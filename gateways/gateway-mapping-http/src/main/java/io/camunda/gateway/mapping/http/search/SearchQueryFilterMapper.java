@@ -7,7 +7,11 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
-import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToIntegerOperations;
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToStringOperations;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
@@ -25,7 +29,6 @@ import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
@@ -103,7 +106,7 @@ public class SearchQueryFilterMapper {
           final var orBuilder = toBaseProcessInstanceFilterFields(processDefinitionKey, or);
           if (orBuilder.isLeft()) {
             validationErrors.addAll(orBuilder.getLeft());
-          } else {
+          } else if (builder.isRight()) {
             builder.get().addOrOperation(orBuilder.get().build());
           }
         }
@@ -122,26 +125,27 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getParentProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentProcessInstanceKey", validationErrors))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.getParentElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentElementInstanceKey", validationErrors))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("startDate", validationErrors))
           .ifPresent(builder::startDateOperations);
       ofNullable(filter.getEndDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("endDate", validationErrors))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class, new ProcessInstanceStateConverter()))
+          .map(
+              mapToStringOperations("state", validationErrors, new ProcessInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
       if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
         validationErrors.add(
@@ -153,23 +157,23 @@ public class SearchQueryFilterMapper {
                 ? filter.getBatchOperationKey()
                 : filter.getBatchOperationId();
         ofNullable(batchOperationFilter)
-            .map(mapToOperations(String.class))
+            .map(mapToStringOperations())
             .ifPresent(builder::batchOperationIdOperations);
       }
       ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
       ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getHasElementInstanceIncident())
           .ifPresent(builder::hasFlowNodeInstanceIncident);
       ofNullable(filter.getElementInstanceState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeInstanceStateOperations);
       ofNullable(filter.getIncidentErrorHashCode())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("incidentErrorHashCode", validationErrors))
           .ifPresent(builder::incidentErrorHashCodeOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
@@ -184,105 +188,108 @@ public class SearchQueryFilterMapper {
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  static JobFilter toJobFilter(final io.camunda.gateway.protocol.model.JobFilter filter) {
+  static Either<List<String>, JobFilter> toJobFilter(
+      final io.camunda.gateway.protocol.model.JobFilter filter) {
     final var builder = FilterBuilders.job();
+    final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.getJobKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("jobKey", validationErrors))
           .ifPresent(builder::jobKeyOperations);
-      ofNullable(filter.getType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::typeOperations);
+      ofNullable(filter.getType()).map(mapToStringOperations()).ifPresent(builder::typeOperations);
       ofNullable(filter.getWorker())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::workerOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
-      ofNullable(filter.getKind())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::kindOperations);
+      ofNullable(filter.getKind()).map(mapToStringOperations()).ifPresent(builder::kindOperations);
       ofNullable(filter.getListenerEventType())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::listenerEventTypeOperations);
       ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::elementIdOperations);
       ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::elementInstanceKeyOperations);
       ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
       ofNullable(filter.getDeadline())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("deadline", validationErrors))
           .ifPresent(builder::deadlineOperations);
       ofNullable(filter.getDeniedReason())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::deniedReasonOperations);
       ofNullable(filter.getIsDenied()).ifPresent(builder::isDenied);
       ofNullable(filter.getEndTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("endTime", validationErrors))
           .ifPresent(builder::endTimeOperations);
       ofNullable(filter.getErrorCode())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::errorCodeOperations);
       ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasFailedWithRetriesLeft()).ifPresent(builder::hasFailedWithRetriesLeft);
       ofNullable(filter.getRetries())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("retries", validationErrors))
           .ifPresent(builder::retriesOperations);
       ofNullable(filter.getCreationTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
           .ifPresent(builder::creationTimeOperations);
       ofNullable(filter.getLastUpdateTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("lastUpdateTime", validationErrors))
           .ifPresent(builder::lastUpdateTimeOperations);
     }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static DecisionInstanceFilter toDecisionInstanceFilter(
+  static Either<List<String>, DecisionInstanceFilter> toDecisionInstanceFilter(
       final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
     final var builder = FilterBuilders.decisionInstance();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getDecisionEvaluationKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("decisionEvaluationKey", validationErrors))
           .ifPresent(builder::decisionInstanceKeys);
       ofNullable(filter.getDecisionEvaluationInstanceKey())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::decisionInstanceIdOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+          .map(
+              mapToStringOperations(
+                  "state", validationErrors, new DecisionInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getEvaluationDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("evaluationDate", validationErrors))
           .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getDecisionDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("decisionDefinitionKey", validationErrors))
           .ifPresent(builder::decisionDefinitionKeyOperations);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
@@ -292,14 +299,16 @@ public class SearchQueryFilterMapper {
           .map(t -> convertEnum(t, DecisionDefinitionType.class))
           .ifPresent(builder::decisionTypes);
       ofNullable(filter.getRootDecisionDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("rootDecisionDefinitionKey", validationErrors))
           .ifPresent(builder::rootDecisionDefinitionKeyOperations);
       ofNullable(filter.getDecisionRequirementsKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("decisionRequirementsKey", validationErrors))
           .ifPresent(builder::decisionRequirementsKeyOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   private static <Q extends Enum<Q>, E extends Enum<E>> E convertEnum(
@@ -307,33 +316,32 @@ public class SearchQueryFilterMapper {
     return Enum.valueOf(targetEnumType, sourceEnum.name());
   }
 
-  static VariableFilter toVariableFilter(
+  static Either<List<String>, VariableFilter> toVariableFilter(
       final io.camunda.gateway.protocol.model.VariableFilter filter) {
     if (filter == null) {
-      return FilterBuilders.variable().build();
+      return Either.right(FilterBuilders.variable().build());
     }
 
     final var builder = FilterBuilders.variable();
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.getProcessInstanceKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
     ofNullable(filter.getScopeKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("scopeKey", validationErrors))
         .ifPresent(builder::scopeKeyOperations);
     ofNullable(filter.getVariableKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("variableKey", validationErrors))
         .ifPresent(builder::variableKeyOperations);
     ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
-    ofNullable(filter.getValue())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::valueOperations);
+    ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static ClusterVariableFilter toClusterVariableFilter(
@@ -345,17 +353,11 @@ public class SearchQueryFilterMapper {
 
     final var builder = FilterBuilders.clusterVariable();
 
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
-    ofNullable(filter.getValue())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::valueOperations);
-    ofNullable(filter.getScope())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::scopeOperations);
+    ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
+    ofNullable(filter.getScope()).map(mapToStringOperations()).ifPresent(builder::scopeOperations);
     ofNullable(filter.getTenantId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
 
@@ -368,49 +370,53 @@ public class SearchQueryFilterMapper {
 
     if (filter != null) {
       ofNullable(filter.getBatchOperationKey())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getOperationType())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::operationTypeOperations);
       ofNullable(filter.getActorType())
           .map(io.camunda.gateway.protocol.model.AuditLogActorTypeEnum::getValue)
           .map(String::toUpperCase)
           .ifPresent(builder::actorTypes);
       ofNullable(filter.getActorId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::actorIdOperations);
     }
 
     return builder.build();
   }
 
-  static io.camunda.search.filter.BatchOperationItemFilter toBatchOperationItemFilter(
-      final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
+  static Either<List<String>, io.camunda.search.filter.BatchOperationItemFilter>
+      toBatchOperationItemFilter(
+          final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
     final var builder = FilterBuilders.batchOperationItem();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getBatchOperationKey())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getItemKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("itemKey", validationErrors))
           .ifPresent(builder::itemKeyOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getOperationType())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::operationTypeOperations);
     }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   public static Either<List<String>, GlobalJobStatisticsFilter> toGlobalJobStatisticsFilter(
@@ -454,7 +460,7 @@ public class SearchQueryFilterMapper {
     Optional.ofNullable(to).ifPresent(builder::to);
 
     Optional.ofNullable(filter.getJobType())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::jobTypeOperations);
 
     return validationErrors.isEmpty()
@@ -542,10 +548,10 @@ public class SearchQueryFilterMapper {
     }
 
     Optional.ofNullable(filter.getErrorCode())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::errorCodeOperations);
     Optional.ofNullable(filter.getErrorMessage())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::errorMessageOperations);
 
     return validationErrors.isEmpty()
@@ -553,29 +559,28 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static ProcessDefinitionFilter toProcessDefinitionFilter(
+  static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              Optional.ofNullable(f.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
-              Optional.ofNullable(f.getProcessDefinitionKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getName())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::nameOperations);
-              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
-              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
-              Optional.ofNullable(f.getProcessDefinitionId())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::processDefinitionIdOperations);
-              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getHasStartForm()).ifPresent(builder::hasStartForm);
-            });
-    return builder.build();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
+      ofNullable(filter.getVersionTag()).ifPresent(builder::versionTags);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
+    }
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static OffsetDateTime toOffsetDateTime(final String text) {
@@ -601,7 +606,7 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_DECISION_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
-    return Either.right(toDecisionInstanceFilter(filter));
+    return toDecisionInstanceFilter(filter);
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
@@ -619,7 +624,7 @@ public class SearchQueryFilterMapper {
           final var orBuilder = toProcessInstanceFilterFields(or);
           if (orBuilder.isLeft()) {
             validationErrors.addAll(orBuilder.getLeft());
-          } else {
+          } else if (builder.isRight()) {
             builder.get().addOrOperation(orBuilder.get().build());
           }
         }
@@ -637,41 +642,42 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessDefinitionName())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionNameOperations);
       ofNullable(filter.getProcessDefinitionVersion())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
           .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessDefinitionVersionTag())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionVersionTagOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getParentProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentProcessInstanceKey", validationErrors))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.getParentElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentElementInstanceKey", validationErrors))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("startDate", validationErrors))
           .ifPresent(builder::startDateOperations);
       ofNullable(filter.getEndDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("endDate", validationErrors))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class, new ProcessInstanceStateConverter()))
+          .map(
+              mapToStringOperations("state", validationErrors, new ProcessInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
       if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
         validationErrors.add(
@@ -683,23 +689,23 @@ public class SearchQueryFilterMapper {
                 ? filter.getBatchOperationKey()
                 : filter.getBatchOperationId();
         ofNullable(batchOperationFilter)
-            .map(mapToOperations(String.class))
+            .map(mapToStringOperations())
             .ifPresent(builder::batchOperationIdOperations);
       }
       ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
       ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getHasElementInstanceIncident())
           .ifPresent(builder::hasFlowNodeInstanceIncident);
       ofNullable(filter.getElementInstanceState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeInstanceStateOperations);
       ofNullable(filter.getIncidentErrorHashCode())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("incidentErrorHashCode", validationErrors))
           .ifPresent(builder::incidentErrorHashCodeOperations);
 
       if (!CollectionUtils.isEmpty(filter.getTags())) {
@@ -712,7 +718,7 @@ public class SearchQueryFilterMapper {
       }
 
       ofNullable(filter.getBusinessId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::businessIdOperations);
 
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
@@ -741,7 +747,7 @@ public class SearchQueryFilterMapper {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::groupIdOperations);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
@@ -769,13 +775,14 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static DecisionDefinitionFilter toDecisionDefinitionFilter(
+  static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
       final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getDecisionDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("decisionDefinitionKey", validationErrors))
           .ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getName()).ifPresent(builder::names);
@@ -783,7 +790,7 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("decisionRequirementsKey", validationErrors))
           .ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getDecisionRequirementsName())
           .ifPresent(builder::decisionRequirementsNames);
@@ -792,71 +799,72 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static DecisionRequirementsFilter toDecisionRequirementsFilter(
+  static Either<List<String>, DecisionRequirementsFilter> toDecisionRequirementsFilter(
       final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
+    final List<String> validationErrors = new ArrayList<>();
 
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              Optional.ofNullable(f.getDecisionRequirementsKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getDecisionRequirementsName()).ifPresent(builder::names);
-              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getDecisionRequirementsId())
-                  .ifPresent(builder::decisionRequirementsIds);
-              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
-            });
+    if (filter != null) {
+      ofNullable(filter.getDecisionRequirementsKey())
+          .map(mapKeyToLong("decisionRequirementsKey", validationErrors))
+          .ifPresent(builder::decisionRequirementsKeys);
+      ofNullable(filter.getDecisionRequirementsName()).ifPresent(builder::names);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
+      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+    }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static FlowNodeInstanceFilter toElementInstanceFilter(
+  static Either<List<String>, FlowNodeInstanceFilter> toElementInstanceFilter(
       final io.camunda.gateway.protocol.model.ElementInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              Optional.ofNullable(f.getElementInstanceKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::flowNodeInstanceKeys);
-              Optional.ofNullable(f.getProcessInstanceKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processInstanceKeys);
-              Optional.ofNullable(f.getProcessDefinitionKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getProcessDefinitionId())
-                  .ifPresent(builder::processDefinitionIds);
-              Optional.ofNullable(f.getState())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::stateOperations);
-              Optional.ofNullable(f.getType())
-                  .ifPresent(
-                      t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
-              Optional.ofNullable(f.getElementId()).ifPresent(builder::flowNodeIds);
-              Optional.ofNullable(f.getElementName()).ifPresent(builder::flowNodeNames);
-              Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
-              Optional.ofNullable(f.getIncidentKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::incidentKeys);
-              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getStartDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::startDateOperations);
-              Optional.ofNullable(f.getEndDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::endDateOperations);
-              Optional.ofNullable(f.getElementInstanceScopeKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::elementInstanceScopeKeys);
-            });
-    return builder.build();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      Optional.ofNullable(filter.getElementInstanceKey())
+          .map(mapKeyToLong("elementInstanceKey", validationErrors))
+          .ifPresent(builder::flowNodeInstanceKeys);
+      Optional.ofNullable(filter.getProcessInstanceKey())
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeys);
+      Optional.ofNullable(filter.getProcessDefinitionKey())
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeys);
+      Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
+      Optional.ofNullable(filter.getState())
+          .map(mapToStringOperations())
+          .ifPresent(builder::stateOperations);
+      Optional.ofNullable(filter.getType())
+          .ifPresent(t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
+      Optional.ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
+      Optional.ofNullable(filter.getElementName()).ifPresent(builder::flowNodeNames);
+      Optional.ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
+      Optional.ofNullable(filter.getIncidentKey())
+          .map(mapKeyToLong("incidentKey", validationErrors))
+          .ifPresent(builder::incidentKeys);
+      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      Optional.ofNullable(filter.getStartDate())
+          .map(mapToOffsetDateTimeOperations("startDate", validationErrors))
+          .ifPresent(builder::startDateOperations);
+      Optional.ofNullable(filter.getEndDate())
+          .map(mapToOffsetDateTimeOperations("endDate", validationErrors))
+          .ifPresent(builder::endDateOperations);
+      Optional.ofNullable(filter.getElementInstanceScopeKey())
+          .map(mapKeyToLong("elementInstanceScopeKey", validationErrors))
+          .ifPresent(builder::elementInstanceScopeKeys);
+    }
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static Either<List<String>, UserTaskFilter> toUserTaskFilter(
@@ -865,39 +873,39 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       Optional.ofNullable(filter.getUserTaskKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("userTaskKey", validationErrors))
           .ifPresent(builder::userTaskKeys);
       Optional.ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
       Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
       Optional.ofNullable(filter.getName())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::nameOperations);
       Optional.ofNullable(filter.getAssignee())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::assigneeOperations);
       Optional.ofNullable(filter.getPriority())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("priority", validationErrors))
           .ifPresent(builder::priorityOperations);
       Optional.ofNullable(filter.getCandidateGroup())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::candidateGroupOperations);
       Optional.ofNullable(filter.getCandidateUser())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::candidateUserOperations);
       Optional.ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       Optional.ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
       Optional.ofNullable(filter.getElementInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("elementInstanceKey", validationErrors))
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.getProcessInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
@@ -918,16 +926,16 @@ public class SearchQueryFilterMapper {
         }
       }
       Optional.ofNullable(filter.getCreationDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationDate", validationErrors))
           .ifPresent(builder::creationDateOperations);
       Optional.ofNullable(filter.getCompletionDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("completionDate", validationErrors))
           .ifPresent(builder::completionDateOperations);
       Optional.ofNullable(filter.getDueDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("dueDate", validationErrors))
           .ifPresent(builder::dueDateOperations);
       Optional.ofNullable(filter.getFollowUpDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("followUpDate", validationErrors))
           .ifPresent(builder::followUpDateOperations);
 
       if (!CollectionUtils.isEmpty(filter.getTags())) {
@@ -950,245 +958,266 @@ public class SearchQueryFilterMapper {
     final var builder = FilterBuilders.user();
     if (filter != null) {
       Optional.ofNullable(filter.getUsername())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::usernameOperations);
       Optional.ofNullable(filter.getName())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::nameOperations);
       Optional.ofNullable(filter.getEmail())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::emailOperations);
     }
     return builder.build();
   }
 
-  static IncidentFilter toIncidentFilter(
+  static Either<List<String>, IncidentFilter> toIncidentFilter(
       final io.camunda.gateway.protocol.model.IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getIncidentKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("incidentKey", validationErrors))
           .ifPresent(builder::incidentKeyOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getErrorType())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::errorTypeOperations);
       ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getCreationTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
           .ifPresent(builder::creationTimeOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getJobKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("jobKey", validationErrors))
           .ifPresent(builder::jobKeyOperations);
       ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
     }
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static MessageSubscriptionFilter toMessageSubscriptionFilter(
+  static Either<List<String>, MessageSubscriptionFilter> toMessageSubscriptionFilter(
       final io.camunda.gateway.protocol.model.MessageSubscriptionFilter filter) {
     final var builder = FilterBuilders.messageSubscription();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getMessageSubscriptionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("messageSubscriptionKey", validationErrors))
           .ifPresent(builder::messageSubscriptionKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getMessageSubscriptionState())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::messageSubscriptionStateOperations);
       ofNullable(filter.getLastUpdatedDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("lastUpdatedDate", validationErrors))
           .ifPresent(builder::dateTimeOperations);
       ofNullable(filter.getMessageName())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::messageNameOperations);
       ofNullable(filter.getCorrelationKey())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::correlationKeyOperations);
       ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
     }
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static CorrelatedMessageSubscriptionFilter toCorrelatedMessageSubscriptionFilter(
-      final io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionFilter filter) {
+  static Either<List<String>, CorrelatedMessageSubscriptionFilter>
+      toCorrelatedMessageSubscriptionFilter(
+          final io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionFilter filter) {
     final var builder = FilterBuilders.correlatedMessageSubscription();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getCorrelationKey())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::correlationKeyOperations);
       ofNullable(filter.getCorrelationTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("correlationTime", validationErrors))
           .ifPresent(builder::correlationTimeOperations);
       ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getMessageKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("messageKey", validationErrors))
           .ifPresent(builder::messageKeyOperations);
       ofNullable(filter.getMessageName())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::messageNameOperations);
       ofNullable(filter.getPartitionId())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("partitionId", validationErrors))
           .ifPresent(builder::partitionIdOperations);
       ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getSubscriptionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("subscriptionKey", validationErrors))
           .ifPresent(builder::subscriptionKeyOperations);
       ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
     }
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static io.camunda.search.filter.AuditLogFilter toAuditLogFilter(
+  static Either<List<String>, io.camunda.search.filter.AuditLogFilter> toAuditLogFilter(
       final io.camunda.gateway.protocol.model.AuditLogFilter filter) {
     if (filter == null) {
-      return FilterBuilders.auditLog().build();
+      return Either.right(FilterBuilders.auditLog().build());
     }
 
     final var builder = FilterBuilders.auditLog();
+    final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getAuditLogKey())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::auditLogKeyOperations);
     ofNullable(filter.getProcessDefinitionKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
         .ifPresent(builder::processDefinitionKeyOperations);
     ofNullable(filter.getProcessInstanceKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
     ofNullable(filter.getElementInstanceKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("elementInstanceKey", validationErrors))
         .ifPresent(builder::elementInstanceKeyOperations);
     ofNullable(filter.getOperationType())
-        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
+        .map(
+            mapToStringOperations(
+                "operationType", validationErrors, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
     ofNullable(filter.getResult())
-        .map(mapToOperations(String.class, new AuditLogResultConverter()))
+        .map(mapToStringOperations("result", validationErrors, new AuditLogResultConverter()))
         .ifPresent(builder::resultOperations);
     ofNullable(filter.getTimestamp())
-        .map(mapToOperations(OffsetDateTime.class))
+        .map(mapToOffsetDateTimeOperations("timestamp", validationErrors))
         .ifPresent(builder::timestampOperations);
     ofNullable(filter.getActorId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::actorIdOperations);
     ofNullable(filter.getActorType())
-        .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
+        .map(mapToStringOperations("actorType", validationErrors, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
     ofNullable(filter.getAgentElementId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::agentElementIdOperations);
     ofNullable(filter.getEntityType())
-        .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
+        .map(
+            mapToStringOperations(
+                "entityType", validationErrors, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
     ofNullable(filter.getEntityKey())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::entityKeyOperations);
     ofNullable(filter.getTenantId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getCategory())
-        .map(mapToOperations(String.class, new AuditLogCategoryConverter()))
+        .map(mapToStringOperations("category", validationErrors, new AuditLogCategoryConverter()))
         .ifPresent(builder::categoryOperations);
     ofNullable(filter.getDeploymentKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("deploymentKey", validationErrors))
         .ifPresent(builder::deploymentKeyOperations);
     ofNullable(filter.getFormKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("formKey", validationErrors))
         .ifPresent(builder::formKeyOperations);
     ofNullable(filter.getResourceKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("resourceKey", validationErrors))
         .ifPresent(builder::resourceKeyOperations);
     ofNullable(filter.getBatchOperationType())
-        .map(mapToOperations(String.class, new BatchOperationTypeConverter()))
+        .map(
+            mapToStringOperations(
+                "batchOperationType", validationErrors, new BatchOperationTypeConverter()))
         .ifPresent(builder::batchOperationTypeOperations);
     ofNullable(filter.getProcessDefinitionId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::processDefinitionIdOperations);
     ofNullable(filter.getJobKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("jobKey", validationErrors))
         .ifPresent(builder::jobKeyOperations);
     ofNullable(filter.getUserTaskKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("userTaskKey", validationErrors))
         .ifPresent(builder::userTaskKeyOperations);
     ofNullable(filter.getDecisionRequirementsId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::decisionRequirementsIdOperations);
     ofNullable(filter.getDecisionRequirementsKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("decisionRequirementsKey", validationErrors))
         .ifPresent(builder::decisionRequirementsKeyOperations);
     ofNullable(filter.getDecisionDefinitionId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::decisionDefinitionIdOperations);
     ofNullable(filter.getDecisionDefinitionKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("decisionDefinitionKey", validationErrors))
         .ifPresent(builder::decisionDefinitionKeyOperations);
     ofNullable(filter.getDecisionEvaluationKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("decisionEvaluationKey", validationErrors))
         .ifPresent(builder::decisionEvaluationKeyOperations);
     ofNullable(filter.getRelatedEntityKey())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::relatedEntityKeyOperations);
     ofNullable(filter.getRelatedEntityType())
-        .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
+        .map(
+            mapToStringOperations(
+                "relatedEntityType", validationErrors, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::relatedEntityTypeOperations);
     ofNullable(filter.getEntityDescription())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::entityDescriptionOperations);
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static Either<List<String>, ProcessDefinitionInstanceVersionStatisticsFilter>
@@ -1246,7 +1275,7 @@ public class SearchQueryFilterMapper {
 
   private static List<VariableValueFilter> toVariableValueFilters(
       final String name, final StringFilterProperty value) {
-    final List<Operation<String>> operations = mapToOperations(String.class).apply(value);
+    final List<Operation<String>> operations = mapToStringOperations().apply(value);
     return new VariableValueFilter.Builder()
         .name(name)
         .valueTypedOperations(operations)
@@ -1269,28 +1298,34 @@ public class SearchQueryFilterMapper {
         .orElse(null);
   }
 
-  static AuditLogFilter toUserTaskAuditLogFilter(final UserTaskAuditLogFilter filter) {
+  static Either<List<String>, AuditLogFilter> toUserTaskAuditLogFilter(
+      final UserTaskAuditLogFilter filter) {
     if (filter == null) {
-      return FilterBuilders.auditLog().build();
+      return Either.right(FilterBuilders.auditLog().build());
     }
 
     final var builder = FilterBuilders.auditLog();
+    final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getOperationType())
-        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
+        .map(
+            mapToStringOperations(
+                "operationType", validationErrors, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
     ofNullable(filter.getResult())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::resultOperations);
     ofNullable(filter.getTimestamp())
-        .map(mapToOperations(OffsetDateTime.class))
+        .map(mapToOffsetDateTimeOperations("timestamp", validationErrors))
         .ifPresent(builder::timestampOperations);
     ofNullable(filter.getActorId())
-        .map(mapToOperations(String.class))
+        .map(mapToStringOperations())
         .ifPresent(builder::actorIdOperations);
     ofNullable(filter.getActorType())
-        .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
+        .map(mapToStringOperations("actorType", validationErrors, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {
@@ -1299,9 +1334,7 @@ public class SearchQueryFilterMapper {
     }
 
     final var builder = FilterBuilders.variable();
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
 
     return builder.build();
   }
@@ -1324,34 +1357,35 @@ public class SearchQueryFilterMapper {
             f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(filter.getErrorHashCode())));
   }
 
-  static GlobalListenerFilter toGlobalTaskListenerFilter(
+  static Either<List<String>, GlobalListenerFilter> toGlobalTaskListenerFilter(
       final GlobalTaskListenerSearchQueryFilterRequest filter) {
 
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getId())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::listenerIdOperations);
-      ofNullable(filter.getType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::typeOperations);
+      ofNullable(filter.getType()).map(mapToStringOperations()).ifPresent(builder::typeOperations);
       ofNullable(filter.getRetries())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("retries", validationErrors))
           .ifPresent(builder::retriesOperations);
       ofNullable(filter.getEventTypes())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::eventTypeOperations);
       ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
       ofNullable(filter.getPriority())
-          .map(mapToOperations(Integer.class))
+          .map(mapToIntegerOperations("priority", validationErrors))
           .ifPresent(builder::priorityOperations);
       ofNullable(filter.getSource())
-          .map(mapToOperations(String.class))
+          .map(mapToStringOperations())
           .ifPresent(builder::sourceOperations);
     }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 }
