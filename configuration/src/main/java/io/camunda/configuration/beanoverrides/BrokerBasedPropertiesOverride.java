@@ -791,6 +791,7 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
 
     validateSchedulerConfiguration(primaryStorageBackup);
+    validateContinuousBackupsForRdbms(primaryStorageBackup);
 
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setRequired(primaryStorageBackup.isRequired());
@@ -812,6 +813,17 @@ public class BrokerBasedPropertiesOverride {
       throw new IllegalArgumentException(
           "Continuous backups are not compatible with secondary storage: `%s`. Please disable continuous backups."
               .formatted(dbType));
+    }
+  }
+
+  private void validateContinuousBackupsForRdbms(final PrimaryStorageBackup primaryStorageBackup) {
+    final var dbType = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType();
+    final var backupStoreConfigured =
+        primaryStorageBackup.getStore() != PrimaryStorageBackup.BackupStoreType.NONE;
+    if (dbType.isRdbms() && backupStoreConfigured && !primaryStorageBackup.isContinuous()) {
+      throw new IllegalArgumentException(
+          "Continuous backups must be enabled when a backup store is configured and RDBMS is used as secondary storage. "
+              + "Please set 'camunda.data.primary-storage.backup.continuous=true'.");
     }
   }
 

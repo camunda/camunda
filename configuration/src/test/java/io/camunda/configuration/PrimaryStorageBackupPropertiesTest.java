@@ -340,6 +340,82 @@ public class PrimaryStorageBackupPropertiesTest {
     }
 
     @Test
+    void shouldStartOnRdbmsWithBackupStoreAndContinuousEnabled() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.store",
+              "S3",
+              "camunda.data.primary-storage.backup.continuous",
+              "true",
+              "camunda.data.secondary-storage.type",
+              "rdbms");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatCode(app::run).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldFailOnRdbmsWithBackupStoreAndContinuousDisabled() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.store",
+              "S3",
+              "camunda.data.primary-storage.backup.continuous",
+              "false",
+              "camunda.data.secondary-storage.type",
+              "rdbms");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Continuous backups must be enabled when a backup store is configured and RDBMS is used as secondary storage");
+    }
+
+    @Test
+    void shouldStartOnRdbmsWithNoBackupStore() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.store",
+              "NONE",
+              "camunda.data.secondary-storage.type",
+              "rdbms");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatCode(app::run).doesNotThrowAnyException();
+    }
+
+    @Test
     void shouldStartOnNoDb() {
 
       // given
