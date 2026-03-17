@@ -218,13 +218,14 @@ _You need a Kubernetes Cluster at your disposal to run the load test itself, whi
 Similar to the `newLoadTest.sh`, it will create a new Kubernetes namespace and a new folder with the given name.
 Afterwards, we can deploy our load test applications (via the [Load Test Helm Chart](https://github.com/camunda/camunda-load-tests-helm)). 
 
-But before we can do that, you need to store a credentials file (corresponding to your SaaS cluster). Make sure to download the credentials file, containing all environment variables.
+Before doing that, you need to provide the Camunda SaaS credentials for the cluster you want to test. The `newCloudLoadTest.sh` script has already created a `credentials.txt` file inside the newly created namespace folder.
 
-After doing that, source this file, and with that, you can run the following makefile command:
+Download the Camunda SaaS credentials (the file containing the required environment variables) and either copy its contents into the generated `credentials.txt` file or replace `credentials.txt` with the downloaded file (keeping the filename `credentials.txt`).
+
+Once `credentials.txt` contains the correct SaaS environment variables, you can run the following Makefile command from inside the namespace folder:
 
 ```sh
-. CAMUNDA_CREDENTIALS...
-make install
+make install-load-test
 ```
 
 ### Running specific scenarios
