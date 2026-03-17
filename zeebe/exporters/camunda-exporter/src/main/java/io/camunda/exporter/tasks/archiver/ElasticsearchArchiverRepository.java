@@ -436,9 +436,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       return CompletableFuture.completedFuture(null);
     }
 
+    final var query = QueryBuilders.bool(q -> q.filter(b -> b.ids(id -> id.values(docIds))));
     final var request =
         new ReindexRequest.Builder()
-            .source(src -> src.index(sourceIndexName).query(buildIdTermsQuery("_id", docIds)))
+            .source(src -> src.index(sourceIndexName).query(query))
             .dest(dest -> dest.index(destinationIndexName))
             .conflicts(Conflicts.Proceed)
             .scroll(REINDEX_SCROLL_TIMEOUT)
