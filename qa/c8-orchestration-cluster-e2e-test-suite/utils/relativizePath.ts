@@ -39,6 +39,9 @@ export const Paths = {
   authorizations() {
     return '/admin/authorizations';
   },
+  operationsLog() {
+    return '/admin/operations-log';
+  },
   operateDashboard() {
     return '/operate';
   },
