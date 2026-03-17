@@ -49,9 +49,19 @@ public class AdvancedSearchFilterUtil {
             });
   }
 
-  public static Function<Object, List<Operation<Integer>>> mapToIntegerOperations() {
+  public static Function<Object, List<Operation<Integer>>> mapToIntegerOperations(
+      final String fieldName, final List<String> validationErrors) {
     return (final Object filter) ->
-        mapToTypedOperations(filter, value -> value instanceof final Integer i ? i : null);
+        mapToTypedOperations(
+            filter,
+            value -> {
+              if (value instanceof final Integer i) {
+                return i;
+              }
+              validationErrors.add(
+                  "The provided %s '%s' is not a valid integer value.".formatted(fieldName, value));
+              return null;
+            });
   }
 
   public static Function<Object, List<Operation<String>>> mapToStringOperations() {
