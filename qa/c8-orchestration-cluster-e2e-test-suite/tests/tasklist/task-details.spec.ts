@@ -216,7 +216,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillDatetimeField('Invoice Date', '1/1/3000');
     await taskDetailsPage.fillDatetimeField('Due Date', '1/2/3000');
     await taskDetailsPage.fillTextInput('Invoice Number*', '123');
-    await sleep(200);
+    await sleep(500);
 
     await taskDetailsPage.selectDropdownOption(
       'USD - United States Dollar',
@@ -227,7 +227,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillDynamicList('Item Name*', 'Laptop');
     await taskDetailsPage.fillDynamicList('Unit Price*', '1');
     await taskDetailsPage.fillDynamicList('Quantity*', '2');
-    await sleep(200);
+    await sleep(1000);
 
     await expect(taskDetailsPage.form).toContainText('EUR 231');
     await expect(taskDetailsPage.form).toContainText('EUR 264');
