@@ -13,8 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.read.domain.ProcessInstanceStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -32,8 +34,7 @@ class ProcessInstanceStatisticsDbReaderTest {
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
     final ProcessInstanceFlowNodeStatisticsQuery query =
-        new ProcessInstanceFlowNodeStatisticsQuery(
-            new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));
+        new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -49,8 +50,7 @@ class ProcessInstanceStatisticsDbReaderTest {
   @Test
   void shouldReturnEmptyListWhenAuthorizedTenantIdsIsEmpty() {
     final ProcessInstanceFlowNodeStatisticsQuery query =
-        new ProcessInstanceFlowNodeStatisticsQuery(
-            new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));
+        new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
@@ -62,18 +62,18 @@ class ProcessInstanceStatisticsDbReaderTest {
 
   @Test
   void shouldPassAuthorizationFiltersToMapper() {
+    final ProcessInstanceFlowNodeStatisticsQuery query =
+        new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
     final var authorizedResourceIds = List.of("process-definition-1", "process-definition-2");
     final var authorizedTenantIds = List.of("tenant-1", "tenant-2");
+    final var dbQuery =
+        new ProcessInstanceStatisticsDbQuery(
+            query.filter(), authorizedResourceIds, authorizedTenantIds);
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),
             new ProcessFlowNodeStatisticsEntity("node2", 8L, 3L, 1L, 4L));
-    when(processInstanceMapper.flowNodeStatistics(123L, authorizedResourceIds, authorizedTenantIds))
-        .thenReturn(expected);
-
-    final ProcessInstanceFlowNodeStatisticsQuery query =
-        new ProcessInstanceFlowNodeStatisticsQuery(
-            new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));
+    when(processInstanceMapper.flowNodeStatistics(dbQuery)).thenReturn(expected);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -86,21 +86,20 @@ class ProcessInstanceStatisticsDbReaderTest {
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processInstanceMapper)
-        .flowNodeStatistics(123L, authorizedResourceIds, authorizedTenantIds);
+    verify(processInstanceMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
   void shouldReturnEmptyListWhenNotAuthorizedForResource() {
+    final ProcessInstanceFlowNodeStatisticsQuery query =
+        new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
     final var authorizedResourceIds = List.of("unauthorized-process-definition");
     final var authorizedTenantIds = List.of("tenant-1");
-    when(processInstanceMapper.flowNodeStatistics(123L, authorizedResourceIds, authorizedTenantIds))
-        .thenReturn(List.of());
-
-    final ProcessInstanceFlowNodeStatisticsQuery query =
-        new ProcessInstanceFlowNodeStatisticsQuery(
-            new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));
+    final var dbQuery =
+        new ProcessInstanceStatisticsDbQuery(
+            query.filter(), authorizedResourceIds, authorizedTenantIds);
+    when(processInstanceMapper.flowNodeStatistics(dbQuery)).thenReturn(List.of());
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -113,21 +112,20 @@ class ProcessInstanceStatisticsDbReaderTest {
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processInstanceMapper)
-        .flowNodeStatistics(123L, authorizedResourceIds, authorizedTenantIds);
+    verify(processInstanceMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEmpty();
   }
 
   @Test
   void shouldReturnEmptyListWhenNotAuthorizedForTenant() {
+    final ProcessInstanceFlowNodeStatisticsQuery query =
+        new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
     final var authorizedResourceIds = List.of("process-definition-1");
     final var authorizedTenantIds = List.of("unauthorized-tenant");
-    when(processInstanceMapper.flowNodeStatistics(123L, authorizedResourceIds, authorizedTenantIds))
-        .thenReturn(List.of());
-
-    final ProcessInstanceFlowNodeStatisticsQuery query =
-        new ProcessInstanceFlowNodeStatisticsQuery(
-            new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));
+    final var dbQuery =
+        new ProcessInstanceStatisticsDbQuery(
+            query.filter(), authorizedResourceIds, authorizedTenantIds);
+    when(processInstanceMapper.flowNodeStatistics(dbQuery)).thenReturn(List.of());
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -140,27 +138,25 @@ class ProcessInstanceStatisticsDbReaderTest {
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processInstanceMapper)
-        .flowNodeStatistics(123L, authorizedResourceIds, authorizedTenantIds);
+    verify(processInstanceMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEmpty();
   }
 
   @Test
   void shouldReturnStatistics() {
+    final ProcessInstanceFlowNodeStatisticsQuery query =
+        new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
+    final var dbQuery = new ProcessInstanceStatisticsDbQuery(query.filter(), List.of(), null);
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),
             new ProcessFlowNodeStatisticsEntity("node2", 8L, 3L, 1L, 4L));
-    when(processInstanceMapper.flowNodeStatistics(123L, List.of(), null)).thenReturn(expected);
-
-    final ProcessInstanceFlowNodeStatisticsQuery query =
-        new ProcessInstanceFlowNodeStatisticsQuery(
-            new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));
+    when(processInstanceMapper.flowNodeStatistics(dbQuery)).thenReturn(expected);
     final ResourceAccessChecks resourceAccessChecks = ResourceAccessChecks.disabled();
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processInstanceMapper).flowNodeStatistics(123L, List.of(), null);
+    verify(processInstanceMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEqualTo(expected);
   }
 }

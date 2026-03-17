@@ -13,8 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -33,7 +35,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
     final ProcessDefinitionFlowNodeStatisticsQuery query =
-        new ProcessDefinitionFlowNodeStatisticsQuery(null);
+        new ProcessDefinitionFlowNodeStatisticsQuery(
+            new ProcessDefinitionStatisticsFilter.Builder(123L).build());
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -49,7 +52,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
   @Test
   void shouldReturnEmptyListWhenAuthorizedTenantIdsListIsEmpty() {
     final ProcessDefinitionFlowNodeStatisticsQuery query =
-        new ProcessDefinitionFlowNodeStatisticsQuery(null);
+        new ProcessDefinitionFlowNodeStatisticsQuery(
+            new ProcessDefinitionStatisticsFilter.Builder(123L).build());
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
@@ -61,18 +65,19 @@ class ProcessDefinitionStatisticsDbReaderTest {
 
   @Test
   void shouldPassAuthorizationFiltersToMapper() {
+    final ProcessDefinitionFlowNodeStatisticsQuery query =
+        new ProcessDefinitionFlowNodeStatisticsQuery(
+            new ProcessDefinitionStatisticsFilter.Builder(123L).build());
     final var authorizedResourceIds = List.of("process-definition-1", "process-definition-2");
     final var authorizedTenantIds = List.of("tenant-1", "tenant-2");
+    final var dbQuery =
+        new ProcessDefinitionStatisticsDbQuery(
+            query.filter(), authorizedResourceIds, authorizedTenantIds);
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),
             new ProcessFlowNodeStatisticsEntity("node2", 8L, 3L, 1L, 4L));
-    when(processDefinitionMapper.flowNodeStatistics(
-            null, authorizedResourceIds, authorizedTenantIds))
-        .thenReturn(expected);
-
-    final ProcessDefinitionFlowNodeStatisticsQuery query =
-        new ProcessDefinitionFlowNodeStatisticsQuery(null);
+    when(processDefinitionMapper.flowNodeStatistics(dbQuery)).thenReturn(expected);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -85,21 +90,21 @@ class ProcessDefinitionStatisticsDbReaderTest {
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processDefinitionMapper)
-        .flowNodeStatistics(null, authorizedResourceIds, authorizedTenantIds);
+    verify(processDefinitionMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
   void shouldReturnEmptyListWhenNotAuthorizedForResource() {
+    final ProcessDefinitionFlowNodeStatisticsQuery query =
+        new ProcessDefinitionFlowNodeStatisticsQuery(
+            new ProcessDefinitionStatisticsFilter.Builder(123L).build());
     final var authorizedResourceIds = List.of("unauthorized-process-definition");
     final var authorizedTenantIds = List.of("tenant-1");
-    when(processDefinitionMapper.flowNodeStatistics(
-            null, authorizedResourceIds, authorizedTenantIds))
-        .thenReturn(List.of());
-
-    final ProcessDefinitionFlowNodeStatisticsQuery query =
-        new ProcessDefinitionFlowNodeStatisticsQuery(null);
+    final var dbQuery =
+        new ProcessDefinitionStatisticsDbQuery(
+            query.filter(), authorizedResourceIds, authorizedTenantIds);
+    when(processDefinitionMapper.flowNodeStatistics(dbQuery)).thenReturn(List.of());
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -112,21 +117,21 @@ class ProcessDefinitionStatisticsDbReaderTest {
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processDefinitionMapper)
-        .flowNodeStatistics(null, authorizedResourceIds, authorizedTenantIds);
+    verify(processDefinitionMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEmpty();
   }
 
   @Test
   void shouldReturnEmptyListWhenNotAuthorizedForTenant() {
+    final ProcessDefinitionFlowNodeStatisticsQuery query =
+        new ProcessDefinitionFlowNodeStatisticsQuery(
+            new ProcessDefinitionStatisticsFilter.Builder(123L).build());
     final var authorizedResourceIds = List.of("process-definition-1");
     final var authorizedTenantIds = List.of("unauthorized-tenant");
-    when(processDefinitionMapper.flowNodeStatistics(
-            null, authorizedResourceIds, authorizedTenantIds))
-        .thenReturn(List.of());
-
-    final ProcessDefinitionFlowNodeStatisticsQuery query =
-        new ProcessDefinitionFlowNodeStatisticsQuery(null);
+    final var dbQuery =
+        new ProcessDefinitionStatisticsDbQuery(
+            query.filter(), authorizedResourceIds, authorizedTenantIds);
+    when(processDefinitionMapper.flowNodeStatistics(dbQuery)).thenReturn(List.of());
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
@@ -139,26 +144,26 @@ class ProcessDefinitionStatisticsDbReaderTest {
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processDefinitionMapper)
-        .flowNodeStatistics(null, authorizedResourceIds, authorizedTenantIds);
+    verify(processDefinitionMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEmpty();
   }
 
   @Test
   void shouldReturnStatistics() {
+    final ProcessDefinitionFlowNodeStatisticsQuery query =
+        new ProcessDefinitionFlowNodeStatisticsQuery(
+            new ProcessDefinitionStatisticsFilter.Builder(123L).build());
+    final var dbQuery = new ProcessDefinitionStatisticsDbQuery(query.filter(), List.of(), null);
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),
             new ProcessFlowNodeStatisticsEntity("node2", 8L, 3L, 1L, 4L));
-    when(processDefinitionMapper.flowNodeStatistics(null, List.of(), null)).thenReturn(expected);
-
-    final ProcessDefinitionFlowNodeStatisticsQuery query =
-        new ProcessDefinitionFlowNodeStatisticsQuery(null);
+    when(processDefinitionMapper.flowNodeStatistics(dbQuery)).thenReturn(expected);
     final ResourceAccessChecks resourceAccessChecks = ResourceAccessChecks.disabled();
 
     final var result = reader.aggregate(query, resourceAccessChecks);
 
-    verify(processDefinitionMapper).flowNodeStatistics(null, List.of(), null);
+    verify(processDefinitionMapper).flowNodeStatistics(dbQuery);
     assertThat(result).isEqualTo(expected);
   }
 }
