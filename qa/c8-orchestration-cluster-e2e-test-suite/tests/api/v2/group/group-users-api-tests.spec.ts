@@ -28,7 +28,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 /* eslint-disable playwright/expect-expect */
-test.describe('Group Users API Tests', () => {
+test.describe.parallel('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];
 
