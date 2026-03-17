@@ -24,6 +24,22 @@ import org.junit.jupiter.api.Test;
 public class BrokerRequestAuthorizationConverterTest {
 
   @Test
+  void shouldReturnEmptyMapWhenAuthorizationAndMultiTenancyDisabled() {
+    // given
+    final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthorizations().setEnabled(false);
+    securityConfiguration.getMultiTenancy().setChecksEnabled(false);
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(brokerRequestAuth).isEmpty();
+  }
+
+  @Test
   void shouldContainAnonymousClaim() {
     // given
     final var authentication = CamundaAuthentication.anonymous();
