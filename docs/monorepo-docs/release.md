@@ -247,7 +247,7 @@ Changes to the release process are done in these steps:
 
 ## Issue Tracking
 
-All problems, bugs and feature requests regarding the C8 release process are tracked using[GitHub Issues](https://github.com/camunda/camunda/issues).
+All problems, bugs and feature requests regarding the C8 release process are tracked using [GitHub Issues](https://github.com/camunda/camunda/issues).
 
 For visibility and prioritization there is the (internal) [Monorepo Release project board](https://github.com/orgs/camunda/projects/115/views/4) that tracks high-level issues.
 
@@ -298,7 +298,7 @@ For 8.9.0 we evaluate the following approach (to be decided if kept for future m
   - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
     - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
   - **Bug Fix Handling After Last Alpha Release (Minor Version Feature Freeze)**:
-    :::
+:::
 
 3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
 
@@ -351,32 +351,32 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - **Purpose**: Lock in the feature scope for the upcoming minor release
 - **Timing**: Occurs with the **last alpha** before the minor release (e.g., for `8.9.0`, this would be `8.9.0-alpha5`), on the day of the code freeze of the last alpha
 - **What Changes**:
-- ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
-- ❌ No new features, scope extensions, or risky changes after this point
-- ✅ Bug fixes, stabilization work, and E2E testing continue
+  - ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
+  - ❌ No new features, scope extensions, or risky changes after this point
+  - ✅ Bug fixes, stabilization work, and E2E testing continue
 - **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
-- **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
-- **Body**:
+  - **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
+  - **Body**:
 
-```
-Hey all,
+    ```
+    Hey all,
 
-        This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
-        <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
+    This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
+    <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
 
-        After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
+    After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
 
-        Overall release manager is <release_manager_name>
+    Overall release manager is <release_manager_name>
 
-        Have a nice week!
-        ```
+    Have a nice week!
+    ```
 
 **🚫 Code Freeze (Minor Releases)**
 - **Purpose**: Minimize code changes to ensure release stability
 - **Timing**: Three weeks before the press release (e.g., release branch creation and thus code freeze for `8.9.0` is on March 24th since press release is on April 14th)
 - **What Changes**:
-- ✅ Only **critical** changes allowed (release blockers, severe regressions, security issues)
-- ❌ Non-critical changes deferred to future alphas or patch releases
+  - ✅ Only **critical** changes allowed (release blockers, severe regressions, security issues)
+  - ❌ Non-critical changes deferred to future alphas or patch releases
 - **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
 
 **📅 Important References**
@@ -487,10 +487,10 @@ Note: Hotfixes are **not part of the official release process** and **should not
 Release process roughly looks like this:
 - release branch is created (forked from `main` or `stable/x.y`)
 - on the release branch, as a part of the release process, maven-release-plugin creates 2 commits sequentially:
-- commit 1 ([example](https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c)): bumping pom.xml files to the version we want to release (e.g. `8.8.0-SNAPSHOT` -> `8.8.0-alpha6`)
-- A git tag for the release (e.g. `8.8.0-alpha6`) is created from this commit
-- The release is built from this commit.
-- commit 2 ([example](https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab)): bumping pom.xml files for the next development version (e.g. `8.8.0-alpha6` -> `8.8.0-SNAPSHOT`)
+  - commit 1 ([example](https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c)): bumping pom.xml files to the version we want to release (e.g. `8.8.0-SNAPSHOT` -> `8.8.0-alpha6`)
+    - A git tag for the release (e.g. `8.8.0-alpha6`) is created from this commit
+    - The release is built from this commit.
+  - commit 2 ([example](https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab)): bumping pom.xml files for the next development version (e.g. `8.8.0-alpha6` -> `8.8.0-SNAPSHOT`)
 
 If one needs to retry the failed release (assuming no need to clear the released artifacts), need to do:
 - delete these two commits from the git history
