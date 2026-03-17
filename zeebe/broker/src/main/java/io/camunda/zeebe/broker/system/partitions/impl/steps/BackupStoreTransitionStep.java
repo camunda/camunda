@@ -80,16 +80,18 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
         store
             .verifyConnection()
-            .whenComplete(
+            .whenCompleteAsync(
                 (ignore, err) -> {
                   if (err != null) {
                     context.setBackupStore(null);
+                    store.closeAsync();
                     installed.completeExceptionally(err);
                   } else {
                     context.setBackupStore(store);
                     installed.complete(null);
                   }
-                });
+                },
+                context.getConcurrencyControl()::run);
       } else {
         context.setBackupStore(store);
         installed.complete(null);
