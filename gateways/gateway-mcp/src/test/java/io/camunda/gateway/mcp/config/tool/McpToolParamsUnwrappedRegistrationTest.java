@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -20,7 +21,9 @@ import org.junit.jupiter.api.Test;
 
 class McpToolParamsUnwrappedRegistrationTest {
 
-  private final CamundaJsonSchemaGenerator schemaGenerator = new CamundaJsonSchemaGenerator();
+  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final CamundaJsonSchemaGenerator schemaGenerator =
+      new CamundaJsonSchemaGenerator(objectMapper);
 
   @Test
   void shouldRejectMultipleMcpToolParams() {

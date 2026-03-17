@@ -37,16 +37,15 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
-import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.method.tool.utils.ConcurrentReferenceHashMap;
-import org.springaicommunity.mcp.method.tool.utils.JsonParser;
-import org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator;
-import org.springaicommunity.mcp.method.tool.utils.SpringAiSchemaModule;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.method.tool.utils.SpringAiSchemaModule;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ConcurrentReferenceHashMap;
 
 /**
- * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and with
- * support for {@link McpToolParamsUnwrapped} expansion.
+ * This is an adapted variant of {@link
+ * org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator}, configured to
+ * inline defs and with support for {@link McpToolParamsUnwrapped} expansion.
  */
 public class CamundaJsonSchemaGenerator {
 
@@ -59,10 +58,6 @@ public class CamundaJsonSchemaGenerator {
   private final ObjectMapper objectMapper;
   private final SchemaGenerator typeSchemaGenerator;
   private final SchemaGenerator subtypeSchemaGenerator;
-
-  public CamundaJsonSchemaGenerator() {
-    this(JsonParser.getObjectMapper());
-  }
 
   public CamundaJsonSchemaGenerator(final ObjectMapper objectMapper) {
     this(objectMapper, Function.identity(), Function.identity());
