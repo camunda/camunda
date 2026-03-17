@@ -69,6 +69,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_RESOURCE_ID = "resourceId";
   public static final String ATTRIBUTE_RESOURCE_TYPE = "resourceType";
   public static final String ATTRIBUTE_LINK_NAME = "linkName";
+  public static final String ATTRIBUTE_LINK_VARIABLE_NAME = "variableName";
 
   public static final String ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
   public static final String ATTRIBUTE_CONDITION = "condition";

@@ -38,4 +38,8 @@ public interface ZeebeLinkedResource extends BpmnModelElementInstance {
   String getLinkName();
 
   void setLinkName(String linkName);
+
+  String getVariableName();
+
+  void setVariableName(String variableName);
 }
