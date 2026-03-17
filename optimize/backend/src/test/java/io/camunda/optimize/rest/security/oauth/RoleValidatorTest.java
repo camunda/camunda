@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.oauth;
 
+import static io.camunda.optimize.rest.security.oauth.RoleValidator.ORGANIZATION_CLAIM_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -22,9 +23,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 class RoleValidatorTest {
 
-  private static final String ORGANIZATION_ID = "org1";
+  private static final String ORGANIZATION_ID_1 = "org1";
+  private static final String ORGANIZATION_ID_2 = "org2";
   private final List<String> allowedRoles = Arrays.asList("admin", "analyst", "owner");
-  private final RoleValidator validator = new RoleValidator(allowedRoles, ORGANIZATION_ID);
+  private final RoleValidator validator = new RoleValidator(allowedRoles, ORGANIZATION_ID_1);
 
   @Test
   void shouldFailWhenTokenHasNoOrganizationClaim() {
@@ -46,9 +48,9 @@ class RoleValidatorTest {
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org = new HashMap<>();
-    org.put("id", "org1");
+    org.put("id", ORGANIZATION_ID_1);
     org.put("roles", Arrays.asList("admin", "developer"));
-    claims.put("https://camunda.com/orgs", List.of(org));
+    claims.put(ORGANIZATION_CLAIM_KEY, List.of(org));
     when(token.getClaims()).thenReturn(claims);
 
     // when
@@ -64,12 +66,12 @@ class RoleValidatorTest {
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org1 = new HashMap<>();
-    org1.put("id", "org1");
+    org1.put("id", ORGANIZATION_ID_1);
     org1.put("roles", List.of("analyst"));
     final Map<String, Object> org2 = new HashMap<>();
-    org2.put("id", "org2");
+    org2.put("id", ORGANIZATION_ID_2);
     org2.put("roles", List.of("developer"));
-    claims.put("https://camunda.com/orgs", Arrays.asList(org1, org2));
+    claims.put(ORGANIZATION_CLAIM_KEY, Arrays.asList(org1, org2));
     when(token.getClaims()).thenReturn(claims);
 
     // when
@@ -85,12 +87,12 @@ class RoleValidatorTest {
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org1 = new HashMap<>();
-    org1.put("id", "org1");
+    org1.put("id", ORGANIZATION_ID_1);
     org1.put("roles", List.of("developer"));
     final Map<String, Object> org2 = new HashMap<>();
-    org2.put("id", "org2");
+    org2.put("id", ORGANIZATION_ID_2);
     org2.put("roles", List.of("analyst"));
-    claims.put("https://camunda.com/orgs", Arrays.asList(org1, org2));
+    claims.put(ORGANIZATION_CLAIM_KEY, Arrays.asList(org1, org2));
     when(token.getClaims()).thenReturn(claims);
 
     // when
@@ -107,9 +109,9 @@ class RoleValidatorTest {
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org = new HashMap<>();
-    org.put("id", "org1");
+    org.put("id", ORGANIZATION_ID_1);
     org.put("roles", Arrays.asList("developer", "viewer"));
-    claims.put("https://camunda.com/orgs", List.of(org));
+    claims.put(ORGANIZATION_CLAIM_KEY, List.of(org));
     when(token.getClaims()).thenReturn(claims);
 
     // when
@@ -126,9 +128,9 @@ class RoleValidatorTest {
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org = new HashMap<>();
-    org.put("id", "org1");
+    org.put("id", ORGANIZATION_ID_1);
     org.put("roles", Collections.emptyList());
-    claims.put("https://camunda.com/orgs", List.of(org));
+    claims.put(ORGANIZATION_CLAIM_KEY, List.of(org));
     when(token.getClaims()).thenReturn(claims);
 
     // when
@@ -143,7 +145,7 @@ class RoleValidatorTest {
     // given
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
-    claims.put("https://camunda.com/orgs", Collections.emptyList());
+    claims.put(ORGANIZATION_CLAIM_KEY, Collections.emptyList());
     when(token.getClaims()).thenReturn(claims);
 
     // when
@@ -158,7 +160,7 @@ class RoleValidatorTest {
     // given
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
-    claims.put("https://camunda.com/orgs", "invalid-structure");
+    claims.put(ORGANIZATION_CLAIM_KEY, "invalid-structure");
     when(token.getClaims()).thenReturn(claims);
 
     // when
