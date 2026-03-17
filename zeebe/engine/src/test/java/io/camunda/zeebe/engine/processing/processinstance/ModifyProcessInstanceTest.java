@@ -31,6 +31,8 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -1541,16 +1543,28 @@ public class ModifyProcessInstanceTest {
 
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
+    assertThatElementIsTerminated(processInstanceKey, elementId, 1);
+  }
+
+  private void assertThatElementIsTerminated(
+      final long processInstanceKey, final String elementId, final int count) {
+    final var expectedIntents = new ArrayList<ProcessInstanceIntent>();
+    expectedIntents.addAll(Collections.nCopies(count, ProcessInstanceIntent.ELEMENT_TERMINATING));
+    expectedIntents.addAll(Collections.nCopies(count, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
-                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .limitByCount(
+                    r ->
+                        r.getValue().getElementId().equals(elementId)
+                            && r.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED),
+                    count)
                 .toList())
         .extracting(Record::getIntent)
-        .containsSequence(
-            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+        .containsSequence(expectedIntents);
   }
 
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
@@ -1560,5 +1574,44 @@ public class ModifyProcessInstanceTest {
                 .withElementId(elementId)
                 .exists())
         .isTrue();
+  }
+
+
+
+  @Test
+  public void shouldTerminateElementsInsideAdHocSubProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "AHSP",
+                    ahsp -> {
+                      ahsp.userTask("A").zeebeUserTask();
+                      ahsp.userTask("B").zeebeUserTask();
+                      ahsp.zeebeActiveElementsCollectionExpression("=[\"A\", \"B\"]");
+                    })
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("AHSP", "C")
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "AHSP");
+    assertThatElementIsTerminated(processInstanceKey, "AHSP#innerInstance", 2);
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, "B");
+    verifyThatRootElementIsActivated(processInstanceKey, "C", BpmnElementType.USER_TASK);
   }
 }
