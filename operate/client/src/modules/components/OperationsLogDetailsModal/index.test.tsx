@@ -19,7 +19,6 @@ const baseAuditLog: AuditLog = {
   result: 'SUCCESS',
   actorId: 'demo',
   timestamp: '2024-01-01T10:00:00.000Z',
-  annotation: 'Updated variable',
   actorType: 'USER',
   category: 'USER_TASKS',
   batchOperationKey: null,

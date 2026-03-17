@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.52
+
+### 🩹 Fixes
+
+- Remove `annotation` field from Audit Log schema ([#47668](https://github.com/camunda/camunda/issues/47668))
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
 ## v0.0.51
 
 ### 🩹 Fixes

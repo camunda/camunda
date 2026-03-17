@@ -24,7 +24,6 @@ const auditLog = (customFields: Partial<AuditLog> = {}): AuditLog => ({
   actorType: 'USER',
   tenantId: null,
   result: 'SUCCESS',
-  annotation: null,
   category: 'USER_TASKS',
   processDefinitionId: null,
   processDefinitionKey: null,
