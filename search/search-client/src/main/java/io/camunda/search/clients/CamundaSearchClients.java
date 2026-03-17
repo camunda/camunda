@@ -579,8 +579,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
       return withResultTypeCheck(reader, query, overwriteResourceAccessChecks);
     } catch (final CamundaSearchException e) {
       throw e; // rethrow known exceptions
-    } catch (final Exception e) {
-      LOG.warn("Unexpected error while trying to get search result", e);
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Unexpected runtime error while trying to get search result for search query type {}",
+          query != null ? query.getClass().getSimpleName() : "null",
+          e);
       throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
     }
   }
@@ -592,8 +595,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
       return withResultTypeCheck(reader, query);
     } catch (final CamundaSearchException e) {
       throw e; // rethrow known exceptions
-    } catch (final Exception e) {
-      LOG.warn("Unexpected error while trying to get search result", e);
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Unexpected runtime error while trying to get search result for aggregation query type {}",
+          query != null ? query.getClass().getSimpleName() : "null",
+          e);
       throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
     }
   }
@@ -652,8 +658,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
       return Optional.empty();
     } catch (final CamundaSearchException e) {
       throw e; // rethrow known exceptions
-    } catch (final Exception e) {
-      LOG.warn("Unexpected error while trying to get search result", e);
+    } catch (final RuntimeException e) {
+      LOG.warn("Unexpected runtime error while performing doGet operation", e);
       throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
     }
   }
