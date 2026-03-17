@@ -829,7 +829,6 @@ public class SearchQuerySortRequestMapper {
       switch (field) {
         case ACTOR_ID -> builder.actorId();
         case ACTOR_TYPE -> builder.actorType();
-        case ANNOTATION -> builder.annotation();
         case AUDIT_LOG_KEY -> builder.auditLogKey();
         case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case BATCH_OPERATION_TYPE -> builder.batchOperationType();

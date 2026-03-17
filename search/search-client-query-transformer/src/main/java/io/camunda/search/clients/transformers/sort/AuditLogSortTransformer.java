@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ACTOR_ID;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ACTOR_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.ANNOTATION;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.BATCH_OPERATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.BATCH_OPERATION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.CATEGORY;
@@ -40,7 +39,6 @@ public class AuditLogSortTransformer implements FieldSortingTransformer {
       case "auditLogKey" -> ID;
       case "actorId" -> ACTOR_ID;
       case "actorType" -> ACTOR_TYPE;
-      case "annotation" -> ANNOTATION;
       case "batchOperationKey" -> BATCH_OPERATION_KEY;
       case "batchOperationType" -> BATCH_OPERATION_TYPE;
       case "category" -> CATEGORY;

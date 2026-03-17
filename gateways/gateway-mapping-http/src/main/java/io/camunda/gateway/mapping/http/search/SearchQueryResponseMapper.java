@@ -1457,7 +1457,6 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(AuditLogResultEnum::fromValue)
                 .orElse(null))
-        .annotation(auditLog.annotation())
         .category(
             ofNullable(auditLog.category())
                 .map(Enum::name)

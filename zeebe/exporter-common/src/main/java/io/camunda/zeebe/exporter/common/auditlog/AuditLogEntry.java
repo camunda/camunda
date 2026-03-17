@@ -67,9 +67,6 @@ public class AuditLogEntry {
   // the tenant the operation was performed in
   private Optional<AuditLogTenant> tenant;
 
-  // the explanation on why the operation was performed
-  private String annotation;
-
   // searchable fields dependent on the entity type
   private String processDefinitionId;
 
@@ -235,15 +232,6 @@ public class AuditLogEntry {
 
   public AuditLogEntry setResult(final AuditLogOperationResult result) {
     this.result = result;
-    return this;
-  }
-
-  public String getAnnotation() {
-    return annotation;
-  }
-
-  public AuditLogEntry setAnnotation(final String annotation) {
-    this.annotation = annotation;
     return this;
   }
 
