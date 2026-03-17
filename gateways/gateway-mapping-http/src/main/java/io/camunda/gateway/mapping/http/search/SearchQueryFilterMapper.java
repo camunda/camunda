@@ -173,7 +173,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::flowNodeInstanceStateOperations);
       ofNullable(filter.getIncidentErrorHashCode())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("incidentErrorHashCode", validationErrors))
           .ifPresent(builder::incidentErrorHashCodeOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
@@ -243,7 +243,7 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasFailedWithRetriesLeft()).ifPresent(builder::hasFailedWithRetriesLeft);
       ofNullable(filter.getRetries())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("retries", validationErrors))
           .ifPresent(builder::retriesOperations);
       ofNullable(filter.getCreationTime())
           .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
@@ -651,7 +651,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionNameOperations);
       ofNullable(filter.getProcessDefinitionVersion())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
           .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessDefinitionVersionTag())
           .map(mapToStringOperations())
@@ -705,7 +705,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::flowNodeInstanceStateOperations);
       ofNullable(filter.getIncidentErrorHashCode())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("incidentErrorHashCode", validationErrors))
           .ifPresent(builder::incidentErrorHashCodeOperations);
 
       if (!CollectionUtils.isEmpty(filter.getTags())) {
@@ -887,7 +887,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::assigneeOperations);
       Optional.ofNullable(filter.getPriority())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("priority", validationErrors))
           .ifPresent(builder::priorityOperations);
       Optional.ofNullable(filter.getCandidateGroup())
           .map(mapToStringOperations())
@@ -1089,7 +1089,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::messageNameOperations);
       ofNullable(filter.getPartitionId())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("partitionId", validationErrors))
           .ifPresent(builder::partitionIdOperations);
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToStringOperations())
@@ -1370,14 +1370,14 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::listenerIdOperations);
       ofNullable(filter.getType()).map(mapToStringOperations()).ifPresent(builder::typeOperations);
       ofNullable(filter.getRetries())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("retries", validationErrors))
           .ifPresent(builder::retriesOperations);
       ofNullable(filter.getEventTypes())
           .map(mapToStringOperations())
           .ifPresent(builder::eventTypeOperations);
       ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
       ofNullable(filter.getPriority())
-          .map(mapToIntegerOperations())
+          .map(mapToIntegerOperations("priority", validationErrors))
           .ifPresent(builder::priorityOperations);
       ofNullable(filter.getSource())
           .map(mapToStringOperations())

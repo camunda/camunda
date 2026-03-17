@@ -189,11 +189,14 @@ class AdvancedSearchFilterUtilTest {
       throws Exception {
     // given
     final var filter = constructFilter(AdvancedIntegerFilter.class, Integer.class, operations);
+    final var errors = new ArrayList<String>();
 
     // when
-    final var actual = AdvancedSearchFilterUtil.mapToIntegerOperations().apply(filter);
+    final var actual =
+        AdvancedSearchFilterUtil.mapToIntegerOperations("retries", errors).apply(filter);
 
     // then
+    assertThat(errors).isEmpty();
     assertThat(actual).hasSize(operations.size());
     assertThat(actual).containsExactlyInAnyOrderElementsOf(operations);
   }
