@@ -8,7 +8,6 @@
     <bpmn:userTask id="State_Happiness" name="State happiness">
       <bpmn:extensionElements>
         <zeebe:userTask />
-        <zeebe:formDefinition formId="satisfaction" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_05tp05i</bpmn:incoming>
       <bpmn:incoming>Flow_163p5xo</bpmn:incoming>

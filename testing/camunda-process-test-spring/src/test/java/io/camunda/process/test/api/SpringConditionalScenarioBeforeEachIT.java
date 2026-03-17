@@ -47,7 +47,6 @@ public class SpringConditionalScenarioBeforeEachIT {
     client
         .newDeployResourceCommand()
         .addResourceFromClasspath("conditionalScenarioApi/scenario-api-test.bpmn")
-        .addResourceFromClasspath("conditionalScenarioApi/satisfaction.form")
         .execute();
 
     processTestContext

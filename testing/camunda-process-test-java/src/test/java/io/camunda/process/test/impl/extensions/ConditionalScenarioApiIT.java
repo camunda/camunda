@@ -37,11 +37,7 @@ public class ConditionalScenarioApiIT {
 
   // ensure repeated tests get fresh scenarios
   @RepeatedTest(value = 2)
-  @TestDeployment(
-      resources = {
-        "conditionalScenarioApi/scenario-api-test.bpmn",
-        "conditionalScenarioApi/satisfaction.form"
-      })
+  @TestDeployment(resources = "conditionalScenarioApi/scenario-api-test.bpmn")
   void shouldCompleteProcessWithConditionalScenarios() {
     final Map<String, Object> unhappy = Collections.singletonMap("happy", false);
     final Map<String, Object> happy = Collections.singletonMap("happy", true);

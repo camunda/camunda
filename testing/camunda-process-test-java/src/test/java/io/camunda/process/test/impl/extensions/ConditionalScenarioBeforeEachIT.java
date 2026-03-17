@@ -34,11 +34,7 @@ import org.junit.jupiter.api.Test;
  * multiple test methods. Each test method gets fresh scenarios.
  */
 @CamundaProcessTest
-@TestDeployment(
-    resources = {
-      "conditionalScenarioApi/scenario-api-test.bpmn",
-      "conditionalScenarioApi/satisfaction.form"
-    })
+@TestDeployment(resources = "conditionalScenarioApi/scenario-api-test.bpmn")
 public class ConditionalScenarioBeforeEachIT {
 
   private static final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);

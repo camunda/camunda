@@ -39,7 +39,6 @@ public class SpringConditionalScenarioApiIT {
     client
         .newDeployResourceCommand()
         .addResourceFromClasspath("conditionalScenarioApi/scenario-api-test.bpmn")
-        .addResourceFromClasspath("conditionalScenarioApi/satisfaction.form")
         .execute();
 
     // Setup conditional scenarios
