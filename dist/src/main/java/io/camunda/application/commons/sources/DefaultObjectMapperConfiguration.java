@@ -49,7 +49,9 @@ public class DefaultObjectMapperConfiguration {
       @Qualifier("tasklistObjectMapperCustomizer")
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> tasklistCustomizer,
       @Qualifier("gatewayRestObjectMapperCustomizer")
-          final Optional<Consumer<Jackson2ObjectMapperBuilder>> gatewayRestCustomizer) {
+          final Optional<Consumer<Jackson2ObjectMapperBuilder>> gatewayRestCustomizer,
+      @Qualifier("gatewayMcpObjectMapperCustomizer")
+          final Optional<Consumer<Jackson2ObjectMapperBuilder>> gatewayMcpCustomizer) {
 
     final var builder = Jackson2ObjectMapperBuilder.json();
     // Configure proper date/time serialization for date types
@@ -58,6 +60,7 @@ public class DefaultObjectMapperConfiguration {
     tasklistCustomizer.ifPresent(c -> c.accept(builder));
     operateCustomizer.ifPresent(c -> c.accept(builder));
     gatewayRestCustomizer.ifPresent(c -> c.accept(builder));
+    gatewayMcpCustomizer.ifPresent(c -> c.accept(builder));
     return builder.build();
   }
 }

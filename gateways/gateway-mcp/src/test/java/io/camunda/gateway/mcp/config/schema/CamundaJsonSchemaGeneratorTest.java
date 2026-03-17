@@ -16,13 +16,14 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
-import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 
 class CamundaJsonSchemaGeneratorTest {
 
-  private final CamundaJsonSchemaGenerator schemaGenerator = new CamundaJsonSchemaGenerator();
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final CamundaJsonSchemaGenerator schemaGenerator =
+      new CamundaJsonSchemaGenerator(objectMapper);
 
   @Test
   void shouldGenerateMinimalSchemaForMethodWithOnlyFrameworkParams() throws Exception {
