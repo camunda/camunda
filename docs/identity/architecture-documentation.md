@@ -815,9 +815,9 @@ Scenario: an administrator creates a new user via the REST API; the command is a
 2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
 3. The REST API delegates to `UserServices` (part of Camunda Services), which issues a `CreateUser` command to the Zeebe Engine.
 4. Before applying the command, the Engine enforces RBAC via `AuthorizationCheckBehavior`, verifying the principal holds the `USER:CREATE` permission by reading from `AuthorizationState` / `MembershipState` via the Primary Database.
-5. The Engine applies the command: `MembershipState` (and related State classes) persist the new user record to the Primary Database (RocksDB).
+5. The Engine applies the command: `MutableMembershipState` (and related State classes) persist the new user record to the Primary Database (RocksDB).
 6. The Engine returns a command acknowledgement and `UserServices` returns the created user to the REST API, which responds with `201 Created` and the new user key.
-7. Asynchronously, the Camunda Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
+7. Asynchronously, the Camunda or Rdbms Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
 
 ```mermaid
 sequenceDiagram
@@ -831,7 +831,7 @@ sequenceDiagram
     participant ENGINE as Engine
     participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
     participant STATE as State Classes<br/>(AuthorizationState, MembershipState,<br/>MappingRuleState)
-    participant EXPORTER as Camunda Exporter
+    participant EXPORTER as Camunda/Rdbms Exporter
   end
   box External
     participant PRIMARY_DB as Primary Database (RocksDB)
@@ -857,8 +857,8 @@ sequenceDiagram
   CAMUNDA_SERVICES-->>REST: CreateUserResponse
   REST-->>CLIENT: 201 Created with user key
   ENGINE-->>EXPORTER: UserCreated event (async)
-  EXPORTER->>SECONDARY_DB: Index user record
-  SECONDARY_DB-->>EXPORTER: Indexed
+  EXPORTER->>SECONDARY_DB: Persist user
+  SECONDARY_DB-->>EXPORTER: Persisted user
 ```
 
 ## 6.7 Creating a new authorization
@@ -869,9 +869,9 @@ Scenario: an administrator creates a new authorization (permission grant) via th
 2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
 3. The REST API delegates to `AuthorizationServices` (part of Camunda Services), which issues a `CreateAuthorization` command to the Zeebe Engine.
 4. Before applying the command, the Engine enforces RBAC via `AuthorizationCheckBehavior`, verifying the principal holds the `AUTHORIZATION:CREATE` permission by reading from `AuthorizationState` / `MembershipState` via the Primary Database.
-5. The Engine applies the command: `AuthorizationState` persists the new authorization record to the Primary Database (RocksDB).
+5. The Engine applies the command: `MutableAuthorizationState` persists the new authorization record to the Primary Database (RocksDB).
 6. The Engine returns a command acknowledgement and `AuthorizationServices` returns the created authorization to the REST API, which responds with `201 Created` and the new authorization key.
-7. Asynchronously, the Camunda Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
+7. Asynchronously, the Camunda or RDBMS Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
 
 ```mermaid
 sequenceDiagram
@@ -885,7 +885,7 @@ sequenceDiagram
     participant ENGINE as Engine
     participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
     participant STATE as State Classes<br/>(AuthorizationState, MembershipState,<br/>MappingRuleState)
-    participant EXPORTER as Camunda Exporter
+    participant EXPORTER as Camunda/Rdbms Exporter
   end
   box External
     participant PRIMARY_DB as Primary Database (RocksDB)
@@ -911,8 +911,8 @@ sequenceDiagram
   CAMUNDA_SERVICES-->>REST: CreateAuthorizationResponse
   REST-->>CLIENT: 201 Created with authorization key
   ENGINE-->>EXPORTER: AuthorizationCreated event (async)
-  EXPORTER->>SECONDARY_DB: Index authorization record
-  SECONDARY_DB-->>EXPORTER: Indexed
+  EXPORTER->>SECONDARY_DB: Persist authorization
+  SECONDARY_DB-->>EXPORTER: Persisted authorization
 ```
 
 
@@ -1022,33 +1022,7 @@ The architectural decisions for Identity are documented as individual ADR files 
 - [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](adr/0004-multi-jwks-endpoints-per-issuer.md)
 
 
-# 10. Quality requirements
-
-(See also section 1.3 for top‑level quality goals.)
-
-- Security
-  - Support strong authentication (OIDC with enterprise IdPs, MFA).
-  - Provide least‑privilege authorization at resource level.
-  - Ensure auditable changes to identity entities and authorizations.
-
-- Consistency
-  - Apply the same authorization semantics for:
-    - Human users and service accounts.
-    - UI operations and API calls.
-  - Align concepts (users, groups, roles, tenants, authorizations) across SaaS and Self‑Managed.
-
-- Operability
-  - Minimize additional infrastructure required for Identity (reuse existing storage, embed into cluster).
-  - Provide clear logging and metrics for authentication and authorization flows and migrations.
-
-- Extensibility
-  - Allow product teams to:
-    - Add new resource types (for example new APIs or UI features).
-    - Define new permission types within the shared RBAC framework.
-  - Keep Identity and RBAC changes backwards compatible where possible.
-
-
-# 11. Risks and technical debt
+# 10. Risks and technical debt
 
 - Migration complexity and failure modes
   Migration from Management Identity introduces complexity and potential misconfiguration (for example mismatched IdP setups, conflicting mapping rules).
@@ -1063,7 +1037,7 @@ The architectural decisions for Identity are documented as individual ADR files 
   Misconfigured claims or group mappings can lead to over‑ or under‑provisioned access.
 
 
-# 12. Glossary
+# 11. Glossary
 
 | Term                           | Definition                                                                                                     |
 |--------------------------------|----------------------------------------------------------------------------------------------------------------|
