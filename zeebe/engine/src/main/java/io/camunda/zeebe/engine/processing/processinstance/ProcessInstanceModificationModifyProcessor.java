@@ -824,7 +824,6 @@ public final class ProcessInstanceModificationModifyProcessor
       final long elementInstanceKey,
       final ElementInstance currentElement) {
     final var childInstances = new ArrayList<ElementInstance>();
-    // terminate all child instances if the element is an event subprocess
     if (elementType.isContainerElement()) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
           .filter(ElementInstance::canTerminate)
