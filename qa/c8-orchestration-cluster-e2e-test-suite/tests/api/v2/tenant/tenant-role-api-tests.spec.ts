@@ -27,7 +27,7 @@ import {
   roleIdValueUsingKey,
 } from '@requestHelpers';
 import {ROLES_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Tenant Roles API Tests', () => {
@@ -42,7 +42,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     await assignRolesToTenant(request, 3, 'tenantId3', state);
   });
 
-  test('Assign Role To Tenant', async ({request}) => {
+  test('Assign Role To Tenant - Success', async ({request}) => {
     const roleBody = await createRole(request);
     const p = {
       roleId: roleBody.roleId as string,
@@ -60,7 +60,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Role To Tenant Non Existent Role Not Found', async ({
+  test('Assign Role To Tenant Non Existent Role - Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
@@ -80,7 +80,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     );
   });
 
-  test('Assign Role To Tenant Non Existent Tenant Not Found', async ({
+  test('Assign Role To Tenant Non Existent Tenant - Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
@@ -100,7 +100,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     );
   });
 
-  test('Assign Role To Tenant Unauthorized', async ({request}) => {
+  test('Assign Role To Tenant - Unauthorized', async ({request}) => {
     const stateParams: Record<string, string> = {
       roleId: roleIdValueUsingKey('tenantId1', state) as string,
       tenantId: state['tenantId1'] as string,
@@ -117,7 +117,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Already Added Role To Tenant Conflict', async ({request}) => {
+  test('Assign Already Added Role To Tenant - Conflict', async ({request}) => {
     const stateParams: Record<string, string> = {
       roleId: roleIdValueUsingKey('tenantId1', state) as string,
       tenantId: state['tenantId1'] as string,
@@ -135,11 +135,12 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Unassign Role From Tenant', async ({request}) => {
+  test('Unassign Role From Tenant - Success', async ({request}) => {
     const p = {
       roleId: roleIdValueUsingKey('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
     };
+
     await test.step('Unassign Role From Tenant', async () => {
       await expect(async () => {
         const res = await request.delete(
@@ -152,28 +153,32 @@ test.describe.parallel('Tenant Roles API Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await test.step(
-      'Search Tenant Roles After Deletion',
-      async () => {
-        await expect(async () => {
-          const res = await request.post(
-            buildUrl('/tenants/{tenantId}/roles/search', p),
-            {
-              headers: jsonHeaders(),
-              data: {},
-            },
-          );
+    await test.step('Search Tenant Roles After Deletion', async () => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/tenants/{tenantId}/roles/search', p),
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
 
-          await assertStatusCode(res, 200);
-          const json = await res.json();
-          assertRequiredFields(json, paginatedResponseFields);
-          expect(json.page.totalItems).toBe(0);
-        }).toPass(defaultAssertionOptions);
-      },
-    );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+            {
+                path: '/tenants/{tenantId}/roles/search',
+                method: 'POST',
+                status: '200',
+            },
+            res,
+        );
+        const json = await res.json();
+        expect(json.page.totalItems).toBe(0);
+      }).toPass(defaultAssertionOptions);
+    });
   });
 
-  test('Unassign Role From Tenant Unauthorized', async ({request}) => {
+  test('Unassign Role From Tenant - Unauthorized', async ({request}) => {
     const p = {
       roleId: roleIdValueUsingKey('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
@@ -187,7 +192,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Unassign Role From Tenant Non Existent Role Not Found', async ({
+  test('Unassign Role From Tenant Non Existent Role - Not Found', async ({
     request,
   }) => {
     const p = {
@@ -206,7 +211,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     );
   });
 
-  test('Unassign Role From Tenant Non Existent Tenant Not Found', async ({
+  test('Unassign Role From Tenant Non Existent Tenant - Not Found', async ({
     request,
   }) => {
     const p = {
@@ -242,14 +247,14 @@ test.describe.parallel('Tenant Roles API Tests', () => {
       });
       const json = await res.json();
       await assertStatusCode(res, 200);
-    await validateResponse(
+      await validateResponse(
         {
-            path: '/tenants/{tenantId}/roles/search',
-            method: 'POST',
-            status: '200',
+          path: '/tenants/{tenantId}/roles/search',
+          method: 'POST',
+          status: '200',
         },
         res,
-    );
+      );
       assertRolesInResponse(json, ROLES_EXPECTED_BODY(role1), role1);
       assertRolesInResponse(json, ROLES_EXPECTED_BODY(role2), role2);
       assertRolesInResponse(json, ROLES_EXPECTED_BODY(role3), role3);
@@ -268,14 +273,14 @@ test.describe.parallel('Tenant Roles API Tests', () => {
         {headers: jsonHeaders(), data: {}},
       );
       await assertStatusCode(res, 200);
-    await validateResponse(
+      await validateResponse(
         {
-            path: '/tenants/{tenantId}/roles/search',
-            method: 'POST',
-            status: '200',
+          path: '/tenants/{tenantId}/roles/search',
+          method: 'POST',
+          status: '200',
         },
         res,
-    );
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
@@ -283,7 +288,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Tenant Roles Unauthorized', async ({request}) => {
+  test('Search Tenant Roles - Unauthorized', async ({request}) => {
     const p = {tenantId: state['tenantId3'] as string};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/roles/search', p),
@@ -292,7 +297,7 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search Tenant Roles Tenant Not Found', async ({request}) => {
+  test('Search Tenant Roles Tenant - Not Found (empty response)', async ({request}) => {
     const p = {tenantId: 'invalid-tenant-id'};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/roles/search', p),
@@ -301,12 +306,12 @@ test.describe.parallel('Tenant Roles API Tests', () => {
 
     await assertStatusCode(res, 200);
     await validateResponse(
-        {
-            path: '/tenants/{tenantId}/roles/search',
-            method: 'POST',
-            status: '200',
-        },
-        res,
+      {
+        path: '/tenants/{tenantId}/roles/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,
