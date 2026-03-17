@@ -280,8 +280,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState);
 
     linkedResourceBehavior =
-        new BpmnLinkedResourceBehavior(
-            processingState.getKeyGenerator(), writers, processingState.getResourceState());
+        new BpmnLinkedResourceBehavior(processingState.getResourceState(), stateBehavior);
   }
 
   @Override
