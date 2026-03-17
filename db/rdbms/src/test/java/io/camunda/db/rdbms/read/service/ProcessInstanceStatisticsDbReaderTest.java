@@ -50,7 +50,7 @@ class ProcessInstanceStatisticsDbReaderTest {
   }
 
   @Test
-  void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
+  void shouldReturnEmptyListWhenAuthorizedTenantIdsIsEmpty() {
     final ProcessInstanceFlowNodeStatisticsQuery query =
         new ProcessInstanceFlowNodeStatisticsQuery(
             new io.camunda.search.filter.ProcessInstanceStatisticsFilter(123L));

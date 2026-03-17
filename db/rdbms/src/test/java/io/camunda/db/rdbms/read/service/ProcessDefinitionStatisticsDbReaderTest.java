@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
@@ -45,11 +46,11 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final var result = reader.aggregate(query, resourceAccessChecks);
 
     assertThat(result).isEmpty();
-    verify(processDefinitionMapper, times(0)).flowNodeStatistics(any(), anyList(), anyList());
+    verifyNoInteractions(processDefinitionMapper);
   }
 
   @Test
-  void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
+  void shouldReturnEmptyListWhenAuthorizedTenantIdsListIsEmpty() {
     final ProcessDefinitionFlowNodeStatisticsQuery query =
         new ProcessDefinitionFlowNodeStatisticsQuery(null);
     final ResourceAccessChecks resourceAccessChecks =
@@ -58,7 +59,7 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final var result = reader.aggregate(query, resourceAccessChecks);
 
     assertThat(result).isEmpty();
-    verify(processDefinitionMapper, times(0)).flowNodeStatistics(any(), anyList(), anyList());
+    verifyNoInteractions(processDefinitionMapper);
   }
 
   @Test
