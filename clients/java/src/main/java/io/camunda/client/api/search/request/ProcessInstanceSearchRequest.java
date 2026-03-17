@@ -16,10 +16,11 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 
 public interface ProcessInstanceSearchRequest
     extends TypedSearchRequest<
-            ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceSearchRequest>,
+            ProcessInstanceFilter, ProcessInstanceSort, AnyPage, ProcessInstanceSearchRequest>,
         FinalSearchRequestStep<ProcessInstance> {}

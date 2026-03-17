@@ -15,6 +15,12 @@
  */
 package io.camunda.client.api.search.request;
 
+/**
+ * @deprecated This interface has been moved to {@link io.camunda.client.api.search.page.AnyPage}
+ *     and now uses typed pagination models. Use the new pagination model interfaces from {@link
+ *     io.camunda.client.api.search.page} package instead.
+ */
+@Deprecated
 public interface SearchRequestPage {
 
   /** Start the page from. */

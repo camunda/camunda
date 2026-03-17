@@ -16,6 +16,7 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.request.TypedPageableRequest;
 import io.camunda.client.api.statistics.response.JobWorkerStatistics;
 
@@ -24,4 +25,4 @@ import io.camunda.client.api.statistics.response.JobWorkerStatistics;
  */
 public interface JobWorkerStatisticsRequest
     extends FinalCommandStep<JobWorkerStatistics>,
-        TypedPageableRequest<JobWorkerStatisticsRequest> {}
+        TypedPageableRequest<CursorForwardPage, JobWorkerStatisticsRequest> {}

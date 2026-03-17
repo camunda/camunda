@@ -16,10 +16,11 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 
 public interface DecisionInstanceSearchRequest
     extends TypedSearchRequest<
-            DecisionInstanceFilter, DecisionInstanceSort, DecisionInstanceSearchRequest>,
+            DecisionInstanceFilter, DecisionInstanceSort, AnyPage, DecisionInstanceSearchRequest>,
         FinalSearchRequestStep<DecisionInstance> {}
