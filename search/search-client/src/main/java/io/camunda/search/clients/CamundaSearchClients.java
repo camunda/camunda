@@ -575,13 +575,27 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final SearchEntityReader<T, Q> reader,
       final Q query,
       final Function<ResourceAccessChecks, ResourceAccessChecks> overwriteResourceAccessChecks) {
-    return withResultTypeCheck(reader, query, overwriteResourceAccessChecks);
+    try {
+      return withResultTypeCheck(reader, query, overwriteResourceAccessChecks);
+    } catch (final CamundaSearchException e) {
+      throw e; // rethrow known exceptions
+    } catch (final Exception e) {
+      LOG.warn("Unexpected error while trying to get search result", e);
+      throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
+    }
   }
 
   protected <T, A extends TypedSearchAggregationQuery<?, ?, ?>>
       SearchQueryResult<T> doSearchWithReader(
           final SearchQueryStatisticsReader<T, A> reader, final A query) {
-    return withResultTypeCheck(reader, query);
+    try {
+      return withResultTypeCheck(reader, query);
+    } catch (final CamundaSearchException e) {
+      throw e; // rethrow known exceptions
+    } catch (final Exception e) {
+      LOG.warn("Unexpected error while trying to get search result", e);
+      throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
+    }
   }
 
   protected <T, A extends TypedSearchAggregationQuery<?, ?, ?>>
@@ -636,6 +650,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
     } catch (final TenantAccessDeniedException e) {
       LOG.trace("Forbidden to access tenant, returning null", e);
       return Optional.empty();
+    } catch (final CamundaSearchException e) {
+      throw e; // rethrow known exceptions
+    } catch (final Exception e) {
+      LOG.warn("Unexpected error while trying to get search result", e);
+      throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
     }
   }
 
