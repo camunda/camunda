@@ -78,4 +78,17 @@ class SearchEngineClientUtilsTest {
     assertThat(batches).hasSize(1);
     assertThat(batches.get(0)).isEqualTo(largePattern);
   }
+
+  @Test
+  void shouldSkipBatchingWhenPatternContainsExclusionEntries() {
+    // given – the exclusion pattern must not be split away from its include
+    final var namePattern = "index-a*,-index-a,index-b*,-index-b";
+
+    // when
+    final var batches = SearchEngineClientUtils.batchPatterns(namePattern);
+
+    // then – returned as-is so exclusion semantics are preserved
+    assertThat(batches).hasSize(1);
+    assertThat(batches.get(0)).isEqualTo(namePattern);
+  }
 }

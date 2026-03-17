@@ -22,8 +22,12 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchEngineClientUtils {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
 
   /**
    * Maximum length of a comma-delimited index-pattern string passed in a URL request. Requests
@@ -52,6 +56,11 @@ public class SearchEngineClientUtils {
    * exceed {@link #MAX_INDEX_PATTERN_REQUEST_LENGTH}. A single pattern that is itself longer than
    * the limit is placed in its own batch.
    *
+   * <p><b>Note:</b> If the pattern contains exclusion entries (segments starting with {@code -},
+   * e.g. {@code "index-a*,-index-a"}), batching is skipped entirely because splitting at a batch
+   * boundary could separate an include pattern from its paired exclusion, producing incorrect query
+   * results. In that case a warning is logged and the original pattern is returned as-is.
+   *
    * @param namePattern comma-separated index patterns, e.g. {@code "index-a*,index-b*"}
    * @return ordered list of comma-joined batches
    */
@@ -60,6 +69,15 @@ public class SearchEngineClientUtils {
       return Collections.emptyList();
     }
     final String[] patterns = namePattern.split(",");
+    for (final String pattern : patterns) {
+      if (pattern.startsWith("-")) {
+        LOG.warn(
+            "Index pattern [{}] contains exclusion entries; skipping batching to preserve "
+                + "exclusion semantics. The full pattern will be sent in a single request.",
+            namePattern);
+        return Collections.singletonList(namePattern);
+      }
+    }
     final List<String> batches = new ArrayList<>();
     final StringBuilder current = new StringBuilder();
     for (final String pattern : patterns) {
