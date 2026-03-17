@@ -13,14 +13,12 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
-import io.camunda.zeebe.auth.Authorization;
-import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
@@ -114,7 +112,7 @@ public class AddEntityTenantTest {
   }
 
   @Test
-  public void shouldAddNonExistingUserToTenant() {
+  public void shouldRejectAddNonExistingUserToTenant() {
     // given
     final var entityType = USER;
     final var username = UUID.randomUUID().toString();
@@ -136,19 +134,15 @@ public class AddEntityTenantTest {
             .addEntity(tenantId)
             .withEntityId(username)
             .withEntityType(entityType)
-            .add()
-            .getValue();
+            .expectRejection()
+            .add();
 
-    // then assert that the entity was added correctly
-    Assertions.assertThat(updatedTenant)
-        .describedAs(
-            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
-            entityType, username, tenantKey)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("entityId", username)
-        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityType", entityType);
+    // then
+    assertThat(updatedTenant)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add user with ID '%s' to tenant with ID '%s', but the user doesn't exist."
+                .formatted(username, tenantId));
   }
 
   @Test
@@ -182,63 +176,35 @@ public class AddEntityTenantTest {
   }
 
   @Test
-  public void shouldAddNonExistingGroupToTenantIfGroupsClaimEnabled() {
+  public void shouldRejectIfUserIsNotPresent() {
     // given
-    final var entityType = GROUP;
-    final var groupId = Strings.newRandomValidIdentityId();
     final var tenantId = UUID.randomUUID().toString();
-    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+    engine
+        .tenant()
+        .newTenant()
+        .withTenantId(tenantId)
+        .withName("name")
+        .create()
+        .getValue()
+        .getTenantKey();
+    final var username = "foo";
 
-    // when add user entity to tenant
-    final var updatedTenant =
+    // when
+    final var result =
         engine
             .tenant()
             .addEntity(tenantId)
-            .withEntityId(groupId)
-            .withEntityType(entityType)
-            .add(
-                AuthorizationUtil.getAuthInfoWithClaim(
-                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
-            .getValue();
+            .withEntityId(username)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
 
-    // then assert that the entity was added correctly
-    assertThat(updatedTenant)
-        .describedAs(
-            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
-            entityType, groupId, tenantId)
-        .isNotNull()
-        .hasTenantId(tenantId)
-        .hasEntityType(entityType)
-        .hasEntityId(groupId);
-  }
-
-  @Test
-  public void shouldAddNonExistingGroupToTenantIfGroupsClaimDisabled() {
-    // given
-    final var entityType = GROUP;
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var tenantId = UUID.randomUUID().toString();
-    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
-
-    // when add user entity to tenant
-    final var updatedTenant =
-        engine
-            .tenant()
-            .addEntity(tenantId)
-            .withEntityId(groupId)
-            .withEntityType(entityType)
-            .add()
-            .getValue();
-
-    // then assert that the entity was added correctly
-    assertThat(updatedTenant)
-        .describedAs(
-            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
-            entityType, groupId, tenantId)
-        .isNotNull()
-        .hasTenantId(tenantId)
-        .hasEntityType(entityType)
-        .hasEntityId(groupId);
+    // then
+    assertThat(result)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add user with ID '%s' to tenant with ID '%s', but the user doesn't exist."
+                .formatted(username, tenantId));
   }
 
   @Test
