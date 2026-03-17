@@ -222,7 +222,14 @@ public class ConditionalScenarioEngine {
       try {
         condition.verifyCondition();
         return true;
+      } catch (final AssertionError e) {
+        return false;
       } catch (final Throwable t) {
+        LOGGER.warn(
+            "Scenario '{}' condition threw an unexpected exception"
+                + " (expected AssertionError for unmet conditions)",
+            name,
+            t);
         return false;
       }
     }
