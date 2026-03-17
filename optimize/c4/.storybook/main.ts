@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url"
 import type { StorybookConfig } from "@storybook/react-webpack5"
 
 const config: StorybookConfig = {
@@ -37,7 +38,7 @@ const config: StorybookConfig = {
 		if (config.resolve) {
 			config.resolve.alias = {
 				...(config.resolve.alias ?? {}),
-				src: new URL("../src", import.meta.url).pathname,
+				src: fileURLToPath(new URL("../src", import.meta.url)),
 			}
 		}
 		return config
