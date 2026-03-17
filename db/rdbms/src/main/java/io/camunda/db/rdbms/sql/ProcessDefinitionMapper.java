@@ -17,6 +17,7 @@ import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEnti
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 
 public interface ProcessDefinitionMapper {
 
@@ -27,7 +28,9 @@ public interface ProcessDefinitionMapper {
   List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
-      ProcessDefinitionStatisticsFilter filter);
+      @Param("filter") ProcessDefinitionStatisticsFilter filter,
+      @Param("authorizedResourceIds") List<String> authorizedResourceIds,
+      @Param("authorizedTenantIds") List<String> authorizedTenantIds);
 
   Long processInstanceStatisticsCount(ProcessDefinitionInstanceStatisticsDbQuery filter);
 

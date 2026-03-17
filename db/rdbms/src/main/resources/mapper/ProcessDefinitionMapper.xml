@@ -144,7 +144,7 @@
   </resultMap>
 
   <select id="flowNodeStatistics"
-    parameterType="io.camunda.search.filter.ProcessDefinitionStatisticsFilter"
+    parameterType="java.util.Map"
     resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
     SELECT
       res.FLOW_NODE_ID,
@@ -315,6 +315,20 @@
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
           AND i.ERROR_MESSAGE_HASH <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition" />
         )
+        </foreach>
+      </if>
+
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND pi.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pi.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
         </foreach>
       </if>
     </trim>

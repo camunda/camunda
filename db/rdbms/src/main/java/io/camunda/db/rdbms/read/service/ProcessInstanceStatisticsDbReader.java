@@ -13,6 +13,7 @@ import io.camunda.search.clients.reader.ProcessInstanceStatisticsReader;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
@@ -42,9 +43,17 @@ public class ProcessInstanceStatisticsDbReader
       return Collections.emptyList();
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
+
     LOG.trace(
         "[RDBMS DB] Query process instance flow node statistics with {}",
         query.filter().processInstanceKey());
-    return processInstanceMapper.flowNodeStatistics(query.filter().processInstanceKey());
+    return processInstanceMapper.flowNodeStatistics(
+        query.filter().processInstanceKey(),
+        authorizedResourceIds,
+        resourceAccessChecks.getAuthorizedTenantIds());
   }
 }
