@@ -94,6 +94,7 @@ Examples:
 As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
 
 Example:
+
 ```sh
 . ./newBenchmark.sh my-load-test-name
 ```
@@ -215,13 +216,13 @@ The `clean` job works regardless and cleans up both the platform and load-test d
 _You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda SaaS Cluster._
 
 ```sh
- ./newCloudBenchmark.sh <namespace>
+./newCloudBenchmark.sh <namespace>
 ```
 
 Similar to the `newBenchmark.sh`, it will create a new Kubernetes namespace and a new folder with the given name.
-Afterwards, we can deploy our load test applications (via the [Load Test Helm Chart](https://github.com/camunda/camunda-load-tests-helm)). 
+Afterwards, we can deploy our load test applications (via the [Load Test Helm Chart](https://github.com/camunda/camunda-load-tests-helm)).
 
-Before doing that, you need to provide the Camunda SaaS credentials for the cluster you want to test. The `newCloudLoadTest.sh` script has already created a `credentials.txt` file inside the newly created namespace folder.
+Before doing that, you need to provide the Camunda SaaS credentials for the cluster you want to test. The `newCloudBenchmark.sh` script has already created a `credentials.txt` file inside the newly created namespace folder.
 
 Download the Camunda SaaS credentials (the file containing the required environment variables) and either copy its contents into the generated `credentials.txt` file or replace `credentials.txt` with the downloaded file (keeping the filename `credentials.txt`).
 
@@ -242,3 +243,4 @@ make typical
 # Run a realistic workload with multi-instance call activities, etc.
 make realistic
 ```
+
