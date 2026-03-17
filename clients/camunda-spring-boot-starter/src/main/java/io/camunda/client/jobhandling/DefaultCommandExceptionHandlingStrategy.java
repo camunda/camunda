@@ -57,37 +57,31 @@ public class DefaultCommandExceptionHandlingStrategy implements CommandException
   }
 
   @Override
-  public void handleCommandError(final CommandWrapper command, final Throwable throwable) {
-    if (StatusRuntimeException.class.isAssignableFrom(throwable.getClass())) {
-      final StatusRuntimeException exception = (StatusRuntimeException) throwable;
+  public CommandOutcome handleCommandError(
+      final CommandWrapper command, final Throwable throwable) {
+    if (throwable instanceof final StatusRuntimeException exception) {
       final Status.Code code = exception.getStatus().getCode();
 
-      if (!RETRIABLE_CODES.contains(code)
-          || !IGNORABLE_FAILURE_CODES.contains(code)
-          || FAILURE_CODES.contains(code)) {
-        throw new RuntimeException(
-            "Could not execute " + command + " due to exception: " + throwable.getMessage(),
-            throwable);
+      if (IGNORABLE_FAILURE_CODES.contains(code)) {
+        LOG.info("Ignoring {} as superseded, error type '{}'", command, code);
+        return new CommandOutcome.Ignored(throwable, command.getAttempts());
       }
 
       if (RETRIABLE_CODES.contains(code)) {
         if (!command.hasMoreRetries()) {
-          throw new RuntimeException(
-              "Could not execute "
-                  + command
-                  + " due to error of type '"
-                  + code
-                  + "' and no retries are left",
-              throwable);
+          return new CommandOutcome.Failed(throwable, command.getAttempts());
         }
         command.increaseBackoffUsing(backoffSupplier);
         LOG.warn("Retrying {} after error of type '{}' with backoff", command, code);
         command.scheduleExecutionUsing(scheduledExecutorService);
-        return;
+        return null; // retry scheduled
       }
 
-      throw new RuntimeException(
-          "Could not execute " + command + " due to error of type '" + code + "'", throwable);
+      // FAILURE_CODES and anything else
+      return new CommandOutcome.Failed(throwable, command.getAttempts());
     }
+    // TODO: handle REST exceptions (ProblemException/ClientHttpException) — currently silently
+    // swallowed. REST 404 → Ignored, 429/502/503/504 → retriable, 4xx → Failed
+    return new CommandOutcome.Failed(throwable, command.getAttempts());
   }
 }

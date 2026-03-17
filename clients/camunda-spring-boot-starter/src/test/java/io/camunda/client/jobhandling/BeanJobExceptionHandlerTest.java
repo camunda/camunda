@@ -61,7 +61,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
@@ -90,7 +90,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
@@ -120,7 +120,7 @@ public class BeanJobExceptionHandlerTest {
     when(throwErrorCommandStep2.variables(any(JobResponse.class)))
         .thenReturn(throwErrorCommandStep2);
     when(throwErrorCommandStep2.send()).thenReturn(future);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);

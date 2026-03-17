@@ -15,7 +15,13 @@
  */
 package io.camunda.client.jobhandling;
 
-public interface CommandExceptionHandlingStrategy {
+public sealed interface CommandOutcome {
 
-  CommandOutcome handleCommandError(CommandWrapper command, Throwable throwable);
+  int attempts();
+
+  record Completed(Object response, int attempts) implements CommandOutcome {}
+
+  record Failed(Throwable cause, int attempts) implements CommandOutcome {}
+
+  record Ignored(Throwable cause, int attempts) implements CommandOutcome {}
 }

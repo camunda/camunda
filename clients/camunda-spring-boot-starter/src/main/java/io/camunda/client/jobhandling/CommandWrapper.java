@@ -20,8 +20,10 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 public class CommandWrapper {
@@ -34,6 +36,9 @@ public class CommandWrapper {
   private long currentRetryDelay = 50L;
   private int invocationCounter = 0;
   private final int maxRetries;
+  private final CompletableFuture<CommandOutcome> resultFuture = new CompletableFuture<>();
+  private final AtomicBoolean started = new AtomicBoolean(false);
+  private Runnable retryAction;
 
   public CommandWrapper(
       final FinalCommandStep<?> command,
@@ -50,32 +55,64 @@ public class CommandWrapper {
     this.metricsContext = metricsContext;
   }
 
-  public void executeAsync() {
+  public CompletableFuture<CommandOutcome> executeAsync() {
+    return execute(this::doExecute);
+  }
+
+  public CompletableFuture<CommandOutcome> executeAsyncWithMetrics(
+      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
+    return execute(() -> doExecuteWithMetrics(increaser));
+  }
+
+  private CompletableFuture<CommandOutcome> execute(final Runnable action) {
+    if (!started.compareAndSet(false, true)) {
+      throw new IllegalStateException("CommandWrapper has already been executed");
+    }
+
+    retryAction = action;
+    action.run();
+
+    return resultFuture;
+  }
+
+  private void doExecute() {
     invocationCounter++;
     command
         .send()
-        .exceptionally(
-            t -> {
-              commandExceptionHandlingStrategy.handleCommandError(this, t);
-              return null;
+        .whenComplete(
+            (response, throwable) -> {
+              if (throwable != null) {
+                handleError(throwable);
+              } else {
+                resultFuture.complete(new CommandOutcome.Completed(response, invocationCounter));
+              }
             });
   }
 
-  public void executeAsyncWithMetrics(
+  private void doExecuteWithMetrics(
       final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
     invocationCounter++;
     command
         .send()
-        .thenApply(
-            result -> {
-              increaser.accept(metricsRecorder, metricsContext);
-              return result;
-            })
-        .exceptionally(
-            t -> {
-              commandExceptionHandlingStrategy.handleCommandError(this, t);
-              return null;
+        .whenComplete(
+            (response, throwable) -> {
+              if (throwable != null) {
+                handleError(throwable);
+              } else {
+                increaser.accept(metricsRecorder, metricsContext);
+                resultFuture.complete(new CommandOutcome.Completed(response, invocationCounter));
+              }
             });
+  }
+
+  private void handleError(final Throwable throwable) {
+    final CommandOutcome outcome =
+        commandExceptionHandlingStrategy.handleCommandError(this, throwable);
+
+    // returns either a final outcome or null if the command will be retried
+    if (outcome != null) {
+      resultFuture.complete(outcome);
+    }
   }
 
   public void increaseBackoffUsing(final BackoffSupplier backoffSupplier) {
@@ -83,7 +120,7 @@ public class CommandWrapper {
   }
 
   public void scheduleExecutionUsing(final ScheduledExecutorService scheduledExecutorService) {
-    scheduledExecutorService.schedule(this::executeAsync, currentRetryDelay, TimeUnit.MILLISECONDS);
+    scheduledExecutorService.schedule(retryAction, currentRetryDelay, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -96,6 +133,10 @@ public class CommandWrapper {
         + ", currentRetryDelay="
         + currentRetryDelay
         + '}';
+  }
+
+  public int getAttempts() {
+    return invocationCounter;
   }
 
   public boolean hasMoreRetries() {

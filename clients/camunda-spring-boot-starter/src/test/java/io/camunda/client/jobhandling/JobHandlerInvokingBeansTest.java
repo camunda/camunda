@@ -80,7 +80,7 @@ public class JobHandlerInvokingBeansTest {
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     when(completeJobCommandStep1.variables(any(JobResponse.class)))
         .thenReturn(completeJobCommandStep1);
     when(completeJobCommandStep1.send()).thenReturn(future);
