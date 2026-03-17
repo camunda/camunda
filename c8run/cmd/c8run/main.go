@@ -841,13 +841,6 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-func copyFileEnsureDir(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	return copyFile(src, dst)
-}
-
 func main() {
 	consoleWriter := zerolog.ConsoleWriter{Out: os.Stderr}
 	logger := zerolog.New(consoleWriter).With().Timestamp().Logger()
