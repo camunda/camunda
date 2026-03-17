@@ -13,23 +13,26 @@
 > Is this a single deliverable or should it be phased (e.g., Phase 1: Kafka Self-Managed, Phase 2: Kafka SaaS, Phase 3: Azure Event Hub)? If phased, what is the MVP for Phase 1?
 
 **Answer:**
-
+First Phase should be Camunda 8 Self-Managed. In first phase we do not need Azure Event Hub.
+Ideally we can support both Kafka Self-Managed and SaaS (Confluent) in first phase. 
 
 ### Q2
 > Should this ship as a **built-in exporter** (always available, configured via `camunda.*` properties) or as an **optional external JAR** that users deploy alongside the broker?
 
 **Answer:**
-
+From my perspective it should be built-in exporter. 
 
 ### Q3
 > Is this exporter intended to replace the community Zeebe Kafka Exporter, or coexist with it? Should there be a migration path from the community exporter?
 
 **Answer:**
-
+Yes, it should replace it. Ideally, if possible, there would be docs to show how to go from community to camunda one. 
+There can be breaking changes though.
 
 ### Q4
 > What Camunda 8 version is this targeting (8.10, 8.11, later)? Does the SaaS delivery have a different timeline than Self-Managed?
 >
+Ideally all for 8.10. Self-Managed can ship in first phase and SaaS second phase. We can split it and first focus on Self-Managed.
 
 ## Architecture & Exporter Model
 
@@ -40,7 +43,7 @@
 > Should this be implemented as a **Zeebe Exporter** (implementing the `Exporter` SPI, running inside the broker JVM per partition) or as an **external service** consuming from the existing exporters (e.g., reading from Elasticsearch/OpenSearch and forwarding to Kafka)?
 
 **Answer:**
-
+Should be a Exporter.
 
 ### Q6
 > If it's a Zeebe Exporter, should it follow the `app-integrations-exporter` pattern (simple `Exporter` class with `ExporterFactory`) or the more complex `camunda-exporter` pattern (with `ExportHandler` dispatch, entity caching, and background tasks)?
@@ -89,7 +92,8 @@
 
 ### Q13
 > Should users be able to define **multiple independent Kafka export configurations** (e.g., process events → topic A on cluster X, incident events → topic B on cluster Y)?
->
+
+**Answer:** Yes
 
 ## Kafka Specifics
 
@@ -144,18 +148,19 @@
 ### Q21
 > In a multi-tenant deployment, should events be **filtered by tenant** so that each tenant's events go to a separate topic or Kafka cluster? Or should all tenants' events land on the same topic with `tenantId` as metadata?
 
-**Answer:**
+**Answer:** Same topic with tenantId as metadata.
 
 
 ### Q22
 > For SaaS specifically, is this a **per-cluster** feature (each customer cluster has its own Kafka export config) or a **platform-level** feature (Camunda SaaS infrastructure routes events)?
 
-**Answer:**
+**Answer:** Per Cluster configuration.
 
 
 ### Q23
 > Should tenants be able to configure their own Kafka endpoints in SaaS, or does Camunda operate a shared Kafka infrastructure that customers consume from?
->
+
+**Answer:** Yes, customers should actually be able to configure their own endpoints. There is no shared Camunda infrastructure.
 
 ## Security & Compliance
 
@@ -166,18 +171,18 @@
 > What **authentication mechanisms** must be supported for Kafka connections? SASL/PLAIN, SASL/SCRAM, SASL/OAUTHBEARER, mTLS, Kerberos? Which are required for MVP vs. later?
 
 **Answer:**
-
+Look at what we support for Kafka connectors today at Camunda and do it the same way. 
 
 ### Q25
 > Should the exporter support **TLS encryption** for Kafka connections? Is mTLS (mutual TLS) required?
 
-**Answer:**
+**Answer:** Not necessarily in first phase.
 
 
 ### Q26
 > Should there be **data masking/redaction** for sensitive fields (e.g., process variables containing PII) before export? The current exporters have no masking — is this acceptable for Kafka too?
 
-**Answer:**
+**Answer:** First iteration yes. Of course we could get inspiration from the filters we have build now for Optimize (in the Zeebe Elastic exporter).
 
 
 ### Q27
@@ -189,7 +194,7 @@
 ### Q28
 > Should there be **access control** on which users/roles can configure the Kafka exporter, or is it purely an infrastructure/admin concern?
 
-**Answer:**
+**Answer:** It's an Admin concern for now in Console SaaS and in SM it's a backend configuration.
 
 
 ### Q29
@@ -204,7 +209,7 @@
 ### Q30
 > Should the Kafka exporter be configured via **unified `camunda.*` properties** (like RDBMS exporter), **`zeebe.broker.exporters.*` properties** (like ES/OS exporters), or both with migration support?
 
-**Answer:**
+**Answer:** I think camunda. would be better using the unified config.
 
 
 ### Q31
