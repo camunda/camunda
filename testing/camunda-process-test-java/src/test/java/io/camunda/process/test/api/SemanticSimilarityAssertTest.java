@@ -377,6 +377,32 @@ public class SemanticSimilarityAssertTest {
           .hasMessageContaining("localVar")
           .hasMessageContaining("no value to compare");
     }
+
+    @Test
+    void shouldPassWhenCalledWithStringElementId() {
+      // given - String elementId overload delegates to ElementSelectors.byId(elementId)
+      when(embeddingModel.embed(any())).thenReturn(UNIT_VEC_X);
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  ElementInstanceBuilder.newActiveElementInstance("task1", PROCESS_INSTANCE_KEY)
+                      .setElementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .build()));
+
+      final Variable variable =
+          VariableBuilder.newVariable("localVar", "\"local value\"")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .setScopeKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then - passes: String elementId overload resolves to ElementSelectors.byId("task1")
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariableSimilarTo("task1", "localVar", "some expectation");
+    }
   }
 
   @Nested

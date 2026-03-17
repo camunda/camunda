@@ -73,10 +73,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     private final Integer dimensions;
     private final Map<String, String> headers;
 
-    public OpenAiConfig(final String model, final String apiKey) {
-      this(model, apiKey, null, null);
-    }
-
     public OpenAiConfig(
         final String model,
         final String apiKey,
@@ -108,10 +104,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     private final String apiKey;
     private final Integer dimensions;
     private final Map<String, String> headers;
-
-    public OpenAiCompatibleConfig(final String model, final String baseUrl, final String apiKey) {
-      this(model, baseUrl, apiKey, null, null);
-    }
 
     public OpenAiCompatibleConfig(
         final String model,
@@ -150,15 +142,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     private final String apiKey;
     private final Integer dimensions;
     private final Map<String, String> headers;
-
-    public AzureOpenAiConfig(final String model, final String endpoint, final String apiKey) {
-      this(model, endpoint, apiKey, null, null);
-    }
-
-    public AzureOpenAiConfig(
-        final String model, final String endpoint, final String apiKey, final Integer dimensions) {
-      this(model, endpoint, apiKey, dimensions, null);
-    }
 
     public AzureOpenAiConfig(
         final String model,

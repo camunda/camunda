@@ -20,14 +20,6 @@ import java.util.Locale;
 /**
  * A {@link TextPreprocessor} that converts text to lower case using {@link Locale#ROOT} to ensure
  * locale-independent behaviour.
- *
- * <p>Can be chained with other preprocessors via {@link #andThen(TextPreprocessor)}:
- *
- * <pre>
- *   TextPreprocessor pipeline = new UnicodeNormalizerPreprocessor()
- *       .andThen(new WhitespaceNormalizerPreprocessor())
- *       .andThen(new LowercaseNormalizerPreprocessor());
- * </pre>
  */
 public final class LowercaseNormalizerPreprocessor implements TextPreprocessor {
 

@@ -21,14 +21,6 @@ import java.text.Normalizer;
  * A {@link TextPreprocessor} that applies Unicode NFC (Canonical Decomposition, followed by
  * Canonical Composition) normalization to text. This resolves composed and decomposed character
  * representations to a consistent form (e.g. {@code "é"} vs {@code "e\u0301"}).
- *
- * <p>Can be chained with other preprocessors via {@link #andThen(TextPreprocessor)}:
- *
- * <pre>
- *   TextPreprocessor pipeline = new UnicodeNormalizerPreprocessor()
- *       .andThen(new WhitespaceNormalizerPreprocessor())
- *       .andThen(new LowercaseNormalizerPreprocessor());
- * </pre>
  */
 public final class UnicodeNormalizerPreprocessor implements TextPreprocessor {
 

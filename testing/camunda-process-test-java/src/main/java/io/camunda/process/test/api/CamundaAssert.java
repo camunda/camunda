@@ -234,7 +234,8 @@ public class CamundaAssert {
   /**
    * Configures the embedding model for semantic similarity assertions.
    *
-   * @param similarityConfig the similarity configuration, or null to disable similarity assertions
+   * @param semanticSimilarityConfig the similarity configuration, or null to disable similarity
+   *     assertions
    * @see SemanticSimilarityConfig
    */
   public static void setSemanticSimilarityConfig(

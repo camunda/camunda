@@ -769,6 +769,20 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
    *
    * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
    *
+   * @param elementId the BPMN element ID
+   * @param variableName the variable name
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariableSimilarTo(
+      String elementId, String variableName, String expectedValue);
+
+  /**
+   * Verifies that a local variable's value is semantically similar to an expected value using text
+   * embeddings. Uses the default threshold from the configured {@link SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
+   *
    * @param selector the selector for the BPMN element
    * @param variableName the variable name
    * @param expectedValue the expected value to compare against

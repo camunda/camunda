@@ -55,6 +55,10 @@ public class SemanticSimilarityProperties {
       "similarity.embeddingModel.headers";
   public static final String PROPERTY_NAME_SIMILARITY_PREPROCESS_DEFAULTS_ENABLED =
       "similarity.preprocessors.defaults-enabled";
+  public static final String PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_NORMALIZE =
+      "similarity.embeddingModel.normalize";
+  public static final String PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_CUSTOM_PROPERTIES_PREFIX =
+      "similarity.embeddingModel.customProperties";
 
   private static final double DEFAULT_THRESHOLD = SemanticSimilarityConfig.DEFAULT_THRESHOLD;
 
@@ -70,6 +74,8 @@ public class SemanticSimilarityProperties {
   private final Integer embeddingModelDimensions;
   private final Map<String, String> embeddingModelHeaders;
   private final boolean defaultPreprocessorsEnabled;
+  private final Boolean embeddingModelNormalize;
+  private final Map<String, String> embeddingModelCustomProperties;
 
   public SemanticSimilarityProperties(final Properties properties) {
     final double parsedThreshold =
@@ -113,6 +119,15 @@ public class SemanticSimilarityProperties {
             PROPERTY_NAME_SIMILARITY_PREPROCESS_DEFAULTS_ENABLED,
             Boolean::parseBoolean,
             true);
+    embeddingModelNormalize =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_NORMALIZE,
+            Boolean::parseBoolean,
+            null);
+    embeddingModelCustomProperties =
+        getPropertyMapOrEmpty(
+            properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_CUSTOM_PROPERTIES_PREFIX);
   }
 
   public boolean hasProviderConfigured() {
@@ -160,10 +175,11 @@ public class SemanticSimilarityProperties {
             embeddingModelApiKey,
             embeddingModelCredentialsAccessKey,
             embeddingModelCredentialsSecretKey,
-            null,
+            embeddingModelNormalize,
             embeddingModelDimensions);
       default:
-        return new BaseProviderConfig.GenericConfig(normalized, embeddingModelModel);
+        return new BaseProviderConfig.GenericConfig(
+            normalized, embeddingModelModel, embeddingModelCustomProperties);
     }
   }
 }

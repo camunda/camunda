@@ -567,6 +567,14 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasLocalVariableSimilarTo(
+      final String elementId, final String variableName, final String expectedValue) {
+    variableAssertj.hasLocalVariableSimilarTo(
+        getProcessInstanceKey(), elementSelector.apply(elementId), variableName, expectedValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSimilarTo(
       final ElementSelector selector, final String variableName, final String expectedValue) {
     variableAssertj.hasLocalVariableSimilarTo(
         getProcessInstanceKey(), selector, variableName, expectedValue);

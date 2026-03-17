@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.configuration;
 import io.camunda.process.test.api.similarity.ProviderConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig;
+import java.util.Collections;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.StringUtils;
@@ -97,7 +98,8 @@ public class SemanticSimilarityConfiguration {
             embeddingModel.getNormalize(),
             embeddingModel.getDimensions());
       default:
-        return new BaseProviderConfig.GenericConfig(provider, embeddingModel.getModel());
+        return new BaseProviderConfig.GenericConfig(
+            provider, embeddingModel.getModel(), embeddingModel.customProperties);
     }
   }
 
@@ -135,6 +137,9 @@ public class SemanticSimilarityConfiguration {
 
     @NestedConfigurationProperty
     private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
+
+    /** Custom properties for custom/unknown providers. */
+    private Map<String, String> customProperties = Collections.emptyMap();
 
     public String getProvider() {
       return provider;
@@ -214,6 +219,14 @@ public class SemanticSimilarityConfiguration {
 
     public void setCredentials(final AwsCredentialsConfiguration credentials) {
       this.credentials = credentials;
+    }
+
+    public Map<String, String> getCustomProperties() {
+      return customProperties;
+    }
+
+    public void setCustomProperties(final Map<String, String> customProperties) {
+      this.customProperties = customProperties;
     }
   }
 

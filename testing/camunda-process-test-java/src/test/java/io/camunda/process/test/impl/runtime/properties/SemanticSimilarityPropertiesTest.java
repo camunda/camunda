@@ -181,6 +181,29 @@ public class SemanticSimilarityPropertiesTest {
   }
 
   @Test
+  void shouldPassCustomPropertiesToGenericConfig() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("similarity.embeddingModel.provider", "my-custom-embedder");
+    properties.setProperty("similarity.embeddingModel.model", "custom-model");
+    properties.setProperty(
+        "similarity.embeddingModel.customProperties.endpoint", "http://localhost:8080");
+    properties.setProperty("similarity.embeddingModel.customProperties.normalize", "true");
+
+    // when
+    final ProviderConfig config = new SemanticSimilarityProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
+    assertThat(config.getProvider()).isEqualTo("my-custom-embedder");
+    assertThat(config.getModel()).isEqualTo("custom-model");
+    assertThat(config.getCustomProperties())
+        .containsEntry("endpoint", "http://localhost:8080")
+        .containsEntry("normalize", "true")
+        .hasSize(2);
+  }
+
+  @Test
   void shouldCreateAmazonBedrockProviderConfig() {
     // given
     final Properties properties = new Properties();

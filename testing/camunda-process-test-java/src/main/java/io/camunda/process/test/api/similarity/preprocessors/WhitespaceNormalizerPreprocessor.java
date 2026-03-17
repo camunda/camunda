@@ -18,14 +18,6 @@ package io.camunda.process.test.api.similarity.preprocessors;
 /**
  * A {@link TextPreprocessor} that trims leading/trailing whitespace and collapses all internal
  * whitespace sequences (spaces, tabs, newlines) to a single space.
- *
- * <p>Can be chained with other preprocessors via {@link #andThen(TextPreprocessor)}:
- *
- * <pre>
- *   TextPreprocessor pipeline = new UnicodeNormalizerPreprocessor()
- *       .andThen(new WhitespaceNormalizerPreprocessor())
- *       .andThen(new LowercaseNormalizerPreprocessor());
- * </pre>
  */
 public final class WhitespaceNormalizerPreprocessor implements TextPreprocessor {
 

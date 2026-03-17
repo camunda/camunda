@@ -16,7 +16,8 @@
 package io.camunda.process.test.api.similarity.preprocessors;
 
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -80,13 +81,13 @@ public final class TextPreprocessors {
    * overridden via {@link SemanticSimilarityConfig#withPreprocessors} or {@link
    * SemanticSimilarityConfig#withoutPreprocessors}.
    *
-   * @return a mutable list of the default {@link TextPreprocessor}s in application order
+   * @return an immutable list of the default {@link TextPreprocessor}s in application order
    */
   public static List<TextPreprocessor> defaults() {
-    final List<TextPreprocessor> list = new ArrayList<>();
-    list.add(new UnicodeNormalizerPreprocessor());
-    list.add(new WhitespaceNormalizerPreprocessor());
-    list.add(new LowercaseNormalizerPreprocessor());
-    return list;
+    return Collections.unmodifiableList(
+        Arrays.asList(
+            new UnicodeNormalizerPreprocessor(),
+            new WhitespaceNormalizerPreprocessor(),
+            new LowercaseNormalizerPreprocessor()));
   }
 }

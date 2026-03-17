@@ -21,18 +21,58 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.similarity.ProviderConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
+import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig;
 import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.similarity.OpenAiEmbeddingModelAdapterProvider;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.NestedTestConfiguration;
 import org.springframework.test.context.NestedTestConfiguration.EnclosingConfiguration;
 
 @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
 public class SemanticSimilarityConfigBootstrapIT {
+
+  static final EmbeddingModelAdapter ADAPTER_A = text -> new float[] {1.0f};
+  static final EmbeddingModelAdapter ADAPTER_B = text -> new float[] {0.0f};
+
+  @Configuration
+  static class SingleEmbeddingModelAdapterConfig {
+
+    @Bean
+    EmbeddingModelAdapter embeddingModelAdapter() {
+      return ADAPTER_A;
+    }
+  }
+
+  @Configuration
+  static class GenericEmbeddingModelAdapterConfig {
+
+    @Bean("similarity.my-generic")
+    EmbeddingModelAdapter genericAdapter() {
+      return ADAPTER_A;
+    }
+  }
+
+  @Configuration
+  static class MultipleEmbeddingModelAdapterConfig {
+
+    @Bean("similarity.my-custom")
+    EmbeddingModelAdapter customAdapter() {
+      return ADAPTER_A;
+    }
+
+    @Bean("similarity.another-adapter")
+    EmbeddingModelAdapter anotherAdapter() {
+      return ADAPTER_B;
+    }
+  }
 
   @Nested
   @SpringBootTest(classes = SemanticSimilarityConfigBootstrapIT.class)
@@ -163,6 +203,114 @@ public class SemanticSimilarityConfigBootstrapIT {
       final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
       assertThat(config).isNotNull();
       assertThat(config.getEmbeddingModel()).isNotNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.threshold=0.75",
+      })
+  @CamundaSpringProcessTest
+  @Import(SemanticSimilarityConfigBootstrapIT.SingleEmbeddingModelAdapterConfig.class)
+  class WithSingleEmbeddingModelAdapterBean {
+
+    @Test
+    void shouldUseSingleBeanWhenNoProviderConfigured() {
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getEmbeddingModel()).isSameAs(ADAPTER_A);
+      assertThat(config.getThreshold()).isEqualTo(0.75);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.embeddingModel.provider=my-custom",
+        "camunda.process-test.similarity.threshold=0.7",
+      })
+  @CamundaSpringProcessTest
+  @Import(SemanticSimilarityConfigBootstrapIT.MultipleEmbeddingModelAdapterConfig.class)
+  class WithMultipleBeansAndMatchingProvider {
+
+    @Test
+    void shouldSelectBeanByProviderName() {
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getEmbeddingModel()).isSameAs(ADAPTER_A);
+      assertThat(config.getThreshold()).isEqualTo(0.7);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.embeddingModel.provider=openai",
+        "camunda.process-test.similarity.embeddingModel.model=text-embedding-3-small",
+        "camunda.process-test.similarity.embeddingModel.apiKey=test-key",
+      })
+  @CamundaSpringProcessTest
+  @Import(SemanticSimilarityConfigBootstrapIT.MultipleEmbeddingModelAdapterConfig.class)
+  class WithMultipleBeansAndNoMatch {
+
+    @Test
+    void shouldFallBackToSpiWhenNoBeanMatchesProvider() {
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      // SPI-bootstrapped adapter (from Langchain4j), not one of the beans
+      assertThat(config.getEmbeddingModel()).isNotSameAs(ADAPTER_A).isNotSameAs(ADAPTER_B);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = SemanticSimilarityConfigBootstrapIT.class)
+  @CamundaSpringProcessTest
+  @Import(SemanticSimilarityConfigBootstrapIT.MultipleEmbeddingModelAdapterConfig.class)
+  class WithMultipleBeansAndNoProviderProperty {
+
+    @Test
+    void shouldNotBootstrapWhenMultipleBeansAndNoProvider() {
+      assertThat(CamundaAssert.getSemanticSimilarityConfig()).isNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.embeddingModel.provider=my-generic",
+        "camunda.process-test.similarity.embeddingModel.model=custom-model",
+        "camunda.process-test.similarity.embeddingModel.customProperties.endpoint=http://localhost:8080",
+        "camunda.process-test.similarity.embeddingModel.customProperties.dimensions=768",
+        "camunda.process-test.similarity.threshold=0.6",
+      })
+  @CamundaSpringProcessTest
+  @Import(SemanticSimilarityConfigBootstrapIT.GenericEmbeddingModelAdapterConfig.class)
+  class GenericProviderWithCustomProperties {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBootstrapAndBindCustomProperties() {
+      // similarity config bootstrapped via the single named bean
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getEmbeddingModel()).isSameAs(ADAPTER_A);
+      assertThat(config.getThreshold()).isEqualTo(0.6);
+
+      // custom properties bound to GenericConfig
+      final ProviderConfig providerConfig = runtimeConfig.getSimilarity().toProviderConfig();
+      assertThat(providerConfig).isInstanceOf(BaseProviderConfig.GenericConfig.class);
+      assertThat(providerConfig.getProvider()).isEqualTo("my-generic");
+      assertThat(providerConfig.getModel()).isEqualTo("custom-model");
+      assertThat(providerConfig.getCustomProperties())
+          .containsEntry("endpoint", "http://localhost:8080")
+          .containsEntry("dimensions", "768")
+          .hasSize(2);
     }
   }
 

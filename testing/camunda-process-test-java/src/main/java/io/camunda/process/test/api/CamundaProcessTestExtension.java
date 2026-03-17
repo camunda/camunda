@@ -36,6 +36,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
 import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -265,17 +266,21 @@ public class CamundaProcessTestExtension
     if (CamundaAssert.getSemanticSimilarityConfig() != null) {
       return;
     }
-    if (!CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES.hasProviderConfigured()) {
+    final SemanticSimilarityProperties semanticSimilarityProperties =
+        CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES;
+    if (!semanticSimilarityProperties.hasProviderConfigured()) {
       return;
     }
-    EmbeddingModelAdapterResolver.resolve(
-            CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES.toProviderConfig())
+    EmbeddingModelAdapterResolver.resolve(semanticSimilarityProperties.toProviderConfig())
         .map(
-            adapter ->
-                SemanticSimilarityConfig.of(
-                    adapter,
-                    CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES
-                        .getThreshold()))
+            adapter -> {
+              SemanticSimilarityConfig config =
+                  SemanticSimilarityConfig.of(adapter, semanticSimilarityProperties.getThreshold());
+              if (!semanticSimilarityProperties.isDefaultPreprocessorsEnabled()) {
+                config = config.withoutPreprocessors();
+              }
+              return config;
+            })
         .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
   }
 
