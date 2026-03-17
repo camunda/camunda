@@ -1,0 +1,42 @@
+{
+  "agents": {
+    "pm": {
+      "invocations": 2,
+      "totalElapsedMs": 280383,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2
+      }
+    },
+    "Engineer": {
+      "invocations": 1,
+      "totalElapsedMs": 367309,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "PM": {
+      "invocations": 1,
+      "totalElapsedMs": 440988,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "Designer": {
+      "invocations": 1,
+      "totalElapsedMs": 752624,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    }
+  },
+  "totalRuns": 0,
+  "lastUpdated": "2026-03-16T16:26:06.060Z"
+}
