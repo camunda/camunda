@@ -25,35 +25,40 @@ public class RocksDbSharedCache {
   static SharedRocksDbResources allocateSharedCache(
       final BrokerCfg brokerCfg, final MeterRegistry meterRegistry) {
     final int partitionsCount = brokerCfg.getCluster().getPartitionsCount();
+    final int brokerCount = brokerCfg.getCluster().getClusterSize();
+    final int replicationFactor = brokerCfg.getCluster().getReplicationFactor();
+    final int partitionsPerBroker = partitionsCount * replicationFactor / brokerCount;
 
     final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
-    final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsCount);
+    final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsPerBroker);
     final var memoryAllocationStrategy = rocksdbCfg.getMemoryAllocationStrategy();
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
 
     LOGGER.info(
         "Allocating {} bytes ({} MB) for RocksDB block cache, with memory allocation strategy: {}. "
-            + "Total system memory: {} bytes ({} MB). Partitions count: {}",
+            + "Total system memory: {} bytes ({} MB). Partitions per "
+            + "broker count: {}",
         blockCacheBytes,
         blockCacheBytes / (1024 * 1024),
         memoryAllocationStrategy,
         totalMemorySize,
         totalMemorySize / (1024 * 1024),
-        partitionsCount);
+        partitionsPerBroker);
 
     RocksDbSharedCacheMetrics.registerAllocationStrategy(meterRegistry, memoryAllocationStrategy);
 
     return SharedRocksDbResources.allocate(blockCacheBytes);
   }
 
-  public static long getBlockCacheBytes(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
+  public static long getBlockCacheBytes(
+      final RocksdbCfg rocksdbCfg, final int partitionsPerBrokerCount) {
 
     return switch (rocksdbCfg.getMemoryAllocationStrategy()) {
       case BROKER -> rocksdbCfg.getMemoryLimit().toBytes();
       case FRACTION -> getFixedMemoryPercentage(rocksdbCfg.getMemoryFraction());
       // in case of PARTITION or null, we allocate per partition
-      default -> rocksdbCfg.getMemoryLimit().toBytes() * partitionsCount;
+      default -> rocksdbCfg.getMemoryLimit().toBytes() * partitionsPerBrokerCount;
     };
   }
 
@@ -64,8 +69,9 @@ public class RocksDbSharedCache {
     return Math.round(totalMemorySize * memoryFraction);
   }
 
-  public static void validateRocksDbMemory(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsCount);
+  public static void validateRocksDbMemory(
+      final RocksdbCfg rocksdbCfg, final int partitionsPerBrokerCount) {
+    final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsPerBrokerCount);
 
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
@@ -79,15 +85,15 @@ public class RocksDbSharedCache {
       validateMaxMemoryFraction(rocksdbCfg, totalMemorySize, blockCacheBytes);
       // validate that the allocated memory does not exceed total system memory.
       validateMemoryDoesNotExceedSystemMemory(
-          rocksdbCfg, totalMemorySize, blockCacheBytes, partitionsCount);
+          rocksdbCfg, totalMemorySize, blockCacheBytes, partitionsPerBrokerCount);
     }
 
     // validate that each partition has at least the minimum required memory
-    if (blockCacheBytes / partitionsCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
+    if (blockCacheBytes / partitionsPerBrokerCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
       throw new IllegalArgumentException(
           String.format(
               "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
-              MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsCount));
+              MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsPerBrokerCount));
     }
   }
 
