@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.extension;
 
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.ConditionalScenarioActionStep;
 import io.camunda.process.test.api.ConditionalScenarioConditionStep;
 import io.camunda.process.test.api.ScenarioCondition;
@@ -51,10 +52,11 @@ import org.slf4j.LoggerFactory;
 public class ConditionalScenarioEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConditionalScenarioEngine.class);
-  private static final Duration POLL_INTERVAL = Duration.ofMillis(50);
   private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration RESET_TIMEOUT = Duration.ofSeconds(5);
   private static final int DEFAULT_MAX_SCENARIO_THREADS = 8;
+
+  private volatile Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
 
   private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
 
@@ -77,7 +79,7 @@ public class ConditionalScenarioEngine {
     if (condition == null) {
       throw new IllegalArgumentException("Condition must not be null");
     }
-    final Scenario scenario = new Scenario(condition, "#" + (scenarios.size() + 1));
+    final Scenario scenario = new Scenario(condition, "#" + (scenarios.size() + 1), pollInterval);
     scenarios.add(scenario);
     LOGGER.trace("Registered scenario '{}'", scenario.name);
     return new ConditionStepImpl(scenario);
@@ -153,7 +155,7 @@ public class ConditionalScenarioEngine {
       LOGGER.trace(
           "Executor created with core pool size {} and poll interval {}",
           DEFAULT_MAX_SCENARIO_THREADS,
-          POLL_INTERVAL);
+          pollInterval);
     }
   }
 
@@ -170,8 +172,8 @@ public class ConditionalScenarioEngine {
             LOGGER.error("Scenario '{}' evaluation failed unexpectedly", scenario.name, t);
           }
         },
-        POLL_INTERVAL.toMillis(),
-        POLL_INTERVAL.toMillis(),
+        pollInterval.toMillis(),
+        pollInterval.toMillis(),
         TimeUnit.MILLISECONDS);
     LOGGER.trace("Scheduled scenario '{}'", scenario.name);
   }
@@ -195,14 +197,17 @@ public class ConditionalScenarioEngine {
   private static final class Scenario {
 
     private final ScenarioCondition condition;
+    private final Duration pollInterval;
     private final List<Runnable> actions = new CopyOnWriteArrayList<>();
     private final AtomicInteger actionIndex = new AtomicInteger(0);
     private final AtomicInteger fireCount = new AtomicInteger(0);
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile String name;
 
-    Scenario(final ScenarioCondition condition, final String defaultName) {
+    Scenario(
+        final ScenarioCondition condition, final String defaultName, final Duration pollInterval) {
       this.condition = condition;
+      this.pollInterval = pollInterval;
       name = defaultName;
     }
 
@@ -246,7 +251,7 @@ public class ConditionalScenarioEngine {
           return;
         }
         try {
-          Thread.sleep(ConditionalScenarioEngine.POLL_INTERVAL.toMillis());
+          Thread.sleep(pollInterval.toMillis());
         } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
@@ -311,7 +316,7 @@ public class ConditionalScenarioEngine {
       }
       scenario.addAction(action);
       // Scheduling starts here, before additional .then() actions may be chained. This is safe
-      // because: (1) the initial delay of POLL_INTERVAL gives the test thread time to complete
+      // because: (1) the initial delay of pollInterval gives the test thread time to complete
       // the chain, and (2) actions use CopyOnWriteArrayList with clampToLastAction, so even if
       // the first evaluation runs early, it fires the only available action without skipping any.
       scheduleScenario(scenario);
