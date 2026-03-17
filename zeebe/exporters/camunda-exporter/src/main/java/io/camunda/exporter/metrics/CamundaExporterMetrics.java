@@ -39,6 +39,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of completed process instances that have been archived. */
   private final Counter processInstancesArchived;
 
+  private final DistributionSummary processInstancesBatchSize;
+
   /**
    * Count of how often we see process instances that have been archived already (due to
    * search/delete visibility in ES/OS).
@@ -137,6 +139,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("state", "deduplicated")
             .description(
                 "Count of process instances that were previously archived, but were found again in the search for completed entities to archive.")
+            .register(meterRegistry);
+    processInstancesBatchSize =
+        DistributionSummary.builder(meterName("archiver.process.instances.batch.size"))
+            .description("How many process instances were archived in one batch")
             .register(meterRegistry);
     batchOperationsArchived =
         Counter.builder(meterName("archiver.batch.operations"))
@@ -332,6 +338,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordProcessInstancesArchiving(final int count) {
     processInstancesArchiving.increment(count);
+    processInstancesBatchSize.record(count);
   }
 
   public void recordProcessInstancesArchivingDeDuplicated(final int count) {
