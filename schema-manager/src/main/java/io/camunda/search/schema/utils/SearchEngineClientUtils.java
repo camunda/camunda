@@ -71,7 +71,7 @@ public class SearchEngineClientUtils {
     final String[] patterns = namePattern.split(",");
     for (final String pattern : patterns) {
       if (pattern.startsWith("-")) {
-        LOG.warn(
+        LOG.debug(
             "Index pattern [{}] contains exclusion entries; skipping batching to preserve "
                 + "exclusion semantics. The full pattern will be sent in a single request.",
             namePattern);
