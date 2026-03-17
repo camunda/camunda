@@ -207,7 +207,8 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
     });
   });
 
-  test('Get Usage Metrics - User with no granted authorization', async ({
+  //Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428
+  test.skip('Get Usage Metrics - User with no granted authorization', async ({
     request,
   }) => {
     const startOfTodayLocal = new Date();

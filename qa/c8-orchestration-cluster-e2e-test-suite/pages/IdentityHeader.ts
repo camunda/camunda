@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from '../utils/sleep';
 
 export class IdentityHeader {
   readonly page: Page;
@@ -39,9 +40,13 @@ export class IdentityHeader {
   async logout() {
     await this.openSettingsButton.click();
     await this.logoutButton.click();
+    await expect(this.page.getByText('logged out...')).toBeVisible({
+      timeout: 15000,
+    });
     await expect(this.page.getByText('logged out...')).not.toBeVisible({
       timeout: 15000,
     });
+    await sleep(2000);
   }
 
   async navigateToRoles() {
