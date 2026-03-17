@@ -146,6 +146,11 @@ final class TestRestorableBackupStore implements BackupStore {
     return CompletableFuture.completedFuture(null);
   }
 
+  @Override
+  public CompletableFuture<Void> verifyConnection() {
+    return CompletableFuture.completedFuture(null);
+  }
+
   private NamedFileSet copyNamedFileSet(
       final Path targetFolder, final Map<String, Path> snapshotFiles) {
     return new NamedFileSetImpl(

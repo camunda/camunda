@@ -96,6 +96,11 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
     return CompletableFuture.completedFuture(null);
   }
 
+  @Override
+  public CompletableFuture<Void> verifyConnection() {
+    return CompletableFuture.completedFuture(null);
+  }
+
   public void completeSaveFutures() {
     for (final var entry : saveFutures.entrySet()) {
       final var future = entry.getValue();
