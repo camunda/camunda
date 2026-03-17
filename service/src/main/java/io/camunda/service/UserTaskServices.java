@@ -19,11 +19,14 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.sort.SortOption.FieldSorting;
+import io.camunda.search.sort.SortOrder;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -41,8 +44,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -253,31 +260,121 @@ public final class UserTaskServices
       final VariableQuery variableQuery,
       final CamundaAuthentication authentication) {
 
-    // Fetch the user task by key
     final var userTask = getByKey(userTaskKey, authentication);
 
-    // Retrieve the tree path for the flow node instance associated to the user task
     final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
 
-    // Convert the tree path to a list of scope keys
     final List<Long> treePathList =
         treePath != null
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
             : Collections.emptyList();
 
-    // Create a variable query with an additional filter for the scope keys
-    final var variableQueryWithTreePathFilter =
+    final var unlimitedQuery =
         variableSearchQuery(
             q ->
                 q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
-                    .sort(variableQuery.sort())
-                    .page(variableQuery.page()));
+                    .unlimited());
 
-    // Execute the search
-    return executeSearchRequest(
-        () ->
-            variableServices.search(
-                variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
+    final var allVariables =
+        executeSearchRequest(
+            () -> variableServices.search(unlimitedQuery, CamundaAuthentication.anonymous()));
+
+    final List<VariableEntity> dedupedVariables =
+        deduplicateVariablesByScope(allVariables.items(), treePathList);
+
+    // Sort the deduplicated variables according to the user's requested sort
+    final var fieldSortings = variableQuery.sort().getFieldSortings();
+    sortVariables(dedupedVariables, fieldSortings);
+
+    // Apply offset-based pagination to the deduplicated and sorted result.
+    // Cursor-based pagination (after/before) is not supported for this endpoint because
+    // deduplication and sorting are performed in-memory after fetching from the search backend.
+    // The Tasklist UI uses offset-based pagination for variables exclusively.
+    final var page = variableQuery.page();
+    final int size = page.size() != null ? page.size() : SearchQueryPage.DEFAULT_SIZE;
+    final int total = dedupedVariables.size();
+    final int from = page.from() != null ? page.from() : 0;
+    final int end = Math.min(from + size, total);
+    final List<VariableEntity> pageItems =
+        from < total ? new ArrayList<>(dedupedVariables.subList(from, end)) : List.of();
+
+    return new SearchQueryResult<>(total, false, pageItems, null, null);
+  }
+
+  /**
+   * Deduplicates variables by name, keeping the variable from the innermost scope (closest to the
+   * user task). The tree path is ordered root→leaf, so we reverse it and walk from innermost to
+   * outermost, using putIfAbsent to keep the first (innermost) occurrence of each variable name.
+   */
+  private List<VariableEntity> deduplicateVariablesByScope(
+      final List<VariableEntity> variables, final List<Long> treePathList) {
+    // Group variables by their scope key
+    final Map<Long, List<VariableEntity>> variablesByScopeKey =
+        variables.stream().collect(Collectors.groupingBy(VariableEntity::scopeKey));
+
+    final var dedupedMap = new LinkedHashMap<String, VariableEntity>();
+    final var reversedScopeKeys = new ArrayList<>(treePathList);
+    Collections.reverse(reversedScopeKeys);
+
+    for (final Long scopeKey : reversedScopeKeys) {
+      final var scopeVars = variablesByScopeKey.getOrDefault(scopeKey, List.of());
+      for (final VariableEntity variable : scopeVars) {
+        dedupedMap.putIfAbsent(variable.name(), variable);
+      }
+    }
+
+    return new ArrayList<>(dedupedMap.values());
+  }
+
+  private void sortVariables(
+      final List<VariableEntity> variables, final List<FieldSorting> fieldSortings) {
+    if (fieldSortings == null || fieldSortings.isEmpty()) {
+      return;
+    }
+
+    Comparator<VariableEntity> comparator = null;
+
+    for (final FieldSorting sorting : fieldSortings) {
+      final Comparator<VariableEntity> fieldComparator = buildFieldComparator(sorting);
+      if (fieldComparator != null) {
+        comparator =
+            comparator == null ? fieldComparator : comparator.thenComparing(fieldComparator);
+      }
+    }
+
+    if (comparator != null) {
+      variables.sort(comparator);
+    }
+  }
+
+  /**
+   * Builds a comparator for a single field sorting criterion using reflection. Since {@link
+   * VariableEntity} is a record, the accessor method name matches the field name exactly (e.g.,
+   * field "name" → method {@code name()}). This avoids maintaining a manual mapping of field names
+   * to accessor methods.
+   */
+  @SuppressWarnings("unchecked")
+  private Comparator<VariableEntity> buildFieldComparator(final FieldSorting sorting) {
+    final Method accessor;
+    try {
+      accessor = VariableEntity.class.getMethod(sorting.field());
+    } catch (final NoSuchMethodException e) {
+      // Unknown field — skip this sorting criterion
+      return null;
+    }
+
+    final Comparator<VariableEntity> comparator =
+        Comparator.comparing(
+            entity -> {
+              try {
+                return (Comparable<Object>) accessor.invoke(entity);
+              } catch (final ReflectiveOperationException e) {
+                throw new IllegalStateException("Failed to access field: " + sorting.field(), e);
+              }
+            },
+            Comparator.nullsLast(Comparator.naturalOrder()));
+
+    return sorting.order() == SortOrder.DESC ? comparator.reversed() : comparator;
   }
 
   public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(
