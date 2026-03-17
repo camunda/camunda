@@ -40,8 +40,6 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.ConditionalScenarioConditionStep;
-import io.camunda.process.test.api.ScenarioCondition;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -50,6 +48,8 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.api.scenario.ConditionBehaviorChain;
+import io.camunda.process.test.api.scenario.ScenarioCondition;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
@@ -695,7 +695,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public ConditionalScenarioConditionStep when(final ScenarioCondition condition) {
+  public ConditionBehaviorChain when(final ScenarioCondition condition) {
     return conditionalScenarioEngine.when(condition);
   }
 
