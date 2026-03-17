@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
+import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -102,8 +104,9 @@ public final class ZeebePartitionFactory {
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
-  private final SharedRocksDbResources sharedRocksDbResources;
+  private SharedRocksDbResources sharedRocksDbResources;
   private final ClusterConfigurationService clusterConfigurationService;
+  private final MeterRegistry brokerMeterRegistry;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -124,7 +127,8 @@ public final class ZeebePartitionFactory {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SharedRocksDbResources sharedRocksDbResources,
-      final ClusterConfigurationService clusterConfigurationService) {
+      final ClusterConfigurationService clusterConfigurationService,
+      final MeterRegistry brokerMeterRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -144,6 +148,7 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.sharedRocksDbResources = sharedRocksDbResources;
     this.clusterConfigurationService = clusterConfigurationService;
+    this.brokerMeterRegistry = brokerMeterRegistry;
   }
 
   public ZeebePartition constructPartition(
@@ -152,6 +157,8 @@ public final class ZeebePartitionFactory {
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
       final MeterRegistry partitionMeterRegistry) {
+    initializeSharedRocksDbResources();
+
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
@@ -204,6 +211,55 @@ public final class ZeebePartitionFactory {
         new PartitionTransitionImpl(generateTransitionSteps());
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
+  }
+
+  /**
+   * Lazily initializes the shared RocksDB resources on the first partition construction. This
+   * ensures the cluster configuration service is initialized and partition distribution is
+   * available.
+   */
+  private synchronized void initializeSharedRocksDbResources() {
+    if (sharedRocksDbResources.isInitialized()) {
+      return;
+    }
+
+    final var localMemberId = clusterServices.getMembershipService().getLocalMember().id();
+    final int partitionsPerBroker =
+        getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg);
+    sharedRocksDbResources =
+        RocksDbSharedCache.allocateSharedCache(brokerCfg, brokerMeterRegistry, partitionsPerBroker);
+  }
+
+  /**
+   * Determines the number of partitions this broker is responsible for. First attempts to get the
+   * actual partition count from the cluster configuration. If no partitions are assigned yet (e.g.,
+   * during initial cluster bootstrap), falls back to a static calculation based on cluster
+   * configuration.
+   */
+  private static int getPartitionsPerBroker(
+      final ClusterConfigurationService clusterConfigurationService,
+      final MemberId localMemberId,
+      final BrokerCfg brokerCfg) {
+    final var partitionDistribution = clusterConfigurationService.getPartitionDistribution();
+
+    if (partitionDistribution != null) {
+      final long partitionCount =
+          partitionDistribution.partitions().stream()
+              .filter(p -> p.members().contains(localMemberId))
+              .count();
+      if (partitionCount > 0) {
+        return (int) partitionCount;
+      }
+    }
+
+    // Fallback to static calculation if partition distribution not yet available
+    final int partitionsCount = brokerCfg.getCluster().getPartitionsCount();
+    final int brokerCount = brokerCfg.getCluster().getClusterSize();
+    final int replicationFactor = brokerCfg.getCluster().getReplicationFactor();
+    final double estimatedPartitionsPerBroker =
+        (double) partitionsCount * replicationFactor / brokerCount;
+    // Round up to ensure enough resources are allocated, even if the division is not even
+    return (int) Math.ceil(estimatedPartitionsPerBroker);
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
