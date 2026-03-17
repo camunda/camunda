@@ -34,7 +34,7 @@ export class OperateFiltersPanelPage {
   readonly parentProcessInstanceKeyFilter: Locator;
   readonly processInstanceKey: Locator;
   readonly flowNodeFilter: Locator;
-  readonly operationIdFilter: Locator;
+  readonly batchOperationIdFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
@@ -100,7 +100,7 @@ export class OperateFiltersPanelPage {
     this.flowNodeFilter = this.page.getByRole('combobox', {
       name: 'element',
     });
-    this.operationIdFilter = this.page.getByRole('textbox', {
+    this.batchOperationIdFilter = this.page.getByRole('textbox', {
       name: 'operation id',
     });
     this.resetFiltersButton = this.page.getByRole('button', {
@@ -288,11 +288,11 @@ export class OperateFiltersPanelPage {
     await expect(this.errorMessageFilter).toHaveValue(errorMessage);
   }
 
-  async fillOperationIdFilter(operationId: string) {
-    await expect(this.operationIdFilter).toBeVisible();
-    await expect(this.operationIdFilter).toBeEnabled();
-    await this.operationIdFilter.fill(operationId);
-    await expect(this.operationIdFilter).toHaveValue(operationId);
+  async fillBatchOperationIdFilter(operationId: string) {
+    await expect(this.batchOperationIdFilter).toBeVisible();
+    await expect(this.batchOperationIdFilter).toBeEnabled();
+    await this.batchOperationIdFilter.fill(operationId);
+    await expect(this.batchOperationIdFilter).toHaveValue(operationId);
   }
 
   async clickJsonEditorModal() {

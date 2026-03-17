@@ -347,7 +347,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await page.goto(
-        `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=TaskF`,
+        `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=TaskF`,
       );
 
       await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
@@ -378,7 +378,7 @@ test.describe.serial('Process Instance Migration', () => {
         await operateFiltersPanelPage.selectVersion(targetVersion);
 
         await page.goto(
-          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
+          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
@@ -410,7 +410,7 @@ test.describe.serial('Process Instance Migration', () => {
         await operateFiltersPanelPage.selectVersion(targetVersion);
 
         await page.goto(
-          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
+          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({
