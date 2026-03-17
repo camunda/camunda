@@ -271,11 +271,13 @@ public final class GcsBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
             () -> {
               try {
-                client
-                    .list(config.bucketName(), BlobListOption.pageSize(1))
-                    .iterateAll()
-                    .iterator()
-                    .hasNext();
+                // Trigger a list operation to verify connection
+                final var ignored =
+                    client
+                        .list(config.bucketName(), BlobListOption.pageSize(1))
+                        .iterateAll()
+                        .iterator()
+                        .hasNext();
               } catch (final Exception e) {
                 throw new ConfigurationException(
                     "Unable to connect to GCS bucket '%s': %s"
