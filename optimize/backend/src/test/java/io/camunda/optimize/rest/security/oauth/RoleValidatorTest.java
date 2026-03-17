@@ -22,8 +22,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 class RoleValidatorTest {
 
+  private static final String ORGANIZATION_ID = "org1";
   private final List<String> allowedRoles = Arrays.asList("admin", "analyst", "owner");
-  private final RoleValidator validator = new RoleValidator(allowedRoles);
+  private final RoleValidator validator = new RoleValidator(allowedRoles, ORGANIZATION_ID);
 
   @Test
   void shouldFailWhenTokenHasNoOrganizationClaim() {
@@ -58,8 +59,29 @@ class RoleValidatorTest {
   }
 
   @Test
-  void shouldSucceedWhenUserHasAllowedRoleInAnyOrg() {
-    // given
+  void shouldSucceedWhenUserHasAllowedRoleInCorrectOrg() {
+    // given - user has "analyst" in org1 (the configured org) and only disallowed roles in org2
+    final Jwt token = mock(Jwt.class);
+    final Map<String, Object> claims = new HashMap<>();
+    final Map<String, Object> org1 = new HashMap<>();
+    org1.put("id", "org1");
+    org1.put("roles", List.of("analyst"));
+    final Map<String, Object> org2 = new HashMap<>();
+    org2.put("id", "org2");
+    org2.put("roles", List.of("developer"));
+    claims.put("https://camunda.com/orgs", Arrays.asList(org1, org2));
+    when(token.getClaims()).thenReturn(claims);
+
+    // when
+    final OAuth2TokenValidatorResult result = validator.validate(token);
+
+    // then
+    assertThat(result.hasErrors()).isFalse();
+  }
+
+  @Test
+  void shouldFailWhenUserHasAllowedRoleInDifferentOrgOnly() {
+    // given - user2 has "analyst" in org2 but the cluster belongs to org1 (the bug scenario)
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org1 = new HashMap<>();
@@ -75,7 +97,8 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertThat(result.hasErrors()).isFalse();
+    assertThat(result.hasErrors()).isTrue();
+    assertThat(result.getErrors().iterator().next().getErrorCode()).isEqualTo("invalid_token");
   }
 
   @Test
