@@ -249,7 +249,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @SuppressWarnings("unchecked")
   private OAuth2TokenValidator<Jwt> createIdTokenValidators() {
     // Only include role validation for ID tokens
-    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+    final OAuth2TokenValidator<Jwt> roleValidator =
+        new RoleValidator(ALLOWED_ORG_ROLES, getAuth0Configuration().getOrganizationId());
 
     // The role validation uses organization claims which are present in ID tokens
     return JwtValidators.createDefaultWithValidators(roleValidator);
@@ -269,7 +270,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                 .getUserAccessTokenAudience()
                 .orElse(""));
     final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
-    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+    final OAuth2TokenValidator<Jwt> roleValidator =
+        new RoleValidator(ALLOWED_ORG_ROLES, getAuth0Configuration().getOrganizationId());
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
         JwtValidators.createDefaultWithValidators(

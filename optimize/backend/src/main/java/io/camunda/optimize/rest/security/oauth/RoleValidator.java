@@ -25,9 +25,11 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
   private static final Logger LOG = LoggerFactory.getLogger(RoleValidator.class);
 
   private final List<String> allowedRoles;
+  private final String organizationId;
 
-  public RoleValidator(final List<String> allowedRoles) {
+  public RoleValidator(final List<String> allowedRoles, final String organizationId) {
     this.allowedRoles = Objects.requireNonNull(allowedRoles, "allowedRoles must not be null");
+    this.organizationId = Objects.requireNonNull(organizationId, "organizationId must not be null");
   }
 
   @Override
@@ -60,14 +62,21 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
 
   private boolean hasAllowedRole(final Collection<?> claimedOrgs) {
     for (final Object claimedOrg : claimedOrgs) {
-      if (claimedOrg instanceof final Map<?, ?> orgDetails) {
-        final Object rolesObj = orgDetails.get("roles");
-        if (rolesObj instanceof final Collection<?> userRoles) {
-          for (final Object userRole : userRoles) {
-            if (userRole instanceof String && allowedRoles.contains(userRole)) {
-              LOG.debug("User has allowed role '{}' for Optimize access", userRole);
-              return true;
-            }
+      if (!(claimedOrg instanceof final Map<?, ?> orgDetails)) {
+        continue;
+      }
+
+      // https://github.com/camunda/camunda/issues/39350 allowed roles per organization
+      if (!organizationId.equals(orgDetails.get("id"))) {
+        continue;
+      }
+
+      final Object rolesObj = orgDetails.get("roles");
+      if (rolesObj instanceof final Collection<?> userRoles) {
+        for (final Object userRole : userRoles) {
+          if (userRole instanceof String role && allowedRoles.contains(role)) {
+            LOG.debug("User has allowed role '{}' for Optimize access", role);
+            return true;
           }
         }
       }
