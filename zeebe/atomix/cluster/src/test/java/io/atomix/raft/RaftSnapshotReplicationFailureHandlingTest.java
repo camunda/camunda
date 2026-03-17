@@ -112,6 +112,35 @@ public class RaftSnapshotReplicationFailureHandlingTest {
         .isEqualTo(2);
   }
 
+  /**
+   * Regression test for <a href="https://github.com/camunda/camunda/issues/46345">#46345</a>.
+   *
+   * <p>When install responses time out repeatedly, the leader accumulates failures and switches to
+   * sending heartbeats (empty appends). Before the fix, these heartbeats would abort the pending
+   * snapshot on the follower, forcing a full restart of the snapshot replication. With the fix,
+   * heartbeats from the same leader no longer abort in-progress snapshots.
+   */
+  @Test
+  public void shouldCompleteSnapshotReplicationDespiteHeartbeats() throws Throwable {
+    // given
+    final int numberOfChunks = 10;
+    disconnectFollowerAndTakeSnapshot(numberOfChunks);
+
+    // Let the first 5 install responses succeed, then time out the next 5 responses.
+    // After 5 timeouts, the leader will start sending heartbeats.
+    leaderProtocol.interceptResponse(
+        InstallResponse.class, new SucceedThenTimeoutInterceptor(5, 5));
+
+    // when - resume snapshot replication
+    reconnectFollowerAndAwaitSnapshot();
+
+    // then - snapshot should complete without a full restart. Only the 5 timed out chunks are
+    // retried.
+    assertThat(totalInstallRequest.get())
+        .describedAs("Should complete snapshot without restarting due to heartbeats")
+        .isEqualTo(numberOfChunks + 5);
+  }
+
   private void reconnectFollowerAndAwaitSnapshot() throws InterruptedException {
     final var snapshotReceived = new CountDownLatch(1);
     raftRule
@@ -177,6 +206,28 @@ public class RaftSnapshotReplicationFailureHandlingTest {
         return CompletableFuture.failedFuture(new TimeoutException());
       } else {
         return CompletableFuture.completedFuture(null);
+      }
+    }
+  }
+
+  private static class SucceedThenTimeoutInterceptor
+      implements ResponseInterceptor<InstallResponse> {
+    private int count = 0;
+    private final int succeedCount;
+    private final int timeoutCount;
+
+    public SucceedThenTimeoutInterceptor(final int succeedCount, final int timeoutCount) {
+      this.succeedCount = succeedCount;
+      this.timeoutCount = timeoutCount;
+    }
+
+    @Override
+    public CompletableFuture<InstallResponse> apply(final InstallResponse installResponse) {
+      count++;
+      if (count > succeedCount && count <= succeedCount + timeoutCount) {
+        return CompletableFuture.failedFuture(new TimeoutException());
+      } else {
+        return CompletableFuture.completedFuture(installResponse);
       }
     }
   }
