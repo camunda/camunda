@@ -99,7 +99,7 @@ describe('OperationsLog InstancesTable', () => {
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
   });
 
-  it('should render empty state when no operations are found', async () => {
+  it('should render empty state when no operations are found without filters', async () => {
     mockQueryAuditLogs().withSuccess({
       items: [],
       page: {
@@ -112,6 +112,47 @@ describe('OperationsLog InstancesTable', () => {
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText('No operation log items yet'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Operations that you perform in UI or via the API will appear here.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should render empty state when no operations are found with filters', async () => {
+    mockQueryAuditLogs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    const WrapperWithFilter: React.FC<{children: React.ReactNode}> = ({
+      children,
+    }) => {
+      return (
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter
+            initialEntries={['/operations-log?operationType=CREATE']}
+          >
+            <Routes>
+              <Route path="/operations-log" element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+    };
+
+    render(<InstancesTable />, {
+      wrapper: WrapperWithFilter,
     });
 
     expect(
