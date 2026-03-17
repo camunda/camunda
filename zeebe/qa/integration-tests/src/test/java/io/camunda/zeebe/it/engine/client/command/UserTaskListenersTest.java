@@ -61,7 +61,10 @@ public class UserTaskListenersTest {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess()
+          .withProperty("zeebe.broker.gateway.cluster.requestTimeout", "1s");
 
   @AutoClose private CamundaClient client;
 
@@ -1047,6 +1050,51 @@ public class UserTaskListenersTest {
             assertThat(userTask)
                 .describedAs("Canceled user task should match the originally created one")
                 .isEqualTo(createdUserTask));
+  }
+
+  @Test
+  void shouldReturnGatewayTimeoutWhenUpdatingTaskListenerBlocksVariableUpdate() {
+    // given
+    final var listenerType = "blocking_updating_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+
+    try (final var restClient =
+        ZEEBE
+            .newClientBuilder()
+            .preferRestOverGrpc(false)
+            .defaultRequestTimeout(Duration.ofSeconds(60))
+            .build()) {
+      final var updateTaskVariablesFuture =
+          restClient
+              .newSetVariablesCommand(createdUserTask.getElementInstanceKey())
+              .useRest()
+              .variables(Map.of("approvalStatus", "APPROVED"))
+              .local(true)
+              .send();
+
+      // when: the listener job is created but not completed by any worker
+      await().untilAsserted(() -> ZeebeAssertHelper.assertJobCreated(listenerType));
+
+      // then
+      assertThatExceptionOfType(ProblemException.class)
+          .isThrownBy(updateTaskVariablesFuture::join)
+          .extracting(ProblemException::details)
+          .satisfies(
+              details -> {
+                assertThat(details.getStatus()).isEqualTo(HttpStatus.SC_GATEWAY_TIMEOUT);
+                assertThat(details.getTitle()).isEqualTo("DEADLINE_EXCEEDED");
+                assertThat(details.getDetail())
+                    .isEqualTo(
+                        "Expected to handle request, but request timed out between gateway and broker");
+              });
+    }
   }
 
   private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
