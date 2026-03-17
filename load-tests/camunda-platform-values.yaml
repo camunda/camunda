@@ -147,7 +147,7 @@ orchestration:
         # We need to configure it for the ES exporter AND the CamundaExporter
         zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
         zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
-        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 100
         zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
         # Configure a rate limit for all writes, so that we can visualize flow control metrics.
         zeebe.broker.flowControl.write.enabled: "true"
