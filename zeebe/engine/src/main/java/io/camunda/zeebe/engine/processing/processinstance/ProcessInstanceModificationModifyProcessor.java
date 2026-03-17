@@ -1467,6 +1467,8 @@ public final class ProcessInstanceModificationModifyProcessor
     // terminate all child instances if the element is an event subprocess
     if (elementType == BpmnElementType.EVENT_SUB_PROCESS
         || elementType == BpmnElementType.SUB_PROCESS
+        || elementType == BpmnElementType.AD_HOC_SUB_PROCESS
+        || elementType == BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
         || elementType == BpmnElementType.PROCESS
         || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
