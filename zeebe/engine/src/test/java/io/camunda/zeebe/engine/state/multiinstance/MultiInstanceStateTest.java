@@ -71,7 +71,7 @@ public class MultiInstanceStateTest {
         List.of(new UnsafeBuffer("foo".getBytes()), new UnsafeBuffer("bar".getBytes()));
     multiInstanceState.upsertInputCollection(key, initialCollection);
 
-    // when - calling insert again with the same key (e.g. on incident resolution re-activation)
+    // when - calling upsert again with the same key (e.g. on incident resolution re-activation)
     final List<DirectBuffer> updatedCollection = List.of(new UnsafeBuffer("baz".getBytes()));
     multiInstanceState.upsertInputCollection(key, updatedCollection);
 
