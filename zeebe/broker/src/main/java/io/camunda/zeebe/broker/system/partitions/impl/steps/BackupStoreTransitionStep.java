@@ -91,7 +91,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
                     installed.complete(null);
                   }
                 },
-                context.getConcurrencyControl()::run);
+                context.getConcurrencyControl());
       } else {
         context.setBackupStore(store);
         installed.complete(null);
