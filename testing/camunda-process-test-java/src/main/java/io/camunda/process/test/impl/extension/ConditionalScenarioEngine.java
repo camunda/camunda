@@ -335,10 +335,5 @@ public class ConditionalScenarioEngine {
       scenario.addAction(action);
       return this;
     }
-
-    @Override
-    public ConditionalScenarioConditionStep when(final ScenarioCondition condition) {
-      return ConditionalScenarioEngine.this.when(condition);
-    }
   }
 }

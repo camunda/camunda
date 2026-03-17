@@ -49,7 +49,9 @@ public class SpringConditionalScenarioApiIT {
                 assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
                     .hasActiveElement("State_Happiness", 1))
         .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", false)))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", true)))
+        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", true)));
+
+    processTestContext
         .when(
             () ->
                 assertThatProcessInstance(

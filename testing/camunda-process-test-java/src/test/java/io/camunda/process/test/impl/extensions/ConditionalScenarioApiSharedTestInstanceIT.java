@@ -51,17 +51,21 @@ public class ConditionalScenarioApiSharedTestInstanceIT {
     final Map<String, Object> exportVars = Collections.singletonMap("exportSuccess", true);
 
     // Setup conditional scenarios before starting the process
+
+    // When user task "State_Happiness" is created, complete it:
+    //   1st time with happy=false (loops back)
+    //   2nd time with happy=true (proceeds to Export_Happiness)
     processTestContext
-        // When user task "State_Happiness" is created, complete it:
-        //   1st time with happy=false (loops back)
-        //   2nd time with happy=true (proceeds to Export_Happiness)
         .when(
             () ->
                 assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
                     .hasActiveElement("State_Happiness", 1))
         .as("State_Happiness user task got created")
         .then(() -> processTestContext.completeUserTask("State_Happiness", unhappy))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", happy))
+        .then(() -> processTestContext.completeUserTask("State_Happiness", happy));
+
+    // When Export_Happiness is active, complete the job
+    processTestContext
         .when(
             () ->
                 assertThatProcessInstance(
