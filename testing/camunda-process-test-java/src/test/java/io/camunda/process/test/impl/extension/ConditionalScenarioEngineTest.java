@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.process.test.api.ScenarioCondition;
+import io.camunda.process.test.api.scenario.ScenarioCondition;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;

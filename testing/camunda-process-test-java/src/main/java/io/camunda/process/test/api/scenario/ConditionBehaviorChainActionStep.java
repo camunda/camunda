@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api;
+package io.camunda.process.test.api.scenario;
 
 /**
- * A step in the conditional scenario builder that allows chaining additional actions for repeated
+ * A step in the condition-behavior chain that allows chaining additional actions for repeated
  * condition matches.
  */
-public interface ConditionalScenarioActionStep {
+public interface ConditionBehaviorChainActionStep {
 
   /**
    * Chains an additional action for repeated condition matches. Actions are consumed in order:
@@ -29,5 +29,5 @@ public interface ConditionalScenarioActionStep {
    * @param action the action to execute on the next condition match
    * @return this step for further chaining
    */
-  ConditionalScenarioActionStep then(Runnable action);
+  ConditionBehaviorChainActionStep then(Runnable action);
 }

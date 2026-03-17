@@ -25,6 +25,8 @@ import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.api.scenario.ConditionBehaviorChain;
+import io.camunda.process.test.api.scenario.ScenarioCondition;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -407,5 +409,5 @@ public interface CamundaProcessTestContext {
    * @param condition the condition to evaluate
    * @return the condition step for defining the action
    */
-  ConditionalScenarioConditionStep when(ScenarioCondition condition);
+  ConditionBehaviorChain when(ScenarioCondition condition);
 }

@@ -16,9 +16,9 @@
 package io.camunda.process.test.impl.extension;
 
 import io.camunda.process.test.api.CamundaAssert;
-import io.camunda.process.test.api.ConditionalScenarioActionStep;
-import io.camunda.process.test.api.ConditionalScenarioConditionStep;
-import io.camunda.process.test.api.ScenarioCondition;
+import io.camunda.process.test.api.scenario.ConditionBehaviorChain;
+import io.camunda.process.test.api.scenario.ConditionBehaviorChainActionStep;
+import io.camunda.process.test.api.scenario.ScenarioCondition;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -77,7 +77,7 @@ public class ConditionalScenarioEngine {
    * @return the next step for defining the action
    * @throws IllegalArgumentException if condition is null
    */
-  public ConditionalScenarioConditionStep when(final ScenarioCondition condition) {
+  public ConditionBehaviorChain when(final ScenarioCondition condition) {
     if (condition == null) {
       throw new IllegalArgumentException("Condition must not be null");
     }
@@ -304,7 +304,7 @@ public class ConditionalScenarioEngine {
     }
   }
 
-  private final class ConditionStepImpl implements ConditionalScenarioConditionStep {
+  private final class ConditionStepImpl implements ConditionBehaviorChain {
 
     private final Scenario scenario;
 
@@ -313,7 +313,7 @@ public class ConditionalScenarioEngine {
     }
 
     @Override
-    public ConditionalScenarioConditionStep as(final String name) {
+    public ConditionBehaviorChain as(final String name) {
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Name must not be null or blank");
       }
@@ -323,7 +323,7 @@ public class ConditionalScenarioEngine {
     }
 
     @Override
-    public ConditionalScenarioActionStep then(final Runnable action) {
+    public ConditionBehaviorChainActionStep then(final Runnable action) {
       if (action == null) {
         throw new IllegalArgumentException("Action must not be null");
       }
@@ -337,7 +337,7 @@ public class ConditionalScenarioEngine {
     }
   }
 
-  private final class ActionStepImpl implements ConditionalScenarioActionStep {
+  private final class ActionStepImpl implements ConditionBehaviorChainActionStep {
 
     private final Scenario scenario;
 
@@ -346,7 +346,7 @@ public class ConditionalScenarioEngine {
     }
 
     @Override
-    public ConditionalScenarioActionStep then(final Runnable action) {
+    public ConditionBehaviorChainActionStep then(final Runnable action) {
       if (action == null) {
         throw new IllegalArgumentException("Action must not be null");
       }

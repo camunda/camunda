@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api;
+package io.camunda.process.test.api.scenario;
 
-/** A step in the conditional scenario builder that expects an action to be defined. */
-public interface ConditionalScenarioConditionStep {
+/** A step in the condition-behavior chain that expects an action to be defined. */
+public interface ConditionBehaviorChain {
 
   /**
    * Assigns a descriptive name to this scenario, used in log messages and diagnostics. If not
@@ -26,13 +26,13 @@ public interface ConditionalScenarioConditionStep {
    * @return this step for further chaining
    * @throws IllegalArgumentException if name is null or blank
    */
-  ConditionalScenarioConditionStep as(String name);
+  ConditionBehaviorChain as(String name);
 
   /**
    * Defines the action to execute when the condition is satisfied.
    *
    * @param action the action to execute
-   * @return the next step for chaining additional actions or defining new scenarios
+   * @return the next step for chaining additional actions
    */
-  ConditionalScenarioActionStep then(Runnable action);
+  ConditionBehaviorChainActionStep then(Runnable action);
 }
