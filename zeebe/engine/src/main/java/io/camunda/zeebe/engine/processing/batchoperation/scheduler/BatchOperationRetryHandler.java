@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationException;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper.BatchOperationInitializationException;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper.BatchOperationInitializationResult;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import java.time.Duration;
 import java.util.Set;

@@ -231,13 +231,14 @@ public final class FailJobTest {
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
     // explicitly wait for polling
-    ENGINE.increaseTime(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION));
+    ENGINE.increaseTime(Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION));
 
     // verify that our job didn't recur after backoff
     final var reactivatedJobs = ENGINE.jobs().withType(jobType).activate();
     assertThat(reactivatedJobs.getValue().getJobs()).isEmpty();
 
-    ENGINE.increaseTime(backOff.plus(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION)));
+    ENGINE.increaseTime(
+        backOff.plus(Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)));
 
     // verify that our job recurred after backoff
     assertThat(jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).getFirst().getKey())
