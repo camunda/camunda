@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
 import static org.assertj.core.api.Assertions.*;
 
+import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
 import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
@@ -333,6 +334,53 @@ class AdvancedSearchFilterUtilTest {
     // then
     assertThat(errors).isEmpty();
     assertThat(actual).containsExactly(Operation.exists(true));
+  }
+
+  @Test
+  void shouldCollectErrorForNonIntegerValue() {
+    // given — BasicStringFilter has String fields, simulating a type mismatch
+    final var filter = new BasicStringFilter();
+    filter.set$Eq("notAnInteger");
+    final var errors = new ArrayList<String>();
+
+    // when
+    final var actual =
+        AdvancedSearchFilterUtil.mapToIntegerOperations("retries", errors).apply(filter);
+
+    // then
+    assertThat(errors)
+        .containsExactly("The provided retries 'notAnInteger' is not a valid integer value.");
+    assertThat(actual).isEmpty();
+  }
+
+  @Test
+  void shouldCollectErrorWhenConverterThrows() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$Eq("badValue");
+    final var errors = new ArrayList<String>();
+    final CustomConverter<String> failingConverter =
+        new CustomConverter<>() {
+          @Override
+          public boolean canConvert(final Object value) {
+            return true;
+          }
+
+          @Override
+          public String convertValue(final Object value) {
+            throw new IllegalArgumentException("conversion failed");
+          }
+        };
+
+    // when
+    final var actual =
+        AdvancedSearchFilterUtil.mapToStringOperations("state", errors, failingConverter)
+            .apply(filter);
+
+    // then
+    assertThat(errors)
+        .containsExactly("The provided state 'badValue' is not valid: conversion failed");
+    assertThat(actual).isEmpty();
   }
 
   @Test
