@@ -392,6 +392,14 @@ public final class ZeebeRocksDbFactory<
       return new SharedRocksDbResources(sharedCache, sharedWbm, memoryLimit, blockCacheSize);
     }
 
+    public static SharedRocksDbResources uninitialized() {
+      return new SharedRocksDbResources(null, null, 0);
+    }
+
+    public boolean isInitialized() {
+      return sharedCache != null && sharedWbm != null;
+    }
+
     @Override
     public void close() {
       sharedWbm.close();
