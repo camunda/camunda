@@ -24,7 +24,7 @@ public class MultiInstanceInputCollectionEvaluatedApplier
 
   @Override
   public void applyState(final long multiInstanceBodyKey, final MultiInstanceRecord value) {
-    multiInstanceState.insertInputCollection(
+    multiInstanceState.upsertInputCollection(
         multiInstanceBodyKey, value.getInputCollectionBuffers());
   }
 }
