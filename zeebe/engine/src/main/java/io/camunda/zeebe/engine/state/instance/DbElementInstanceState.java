@@ -359,6 +359,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void removeRuntimeInstructions(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.deleteIfExists(elementInstanceKey);
+  }
+
+  @Override
   public void insertProcessInstanceKeyByBusinessId(
       final String businessId,
       final String processDefinitionId,
