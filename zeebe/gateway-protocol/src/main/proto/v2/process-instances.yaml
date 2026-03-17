@@ -45,9 +45,9 @@ paths:
         "409":
           description: |
             The process instance creation was rejected due to a business ID uniqueness conflict.
-            This can happen only when Business ID Uniqueness Control is enabled,
-            `businessId` is provided, and an active root process instance with the same
-            business ID already exists for the same process definition and tenant.
+            This can happen only when Business ID Uniqueness Control is enabled and an
+            active root process instance with the provided business ID already exists
+            for the same process definition and tenant.
           content:
             application/problem+json:
               schema:
