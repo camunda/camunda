@@ -40,6 +40,9 @@ export class IdentityHeader {
   async logout() {
     await this.openSettingsButton.click();
     await this.logoutButton.click();
+    await expect(this.page.getByText('logged out...')).toBeVisible({
+      timeout: 15000,
+    });
     await expect(this.page.getByText('logged out...')).not.toBeVisible({
       timeout: 15000,
     });
