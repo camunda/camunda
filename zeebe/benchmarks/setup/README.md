@@ -1,6 +1,6 @@
 # Manual set up a load test
 
-Welcome to the manual set up of a load test. :wave:
+Welcome to the manual setup of a load test. :wave:
 
 There are two targets to run a load test against:
 
@@ -11,25 +11,95 @@ All guides are targeted at a Linux system.
 
 ## Requirements
 
-Make sure you have the following installed: docker, tsh (Teleport CLI), kubectl, kubens and helm
+To set up a load test from your local machine, you need several tools installed.
+
+Follow these guides to install each of them:
+
+* tsh (Teleport CLI) https://goteleport.com/docs/installation/
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* docker https://docs.docker.com/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+* OPTIONAL go https://golang.org/doc/install
+
+For detailed instructions on accessing the benchmark cluster, see the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
+
+Some of the necessary steps you need to take are:
+
+```sh
+## Authenticate to the benchmark cluster via Teleport
+tsh login --proxy=camunda.teleport.sh:443
+tsh kube login camunda-benchmark-prod
+
+## Log in to the Harbor container registry
+## Zeebe team members have push access by default.
+## If you don't have access, request it in the #ask-infra Slack channel.
+docker login registry.camunda.cloud
+
+## install helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+## add zeebe as helm repo
+helm version
+helm repo add zeebe https://helm.camunda.io
+helm repo add stable https://charts.helm.sh/stable
+helm repo update
+
+## install kubens
+curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
+install kubens /usr/local/bin/
+```
+
+### Best Practices Windows
+
+Running the load tests with Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+The setup changes slightly compared to the Linux setup.
+
+These are the components to install on Windows:
+* Docker
+
+These are the components to install within the WSL:
+* tsh (Teleport CLI) https://goteleport.com/docs/installation/
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+
+When following the instructions above, execute all commands that deal with Docker in a Windows shell, and execute all other commands in the WSL shell.
 
 ## Load testing Self-Managed Zeebe Cluster
 
 ### How to set up a load test namespace
 
-Just run the `newBenchmark.sh` with your preferred new namespace name.
+If you run `newBenchmark.sh` without arguments, it will display the following help message.
 
-Like:
+```sh
+Usage: newBenchmark.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
 
+Arguments:
+  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
+  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+
+Options:
+  -h, --help         Show this help message.
+
+Examples:
+  ./newBenchmark.sh demo
+  ./newBenchmark.sh perf opensearch 3 true
 ```
+
+As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
+
+Example:
+```sh
 . ./newBenchmark.sh my-load-test-name
 ```
 
-This will source and run the `newBenchmark.sh` script, which means it will
-create a new k8 namespace and switch to it via `kubens`. Furthermore, a new folder
-will be created with the given name. If you used `.` before `./newBenchmark.sh`
-the script will also change your directory after running, so you can directly start
-to configure your load test.
+This will source and run the `newBenchmark.sh` script, which means it will create a new Kubernetes namespace. Furthermore, a new folder will be created with the given name.
+If you used `.` before `./newBenchmark.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
 #### Secondary storage options
 
@@ -47,22 +117,22 @@ The `none` option runs load tests without any secondary storage, which disables 
 ### How to configure a load test
 
 The load test configuration is done via the `camunda-platform-values.yaml` file (copied to your namespace folder).
-You can also modify the Makefile to pass additional helm arguments if needed.
+You can also modify the Makefile to pass additional Helm arguments if needed.
 
 #### Use different Camunda Snapshot
 
-If you want to use your own or a different Camunda snapshot then you could do the following.
+If you want to use your own or a different Camunda snapshot, then you could do the following.
 
-**Build the docker image:**
+**Build the Docker image:**
 
 ```bash
 # builds the dist
 mvn clean install -T1C -DskipTests -pl dist -am
 # builds the a new camunda docker image
-docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry.camunda.cloud/team-zeebe/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app -f camunda.Dockerfile .
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry.camunda.cloud/team-zeebe/camunda:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app -f camunda.Dockerfile .
 # pushes the image to our container registry (requires docker login to registry.camunda.cloud)
 # Zeebe team members have push access by default. If you don't have access, request it in #ask-infra.
-docker push registry.camunda.cloud/team-zeebe/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
+docker push registry.camunda.cloud/team-zeebe/camunda:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
 Update the `camunda-platform-values.yaml` file in your namespace folder and set the newly created image tag.
@@ -80,9 +150,9 @@ orchestration:
 
 ### How to run a load test
 
-After you have set up your load test namespace and made changes to your configuration, you can start your load test.
+After you set up your load test namespace and make configuration changes, you can start your load test.
 
-To install/upgrade both the Camunda Platform and the load test:
+To install/upgrade both the [Camunda Platform Helm](https://github.com/camunda/camunda-platform-helm) and the [Load test Helm chart](https://github.com/camunda/camunda-load-tests-helm):
 
 ```shell
 make install
@@ -100,11 +170,11 @@ make install-load-test
 
 The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
 
-This will deploy the Camunda Platform (including `orchestration cluster`, `elastic`) and load test applications (e.g. `starter` and `worker`).
+This will deploy the Camunda Platform (including `orchestration cluster`, `elastic`) and load test applications (e.g., `starter` and `worker`).
 
 ### How to clean up a load test
 
-After you're done with your load test you should remove the remaining namespace.
+After you're done with your load test, you should remove the remaining namespace.
 In order to do this easily, just run:
 
 ```
@@ -135,10 +205,36 @@ You can also use the `template-stable` job to generate templates:
 make template-stable
 ```
 
-The `clean` job works regardless and will clean up both the platform and load test deployments.
+The `clean` job works regardless and cleans up both the platform and load-test deployments.
 
-## Load testing Camunda Cloud SaaS
+## Load testing Camunda SaaS
 
-_You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda Cloud Cluster._
+_You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda SaaS Cluster._
 
-Follow the guide [here](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md#running-against-saas).
+```sh
+ ./newCloudBenchmark.sh <namespace>
+```
+
+Similar to the `newBenchmark.sh`, it will create a new Kubernetes namespace and a new folder with the given name.
+Afterwards, we can deploy our load test applications (via the [Load Test Helm Chart](https://github.com/camunda/camunda-load-tests-helm)). 
+
+But before we can do that, you need to store a credentials file (corresponding to your SaaS cluster). Make sure to download the credentials file, containing all environment variables.
+
+After doing that, source this file, and with that, you can run the following makefile command:
+
+```sh
+. CAMUNDA_CREDENTIALS...
+make install
+```
+
+### Running specific scenarios
+
+By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
+
+```sh
+# Run typical workload, with 10 tasks 
+make typical
+
+# Run a realistic workload with multi-instance call activities, etc.
+make realistic
+```
