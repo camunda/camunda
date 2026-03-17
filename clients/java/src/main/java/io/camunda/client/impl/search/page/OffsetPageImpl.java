@@ -17,16 +17,16 @@ package io.camunda.client.impl.search.page;
 
 import io.camunda.client.api.search.page.OffsetPage;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.OffsetPagination;
 
 /** Implementation of {@link OffsetPage} supporting offset-based pagination. */
-public class OffsetPageImpl extends TypedSearchRequestPropertyProvider<SearchQueryPageRequest>
+public class OffsetPageImpl extends TypedSearchRequestPropertyProvider<OffsetPagination>
     implements OffsetPage {
 
-  private final SearchQueryPageRequest page;
+  private final OffsetPagination page;
 
   public OffsetPageImpl() {
-    page = new SearchQueryPageRequest();
+    page = new OffsetPagination();
   }
 
   @Override
@@ -42,7 +42,7 @@ public class OffsetPageImpl extends TypedSearchRequestPropertyProvider<SearchQue
   }
 
   @Override
-  public SearchQueryPageRequest getSearchRequestProperty() {
+  public OffsetPagination getSearchRequestProperty() {
     return page;
   }
 }
