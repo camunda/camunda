@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -298,6 +299,7 @@ public class ExpressionEvaluationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
         .contains("No function found with name 'invalid_function' and 0 parameters");
   }
 
@@ -836,16 +838,27 @@ public class ExpressionEvaluationIT {
   // ============ ERROR HANDLING TESTS ============
 
   @Test
-  void shouldRejectExpressionWithNonExistentClusterVariable() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newEvaluateExpressionCommand()
-                    .expression("=camunda.vars.cluster.nonExistentVar_" + UUID.randomUUID())
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class);
+  void shouldEvaluateNonExistentClusterVariableAsNull() {
+    // when - accessing a non-existent cluster variable should evaluate to null (not throw)
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression(
+                "=camunda.vars.cluster.nonExistentVar_"
+                    + UUID.randomUUID().toString().replace("-", ""))
+            .send()
+            .join();
+
+    // then - result is null and warnings are produced
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings())
+        .extracting(io.camunda.client.api.response.EvaluationWarning::getMessage)
+        .anySatisfy(
+            message ->
+                assertThat(message)
+                    .contains("The context is empty")
+                    .contains("No context entry found with key"));
   }
 
   @Test

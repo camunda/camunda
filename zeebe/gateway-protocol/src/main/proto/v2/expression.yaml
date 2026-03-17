@@ -73,6 +73,15 @@ components:
           type: array
           description: List of warnings generated during expression evaluation
           items:
-            type: string
+            $ref: '#/components/schemas/ExpressionEvaluationWarningItem'
           example: [ ]
+    ExpressionEvaluationWarningItem:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: The warning message
+          example: "No function found with name 'random' and 1 parameters"
 
