@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -28,10 +29,14 @@ import org.slf4j.Logger;
  * node instances, variable updates, etc).
  */
 public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchiveBatch> {
+  private static final int MAX_LARGE_BATCH_SIZE = 5_000;
+  private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
 
   private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final Queue<ProcessInstanceArchiveBatch> pendingBatches =
+      new java.util.concurrent.ConcurrentLinkedQueue<>();
 
   public ProcessInstanceArchiverJob(
       final HistoryConfiguration config,
@@ -63,7 +68,18 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch(config.getRolloverBatchSize());
+    if (!pendingBatches.isEmpty()) {
+      return CompletableFuture.completedFuture(pendingBatches.poll());
+    }
+    return getArchiverRepository()
+        .getProcessInstancesNextBatch(largeBatchSize())
+        .thenApply(
+            batch -> {
+              final var chunks = batch.chunk(config.getRolloverBatchSize());
+              final var first = chunks.removeFirst();
+              pendingBatches.addAll(chunks);
+              return first;
+            });
   }
 
   @Override
@@ -108,6 +124,11 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
           batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
     }
     return idsMap;
+  }
+
+  private int largeBatchSize() {
+    return Math.min(
+        MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * config.getRolloverBatchSize());
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
