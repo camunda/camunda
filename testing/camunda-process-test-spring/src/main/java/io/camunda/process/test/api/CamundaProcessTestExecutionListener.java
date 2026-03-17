@@ -156,12 +156,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .build();
 
-    // set context proxy for @TestInstance(PER_CLASS) @BeforeAll support
-    testContext
-        .getApplicationContext()
-        .getBean(CamundaProcessTestContextProxy.class)
-        .setContext(camundaProcessTestContext);
-
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
 
