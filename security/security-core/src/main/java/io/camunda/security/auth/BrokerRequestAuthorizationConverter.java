@@ -20,12 +20,19 @@ import java.util.Map;
 public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
+  private final boolean authorizationEmbeddingEnabled;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
+    authorizationEmbeddingEnabled =
+        securityConfiguration.getAuthorizations().isEnabled()
+            || securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
+    if (!authorizationEmbeddingEnabled) {
+      return Map.of();
+    }
 
     final var authorization = new HashMap<String, Object>();
     if (authentication.isAnonymous()) {
