@@ -16,11 +16,20 @@
 package io.camunda.process.test.api;
 
 /**
- * Functional interface defining a scenario condition, highlighting that a missed evaluation should
- * result in an {@link AssertionError}.
+ * Functional interface representing a scenario condition that is evaluated periodically by the
+ * conditional scenario engine. A condition is considered met when the method completes without
+ * throwing. If the condition is not satisfied, the method should throw an {@link AssertionError},
+ * which is typically produced by CPT assertions.
  */
 @FunctionalInterface
 public interface ScenarioCondition {
 
-  void check() throws AssertionError;
+  /**
+   * Verifies whether this condition is currently met. If the condition is not satisfied, an {@link
+   * AssertionError} should be thrown — typically by using a CPT assertion such as {@code
+   * assertThat(processInstance).hasActiveElement("taskA")}.
+   *
+   * @throws AssertionError if the condition is not satisfied
+   */
+  void verifyCondition() throws AssertionError;
 }
