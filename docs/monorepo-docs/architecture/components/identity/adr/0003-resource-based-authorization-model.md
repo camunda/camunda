@@ -34,3 +34,4 @@ new model via the Identity Migration App.
 - Additional migration work required when upgrading from pre-8.8 clusters.
 - More complex authorization model than the previous role-only approach; requires careful
   configuration by operators.
+
