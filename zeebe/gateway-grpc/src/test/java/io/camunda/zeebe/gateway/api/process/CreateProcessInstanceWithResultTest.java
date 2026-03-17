@@ -9,16 +9,22 @@ package io.camunda.zeebe.gateway.api.process;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.Ignore;
@@ -116,6 +122,45 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
             .<BrokerCreateProcessInstanceWithResultRequest>getSingleBrokerRequest()
             .getRequestWriter();
     assertThat(brokerRequestValue.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  public void shouldMapDuplicateBusinessIdRejectionToAlreadyExists() {
+    // given
+    final var businessId = "order-12345";
+    final var processDefinitionId = "bpmnProcessId";
+    final var rejectionReason =
+        "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'"
+            .formatted(businessId, processDefinitionId);
+    brokerClient.registerHandler(
+        BrokerCreateProcessInstanceWithResultRequest.class,
+        request ->
+            new BrokerRejectionResponse<>(
+                new BrokerRejection(
+                    ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+                    1L,
+                    RejectionType.ALREADY_EXISTS,
+                    rejectionReason)));
+
+    final CreateProcessInstanceWithResultRequest request =
+        CreateProcessInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(CreateProcessInstanceWithResultStub.PROCESS_KEY)
+                    .setBusinessId(businessId))
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> client.createProcessInstanceWithResult(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.THROWABLE)
+        .extracting(
+            t -> ((StatusRuntimeException) t).getStatus().getCode(),
+            t -> ((StatusRuntimeException) t).getStatus().getDescription())
+        .containsExactly(
+            Status.Code.ALREADY_EXISTS,
+            "Command 'CREATE_WITH_AWAITING_RESULT' rejected with code 'ALREADY_EXISTS': "
+                + rejectionReason);
   }
 
   @Test
