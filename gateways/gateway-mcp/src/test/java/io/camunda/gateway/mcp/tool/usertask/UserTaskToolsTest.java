@@ -568,6 +568,54 @@ class UserTaskToolsTest extends ToolsTest {
 
       assertTextContentFallback(result);
     }
+
+    @Test
+    void shouldRejectNonNumericProcessInstanceKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldRejectInvalidCreationDate() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(Map.of("filter", Map.of("creationDate", Map.of("from", "not-a-date"))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided creationDate 'not-a-date' cannot be parsed as a date");
+
+      assertTextContentFallback(result);
+    }
   }
 
   @Nested
