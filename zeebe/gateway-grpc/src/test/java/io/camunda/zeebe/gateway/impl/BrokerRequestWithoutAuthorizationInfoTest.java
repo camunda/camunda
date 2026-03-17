@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
@@ -32,8 +33,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Verifies that when both authorization and multi-tenancy checks are disabled, the gateway does NOT
- * embed claims into broker requests (saving MsgPack serialization cost).
+ * Verifies that when both authorization and multi-tenancy checks are disabled, the gateway only
+ * embeds identity claims (username, client ID) but skips authorization claims (token claims, group
+ * memberships) to save MsgPack serialization cost.
  */
 public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
 
@@ -64,7 +66,7 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertNoClaims();
+    assertNoAuthorizationClaims();
   }
 
   @Test
@@ -75,7 +77,7 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertNoClaims();
+    assertNoAuthorizationClaims();
   }
 
   @Test
@@ -97,7 +99,7 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     assertThat(response.hasNext()).isTrue();
 
     // then
-    assertNoClaims();
+    assertNoAuthorizationClaims();
   }
 
   @Test
@@ -108,7 +110,7 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertNoClaims();
+    assertNoAuthorizationClaims();
   }
 
   @Test
@@ -131,11 +133,14 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     // then
     final var metadata = jobStreamer.getStreamMetadata(jobType);
     assertThat(metadata).isNotNull();
-    assertThat(metadata.claims()).isEmpty();
+    assertThat(metadata.claims()).doesNotContainKey(Authorization.USER_TOKEN_CLAIMS);
+    assertThat(metadata.claims()).doesNotContainKey(Authorization.USER_GROUPS_CLAIMS);
   }
 
-  private void assertNoClaims() {
+  private void assertNoAuthorizationClaims() {
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getAuthorization().hasAnyClaims()).isFalse();
+    final var claims = brokerRequest.getAuthorization().toDecodedMap();
+    assertThat(claims).doesNotContainKey(Authorization.USER_TOKEN_CLAIMS);
+    assertThat(claims).doesNotContainKey(Authorization.USER_GROUPS_CLAIMS);
   }
 }

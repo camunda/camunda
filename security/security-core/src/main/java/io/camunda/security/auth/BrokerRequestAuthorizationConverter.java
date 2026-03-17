@@ -20,30 +20,28 @@ import java.util.Map;
 public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
-  private final boolean authorizationEmbeddingEnabled;
+  private final boolean authorizationClaimsEnabled;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
-    authorizationEmbeddingEnabled =
+    authorizationClaimsEnabled =
         securityConfiguration.getAuthorizations().isEnabled()
             || securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
-    if (!authorizationEmbeddingEnabled) {
-      return Map.of();
-    }
-
     final var authorization = new HashMap<String, Object>();
+
     if (authentication.isAnonymous()) {
       authorization.put(AUTHORIZED_ANONYMOUS_USER, true);
       return authorization;
     }
 
+    // Identity claims are always sent because the exporter reads them from the record to populate
+    // the audit log actor (see AuditLogActor.of). Skipping these would cause audit log entries to
+    // have no actor information.
     final var username = authentication.authenticatedUsername();
     final var clientId = authentication.authenticatedClientId();
-    final var groups = authentication.authenticatedGroupIds();
-    final var claims = authentication.claims();
 
     if (username != null) {
       authorization.put(AUTHORIZED_USERNAME, username);
@@ -53,12 +51,17 @@ public class BrokerRequestAuthorizationConverter {
       authorization.put(AUTHORIZED_CLIENT_ID, clientId);
     }
 
-    if (!camundaGroupsEnabled) {
-      authorization.put(USER_GROUPS_CLAIMS, groups);
-    }
+    // Authorization claims (JWT token claims, group memberships) are only needed for authorization
+    // and multi-tenancy checks in the engine. Skip them when both are disabled.
+    if (authorizationClaimsEnabled) {
+      if (!camundaGroupsEnabled) {
+        authorization.put(USER_GROUPS_CLAIMS, authentication.authenticatedGroupIds());
+      }
 
-    if (claims != null) {
-      authorization.put(USER_TOKEN_CLAIMS, claims);
+      final var claims = authentication.claims();
+      if (claims != null) {
+        authorization.put(USER_TOKEN_CLAIMS, claims);
+      }
     }
 
     return authorization;
