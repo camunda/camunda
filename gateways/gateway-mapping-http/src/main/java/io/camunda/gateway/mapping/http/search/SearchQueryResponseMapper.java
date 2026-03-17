@@ -1139,19 +1139,26 @@ public final class SearchQueryResponseMapper {
         .username(camundaUser.username())
         .email(camundaUser.email())
         .authorizedComponents(camundaUser.authorizedComponents())
-        .tenants(toTenantResultsFromIds(camundaUser.tenants()))
+        .tenants(toTenantResults(camundaUser.tenants()))
         .groups(camundaUser.groups())
         .roles(camundaUser.roles())
-        .salesPlanType("")
-        .c8Links(Map.of())
+        .salesPlanType(camundaUser.salesPlanType())
+        .c8Links(camundaUser.c8Links())
         .canLogout(camundaUser.canLogout());
   }
 
-  private static List<TenantResult> toTenantResultsFromIds(final List<String> tenantIds) {
-    if (tenantIds == null) {
+  private static List<TenantResult> toTenantResults(final List<CamundaUserInfo.Tenant> tenants) {
+    if (tenants == null) {
       return List.of();
     }
-    return tenantIds.stream().map(id -> new TenantResult().tenantId(id)).toList();
+    return tenants.stream()
+        .map(
+            t ->
+                new TenantResult()
+                    .tenantId(t.tenantId())
+                    .name(t.name())
+                    .description(t.description()))
+        .toList();
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(

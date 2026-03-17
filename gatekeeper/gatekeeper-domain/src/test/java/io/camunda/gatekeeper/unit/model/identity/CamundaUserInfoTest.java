@@ -18,7 +18,8 @@ final class CamundaUserInfoTest {
 
   @Test
   void nullListsAreNormalizedToEmpty() {
-    final var info = new CamundaUserInfo("name", "user", "email", null, null, null, null, true);
+    final var info =
+        new CamundaUserInfo("name", "user", "email", null, null, null, null, null, null, true);
 
     assertThat(info.authorizedComponents()).isEmpty();
     assertThat(info.tenants()).isEmpty();
@@ -29,20 +30,21 @@ final class CamundaUserInfoTest {
   @Test
   void listsAreDefensivelyCopied() {
     final var components = new ArrayList<>(List.of("operate"));
-    final var tenants = new ArrayList<>(List.of("t1"));
+    final var tenants = new ArrayList<>(List.of(new CamundaUserInfo.Tenant("t1", null, null)));
     final var groups = new ArrayList<>(List.of("g1"));
     final var roles = new ArrayList<>(List.of("r1"));
 
     final var info =
-        new CamundaUserInfo("name", "user", "email", components, tenants, groups, roles, false);
+        new CamundaUserInfo(
+            "name", "user", "email", components, tenants, groups, roles, null, null, false);
 
     components.add("tasklist");
-    tenants.add("t2");
+    tenants.add(new CamundaUserInfo.Tenant("t2", null, null));
     groups.add("g2");
     roles.add("r2");
 
     assertThat(info.authorizedComponents()).containsExactly("operate");
-    assertThat(info.tenants()).containsExactly("t1");
+    assertThat(info.tenants()).containsExactly(new CamundaUserInfo.Tenant("t1", null, null));
     assertThat(info.groups()).containsExactly("g1");
     assertThat(info.roles()).containsExactly("r1");
   }

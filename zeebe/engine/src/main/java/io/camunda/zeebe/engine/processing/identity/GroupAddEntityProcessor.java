@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -44,7 +44,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final SecurityConfiguration securityConfig;
+  private final AuthenticationConfig authenticationConfig;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -54,7 +54,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final AuthenticationConfig authenticationConfig) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
@@ -65,7 +65,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.securityConfig = securityConfig;
+    this.authenticationConfig = authenticationConfig;
   }
 
   @Override
@@ -143,7 +143,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   }
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
-    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
+    final boolean localUserEnabled = authenticationConfig.isCamundaUsersEnabled();
     return switch (entityType) {
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;

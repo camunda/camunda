@@ -44,6 +44,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+
+    </dependency>
 
     <dependency>
       <groupId>org.mybatis</groupId>

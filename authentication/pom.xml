@@ -20,85 +20,20 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-security</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-observation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-commons</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.parsson</groupId>
-      <artifactId>parsson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.json</groupId>
-      <artifactId>jakarta.json-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-gateway-model</artifactId>
+      <artifactId>gatekeeper-spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -113,24 +48,36 @@
       <artifactId>camunda-search-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
-      <scope>test</scope>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-web</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
@@ -147,60 +94,35 @@
       <artifactId>spring-security-oauth2-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>oauth2-oidc-sdk</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>nimbus-jose-jwt</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>gatekeeper-spring-boot-starter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-resource-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>oauth2-oidc-sdk</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-oauth2-jose</artifactId>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.parsson</groupId>
+      <artifactId>parsson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Test -->
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-webmvc-test</artifactId>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -209,53 +131,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-crypto</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-query-transformer</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-spring-utils</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.github.dasniko</groupId>
-      <artifactId>testcontainers-keycloak</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

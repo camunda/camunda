@@ -682,6 +682,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <ignoredUsedUndeclaredDependencies>
+            <dep>io.camunda:gatekeeper-domain</dep>
+          </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>io.camunda:zeebe-elasticsearch-exporter</dep>
             <dep>io.camunda:zeebe-opensearch-exporter</dep>

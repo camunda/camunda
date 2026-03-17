@@ -69,7 +69,7 @@ public abstract class SecurityHeadersBaseIT {
           + "deferred-fetch-minimal=(), "
           + "display-capture=(), "
           + "encrypted-media=(), "
-          + "fullscreen=(), "
+          + "fullscreen=(self), "
           + "gamepad=(), "
           + "geolocation=(), "
           + "gyroscope=(), "

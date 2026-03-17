@@ -19,6 +19,7 @@ import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.UserServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -51,18 +52,22 @@ public final class BasicCamundaUserProviderAdapter implements CamundaUserProvide
                   userServices.getUser(
                       auth.authenticatedUsername(), CamundaAuthentication.anonymous());
               final var authorizedComponents = getAuthorizedComponents(auth);
-              final var tenantIds =
+              final var tenants =
                   auth.authenticatedTenantIds() != null
-                      ? auth.authenticatedTenantIds()
-                      : List.<String>of();
+                      ? auth.authenticatedTenantIds().stream()
+                          .map(id -> new CamundaUserInfo.Tenant(id, null, null))
+                          .toList()
+                      : List.<CamundaUserInfo.Tenant>of();
               return new CamundaUserInfo(
                   user.name(),
                   auth.authenticatedUsername(),
                   user.email(),
                   authorizedComponents,
-                  tenantIds,
+                  tenants,
                   auth.authenticatedGroupIds(),
                   auth.authenticatedRoleIds(),
+                  null,
+                  Map.of(),
                   true);
             })
         .orElse(null);

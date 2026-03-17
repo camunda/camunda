@@ -8,10 +8,12 @@
 package io.camunda.gatekeeper.spring.autoconfigure;
 
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.gatekeeper.spi.CamundaAuthenticationConverter;
 import io.camunda.gatekeeper.spi.MembershipResolver;
 import io.camunda.gatekeeper.spring.condition.ConditionalOnAuthenticationMethod;
 import io.camunda.gatekeeper.spring.converter.UsernamePasswordAuthenticationTokenConverter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +30,13 @@ public final class GatekeeperBasicAuthAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CamundaAuthenticationConverter<Authentication>
-      usernamePasswordAuthenticationTokenConverter(final MembershipResolver membershipResolver) {
-    return new UsernamePasswordAuthenticationTokenConverter(membershipResolver);
+      usernamePasswordAuthenticationTokenConverter(
+          final ObjectProvider<MembershipResolver> membershipResolverProvider) {
+    final var resolver =
+        membershipResolverProvider.getIfAvailable(
+            () ->
+                (claims, principalId, principalType) ->
+                    CamundaAuthentication.of(b -> b.user(principalId)));
+    return new UsernamePasswordAuthenticationTokenConverter(resolver);
   }
 }

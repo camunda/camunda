@@ -16,6 +16,7 @@ import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
 import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

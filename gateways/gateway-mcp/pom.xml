@@ -23,6 +23,10 @@
     <!-- Camunda dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-model</artifactId>
     </dependency>
     <dependency>

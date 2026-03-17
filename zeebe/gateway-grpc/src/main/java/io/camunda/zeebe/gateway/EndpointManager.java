@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -94,11 +95,13 @@ public final class EndpointManager {
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
+      final AuthenticationConfig authenticationConfig,
       final SecurityConfiguration securityConfiguration) {
     this(
         brokerClient,
         activateJobsHandler,
         streamJobsHandler,
+        authenticationConfig,
         securityConfiguration,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
@@ -107,6 +110,7 @@ public final class EndpointManager {
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
+      final AuthenticationConfig authenticationConfig,
       final SecurityConfiguration securityConfiguration,
       final int maxVariableNameLength) {
     this.brokerClient = brokerClient;
@@ -116,7 +120,8 @@ public final class EndpointManager {
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     RequestMapper.setMultiTenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
-    authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    authorizationConverter =
+        new BrokerRequestAuthorizationConverter(authenticationConfig, securityConfiguration);
   }
 
   private void addBrokerInfo(

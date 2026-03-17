@@ -797,7 +797,11 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <ignoredUsedUndeclaredDependencies>
+            <ignoredUsedUndeclaredDependency>io.camunda:gatekeeper-domain:jar</ignoredUsedUndeclaredDependency>
+          </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>io.camunda:gatekeeper-domain:jar</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-jackson:jar</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>

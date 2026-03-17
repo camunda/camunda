@@ -153,18 +153,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public TestStandaloneBroker withProperty(final String key, final Object value) {
-    // Since the security config is not constructed from the properties, we need to manually update
-    // it when we override a property.
-    switch (key) {
-      case "camunda.security.authentication.method" ->
-          AuthenticationMethod.parse(String.valueOf(value))
-              .ifPresent(securityConfig.getAuthentication()::setMethod);
-      case "camunda.security.authentication.unprotected-api" ->
-          securityConfig
-              .getAuthentication()
-              .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
-      default -> {}
-    }
     return super.withProperty(key, value);
   }
 

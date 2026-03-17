@@ -12,15 +12,15 @@
 
 ## File Map
 
-| File | Action | Purpose |
-|---|---|---|
-| `gatekeeper-domain/src/main/java/io/camunda/gatekeeper/config/AssertionConfig.java` | Create | Immutable record holding assertion/keystore/kid config |
-| `gatekeeper-domain/src/main/java/io/camunda/gatekeeper/config/OidcConfig.java` | Modify | Add `AssertionConfig assertion` field |
-| `gatekeeper-domain/src/test/java/io/camunda/gatekeeper/unit/config/OidcConfigTest.java` | Modify | Update `createConfig` helpers for new constructor parameter |
-| `gatekeeper-domain/src/test/java/io/camunda/gatekeeper/unit/config/AssertionConfigTest.java` | Create | Tests for validation logic |
-| `gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/config/GatekeeperProperties.java` | Modify | Add `AssertionProperties` inner class to `OidcProperties` |
-| `gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/oidc/AssertionJwkProvider.java` | Modify | Replace stub with working keystore-based JWK creation |
-| `gatekeeper-spring-boot-starter/src/test/java/io/camunda/gatekeeper/spring/unit/oidc/AssertionJwkProviderTest.java` | Create | Tests for JWK creation from keystore |
+|                                                        File                                                         | Action |                           Purpose                           |
+|---------------------------------------------------------------------------------------------------------------------|--------|-------------------------------------------------------------|
+| `gatekeeper-domain/src/main/java/io/camunda/gatekeeper/config/AssertionConfig.java`                                 | Create | Immutable record holding assertion/keystore/kid config      |
+| `gatekeeper-domain/src/main/java/io/camunda/gatekeeper/config/OidcConfig.java`                                      | Modify | Add `AssertionConfig assertion` field                       |
+| `gatekeeper-domain/src/test/java/io/camunda/gatekeeper/unit/config/OidcConfigTest.java`                             | Modify | Update `createConfig` helpers for new constructor parameter |
+| `gatekeeper-domain/src/test/java/io/camunda/gatekeeper/unit/config/AssertionConfigTest.java`                        | Create | Tests for validation logic                                  |
+| `gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/config/GatekeeperProperties.java`        | Modify | Add `AssertionProperties` inner class to `OidcProperties`   |
+| `gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/oidc/AssertionJwkProvider.java`          | Modify | Replace stub with working keystore-based JWK creation       |
+| `gatekeeper-spring-boot-starter/src/test/java/io/camunda/gatekeeper/spring/unit/oidc/AssertionJwkProviderTest.java` | Create | Tests for JWK creation from keystore                        |
 
 ---
 
@@ -182,6 +182,7 @@ Expected: BUILD SUCCESS
 Add `AssertionConfig assertion` as the last parameter of the record. Update the compact constructor to default it to `null` (no assertion configured).
 
 The record signature becomes:
+
 ```java
 public record OidcConfig(
     String issuerUri,
@@ -317,12 +318,12 @@ The key changes from the original:
 - Use `AssertionConfig.KidSource` etc. instead of `AssertionConfiguration.KidSource`
 - Load the keystore using `java.security.KeyStore.getInstance("PKCS12")` and `FileInputStream`
 - The `createJwk(String clientRegistrationId)` method should:
-  1. Look up `OidcConfig` from the repository
-  2. Get `OidcConfig.assertion()`
-  3. If assertion is null or not configured, throw `IllegalStateException("No assertion configuration found for registration ID: " + clientRegistrationId)`
-  4. Validate the assertion config
-  5. Load keystore, extract private key and certificate
-  6. Build RSA JWK with kid, x5c chain, and x5t#S256 thumbprint
+1. Look up `OidcConfig` from the repository
+2. Get `OidcConfig.assertion()`
+3. If assertion is null or not configured, throw `IllegalStateException("No assertion configuration found for registration ID: " + clientRegistrationId)`
+4. Validate the assertion config
+5. Load keystore, extract private key and certificate
+6. Build RSA JWK with kid, x5c chain, and x5t#S256 thumbprint
 
 ```java
 public JWK createJwk(final String clientRegistrationId) {
@@ -379,6 +380,7 @@ Create a test keystore (PKCS12) in `src/test/resources/keystore/test-keystore.p1
 4. The generated kid matches expected format based on kid config settings
 
 For generating a test keystore programmatically in the test:
+
 ```java
 @BeforeAll
 static void createTestKeystore() throws Exception {
@@ -425,6 +427,7 @@ git commit -m "feat: add assertion/keystore configuration for private_key_jwt su
 - [ ] **Step 1: Verify property binding path**
 
 Confirm the full property path works:
+
 ```yaml
 camunda:
   security:
@@ -453,6 +456,7 @@ Expected: PASS — `AssertionConfig` is a record in the `config` package with no
 - [ ] **Step 3: Verify multi-provider assertion works**
 
 Named providers should also support assertion config:
+
 ```yaml
 camunda:
   security:

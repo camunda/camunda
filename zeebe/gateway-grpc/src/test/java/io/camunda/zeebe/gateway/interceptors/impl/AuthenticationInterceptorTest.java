@@ -746,6 +746,7 @@ public class AuthenticationInterceptorTest {
         null,
         null,
         null,
+        null,
         usernameClaim,
         clientIdClaim,
         groupsClaim,

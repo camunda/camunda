@@ -38,8 +38,8 @@ final class OidcConfigTest {
   void nullListsAreNormalizedToEmpty() {
     final var config =
         new OidcConfig(
-            null, null, null, null, null, null, null, null, null, null, null, false, null, null,
-            null, null, false, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null, false, null,
+            null, null, null, false, null, null, null, null);
 
     assertThat(config.additionalJwkSetUris()).isEmpty();
     assertThat(config.audiences()).isEmpty();
@@ -55,6 +55,7 @@ final class OidcConfigTest {
         "https://auth",
         "https://token",
         "https://logout",
+        null,
         "sub",
         null,
         groupsClaim,

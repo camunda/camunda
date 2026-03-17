@@ -89,8 +89,9 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
-      final AuthenticationConfig authenticationConfig) {
-    return new BrokerRequestAuthorizationConverter(authenticationConfig);
+      final AuthenticationConfig authenticationConfig,
+      final SecurityConfiguration securityConfiguration) {
+    return new BrokerRequestAuthorizationConverter(authenticationConfig, securityConfiguration);
   }
 
   @Bean

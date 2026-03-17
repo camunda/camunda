@@ -20,6 +20,7 @@ public record OidcConfig(
     String authorizationUri,
     String tokenUri,
     String endSessionEndpointUri,
+    String userInfoEndpointUri,
     String usernameClaim,
     String clientIdClaim,
     String groupsClaim,

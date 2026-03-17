@@ -54,11 +54,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
 

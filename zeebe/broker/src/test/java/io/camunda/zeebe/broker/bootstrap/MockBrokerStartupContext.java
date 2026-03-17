@@ -11,10 +11,10 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;

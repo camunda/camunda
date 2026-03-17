@@ -92,7 +92,8 @@ public final class TestEngine {
                             SearchClientsProxy.noop(),
                             new BrokerRequestAuthorizationConverter(
                                 SecurityConfigurations.toAuthenticationConfig(
-                                    new SecurityConfiguration())))
+                                    new SecurityConfiguration()),
+                                new SecurityConfiguration()))
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

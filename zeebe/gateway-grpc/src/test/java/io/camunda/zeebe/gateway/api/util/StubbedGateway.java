@@ -11,8 +11,8 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.config.OidcConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
@@ -105,16 +105,25 @@ public final class StubbedGateway {
 
     final EndpointManager endpointManager =
         new EndpointManager(
-            brokerClient, activateJobsHandler, clientStreamAdapter, securityConfiguration);
+            brokerClient,
+            activateJobsHandler,
+            clientStreamAdapter,
+            authenticationConfig,
+            securityConfiguration);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final var oidcConfig =
+        authenticationConfig.oidc() != null
+            ? authenticationConfig.oidc()
+            : new OidcConfig(
+                null, null, null, null, null, null, null, null, null, "sub", null, null, false,
+                null, null, null, null, false, null, null, null, null);
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
                     new AuthenticationInterceptor(
-                        new AuthenticationHandler.Oidc(
-                            new FakeJwtDecoder(), authenticationConfig.oidc()),
+                        new AuthenticationHandler.Oidc(new FakeJwtDecoder(), oidcConfig),
                         new AuthenticationMetrics(
                             new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
     server = serverBuilder.build();

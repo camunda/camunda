@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -25,7 +25,7 @@ public class RoleProcessors {
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final AuthenticationConfig authenticationConfig) {
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.CREATE,
@@ -53,7 +53,7 @@ public class RoleProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior,
-            securityConfig));
+            authenticationConfig));
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.REMOVE_ENTITY,

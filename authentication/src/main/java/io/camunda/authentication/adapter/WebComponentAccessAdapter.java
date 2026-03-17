@@ -14,9 +14,11 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnBean(ResourceAccessProvider.class)
 public final class WebComponentAccessAdapter {
 
   private static final List<String> WEB_COMPONENTS =

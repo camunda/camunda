@@ -18,6 +18,11 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol-impl</artifactId>
     </dependency>
 
@@ -135,16 +140,15 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- required to run both junit4 and junit 5 as test engines side by side -->
     <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -165,6 +169,9 @@
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
           </ignoredDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>org.junit.vintage:junit-vintage-engine</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <!-- indirectly required via the broker-client module -->
             <dependency>io.camunda:zeebe-cluster-config</dependency>

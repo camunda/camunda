@@ -24,6 +24,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
       <version>${project.version}</version>
     </dependency>

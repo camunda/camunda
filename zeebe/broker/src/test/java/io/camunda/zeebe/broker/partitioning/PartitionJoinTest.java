@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
@@ -110,19 +111,21 @@ final class PartitionJoinTest {
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
+    final var securityConfig = new SecurityConfiguration();
+    final var authConfig = SecurityConfigurations.toAuthenticationConfig(null);
     final var systemContext =
         new SystemContext(
             brokerCfg,
             actorScheduler,
             atomixCluster,
             brokerClient,
-            new SecurityConfiguration(),
-            SecurityConfigurations.toAuthenticationConfig(null),
+            securityConfig,
+            authConfig,
             null,
             null,
             null,
             null,
-            null,
+            new BrokerRequestAuthorizationConverter(authConfig, securityConfig),
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

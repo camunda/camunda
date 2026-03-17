@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;

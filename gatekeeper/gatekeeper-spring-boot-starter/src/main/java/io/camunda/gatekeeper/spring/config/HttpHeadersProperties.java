@@ -17,19 +17,61 @@ public class HttpHeadersProperties {
   public static final String DEFAULT_CSP_POLICY =
       "default-src 'self'; "
           + "base-uri 'self'; "
-          + "script-src 'self' https:; "
-          + "script-src-elem 'self' cdn.jsdelivr.net; "
-          + "connect-src 'self' https:; "
-          + "style-src 'self' https: 'unsafe-inline' cdn.jsdelivr.net; "
+          + "script-src 'self' https: *.chargebee.com *.mixpanel.com ajax.cloudflare.com static.cloudflareinsights.com; "
+          + "script-src-elem 'self' cdn.jsdelivr.net ; "
+          + "connect-src 'self' https: *.mixpanel.com cloudflareinsights.com *.appcues.net wss://api.appcues.net cdn.jsdelivr.net; "
+          + "style-src 'self' https: 'unsafe-inline' cdn.jsdelivr.net *.googleapis.com *.chargebee.com; "
           + "img-src data: 'self'; "
           + "form-action 'self'; "
           + "frame-ancestors 'self'; "
-          + "frame-src 'self' https: blob:; "
+          + "frame-src 'self' https: *.chargebee.com blob: ; "
           + "object-src 'self' blob:; "
           + "font-src 'self' data: fonts.camunda.io cdn.jsdelivr.net; "
           + "worker-src 'self' blob:; "
           + "child-src; "
           + "script-src-attr 'none'";
+
+  public static final String DEFAULT_PERMISSIONS_POLICY =
+      "accelerometer=(), "
+          + "ambient-light-sensor=(), "
+          + "attribution-reporting=(), "
+          + "autoplay=(), "
+          + "bluetooth=(), "
+          + "browsing-topics=(), "
+          + "camera=(), "
+          + "compute-pressure=(), "
+          + "cross-origin-isolated=(), "
+          + "deferred-fetch=(), "
+          + "deferred-fetch-minimal=(), "
+          + "display-capture=(), "
+          + "encrypted-media=(), "
+          + "fullscreen=(self), "
+          + "gamepad=(), "
+          + "geolocation=(), "
+          + "gyroscope=(), "
+          + "hid=(), "
+          + "identity-credentials-get=(), "
+          + "idle-detection=(), "
+          + "language-detector=(), "
+          + "local-fonts=(), "
+          + "magnetometer=(), "
+          + "microphone=(), "
+          + "midi=(), "
+          + "otp-credentials=(), "
+          + "payment=(), "
+          + "picture-in-picture=(), "
+          + "publickey-credentials-create=(), "
+          + "publickey-credentials-get=(), "
+          + "screen-wake-lock=(), "
+          + "serial=(), "
+          + "speaker-selection=(), "
+          + "storage-access=(), "
+          + "summarizer=(), "
+          + "translator=(), "
+          + "usb=(), "
+          + "web-share=(), "
+          + "window-management=(), "
+          + "xr-spatial-tracking=()";
 
   private ContentTypeOptions contentTypeOptions = new ContentTypeOptions();
   private CacheControl cacheControl = new CacheControl();
@@ -37,7 +79,7 @@ public class HttpHeadersProperties {
   private FrameOptions frameOptions = new FrameOptions();
   private ContentSecurityPolicy contentSecurityPolicy = new ContentSecurityPolicy();
   private String referrerPolicy = "STRICT_ORIGIN_WHEN_CROSS_ORIGIN";
-  private String permissionsPolicy;
+  private String permissionsPolicy = DEFAULT_PERMISSIONS_POLICY;
   private String crossOriginOpenerPolicy = "SAME_ORIGIN_ALLOW_POPUPS";
   private String crossOriginEmbedderPolicy = "UNSAFE_NONE";
   private String crossOriginResourcePolicy = "SAME_SITE";
