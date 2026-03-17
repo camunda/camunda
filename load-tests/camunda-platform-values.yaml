@@ -203,7 +203,7 @@ orchestration:
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
-      # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
 
 # Change these settings to configure a different way to collect metrics
