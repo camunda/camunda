@@ -9,15 +9,14 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
-import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import java.util.List;
-import org.apache.ibatis.annotations.Param;
 
 public interface ProcessDefinitionMapper {
 
@@ -27,10 +26,7 @@ public interface ProcessDefinitionMapper {
 
   List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
 
-  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
-      @Param("filter") ProcessDefinitionStatisticsFilter filter,
-      @Param("authorizedResourceIds") List<String> authorizedResourceIds,
-      @Param("authorizedTenantIds") List<String> authorizedTenantIds);
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(ProcessDefinitionStatisticsDbQuery query);
 
   Long processInstanceStatisticsCount(ProcessDefinitionInstanceStatisticsDbQuery filter);
 

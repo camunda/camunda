@@ -144,7 +144,7 @@
   </resultMap>
 
   <select id="flowNodeStatistics"
-    parameterType="java.util.Map"
+    parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery"
     resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
     SELECT
       res.FLOW_NODE_ID,

@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -50,6 +51,10 @@ public class ProcessDefinitionStatisticsDbReader
 
     LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", query);
     return processDefinitionMapper.flowNodeStatistics(
-        query.filter(), authorizedResourceIds, resourceAccessChecks.getAuthorizedTenantIds());
+        ProcessDefinitionStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())));
   }
 }
