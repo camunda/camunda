@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+<<<<<<< HEAD
 import {Page, Locator} from '@playwright/test';
+=======
+import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from '../utils/sleep';
+>>>>>>> ba7776ca (test: refactored tests)
 
 export class IdentityHeader {
   readonly openSettingsButton: Locator;
@@ -34,6 +39,13 @@ export class IdentityHeader {
   async logout() {
     await this.openSettingsButton.click();
     await this.logoutButton.click();
+<<<<<<< HEAD
+=======
+    await expect(this.page.getByText('logged out...')).not.toBeVisible({
+      timeout: 15000,
+    });
+    await sleep(2000);
+>>>>>>> ba7776ca (test: refactored tests)
   }
 
   async navigateToRoles() {
