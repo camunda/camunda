@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {mockVariables} from './index.setup';
 import {getWrapper, mockProcessInstance} from './mocks';
@@ -23,7 +23,7 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-describe('VariablePanel notifications', () => {
+describe('VariablesTab notifications', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -43,10 +43,7 @@ describe('VariablePanel notifications', () => {
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -122,10 +119,7 @@ describe('VariablePanel notifications', () => {
   });
 
   it('should display warning notification if add variable operation could not be created because of authorization error', async () => {
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {

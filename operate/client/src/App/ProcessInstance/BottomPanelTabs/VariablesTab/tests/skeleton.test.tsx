@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {getWrapper, mockProcessInstance} from './mocks';
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -54,7 +54,7 @@ describe('Skeleton', () => {
       },
     });
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
     expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();

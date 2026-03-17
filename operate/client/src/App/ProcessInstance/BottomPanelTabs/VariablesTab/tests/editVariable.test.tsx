@@ -22,7 +22,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockVariables} from './index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
 import {act} from 'react';
@@ -78,10 +78,7 @@ describe('Edit variable', () => {
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
@@ -157,10 +154,7 @@ describe('Edit variable', () => {
     mockGetVariable().withSuccess(mockVariables.items[0]!);
     mockGetVariable().withSuccess(mockVariables.items[0]!);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -204,10 +198,7 @@ describe('Edit variable', () => {
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -242,10 +233,7 @@ describe('Edit variable', () => {
 
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -332,10 +320,7 @@ describe('Edit variable', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -405,10 +390,7 @@ describe('Edit variable', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -471,10 +453,7 @@ describe('Edit variable', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -539,12 +518,9 @@ describe('Edit variable', () => {
       }),
     );
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -609,12 +585,9 @@ describe('Edit variable', () => {
       }),
     );
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -671,10 +644,7 @@ describe('Edit variable', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -728,10 +698,7 @@ describe('Edit variable', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -778,7 +745,7 @@ describe('Edit variable', () => {
       },
     });
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
 

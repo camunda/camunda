@@ -14,7 +14,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockVariables} from './index.setup';
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -117,10 +117,7 @@ describe('Footer', () => {
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -190,14 +187,11 @@ describe('Footer', () => {
       tenantId: '<default>',
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {
-        wrapper: getWrapper([
-          `${Paths.processInstance('1')}?elementId=start&elementInstanceKey=2`,
-        ]),
-      },
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=start&elementInstanceKey=2`,
+      ]),
+    });
 
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
@@ -246,7 +240,7 @@ describe('Footer', () => {
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
 
@@ -263,7 +257,7 @@ describe('Footer', () => {
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
 

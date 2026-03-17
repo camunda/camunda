@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {
   render,
   screen,
@@ -14,10 +14,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {
-  createVariable,
-  mockProcessWithInputOutputMappingsXML,
-} from 'modules/testUtils';
+import {createVariable} from 'modules/testUtils';
 import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
@@ -27,7 +24,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
-import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 
@@ -38,8 +35,7 @@ vi.mock('modules/stores/notifications', () => ({
 }));
 
 const TestSelectionControls: React.FC = () => {
-  const {selectElementInstance, selectElement, clearSelection} =
-    useProcessInstanceElementSelection();
+  const {selectElementInstance} = useProcessInstanceElementSelection();
   return (
     <>
       <button
@@ -52,40 +48,6 @@ const TestSelectionControls: React.FC = () => {
         }
       >
         select test element
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          selectElementInstance({
-            elementId: 'Activity_0qtp1k6',
-            elementInstanceKey: '2',
-          })
-        }
-      >
-        select activity
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          selectElement({
-            elementId: 'Event_0bonl61',
-          })
-        }
-      >
-        select end event
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          selectElement({
-            elementId: 'StartEvent_1',
-          })
-        }
-      >
-        select start event
-      </button>
-      <button type="button" onClick={() => clearSelection()}>
-        clear selection
       </button>
     </>
   );
@@ -106,7 +68,7 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
   return Wrapper;
 };
 
-describe('VariablePanel', () => {
+describe('VariablesTab', () => {
   const statistics = [
     {
       elementId: 'TEST_ELEMENT',
@@ -148,9 +110,7 @@ describe('VariablePanel', () => {
         hasMoreTotalItems: false,
       },
     });
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
+    mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchJobs().withSuccess({
       items: [],
       page: {
@@ -177,7 +137,7 @@ describe('VariablePanel', () => {
       },
     });
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
 
@@ -193,10 +153,7 @@ describe('VariablePanel', () => {
       `:${mockProcessInstance.processInstanceKey}`,
     ).withDelay(null);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -316,10 +273,7 @@ describe('VariablePanel', () => {
   it('should remove pending variable if scope changes', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -456,10 +410,7 @@ describe('VariablePanel', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -521,234 +472,5 @@ describe('VariablePanel', () => {
         title: 'Variable could not be saved',
       }),
     );
-  });
-
-  it('should select correct tab when navigating between elements', async () => {
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    mockSearchVariables().withSuccess({
-      items: [createVariable({name: 'test2'})],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
-
-    mockFetchElementInstance('2').withSuccess({
-      elementInstanceKey: '2',
-      elementId: 'Activity_0qtp1k6',
-      elementName: 'Activity',
-      type: 'SERVICE_TASK',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      endDate: null,
-      processDefinitionId: 'someKey',
-      processInstanceKey: mockProcessInstance.processInstanceKey,
-      processDefinitionKey: '2',
-      rootProcessInstanceKey: null,
-      hasIncident: true,
-      incidentKey: null,
-      tenantId: '<default>',
-    });
-
-    await user.click(screen.getByRole('button', {name: /select activity/i}));
-
-    expect(await screen.findByText('test2')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [createVariable({name: 'test2'})],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
-
-    mockSearchElementInstances().withSuccess({
-      items: [
-        {
-          elementInstanceKey: '10',
-          elementId: 'Event_0bonl61',
-          elementName: 'End Event',
-          type: 'END_EVENT',
-          state: 'COMPLETED',
-          startDate: '2018-06-21',
-          endDate: null,
-          processDefinitionId: 'someKey',
-          processInstanceKey: mockProcessInstance.processInstanceKey,
-          processDefinitionKey: '2',
-          rootProcessInstanceKey: null,
-          hasIncident: false,
-          incidentKey: null,
-          tenantId: '<default>',
-        },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    await user.click(screen.getByRole('button', {name: /select end event/i}));
-
-    expect(
-      await screen.findByText('No Input Mappings defined'),
-    ).toBeInTheDocument();
-
-    mockSearchVariables().withSuccess({
-      items: [createVariable({name: 'test2'})],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    await user.click(screen.getByRole('button', {name: /clear selection/i}));
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText('No Input Mappings defined'),
-      ).not.toBeInTheDocument(),
-    );
-    expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
-    expect(
-      screen.queryByRole('tab', {name: 'Input Mappings'}),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('tab', {name: 'Output Mappings'}),
-    ).not.toBeInTheDocument();
-
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    mockSearchElementInstances().withSuccess({
-      items: [
-        {
-          elementInstanceKey: '20',
-          elementId: 'StartEvent_1',
-          elementName: 'Start Event',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          startDate: '2018-06-21',
-          endDate: null,
-          processDefinitionId: 'someKey',
-          processInstanceKey: mockProcessInstance.processInstanceKey,
-          processDefinitionKey: '2',
-          rootProcessInstanceKey: null,
-          hasIncident: false,
-          incidentKey: null,
-          tenantId: '<default>',
-        },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    await user.click(screen.getByRole('button', {name: /select start event/i}));
-
-    expect(
-      await screen.findByText('No Input Mappings defined'),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('heading', {name: 'Variables'}),
-    ).not.toBeInTheDocument();
-
-    expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
-    expect(
-      screen.getByRole('tab', {name: 'Input Mappings'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('tab', {name: 'Output Mappings'}),
-    ).toBeInTheDocument();
   });
 });
