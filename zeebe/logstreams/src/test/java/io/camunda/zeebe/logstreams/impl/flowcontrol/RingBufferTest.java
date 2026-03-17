@@ -497,7 +497,8 @@ final class RingBufferTest {
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
                   final var entry = new InFlightEntry(METRICS, null, null);
                   entry.highestPosition = pos;
-                  publishedIndex.set(buffer.put(entry));
+                  buffer.put(entry);
+                  publishedIndex.set(pos);
                 }
               });
 
@@ -510,7 +511,7 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
                   if (pos > publishedIndex.get()) {
-                    Thread.yield();
+                    LockSupport.parkNanos(1);
                   }
                   final var entry = buffer.findAndRemove(pos);
                   if (entry != null) {
