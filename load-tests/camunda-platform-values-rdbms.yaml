@@ -2,8 +2,6 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  elasticsearch:
-    enabled: false
   postgresql:
     auth:
       database: camunda
@@ -62,12 +60,6 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
-
-########################################################################################
-################################################### Disable ElasticSearch for RDBMS
-########################################################################################
-elasticsearch:
-  enabled: false
 
 ###########################################################################
 #
@@ -138,3 +130,40 @@ primary:
     pg_stat_statements.max = 10000
     track_io_timing = on
     track_functions = all
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+# We need ES for Optimize
+# But we do not need such a big cluster as with the Camunda Exporter, as we do not need to store as much data in ES, and we do not need to run any queries on it.
+elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 256Gi
+      storageClass: "ssd"
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 3000m
+        memory: 6Gi
+      limits:
+        cpu: 3000m
+        memory: 6Gi
+    nodeSelector:
+      component: benchmark-n2-standard-4
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule
