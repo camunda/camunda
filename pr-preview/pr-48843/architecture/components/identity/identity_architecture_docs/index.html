@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.b128d974.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.4abb63d4.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.152933ea.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.73efeec5.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -190,7 +190,7 @@ Identity entities are stored using Zeebe’s existing primary (RocksDB) and seco
 <li class="">Camunda Services: Enhances the commands and queries with the given authentication and the necessary authorizations.</li>
 <li class="">Camunda Search Client: Used for querying the secondary database against ES, OS, or RDBMS, depending on the configuration.</li>
 <li class="">Authentication: Contains authentication-related converters, helpers, utils, and services among others for spring security.</li>
-<li class="">Security: Authorization checks for queries against a secondary database are done via the shared RBAC framework. TODO: and there is also Authentication related stuff...</li>
+<li class="">Security: Performs authorization checks for queries against the secondary database via the shared RBAC framework and provides shared security helpers used by authentication components.</li>
 <li class="">Zeebe: Is responsible for processing commands and storing state.</li>
 <li class="">Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.</li>
 <li class="">Engine Identity: Shared RBAC engine used for authorization checks in the engine, lives directly in the engine.</li>
@@ -214,7 +214,7 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 <li class="">Authentication Provider (<code>DefaultCamundaAuthenticationProvider</code>): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>.</li>
 <li class="">Session Repository (<code>WebSessionRepository</code>): creates and invalidates server‑side sessions backed by secondary storage.</li>
 </ul>
-<p>Extern responsibilities:</p>
+<p>External responsibilities:</p>
 <ul>
 <li class="">Spring Security (<code>UsernamePasswordAuthenticationFilter</code>): performs the actual credential extraction and delegates to the configured converter.</li>
 <li class="">Camunda Services: provide access to user, role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include <code>UserServices</code>, <code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, and <code>MappingRuleServices</code>.</li>
@@ -232,7 +232,7 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 <li class="">Authorized Client Manager (<code>DefaultOAuth2AuthorizedClientManager</code>): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including <code>private_key_jwt</code> client authentication).</li>
 <li class="">OAuth2AuthorizedClientRepository (<code>HttpSessionOAuth2AuthorizedClientRepository</code>): stores authorized client state in the HTTP session.</li>
 <li class="">OIDC User Service (<code>OidcUserService</code>): loads OIDC user details from the IdP&#x27;s userinfo endpoint during browser login.</li>
-<li class="">OIDC Token Converter (<code>OidcTokenAuthenticationConverter</code>): converts Bearer JWTs (M2M) into a <code>CamundaAuthentication</code> (OIDC M2M only)..</li>
+<li class="">OIDC Token Converter (<code>OidcTokenAuthenticationConverter</code>): converts Bearer JWTs (M2M) into a <code>CamundaAuthentication</code> (OIDC M2M only).</li>
 </ul>
 </li>
 <li class="">Claims Converter (<code>TokenClaimsConverter</code>): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via <code>MembershipService</code>.</li>
