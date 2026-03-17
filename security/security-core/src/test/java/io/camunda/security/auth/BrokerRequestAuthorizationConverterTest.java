@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 public class BrokerRequestAuthorizationConverterTest {
 
   @Test
-  void shouldReturnEmptyMapWhenAuthorizationAndMultiTenancyDisabled() {
+  void shouldOnlyContainIdentityClaimsWhenAuthorizationAndMultiTenancyDisabled() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
     final var securityConfiguration = new SecurityConfiguration();
@@ -35,8 +35,11 @@ public class BrokerRequestAuthorizationConverterTest {
     // when
     final var brokerRequestAuth = converter.convert(authentication);
 
-    // then
-    assertThat(brokerRequestAuth).isEmpty();
+    // then — identity claims are present (for audit logging), but no authorization claims
+    assertThat(brokerRequestAuth).hasSize(1);
+    assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_USERNAME, "foo");
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_TOKEN_CLAIMS);
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
   }
 
   @Test

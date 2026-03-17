@@ -192,8 +192,7 @@ public final class EndpointManager {
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
     try {
       final JobActivationProperties brokerRequest =
-          RequestMapper.toJobActivationProperties(
-              request, authorizationEmbeddingEnabled ? getClaims() : Map.of());
+          RequestMapper.toJobActivationProperties(request, getClaims());
 
       streamJobsHandler.handle(request.getType(), brokerRequest, responseObserver);
     } catch (final Exception e) {
@@ -523,38 +522,38 @@ public final class EndpointManager {
       throws Exception {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
-
-    if (authorizationEmbeddingEnabled) {
-      brokerRequest.setAuthorization(getClaims());
-    }
-
+    brokerRequest.setAuthorization(getClaims());
     return brokerRequest;
   }
 
   private Map<String, Object> getClaims() throws Exception {
     final Map<String, Object> claims = new HashMap<>();
 
-    // retrieve the user claims from the context and add them to the authorization if present
-    final Map<String, Object> userClaims =
-        Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
-    claims.put(Authorization.USER_TOKEN_CLAIMS, userClaims);
-
-    // retrieve the username from the context and add it to the authorization if present
+    // Identity claims are always sent because the exporter reads them from the record to populate
+    // the audit log actor (see AuditLogActor.of). Skipping these would cause audit log entries to
+    // have no actor information.
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     if (username != null) {
       claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }
 
-    // retrieve the client id from the context and add it to the authorization if present
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
     if (clientId != null) {
       claims.put(Authorization.AUTHORIZED_CLIENT_ID, clientId);
     }
 
-    final List<String> groupsClaims =
-        Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
-    if (groupsClaims != null) {
-      claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
+    // Authorization claims (JWT token claims, group memberships) are only needed for authorization
+    // and multi-tenancy checks in the engine. Skip them when both are disabled.
+    if (authorizationEmbeddingEnabled) {
+      final Map<String, Object> userClaims =
+          Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
+      claims.put(Authorization.USER_TOKEN_CLAIMS, userClaims);
+
+      final List<String> groupsClaims =
+          Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+      if (groupsClaims != null) {
+        claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
+      }
     }
 
     return claims;
