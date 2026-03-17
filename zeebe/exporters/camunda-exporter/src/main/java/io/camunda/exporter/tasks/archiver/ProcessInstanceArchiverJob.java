@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
 /**
@@ -48,7 +49,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         processInstanceTemplate,
         processInstanceDependants,
         metrics,
-        new RecentlyArchivedProcessInstances(config.getRolloverBatchSize()),
+        new RecentlyArchivedProcessInstances(10 * config.getRolloverBatchSize()),
         logger,
         executor);
   }
@@ -90,7 +91,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
             config.getRolloverBatchSizeOverRequest(),
             recentlyArchivedProcessInstances.getRecentlyArchiveCount());
     return getArchiverRepository()
-        .getProcessInstancesNextBatch(config.getRolloverBatchSize() + overRequest)
+        .getProcessInstancesNextBatch(largeBatchSize() + overRequest)
         .thenApply(this::deduplicateAndLimitBatch);
   }
 
@@ -102,13 +103,20 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
-    return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
-        .thenApply(
-            archived -> {
-              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
-              return archived;
-            });
+    final var chunks = batch.chunk(config.getRolloverBatchSize());
+    System.out.println(
+        "Archiving batch of size " + batch.size() + " in " + chunks.size() + " chunks");
+    final var i = new AtomicInteger();
+    final var totalArchived = new AtomicInteger();
+    return AsyncRepeatUntil.repeatUntil(
+            () -> {
+              System.out.println("Archiving chunk " + (i.get() + 1) + "/" + chunks.size());
+              final var chunk = chunks.get(i.getAndIncrement());
+              return archiveSubBatch(templateDescriptor, chunk)
+                  .thenAccept(totalArchived::addAndGet);
+            },
+            (res) -> i.get() >= chunks.size())
+        .thenApply(v -> totalArchived.get());
   }
 
   @Override
@@ -143,12 +151,27 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
     return idsMap;
   }
 
+  private CompletableFuture<Integer> archiveSubBatch(
+      final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    return archiveProcessDependants(batch)
+        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
+        .thenApply(
+            archived -> {
+              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
+              return archived;
+            });
+  }
+
   private ProcessInstanceArchiveBatch deduplicateAndLimitBatch(
       final ProcessInstanceArchiveBatch batch) {
     final var deduped = recentlyArchivedProcessInstances.deduplicate(batch);
     final var duplication = batch.size() - deduped.size();
     exporterMetrics.recordProcessInstancesArchivingDeDuplicated(duplication);
-    return deduped.limit(config.getRolloverBatchSize());
+    return deduped.limit(largeBatchSize());
+  }
+
+  private int largeBatchSize() {
+    return 10 * config.getRolloverBatchSize();
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
