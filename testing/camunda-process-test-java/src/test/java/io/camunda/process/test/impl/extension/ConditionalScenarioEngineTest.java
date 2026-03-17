@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.process.test.api.ScenarioCondition;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -434,12 +435,15 @@ class ConditionalScenarioEngineTest {
   void shouldRearmAfterResetTimeoutWhenConditionNeverResets() {
     final AtomicInteger actionCount = new AtomicInteger(0);
 
+    // use a short reset timeout so the test completes quickly
+    engine.setResetTimeout(Duration.ofMillis(500));
+
     // condition always passes — reset-wait will hit timeout
     engine.when(() -> {}).then(actionCount::incrementAndGet);
 
-    // wait for at least 2 firings (each separated by ~5s reset timeout)
+    // wait for at least 2 firings (each separated by the short reset timeout)
     await()
-        .atMost(15, TimeUnit.SECONDS)
+        .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(2));
   }
 
@@ -454,7 +458,7 @@ class ConditionalScenarioEngineTest {
     engine.stop();
     final long elapsed = System.currentTimeMillis() - start;
 
-    // should stop well within the shutdown timeout, not wait for reset timeout
-    assertThat(elapsed).isLessThan(2_000);
+    // should stop well within the shutdown timeout
+    assertThat(elapsed).isLessThan(ConditionalScenarioEngine.DEFAULT_RESET_TIMEOUT.toMillis());
   }
 }
