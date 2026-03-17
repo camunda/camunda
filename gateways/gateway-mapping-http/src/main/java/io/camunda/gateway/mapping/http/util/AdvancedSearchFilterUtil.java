@@ -65,8 +65,7 @@ public class AdvancedSearchFilterUtil {
   }
 
   public static Function<Object, List<Operation<String>>> mapToStringOperations() {
-    return (final Object filter) ->
-        mapToTypedOperations(filter, value -> value == null ? null : value.toString());
+    return (final Object filter) -> mapToTypedOperations(filter, Object::toString);
   }
 
   public static Function<Object, List<Operation<String>>> mapToStringOperations(
@@ -87,7 +86,7 @@ public class AdvancedSearchFilterUtil {
                   return null;
                 }
               }
-              return value == null ? null : value.toString();
+              return value.toString();
             });
   }
 
