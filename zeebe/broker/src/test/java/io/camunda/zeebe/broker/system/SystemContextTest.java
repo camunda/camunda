@@ -802,6 +802,8 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setContinuous(true);
     backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
     backupCfg.setSchedule("invalid-schedule");
 
     // when/then
@@ -818,6 +820,8 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setContinuous(true);
     backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
     backupCfg.setSchedule("PT10M");
     backupCfg.getRetention().setCleanupSchedule("invalid-schedule");
 
@@ -837,6 +841,32 @@ final class SystemContextTest {
     backupCfg.setRequired(false);
 
     // when/then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldThrowWhenBackupIsRequiredButStoreIsNone() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.NONE);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining("Backup is required but no backup store is configured");
+  }
+
+  @Test
+  void shouldNotThrowWhenBackupIsNotRequiredAndStoreIsNone() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setRequired(false);
+    backupCfg.setStore(BackupStoreType.NONE);
+
+    // when - then
     assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
   }
 
@@ -861,6 +891,8 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setContinuous(false);
     backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
     backupCfg.setSchedule("PT10M");
     backupCfg.getRetention().setCleanupSchedule("invalid-schedule");
 
@@ -888,6 +920,8 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setContinuous(true);
     backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
     backupCfg.setSchedule(null);
 
     // when/then
@@ -903,6 +937,8 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setContinuous(true);
     backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
     backupCfg.setSchedule("PT10M");
     backupCfg.getRetention().setCleanupSchedule(null);
 
