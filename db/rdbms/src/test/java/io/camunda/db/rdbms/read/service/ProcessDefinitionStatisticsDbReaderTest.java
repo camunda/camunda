@@ -69,7 +69,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),
             new ProcessFlowNodeStatisticsEntity("node2", 8L, 3L, 1L, 4L));
-    when(processDefinitionMapper.flowNodeStatistics(null, authorizedResourceIds, authorizedTenantIds))
+    when(processDefinitionMapper.flowNodeStatistics(
+            null, authorizedResourceIds, authorizedTenantIds))
         .thenReturn(expected);
 
     final ProcessDefinitionFlowNodeStatisticsQuery query =
@@ -95,7 +96,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
   void shouldReturnEmptyListWhenNotAuthorizedForResource() {
     final var authorizedResourceIds = List.of("unauthorized-process-definition");
     final var authorizedTenantIds = List.of("tenant-1");
-    when(processDefinitionMapper.flowNodeStatistics(null, authorizedResourceIds, authorizedTenantIds))
+    when(processDefinitionMapper.flowNodeStatistics(
+            null, authorizedResourceIds, authorizedTenantIds))
         .thenReturn(List.of());
 
     final ProcessDefinitionFlowNodeStatisticsQuery query =
@@ -121,7 +123,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
   void shouldReturnEmptyListWhenNotAuthorizedForTenant() {
     final var authorizedResourceIds = List.of("process-definition-1");
     final var authorizedTenantIds = List.of("unauthorized-tenant");
-    when(processDefinitionMapper.flowNodeStatistics(null, authorizedResourceIds, authorizedTenantIds))
+    when(processDefinitionMapper.flowNodeStatistics(
+            null, authorizedResourceIds, authorizedTenantIds))
         .thenReturn(List.of());
 
     final ProcessDefinitionFlowNodeStatisticsQuery query =

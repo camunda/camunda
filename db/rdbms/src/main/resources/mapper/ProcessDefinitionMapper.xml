@@ -175,13 +175,13 @@
       JOIN ${prefix}PROCESS_INSTANCE pi ON (pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY)
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
     <where>
-      pd.PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+      pd.PROCESS_DEFINITION_KEY = #{filter.processDefinitionKey}
       <trim prefix="AND" prefixOverrides="AND">
-        <bind name="filter" value="_parameter" />
+        <bind name="filter" value="_parameter.filter" />
         <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
-        <if test="orFilters != null and !orFilters.isEmpty()">
+        <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
           AND (
-          <foreach collection="orFilters" item="filter" separator=" OR ">
+          <foreach collection="filter.orFilters" item="filter" separator=" OR ">
             <trim prefix="(" suffix=")">
               <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
             </trim>
