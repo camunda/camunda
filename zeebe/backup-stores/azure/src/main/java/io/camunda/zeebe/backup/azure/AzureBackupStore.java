@@ -346,8 +346,7 @@ public final class AzureBackupStore implements BackupStore {
             error -> {
               if (error instanceof TimeoutException) {
                 throw new ConfigurationException(
-                    "Failed to connect to Azure Blob Storage: connection timed out after 10 seconds",
-                    error);
+                    "Failed to connect to Azure Blob Storage: connection timed out after 10 seconds");
               }
               throw new ConfigurationException(
                   "Failed to connect to Azure Blob Storage with the provided configuration", error);
