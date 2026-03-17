@@ -51,12 +51,14 @@ import org.slf4j.LoggerFactory;
  */
 public class ConditionalScenarioEngine {
 
+  static final Duration DEFAULT_RESET_TIMEOUT = Duration.ofSeconds(5);
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ConditionalScenarioEngine.class);
   private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
-  private static final Duration RESET_TIMEOUT = Duration.ofSeconds(5);
   private static final int DEFAULT_MAX_SCENARIO_THREADS = 8;
 
   private volatile Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
+  private volatile Duration resetTimeout = DEFAULT_RESET_TIMEOUT;
 
   private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
 
@@ -79,7 +81,8 @@ public class ConditionalScenarioEngine {
     if (condition == null) {
       throw new IllegalArgumentException("Condition must not be null");
     }
-    final Scenario scenario = new Scenario(condition, "#" + (scenarios.size() + 1), pollInterval);
+    final Scenario scenario =
+        new Scenario(condition, "#" + (scenarios.size() + 1), pollInterval, resetTimeout);
     scenarios.add(scenario);
     LOGGER.trace("Registered scenario '{}'", scenario.name);
     return new ConditionStepImpl(scenario);
@@ -106,6 +109,11 @@ public class ConditionalScenarioEngine {
     stopExecutor();
     logSummary();
     scenarios.clear();
+  }
+
+  /** Sets the reset timeout for condition-reset gating. Package-private for testing. */
+  void setResetTimeout(final Duration resetTimeout) {
+    this.resetTimeout = resetTimeout;
   }
 
   private void logSummary() {
@@ -198,6 +206,7 @@ public class ConditionalScenarioEngine {
 
     private final ScenarioCondition condition;
     private final Duration pollInterval;
+    private final Duration resetTimeout;
     private final List<Runnable> actions = new CopyOnWriteArrayList<>();
     private final AtomicInteger actionIndex = new AtomicInteger(0);
     private final AtomicInteger fireCount = new AtomicInteger(0);
@@ -205,9 +214,13 @@ public class ConditionalScenarioEngine {
     private volatile String name;
 
     Scenario(
-        final ScenarioCondition condition, final String defaultName, final Duration pollInterval) {
+        final ScenarioCondition condition,
+        final String defaultName,
+        final Duration pollInterval,
+        final Duration resetTimeout) {
       this.condition = condition;
       this.pollInterval = pollInterval;
+      this.resetTimeout = resetTimeout;
       name = defaultName;
     }
 
@@ -240,14 +253,14 @@ public class ConditionalScenarioEngine {
     }
 
     private void waitForConditionReset() {
-      final long deadline = System.currentTimeMillis() + RESET_TIMEOUT.toMillis();
+      final long deadline = System.currentTimeMillis() + resetTimeout.toMillis();
       while (!Thread.currentThread().isInterrupted()) {
         if (!isConditionMet()) {
           LOGGER.trace("Condition reset detected for '{}'", name);
           return;
         }
         if (System.currentTimeMillis() >= deadline) {
-          LOGGER.trace("Reset timeout ({}) reached for '{}', re-arming", RESET_TIMEOUT, name);
+          LOGGER.trace("Reset timeout ({}) reached for '{}', re-arming", resetTimeout, name);
           return;
         }
         try {
