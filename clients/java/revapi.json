@@ -67,7 +67,7 @@
         {
           "ignore": true,
           "code": "java.class.noLongerImplementsInterface",
-          "justification": "TypedPageableRequest was removed from search request interfaces because pagination model selection is now handled via the pagination type parameter in TypedSearchRequest. This provides compile-time type safety for pagination methods, similar to how sort models work. The pagination() and page() methods remain available through TypedSearchRequest."
+          "justification": "TypedPageableRequest was removed from search request interfaces because pagination model selection is now handled via the pagination type parameter in TypedSearchRequest. This provides compile-time type safety for the page() method, similar to how sort models work. The page() method remains available through TypedSearchRequest."
         },
         {
           "ignore": true,
@@ -78,7 +78,7 @@
           "ignore": true,
           "code": "java.method.removed",
           "old": "method SELF io.camunda.client.api.search.request.TypedPageableRequest<SELF extends io.camunda.client.api.search.request.TypedPageableRequest<SELF>>::page(io.camunda.client.api.search.request.SearchRequestPage)",
-          "justification": "The page() method signature changed to accept typed pagination models instead of the generic SearchRequestPage. The method is now available through TypedSearchRequest with type-safe pagination model parameters."
+          "justification": "The page() method signature changed to accept typed pagination models (via SearchPagination<P>) instead of the legacy SearchRequestPage. The method is now available through TypedSearchRequest with type-safe pagination model parameters (AnyPage, OffsetPage, CursorForwardPage, etc.)."
         }
       ]
     }

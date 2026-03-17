@@ -21,7 +21,7 @@ package io.camunda.client.api.search.page;
  * <p>Use this for simple pagination where you only need to limit the number of results without
  * specifying an offset or cursor.
  */
-public interface LimitPage extends SearchRequestPage<LimitPage> {
+public interface LimitPage extends SearchPagination<LimitPage> {
 
   /** Limit the number of returned entities. */
   LimitPage limit(final Integer value);

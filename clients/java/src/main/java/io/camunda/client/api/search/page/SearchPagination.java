@@ -34,4 +34,4 @@ package io.camunda.client.api.search.page;
  *
  * @param <P> the concrete pagination model type
  */
-public interface SearchRequestPage<P extends SearchRequestPage<P>> {}
+public interface SearchPagination<P extends SearchPagination<P>> {}
