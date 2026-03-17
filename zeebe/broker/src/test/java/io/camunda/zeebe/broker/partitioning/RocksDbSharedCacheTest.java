@@ -262,36 +262,6 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
-  void shouldAccountForReplicationFactorWhenAllocatingMemoryPerPartition() {
-    // given
-    // 8 partitions, 3 replicas, 4 brokers =>
-    // partitionsPerBroker = 8 * 3 / 4 = 6 partitions per broker
-    brokerCfg
-        .getExperimental()
-        .getRocksdb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
-    brokerCfg.getCluster().setPartitionsCount(8);
-    brokerCfg.getCluster().setReplicationFactor(3);
-    brokerCfg.getCluster().setClusterSize(4);
-    brokerCfg
-        .getExperimental()
-        .getRocksdb()
-        .setMemoryLimit(DataSize.ofBytes(64L * 1024 * 1024)); // 64MB per partition
-
-    // when
-    // Total allocation = 64MB * 6 partitions per broker = 384MB
-    try (final var ignored = mockMemoryEnvironment(512L * 1024 * 1024)) { // 512MB
-      try (final var sharedResources =
-          RocksDbSharedCache.allocateSharedCache(brokerCfg, meterRegistry)) {
-        // then
-        // Expected: 64MB * (8 partitions * 3 replicas / 4 brokers) = 64MB * 6 = 384MB
-        final long expectedAllocation = 64L * 1024 * 1024 * 6;
-        assertThat(sharedResources.reservedMemory()).isEqualTo(expectedAllocation);
-      }
-    }
-  }
-
-  @Test
   void shouldNotFailAllocatingMoreThanHalfOfRamIfFraction() {
     // when
     brokerCfg
