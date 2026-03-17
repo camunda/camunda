@@ -21,7 +21,7 @@ public interface MutableMultiInstanceState extends MultiInstanceState {
    * @param multiInstanceKey The key of the multi-instance element instance.
    * @param inputCollection The evaluated input collection as a list of buffers.
    */
-  void insertInputCollection(long multiInstanceKey, List<DirectBuffer> inputCollection);
+  void upsertInputCollection(long multiInstanceKey, List<DirectBuffer> inputCollection);
 
   /**
    * Deletes the input collection for a multi-instance body from the state.

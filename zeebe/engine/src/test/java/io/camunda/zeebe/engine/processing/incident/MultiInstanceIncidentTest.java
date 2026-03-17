@@ -559,17 +559,9 @@ public final class MultiInstanceIncidentTest {
         .isTrue();
   }
 
-  /**
-   * Regression test for the scenario where an incident is raised after the multi-instance input
-   * collection has already been evaluated and stored in state. On incident resolution, the
-   * multi-instance body is re-activated, which previously caused a {@code
-   * ZeebeDbInconsistentException} because the input collection was inserted again with {@code
-   * insert} (which rejects duplicates). The fix changes it to {@code upsert}.
-   */
   @Test
   public void shouldCompleteProcessAfterResolvingIncidentRaisedAfterInputCollectionEvaluated() {
-    // given - a multi-instance service task with a timer boundary event using an expression
-    // the timer boundary event is non-interrupting so it does not cancel the task instances
+    // given
     final var processId = "multi-instance-with-timer-boundary";
     ENGINE
         .deployment()
@@ -595,9 +587,8 @@ public final class MultiInstanceIncidentTest {
                 .done())
         .deploy();
 
-    // when - creating a process instance with items but without the timer duration variable
-    // the input collection is evaluated first (stored in state), then subscribeToEvents fails
-    // because timerDuration is not set, creating an incident on the multi-instance body
+    // when - create a process instance without the timerDuration variable to ensure an incident is
+    // created
     final long processInstanceKey =
         ENGINE
             .processInstance()
@@ -621,13 +612,11 @@ public final class MultiInstanceIncidentTest {
 
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    // then - the process continues and can complete after all jobs are done
-    // (without the fix, re-activation would throw ZeebeDbInconsistentException because
-    // the input collection INSERT would fail for the already-existing key)
     completeNthJob(processInstanceKey, 1);
     completeNthJob(processInstanceKey, 2);
     completeNthJob(processInstanceKey, 3);
 
+    // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementType(BpmnElementType.PROCESS)
