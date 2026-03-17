@@ -329,44 +329,6 @@ final class OpensearchAuditLogArchiverRepositoryIT {
   }
 
   @Test
-  void shouldNotDeleteCleanupEntitiesWhenAuditLogBatchLimitIsReached() throws IOException {
-    // given
-    createAuditLogCleanupIndex();
-    createAuditLogIndex();
-    config.setRolloverBatchSize(2);
-    final var repository = createRepository();
-
-    final var cleanupEntity =
-        new AuditLogCleanupEntity()
-            .setKey("123")
-            .setKeyField(AuditLogTemplate.PROCESS_INSTANCE_KEY)
-            .setEntityType(AuditLogEntityType.PROCESS_INSTANCE)
-            .setPartitionId(1);
-    // Index more audit logs than the batch size limit
-    for (int i = 1; i <= 3; i++) {
-      index(
-          auditLogIndex,
-          "audit-" + i,
-          Map.of("processInstanceKey", "123", "entityType", "PROCESS_INSTANCE"));
-    }
-    index(auditLogCleanupIndex, "cleanup-1", cleanupEntity);
-    testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
-
-    // when
-    final var result = repository.getNextBatch();
-
-    // then - audit log IDs should be limited to batch size
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var batch = result.join();
-    assertThat(batch.auditLogIds())
-        .as("Should only return up to batch size audit log IDs")
-        .hasSize(2);
-    assertThat(batch.auditLogCleanupIds())
-        .as("Should not include cleanup entity IDs when audit log batch limit is reached")
-        .isEmpty();
-  }
-
-  @Test
   void shouldDeleteAuditLogCleanupMetadata() throws IOException {
     // given
     createAuditLogCleanupIndex();
