@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -45,22 +45,22 @@ public class AuthorizationEntityValidator {
   private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
   private final RoleState roleState;
-  private final SecurityConfiguration securityConfig;
+  private final AuthenticationConfig authenticationConfig;
 
   public AuthorizationEntityValidator(
-      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
+      final ProcessingState processingState, final AuthenticationConfig authenticationConfig) {
     userState = processingState.getUserState();
     mappingRuleState = processingState.getMappingRuleState();
     groupState = processingState.getGroupState();
     roleState = processingState.getRoleState();
-    this.securityConfig = securityConfig;
+    this.authenticationConfig = authenticationConfig;
   }
 
   public Either<Rejection, AuthorizationRecord> ownerAndResourceExists(
       final TypedRecord<AuthorizationRecord> command) {
     final var record = command.getValue();
-    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
-    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+    final boolean localUserEnabled = authenticationConfig.isCamundaUsersEnabled();
+    final boolean localGroupEnabled = authenticationConfig.isCamundaGroupsEnabled();
     switch (record.getOwnerType()) {
       case GROUP:
         if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {

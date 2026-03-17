@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -54,7 +54,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final TypedResponseWriter responseWriter;
   private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final SecurityConfiguration securityConfig;
+  private final AuthenticationConfig authenticationConfig;
   private final MembershipState membershipState;
 
   public TenantAddEntityProcessor(
@@ -63,7 +63,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final AuthenticationConfig authenticationConfig) {
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
@@ -77,7 +77,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.securityConfig = securityConfig;
+    this.authenticationConfig = authenticationConfig;
   }
 
   @Override
@@ -158,8 +158,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private boolean isEntityPresent(final EntityType entityType, final String entityId) {
-    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
-    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+    final boolean localUserEnabled = authenticationConfig.isCamundaUsersEnabled();
+    final boolean localGroupEnabled = authenticationConfig.isCamundaGroupsEnabled();
     return switch (entityType) {
       case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();

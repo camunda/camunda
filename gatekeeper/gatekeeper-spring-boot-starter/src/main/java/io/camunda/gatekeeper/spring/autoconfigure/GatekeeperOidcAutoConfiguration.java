@@ -265,7 +265,7 @@ public final class GatekeeperOidcAutoConfiguration {
       return ClientRegistrationFactory.createClientRegistration(registrationId, config);
     } catch (final Exception e) {
       throw new IllegalStateException(
-          "Unable to connect to the Identity Provider endpoint '"
+          "Unable to connect to the Identity Provider endpoint `"
               + config.issuerUri()
               + "'. Double check that it is configured correctly, and if the problem persists, "
               + "contact your external Identity provider.",

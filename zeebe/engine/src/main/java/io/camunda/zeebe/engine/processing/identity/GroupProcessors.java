@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -25,7 +25,7 @@ public class GroupProcessors {
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final AuthenticationConfig authenticationConfig) {
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.CREATE,
@@ -53,7 +53,7 @@ public class GroupProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior,
-            securityConfig));
+            authenticationConfig));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.REMOVE_ENTITY,

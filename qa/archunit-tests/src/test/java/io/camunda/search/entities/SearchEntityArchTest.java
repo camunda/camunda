@@ -241,7 +241,8 @@ public final class SearchEntityArchTest {
               })
           .because(
               "authentication entity records should default collection fields to non-null "
-                  + "empty instances to avoid NullPointerExceptions");
+                  + "empty instances to avoid NullPointerExceptions")
+          .allowEmptyShould(true);
 
   // ---------------------------------------------------------------------------
   // Helpers

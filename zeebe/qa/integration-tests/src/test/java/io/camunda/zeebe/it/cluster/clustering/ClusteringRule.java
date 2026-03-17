@@ -37,6 +37,7 @@ import io.camunda.client.api.response.Topology;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -369,6 +370,8 @@ public class ClusteringRule extends ExternalResource {
             brokerClientConfig, atomixCluster, scheduler, topologyManager, meterRegistry);
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
+    final var securityConfig = SecurityConfigurations.unauthenticatedAndUnauthorized();
+    final var authConfig = SecurityConfigurations.toAuthenticationConfig(null);
     final var systemContext =
         new SystemContext(
             brokerSpringConfig.shutdownTimeout(),
@@ -378,12 +381,13 @@ public class ClusteringRule extends ExternalResource {
             atomixCluster,
             brokerClient,
             meterRegistry,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            securityConfig,
+            authConfig,
             null,
             null,
             null,
             null,
-            null,
+            new BrokerRequestAuthorizationConverter(authConfig, securityConfig),
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     final Broker broker =

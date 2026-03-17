@@ -433,7 +433,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
           null,
           new ApiServicesExecutorProvider(1, 1, 1, 1),
           new BrokerRequestAuthorizationConverter(
-              SecurityConfigurations.toAuthenticationConfig(new SecurityConfiguration())));
+              SecurityConfigurations.toAuthenticationConfig(new SecurityConfiguration()),
+              new SecurityConfiguration()));
     }
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -26,7 +26,7 @@ public final class AuthorizationProcessors {
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final SecurityConfiguration securityConfig) {
+      final AuthenticationConfig authenticationConfig) {
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.CREATE,
@@ -36,7 +36,7 @@ public final class AuthorizationProcessors {
             processingState,
             distributionBehavior,
             authCheckBehavior,
-            securityConfig));
+            authenticationConfig));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.DELETE,
@@ -51,6 +51,6 @@ public final class AuthorizationProcessors {
             processingState,
             distributionBehavior,
             authCheckBehavior,
-            securityConfig));
+            authenticationConfig));
   }
 }

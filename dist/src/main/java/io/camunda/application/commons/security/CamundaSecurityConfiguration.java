@@ -9,6 +9,8 @@ package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -16,6 +18,7 @@ import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
+import java.util.List;
 import java.util.regex.PatternSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -81,6 +84,14 @@ public class CamundaSecurityConfiguration {
                   true,
                   "camunda.security.authentication.unprotected-api",
                   true));
+    }
+
+    final List<ConfiguredUser> users = camundaSecurityProperties.getInitialization().getUsers();
+    if (authenticationConfig.method() == AuthenticationMethod.OIDC
+        && users != null
+        && !users.isEmpty()) {
+      throw new IllegalStateException(
+          "Creation of initial users is not supported with `OIDC` authentication method");
     }
 
     final var idRegex = camundaSecurityProperties.getIdValidationPattern();

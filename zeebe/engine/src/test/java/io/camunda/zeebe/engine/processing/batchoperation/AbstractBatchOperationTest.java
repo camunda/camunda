@@ -25,6 +25,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
@@ -75,7 +76,7 @@ abstract class AbstractBatchOperationTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   protected final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
   protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
-      Mockito.mock(BrokerRequestAuthorizationConverter.class);
+      createBrokerRequestAuthorizationConverterMock();
 
   @Rule
   public final EngineRule engine =
@@ -100,6 +101,14 @@ abstract class AbstractBatchOperationTest {
                       .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100)))
           .withSearchClientsProxy(searchClientsProxy)
           .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+
+  private static BrokerRequestAuthorizationConverter
+      createBrokerRequestAuthorizationConverterMock() {
+    final var mock = Mockito.mock(BrokerRequestAuthorizationConverter.class);
+    Mockito.when(mock.getAuthenticationConfig())
+        .thenReturn(SecurityConfigurations.toAuthenticationConfig(null));
+    return mock;
+  }
 
   @Before
   public void setUp() {

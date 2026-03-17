@@ -21,6 +21,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
@@ -80,13 +81,21 @@ public class ResourceDeletionTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   protected final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
   protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
-      Mockito.mock(BrokerRequestAuthorizationConverter.class);
+      createBrokerRequestAuthorizationConverterMock();
 
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withSearchClientsProxy(searchClientsProxy)
           .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+
+  private static BrokerRequestAuthorizationConverter
+      createBrokerRequestAuthorizationConverterMock() {
+    final var mock = Mockito.mock(BrokerRequestAuthorizationConverter.class);
+    Mockito.when(mock.getAuthenticationConfig())
+        .thenReturn(SecurityConfigurations.toAuthenticationConfig(null));
+    return mock;
+  }
 
   @Before
   public void setUp() {

@@ -38,10 +38,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("oidc")
 final class OidcApiIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
-
   private static String demoToken;
   private static String operatorToken;
+
+  @Autowired private MockMvc mockMvc;
 
   @DynamicPropertySource
   static void configureOidc(final DynamicPropertyRegistry registry) {

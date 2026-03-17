@@ -15,4 +15,15 @@ public record AuthenticationConfig(
     AuthenticationMethod method,
     Duration authenticationRefreshInterval,
     boolean unprotectedApi,
-    OidcConfig oidc) {}
+    OidcConfig oidc) {
+
+  /** Returns true if local (database-managed) groups are enabled, i.e. not sourced from an IdP. */
+  public boolean isCamundaGroupsEnabled() {
+    return !(method == AuthenticationMethod.OIDC && oidc != null && oidc.isGroupsClaimConfigured());
+  }
+
+  /** Returns true if local (database-managed) users are enabled, i.e. not using OIDC. */
+  public boolean isCamundaUsersEnabled() {
+    return method != AuthenticationMethod.OIDC;
+  }
+}

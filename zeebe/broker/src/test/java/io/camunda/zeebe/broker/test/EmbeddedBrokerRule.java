@@ -17,6 +17,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.util.AddressUtil;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -245,19 +246,21 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
     atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
+    final var securityConfig = SecurityConfigurations.unauthenticatedAndUnauthorized();
+    final var authConfig = SecurityConfigurations.toAuthenticationConfig(null);
     systemContext =
         new SystemContext(
             brokerCfg,
             scheduler,
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
-            SecurityConfigurations.toAuthenticationConfig(null),
+            securityConfig,
+            authConfig,
             null,
             null,
             null,
             null,
-            null,
+            new BrokerRequestAuthorizationConverter(authConfig, securityConfig),
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));

@@ -42,14 +42,22 @@ public final class StubCamundaUserProvider implements CamundaUserProvider {
     final var username = auth.authenticatedUsername();
     final var profile = PROFILES.get(username);
 
+    final var tenants =
+        auth.authenticatedTenantIds() != null
+            ? auth.authenticatedTenantIds().stream()
+                .map(id -> new CamundaUserInfo.Tenant(id, null, null))
+                .toList()
+            : List.<CamundaUserInfo.Tenant>of();
     return new CamundaUserInfo(
         profile != null ? profile[0] : username,
         username,
         profile != null ? profile[1] : null,
         List.of(),
-        auth.authenticatedTenantIds(),
+        tenants,
         auth.authenticatedGroupIds(),
         auth.authenticatedRoleIds(),
+        null,
+        Map.of(),
         true);
   }
 

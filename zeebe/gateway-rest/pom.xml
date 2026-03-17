@@ -25,6 +25,11 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+
     <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
       <groupId>io.camunda</groupId>

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway;
 
 import com.google.rpc.Code;
 import io.camunda.gatekeeper.config.AuthenticationConfig;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -257,6 +256,7 @@ public final class Gateway implements CloseableSilently {
             brokerClient,
             activateJobsHandler,
             streamJobsHandler,
+            authenticationConfig,
             securityConfiguration,
             maxVariableNameLength);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);

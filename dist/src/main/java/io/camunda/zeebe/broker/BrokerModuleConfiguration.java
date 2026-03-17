@@ -134,7 +134,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             passwordEncoder,
             jwtDecoder,
             searchClientsProxy,
-            new BrokerRequestAuthorizationConverter(authenticationConfig),
+            new BrokerRequestAuthorizationConverter(authenticationConfig, securityConfiguration),
             nodeIdProvider);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));

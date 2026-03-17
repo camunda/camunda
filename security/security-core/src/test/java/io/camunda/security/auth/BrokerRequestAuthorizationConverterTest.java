@@ -19,6 +19,8 @@ import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.config.OidcConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -57,7 +59,11 @@ public class BrokerRequestAuthorizationConverterTest {
     final var securityConfiguration = new SecurityConfiguration();
     securityConfiguration.getAuthorizations().setEnabled(false);
     securityConfiguration.getMultiTenancy().setChecksEnabled(false);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(
+                AuthenticationMethod.BASIC, Duration.ofSeconds(30), false, null),
+            securityConfiguration);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -75,7 +81,8 @@ public class BrokerRequestAuthorizationConverterTest {
     final var authentication = CamundaAuthentication.anonymous();
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, DEFAULT_OIDC));
+            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, DEFAULT_OIDC),
+            new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -91,7 +98,8 @@ public class BrokerRequestAuthorizationConverterTest {
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, DEFAULT_OIDC));
+            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, DEFAULT_OIDC),
+            new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -107,7 +115,7 @@ public class BrokerRequestAuthorizationConverterTest {
     final var authentication = CamundaAuthentication.of(b -> b.clientId("foo"));
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC));
+            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC), new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -124,7 +132,7 @@ public class BrokerRequestAuthorizationConverterTest {
     final var authentication = CamundaAuthentication.of(b -> b.claims(claims));
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC));
+            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC), new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -167,7 +175,8 @@ public class BrokerRequestAuthorizationConverterTest {
 
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(OIDC, null, false, oidcWithGroups));
+            new AuthenticationConfig(OIDC, null, false, oidcWithGroups),
+            new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -210,7 +219,8 @@ public class BrokerRequestAuthorizationConverterTest {
 
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, oidcWithGroups));
+            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, oidcWithGroups),
+            new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -227,7 +237,7 @@ public class BrokerRequestAuthorizationConverterTest {
 
     final var converter =
         new BrokerRequestAuthorizationConverter(
-            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC));
+            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC), new SecurityConfiguration());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);

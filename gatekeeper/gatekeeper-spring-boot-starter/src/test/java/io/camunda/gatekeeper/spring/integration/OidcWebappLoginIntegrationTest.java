@@ -78,6 +78,37 @@ final class OidcWebappLoginIntegrationTest {
     return "http://localhost:" + port;
   }
 
+  private HttpResponse<String> httpGet(final String url) throws Exception {
+    final var request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private HttpResponse<String> httpPostForm(final String url, final String formBody)
+      throws Exception {
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString(formBody))
+            .build();
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private String resolveUrl(final String url) {
+    if (url.startsWith("http")) {
+      return url;
+    }
+    return baseUrl() + url;
+  }
+
+  private static String extractFormAction(final String html) {
+    final var matcher = FORM_ACTION_PATTERN.matcher(html);
+    if (!matcher.find()) {
+      throw new IllegalStateException("Could not find form action URL in Keycloak login page HTML");
+    }
+    return matcher.group(1).replace("&amp;", "&");
+  }
+
   @Nested
   @DisplayName("OAuth2 webapp login flow")
   class WebappLoginTests {
@@ -134,37 +165,6 @@ final class OidcWebappLoginIntegrationTest {
       assertThat(identity.get("username")).isEqualTo("demo");
       assertThat(identity.get("anonymous")).isEqualTo(false);
     }
-  }
-
-  private HttpResponse<String> httpGet(final String url) throws Exception {
-    final var request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-  }
-
-  private HttpResponse<String> httpPostForm(final String url, final String formBody)
-      throws Exception {
-    final var request =
-        HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString(formBody))
-            .build();
-    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-  }
-
-  private String resolveUrl(final String url) {
-    if (url.startsWith("http")) {
-      return url;
-    }
-    return baseUrl() + url;
-  }
-
-  private static String extractFormAction(final String html) {
-    final var matcher = FORM_ACTION_PATTERN.matcher(html);
-    if (!matcher.find()) {
-      throw new IllegalStateException("Could not find form action URL in Keycloak login page HTML");
-    }
-    return matcher.group(1).replace("&amp;", "&");
   }
 
   /**

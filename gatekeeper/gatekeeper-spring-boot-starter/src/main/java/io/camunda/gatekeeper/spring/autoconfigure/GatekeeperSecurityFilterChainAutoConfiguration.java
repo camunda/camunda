@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
@@ -88,6 +89,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
       GatekeeperBasicAuthAutoConfiguration.class
     })
 @EnableWebSecurity
+@ConditionalOnBean(SecurityPathProvider.class)
 public final class GatekeeperSecurityFilterChainAutoConfiguration {
 
   public static final String SESSION_COOKIE = "camunda-session";
@@ -129,19 +131,23 @@ public final class GatekeeperSecurityFilterChainAutoConfiguration {
   public SecurityFilterChain unprotectedApiSecurityFilterChain(
       final HttpSecurity http,
       final AuthFailureHandler authFailureHandler,
+      final GatekeeperProperties properties,
       final SecurityPathProvider pathProvider)
       throws Exception {
     LOG.warn(
         "The API is unprotected. This is intended for development only. API paths: {}",
         pathProvider.apiPaths());
-    return http.securityMatcher(pathProvider.apiPaths().toArray(String[]::new))
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-        .cors(AbstractHttpConfigurer::disable)
-        .exceptionHandling(eh -> eh.accessDeniedHandler(authFailureHandler))
-        .formLogin(AbstractHttpConfigurer::disable)
-        .anonymous(AbstractHttpConfigurer::disable)
-        .csrf(AbstractHttpConfigurer::disable)
-        .build();
+    final var filterChainBuilder =
+        http.securityMatcher(pathProvider.apiPaths().toArray(String[]::new))
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .cors(AbstractHttpConfigurer::disable)
+            .exceptionHandling(eh -> eh.accessDeniedHandler(authFailureHandler))
+            .formLogin(AbstractHttpConfigurer::disable)
+            .anonymous(AbstractHttpConfigurer::disable);
+
+    applyCsrfConfiguration(filterChainBuilder, properties, pathProvider);
+
+    return filterChainBuilder.build();
   }
 
   // ── OIDC API chain ──
@@ -155,33 +161,38 @@ public final class GatekeeperSecurityFilterChainAutoConfiguration {
       final HttpSecurity http,
       final AuthFailureHandler authFailureHandler,
       final JwtDecoder jwtDecoder,
+      final GatekeeperProperties properties,
       final SecurityPathProvider pathProvider)
       throws Exception {
     LOG.info("The API is protected by OIDC JWT authentication.");
-    return http.securityMatcher(pathProvider.apiPaths().toArray(String[]::new))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(pathProvider.unprotectedApiPaths().toArray(String[]::new))
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2
-                    .jwt(jwt -> jwt.decoder(jwtDecoder))
-                    .authenticationEntryPoint(authFailureHandler)
-                    .accessDeniedHandler(authFailureHandler)
-                    .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
-        .requestCache(cache -> cache.requestCache(new NullRequestCache()))
-        .cors(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .anonymous(AbstractHttpConfigurer::disable)
-        .oauth2Login(AbstractHttpConfigurer::disable)
-        .oidcLogout(AbstractHttpConfigurer::disable)
-        .logout(AbstractHttpConfigurer::disable)
-        .csrf(AbstractHttpConfigurer::disable)
-        .build();
+    final var filterChainBuilder =
+        http.securityMatcher(pathProvider.apiPaths().toArray(String[]::new))
+            .authorizeHttpRequests(
+                auth ->
+                    auth.requestMatchers(pathProvider.unprotectedApiPaths().toArray(String[]::new))
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+            .oauth2ResourceServer(
+                oauth2 ->
+                    oauth2
+                        .jwt(jwt -> jwt.decoder(jwtDecoder))
+                        .authenticationEntryPoint(authFailureHandler)
+                        .accessDeniedHandler(authFailureHandler)
+                        .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+            .requestCache(cache -> cache.requestCache(new NullRequestCache()))
+            .cors(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .anonymous(AbstractHttpConfigurer::disable)
+            .oauth2Login(AbstractHttpConfigurer::disable)
+            .oidcLogout(AbstractHttpConfigurer::disable)
+            .logout(AbstractHttpConfigurer::disable);
+
+    applyCsrfConfiguration(filterChainBuilder, properties, pathProvider);
+    setupSecureHeaders(filterChainBuilder, properties.getHttpHeaders());
+
+    return filterChainBuilder.build();
   }
 
   // ── OIDC Webapp chain ──
@@ -291,28 +302,33 @@ public final class GatekeeperSecurityFilterChainAutoConfiguration {
   public SecurityFilterChain basicAuthApiSecurityFilterChain(
       final HttpSecurity http,
       final AuthFailureHandler authFailureHandler,
+      final GatekeeperProperties properties,
       final SecurityPathProvider pathProvider)
       throws Exception {
     LOG.info("The API is protected by HTTP Basic authentication.");
-    return http.securityMatcher(pathProvider.apiPaths().toArray(String[]::new))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(pathProvider.unprotectedApiPaths().toArray(String[]::new))
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .cors(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .anonymous(AbstractHttpConfigurer::disable)
-        .httpBasic(Customizer.withDefaults())
-        .exceptionHandling(
-            eh ->
-                eh.authenticationEntryPoint(authFailureHandler)
-                    .accessDeniedHandler(authFailureHandler))
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
-        .requestCache(cache -> cache.requestCache(new NullRequestCache()))
-        .csrf(AbstractHttpConfigurer::disable)
-        .build();
+    final var filterChainBuilder =
+        http.securityMatcher(pathProvider.apiPaths().toArray(String[]::new))
+            .authorizeHttpRequests(
+                auth ->
+                    auth.requestMatchers(pathProvider.unprotectedApiPaths().toArray(String[]::new))
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+            .cors(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .anonymous(AbstractHttpConfigurer::disable)
+            .httpBasic(Customizer.withDefaults())
+            .exceptionHandling(
+                eh ->
+                    eh.authenticationEntryPoint(authFailureHandler)
+                        .accessDeniedHandler(authFailureHandler))
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+            .requestCache(cache -> cache.requestCache(new NullRequestCache()));
+
+    applyCsrfConfiguration(filterChainBuilder, properties, pathProvider);
+    setupSecureHeaders(filterChainBuilder, properties.getHttpHeaders());
+
+    return filterChainBuilder.build();
   }
 
   // ── Basic auth Webapp chain ──
@@ -342,9 +358,26 @@ public final class GatekeeperSecurityFilterChainAutoConfiguration {
                     formLogin
                         .loginPage(LOGIN_URL)
                         .loginProcessingUrl(LOGIN_URL)
-                        .failureHandler(authFailureHandler))
+                        .failureHandler(authFailureHandler)
+                        .successHandler(
+                            (request, response, authentication) -> {
+                              response.setStatus(
+                                  org.springframework.http.HttpStatus.NO_CONTENT.value());
+                              final CsrfToken token =
+                                  (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+                              if (token != null) {
+                                response.setHeader(X_CSRF_TOKEN, token.getToken());
+                              }
+                            }))
             .logout(
-                logout -> logout.logoutUrl(LOGOUT_URL).deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                logout ->
+                    logout
+                        .logoutUrl(LOGOUT_URL)
+                        .logoutSuccessHandler(
+                            (request, response, authentication) ->
+                                response.setStatus(
+                                    org.springframework.http.HttpStatus.NO_CONTENT.value()))
+                        .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
             .exceptionHandling(
                 eh ->
                     eh.authenticationEntryPoint(authFailureHandler)

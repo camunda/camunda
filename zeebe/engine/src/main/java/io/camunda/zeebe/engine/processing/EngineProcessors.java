@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
@@ -119,6 +120,8 @@ public final class EngineProcessors {
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
+    final AuthenticationConfig authenticationConfig =
+        brokerRequestAuthorizationConverter.getAuthenticationConfig();
 
     final DueDateTimerCheckScheduler timerChecker =
         new DueDateTimerCheckScheduler(
@@ -299,7 +302,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         authCheckBehavior,
-        securityConfig);
+        authenticationConfig);
 
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
@@ -308,7 +311,7 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        authenticationConfig);
 
     GroupProcessors.addGroupProcessors(
         typedRecordProcessors,
@@ -317,7 +320,7 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        authenticationConfig);
 
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
@@ -334,7 +337,7 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        authenticationConfig);
 
     MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,

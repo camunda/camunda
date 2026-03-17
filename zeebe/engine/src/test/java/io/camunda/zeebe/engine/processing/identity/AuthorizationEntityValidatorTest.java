@@ -16,8 +16,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.authorization.PersistedRole;
@@ -56,7 +55,7 @@ class AuthorizationEntityValidatorTest {
 
   @Mock private TypedRecord<AuthorizationRecord> command;
 
-  @Mock private AuthenticationConfiguration authConfig;
+  @Mock private AuthenticationConfig authConfig;
 
   private AuthorizationEntityValidator checker;
 
@@ -67,9 +66,7 @@ class AuthorizationEntityValidatorTest {
     when(processingState.getGroupState()).thenReturn(groupState);
     when(processingState.getRoleState()).thenReturn(roleState);
 
-    final SecurityConfiguration securityConfig = new SecurityConfiguration();
-    securityConfig.setAuthentication(authConfig);
-    checker = new AuthorizationEntityValidator(processingState, securityConfig);
+    checker = new AuthorizationEntityValidator(processingState, authConfig);
     lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
     lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
     lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));

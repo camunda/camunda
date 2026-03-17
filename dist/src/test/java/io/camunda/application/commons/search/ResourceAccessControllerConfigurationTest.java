@@ -13,10 +13,13 @@ import static org.mockito.Mockito.mock;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.TenantAccessProvider;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
@@ -30,6 +33,11 @@ public class ResourceAccessControllerConfigurationTest {
             UnifiedConfiguration.class,
             UnifiedConfigurationHelper.class)
         .withBean(AuthorizationChecker.class, () -> mock(AuthorizationChecker.class))
+        .withBean(
+            AuthenticationConfig.class,
+            () ->
+                new AuthenticationConfig(
+                    AuthenticationMethod.BASIC, Duration.ofSeconds(30), false, null))
         // make REST gateway condition pass
         .withPropertyValues(
             "zeebe.broker.gateway.enable=true",

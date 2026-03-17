@@ -18,6 +18,11 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol-impl</artifactId>
     </dependency>
 

@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -141,7 +143,9 @@ public final class EngineRule extends ExternalResource {
         cfg.setEnableIdentitySetup(false);
       };
   private SearchClientsProxy searchClientsProxy;
-  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
+      new BrokerRequestAuthorizationConverter(
+          SecurityConfigurations.toAuthenticationConfig(null), new SecurityConfiguration());
   private Optional<RoutingState> initialRoutingState = Optional.empty();
 
   private EngineRule(final int partitionCount) {
@@ -265,6 +269,12 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withSecurityConfig(final Consumer<SecurityConfiguration> modifier) {
     securityConfigModifier = securityConfigModifier.andThen(modifier);
+    return this;
+  }
+
+  public EngineRule withAuthenticationConfig(final AuthenticationConfig authenticationConfig) {
+    brokerRequestAuthorizationConverter =
+        new BrokerRequestAuthorizationConverter(authenticationConfig, new SecurityConfiguration());
     return this;
   }
 

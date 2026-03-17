@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -225,19 +226,21 @@ final class PartitionLeaveTest {
     final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
+    final var securityConfig = SecurityConfigurations.unauthenticatedAndUnauthorized();
+    final var authConfig = SecurityConfigurations.toAuthenticationConfig(null);
     final var systemContext =
         new SystemContext(
             brokerCfg,
             actorScheduler,
             atomixCluster,
             brokerClient,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
-            SecurityConfigurations.toAuthenticationConfig(null),
+            securityConfig,
+            authConfig,
             null,
             null,
             null,
             null,
-            null,
+            new BrokerRequestAuthorizationConverter(authConfig, securityConfig),
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

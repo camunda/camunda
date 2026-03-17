@@ -15,6 +15,7 @@ import io.camunda.gatekeeper.model.identity.CamundaUserInfo;
 import io.camunda.gatekeeper.spi.CamundaUserProvider;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -37,9 +38,13 @@ public class AuthenticationControllerTest extends RestControllerTest {
             "camundaUSer",
             "camunda.user@email.com",
             List.of("test application"),
-            List.of("testTenantId"),
+            List.of(
+                new CamundaUserInfo.Tenant(
+                    "testTenantId", "testTenantNem", "testTenantDescription")),
             List.of("test group"),
             List.of("test role"),
+            null,
+            Map.of(),
             true);
 
     when(camundaUserProvider.getCurrentUser()).thenReturn(camundaUserInfo);
@@ -60,9 +65,11 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "username": "camundaUSer",
                   "email": "camunda.user@email.com",
                   "authorizedComponents": ["test application"],
-                  "tenants": ["testTenantId"],
+                  "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
+                  "salesPlanType": null,
+                  "c8Links": {},
                   "canLogout": true
                 }""",
             JsonCompareMode.STRICT);

@@ -10,7 +10,8 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
@@ -38,8 +39,9 @@ public class DeleteAuthorizationMultipartitionTest {
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
-          .withSecurityConfig(
-              (cfg) -> cfg.getAuthentication().setMethod(AuthenticationMethod.OIDC));
+          .withAuthenticationConfig(
+              new AuthenticationConfig(
+                  AuthenticationMethod.OIDC, java.time.Duration.ofSeconds(30), false, null));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 

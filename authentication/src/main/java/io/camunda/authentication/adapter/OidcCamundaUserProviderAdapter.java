@@ -37,13 +37,13 @@ import org.springframework.stereotype.Component;
 public final class OidcCamundaUserProviderAdapter implements CamundaUserProvider {
 
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final ResourceAccessProvider resourceAccessProvider;
+  private final Optional<ResourceAccessProvider> resourceAccessProvider;
   private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final HttpServletRequest request;
 
   public OidcCamundaUserProviderAdapter(
       final CamundaAuthenticationProvider authenticationProvider,
-      final ResourceAccessProvider resourceAccessProvider,
+      final Optional<ResourceAccessProvider> resourceAccessProvider,
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final HttpServletRequest request) {
     this.authenticationProvider = authenticationProvider;
@@ -61,18 +61,22 @@ public final class OidcCamundaUserProviderAdapter implements CamundaUserProvider
             auth -> {
               final var user = getUser();
               final var authorizedComponents = getAuthorizedComponents(auth);
-              final var tenantIds =
+              final var tenants =
                   auth.authenticatedTenantIds() != null
-                      ? auth.authenticatedTenantIds()
-                      : List.<String>of();
+                      ? auth.authenticatedTenantIds().stream()
+                          .map(id -> new CamundaUserInfo.Tenant(id, null, null))
+                          .toList()
+                      : List.<CamundaUserInfo.Tenant>of();
               return new CamundaUserInfo(
                   user != null ? user.getFullName() : auth.authenticatedUsername(),
                   auth.authenticatedUsername(),
                   user != null ? user.getEmail() : null,
                   authorizedComponents,
-                  tenantIds,
+                  tenants,
                   auth.authenticatedGroupIds(),
                   auth.authenticatedRoleIds(),
+                  null,
+                  Map.of(),
                   true);
             })
         .orElse(null);
@@ -150,9 +154,13 @@ public final class OidcCamundaUserProviderAdapter implements CamundaUserProvider
 
   private List<String> getAuthorizedComponents(
       final io.camunda.gatekeeper.model.identity.CamundaAuthentication authentication) {
+    if (resourceAccessProvider.isEmpty()) {
+      return List.of();
+    }
     final var componentAccess =
-        resourceAccessProvider.resolveResourceAccess(
-            authentication, COMPONENT_ACCESS_AUTHORIZATION);
+        resourceAccessProvider
+            .get()
+            .resolveResourceAccess(authentication, COMPONENT_ACCESS_AUTHORIZATION);
     return componentAccess.allowed() ? componentAccess.authorization().resourceIds() : List.of();
   }
 

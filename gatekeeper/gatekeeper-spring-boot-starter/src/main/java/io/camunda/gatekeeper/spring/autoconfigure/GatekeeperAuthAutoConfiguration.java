@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
@@ -43,6 +44,7 @@ public final class GatekeeperAuthAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(name = "requestContextBasedAuthenticationHolder")
+  @ConditionalOnWebApplication
   public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder(
       final HttpServletRequest request) {
     return new RequestContextBasedAuthenticationHolder(request);
@@ -50,6 +52,7 @@ public final class GatekeeperAuthAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(name = "httpSessionBasedAuthenticationHolder")
+  @ConditionalOnWebApplication
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
       final HttpServletRequest request, final AuthenticationConfig authenticationConfig) {
     return new HttpSessionBasedAuthenticationHolder(request, authenticationConfig);

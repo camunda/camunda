@@ -46,6 +46,7 @@ public class CamundaSecurityConfigurationTest {
                       UnifiedConfigurationHelper.class,
                       GatewayBasedPropertiesOverride.class,
                       SearchEngineConnectProperties.class);
+              app.setAllowBeanDefinitionOverriding(true);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
@@ -71,6 +72,7 @@ public class CamundaSecurityConfigurationTest {
                       UnifiedConfiguration.class,
                       GatewayBasedPropertiesOverride.class,
                       SearchEngineConnectProperties.class);
+              app.setAllowBeanDefinitionOverriding(true);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
@@ -96,6 +98,7 @@ public class CamundaSecurityConfigurationTest {
                       UnifiedConfiguration.class,
                       GatewayBasedPropertiesOverride.class,
                       SearchEngineConnectProperties.class);
+              app.setAllowBeanDefinitionOverriding(true);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)

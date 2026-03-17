@@ -10,15 +10,20 @@ package io.camunda.application.commons.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.spring.config.GatekeeperProperties;
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 
 @SpringBootTest(
     classes = ConfiguredAuthorizationPropertiesTest.TestConfig.class,
@@ -133,5 +138,13 @@ class ConfiguredAuthorizationPropertiesTest {
 
   @Configuration
   @Import({CamundaSecurityConfiguration.class})
-  static class TestConfig {}
+  @EnableConfigurationProperties(GatekeeperProperties.class)
+  static class TestConfig {
+
+    @Bean
+    @Primary
+    AuthenticationConfig authenticationConfig(final GatekeeperProperties properties) {
+      return properties.toAuthenticationConfig();
+    }
+  }
 }

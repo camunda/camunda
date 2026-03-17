@@ -8,6 +8,7 @@
 package io.camunda.gatekeeper.model.identity;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents the current authenticated user's information, including profile, authorization, and
@@ -18,9 +19,11 @@ public record CamundaUserInfo(
     String username,
     String email,
     List<String> authorizedComponents,
-    List<String> tenants,
+    List<Tenant> tenants,
     List<String> groups,
     List<String> roles,
+    String salesPlanType,
+    Map<String, String> c8Links,
     boolean canLogout) {
 
   public CamundaUserInfo {
@@ -29,5 +32,9 @@ public record CamundaUserInfo(
     tenants = tenants != null ? List.copyOf(tenants) : List.of();
     groups = groups != null ? List.copyOf(groups) : List.of();
     roles = roles != null ? List.copyOf(roles) : List.of();
+    c8Links = c8Links != null ? Map.copyOf(c8Links) : Map.of();
   }
+
+  /** Lightweight tenant representation for user info responses. */
+  public record Tenant(String tenantId, String name, String description) {}
 }
