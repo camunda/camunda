@@ -8,6 +8,9 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -22,6 +25,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +39,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   private final Executor executor = Runnable::run;
 
   private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
-  private final TestRepository repository = new TestRepository();
+  private final TestRepository repository = spy(new TestRepository());
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
   private final DecisionInstanceTemplate decisionInstanceTemplate =
       new DecisionInstanceTemplate("", true);
@@ -198,6 +202,64 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .contains(
             new DocumentMove(
                 "foo_", "foo_" + "2024-01-01", Map.of("bar", List.of("1", "2")), executor));
+  }
+
+  @Test
+  void shouldRequestLargeBatchAndChunkIt() {
+    // given
+    repository.batch =
+        new ProcessInstanceArchiveBatch(
+            "2024-01-01", LongStream.rangeClosed(1L, 300L).boxed().toList(), List.of());
+
+    // when
+    final var first = job.getNextBatch().toCompletableFuture().join();
+    final var second = job.getNextBatch().toCompletableFuture().join();
+    final var third = job.getNextBatch().toCompletableFuture().join();
+
+    // then
+    assertThat(first)
+        .isEqualTo(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+    assertThat(second)
+        .isEqualTo(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(101L, 200L).boxed().toList(), List.of()));
+    assertThat(third)
+        .isEqualTo(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(201L, 300L).boxed().toList(), List.of()));
+
+    verify(repository).getProcessInstancesNextBatch(1_000);
+  }
+
+  @Test
+  void shouldRequestAgainWhenChunksExhausted() {
+    // given
+    repository.batch =
+        new ProcessInstanceArchiveBatch(
+            "2024-01-01", LongStream.rangeClosed(1L, 200L).boxed().toList(), List.of());
+
+    // when
+    final var first = job.getNextBatch().toCompletableFuture().join();
+    final var second = job.getNextBatch().toCompletableFuture().join();
+    final var third = job.getNextBatch().toCompletableFuture().join();
+
+    // then
+    assertThat(first)
+        .isEqualTo(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+    assertThat(second)
+        .isEqualTo(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(101L, 200L).boxed().toList(), List.of()));
+    assertThat(third)
+        .isEqualTo(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+
+    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
