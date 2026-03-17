@@ -357,8 +357,7 @@ public final class S3BackupStore implements BackupStore {
         .whenCompleteAsync(
             (ignore, err) -> {
               if (err != null) {
-                throw new ConfigurationException(
-                    "Failed to connect to S3 bucket '%s'".formatted(config), err);
+                throw new ConfigurationException("Failed to connect to S3", err);
               }
             })
         .thenApply(ignore -> null);

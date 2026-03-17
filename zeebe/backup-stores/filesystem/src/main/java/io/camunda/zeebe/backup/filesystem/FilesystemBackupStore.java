@@ -261,11 +261,6 @@ public final class FilesystemBackupStore implements BackupStore {
         });
   }
 
-  /**
-   * Validates that the filesystem backup store is usable by verifying that the base path directory
-   * can be created and is writable. This goes beyond {@link
-   * #validateConfig(FilesystemBackupConfig)} by performing filesystem operations.
-   */
   @Override
   public CompletableFuture<Void> verifyConnection() {
     return CompletableFuture.runAsync(

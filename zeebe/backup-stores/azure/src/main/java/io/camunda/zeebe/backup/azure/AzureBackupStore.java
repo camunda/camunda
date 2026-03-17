@@ -337,9 +337,7 @@ public final class AzureBackupStore implements BackupStore {
                     .findFirst();
               } catch (final Exception e) {
                 throw new ConfigurationException(
-                    "Failed to connect to Azure Blob Storage with the provided configuration '%s'"
-                        .formatted(config),
-                    e);
+                    "Failed to connect to Azure Blob Storage with the provided configuration", e);
               }
             },
             executor)
@@ -348,12 +346,11 @@ public final class AzureBackupStore implements BackupStore {
             error -> {
               if (error instanceof TimeoutException) {
                 throw new ConfigurationException(
-                    "Failed to connect to Azure Blob Storage: connection timed out after 10 seconds");
+                    "Failed to connect to Azure Blob Storage: connection timed out after 10 seconds",
+                    error);
               }
               throw new ConfigurationException(
-                  "Failed to connect to Azure Blob Storage with the provided configuration '%s'"
-                      .formatted(config),
-                  error);
+                  "Failed to connect to Azure Blob Storage with the provided configuration", error);
             });
   }
 
