@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,6 +46,44 @@ public interface ArchiveBatch {
       final var processInstanceKeys =
           this.processInstanceKeys.stream().limit(remainingLimit).toList();
       return new ProcessInstanceArchiveBatch(finishDate, processInstanceKeys, rootProcessInstances);
+    }
+
+    public List<ProcessInstanceArchiveBatch> chunk(final int chunkSize) {
+      final var chunks = new ArrayList<ProcessInstanceArchiveBatch>();
+
+      List<Long> currentRootProcessInstanceKeys = new ArrayList<>();
+      List<Long> currentProcessInstanceKeys = new ArrayList<>();
+
+      for (final var rootPi : rootProcessInstanceKeys()) {
+        if (currentRootProcessInstanceKeys.size() >= chunkSize) {
+          chunks.add(
+              new ProcessInstanceArchiveBatch(
+                  finishDate, currentProcessInstanceKeys, currentRootProcessInstanceKeys));
+          currentRootProcessInstanceKeys = new ArrayList<>();
+          currentProcessInstanceKeys = new ArrayList<>();
+        }
+        currentRootProcessInstanceKeys.add(rootPi);
+      }
+
+      for (final var pi : processInstanceKeys()) {
+        if (currentRootProcessInstanceKeys.size() + currentProcessInstanceKeys.size()
+            >= chunkSize) {
+          chunks.add(
+              new ProcessInstanceArchiveBatch(
+                  finishDate, currentProcessInstanceKeys, currentRootProcessInstanceKeys));
+          currentRootProcessInstanceKeys = new ArrayList<>();
+          currentProcessInstanceKeys = new ArrayList<>();
+        }
+        currentProcessInstanceKeys.add(pi);
+      }
+
+      if (!currentRootProcessInstanceKeys.isEmpty() || !currentProcessInstanceKeys.isEmpty()) {
+        chunks.add(
+            new ProcessInstanceArchiveBatch(
+                finishDate, currentProcessInstanceKeys, currentRootProcessInstanceKeys));
+      }
+
+      return chunks;
     }
   }
 

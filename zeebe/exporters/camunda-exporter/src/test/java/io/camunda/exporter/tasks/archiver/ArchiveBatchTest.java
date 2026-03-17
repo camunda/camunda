@@ -28,6 +28,17 @@ class ArchiveBatchTest {
     assertThat(batch.limit(limit)).isEqualTo(expected);
   }
 
+  @ParameterizedTest
+  @MethodSource("shouldChunkProcessInstanceBatchArguments")
+  void shouldChunkProcessInstanceBatch(
+      final int chunkSize, final List<ArchiveBatch.ProcessInstanceArchiveBatch> expected) {
+    final var batch =
+        new ArchiveBatch.ProcessInstanceArchiveBatch(
+            "finished-date", List.of(1L, 2L, 3L), List.of(1L, 2L, 3L));
+
+    assertThat(batch.chunk(chunkSize)).isEqualTo(expected);
+  }
+
   private static Stream<Arguments> shouldLimitProcessInstanceBatchArguments() {
     return Stream.of(
         Arguments.of(
@@ -49,5 +60,48 @@ class ArchiveBatchTest {
         Arguments.of(
             1,
             new ArchiveBatch.ProcessInstanceArchiveBatch("finished-date", List.of(), List.of(1L))));
+  }
+
+  private static Stream<Arguments> shouldChunkProcessInstanceBatchArguments() {
+    return Stream.of(
+        Arguments.of(
+            10,
+            List.of(
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(1L, 2L, 3L), List.of(1L, 2L, 3L)))),
+        Arguments.of(
+            6,
+            List.of(
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(1L, 2L, 3L), List.of(1L, 2L, 3L)))),
+        Arguments.of(
+            5,
+            List.of(
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(1L, 2L), List.of(1L, 2L, 3L)),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(3L), List.of()))),
+        Arguments.of(
+            3,
+            List.of(
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(), List.of(1L, 2L, 3L)),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(1L, 2L, 3L), List.of()))),
+        Arguments.of(
+            1,
+            List.of(
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(), List.of(1L)),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(), List.of(2L)),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(), List.of(3L)),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(1L), List.of()),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(2L), List.of()),
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(3L), List.of()))));
   }
 }
