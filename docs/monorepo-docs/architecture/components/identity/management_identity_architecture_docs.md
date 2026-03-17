@@ -23,8 +23,7 @@ It is responsible for:
 
 By design, Management Identity does not control access for the Orchestration Cluster (Zeebe, Operate, Tasklist, Orchestration Cluster APIs). That is handled by Orchestration Cluster Identity, described in the Orchestration Cluster Identity architecture documentation:
 
-- Orchestration Cluster Identity architecture:
-  https://github.com/camunda/camunda/blob/identity_architecture_documentation/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md
+- [Orchestration Cluster Identity architecture](identity_architecture_docs.md)
 
 Where concepts (users, groups, roles, mapping rules, tenants, RBAC) overlap between Management Identity and Orchestration Cluster Identity, the Orchestration Cluster Identity document is the primary reference. This document describes only the specifics of Management Identity.
 
@@ -190,6 +189,8 @@ Key points:
 
 ## 5. Building block view
 
+### 5.1 Whitebox overall system
+
 ```mermaid
 ---
 title: Management Identity - Building Blocks
@@ -197,7 +198,7 @@ title: Management Identity - Building Blocks
 flowchart TB
   BROWSER["Admin / user browser"]
   IDP[("Keycloak / OIDC IdP")]
-  MGMT_DB[("Management Identity DB")]
+  MGMT_DB[("Management Identity DB\n(Postgres)")]
 
   subgraph MGMT_ID["Management Identity"]
     UI["Management Identity UI"]
@@ -253,8 +254,337 @@ Responsibilities:
 - Mapping rules
   Connect IdP token claims to roles, groups, and tenants. The general mapping‑rules concept is shared with Orchestration Cluster Identity; see the mapping rules section in the Orchestration Cluster Identity architecture doc for a more detailed explanation of the pattern.
 
+### 5.2 Management Identity API — Level 2
 
-## 6. Crosscutting concepts
+The Management Identity API is a Spring Boot application that exposes REST endpoints consumed by both the Management Identity UI and external clients. It owns the RBAC model for platform apps and manages the Keycloak realm configuration.
+
+```mermaid
+---
+title: Management Identity API - Level 2
+---
+flowchart TB
+  UI["Management Identity UI"]
+  KEYCLOAK[("Keycloak / OIDC IdP")]
+  MGMT_DB[("Management Identity DB\n(Postgres)")]
+
+  subgraph API["Management Identity API"]
+    REST_LAYER["REST Controllers\n(/api/users, /api/groups,\n/api/roles, /api/applications,\n/api/tenants, /api/mapping-rules)"]
+    AUTHN["Token Validation\n(JWT / OIDC)"]
+    AUTHZ["RBAC Enforcement\n(role and permission checks)"]
+    USER_SVC["User Service"]
+    GROUP_SVC["Group Service"]
+    ROLE_SVC["Role Service"]
+    APP_SVC["Application Service"]
+    TENANT_SVC["Tenant Service"]
+    MAPPING_SVC["Mapping Rule Service"]
+    KC_CONNECTOR["Keycloak Connector\n(realm, client, user sync)"]
+
+    REST_LAYER --> AUTHN
+    REST_LAYER --> AUTHZ
+    REST_LAYER --> USER_SVC
+    REST_LAYER --> GROUP_SVC
+    REST_LAYER --> ROLE_SVC
+    REST_LAYER --> APP_SVC
+    REST_LAYER --> TENANT_SVC
+    REST_LAYER --> MAPPING_SVC
+    USER_SVC --> KC_CONNECTOR
+    APP_SVC --> KC_CONNECTOR
+  end
+
+  UI --> REST_LAYER
+  AUTHN -->|"JWKS validation"| KEYCLOAK
+  KC_CONNECTOR -->|"Realm / client / user mgmt"| KEYCLOAK
+  USER_SVC --> MGMT_DB
+  GROUP_SVC --> MGMT_DB
+  ROLE_SVC --> MGMT_DB
+  APP_SVC --> MGMT_DB
+  TENANT_SVC --> MGMT_DB
+  MAPPING_SVC --> MGMT_DB
+```
+
+Key responsibilities:
+
+- REST Controllers: expose the Management Identity REST API surface consumed by the UI and external clients. Each controller delegates to the corresponding service.
+- Token Validation: validates incoming JWT tokens against the Keycloak JWKS endpoint to authenticate API callers. Resolves the caller's roles and groups from the token claims and stored Management Identity data.
+- RBAC Enforcement: checks that the authenticated caller has the necessary role or permission before executing the requested operation.
+- User / Group / Role / Application / Tenant / Mapping Rule Services: implement the business logic for each identity resource type; persist and retrieve data from the Management Identity DB (Postgres).
+- Keycloak Connector: interacts with the Keycloak Admin REST API to:
+  - Register and configure OAuth2 clients (applications) and their scopes.
+  - Synchronize users created in Management Identity to the Keycloak realm.
+  - Configure realm settings such as login flows and token expiry.
+
+
+## 6. Runtime view
+
+### 6.1 User login via Keycloak (default)
+
+Scenario: a platform user logs into Console, Web Modeler, or Optimize using the default bundled Keycloak as the IdP.
+
+1. Browser navigates to Console, Web Modeler, or Optimize.
+2. The application redirects the browser to Keycloak for login (OIDC authorization code flow).
+3. The user authenticates with Keycloak (username/password, or an existing Keycloak SSO session).
+4. Keycloak issues an ID token and access token and redirects back to the application.
+5. The application exchanges the authorization code for tokens and requests user info.
+6. The application calls Management Identity API to resolve the user's roles, groups, and tenants by matching token claims against stored assignments and mapping rules.
+7. A session is established and the application renders the requested view.
+
+```mermaid
+sequenceDiagram
+  actor USER as User (Browser)
+  box Platform Apps
+    participant APP as Console / Web Modeler / Optimize
+  end
+  box Management Identity
+    participant MGMT_API as Management Identity API
+    participant MGMT_DB as Management Identity DB (Postgres)
+  end
+  box External
+    participant KEYCLOAK as Keycloak (default IdP)
+  end
+
+  USER->>APP: Navigate to app
+  APP-->>USER: Redirect to Keycloak (OIDC authorization code flow)
+  USER->>KEYCLOAK: Enter credentials
+  KEYCLOAK->>KEYCLOAK: Authenticate user
+  KEYCLOAK-->>USER: Redirect with authorization code
+  USER->>APP: Authorization code callback
+  APP->>KEYCLOAK: Exchange code for tokens (token endpoint)
+  KEYCLOAK-->>APP: ID token + access token
+  APP->>MGMT_API: Validate token / resolve user identity (roles, groups, tenants)
+  MGMT_API->>MGMT_DB: Query user, role assignments, mapping rules
+  MGMT_DB-->>MGMT_API: User entity, roles, groups, tenants
+  MGMT_API-->>APP: Resolved identity (roles, groups, tenants)
+  APP-->>USER: Session established, app rendered
+```
+
+### 6.2 User login via external OIDC IdP (Keycloak as broker)
+
+Scenario: the enterprise uses an external IdP (for example Okta or Microsoft Entra ID). Keycloak is configured as an OIDC broker and forwards authentication to the external IdP.
+
+1. Browser navigates to Console, Web Modeler, or Optimize.
+2. The application redirects to Keycloak; Keycloak in turn redirects to the external IdP.
+3. The external IdP authenticates the user and redirects back to Keycloak with an authorization code.
+4. Keycloak exchanges the code for external tokens, maps the external claims to local users/groups using Keycloak identity-provider mappers, and issues its own tokens.
+5. The application receives Keycloak tokens and proceeds as in the default login flow (6.1).
+6. Management Identity API evaluates mapping rules to assign platform roles and tenants based on the claims in the Keycloak token.
+
+```mermaid
+sequenceDiagram
+  actor USER as User (Browser)
+  box Platform Apps
+    participant APP as Console / Web Modeler / Optimize
+  end
+  box Management Identity
+    participant MGMT_API as Management Identity API
+    participant MGMT_DB as Management Identity DB (Postgres)
+  end
+  box External
+    participant KEYCLOAK as Keycloak (broker)
+    participant EXT_IDP as External IdP (Okta, Entra, ...)
+  end
+
+  USER->>APP: Navigate to app
+  APP-->>USER: Redirect to Keycloak
+  USER->>KEYCLOAK: Keycloak login page
+  KEYCLOAK-->>USER: Redirect to external IdP
+  USER->>EXT_IDP: Authenticate with enterprise credentials
+  EXT_IDP-->>USER: Redirect to Keycloak with authorization code
+  USER->>KEYCLOAK: Authorization code
+  KEYCLOAK->>EXT_IDP: Exchange code for external tokens
+  EXT_IDP-->>KEYCLOAK: External ID token + claims
+  KEYCLOAK->>KEYCLOAK: Map external claims to local users/groups (IdP mappers)
+  KEYCLOAK-->>USER: Redirect to app with Keycloak authorization code
+  USER->>APP: Authorization code callback
+  APP->>KEYCLOAK: Exchange code for tokens
+  KEYCLOAK-->>APP: ID token + access token (with mapped claims)
+  APP->>MGMT_API: Validate token / resolve user identity
+  MGMT_API->>MGMT_DB: Evaluate mapping rules, query roles, groups, tenants
+  MGMT_DB-->>MGMT_API: Resolved identity data
+  MGMT_API-->>APP: Resolved identity (roles, groups, tenants)
+  APP-->>USER: Session established, app rendered
+```
+
+### 6.3 Machine-to-machine access (client credentials)
+
+Scenario: an automated service (for example a CI/CD pipeline or backend integration) calls the Management Identity API using client credentials to obtain a token and perform identity operations.
+
+1. The service requests a JWT access token from Keycloak using the OAuth2 client credentials grant.
+2. Keycloak validates the client credentials and issues an access token.
+3. The service sends the token as a `Bearer` header on each Management Identity API request.
+4. Management Identity API validates the token signature via Keycloak's JWKS endpoint.
+5. Management Identity API resolves the client's roles and permissions from the database and processes the authorized request.
+
+```mermaid
+sequenceDiagram
+  box Customer System
+    participant SERVICE as Automated Service
+  end
+  box External
+    participant KEYCLOAK as Keycloak
+  end
+  box Management Identity
+    participant MGMT_API as Management Identity API
+    participant MGMT_DB as Management Identity DB (Postgres)
+  end
+
+  SERVICE->>KEYCLOAK: Request token (client credentials grant)
+  KEYCLOAK->>KEYCLOAK: Validate client credentials
+  KEYCLOAK-->>SERVICE: JWT access token
+  SERVICE->>MGMT_API: API request + Bearer token
+  MGMT_API->>KEYCLOAK: Validate token signature (JWKS endpoint)
+  KEYCLOAK-->>MGMT_API: Token valid
+  MGMT_API->>MGMT_DB: Load client roles and permissions
+  MGMT_DB-->>MGMT_API: Client roles, permissions
+  MGMT_API-->>SERVICE: API response
+```
+
+### 6.4 Admin operations: managing users and roles
+
+Scenario: a platform administrator uses the Management Identity UI to create a new user and assign a role to that user.
+
+1. Administrator logs into the Management Identity UI via the standard OIDC login flow (see 6.1).
+2. Administrator navigates to Users and creates a new user.
+3. Management Identity UI sends a `POST /api/users` request to the Management Identity API.
+4. The API validates the request, stores the new user in the Management Identity DB, and synchronizes the user to the Keycloak realm via the Keycloak Connector.
+5. Administrator assigns a role to the user.
+6. Management Identity UI sends the assignment request to the Management Identity API.
+7. The API updates the role assignment in the Management Identity DB.
+
+```mermaid
+sequenceDiagram
+  actor ADMIN as Administrator
+  box Management Identity
+    participant MGMT_UI as Management Identity UI
+    participant MGMT_API as Management Identity API
+    participant MGMT_DB as Management Identity DB (Postgres)
+  end
+  box External
+    participant KEYCLOAK as Keycloak
+  end
+
+  ADMIN->>MGMT_UI: Login (OIDC flow — see 6.1)
+  MGMT_UI-->>ADMIN: Management Identity UI loaded
+  ADMIN->>MGMT_UI: Create new user (fill form)
+  MGMT_UI->>MGMT_API: POST /api/users
+  MGMT_API->>MGMT_API: Validate request and RBAC (caller has USER:CREATE)
+  MGMT_API->>MGMT_DB: Store user record
+  MGMT_DB-->>MGMT_API: User stored
+  MGMT_API->>KEYCLOAK: Create user in Keycloak realm (Keycloak Connector)
+  KEYCLOAK-->>MGMT_API: User created in realm
+  MGMT_API-->>MGMT_UI: 201 Created (user key)
+  MGMT_UI-->>ADMIN: User created confirmation
+  ADMIN->>MGMT_UI: Assign role to user
+  MGMT_UI->>MGMT_API: PUT /api/users/{id}/roles
+  MGMT_API->>MGMT_API: Validate request and RBAC (caller has ROLE:UPDATE)
+  MGMT_API->>MGMT_DB: Update role assignment
+  MGMT_DB-->>MGMT_API: Role assignment updated
+  MGMT_API-->>MGMT_UI: 200 OK
+  MGMT_UI-->>ADMIN: Role assignment confirmed
+```
+
+
+## 7. Deployment view
+
+Management Identity is a standalone service deployed alongside (but separate from) the Orchestration Cluster in Self‑Managed Camunda 8 installations.
+
+### 7.1 Default Self-Managed deployment
+
+In the default configuration, Management Identity is deployed with a bundled Keycloak and a PostgreSQL database. All platform apps (Console, Web Modeler, Optimize) are configured to use this Keycloak instance for OIDC login.
+
+```mermaid
+---
+title: Management Identity - Deployment View (Default)
+---
+flowchart TB
+  CLIENTS["Platform Users (Browser)"]
+
+  subgraph SM["Self-Managed Kubernetes"]
+    subgraph MGMT_STACK["Management Identity Stack"]
+      MGMT_POD["Management Identity\n(UI + API)"]
+      KEYCLOAK_POD["Keycloak"]
+      MGMT_DB_POD[("PostgreSQL\n(Management Identity DB)")]
+      KEYCLOAK_DB_POD[("PostgreSQL\n(Keycloak DB)")]
+
+      MGMT_POD -->|"Realm / client / user config\n(Keycloak Connector)"| KEYCLOAK_POD
+      MGMT_POD -->|"Users, groups, roles,\ntenants, mapping rules"| MGMT_DB_POD
+      KEYCLOAK_POD -->|"Users, sessions"| KEYCLOAK_DB_POD
+    end
+
+    subgraph PLATFORM_APPS["Platform Apps"]
+      CONSOLE["Console"]
+      WEB_MODELER["Web Modeler"]
+      OPT["Optimize"]
+    end
+
+    subgraph OC["Orchestration Cluster"]
+      OC_COMPONENTS["Zeebe, Operate, Tasklist,\nOrchestration Cluster Identity"]
+    end
+
+    CONSOLE -->|"OIDC login"| KEYCLOAK_POD
+    WEB_MODELER -->|"OIDC login"| KEYCLOAK_POD
+    OPT -->|"OIDC login"| KEYCLOAK_POD
+
+    CONSOLE -->|"RBAC / user info"| MGMT_POD
+    WEB_MODELER -->|"RBAC / user info"| MGMT_POD
+    OPT -->|"RBAC / user info"| MGMT_POD
+  end
+
+  CLIENTS -->|"Browser access"| CONSOLE
+  CLIENTS -->|"Browser access"| WEB_MODELER
+  CLIENTS -->|"Browser access"| OPT
+```
+
+Key points:
+
+- Management Identity and Keycloak are deployed as separate pods/containers; they communicate via the Keycloak Admin REST API.
+- The Orchestration Cluster (Zeebe, Operate, Tasklist, Orchestration Cluster Identity) is an independent stack that does not depend on Management Identity at runtime.
+- Each stack uses its own PostgreSQL instance (or separate databases in a shared instance).
+
+### 7.2 External Keycloak or OIDC provider
+
+Management Identity supports two alternative IdP configurations for enterprise environments:
+
+- **External Keycloak**: an existing Keycloak instance is connected instead of the bundled one. Management Identity configures realms and clients in the external Keycloak via the Keycloak Connector.
+- **Direct OIDC mode**: Management Identity is connected directly to a generic OIDC provider (for example Okta or Microsoft Entra ID) without Keycloak acting as an intermediary.
+
+```mermaid
+---
+title: Management Identity - Deployment View (External IdP)
+---
+flowchart TB
+  subgraph SM["Self-Managed Kubernetes"]
+    subgraph MGMT_STACK["Management Identity Stack"]
+      MGMT_POD["Management Identity\n(UI + API)"]
+      MGMT_DB_POD[("PostgreSQL\n(Management Identity DB)")]
+      MGMT_POD --> MGMT_DB_POD
+    end
+
+    subgraph PLATFORM_APPS["Platform Apps"]
+      CONSOLE["Console"]
+      WEB_MODELER["Web Modeler"]
+      OPT["Optimize"]
+    end
+
+    CONSOLE -->|"OIDC login"| EXT_IDP
+    WEB_MODELER -->|"OIDC login"| EXT_IDP
+    OPT -->|"OIDC login"| EXT_IDP
+
+    CONSOLE -->|"RBAC / user info"| MGMT_POD
+    WEB_MODELER -->|"RBAC / user info"| MGMT_POD
+    OPT -->|"RBAC / user info"| MGMT_POD
+
+    MGMT_POD -->|"OIDC token validation (JWKS)"| EXT_IDP
+  end
+
+  EXT_IDP[("External IdP\n(External Keycloak / Okta / Entra)")]
+  CLIENTS["Platform Users (Browser)"]
+  CLIENTS -->|"Browser access"| CONSOLE
+  CLIENTS -->|"Browser access"| WEB_MODELER
+  CLIENTS -->|"Browser access"| OPT
+```
+
+
+## 8. Crosscutting concepts
 
 This section only highlights differences or specifics for Management Identity. For shared concepts (RBAC model, mapping rules, tenants, authorization checks), see the Orchestration Cluster Identity architecture doc.
 
@@ -280,8 +610,29 @@ This section only highlights differences or specifics for Management Identity. F
     - Optimize tenants
   - The same general pattern is used for Orchestration Cluster Identity; see the Orchestration Cluster Identity architecture doc for details.
 
+- Data storage
+  - Management Identity uses its own PostgreSQL database. Unlike Orchestration Cluster Identity, it does not reuse Zeebe's primary or secondary storage.
+  - Keycloak uses a separate PostgreSQL database for users, sessions, and realm configuration.
 
-## 7. Quality goals
+
+## 9. Architectural decisions
+
+The following decisions are specific to Management Identity. For decisions about Orchestration Cluster Identity (for example the decision to embed identity in the cluster rather than use Management Identity for runtime, or the resource-based authorization model), see the ADRs referenced in the [Orchestration Cluster Identity architecture doc](identity_architecture_docs.md#9-architectural-decisions).
+
+- Keycloak as default IdP
+  Management Identity ships Keycloak as the default bundled IdP for Self‑Managed deployments. This provides an out-of-the-box OIDC-capable IdP with a well-known admin API that Management Identity can configure programmatically. External Keycloak and direct OIDC modes are also supported for enterprise environments.
+
+- Separate service (not cluster-embedded)
+  Management Identity is deployed as an independent service rather than being embedded in the Orchestration Cluster. This keeps platform-level IAM (Console, Web Modeler, Optimize) decoupled from cluster runtime availability. The trade-off is that two identity services must be operated in Self‑Managed deployments during the transition period.
+
+- PostgreSQL as persistence layer
+  Unlike Orchestration Cluster Identity, which reuses Zeebe's storage, Management Identity uses its own PostgreSQL database. This is consistent with its role as a standalone platform service.
+
+- Alignment with Orchestration Cluster Identity model
+  Identity concepts (users, groups, roles, tenants, mapping rules) are kept aligned with those in Orchestration Cluster Identity to reduce cognitive load and simplify tooling and documentation. See [ADR-0001](adr/0001-cluster-embedded-identity.md) for background on the split between the two identity services.
+
+
+## 10. Quality goals
 
 - Clear separation of concerns
   Platform‑level identity (Management Identity) and runtime identity (Orchestration Cluster Identity) are separated to avoid cross‑dependencies that affect availability.
@@ -294,3 +645,43 @@ This section only highlights differences or specifics for Management Identity. F
 
 - Consistency with Orchestration Cluster Identity
   Where feasible, concepts and naming are kept aligned with Orchestration Cluster Identity to reduce cognitive load and simplify documentation and tooling.
+
+
+## 11. Risks and technical debt
+
+- Dual identity model during transition
+  Management Identity (for Console, Web Modeler, Optimize) and Orchestration Cluster Identity (for the runtime cluster) coexist during the transition period. This creates a risk of confusion about the source of truth for identity data and duplicated configuration. Users and groups may need to be managed in two places until consolidation is complete.
+  Mitigation: clear documentation of the responsibility boundary; Identity Migration App to assist migration; alignment of concepts and naming across both models.
+
+- Keycloak operational complexity
+  Running Keycloak as a dependency adds operational overhead: version management, database maintenance, configuration management, and availability dependencies. Misconfigured realms or client registrations can break login for all platform apps.
+  Mitigation: Helm chart automation for standard setups; detailed documentation for external Keycloak and direct OIDC configurations.
+
+- External IdP dependency
+  For OIDC, availability and correctness of the external IdP (Keycloak or third-party) are critical. Misconfigured claims or mapping rules can lead to over- or under-provisioned access.
+  Mitigation: mapping rule validation; comprehensive integration tests for common IdP configurations.
+
+- Migration complexity
+  Migrating identity data from Management Identity to Orchestration Cluster Identity (users, groups, roles, tenants, mapping rules) requires careful coordination to avoid access disruptions.
+  Mitigation: dedicated Identity Migration App, idempotent migration runs, detailed migration logs, and pre-migration validation tooling.
+
+
+## 12. Glossary
+
+|              Term              |                                                                   Definition                                                                    |
+|--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Management Identity            | Standalone identity service (Self‑Managed) for platform-level apps: Console, Web Modeler, and Optimize.                                        |
+| Orchestration Cluster Identity | Cluster‑embedded identity service for runtime IAM (Zeebe, Operate, Tasklist, Orchestration Cluster APIs).                                      |
+| Keycloak                       | Open-source IdP bundled with Management Identity by default; also supports external Keycloak or direct OIDC providers.                          |
+| Platform app                   | Applications managed by Management Identity: Console, Web Modeler, Optimize.                                                                    |
+| User                           | Human principal registered in Management Identity for use with platform apps.                                                                   |
+| Group                          | Named collection of users; groups can be assigned roles and used in mapping rules.                                                              |
+| Role                           | Set of permissions controlling what operations a user or service can perform in platform apps.                                                  |
+| Application (client)           | OAuth2 client registered in Management Identity representing a platform or external app (for example Optimize backend, Web Modeler backend).    |
+| Tenant (Optimize)              | Logical partition for reporting and data isolation in Optimize. Distinct from runtime tenants in Orchestration Cluster Identity.                |
+| Mapping rule                   | Rule that maps IdP token claims (for example group names, attributes) to Management Identity roles, groups, or Optimize tenants.                |
+| OIDC                           | OpenID Connect; the protocol used for authentication and token issuance between platform apps, Keycloak, and Management Identity.               |
+| Client credentials grant       | OAuth2 flow for machine-to-machine access; a service authenticates with its client ID and secret to obtain a token.                            |
+| Authorization code flow        | OAuth2/OIDC flow for interactive user login via a browser redirect to the IdP.                                                                  |
+| JWKS                           | JSON Web Key Set; the public key endpoint exposed by Keycloak/IdP, used by Management Identity API to validate incoming JWT signatures.         |
+| Keycloak Connector             | Management Identity internal component that manages Keycloak realm, client, and user configuration via the Keycloak Admin REST API.             |
