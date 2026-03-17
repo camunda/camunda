@@ -166,6 +166,10 @@ public class AdvancedSearchFilterUtil {
     final var tValues = new ArrayList<T>();
     boolean hasNull = false;
     for (final Object v : values) {
+      if (v == null) {
+        hasNull = true;
+        continue;
+      }
       final T converted = converter.apply(v);
       if (converted == null) {
         hasNull = true;

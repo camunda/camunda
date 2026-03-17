@@ -397,4 +397,54 @@ class AdvancedSearchFilterUtilTest {
     assertThat(errors).hasSize(2);
     assertThat(actual).isEmpty();
   }
+
+  @Test
+  void shouldHandleNullElementInListForStringOperations() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$In(nullableList("a", null, "b"));
+
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToStringOperations().apply(filter);
+
+    // then — null element causes the whole operation to be dropped
+    assertThat(actual).isEmpty();
+  }
+
+  @Test
+  void shouldHandleNullElementInListForKeyOperations() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$In(nullableList("123", null));
+    final var errors = new ArrayList<String>();
+
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToKeyOperations("key", errors).apply(filter);
+
+    // then — null element causes the whole operation to be dropped
+    assertThat(actual).isEmpty();
+  }
+
+  @Test
+  void shouldHandleNullElementInListForIntegerOperations() {
+    // given
+    final var filter = new AdvancedIntegerFilter();
+    filter.set$In(nullableList(1, null, 2));
+    final var errors = new ArrayList<String>();
+
+    // when
+    final var actual =
+        AdvancedSearchFilterUtil.mapToIntegerOperations("retries", errors).apply(filter);
+
+    // then — null element causes the whole operation to be dropped
+    assertThat(actual).isEmpty();
+  }
+
+  /** Creates an ArrayList that allows null elements (unlike List.of). */
+  @SafeVarargs
+  private static <T> List<T> nullableList(final T... elements) {
+    final var list = new ArrayList<T>(elements.length);
+    java.util.Collections.addAll(list, elements);
+    return list;
+  }
 }
