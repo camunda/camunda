@@ -809,9 +809,14 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       processInstance.state === 'ACTIVE' &&
       !modificationsStore.isModificationModeEnabled;
 
-    elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey, {
-      enablePolling,
-    });
+    useEffect(() => {
+      elementInstancesTreeStore.setRootNode(
+        processInstance.processInstanceKey,
+        {
+          enablePolling,
+        },
+      );
+    }, [processInstance.processInstanceKey, enablePolling]);
 
     useEffect(() => {
       return elementInstancesTreeStore.reset;
