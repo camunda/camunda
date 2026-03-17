@@ -15,10 +15,14 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
@@ -215,5 +219,24 @@ final class GrpcErrorMapperTest {
     assertThat(recorder.getAppendedEvents()).hasSize(1);
     final LogEvent event = recorder.getAppendedEvents().getFirst();
     assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+  }
+
+  @Test
+  void shouldMapAlreadyExistsRejectionToAlreadyExistsStatus() {
+    // given
+    final var reason =
+        "Expected to create instance of process with business id 'order-12345', but an instance with this business id already exists for process definition 'bpmnProcessId'";
+    final var rejection =
+        new BrokerRejection(
+            ProcessInstanceCreationIntent.CREATE, 1L, RejectionType.ALREADY_EXISTS, reason);
+    final var exception = new BrokerRejectionException(rejection);
+
+    // when
+    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.ALREADY_EXISTS);
+    assertThat(statusException.getStatus().getDescription())
+        .isEqualTo("Command 'CREATE' rejected with code 'ALREADY_EXISTS': " + reason);
   }
 }

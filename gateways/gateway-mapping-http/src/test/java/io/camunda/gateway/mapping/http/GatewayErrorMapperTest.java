@@ -225,6 +225,22 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getTitle()).isEqualTo(INVALID_ARGUMENT.name());
   }
 
+  @Test
+  void shouldMapAlreadyExistsServiceExceptionToConflictProblemDetail() {
+    // given
+    final var reason =
+        "Expected to create instance of process with business id 'order-12345', but an instance with this business id already exists for process definition 'bpmnProcessId'";
+
+    // when
+    final ProblemDetail problemDetail =
+        GatewayErrorMapper.mapErrorToProblem(new ServiceException(reason, ALREADY_EXISTS));
+
+    // then
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+    assertThat(problemDetail.getTitle()).isEqualTo(ALREADY_EXISTS.name());
+    assertThat(problemDetail.getDetail()).isEqualTo(reason);
+  }
+
   // Sample custom ServiceException for testing
   public static class TestServiceException extends ServiceException {
     public TestServiceException(final String message, final Status status) {
