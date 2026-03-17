@@ -106,7 +106,7 @@ public class SearchQueryFilterMapper {
           final var orBuilder = toBaseProcessInstanceFilterFields(processDefinitionKey, or);
           if (orBuilder.isLeft()) {
             validationErrors.addAll(orBuilder.getLeft());
-          } else {
+          } else if (builder.isRight()) {
             builder.get().addOrOperation(orBuilder.get().build());
           }
         }
@@ -624,7 +624,7 @@ public class SearchQueryFilterMapper {
           final var orBuilder = toProcessInstanceFilterFields(or);
           if (orBuilder.isLeft()) {
             validationErrors.addAll(orBuilder.getLeft());
-          } else {
+          } else if (builder.isRight()) {
             builder.get().addOrOperation(orBuilder.get().build());
           }
         }
