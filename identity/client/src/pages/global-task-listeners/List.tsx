@@ -72,15 +72,10 @@ const List: FC = () => {
 
   const transformedData = globalTaskListeners?.items.map((listener) => ({
     ...listener,
-    // Convert the boolean `afterNonGlobal` to a user-friendly string using translations
-    // Note that we need to keep the original `afterNonGlobal` key in order to be able to sort by it
     afterNonGlobal: listener.afterNonGlobal
       ? t("executionOrderAfter")
       : t("executionOrderBefore"),
-    // Display event types with user-friendly translations, and handle the "all" case
-    // Note that we could use a different key here since sorting by event types is not supported by the API
     eventTypes: getEventTypeLabels(listener.eventTypes, t),
-    // Keep a reference to the original listener object for use in edit and delete actions
     originalListener: listener,
   }));
 
