@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -76,7 +76,6 @@ import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,7 +88,7 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final boolean authorizationEmbeddingEnabled;
+  private final BrokerRequestAuthorizationConverter authorizationConverter;
 
   public EndpointManager(
       final BrokerClient brokerClient,
@@ -117,9 +116,7 @@ public final class EndpointManager {
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     RequestMapper.setMultiTenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
-    authorizationEmbeddingEnabled =
-        securityConfiguration.getAuthorizations().isEnabled()
-            || securityConfiguration.getMultiTenancy().isChecksEnabled();
+    authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
   }
 
   private void addBrokerInfo(
@@ -527,36 +524,17 @@ public final class EndpointManager {
   }
 
   private Map<String, Object> getClaims() throws Exception {
-    final Map<String, Object> claims = new HashMap<>();
-
-    // Identity claims are always sent because the exporter reads them from the record to populate
-    // the audit log actor (see AuditLogActor.of). Skipping these would cause audit log entries to
-    // have no actor information.
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
-    if (username != null) {
-      claims.put(Authorization.AUTHORIZED_USERNAME, username);
-    }
-
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
-    if (clientId != null) {
-      claims.put(Authorization.AUTHORIZED_CLIENT_ID, clientId);
+
+    List<String> groups = null;
+    Map<String, Object> tokenClaims = null;
+    if (authorizationConverter.isAuthorizationClaimsEnabled()) {
+      groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+      tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
 
-    // Authorization claims (JWT token claims, group memberships) are only needed for authorization
-    // and multi-tenancy checks in the engine. Skip them when both are disabled.
-    if (authorizationEmbeddingEnabled) {
-      final Map<String, Object> userClaims =
-          Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
-      claims.put(Authorization.USER_TOKEN_CLAIMS, userClaims);
-
-      final List<String> groupsClaims =
-          Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
-      if (groupsClaims != null) {
-        claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
-      }
-    }
-
-    return claims;
+    return authorizationConverter.convert(false, username, clientId, groups, tokenClaims);
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(
