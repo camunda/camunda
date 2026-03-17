@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -18,10 +19,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuditLogArchiverJobTest {
+class AuditLogArchiverJobTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AuditLogArchiverJobTest.class);
 
@@ -31,6 +34,7 @@ public class AuditLogArchiverJobTest {
       new NoopAuditLogArchiverRepository();
   private final TestRepository archiverRepository = new TestRepository();
   private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
+  private final HistoryConfiguration config = new HistoryConfiguration();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
   private final AuditLogArchiverJob job =
@@ -39,6 +43,7 @@ public class AuditLogArchiverJobTest {
           archiverRepository,
           auditLogTemplate,
           metrics,
+          config,
           LOGGER,
           executor);
 
@@ -144,10 +149,55 @@ public class AuditLogArchiverJobTest {
     // when
     final int count = job.execute().toCompletableFuture().join();
 
-    // then
+    // then - no audit log move, cleanup entities are deleted directly
     assertThat(count).isEqualTo(2);
-    assertThat(archiverRepository.moves).hasSize(1);
+    assertThat(archiverRepository.moves).isEmpty();
     assertThat(auditLogArchiverRepository.deletedBatch).isEqualTo(auditLogArchiverRepository.batch);
+  }
+
+  @Test
+  void shouldArchiveAuditLogsButSkipCleanupDeletionWhenCleanupIdsAreEmpty() {
+    // given - batch with audit log IDs only; cleanup IDs are empty
+    auditLogArchiverRepository.batch =
+        new AuditLogCleanupBatch("2026-01-01", List.of(), List.of("audit-1", "audit-2"));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - should count only audit log IDs (no cleanup IDs)
+    assertThat(count).isEqualTo(2);
+
+    // then - should move audit log documents
+    assertThat(archiverRepository.moves).hasSize(1);
+    final var move = archiverRepository.moves.getFirst();
+    assertThat(move.keysByField())
+        .containsEntry(AuditLogTemplate.ID, List.of("audit-1", "audit-2"));
+
+    // then - deleteAuditLogCleanupMetadata should not be called
+    assertThat(auditLogArchiverRepository.deletedBatch).isNull();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {2, 3})
+  void shouldNotDeleteAuditLogCleanupMetadataWhenArchivedCountReachesOrExceedsRolloverBatchSize(
+      final int archivedAuditLogCount) {
+    // given
+    config.setRolloverBatchSize(2);
+    auditLogArchiverRepository.batch =
+        new AuditLogCleanupBatch(
+            "2026-01-01",
+            List.of("cleanup-1"),
+            archivedAuditLogCount == 2
+                ? List.of("audit-1", "audit-2")
+                : List.of("audit-1", "audit-2", "audit-3"));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - only audit logs are archived, cleanup metadata is not deleted
+    assertThat(count).isEqualTo(auditLogArchiverRepository.batch.auditLogIds().size());
+    assertThat(archiverRepository.moves).hasSize(1);
+    assertThat(auditLogArchiverRepository.deletedBatch).isNull();
   }
 
   static class NoopAuditLogArchiverRepository implements AuditLogArchiverRepository {
@@ -164,7 +214,7 @@ public class AuditLogArchiverJobTest {
     public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
         final AuditLogCleanupBatch batch) {
       deletedBatch = batch;
-      return CompletableFuture.completedFuture(batch.size());
+      return CompletableFuture.completedFuture(batch.auditLogCleanupIds().size());
     }
 
     @Override

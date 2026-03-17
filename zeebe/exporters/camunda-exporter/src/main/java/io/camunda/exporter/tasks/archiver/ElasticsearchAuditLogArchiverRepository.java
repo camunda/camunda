@@ -140,11 +140,10 @@ public class ElasticsearchAuditLogArchiverRepository extends ElasticsearchReposi
     final var indexName = auditLogTemplateDescriptor.getFullQualifiedName();
     logger.trace("Create search request against index '{}'", indexName);
 
-    // TODO should we limit the size of the archive request here? This could be a loooot of
-    // documents.
     return new SearchRequest.Builder()
         .index(indexName)
         .requestCache(false)
+        .size(historyConfig.getRolloverBatchSize())
         .source(s -> s.filter(f -> f.includes(AuditLogTemplate.ID)))
         .query(
             q ->

@@ -515,6 +515,7 @@ public final class BackgroundTaskManagerFactory {
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
             metrics,
+            config.getHistory(),
             logger,
             executor));
   }
