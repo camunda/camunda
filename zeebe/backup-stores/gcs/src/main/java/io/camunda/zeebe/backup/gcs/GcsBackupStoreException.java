@@ -21,7 +21,7 @@ public abstract class GcsBackupStoreException extends RuntimeException {
       super(message);
     }
 
-    public ConfigurationException(final String message, final Exception cause) {
+    public ConfigurationException(final String message, final Throwable cause) {
       super(message, cause);
     }
   }

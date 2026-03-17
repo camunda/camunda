@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,12 +51,14 @@ public final class GcsBackupStore implements BackupStore {
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
+  private final GcsBackupConfig config;
 
   GcsBackupStore(final GcsBackupConfig config) {
     this(config, buildClient(config));
   }
 
   GcsBackupStore(final GcsBackupConfig config, final Storage client) {
+    this.config = config;
     bucketInfo = BucketInfo.of(config.bucketName());
     basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
@@ -263,6 +266,39 @@ public final class GcsBackupStore implements BackupStore {
         });
   }
 
+  @Override
+  public CompletableFuture<Void> verifyConnection() {
+    return CompletableFuture.runAsync(
+            () -> {
+              try {
+                // Trigger a list operation to verify connection
+                final var ignored =
+                    client
+                        .list(config.bucketName(), BlobListOption.pageSize(1))
+                        .iterateAll()
+                        .iterator()
+                        .hasNext();
+              } catch (final Exception e) {
+                throw new ConfigurationException(
+                    "Unable to connect to GCS bucket '%s': %s"
+                        .formatted(config.bucketName(), e.getMessage()),
+                    e);
+              }
+            },
+            executor)
+        .orTimeout(10, TimeUnit.SECONDS)
+        .exceptionally(
+            error -> {
+              if (error instanceof TimeoutException) {
+                throw new ConfigurationException(
+                    "Failed to connect to GCS: connection timed out after 10 seconds");
+              }
+              throw new ConfigurationException(
+                  "Failed to connect to GCS with the provided configuration '%s'".formatted(config),
+                  error);
+            });
+  }
+
   private BlobInfo backupMetadataBlobInfo(final int partitionId) {
     return BlobInfo.newBuilder(
             bucketInfo, "%smetadata/%d/%s".formatted(basePath, partitionId, METADATA_OBJECT_NAME))
@@ -284,17 +320,39 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final GcsBackupConfig config) {
-    try (final var storage = buildClient(config)) {
-      try {
-        storage.list(config.bucketName(), BlobListOption.pageSize(1));
-      } catch (final Exception e) {
-        LOG.warn(
-            "Unable to verify that the bucket {} exists, initialization will continue as it can be a transient network issue",
-            config.bucketName(),
-            e);
+    if (config == null) {
+      throw new IllegalArgumentException(ERROR_VALIDATION_FAILED.formatted("config is null"));
+    }
+
+    if (config.bucketName() == null || config.bucketName().isBlank()) {
+      throw new IllegalArgumentException(
+          ERROR_VALIDATION_FAILED.formatted("bucketName must not be null or empty"));
+    }
+
+    if (config.connection() == null) {
+      throw new IllegalArgumentException(
+          ERROR_VALIDATION_FAILED.formatted("connection configuration must not be null"));
+    }
+
+    if (config.connection().auth() == null) {
+      throw new IllegalArgumentException(
+          ERROR_VALIDATION_FAILED.formatted("authentication configuration must not be null"));
+    }
+
+    // Validate None authentication has projectId
+    if (config.connection().auth() instanceof None(final var projectId)) {
+      if (projectId == null || projectId.isBlank()) {
+        throw new IllegalArgumentException(
+            ERROR_VALIDATION_FAILED.formatted(
+                "projectId must be provided when using no authentication"));
       }
-    } catch (final Exception e) {
-      throw new ConfigurationException(ERROR_VALIDATION_FAILED.formatted(config), e);
+    }
+
+    // Max concurrent transfers validation
+    if (config.maxConcurrentTransfers() <= 0) {
+      throw new IllegalArgumentException(
+          ERROR_VALIDATION_FAILED.formatted(
+              "maxConcurrentTransfers must be positive, got " + config.maxConcurrentTransfers()));
     }
   }
 }

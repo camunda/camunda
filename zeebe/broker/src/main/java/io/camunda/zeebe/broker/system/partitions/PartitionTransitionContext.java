@@ -40,6 +40,7 @@ import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public interface PartitionTransitionContext extends PartitionContext {
 
@@ -131,9 +132,9 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setCheckpointProcessor(CheckpointRecordsProcessor checkpointRecordsProcessor);
 
-  BackupStore getBackupStore();
+  @Nullable BackupStore getBackupStore();
 
-  void setBackupStore(BackupStore backupStore);
+  void setBackupStore(@Nullable BackupStore backupStore);
 
   /**
    * Returns a meter registry which already has some common tags for the partition (so you can omit
