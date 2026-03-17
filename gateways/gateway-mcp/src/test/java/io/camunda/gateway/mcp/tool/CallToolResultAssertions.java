@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.config.McpObjectMapperUtilities;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -19,9 +18,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 public final class CallToolResultAssertions {
 
   private static final ObjectMapper NON_NULL_MAPPER =
-      McpObjectMapperUtilities.getObjectMapper()
-          .copy()
-          .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+      new ObjectMapper().setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
 
   private CallToolResultAssertions() {}
 

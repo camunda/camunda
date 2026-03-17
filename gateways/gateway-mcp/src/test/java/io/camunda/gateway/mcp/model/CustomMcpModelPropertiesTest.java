@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.config.McpObjectMapperUtilities;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
@@ -37,7 +36,16 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public class CustomMcpModelPropertiesTest {
 
-  static final ObjectMapper MAPPER = new ObjectMapper();
+  static final ObjectMapper MAPPER =
+      new ObjectMapper()
+          .addMixIn(IncidentFilter.class, McpIncidentFilter.class)
+          .addMixIn(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class)
+          .addMixIn(
+              ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class)
+          .addMixIn(ProcessInstanceFilter.class, McpProcessInstanceFilter.class)
+          .addMixIn(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class)
+          .addMixIn(UserTaskFilter.class, McpUserTaskFilter.class)
+          .addMixIn(VariableFilter.class, McpVariableFilter.class);
 
   static Stream<Arguments> modelsWithExpectedFields() {
     return Stream.of(
@@ -152,9 +160,7 @@ public class CustomMcpModelPropertiesTest {
   @SuppressWarnings("unchecked")
   private Collection<String> getProperties(final Class<?> schemaClass) {
     try {
-      final var schema =
-          new CamundaJsonSchemaGenerator(McpObjectMapperUtilities.getObjectMapper())
-              .generateFromType(schemaClass);
+      final var schema = new CamundaJsonSchemaGenerator(MAPPER).generateFromType(schemaClass);
       final Map<String, Object> map = MAPPER.readValue(schema, Map.class);
       assertThat(map)
           .withFailMessage("Generated schema doesn't contain properties.")
