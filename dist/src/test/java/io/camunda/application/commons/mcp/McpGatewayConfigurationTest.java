@@ -49,12 +49,12 @@ class McpGatewayConfigurationTest {
         .map(Method::getReturnType)
         .forEach(mockBeans::add);
 
-    // add mocks needed for McpGatewayConfiguration
-    mockBeans.add(ObjectMapper.class);
-
     for (final Class<?> mockedBean : mockBeans) {
       runner = addMockedBean(runner, mockedBean);
     }
+
+    // Provide a real ObjectMapper instead of a mock since CamundaJsonSchemaGenerator needs it
+    runner = runner.withBean(ObjectMapper.class, ObjectMapper::new);
 
     return runner;
   }

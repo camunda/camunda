@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -68,21 +67,6 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
             .setMixInAnnotation(UserTaskFilter.class, McpUserTaskFilter.class)
             .setMixInAnnotation(VariableFilter.class, McpVariableFilter.class);
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
-  }
-
-  @Bean
-  public JsonMapperBuilderCustomizer jsonMapperBuilderCustomizer() {
-    return builder ->
-        builder
-            .addMixIn(IncidentFilter.class, McpIncidentFilter.class)
-            .addMixIn(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class)
-            .addMixIn(
-                ProcessInstanceCreationInstruction.class,
-                McpProcessInstanceCreationInstruction.class)
-            .addMixIn(ProcessInstanceFilter.class, McpProcessInstanceFilter.class)
-            .addMixIn(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class)
-            .addMixIn(UserTaskFilter.class, McpUserTaskFilter.class)
-            .addMixIn(VariableFilter.class, McpVariableFilter.class);
   }
 
   @Bean
