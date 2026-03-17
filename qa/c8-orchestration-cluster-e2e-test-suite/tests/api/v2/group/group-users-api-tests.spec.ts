@@ -21,22 +21,19 @@ import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/be
 import {
   assignUsersToGroup,
   createGroupAndStoreResponseFields,
+  createUser,
   userFromState,
 } from '@requestHelpers';
-import {
-  defaultAssertionOptions,
-  generateUniqueId,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 /* eslint-disable playwright/expect-expect */
-test.describe.parallel('Group Users API Tests', () => {
+test.describe('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 3, state);
-
     await assignUsersToGroup(request, 1, state['groupId2'] as string, state);
     await assignUsersToGroup(request, 1, state['groupId3'] as string, state);
 
@@ -70,10 +67,10 @@ test.describe.parallel('Group Users API Tests', () => {
   });
 
   test('Assign User To Group', async ({request}) => {
-    const user = 'test-user' + generateUniqueId();
+    const user = await createUser(request);
     const stateParams: Record<string, string> = {
       groupId: state['groupId1'] as string,
-      username: user,
+      username: user.username,
     };
 
     await expect(async () => {
@@ -147,7 +144,7 @@ test.describe.parallel('Group Users API Tests', () => {
     const json = await res.json();
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
-    expect(json.items.length).toBe(0);
+    expect(json.items).toHaveLength(0);
   });
 
   test('Unassign User From Group', async ({request}) => {
@@ -183,7 +180,7 @@ test.describe.parallel('Group Users API Tests', () => {
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
-        expect(json.items.length).toBe(0);
+        expect(json.items).toHaveLength(0);
       }).toPass(defaultAssertionOptions);
     });
   });
