@@ -11,7 +11,6 @@ import {
   buildUrl,
   jsonHeaders,
   assertUnauthorizedRequest,
-  assertBadRequest,
   assertStatusCode,
   assertEqualsForKeys,
   assertNotFoundRequest,
@@ -24,7 +23,7 @@ import {
 import {validateResponse} from '../../../../json-body-assertions';
 import {decisionInstanceRequiredFields} from 'utils/beans/requestBeans';
 
-test.describe.parallel('Search Decision Instances API Tests', () => {
+test.describe.parallel('Get Decision Instances API Tests', () => {
   let decisionInstances: DecisionInstance[] = [];
   let processInstanceKey: string;
 
