@@ -15,7 +15,7 @@ on:
 jobs:
   auto-merge:
     # Only run for PRs from release branches created by release automation
-    # if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
+    if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
     name: Auto-merge release to stable
     runs-on: ubuntu-slim
     timeout-minutes: 240
@@ -243,7 +243,7 @@ jobs:
           correlationKey: ${{ github.event.pull_request.id }}
           variables: |
             {
-              "is_automerge_successful": ${{ steps.monitor_merge.outcome == 'success' }},
+              "is_automerge_successful": "${{ steps.monitor_merge.outcome == 'success' }}",
               "pr_number": ${{ github.event.pull_request.number }},
               "pr_url": "${{ github.event.pull_request.html_url }}",
               "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
