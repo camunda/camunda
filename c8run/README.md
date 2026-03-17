@@ -27,6 +27,8 @@ Elasticsearch remains available, but it is no longer started automatically. The 
    ```bash
    ./c8run start --disable-elasticsearch=false
    ```
+   When you use `--docker`, c8run automatically rewrites loopback Elasticsearch URLs such as
+   `http://localhost:9200` to the bundled Docker Compose service hostname.
 3. When stopping a stack that was started with Elasticsearch, pass the same flag to ensure the Elasticsearch processes are terminated:
 
    ```bash

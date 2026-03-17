@@ -7,6 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
+	neturl "net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -470,6 +472,16 @@ func prepareDockerComposeConfig(baseDir, composeFolder, resolvedConfigPath strin
 		return "", fmt.Errorf("failed to ensure docker-compose configuration directory: %w", err)
 	}
 
+	content, err := os.ReadFile(resolvedConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read configuration for docker-compose: %w", err)
+	}
+
+	dockerContent, rewritten, err := rewriteDockerComposeConfig(content)
+	if err != nil {
+		return "", fmt.Errorf("failed to adapt configuration for docker-compose: %w", err)
+	}
+
 	fileName := filepath.Base(resolvedConfigPath)
 	destPath := filepath.Join(configDir, fileName)
 
@@ -478,17 +490,77 @@ func prepareDockerComposeConfig(baseDir, composeFolder, resolvedConfigPath strin
 		return "", err
 	}
 
-	if !sameFile {
-		if err := copyFileEnsureDir(resolvedConfigPath, destPath); err != nil {
-			return "", fmt.Errorf("failed to copy configuration for docker-compose: %w", err)
+	if !sameFile || rewritten {
+		contentToWrite := content
+		if rewritten {
+			contentToWrite = dockerContent
 		}
-		log.Info().
+		if err := os.WriteFile(destPath, contentToWrite, 0o644); err != nil {
+			return "", fmt.Errorf("failed to write configuration for docker-compose: %w", err)
+		}
+
+		event := log.Info().
 			Str("source", resolvedConfigPath).
-			Str("destination", destPath).
-			Msg("Copied configuration for docker-compose")
+			Str("destination", destPath)
+		if rewritten {
+			event = event.Str("rewrite", "elasticsearch-loopback-url")
+		}
+		event.Msg("Prepared configuration for docker-compose")
 	}
 
 	return fileName, nil
+}
+
+func rewriteDockerComposeConfig(content []byte) ([]byte, bool, error) {
+	if len(bytes.TrimSpace(content)) == 0 {
+		return content, false, nil
+	}
+
+	var root map[string]any
+	if err := yaml.Unmarshal(content, &root); err != nil {
+		return nil, false, err
+	}
+
+	rewritten, err := rewriteDockerComposeElasticsearchURL(root)
+	if err != nil {
+		return nil, false, err
+	}
+	if !rewritten {
+		return content, false, nil
+	}
+
+	updatedContent, err := yaml.Marshal(root)
+	if err != nil {
+		return nil, false, err
+	}
+	return updatedContent, true, nil
+}
+
+func rewriteDockerComposeElasticsearchURL(root map[string]any) (bool, error) {
+	if !strings.EqualFold(extractSecondaryStorageTypeFromMap(root), "elasticsearch") {
+		return false, nil
+	}
+
+	elasticsearchConfig, ok := extractElasticsearchConfigFromMap(root)
+	if !ok {
+		return false, nil
+	}
+
+	rawURL, ok := elasticsearchConfig["url"].(string)
+	if !ok {
+		return false, nil
+	}
+
+	rewrittenURL, changed, err := rewriteLoopbackURLForDocker(rawURL, "elasticsearch")
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+
+	elasticsearchConfig["url"] = rewrittenURL
+	return true, nil
 }
 
 func filesAreSame(a, b string) (bool, error) {
@@ -575,6 +647,64 @@ func extractSecondaryStorageTypeFromMap(root map[string]any) string {
 		return typ
 	}
 	return ""
+}
+
+func extractElasticsearchConfigFromMap(root map[string]any) (map[string]any, bool) {
+	camunda, ok := root["camunda"].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	data, ok := camunda["data"].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	secondary, ok := data["secondary-storage"].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	elasticsearch, ok := secondary["elasticsearch"].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	return elasticsearch, true
+}
+
+func rewriteLoopbackURLForDocker(rawURL string, dockerHost string) (string, bool, error) {
+	trimmedURL := strings.TrimSpace(rawURL)
+	if trimmedURL == "" {
+		return rawURL, false, nil
+	}
+
+	parseTarget := trimmedURL
+	if !strings.Contains(parseTarget, "://") {
+		parseTarget = "http://" + parseTarget
+	}
+
+	parsedURL, err := neturl.Parse(parseTarget)
+	if err != nil {
+		return "", false, err
+	}
+
+	if !isLoopbackHost(parsedURL.Hostname()) {
+		return rawURL, false, nil
+	}
+
+	if port := parsedURL.Port(); port != "" {
+		parsedURL.Host = net.JoinHostPort(dockerHost, port)
+	} else {
+		parsedURL.Host = dockerHost
+	}
+
+	return parsedURL.String(), true, nil
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func detectRdbmsURLFromConfig(path string) (string, error) {

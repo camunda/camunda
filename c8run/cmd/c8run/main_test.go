@@ -216,3 +216,59 @@ func TestDockerCommandEnvNoOverrideWithoutDockerVersion(t *testing.T) {
 
 	assert.Equal(t, base, result)
 }
+
+func TestPrepareDockerComposeConfigRewritesLoopbackElasticsearchURL(t *testing.T) {
+	tempDir := t.TempDir()
+	configDir := filepath.Join(tempDir, "configuration")
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+
+	config := `
+camunda:
+  data:
+    secondary-storage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://localhost:9200
+`
+	configPath := filepath.Join(configDir, "application.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(config), 0o644))
+
+	fileName, err := prepareDockerComposeConfig(tempDir, "docker-compose-8.9", configPath)
+	require.NoError(t, err)
+	assert.Equal(t, "application.yaml", fileName)
+
+	preparedConfigPath := filepath.Join(tempDir, "docker-compose-8.9", "configuration", fileName)
+	preparedConfig, err := os.ReadFile(preparedConfigPath)
+	require.NoError(t, err)
+
+	assert.Contains(t, string(preparedConfig), "url: http://elasticsearch:9200")
+	assert.NotContains(t, string(preparedConfig), "url: http://localhost:9200")
+}
+
+func TestPrepareDockerComposeConfigKeepsExternalElasticsearchURL(t *testing.T) {
+	tempDir := t.TempDir()
+	configDir := filepath.Join(tempDir, "configuration")
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+
+	config := `
+camunda:
+  data:
+    secondary-storage:
+      type: elasticsearch
+      elasticsearch:
+        url: https://es.example.com:9243
+`
+	configPath := filepath.Join(configDir, "application.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(config), 0o644))
+
+	fileName, err := prepareDockerComposeConfig(tempDir, "docker-compose-8.9", configPath)
+	require.NoError(t, err)
+	assert.Equal(t, "application.yaml", fileName)
+
+	preparedConfigPath := filepath.Join(tempDir, "docker-compose-8.9", "configuration", fileName)
+	preparedConfig, err := os.ReadFile(preparedConfigPath)
+	require.NoError(t, err)
+
+	assert.Contains(t, string(preparedConfig), "url: https://es.example.com:9243")
+	assert.NotContains(t, string(preparedConfig), "elasticsearch:9243")
+}
