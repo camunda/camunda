@@ -54,11 +54,9 @@
     "eslint": "eslint .",
     "lint": "npm run ts-check && npm run eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
-    "test:e2e": "cross-env IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 ZEEBE_REST_GATEWAY_ADDRESS=http://localhost:8081 playwright test --project=e2e",
     "test:a11y": "playwright test --project=a11y",
     "test:visual": "playwright test --project=visual-light --project=visual-dark",
     "generate-screenshots": "playwright test --project=screenshot-generator",
-    "test:e2e:ci": "cross-env IS_E2E=true PORT=8080 playwright test --project=e2e",
     "coverage": "npm run test -- --coverage --changed",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.58.2 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
@@ -67,7 +65,6 @@
     "knip": "knip --tsConfig tsconfig.app.json"
   },
   "devDependencies": {
-    "@camunda8/sdk": "8.7.30",
     "@camunda/lint-config": "file:../../client-components/packages/lint-config",
     "@eslint/js": "9.39.3",
     "@playwright/test": "1.58.2",

@@ -9,7 +9,6 @@
 import {devices, defineConfig} from '@playwright/test';
 
 const IS_CI = Boolean(process.env.CI);
-const IS_E2E = Boolean(process.env.IS_E2E);
 const BASE_HOST = process.env.PLAYWRIGHT_BASE_HOST ?? 'localhost';
 
 /**
@@ -21,10 +20,10 @@ const config = defineConfig({
   expect: {
     timeout: 15 * 1000,
   },
-  fullyParallel: !IS_E2E,
+  fullyParallel: true,
   forbidOnly: IS_CI,
   retries: IS_CI ? 2 : 0,
-  workers: IS_CI || IS_E2E ? 1 : undefined,
+  workers: IS_CI ? 1 : undefined,
   reporter: IS_CI
     ? [
         ['blob'],
@@ -39,10 +38,6 @@ const config = defineConfig({
       ]
     : 'html',
   projects: [
-    {
-      name: 'setup',
-      testMatch: /e2e.setup\.ts/,
-    },
     {
       name: 'visual-light',
       testMatch: 'visual/**/*.spec.ts',
@@ -63,17 +58,11 @@ const config = defineConfig({
       testMatch: 'docs-screenshots/**/*.spec.ts',
       use: {...devices['Desktop Firefox']},
     },
-    {
-      name: 'e2e',
-      testMatch: 'tests/**/*.spec.ts',
-      use: {...devices['Desktop Chrome']},
-      dependencies: ['setup'],
-    },
   ],
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://${BASE_HOST}:${IS_CI && IS_E2E ? 8080 : 8081}/operate`,
+    baseURL: `http://${BASE_HOST}:8081/operate`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
