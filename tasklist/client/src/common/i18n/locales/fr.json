@@ -252,6 +252,7 @@
     "customFiltersModalConfirmDeletion": "Confirmer la suppression",
     "customFiltersModalApplyFilters": "Appliquer les filtres",
     "customFiltersModalAllProcesses": "Tous les processus",
+    "customFiltersModalAllTenants": "Tous les clients",
     "taskFilterPanelControlsAria": "Contrôles de filtre",
     "taskFilterPanelExpandButton": "Ouvrir pour afficher les filtres",
     "taskFilterPanelFilterButton": "Filtrer les tâches",

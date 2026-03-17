@@ -251,6 +251,7 @@
     "customFiltersModalConfirmDeletion": "Löschen bestätigen",
     "customFiltersModalApplyFilters": "Filter anwenden",
     "customFiltersModalAllProcesses": "Alle Prozesse",
+    "customFiltersModalAllTenants": "Alle Mandanten",
     "taskFilterPanelControlsAria": "Filtersteuerungen",
     "taskFilterPanelExpandButton": "Erweitern, um Filter anzuzeigen",
     "taskFilterPanelFilterButton": "Aufgaben filtern",
