@@ -18,7 +18,7 @@ jobs:
     # if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
     name: Auto-merge release to stable
     runs-on: ubuntu-slim
-    timeout-minutes: 90
+    timeout-minutes: 240
     permissions:
       contents: read
       pull-requests: write
