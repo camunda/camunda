@@ -11,19 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 class McpToolParamsUnwrappedRegistrationTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
   private final CamundaJsonSchemaGenerator schemaGenerator =
-      new CamundaJsonSchemaGenerator(objectMapper);
+      new CamundaJsonSchemaGenerator(JsonMapper.shared());
 
   @Test
   void shouldRejectMultipleMcpToolParams() {

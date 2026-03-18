@@ -11,7 +11,7 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.mcp.config.CamundaMcpJackson3Module;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Verifies that custom MCP model classes only expose their intended properties in the generated
@@ -36,16 +37,8 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public class CustomMcpModelPropertiesTest {
 
-  static final ObjectMapper MAPPER =
-      new ObjectMapper()
-          .addMixIn(IncidentFilter.class, McpIncidentFilter.class)
-          .addMixIn(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class)
-          .addMixIn(
-              ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class)
-          .addMixIn(ProcessInstanceFilter.class, McpProcessInstanceFilter.class)
-          .addMixIn(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class)
-          .addMixIn(UserTaskFilter.class, McpUserTaskFilter.class)
-          .addMixIn(VariableFilter.class, McpVariableFilter.class);
+  static final JsonMapper MAPPER =
+      JsonMapper.builder().addModule(new CamundaMcpJackson3Module()).build();
 
   static Stream<Arguments> modelsWithExpectedFields() {
     return Stream.of(
