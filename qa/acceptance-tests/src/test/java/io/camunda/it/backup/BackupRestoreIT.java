@@ -39,6 +39,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,8 +53,10 @@ import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -112,6 +115,17 @@ public class BackupRestoreIT {
   private DataGenerator generator;
   private HistoryBackupClient historyBackupClient;
   private MultiDbConfigurator configurator;
+
+  @BeforeAll
+  public static void beforeAll() {
+    // Non-snapshot version
+    VersionUtil.overrideVersionForTesting("8.10.0");
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    VersionUtil.resetVersionForTesting();
+  }
 
   @AfterEach
   public void tearDown() {
@@ -217,8 +231,15 @@ public class BackupRestoreIT {
     // Zeebe's folder is deleted by ZeebeIntegration automatically when the application is stop()
 
     webappsDBClient.deleteAllIndices(INDEX_PREFIX);
+    // also delete index templates, to test the case restore is done in an empty ES/OS cluster
+    webappsDBClient.deleteAllIndexTemplates(INDEX_PREFIX);
 
-    Awaitility.await().untilAsserted(() -> assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty());
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty();
+              assertThat(webappsDBClient.getIndexTemplates(INDEX_PREFIX)).isEmpty();
+            });
 
     // RESTORE PROCEDURE
     webappsDBClient.restore(REPOSITORY_NAME, snapshots);
@@ -232,6 +253,7 @@ public class BackupRestoreIT {
 
     // then
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
+    assertThat(webappsDBClient.getIndexTemplates(INDEX_PREFIX)).isNotEmpty();
   }
 
   private void configureZeebeBackupStore(final BrokerCfg cfg) {

@@ -165,10 +165,13 @@ public class SchemaManager implements CloseableSilently {
         upgradeSchema = true;
         break;
     }
+    // create any missing index templates, it is done even outside an upgrade scenario, to create
+    // missing index templates after a backup restore
+    initialiseIndexTemplates();
     if (upgradeSchema) {
       final var newIndexProperties = validateIndices(allIndexDescriptors);
-      //  used to create any indices/templates which don't exist
-      initialiseResources();
+      // create any missing indices
+      initialiseIndices();
 
       //  used to update existing indices/templates
       if (!newIndexProperties.isEmpty()) {
@@ -281,12 +284,8 @@ public class SchemaManager implements CloseableSilently {
             String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));
   }
 
-  public void initialiseResources() {
-    initialiseIndexTemplates();
-    initialiseIndices();
-  }
-
-  private void initialiseIndices() {
+  @VisibleForTesting
+  void initialiseIndices() {
     if (allIndexDescriptors.isEmpty()) {
       LOG.info("Do not create any indices, as descriptors are missing");
       return;
@@ -330,7 +329,8 @@ public class SchemaManager implements CloseableSilently {
         .toList();
   }
 
-  private void initialiseIndexTemplates() {
+  @VisibleForTesting
+  void initialiseIndexTemplates() {
     if (indexTemplateDescriptors.isEmpty()) {
       LOG.info("Do not create any index templates, as descriptors are missing");
       return;
