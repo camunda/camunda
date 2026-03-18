@@ -29,6 +29,7 @@
     <module>webapps-common</module>
     <module>webapps-schema</module>
     <module>webapps-backup</module>
+    <module>gatekeeper</module>
     <module>authentication</module>
     <module>db</module>
     <module>schema-manager</module>
