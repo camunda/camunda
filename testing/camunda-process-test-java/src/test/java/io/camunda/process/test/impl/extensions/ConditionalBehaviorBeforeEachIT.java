@@ -26,51 +26,63 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import java.util.Collections;
 import java.util.Map;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+/**
+ * Verifies that conditional behaviors registered in {@code @BeforeEach} work correctly across
+ * multiple test methods. Each test method gets fresh behaviors.
+ */
 @CamundaProcessTest
-public class ConditionalScenarioApiIT {
+public class ConditionalBehaviorBeforeEachIT {
 
-  // injected by the extension
+  private static final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
+  private static final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
+  private static final Map<String, Object> EXPORT_VARS =
+      Collections.singletonMap("exportSuccess", true);
+
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
 
-  // ensure repeated tests get fresh scenarios
-  @RepeatedTest(value = 2)
-  void shouldCompleteProcessWithConditionalScenarios() {
+  @BeforeEach
+  void setupBehaviors() {
     // Deploy the process model
     client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
-    final Map<String, Object> unhappy = Collections.singletonMap("happy", false);
-    final Map<String, Object> happy = Collections.singletonMap("happy", true);
-    final Map<String, Object> exportVars = Collections.singletonMap("exportSuccess", true);
-
-    // Setup conditional scenarios before starting the process
-
-    // When user task "State_Happiness" is created, complete it:
-    //   1st time with happy=false (loops back)
-    //   2nd time with happy=true (proceeds to Export_Happiness)
     processTestContext
         .when(
             () ->
                 assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                     .hasActiveElement(USER_TASK_ID, 1))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, unhappy))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, happy));
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, UNHAPPY))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, HAPPY));
 
-    // When Export_Happiness is active, complete the job
     processTestContext
         .when(
             () ->
                 assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                     .hasActiveElements(SERVICE_TASK_ID))
-        .then(() -> processTestContext.completeJob(JOB_TYPE, exportVars));
+        .then(() -> processTestContext.completeJob(JOB_TYPE, EXPORT_VARS));
+  }
 
-    // Start the process
+  @Test
+  void shouldCompleteProcessFirstRun() {
     final ProcessInstanceEvent processInstanceEvent =
         client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
-    // Assert process completed with expected variables
+    assertThatProcessInstance(processInstanceEvent)
+        .isCompleted()
+        .hasVariable("happy", true)
+        .hasVariable("exportSuccess", true);
+  }
+
+  @Test
+  void shouldCompleteProcessSecondRun() {
+    // Same behavior — proves @BeforeEach re-registers fresh behaviors for each test,
+    // including a fresh action chain (happy=false first, then happy=true)
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
+
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
         .hasVariable("happy", true)
