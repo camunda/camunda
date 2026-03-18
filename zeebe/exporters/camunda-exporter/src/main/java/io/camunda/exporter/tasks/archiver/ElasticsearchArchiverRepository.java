@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
@@ -68,6 +69,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+  private static final String DATE_AGGREGATION_NAME = "endDateHistogram";
+
   private final int partitionId;
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
@@ -537,16 +540,20 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             sr ->
                 sr.index(indexTemplateDescriptor.getFullQualifiedName())
                     .size(0)
-                    .aggregations("endDateHistogram", dateHistogramAggregation));
+                    .aggregations(DATE_AGGREGATION_NAME, dateHistogramAggregation));
 
     final CompletableFuture<SearchResponse<Void>> future = client.search(searchRequest, Void.class);
     return future.thenApply(
         response -> {
           final Map<String, Aggregate> aggregations = response.aggregations();
           final DateHistogramAggregate histogram =
-              aggregations.get("endDateHistogram").dateHistogram();
-          final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
-          return oldest.keyAsString();
+              aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
+          try {
+            final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
+            return oldest.keyAsString();
+          } catch (NoSuchElementException _exception) {
+            return endDate;
+          }
         });
   }
 

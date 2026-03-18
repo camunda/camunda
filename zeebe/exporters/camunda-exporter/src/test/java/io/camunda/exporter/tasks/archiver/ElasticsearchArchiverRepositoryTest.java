@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverRepositoryTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
+  private static final String DATE_AGGREGATION_NAME = "endDateHistogram";
 
   private final RestClientTransport transport = Mockito.spy(createRestClient());
 
@@ -119,6 +121,23 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     final var response = createResponse(List.of(hit1, hit2));
     when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(response));
+
+    final var voidResponse =
+        SearchResponse.<Void>of(
+            r ->
+                r.took(1)
+                    .timedOut(false)
+                    .shards(s -> s.total(1).successful(1).failed(0))
+                    .hits(
+                        h ->
+                            h.total(t -> t.value(0).relation(TotalHitsRelation.Eq)).hits(List.of()))
+                    .aggregations(
+                        Map.of(
+                            DATE_AGGREGATION_NAME,
+                            Aggregate.of(
+                                a -> a.dateHistogram(dh -> dh.buckets(b -> b.array(List.of())))))));
+    when(client.search(any(SearchRequest.class), eq(Void.class)))
+        .thenReturn(CompletableFuture.completedFuture(voidResponse));
 
     // when
     final var batch = repository.getProcessInstancesNextBatch().join();
