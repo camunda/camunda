@@ -42,8 +42,7 @@ public class VisibleForTestingArchTest {
 
   static final List<String> EXCLUDED_CLASS_NAMES =
       List.of(
-          "io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector",
-          "io.camunda.zeebe.util.micrometer.StatefulGauge");
+          "io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector");
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =

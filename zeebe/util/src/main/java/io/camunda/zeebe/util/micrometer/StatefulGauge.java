@@ -107,6 +107,10 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     return delegate;
   }
 
+  boolean isSameMeter(final Meter meter) {
+    return delegate == meter;
+  }
+
   /** Returns a builder for a meter with the given name. */
   public static StatefulGauge.Builder builder(final String name) {
     return new Builder(name);
