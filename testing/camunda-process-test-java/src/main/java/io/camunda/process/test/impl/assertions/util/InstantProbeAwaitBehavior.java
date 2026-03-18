@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.assertions.util;
 
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.time.Duration;
 import org.assertj.core.api.SoftAssertionsProvider.ThrowingRunnable;
@@ -49,5 +50,10 @@ public class InstantProbeAwaitBehavior implements CamundaAssertAwaitBehavior {
   @Override
   public void setAssertionInterval(final Duration assertionInterval) {
     // no-op — instant probing has no interval
+  }
+
+  @Override
+  public Duration getAssertionInterval() {
+    return CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
   }
 }
