@@ -161,16 +161,24 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(response));
     when(client.search(any(SearchRequest.class), eq(Void.class)))
-        .thenReturn(CompletableFuture.completedFuture(SearchResponse.<Void>of(
-            r ->
-                r.took(1)
-                    .timedOut(false)
-                    .shards(s -> s.total(1).successful(1).failed(0))
-                    .hits(h -> h.total(t -> t.value(0).relation(TotalHitsRelation.Eq)).hits(List.of()))
-                    .aggregations(Map.of(DATE_AGGREGATION_NAME, Aggregate.of(a -> a.dateHistogram(
-                        dh -> dh.buckets(b -> b.array(List.of()))
-                    ))))
-        )));
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                SearchResponse.<Void>of(
+                    r ->
+                        r.took(1)
+                            .timedOut(false)
+                            .shards(s -> s.total(1).successful(1).failed(0))
+                            .hits(
+                                h ->
+                                    h.total(t -> t.value(0).relation(TotalHitsRelation.Eq))
+                                        .hits(List.of()))
+                            .aggregations(
+                                Map.of(
+                                    DATE_AGGREGATION_NAME,
+                                    Aggregate.of(
+                                        a ->
+                                            a.dateHistogram(
+                                                dh -> dh.buckets(b -> b.array(List.of())))))))));
 
     // when
     final var batch = repository.getProcessInstancesNextBatch().join();
