@@ -11,17 +11,15 @@ import {InstanceDetail} from '../Layout/InstanceDetail';
 import {Breadcrumb} from './Breadcrumb';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
-import {ProcessInstanceHeader as ProcessInstanceHeaderNext} from './ProcessInstanceHeaderNext';
 import {TopPanel} from './TopPanel';
 import {
   BottomPanel,
-  BottomPanelNew,
   BottomPanelStacked,
   ModificationFooter,
   Buttons,
@@ -33,7 +31,6 @@ import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
-import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {Frame} from 'modules/components/Frame';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -46,7 +43,6 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate, matchPath, type Location} from 'react-router-dom';
 import {Locations, Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 import {BottomPanelTabs} from './BottomPanelTabs';
 import {
   ResizablePanel,
@@ -91,7 +87,7 @@ const BottomPanelContent: React.FC = () => {
       (containerRef.current?.clientWidth ?? 0) / 4 || undefined;
 
     return (
-      <BottomPanelNew ref={containerRef}>
+      <BottomPanel ref={containerRef}>
         <ResizablePanel
           panelId="process-instance-bottom-panel"
           direction={SplitDirection.Horizontal}
@@ -104,7 +100,7 @@ const BottomPanelContent: React.FC = () => {
           <ElementInstanceLog />
           <BottomPanelTabs />
         </ResizablePanel>
-      </BottomPanelNew>
+      </BottomPanel>
     );
   }
 
@@ -191,9 +187,6 @@ const ProcessInstance: React.FC = observer(() => {
     };
   });
 
-  const [isListenerTabSelected, setListenerTabVisibility] =
-    useState<boolean>(false);
-
   const {
     isModificationModeEnabled,
     state: {modifications, status: modificationStatus},
@@ -224,11 +217,7 @@ const ProcessInstance: React.FC = observer(() => {
       >
         {processInstance && (
           <InstanceDetail
-            className={
-              IS_NEW_PROCESS_INSTANCE_PAGE
-                ? 'camunda-process-instance-page'
-                : undefined
-            }
+            className="camunda-process-instance-page"
             hasLoadingOverlay={modificationStatus === 'applying-modifications'}
             breadcrumb={
               isBreadcrumbVisible && callHierarchy ? (
@@ -238,26 +227,9 @@ const ProcessInstance: React.FC = observer(() => {
                 />
               ) : undefined
             }
-            header={
-              IS_NEW_PROCESS_INSTANCE_PAGE ? (
-                <ProcessInstanceHeaderNext processInstance={processInstance} />
-              ) : (
-                <ProcessInstanceHeader processInstance={processInstance} />
-              )
-            }
+            header={<ProcessInstanceHeader processInstance={processInstance} />}
             topPanel={<TopPanel />}
-            bottomPanel={
-              IS_NEW_PROCESS_INSTANCE_PAGE ? (
-                <BottomPanelContent />
-              ) : (
-                <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
-                  <ElementInstanceLog />
-                  <VariablePanel
-                    setListenerTabVisibility={setListenerTabVisibility}
-                  />
-                </BottomPanel>
-              )
-            }
+            bottomPanel={<BottomPanelContent />}
             footer={
               isModificationModeEnabled ? (
                 <ModificationFooter>

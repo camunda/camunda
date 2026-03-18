@@ -57,11 +57,11 @@ export class ProcessInstance {
     this.variableSpinner = page.getByTestId('variable-operation-spinner');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggle =
-      this.instanceHistory.getByLabel(/^execution count$/i);
-    this.endDateToggle = this.instanceHistory.getByLabel(/^end date$/i);
+      this.instanceHistory.getByLabel("Execution count");
+    this.endDateToggle = this.instanceHistory.getByLabel("End date");
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
-    this.operationsLogTabButton = page.getByRole('tab', {
-      name: /^Operations Log$/i,
+    this.operationsLogTabButton = page.getByRole('link', {
+      name: "Operations Log",
     });
     this.operationsLogTable = page
       .getByTestId('data-table-container')
