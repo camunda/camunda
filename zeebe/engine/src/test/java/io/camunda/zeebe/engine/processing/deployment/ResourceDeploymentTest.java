@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.junit.Rule;
@@ -132,6 +133,29 @@ public class ResourceDeploymentTest {
 
     assertThat(deploymentEvent.getRejectionReason())
         .contains(String.format("Expected the resource id to be filled, but it is blank"));
+  }
+
+  @Test
+  public void shouldRejectWhenResourceJsonIsMalformed() {
+    // given
+    final byte[] malformedJson = "{not valid json".getBytes(StandardCharsets.UTF_8);
+
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonResource(malformedJson, "malformed.rpa")
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains("Failed to parse resource JSON. 'malformed.rpa':");
   }
 
   @Test
