@@ -93,13 +93,13 @@ public final class DecisionInstanceServices
   /**
    * Deletes a decision instance and all associated decision evaluations.
    *
-   * @param decisionInstanceKey the key of the decision instance to delete
+   * @param decisionEvaluationKey the key of the decision evaluation to delete
    * @param operationReference optional operation reference for tracking
    * @return a CompletableFuture containing the batch operation creation record
    * @throws CamundaSearchException if no decision instance with the given key exists
    */
   public CompletableFuture<HistoryDeletionRecord> deleteDecisionInstance(
-      final long decisionInstanceKey,
+      final long decisionEvaluationKey,
       final Long operationReference,
       final CamundaAuthentication authentication) {
 
@@ -107,13 +107,13 @@ public final class DecisionInstanceServices
     final var searchResult =
         search(
             decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))),
+                q -> q.filter(f -> f.decisionInstanceKeys(decisionEvaluationKey))),
             authentication);
 
     if (searchResult.items().isEmpty()) {
       throw ErrorMapper.mapSearchError(
           new CamundaSearchException(
-              ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Decision Instance", decisionInstanceKey),
+              ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Decision Instance", decisionEvaluationKey),
               CamundaSearchException.Reason.NOT_FOUND));
     }
 
@@ -121,7 +121,7 @@ public final class DecisionInstanceServices
 
     final var brokerRequest =
         new BrokerDeleteHistoryRequest()
-            .setResourceKey(decisionInstanceKey)
+            .setResourceKey(decisionEvaluationKey)
             .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
             .setDecisionDefinitionId(decisionInstance.decisionDefinitionId())
             .setTenantId(decisionInstance.tenantId());
