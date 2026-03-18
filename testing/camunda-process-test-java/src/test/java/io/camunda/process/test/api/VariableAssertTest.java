@@ -51,6 +51,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -822,7 +823,9 @@ public class VariableAssertTest {
   @Nested
   class VariableSource {
 
-    @Mock private VariableFilter variableFilter;
+    @Mock(answer = Answers.RETURNS_SELF)
+    private VariableFilter variableFilter;
+
     @Mock private StringProperty stringProperty;
 
     @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
