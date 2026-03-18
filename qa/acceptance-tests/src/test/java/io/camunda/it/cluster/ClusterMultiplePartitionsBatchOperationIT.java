@@ -10,6 +10,7 @@ package io.camunda.it.cluster;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -113,6 +114,8 @@ public class ClusterMultiplePartitionsBatchOperationIT {
     assertThat(result).isNotNull();
 
     // and
+    waitForBatchOperationWithCorrectTotalCount(
+        camundaClient, batchOperationKey, ACTIVE_PROCESS_INSTANCES.size());
     waitForBatchOperationCompleted(
         camundaClient, batchOperationKey, ACTIVE_PROCESS_INSTANCES.size(), 0);
 
