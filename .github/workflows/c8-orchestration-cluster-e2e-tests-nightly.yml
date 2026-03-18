@@ -380,6 +380,20 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -549,6 +563,8 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           DATABASE: "RDBMS"
+          INCLUDE_SLACK_REPORTER: true
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
         run: DATABASE=RDBMS npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
@@ -558,6 +574,57 @@ jobs:
           if [ -f dev-dist/camunda.pid ]; then
             kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
           fi
+
+      - name: Publish test results to TestRail
+        if: always()
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+          BRANCH_NAME: ${{ matrix.branch }}
+          DATABASE_NAME: ${{ matrix.database.database-name }}
+        run: |
+          pip install trcli
+          trcli -y -h "$TESTRAIL_HOST" \
+            --project 'C8' \
+            --username "$TESTRAIL_USERNAME" \
+            --key "$TESTRAIL_KEY" \
+            parse_junit --suite-id 17050 \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $DATABASE_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --close-run \
+            -f "$JUNIT_RESULTS_FILE"
+
+      - name: Sanitize branch name for artifact names
+        id: sanitize
+        if: always()
+        shell: bash
+        run: |
+          branch="${{ matrix.branch }}"
+          # Replace invalid artifact-name characters (at least '/')
+          safe_branch="${branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+            - name: Upload json report to GitHub Actions Artifacts
+              if: always()
+              uses: actions/upload-artifact@v7
+              with:
+                name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}
+                path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+                retention-days: 60
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-e2e-nightly-api-rdbms-tests/(${{ matrix.branch }} / ${{ matrix.database.database-name }})"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   nightly-tests:
     name: nightly-tests (${{ matrix.branch }} - Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
