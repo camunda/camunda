@@ -203,8 +203,8 @@ public class CamundaJsonSchemaGenerator {
           || schemaAnnotation.required();
     }
 
-    final var nullableAnnotation = parameter.getAnnotation(Nullable.class);
-    if (nullableAnnotation != null) {
+    if (parameter.getAnnotation(Nullable.class) != null
+        || parameter.getAnnotation(org.jspecify.annotations.Nullable.class) != null) {
       return false;
     }
 
