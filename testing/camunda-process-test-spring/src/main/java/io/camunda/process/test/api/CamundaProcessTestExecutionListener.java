@@ -155,7 +155,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
-        .setContext(camundaProcessTestContext);
+        .setDelegate(camundaProcessTestContext);
 
     // publish Zeebe client
     testContext
@@ -205,7 +205,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
-        .removeContext();
+        .removeDelegate();
 
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it
