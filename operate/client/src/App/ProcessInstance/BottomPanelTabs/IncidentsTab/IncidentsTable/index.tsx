@@ -21,6 +21,7 @@ import {
 } from 'modules/utils/incidents';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useMemo} from 'react';
 
 type IncidentsTableProps = {
   processInstanceKey: string;
@@ -44,6 +45,31 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
   }) {
     const {selectElementInstance, clearSelection} =
       useProcessInstanceElementSelection();
+    const expandedContent = useMemo(
+      () =>
+        Object.fromEntries(
+          incidents.map((incident) => [
+            incident.incidentKey,
+            <ExpandedContent key={incident.incidentKey}>
+              <ExpandedField>
+                <FieldLabel>Job ID</FieldLabel>
+                <span>{incident.jobKey || '—'}</span>
+              </ExpandedField>
+              <ExpandedField>
+                <FieldLabel>Error message</FieldLabel>
+                <CodeSnippet
+                  type="multi"
+                  feedback="Copied to clipboard"
+                  wrapText
+                >
+                  {incident.errorMessage}
+                </CodeSnippet>
+              </ExpandedField>
+            </ExpandedContent>,
+          ]),
+        ),
+      [incidents],
+    );
 
     return (
       <SortableTable
@@ -143,27 +169,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             ) : undefined,
           };
         })}
-        expandedContent={Object.fromEntries(
-          incidents.map((incident) => [
-            incident.incidentKey,
-            <ExpandedContent key={incident.incidentKey}>
-              <ExpandedField>
-                <FieldLabel>Job ID</FieldLabel>
-                <span>{incident.jobKey || '—'}</span>
-              </ExpandedField>
-              <ExpandedField>
-                <FieldLabel>Error message</FieldLabel>
-                <CodeSnippet
-                  type="multi"
-                  feedback="Copied to clipboard"
-                  wrapText
-                >
-                  {incident.errorMessage}
-                </CodeSnippet>
-              </ExpandedField>
-            </ExpandedContent>,
-          ]),
-        )}
+        expandedContent={expandedContent}
       />
     );
   },
