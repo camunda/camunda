@@ -9,8 +9,7 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,8 +17,8 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
-  private final Queue<InflightActivateJobsRequest<T>> activeRequests = new LinkedList<>();
-  private final Queue<InflightActivateJobsRequest<T>> pendingRequests = new LinkedList<>();
+  private final Set<InflightActivateJobsRequest<T>> activeRequests = new LinkedHashSet<>();
+  private final Set<InflightActivateJobsRequest<T>> pendingRequests = new LinkedHashSet<>();
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
   private final AtomicInteger failedAttempts = new AtomicInteger();
   private long lastUpdatedTime;
@@ -59,9 +58,7 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public void enqueueRequest(final InflightActivateJobsRequest<T> request) {
-    if (!pendingRequests.contains(request)) {
-      pendingRequests.offer(request);
-    }
+    pendingRequests.add(request);
     updatePendingMetrics();
   }
 
@@ -71,13 +68,16 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public InflightActivateJobsRequest<T> getNextPendingRequest() {
-    final InflightActivateJobsRequest<T> request = pendingRequests.poll();
+    if (pendingRequests.isEmpty()) {
+      return null;
+    }
+    final var request = pendingRequests.removeFirst();
     updatePendingMetrics();
     return request;
   }
 
   public void addActiveRequest(final InflightActivateJobsRequest<T> request) {
-    activeRequests.offer(request);
+    activeRequests.add(request);
     pendingRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
     updatePendingMetrics();
