@@ -1304,14 +1304,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newDeleteDecisionInstanceCommand(decisionInstanceKey)
+   *  .newDeleteDecisionInstanceCommand(decisionEvaluationKey)
    *  .send();
    * </pre>
    *
-   * @param decisionInstanceKey the key which identifies the corresponding decision instance
+   * @param decisionEvaluationKey the key which identifies the corresponding decision evaluation
    * @return a builder for the command
    */
-  DeleteDecisionInstanceCommandStep1 newDeleteDecisionInstanceCommand(long decisionInstanceKey);
+  DeleteDecisionInstanceCommandStep1 newDeleteDecisionInstanceCommand(long decisionEvaluationKey);
 
   /**
    * Executes a search request to query incidents.
