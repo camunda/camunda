@@ -25,17 +25,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class BatchOperationCommandAppenderTest {
+class BatchOperationCommandsTest {
 
   private static final int PARTITION_ID = 1;
   private static final long BATCH_OPERATION_KEY = 123L;
 
-  private BatchOperationCommandAppender appender;
+  private BatchOperationCommands appender;
   private TaskResultBuilder mockBuilder;
 
   @BeforeEach
   void setUp() {
-    appender = new BatchOperationCommandAppender(PARTITION_ID);
+    appender = new BatchOperationCommands(PARTITION_ID);
     mockBuilder = mock(TaskResultBuilder.class);
   }
 
@@ -177,7 +177,7 @@ class BatchOperationCommandAppenderTest {
   void shouldUseCorrectPartitionIdInFailureCommand() {
     // given
     final int differentPartitionId = 5;
-    final var differentAppender = new BatchOperationCommandAppender(differentPartitionId);
+    final var differentAppender = new BatchOperationCommands(differentPartitionId);
     final String errorMessage = "Partition specific error";
     final BatchOperationErrorType errorType = BatchOperationErrorType.UNKNOWN;
 
