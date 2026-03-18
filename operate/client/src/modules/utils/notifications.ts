@@ -36,4 +36,21 @@ const handleOperationError = (statusCode?: number) => {
   });
 };
 
-export {handleOperationError, handleMutationError};
+const handleBatchOperationError = (statusCode?: number, title?: string) => {
+  if (statusCode === 404) {
+    return notificationsStore.displayNotification({
+      kind: 'error',
+      title: title ?? 'Operation could not be created',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
+      isDismissable: true,
+    });
+  }
+
+  handleMutationError({
+    statusCode: statusCode ?? 0,
+    title: title ?? 'Operation could not be created',
+  });
+};
+
+export {handleOperationError, handleBatchOperationError, handleMutationError};
