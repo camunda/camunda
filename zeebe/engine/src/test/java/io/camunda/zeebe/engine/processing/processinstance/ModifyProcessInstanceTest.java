@@ -1628,13 +1628,20 @@ public class ModifyProcessInstanceTest {
                 .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("AHSP")
+            .getFirst()
+            .getKey();
 
     // when
     ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .moveElements("AHSP", "C")
+        .terminateElement(elementInstanceKey)
+        .activateElement("C")
         .modify();
 
     // then
