@@ -25,7 +25,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,19 +116,7 @@ public class ConditionalBehaviorEngine {
   public void stop() {
     stopped = true;
     stopExecutor();
-    logSummary();
     behaviors.clear();
-  }
-
-  private void logSummary() {
-    if (behaviors.isEmpty() || !LOGGER.isDebugEnabled()) {
-      return;
-    }
-    final String details =
-        behaviors.stream()
-            .map(ConditionalBehavior::formatSummary)
-            .collect(Collectors.joining("\n  ", "\n  ", ""));
-    LOGGER.debug("Behavior engine summary — {} behavior(s):{}", behaviors.size(), details);
   }
 
   private synchronized void stopExecutor() {
@@ -279,17 +266,6 @@ public class ConditionalBehaviorEngine {
         return;
       }
       actionIndex.set(clampToLastAction(actionIndex.get() + 1));
-    }
-
-    private String formatSummary() {
-      final int fires = fireCount.get();
-      final int failures = failureCount.get();
-      if (fires == 0) {
-        return "'" + name + "': never fired";
-      }
-      return failures == 0
-          ? "'" + name + "': fired " + fires + " time(s)"
-          : "'" + name + "': fired " + fires + " time(s), " + failures + " failed";
     }
 
     private int clampToLastAction(final int index) {
