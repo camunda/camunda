@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.ExternalResourceBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.util.Either;
@@ -34,6 +35,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private final BpmnJobBehavior jobBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final ExternalResourceBehavior externalResourceBehavior;
 
   public JobWorkerTaskProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
@@ -44,6 +46,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     jobBehavior = behaviors.jobBehavior();
     stateBehavior = behaviors.stateBehavior();
     compensationSubscriptionBehaviour = behaviors.compensationSubscriptionBehaviour();
+    externalResourceBehavior = behaviors.externalResourceBehavior();
   }
 
   @Override
@@ -60,8 +63,17 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   @Override
   public Either<Failure, ?> finalizeActivation(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    // TODO we should add a new behavior. The behavior gets the resource and parses the JSON. Then
+    //  it will create the variables, using FEEL where necessary.
+    //  Also consider placing this straight after the input mappings. That way execution listener
+    //  can use these variables if they so desire.
     return jobBehavior
         .evaluateJobExpressions(element.getJobWorkerProperties(), context)
+        .flatMap(
+            j ->
+                externalResourceBehavior
+                    .createExternalResourceVariables(context, j.getLinkedResources())
+                    .map(ok -> j))
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .thenDo(
             jobProperties -> {
