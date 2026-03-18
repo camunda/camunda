@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.filter.VariableFilter;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelectors;
@@ -51,7 +52,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -297,7 +297,10 @@ public class VariableAssertTest {
     @CamundaAssertExpectFailure
     void shouldFailIfVariableNotExist() {
       // given
-      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
+
+      when(camundaDataSource.findVariables(any())).thenReturn(Arrays.asList(variableA, variableB));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -820,8 +823,10 @@ public class VariableAssertTest {
   class VariableSource {
 
     @Mock private VariableFilter variableFilter;
+    @Mock private StringProperty stringProperty;
 
     @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
+    @Captor private ArgumentCaptor<Consumer<StringProperty>> stringPropertyCaptor;
 
     @BeforeEach
     void configureMocks() {
@@ -844,6 +849,7 @@ public class VariableAssertTest {
 
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
       verify(variableFilter).name("a");
     }
 
@@ -891,7 +897,11 @@ public class VariableAssertTest {
 
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
-      verify(variableFilter).value(ArgumentMatchers.<Consumer>any());
+      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).value(stringPropertyCaptor.capture());
+
+      stringPropertyCaptor.getValue().accept(stringProperty);
+      verify(stringProperty).like("*order-123*");
     }
 
     @Test
@@ -908,8 +918,12 @@ public class VariableAssertTest {
 
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
       verify(variableFilter).name("a");
-      verify(variableFilter).value(ArgumentMatchers.<Consumer>any());
+      verify(variableFilter).value(stringPropertyCaptor.capture());
+
+      stringPropertyCaptor.getValue().accept(stringProperty);
+      verify(stringProperty).like("*1*");
     }
 
     @Test
@@ -985,6 +999,7 @@ public class VariableAssertTest {
 
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
       verify(variableFilter).name("a");
     }
 

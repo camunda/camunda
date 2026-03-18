@@ -23,6 +23,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -218,6 +219,42 @@ public class VariableAssertIT {
         .hasLocalVariables("user-task-child-id", expectedVariables);
   }
 
+  @Test
+  void shouldMatchVariableWithCombinedNameAndValueContainsSelector() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithVariables());
+    final Map<String, Object> variables = new HashMap<String, Object>();
+    variables.put("order_id", "order-123");
+    variables.put("other", "value");
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(variables)
+            .send()
+            .join();
+
+    // Then
+    assertThatProcessInstance(processInstanceEvent)
+        .hasVariable(
+            VariableSelectors.byName("order_id").and(VariableSelectors.byValueContains("order")),
+            "order-123");
+
+    withShortAwaitilityTimeouts(
+        () ->
+            Assertions.assertThatThrownBy(
+                    () ->
+                        assertThatProcessInstance(processInstanceEvent)
+                            .hasVariable(
+                                VariableSelectors.byName("order_id")
+                                    .and(VariableSelectors.byValueContains("unknown")),
+                                "order-123"))
+                .hasMessage(
+                    "Process instance [key: %s] should have a variable 'order_id, value contains: unknown'"
+                        + " with value '\"order-123\"' but the variable doesn't exist.",
+                    processInstanceEvent.getProcessInstanceKey()));
+  }
+
   private void withShortAwaitilityTimeouts(final Runnable assertionFn) {
     CamundaAssert.setAssertionTimeout(Duration.ofSeconds(5));
 
@@ -267,6 +304,13 @@ public class VariableAssertIT {
         .zeebeOutputExpression("\"B\"", "shadowed_variable")
         .zeebeUserTask()
         .endEvent("child-end")
+        .done();
+  }
+
+  private BpmnModelInstance processModelWithVariables() {
+    return Bpmn.createExecutableProcess("test-process-variables")
+        .startEvent()
+        .endEvent("success-end")
         .done();
   }
 

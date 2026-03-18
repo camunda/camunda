@@ -43,8 +43,17 @@ public class VariableSelectors {
   }
 
   /**
-   * Select the variable by a substring of its value. Uses the {@code like} filter for server-side
-   * pre-filtering.
+   * Select the variable by its process instance key.
+   *
+   * @param processInstanceKey the process instance key of the variable.
+   * @return the selector
+   */
+  public static VariableSelector byProcessInstanceKey(final long processInstanceKey) {
+    return new VariableProcessInstanceKeySelector(processInstanceKey);
+  }
+
+  /**
+   * Select the variable by a substring of its value.
    *
    * @param substring the substring to search for in the variable value.
    * @return the selector
@@ -121,7 +130,31 @@ public class VariableSelectors {
 
     @Override
     public void applyFilter(final VariableFilter filter) {
-      filter.value(v -> v.like("%" + substring + "%"));
+      filter.value(v -> v.like("*" + substring + "*"));
+    }
+  }
+
+  private static final class VariableProcessInstanceKeySelector implements VariableSelector {
+
+    private final long processInstanceKey;
+
+    private VariableProcessInstanceKeySelector(final long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+    }
+
+    @Override
+    public boolean test(final Variable variable) {
+      return Objects.equals(variable.getProcessInstanceKey(), processInstanceKey);
+    }
+
+    @Override
+    public String describe() {
+      return String.format("processInstanceKey: %d", processInstanceKey);
+    }
+
+    @Override
+    public void applyFilter(final VariableFilter filter) {
+      filter.processInstanceKey(processInstanceKey);
     }
   }
 }

@@ -25,7 +25,6 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.VariableSelector;
-import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
@@ -111,16 +110,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   public void hasLocalVariable(
       final long processInstanceKey,
       final ElementSelector elementSelector,
-      final String variableName,
-      final Object variableValue) {
-
-    hasLocalVariable(
-        processInstanceKey, elementSelector, VariableSelectors.byName(variableName), variableValue);
-  }
-
-  public void hasLocalVariable(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
       final VariableSelector variableSelector,
       final Object variableValue) {
 
@@ -132,14 +121,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableSelector,
                 variableValue,
                 () ->
-                    findVariablesBySelector(
+                    findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
-  }
-
-  public void hasVariable(
-      final long processInstanceKey, final String variableName, final Object variableValue) {
-
-    hasVariable(processInstanceKey, VariableSelectors.byName(variableName), variableValue);
   }
 
   public void hasVariable(
@@ -150,7 +133,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     hasVariable(
         variableSelector,
         variableValue,
-        () -> findVariablesBySelector(processInstanceKey, variableSelector));
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   private void hasVariable(
@@ -184,21 +167,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   public <T> void hasLocalVariableSatisfies(
       final long processInstanceKey,
       final ElementSelector elementSelector,
-      final String variableName,
-      final Class<T> variableValueType,
-      final ThrowingConsumer<T> requirement) {
-
-    hasLocalVariableSatisfies(
-        processInstanceKey,
-        elementSelector,
-        VariableSelectors.byName(variableName),
-        variableValueType,
-        requirement);
-  }
-
-  public <T> void hasLocalVariableSatisfies(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
       final VariableSelector variableSelector,
       final Class<T> variableValueType,
       final ThrowingConsumer<T> requirement) {
@@ -212,18 +180,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableValueType,
                 requirement,
                 () ->
-                    findVariablesBySelector(
+                    findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
-  }
-
-  public <T> void hasVariableSatisfies(
-      final long processInstanceKey,
-      final String variableName,
-      final Class<T> variableValueType,
-      final ThrowingConsumer<T> requirement) {
-
-    hasVariableSatisfies(
-        processInstanceKey, VariableSelectors.byName(variableName), variableValueType, requirement);
   }
 
   public <T> void hasVariableSatisfies(
@@ -236,7 +194,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         variableSelector,
         variableValueType,
         requirement,
-        () -> findVariablesBySelector(processInstanceKey, variableSelector));
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   private void hasVariableSatisfies(
@@ -406,13 +364,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   public void hasVariableSatisfiesJudge(
-      final long processInstanceKey, final String variableName, final String expectation) {
-
-    hasVariableSatisfiesJudge(
-        processInstanceKey, VariableSelectors.byName(variableName), expectation);
-  }
-
-  public void hasVariableSatisfiesJudge(
       final long processInstanceKey,
       final VariableSelector variableSelector,
       final String expectation) {
@@ -425,17 +376,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         rawValue ->
             evaluateJudge(
                 variableSelector.describe(), expectation, judgeConfig.getThreshold(), rawValue),
-        () -> findVariablesBySelector(processInstanceKey, variableSelector));
-  }
-
-  public void hasLocalVariableSatisfiesJudge(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
-      final String variableName,
-      final String expectation) {
-
-    hasLocalVariableSatisfiesJudge(
-        processInstanceKey, elementSelector, VariableSelectors.byName(variableName), expectation);
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   public void hasLocalVariableSatisfiesJudge(
@@ -460,7 +401,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                         judgeConfig.getThreshold(),
                         rawValue),
                 () ->
-                    findVariablesBySelector(
+                    findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
   }
 
@@ -535,17 +476,18 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     return toMap(ensureVariablesAreNotTruncated(variables));
   }
 
-  private List<Variable> findVariablesBySelector(
+  private List<Variable> findGlobalVariablesBySelector(
       final long processInstanceKey, final VariableSelector selector) {
     return ensureVariablesAreNotTruncated(
         dataSource.findVariables(
             filter -> {
               filter.processInstanceKey(processInstanceKey);
+              filter.scopeKey(processInstanceKey);
               selector.applyFilter(filter);
             }));
   }
 
-  private List<Variable> findVariablesBySelector(
+  private List<Variable> findLocalVariablesBySelector(
       final long processInstanceKey,
       final long elementInstanceKey,
       final VariableSelector selector) {
