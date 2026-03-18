@@ -37,6 +37,8 @@ public class PIDController {
     final long currentTime = clock.millis();
     final double error = target - actual;
 
+    System.out.println("error: " + error);
+
     double integral = 0.0;
     double derivative = 0.0;
 
