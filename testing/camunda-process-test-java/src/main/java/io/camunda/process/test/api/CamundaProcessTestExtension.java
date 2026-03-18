@@ -194,11 +194,10 @@ public class CamundaProcessTestExtension
     store.put(STORE_KEY_RUNTIME, runtime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
 
-    // initialize json mapper
+    // initializations
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
-
-    // initialize judge config
     initializeJudgeConfig();
+    initializeAssertions(runtimeBuilder);
   }
 
   private CamundaManagementClient createManagementClient(
@@ -247,6 +246,11 @@ public class CamundaProcessTestExtension
                     CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
                     CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
         .ifPresent(CamundaAssert::setJudgeConfig);
+  }
+
+  private void initializeAssertions(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    runtimeBuilder.getAssertionTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
+    runtimeBuilder.getAssertionInterval().ifPresent(CamundaAssert::setAssertionInterval);
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
