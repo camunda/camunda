@@ -57,7 +57,7 @@ public class ConditionalScenarioEngine {
   private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final int DEFAULT_MAX_SCENARIO_THREADS = 8;
 
-  private volatile Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
+  private final Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
   private volatile Duration resetTimeout = DEFAULT_RESET_TIMEOUT;
 
   private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
@@ -243,11 +243,7 @@ public class ConditionalScenarioEngine {
       } catch (final AssertionError e) {
         return false;
       } catch (final Throwable t) {
-        LOGGER.warn(
-            "Scenario '{}' condition threw an unexpected exception"
-                + " (expected AssertionError for unmet conditions)",
-            name,
-            t);
+        LOGGER.warn("Scenario '{}' condition threw an unexpected exception", name, t);
         return false;
       }
     }
