@@ -21,9 +21,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class CamundaJsonSchemaGeneratorTest {
 
-  private final JsonMapper jsonMapper = JsonMapper.shared();
+  private final JsonMapper objectMapper = JsonMapper.shared();
   private final CamundaJsonSchemaGenerator schemaGenerator =
-      new CamundaJsonSchemaGenerator(jsonMapper);
+      new CamundaJsonSchemaGenerator(objectMapper);
 
   @Test
   void shouldGenerateMinimalSchemaForMethodWithOnlyFrameworkParams() throws Exception {
@@ -92,7 +92,7 @@ class CamundaJsonSchemaGeneratorTest {
   private JsonNode generateMethodSchema(final String methodName, final Class<?>... paramTypes)
       throws Exception {
     final Method method = TestToolMethods.class.getMethod(methodName, paramTypes);
-    return jsonMapper.readTree(schemaGenerator.generateForMethodInput(method));
+    return objectMapper.readTree(schemaGenerator.generateForMethodInput(method));
   }
 
   private void assertInlinedAddressProperties(final JsonNode schema) {
