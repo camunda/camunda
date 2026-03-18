@@ -21,7 +21,6 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
-import tools.jackson.core.Version;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
@@ -38,7 +37,7 @@ public class CamundaMcpJackson3Module extends SimpleModule {
   private static final String MODULE_NAME = "CamundaMcpJackson3Module";
 
   public CamundaMcpJackson3Module() {
-    super(MODULE_NAME, moduleVersion());
+    super(MODULE_NAME);
     setMixInAnnotation(IncidentFilter.class, McpIncidentFilter.class);
     setMixInAnnotation(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class);
     setMixInAnnotation(
@@ -47,26 +46,5 @@ public class CamundaMcpJackson3Module extends SimpleModule {
     setMixInAnnotation(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
     setMixInAnnotation(UserTaskFilter.class, McpUserTaskFilter.class);
     setMixInAnnotation(VariableFilter.class, McpVariableFilter.class);
-  }
-
-  private static Version moduleVersion() {
-    final Package pkg = CamundaMcpJackson3Module.class.getPackage();
-    if (pkg != null && pkg.getImplementationVersion() != null) {
-      try {
-        final String[] parts = pkg.getImplementationVersion().split("\\.");
-        if (parts.length >= 3) {
-          return new Version(
-              Integer.parseInt(parts[0]),
-              Integer.parseInt(parts[1]),
-              Integer.parseInt(parts[2]),
-              null,
-              null,
-              null);
-        }
-      } catch (final NumberFormatException e) {
-        // Fall through to default version
-      }
-    }
-    return new Version(1, 0, 0, null, null, null);
   }
 }
