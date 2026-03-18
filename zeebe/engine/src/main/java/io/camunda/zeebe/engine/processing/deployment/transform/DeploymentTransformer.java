@@ -88,7 +88,12 @@ public final class DeploymentTransformer {
             entry(".xml", bpmnResourceTransformer),
             entry(".dmn", dmnResourceTransformer),
             entry(".form", formResourceTransformer),
-            entry(".rpa", resourceTransformer));
+            entry(".rpa", resourceTransformer),
+            // TODO this should get its own transformer, not the RpaTransformer. But it works for
+            //  PoC purposes.
+            //  It also considers every .json file a configuration file right now. We must make this
+            //  smarter if we want to support generic resource deployment.
+            entry(".json", resourceTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
