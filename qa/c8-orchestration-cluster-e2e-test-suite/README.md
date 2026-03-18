@@ -69,6 +69,7 @@ CAMUNDA_BASIC_AUTH_USERNAME=demo
 CAMUNDA_BASIC_AUTH_PASSWORD=demo
 ZEEBE_REST_ADDRESS=http://localhost:8080
 CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
+DATABASE_CONTAINER=<Service name from db/docker-compose.yml>
 ```
 
 ---
@@ -76,6 +77,8 @@ CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
 ### 4. Start Local Camunda 8 Self-Managed Environment
 
 For running tests locally, ensure you have an active instance. To set it up:
+
+#### General flow for starting the environment:
 
 1. Open a terminal in the `config` folder inside the `c8-orchestration-cluster-e2e-test-suite` directory.
 2. Run:
@@ -95,6 +98,73 @@ DATABASE=elasticsearch docker compose up -d camunda
 This launches Tasklist and Operate with Elasticsearch as the backing database.
 🛠️ Ensure the ports in your .env match those used in this setup (e.g., 8080, 8081, 8089).
 
+#### RDBMS flow for starting the environment:
+
+1. Build distribution locally from the desired branch:
+
+```bash
+./mvnw install -Dquickly -T1C -PskipFrontendBuild
+```
+
+2. Untar the distribution:
+
+```bash
+cd camunda/dist/target
+tar -xzf camunda-orchestration-cluster-*.tar.gz
+```
+
+3. Configure connection of the applications to the database by providing the [application.yaml](qa/c8-orchestration-cluster-e2e-test-suite/config/application.yaml) (this example with oracle db) file
+   with the correct database connection details (e.g., URL, username, password). Alternatively define appropriate environment variables in the run command or your docker environment.:
+
+```bash
+cp qa/c8-orchestration-cluster-e2e-test-suite/config/application.yaml \
+   dist/target/camunda-zeebe-8.10.0-SNAPSHOT/config/
+```
+
+4. Install JDBC driver for the chosen database in the `lib` folder of the distribution (e.g., `ojdbc11.jar` for Oracle).
+
+```bash
+curl -L -o dist/target/camunda-zeebe-8.10.0-SNAPSHOT/lib/ojdbc11.jar \
+    https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/ojdbc11-23.3.0.23.09.jar
+```
+
+5. Start the database container:
+
+```bash
+docker compose -f db/docker-compose.yml up -d --wait <Service name from db/docker-compose.yml, e.g. oracle>
+```
+
+6. Start the application:
+
+```bash
+cd dist/target/camunda-zeebe-8.10.0-SNAPSHOT
+export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
+export ZEEBE_CLOCK_CONTROLLED="true"
+export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
+export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
+export CAMUNDA_SECURITY_AUTHENTICATION_METHOD="BASIC"
+export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED="false"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME="demo"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD="demo"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME="Demo"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL="demo@example.com"
+export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0="demo"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME="lisa"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD="lisa"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME="lisa"
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL="lisa@example.com"
+export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
+export CAMUNDA_DATA_AUDITLOG_ENABLED="true"
+export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_0="ADMIN"
+export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_1="DEPLOYED_RESOURCES"
+export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_2="USER_TASKS"
+export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0="VARIABLE"
+export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1="BATCH"
+export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
+export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
+./bin/camunda
+```
+
 ## Running Tests Locally
 
 ### Headless Mode
@@ -103,6 +173,12 @@ To run the tests without a graphical user interface:
 
 ```bash
 npm run test:local
+```
+
+To run API V2 tests against RDBMS setup, use:
+
+```bash
+DATABASE=RDBMS npm run test -- --project=api-tests
 ```
 
 ### Interactive Mode (UI)
