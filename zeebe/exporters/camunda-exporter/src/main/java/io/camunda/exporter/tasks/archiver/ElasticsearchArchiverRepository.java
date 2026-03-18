@@ -531,8 +531,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                         dh ->
                             dh.field("endDate")
                                 .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
-                                .format(config.getElsRolloverDateFormat())
-                                .keyed(true))
+                                .format(config.getElsRolloverDateFormat()))
                     .aggregations(Map.of("bucketSort", bucketSortAggregation)));
 
     final SearchRequest searchRequest =
