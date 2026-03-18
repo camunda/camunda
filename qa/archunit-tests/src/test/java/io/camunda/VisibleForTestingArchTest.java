@@ -40,6 +40,10 @@ import java.util.Set;
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public class VisibleForTestingArchTest {
 
+  //
+  // Check that the extended visibility is only used for testing purposes
+  //
+
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
       classes().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
@@ -51,6 +55,44 @@ public class VisibleForTestingArchTest {
   @ArchTest
   static final ArchRule FIELD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
       fields().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
+
+  //
+  // Check that the annotation is used to properly extend the visibility
+  //
+
+  @ArchTest
+  static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_HAVE_CORRECT_VISIBILITY =
+      classes()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should()
+          .notBePublic()
+          .andShould()
+          .notBePrivate();
+
+  @ArchTest
+  static final ArchRule METHOD_VISIBLE_FOR_TESTING_SHOULD_HAVE_CORRECT_VISIBILITY =
+      methods()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should()
+          .notBePublic()
+          .andShould()
+          .notBePrivate();
+
+  @ArchTest
+  static final ArchRule FIELD_VISIBLE_FOR_TESTING_SHOULD_HAVE_CORRECT_VISIBILITY =
+      fields()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should()
+          .notBePublic()
+          .andShould()
+          .notBePrivate();
+
+  //
+  // Conditions implementation
+  //
 
   private static <T extends AndFullName> ArchCondition<T> beAccessedBySelfOrTest() {
     return new ArchCondition<>("be accessed from test or self") {
