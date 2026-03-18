@@ -113,7 +113,7 @@ Use the standard `kafka-clients` library version 3, and rely on its backwards co
 ### Q17
 > What should the **Kafka message key** be? Options: partition ID, record key, process instance key, business key, or configurable? This affects Kafka partition ordering guarantees.
 
-**Answer:** If all records from a partition are guaranteed to go to the same Kafka partition, then use partition ID + position like the community exporter. Otherwise use the record key.
+**Answer:** Use `partitionId-position` as the Kafka message key (like the community exporter and consistent with Design Q7). This guarantees ordering per Zeebe partition. To also guarantee ordering per record key (as stated in Q38), all records from the same Zeebe partition must route to the same Kafka partition, which can be achieved through the Kafka partitioning strategy.
 
 
 ### Q18
@@ -172,7 +172,7 @@ Look at what we support for Kafka connectors today at Camunda and do it the same
 ### Q26
 > Should there be **data masking/redaction** for sensitive fields (e.g., process variables containing PII) before export? The current exporters have no masking — is this acceptable for Kafka too?
 
-**Answer:** First iteration yes. Of course we could get inspiration from the filters we have build now for Optimize (in the Zeebe Elastic exporter).
+**Answer:** Exclude PII/sensitive data handling in the first iteration. We could get inspiration from the filters we have built now for Optimize (in the Zeebe Elastic exporter) for future phases. See also Design Q33 for field-level redaction considerations.
 
 
 ### Q27
@@ -241,12 +241,12 @@ Startup config is fine.
 ### Q35
 > How should the exporter handle **Kafka unavailability**? Options: (a) block/retry indefinitely (existing exporter pattern — the broker pauses exporting until the target recovers), (b) circuit breaker with bounded buffer, (c) dead-letter queue. Note that blocking is the current default for all Zeebe exporters.
 
-**Answer:** Consider making it configurable and very clear for end-users.
+**Answer:** The exporter should never block other exporters. It should be completely decoupled with configuration to handle what happens when Kafka is unreachable (e.g., buffer with max size and time, drop, etc.). See Design Q15 for detailed strategy.
 
 ### Q36
 > Should there be a **bounded in-memory buffer** with backpressure to the broker when Kafka is slow, or should it follow the existing exporter pattern of "retry until success, blocking all exports"?
 
-**Answer:** Consider making it configurable and very clear for end-users.
+**Answer:** Yes, implement a bounded in-memory buffer with configurable overflow policy (drop oldest, drop newest, log and skip). This should be configurable and very clear for end-users in documentation.
 
 ### Q37
 > Should the exporter support **batching** to Kafka (buffering N records or M bytes before producing), and if so, what are the default thresholds?
@@ -545,7 +545,7 @@ Startup config is fine.
 >     - Buffer in-memory with a bounded queue (risk OOM)
 >     The existing `ExporterDirector` already handles slow exporters via soft-pause — is that sufficient?
 
-**Answer:** This could be configurable
+**Answer:** The exporter should never block other exporters. Implement a bounded buffer with configurable overflow policies (drop oldest, drop newest, or log and skip). This should be configurable with clear documentation. See Q35/Q36 and Design Q15 for consistency.
 
 
 ### Q24
@@ -807,7 +807,7 @@ Startup config is fine.
 >     - Dead-letter queue for failed records?
 >     - Configurable behavior?
 
-**Answer:** Configurable
+**Answer:** Configurable with options including bounded buffer with overflow policies (drop oldest, drop newest, log and skip). The exporter should never block other exporters. See Q35/Q36 and Engineering Q23 for consistency.
 
 
 ### Q14
@@ -956,7 +956,7 @@ Startup config is fine.
 ### Q33
 > Should the exporter support **field-level redaction** or masking of sensitive data before publishing to Kafka (e.g., masking variable values, PII in user task assignments)?
 
-**Answer:**
+**Answer:** Not in the initial implementation. This could be added in a future phase, potentially leveraging the filter patterns from the Zeebe Elastic exporter used for Optimize. See also Q26.
 
 
 ### Q34
