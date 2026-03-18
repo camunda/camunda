@@ -44,7 +44,7 @@ describe('useElementInstancesStatistics', () => {
     mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
-  it('should fetch flownode instances statistics successfully', async () => {
+  it('should fetch element instances statistics successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -109,7 +109,7 @@ describe('useElementInstancesStatistics', () => {
     expect(result.current.data).toEqual(mockData.items.length);
   });
 
-  it('should handle server error while fetching flownode instances overlay statistics', async () => {
+  it('should handle server error while fetching element instances overlay statistics', async () => {
     mockFetchElementInstancesStatistics().withServerError();
 
     const {result} = renderHook(() => useElementInstancesStatistics(), {
@@ -123,7 +123,7 @@ describe('useElementInstancesStatistics', () => {
     expect(result.current.error?.response).toBeDefined();
   });
 
-  it('should handle network error while fetching flownode instances overlay statistics', async () => {
+  it('should handle network error while fetching element instances overlay statistics', async () => {
     mockFetchElementInstancesStatistics().withNetworkError();
 
     const {result} = renderHook(() => useElementInstancesStatistics(), {

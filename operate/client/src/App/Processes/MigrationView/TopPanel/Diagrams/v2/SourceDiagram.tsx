@@ -80,7 +80,7 @@ const SourceDiagram: React.FC = observer(() => {
             xml={migrationSourceData.xml}
             processDefinitionKey={sourceProcessDefinition?.processDefinitionKey}
             selectableElements={[
-              ...migrationSourceData.selectableFlowNodes,
+              ...migrationSourceData.selectableElements,
               ...migrationSourceData.selectableSequenceFlows,
             ].map((element) => element.id)}
             selectedElementIds={selectedSourceElementIds}
