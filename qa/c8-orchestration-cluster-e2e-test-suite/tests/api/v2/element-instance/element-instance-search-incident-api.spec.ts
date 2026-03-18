@@ -15,6 +15,7 @@ import {
 import {
   assertBadRequest,
   assertForbiddenRequest,
+  assertInvalidArgument,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -40,9 +41,7 @@ test.describe('Element Instance Incident Search API', () => {
 
   test.beforeAll(async ({request}) => {
     await test.step('Deploy processes and create instance', async () => {
-      const deployment1 = await deploy([
-        './resources/calledErrorProcess.bpmn',
-      ]);
+      const deployment1 = await deploy(['./resources/calledErrorProcess.bpmn']);
       state['processDefinitionKeyCalled'] =
         deployment1.processes[0].processDefinitionKey;
       await deploy(['./resources/callErrorProcess.bpmn']);
@@ -299,22 +298,20 @@ test.describe('Element Instance Incident Search API', () => {
   test('Search for incidents of a specific element instance - Wrong Filter Value - Bad Request', async ({
     request,
   }) => {
-    await expect(async () => {
-      const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              processInstanceKey: 'notANumber',
-            },
+    const res = await request.post(
+      buildUrl(
+        `/element-instances/${state.elementInstanceKey}/incidents/search`,
+      ),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: 'notANumber',
           },
         },
-      );
-      await assertBadRequest(res, 'For input string: \"notANumber\"');
-    }).toPass(defaultAssertionOptions);
+      },
+    );
+    await assertInvalidArgument(res, 400, 'For input string: "notANumber"');
   });
 
   test('Search for incidents of a specific element instance - Wrong Filter Field - Bad Request', async ({

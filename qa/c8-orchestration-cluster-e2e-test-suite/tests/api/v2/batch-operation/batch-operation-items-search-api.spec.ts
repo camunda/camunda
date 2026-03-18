@@ -15,6 +15,7 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -621,20 +622,15 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     request,
   }) => {
     const invalidFilterValue = 'meow';
-    await expect(async () => {
-      const res = await request.post(
-        buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              itemKey: invalidFilterValue,
-            },
-          },
+    const res = await request.post(buildUrl(SEARCH_BATCH_OPERATION_ITEMS_PATH), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          itemKey: invalidFilterValue,
         },
-      );
+      },
+    });
 
-      await assertBadRequest(res, 'For input string: \"meow\"');
-    }).toPass(defaultAssertionOptions);
+    await assertInvalidArgument(res, 400, 'For input string: "meow"');
   });
 });
