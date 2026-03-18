@@ -15,45 +15,77 @@ import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * Converts authentication information into the claims map embedded in broker requests.
+ *
+ * <p>Identity claims (username, clientId) are always included because the exporter reads them from
+ * the record to populate the audit log actor (see {@code AuditLogActor.of}). Skipping these would
+ * cause audit log entries to have no actor information.
+ *
+ * <p>Authorization claims (JWT token claims, group memberships) are only needed for authorization
+ * and multi-tenancy checks in the engine, and are skipped when both are disabled. Callers can check
+ * {@link #shouldIncludeAuthorizationClaims()} to avoid computing these values when not needed.
+ */
 public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
+  private final boolean shouldIncludeAuthorizationClaims;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
+    shouldIncludeAuthorizationClaims =
+        securityConfiguration.getAuthorizations().isEnabled()
+            || securityConfiguration.getMultiTenancy().isChecksEnabled();
+  }
+
+  /** Returns whether authorization claims (token claims, groups) are needed in broker requests. */
+  public boolean shouldIncludeAuthorizationClaims() {
+    return shouldIncludeAuthorizationClaims;
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
+    return convert(
+        authentication.isAnonymous(),
+        authentication.authenticatedUsername(),
+        authentication.authenticatedClientId(),
+        authentication.authenticatedGroupIds(),
+        authentication.claims());
+  }
 
-    final var authorization = new HashMap<String, Object>();
-    if (authentication.isAnonymous()) {
-      authorization.put(AUTHORIZED_ANONYMOUS_USER, true);
-      return authorization;
+  public Map<String, Object> convert(
+      final boolean isAnonymous,
+      final String username,
+      final String clientId,
+      final List<String> groups,
+      final Map<String, Object> tokenClaims) {
+
+    if (isAnonymous) {
+      return Map.of(AUTHORIZED_ANONYMOUS_USER, true);
     }
 
-    final var username = authentication.authenticatedUsername();
-    final var clientId = authentication.authenticatedClientId();
-    final var groups = authentication.authenticatedGroupIds();
-    final var claims = authentication.claims();
+    final var claims = new HashMap<String, Object>();
 
     if (username != null) {
-      authorization.put(AUTHORIZED_USERNAME, username);
+      claims.put(AUTHORIZED_USERNAME, username);
     }
 
     if (clientId != null) {
-      authorization.put(AUTHORIZED_CLIENT_ID, clientId);
+      claims.put(AUTHORIZED_CLIENT_ID, clientId);
     }
 
-    if (!camundaGroupsEnabled) {
-      authorization.put(USER_GROUPS_CLAIMS, groups);
+    if (shouldIncludeAuthorizationClaims) {
+      if (!camundaGroupsEnabled && groups != null) {
+        claims.put(USER_GROUPS_CLAIMS, groups);
+      }
+
+      if (tokenClaims != null) {
+        claims.put(USER_TOKEN_CLAIMS, tokenClaims);
+      }
     }
 
-    if (claims != null) {
-      authorization.put(USER_TOKEN_CLAIMS, claims);
-    }
-
-    return authorization;
+    return claims;
   }
 }
