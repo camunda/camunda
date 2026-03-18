@@ -36,11 +36,11 @@ public class DbMultiInstanceState implements MutableMultiInstanceState {
   }
 
   @Override
-  public void insertInputCollection(
+  public void upsertInputCollection(
       final long multiInstanceKey, final List<DirectBuffer> inputCollection) {
     this.multiInstanceKey.wrapLong(multiInstanceKey);
     this.inputCollection.setInputCollection(inputCollection);
-    inputCollectionColumnFamily.insert(this.multiInstanceKey, this.inputCollection);
+    inputCollectionColumnFamily.upsert(this.multiInstanceKey, this.inputCollection);
   }
 
   @Override
