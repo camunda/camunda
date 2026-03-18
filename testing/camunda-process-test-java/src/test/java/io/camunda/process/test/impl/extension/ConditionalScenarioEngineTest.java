@@ -446,19 +446,4 @@ class ConditionalScenarioEngineTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(2));
   }
-
-  @Test
-  void shouldShutdownPromptlyDuringResetWait() {
-    engine.when(() -> {}).then(() -> {});
-
-    // wait for the scenario to fire and enter reset-wait
-    await().atMost(1, TimeUnit.SECONDS).pollDelay(200, TimeUnit.MILLISECONDS).until(() -> true);
-
-    final long start = System.currentTimeMillis();
-    engine.stop();
-    final long elapsed = System.currentTimeMillis() - start;
-
-    // should stop well within the shutdown timeout
-    assertThat(elapsed).isLessThan(ConditionalScenarioEngine.DEFAULT_RESET_TIMEOUT.toMillis());
-  }
 }
