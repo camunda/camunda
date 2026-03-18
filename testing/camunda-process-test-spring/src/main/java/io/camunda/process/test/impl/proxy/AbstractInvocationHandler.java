@@ -16,15 +16,28 @@
 package io.camunda.process.test.impl.proxy;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import javax.annotation.CheckForNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public abstract class AbstractInvocationHandler implements InvocationHandler {
+public abstract class AbstractInvocationHandler<T> implements InvocationHandler {
 
   private static final Object[] NO_ARGS = {};
+
+  private T delegate;
+
+  public void setDelegate(final T client) {
+    delegate = client;
+  }
+
+  public void removeDelegate() {
+    delegate = null;
+  }
+
+  protected abstract Class<T> getDelegateClass();
 
   @Override
   @CheckForNull
@@ -65,8 +78,28 @@ public abstract class AbstractInvocationHandler implements InvocationHandler {
    * an empty array is passed in.
    */
   @CheckForNull
-  protected abstract Object handleInvocation(Object proxy, Method method, @Nullable Object[] args)
-      throws Throwable;
+  private Object handleInvocation(
+      final Object proxy, final Method method, @Nullable final Object[] args) throws Throwable {
+    if (delegate == null) {
+      final String delegateClassName = getDelegateClass().getSimpleName();
+      throw new RuntimeException(
+          "Cannot invoke %s on %s, as %s is currently not initialized. Maybe you run outside of a testcase?"
+              .formatted(method, delegateClassName, delegateClassName));
+    }
+    try {
+      return method.invoke(delegate, args);
+
+    } catch (final InvocationTargetException e) {
+      final Throwable cause = e.getCause();
+      if (cause == null) {
+        // Defensive fallback: propagate the original InvocationTargetException
+        throw e;
+      }
+
+      // Propagate checked exceptions as-is, for example, assertion errors
+      throw cause;
+    }
+  }
 
   /**
    * By default delegates to {@link Object#hashCode}. The dynamic proxies' {@code hashCode()} will
