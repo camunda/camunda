@@ -49,6 +49,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.exporter.tasks.archiver.ExporterBackpressure;
 import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
@@ -87,6 +88,7 @@ public class CamundaExporter implements Exporter {
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
+  private final ExporterBackpressure backpressure = new ExporterBackpressure();
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
@@ -208,6 +210,8 @@ public class CamundaExporter implements Exporter {
     // adding record is idempotent
     writer.addRecord(record);
 
+    backpressure.backpressure();
+
     lastPosition = record.getPosition();
 
     if (shouldFlush()) {
@@ -284,6 +288,7 @@ public class CamundaExporter implements Exporter {
                 context.getConfiguration().getId().toLowerCase(),
                 configuration,
                 provider,
+                backpressure,
                 metrics,
                 context.getLogger(),
                 metadata,
