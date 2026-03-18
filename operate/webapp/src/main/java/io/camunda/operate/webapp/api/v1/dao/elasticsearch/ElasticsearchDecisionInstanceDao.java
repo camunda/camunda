@@ -175,14 +175,15 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
     final DecisionInstance decisionInstance =
         new DecisionInstance()
             .setId((String) searchHitAsMap.get(DecisionInstance.ID))
-            .setKey((Long) searchHitAsMap.get(DecisionInstance.KEY))
+            .setKey(getLong(searchHitAsMap.get(DecisionInstance.KEY)))
             .setState(
                 DecisionInstanceState.fromString(
                     (String) searchHitAsMap.get(DecisionInstance.STATE)))
             .setEvaluationDate((String) searchHitAsMap.get(DecisionInstance.EVALUATION_DATE))
             .setProcessDefinitionKey(
-                (Long) searchHitAsMap.get(DecisionInstance.PROCESS_DEFINITION_KEY))
-            .setProcessInstanceKey((Long) searchHitAsMap.get(DecisionInstance.PROCESS_INSTANCE_KEY))
+                getLong(searchHitAsMap.get(DecisionInstance.PROCESS_DEFINITION_KEY)))
+            .setProcessInstanceKey(
+                getLong(searchHitAsMap.get(DecisionInstance.PROCESS_INSTANCE_KEY)))
             .setDecisionId((String) searchHitAsMap.get(DecisionInstance.DECISION_ID))
             .setTenantId((String) searchHitAsMap.get(DecisionInstance.TENANT_ID))
             .setDecisionDefinitionId(
