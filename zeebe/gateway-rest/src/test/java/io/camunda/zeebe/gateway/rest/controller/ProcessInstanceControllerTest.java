@@ -374,20 +374,18 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new ServiceException(rejectionReason, ServiceException.Status.ALREADY_EXISTS)));
 
-    final var request =
-        """
-            {
-                "processDefinitionId": "bpmnProcessId",
-                "businessId": "order-12345"
-            }""";
-
     // when / then
     webClient
         .post()
         .uri(PROCESS_INSTANCES_START_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue(
+            """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "businessId": "order-12345"
+            }""")
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.CONFLICT)
@@ -775,41 +773,38 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
-    final var request =
-        """
-            {
-                "processDefinitionKey": "123",
-                "awaitCompletion": true,
-                "businessId": "order-12345"
-            }""";
-
-    final var expectedResponse =
-        """
-            {
-              "processDefinitionKey":"123",
-              "processDefinitionId":"bpmnProcessId",
-              "processDefinitionVersion":-1,
-              "processInstanceKey":"456",
-              "tenantId":"<default>",
-              "variables":{},
-              "tags":[],
-              "businessId":"order-12345"
-            }""";
-
     // when / then
     webClient
         .post()
         .uri(PROCESS_INSTANCES_START_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue(
+            """
+            {
+                "processDefinitionKey": "123",
+                "awaitCompletion": true,
+                "businessId": "order-12345"
+            }""")
         .exchange()
         .expectStatus()
         .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .json(
+            """
+            {
+                "processDefinitionKey":"123",
+                "processDefinitionId":"bpmnProcessId",
+                "processDefinitionVersion":-1,
+                "processInstanceKey":"456",
+                "tenantId":"<default>",
+                "variables":{},
+                "tags":[],
+                "businessId":"order-12345"
+            }""",
+            JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
@@ -833,21 +828,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new ServiceException(rejectionReason, ServiceException.Status.ALREADY_EXISTS)));
 
-    final var request =
-        """
-            {
-                "processDefinitionId": "bpmnProcessId",
-                "awaitCompletion": true,
-                "businessId": "order-12345"
-            }""";
-
     // when / then
     webClient
         .post()
         .uri(PROCESS_INSTANCES_START_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue(
+            """
+            {
+              "processDefinitionId": "bpmnProcessId",
+              "awaitCompletion": true,
+              "businessId": "order-12345"
+            }""")
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.CONFLICT)
