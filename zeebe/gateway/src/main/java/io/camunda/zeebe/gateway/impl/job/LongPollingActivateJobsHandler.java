@@ -305,14 +305,12 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
   private void handlePendingRequests(
       final InFlightLongPollingActivateJobsRequestsState<T> state, final String jobType) {
-    final var nextPending = state.getNextPendingRequest();
+    final var nextPending = getNextOpenPendingRequest(state);
     if (nextPending != null) {
       LOG.trace("Unblocking ActivateJobsRequest {}", nextPending.getRequest());
       internalActivateJobsRetry(nextPending);
-    } else {
-      if (!state.hasActiveRequests()) {
-        jobTypeState.remove(jobType);
-      }
+    } else if (!state.hasActiveRequests()) {
+      jobTypeState.remove(jobType);
     }
   }
 
@@ -348,7 +346,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     jobTypeState.forEach(
         (type, state) -> {
           if (state.getLastUpdatedTime() < (now - probeTimeoutMillis)) {
-            final InflightActivateJobsRequest<T> probeRequest = state.getNextPendingRequest();
+            final InflightActivateJobsRequest<T> probeRequest = getNextOpenPendingRequest(state);
             if (probeRequest != null) {
               tryToActivateJobsOnAllPartitions(state, probeRequest);
             } else {
@@ -359,6 +357,17 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
             }
           }
         });
+  }
+
+  private InflightActivateJobsRequest<T> getNextOpenPendingRequest(
+      final InFlightLongPollingActivateJobsRequestsState<T> state) {
+    InflightActivateJobsRequest<T> request;
+    while ((request = state.getNextPendingRequest()) != null) {
+      if (request.isOpen()) {
+        return request;
+      }
+    }
+    return null;
   }
 
   public static <T> Builder<T> newBuilder() {

@@ -216,6 +216,60 @@ public class LongPollingActivateJobsRestTest {
   }
 
   @Test
+  void shouldSkipCancelledRequestAndUnblockNext() {
+    // given
+    final InflightActivateJobsRequest<JobActivationResult> cancelledRequest =
+        getLongPollingJobActivationRequest();
+    final InflightActivateJobsRequest<JobActivationResult> liveRequest =
+        getLongPollingJobActivationRequest();
+
+    handler.internalActivateJobsRetry(cancelledRequest);
+    handler.internalActivateJobsRetry(liveRequest);
+    waitUntil(cancelledRequest::hasScheduledTimer);
+    waitUntil(liveRequest::hasScheduledTimer);
+
+    // when — first request's worker disconnects, then jobs become available
+    doReturn(true).when(cancelledRequest.getResponseObserver()).isCancelled();
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    brokerClient.notifyJobsAvailable(TYPE);
+    Awaitility.await().until(liveRequest::isCompleted);
+
+    // then — the cancelled request is skipped, the live one gets the jobs
+    verify(cancelledRequest.getResponseObserver(), never()).onNext(any());
+    verify(liveRequest.getResponseObserver(), times(1)).onNext(any());
+    verify(liveRequest.getResponseObserver(), times(1)).onCompleted();
+  }
+
+  @Test
+  void shouldCleanUpJobTypeStateWhenAllPendingRequestsCancelled() {
+    // given
+    final InflightActivateJobsRequest<JobActivationResult> request1 =
+        getLongPollingJobActivationRequest();
+    final InflightActivateJobsRequest<JobActivationResult> request2 =
+        getLongPollingJobActivationRequest();
+
+    handler.internalActivateJobsRetry(request1);
+    handler.internalActivateJobsRetry(request2);
+    waitUntil(request1::hasScheduledTimer);
+    waitUntil(request2::hasScheduledTimer);
+
+    // when — all workers disconnect, then a notification arrives
+    doReturn(true).when(request1.getResponseObserver()).isCancelled();
+    doReturn(true).when(request2.getResponseObserver()).isCancelled();
+    brokerClient.notifyJobsAvailable(TYPE);
+
+    // then — a new request for the same type should still work
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    final InflightActivateJobsRequest<JobActivationResult> freshRequest =
+        getLongPollingJobActivationRequest();
+    handler.internalActivateJobsRetry(freshRequest);
+    Awaitility.await().until(freshRequest::isCompleted);
+
+    verify(freshRequest.getResponseObserver(), times(1)).onNext(any());
+    verify(freshRequest.getResponseObserver(), times(1)).onCompleted();
+  }
+
+  @Test
   void shouldCompleteAfterRequestTimeout() {
     // given
     final InflightActivateJobsRequest<JobActivationResult> longPollingRequest =
