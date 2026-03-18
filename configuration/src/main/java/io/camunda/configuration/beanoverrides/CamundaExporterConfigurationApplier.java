@@ -9,6 +9,7 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.InterceptorPlugin;
+import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -74,6 +75,10 @@ public final class CamundaExporterConfigurationApplier {
     target.setPassword(source.getPassword());
     target.setIndexPrefix(source.getIndexPrefix());
     target.setProxy(source.getProxy());
+
+    if (source instanceof final Opensearch opensearch) {
+      target.setAwsEnabled(opensearch.isAwsEnabled());
+    }
 
     // Add security configuration mapping
     if (source.getSecurity() != null) {

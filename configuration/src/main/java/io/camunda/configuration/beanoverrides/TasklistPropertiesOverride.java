@@ -118,6 +118,7 @@ public class TasklistPropertiesOverride {
     override.getOpenSearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpenSearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
     override.getOpenSearch().setDateFormat(database.getOpensearch().getDateFormat());
+    override.getOpenSearch().setAwsEnabled(database.getOpensearch().isAwsEnabled());
     final var osProxy = new ProxyProperties();
     BeanUtils.copyProperties(database.getOpensearch().getProxy(), osProxy);
     override.getOpenSearch().setProxy(osProxy);
