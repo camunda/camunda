@@ -12,9 +12,9 @@ import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.ProblemDetail;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
 
 public class CallToolResultMapper {
 
@@ -80,7 +80,7 @@ public class CallToolResultMapper {
 
   private static String structuredContentAsJson(final Object object) {
     try {
-      return JsonMapper.shared().writeValueAsString(object);
+      return JsonParser.getJsonMapper().writeValueAsString(object);
     } catch (final JacksonException ex) {
       throw new RuntimeException("Failed to convert structuredContent to JSON representation", ex);
     }
