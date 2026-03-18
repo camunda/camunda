@@ -18,6 +18,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -529,11 +530,24 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         Aggregation.of(
             a ->
                 a.dateHistogram(
-                        dh ->
-                            (dh.field("endDate")
-                                .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
-                                .format(config.getElsRolloverDateFormat())
-                                .timeZone(ZoneId.systemDefault().getId())))
+                        dh -> {
+                          dh.field("endDate")
+                              .format(config.getElsRolloverDateFormat())
+                              .timeZone(ZoneId.systemDefault().getId());
+
+                          // we support rolloverIntervals in both calendar (e.g., "month") and
+                          // fixed (e.g., "3d") formats. First, we try to parse it as a calendar
+                          // interval, and if that fails, we treat it as a fixed.
+                          final CalendarInterval calendarInterval =
+                              DateOfArchivedDocumentsUtil.parseCalendarInterval(rolloverInterval);
+                          if (calendarInterval != null) {
+                            dh.calendarInterval(calendarInterval);
+                          } else {
+                            dh.fixedInterval(Time.of(t -> t.time(rolloverInterval)));
+                          }
+
+                          return dh;
+                        })
                     .aggregations(Map.of("bucketSort", bucketSortAggregation)));
 
     final SearchRequest searchRequest =

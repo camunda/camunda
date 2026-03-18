@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.util;
 
+import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -17,6 +18,7 @@ import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -155,6 +157,15 @@ public final class DateOfArchivedDocumentsUtil {
     } catch (final Exception exception) {
       throw new IllegalArgumentException(
           "Invalid date format: " + dateStr + " with pattern: " + pattern, exception);
+    }
+  }
+
+  public static CalendarInterval parseCalendarInterval(final String interval) {
+    try {
+      final CalendarInterval result = CalendarInterval._DESERIALIZER.parse(interval);
+      return result;
+    } catch (NoSuchElementException exception) {
+      return null;
     }
   }
 
