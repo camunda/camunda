@@ -56,7 +56,7 @@ public class ConditionalBehaviorEngine {
   private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final int DEFAULT_MAX_BEHAVIOR_THREADS = 8;
 
-  private final Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
+  private volatile Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
   private volatile Duration resetTimeout = DEFAULT_RESET_TIMEOUT;
 
   private final CopyOnWriteArrayList<ConditionalBehavior> behaviors = new CopyOnWriteArrayList<>();
@@ -81,8 +81,7 @@ public class ConditionalBehaviorEngine {
       throw new IllegalArgumentException("Condition must not be null");
     }
     final ConditionalBehavior behavior =
-        new ConditionalBehavior(
-            condition, "#" + (behaviors.size() + 1), pollInterval, resetTimeout);
+        new ConditionalBehavior(condition, "#" + (behaviors.size() + 1));
     behaviors.add(behavior);
     LOGGER.trace("Registered behavior '{}'", behavior.name);
     return new BuilderImpl(behavior);
@@ -97,9 +96,12 @@ public class ConditionalBehaviorEngine {
    *     iteration with the appropriate context, such as an instant-probe await behavior override
    */
   public void start(
-      final Runnable contextInitializer, final BehaviorEvaluationScope evaluationScope) {
+      final Runnable contextInitializer,
+      final BehaviorEvaluationScope evaluationScope,
+      final Duration pollInterval) {
     this.contextInitializer = contextInitializer;
     this.evaluationScope = evaluationScope;
+    this.pollInterval = pollInterval;
     stopped = false;
   }
 
@@ -202,25 +204,17 @@ public class ConditionalBehaviorEngine {
     evaluationScope.execute(behavior::evaluate);
   }
 
-  private static final class ConditionalBehavior {
+  private final class ConditionalBehavior {
 
     private final BehaviorCondition condition;
-    private final Duration pollInterval;
-    private final Duration resetTimeout;
     private final List<Runnable> actions = new CopyOnWriteArrayList<>();
     private final AtomicInteger actionIndex = new AtomicInteger(0);
     private final AtomicInteger fireCount = new AtomicInteger(0);
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile String name;
 
-    ConditionalBehavior(
-        final BehaviorCondition condition,
-        final String defaultName,
-        final Duration pollInterval,
-        final Duration resetTimeout) {
+    ConditionalBehavior(final BehaviorCondition condition, final String defaultName) {
       this.condition = condition;
-      this.pollInterval = pollInterval;
-      this.resetTimeout = resetTimeout;
       name = defaultName;
     }
 
