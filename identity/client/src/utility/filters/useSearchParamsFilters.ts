@@ -21,11 +21,6 @@ function useSearchParamsFilters<T>(
   }, [location.search, querySync]);
 
   const setSearchParamsFilters = (next: T) => {
-    const nextSearch = querySync.serialize(next);
-    if (nextSearch === location.search) {
-      return;
-    }
-
     void navigate({ search: querySync.serialize(next) }, { replace: true });
   };
 
