@@ -39,6 +39,10 @@ class ProcessDefinitionStatisticsAuthorizationIT {
   private static final String TEST_USERNAME_READ_PROCESS_DEFINITION =
       "testUserReadProcessDefinition";
   private static final String TEST_USERNAME_READ_PROCESS_INSTANCE = "testUserReadProcessInstance";
+  private static final String TEST_USERNAME_READ_SPECIFIC_PROCESS_INSTANCE =
+      "testUserReadSpecificProcessInstance";
+
+  private static final String SPECIFIC_PROCESS_ID = "process-auth-specific";
 
   @UserDefinition
   private static final TestUser TEST_USER_WITH_READ_PROCESS_DEFINITION =
@@ -61,6 +65,17 @@ class ProcessDefinitionStatisticsAuthorizationIT {
                   ResourceType.PROCESS_DEFINITION,
                   PermissionType.READ_PROCESS_INSTANCE,
                   List.of("*"))));
+
+  @UserDefinition
+  private static final TestUser TEST_USER_WITH_READ_SPECIFIC_INSTANCE =
+      new TestUser(
+          TEST_USERNAME_READ_SPECIFIC_PROCESS_INSTANCE,
+          "password",
+          List.of(
+              new Permissions(
+                  ResourceType.PROCESS_DEFINITION,
+                  PermissionType.READ_PROCESS_INSTANCE,
+                  List.of(SPECIFIC_PROCESS_ID))));
 
   private static CamundaClient camundaClient;
 
@@ -104,10 +119,59 @@ class ProcessDefinitionStatisticsAuthorizationIT {
     assertThat(actual).hasSize(2);
   }
 
+  @Test
+  void shouldAllowReadProcessInstancePermissionForSpecificProcess(
+      @Authenticated(TEST_USERNAME_READ_SPECIFIC_PROCESS_INSTANCE) final CamundaClient userClient) {
+    // given
+    final var allowedProcessDefinitionKey = deployCompleteSpecificBPMN();
+    final var notAllowedProcessDefinitionKey = deployCompleteBPMN();
+    createInstance(allowedProcessDefinitionKey);
+    createInstance(allowedProcessDefinitionKey);
+    createInstance(notAllowedProcessDefinitionKey);
+
+    waitForProcessInstances(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(allowedProcessDefinitionKey)
+                .state(ProcessInstanceState.COMPLETED),
+        2);
+    waitForProcessInstances(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(notAllowedProcessDefinitionKey)
+                .state(ProcessInstanceState.COMPLETED),
+        1);
+
+    // when
+    final var allowedActual =
+        userClient
+            .newProcessDefinitionElementStatisticsRequest(allowedProcessDefinitionKey)
+            .send()
+            .join();
+    final var notAllowedActual =
+        userClient
+            .newProcessDefinitionElementStatisticsRequest(allowedProcessDefinitionKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(allowedActual).hasSize(2);
+    assertThat(notAllowedActual).isEmpty();
+  }
+
   private static long deployCompleteBPMN() {
     final var processId = "process-auth-" + UUID.randomUUID();
     final var processModel = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
     return deployResource(processModel, "complete-auth.bpmn")
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
+  private static long deployCompleteSpecificBPMN() {
+    final var processModel =
+        Bpmn.createExecutableProcess(SPECIFIC_PROCESS_ID).startEvent().endEvent().done();
+    return deployResource(processModel, SPECIFIC_PROCESS_ID + ".bpmn")
         .getProcesses()
         .getFirst()
         .getProcessDefinitionKey();
