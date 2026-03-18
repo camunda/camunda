@@ -15,32 +15,13 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.process.test.api.assertions.EvaluationAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.impl.assertions.JudgeEvaluationResultAssert;
+import io.camunda.process.test.impl.assertions.EvaluationAssertj;
 
 /**
- * Entry point for standalone evaluation assertions on arbitrary string values. Provides access to
- * LLM judge assertions and will be extended with semantic similarity assertions in the future.
- *
- * <p>Uses the global {@link JudgeConfig} from {@link CamundaAssert} by default.
- *
- * <p>Example usage:
- *
- * <pre>
- *   // Using global JudgeConfig from CamundaAssert
- *   EvaluationAssertions.assertThat("Hello, how can I help you?")
- *       .satisfiesExpectation("should be a polite greeting");
- *
- *   // With per-assertion config override
- *   EvaluationAssertions.assertThat(agentResponse)
- *       .withJudgeConfig(config -&gt; config.withThreshold(0.8))
- *       .satisfiesExpectation("should be professional");
- *
- *   // Without global config — inline setup
- *   EvaluationAssertions.assertThat(agentResponse)
- *       .withJudgeConfig(config -&gt; config.withChatModelAdapter(myModel))
- *       .satisfiesExpectation("should identify the issue");
- * </pre>
+ * Entry point for standalone LLM judge assertions on string values. Uses the global {@link
+ * JudgeConfig} from {@link CamundaAssert} by default.
  *
  * @see JudgeConfig
  * @see CamundaAssert#setJudgeConfig(JudgeConfig)
@@ -55,7 +36,7 @@ public final class EvaluationAssertions {
    * @param actual the string value to evaluate
    * @return the assertion object
    */
-  public static JudgeEvaluationResultAssert assertThat(final String actual) {
-    return new JudgeEvaluationResultAssert(actual, CamundaAssert.getJudgeConfig());
+  public static EvaluationAssert assertThat(final String actual) {
+    return new EvaluationAssertj(actual, CamundaAssert.getJudgeConfig());
   }
 }
