@@ -8,8 +8,9 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+import {Layer} from '@carbon/react';
 
-const ExpandedContent = styled.div`
+const ExpandedContent = styled(Layer)`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-05);
