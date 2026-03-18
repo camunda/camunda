@@ -68,8 +68,6 @@ public class VisibleForTestingArchTest {
           "io.camunda.zeebe.engine.processing.batchoperation.itemprovider.IncidentItemProvider.getFilter()",
           "io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ProcessInstanceItemProvider.getFilter()",
           "io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry.createAllTransformers()",
-          "io.camunda.zeebe.gateway.JobStreamComponent",
-          "io.camunda.zeebe.gateway.JobStreamComponent.jobStreamClient(io.camunda.zeebe.scheduler.ActorScheduler, io.atomix.cluster.AtomixCluster, io.micrometer.core.instrument.MeterRegistry)",
           "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE",
           "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE",
           "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.USERS_API_DISABLED_ERROR_MESSAGE",
