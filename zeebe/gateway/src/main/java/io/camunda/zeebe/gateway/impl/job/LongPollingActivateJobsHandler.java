@@ -305,14 +305,16 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
   private void handlePendingRequests(
       final InFlightLongPollingActivateJobsRequestsState<T> state, final String jobType) {
-    final var nextPending = state.getNextPendingRequest();
-    if (nextPending != null) {
-      LOG.trace("Unblocking ActivateJobsRequest {}", nextPending.getRequest());
-      internalActivateJobsRetry(nextPending);
-    } else {
-      if (!state.hasActiveRequests()) {
-        jobTypeState.remove(jobType);
+    InflightActivateJobsRequest<T> nextPending;
+    while ((nextPending = state.getNextPendingRequest()) != null) {
+      if (nextPending.isOpen()) {
+        LOG.trace("Unblocking ActivateJobsRequest {}", nextPending.getRequest());
+        internalActivateJobsRetry(nextPending);
+        return;
       }
+    }
+    if (!state.hasActiveRequests()) {
+      jobTypeState.remove(jobType);
     }
   }
 
