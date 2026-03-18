@@ -177,33 +177,33 @@ title: Management Identity - Building Blocks
 ---
 flowchart TB
   BROWSER(["Admin / user browser"])
-  APP_CLIENTS["Platform apps\n(Console, Web Modeler, Optimize)"]
-  IDP[("IdP (Keycloak)")]
+  IDP[("IdP")]
   MGMT_DB[("Management Identity DB\n(Postgres)")]
 
   subgraph MGMT_ID["Management Identity"]
     UI["Management Identity UI"]
 
     subgraph MGMT_API["Management Identity API (Spring Boot)"]
-      SECURITY["Security\n(Spring Security)"]
+      MAIN_CFG["Main Configuration\n(WebSecurityConfig)"]
+      SECURITY["Spring Security (Authentication)"]
       CONTROLLERS["REST Controllers"]
-      SERVICES["Services"]
+      SERVICES["Identity Services"]
       REPOSITORIES["Repositories\n(Spring Data JPA)"]
-      KC_CONNECTOR["Keycloak Admin Service"]
+      IDP_CONNECTOR["IdP Services"]
 
+      MAIN_CFG --> SECURITY
       SECURITY --> CONTROLLERS
       CONTROLLERS --> SERVICES
+      CONTROLLERS --> IDP_CONNECTOR
       SERVICES --> REPOSITORIES
-      SERVICES --> KC_CONNECTOR
     end
   end
 
   BROWSER --> UI
   UI --> SECURITY
-  APP_CLIENTS --> SECURITY
 
   SECURITY -->|"JWKS / token validation"| IDP
-  KC_CONNECTOR -->|"Realm, client,\nuser configuration"| IDP
+  IDP_CONNECTOR -->|"Realm, client,\nuser configuration"| IDP
   REPOSITORIES --> MGMT_DB
 ```
 
@@ -212,20 +212,26 @@ Main building blocks:
 - **Management Identity UI**
   Web-based console for administrators to manage users, groups, roles, applications, and tenants, and define mapping rules.
 
+- **Main Configuration (`WebSecurityConfig`)**
+  Spring `@Configuration` class that defines the security setup for the Management Identity API. It configures the filter chain, enables OIDC/JWT handling, and wires authentication/authorization behavior used by the Security layer.
+
 - **Security**
   Spring Security filter chain responsible for authenticating incoming requests (OIDC token validation via Keycloak JWKS) and enforcing RBAC before delegating to controllers.
 
 - **REST Controllers**
   One controller per resource type (users, groups, roles, applications, tenants, mapping rules). Each controller validates inputs and delegates to the corresponding service.
 
-- **Services**
+- **Identity Services**
   Business logic layer; one service per resource type. Persists and retrieves data via repositories. Services for users and applications additionally synchronize with Keycloak via the Keycloak Admin Service.
 
 - **Repositories**
   Spring Data JPA repositories providing CRUD access to the Management Identity PostgreSQL database; one repository per entity type.
 
-- **Keycloak Admin Service**
-  Wraps the Keycloak Admin REST API. Manages realm configuration, OAuth2 client registrations, scopes, and user synchronization between Management Identity and Keycloak.
+- **IdP Service**
+  A service that wraps interactions with the IdP (Keycloak or external OIDC provider). Responsible for configuring realms, clients, and users in Keycloak based on Management Identity data, and for validating tokens via JWKS.
+
+- **IdP**
+  Keycloak instance (default) or external OIDC provider.
 
 ### 5.2 Building Blocks
 
