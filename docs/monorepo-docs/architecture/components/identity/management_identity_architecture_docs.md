@@ -177,104 +177,181 @@ title: Management Identity - Building Blocks
 ---
 flowchart TB
   BROWSER(["Admin / user browser"])
-  IDP[("IdP")]
+  APP_CLIENTS["Platform apps\n(Console, Web Modeler, Optimize)"]
+  IDP[("IdP (Keycloak)")]
   MGMT_DB[("Management Identity DB\n(Postgres)")]
 
   subgraph MGMT_ID["Management Identity"]
     UI["Management Identity UI"]
-    API["Management Identity API"]
 
-    subgraph SERVICES["Core Services"]
-      IDENTITY_SVC["Identity Service\n(users, groups, roles, apps)"]
-      AUTHZ_SVC["Authorization Service\n(permissions, mappings)"]
-      TENANT_SVC["Tenant Service\n(Optimize data isolation)"]
+    subgraph MGMT_API["Management Identity API (Spring Boot)"]
+      SECURITY["Security\n(Spring Security)"]
+      CONTROLLERS["REST Controllers"]
+      SERVICES["Services"]
+      REPOSITORIES["Repositories\n(Spring Data JPA)"]
+      KC_CONNECTOR["Keycloak Admin Service"]
+
+      SECURITY --> CONTROLLERS
+      CONTROLLERS --> SERVICES
+      SERVICES --> REPOSITORIES
+      SERVICES --> KC_CONNECTOR
     end
   end
 
   BROWSER --> UI
-  UI --> API
-  API --> SERVICES
+  UI --> SECURITY
+  APP_CLIENTS --> SECURITY
 
-  API -->|"Configure clients,\nscopes, realms"| IDP
-
-  SERVICES --> MGMT_DB
+  SECURITY -->|"JWKS / token validation"| IDP
+  KC_CONNECTOR -->|"Realm, client,\nuser configuration"| IDP
+  REPOSITORIES --> MGMT_DB
 ```
 
-Key responsibilities:
+Main building blocks:
 
 - **Management Identity UI**
   Web-based console for administrators to manage users, groups, roles, applications, and tenants, and define mapping rules.
 
-- **Management Identity API**
-  REST service layer that authenticates requests, enforces RBAC, and delegates operations to core services.
+- **Security**
+  Spring Security filter chain responsible for authenticating incoming requests (OIDC token validation via Keycloak JWKS) and enforcing RBAC before delegating to controllers.
 
-- **Identity Service**
-  Manages identity resources: users, groups, roles, and applications (OAuth2 clients). Synchronizes users and clients with the IdP via the Keycloak Connector.
+- **REST Controllers**
+  One controller per resource type (users, groups, roles, applications, tenants, mapping rules). Each controller validates inputs and delegates to the corresponding service.
 
-- **Authorization Service**
-  Evaluates RBAC rules, manages permissions for platform apps, and processes mapping rules that connect IdP claims to roles and tenants.
+- **Services**
+  Business logic layer; one service per resource type. Persists and retrieves data via repositories. Services for users and applications additionally synchronize with Keycloak via the Keycloak Admin Service.
 
-- **Tenant Service**
-  Manages Optimize-specific tenants for data isolation and reporting. Applies tenant-based filtering to user and role assignments.
+- **Repositories**
+  Spring Data JPA repositories providing CRUD access to the Management Identity PostgreSQL database; one repository per entity type.
 
-### 5.2 Management Identity API — Level 2
+- **Keycloak Admin Service**
+  Wraps the Keycloak Admin REST API. Manages realm configuration, OAuth2 client registrations, scopes, and user synchronization between Management Identity and Keycloak.
 
-The Management Identity API is a Spring Boot application that exposes REST endpoints consumed by both the Management Identity UI and external clients. It owns the RBAC model for platform apps and manages the Keycloak realm configuration.
+### 5.2 Building Blocks
+
+#### 5.2.1 REST Controllers — Level 2
+
+Management Identity exposes a REST API consumed by the Management Identity UI and by platform apps. Each resource type is handled by a dedicated controller that maps HTTP verbs to service calls.
 
 ```mermaid
 ---
-title: Management Identity API - Level 2
+title: Management Identity - REST Controllers
 ---
 flowchart TB
   UI["Management Identity UI"]
-  KEYCLOAK[("Keycloak / OIDC IdP")]
-  MGMT_DB[("Management Identity DB\n(Postgres)")]
+  APP_CLIENTS["Platform apps\n(Console, Web Modeler, Optimize)"]
 
-  subgraph API["Management Identity API"]
-    REST_LAYER["REST Controllers\n(/api/users, /api/groups,\n/api/roles, /api/applications,\n/api/tenants, /api/mapping-rules)"]
-    AUTHN["Token Validation\n(JWT / OIDC)"]
-    AUTHZ["RBAC Enforcement\n(role and permission checks)"]
-    USER_SVC["User Service"]
-    GROUP_SVC["Group Service"]
-    ROLE_SVC["Role Service"]
-    APP_SVC["Application Service"]
-    TENANT_SVC["Tenant Service"]
-    MAPPING_SVC["Mapping Rule Service"]
-    KC_CONNECTOR["Keycloak Connector\n(realm, client, user sync)"]
+  subgraph SECURITY["Security (Spring Security)"]
+    SEC_CFG["Security Configuration\n(WebSecurityConfig)"]
+    JWT_CONV["JWT Converter\n(JwtAuthenticationConverter)"]
 
-    REST_LAYER --> AUTHN
-    REST_LAYER --> AUTHZ
-    REST_LAYER --> USER_SVC
-    REST_LAYER --> GROUP_SVC
-    REST_LAYER --> ROLE_SVC
-    REST_LAYER --> APP_SVC
-    REST_LAYER --> TENANT_SVC
-    REST_LAYER --> MAPPING_SVC
-    USER_SVC --> KC_CONNECTOR
-    APP_SVC --> KC_CONNECTOR
+    SEC_CFG --> JWT_CONV
   end
 
-  UI --> REST_LAYER
-  AUTHN -->|"JWKS validation"| KEYCLOAK
-  KC_CONNECTOR -->|"Realm / client / user mgmt"| KEYCLOAK
-  USER_SVC --> MGMT_DB
-  GROUP_SVC --> MGMT_DB
-  ROLE_SVC --> MGMT_DB
-  APP_SVC --> MGMT_DB
-  TENANT_SVC --> MGMT_DB
-  MAPPING_SVC --> MGMT_DB
+  subgraph CONTROLLERS["REST Controllers"]
+    USER_CTRL["Users Controller\n(UserController)"]
+    GROUP_CTRL["Groups Controller\n(GroupController)"]
+    ROLE_CTRL["Roles Controller\n(RoleController)"]
+    APP_CTRL["Applications Controller\n(ApplicationController)"]
+    TENANT_CTRL["Tenants Controller\n(TenantController)"]
+    MAPPING_CTRL["Mapping Rules Controller\n(MappingRulesController)"]
+  end
+
+  IDP[("Keycloak / OIDC IdP")]
+  SERVICES["Services"]
+
+  UI --> SECURITY
+  APP_CLIENTS --> SECURITY
+  SEC_CFG -->|"configured by"| SECURITY
+  JWT_CONV -->|"JWKS validation"| IDP
+  SECURITY --> CONTROLLERS
+  USER_CTRL --> SERVICES
+  GROUP_CTRL --> SERVICES
+  ROLE_CTRL --> SERVICES
+  APP_CTRL --> SERVICES
+  TENANT_CTRL --> SERVICES
+  MAPPING_CTRL --> SERVICES
 ```
 
 Key responsibilities:
 
-- REST Controllers: expose the Management Identity REST API surface consumed by the UI and external clients. Each controller delegates to the corresponding service.
-- Token Validation: validates incoming JWT tokens against the Keycloak JWKS endpoint to authenticate API callers. Resolves the caller's roles and groups from the token claims and stored Management Identity data.
-- RBAC Enforcement: checks that the authenticated caller has the necessary role or permission before executing the requested operation.
-- User / Group / Role / Application / Tenant / Mapping Rule Services: implement the business logic for each identity resource type; persist and retrieve data from the Management Identity DB (Postgres).
-- Keycloak Connector: interacts with the Keycloak Admin REST API to:
-  - Register and configure OAuth2 clients (applications) and their scopes.
-  - Synchronize users created in Management Identity to the Keycloak realm.
-  - Configure realm settings such as login flows and token expiry.
+- Security Configuration (`WebSecurityConfig`): Spring `@Configuration` class that sets up the Spring Security filter chain. Activates JWT/OIDC token validation and registers the `JwtAuthenticationConverter` bean. Controls which endpoints require authentication.
+- JWT Converter (`JwtAuthenticationConverter`): converts a validated JWT into a `CamundaAuthentication` (or equivalent identity principal) by extracting roles, groups, and permissions from token claims.
+- Users Controller (`UserController`): handles CRUD operations for platform users (`GET/POST/PUT/DELETE /api/users`). Delegates user creation and updates to `UserService`, which also synchronizes with Keycloak.
+- Groups Controller (`GroupController`): handles CRUD and member-assignment operations for groups (`/api/groups`). Delegates to `GroupService`.
+- Roles Controller (`RoleController`): handles CRUD operations for roles and permission assignments (`/api/roles`). Delegates to `RoleService`.
+- Applications Controller (`ApplicationController`): handles CRUD for OAuth2 client registrations (`/api/applications`). Delegates to `ApplicationService`, which registers clients in Keycloak.
+- Tenants Controller (`TenantController`): handles CRUD for Optimize-scoped tenants (`/api/tenants`). Delegates to `TenantService`.
+- Mapping Rules Controller (`MappingRulesController`): handles CRUD for IdP-claim-to-role/tenant mapping rules (`/api/mapping-rules`). Delegates to `MappingRuleService`.
+
+#### 5.2.2 Services and Repositories — Level 2
+
+Each service implements business logic for one resource type, persists data via a Spring Data JPA repository, and (where required) calls the Keycloak Admin Service to synchronize data with Keycloak.
+
+```mermaid
+---
+title: Management Identity - Services and Repositories
+---
+flowchart TB
+  CONTROLLERS["REST Controllers"]
+  KEYCLOAK[("Keycloak (Admin REST API)")]
+  MGMT_DB[("Management Identity DB\n(Postgres)")]
+
+  subgraph SERVICES["Services"]
+    USER_SVC["User Service\n(UserService)"]
+    GROUP_SVC["Group Service\n(GroupService)"]
+    ROLE_SVC["Role Service\n(RoleService)"]
+    APP_SVC["Application Service\n(ApplicationService)"]
+    TENANT_SVC["Tenant Service\n(TenantService)"]
+    MAPPING_SVC["Mapping Rule Service\n(MappingRuleService)"]
+    KC_SVC["Keycloak Admin Service\n(KeycloakService)"]
+
+    USER_SVC --> KC_SVC
+    APP_SVC --> KC_SVC
+  end
+
+  subgraph REPOSITORIES["Repositories (Spring Data JPA)"]
+    USER_REPO["User Repository\n(UserRepository)"]
+    GROUP_REPO["Group Repository\n(GroupRepository)"]
+    ROLE_REPO["Role Repository\n(RoleRepository)"]
+    APP_REPO["Application Repository\n(ApplicationRepository)"]
+    TENANT_REPO["Tenant Repository\n(TenantRepository)"]
+    MAPPING_REPO["Mapping Rule Repository\n(MappingRuleRepository)"]
+  end
+
+  CONTROLLERS --> USER_SVC
+  CONTROLLERS --> GROUP_SVC
+  CONTROLLERS --> ROLE_SVC
+  CONTROLLERS --> APP_SVC
+  CONTROLLERS --> TENANT_SVC
+  CONTROLLERS --> MAPPING_SVC
+
+  USER_SVC --> USER_REPO
+  GROUP_SVC --> GROUP_REPO
+  ROLE_SVC --> ROLE_REPO
+  APP_SVC --> APP_REPO
+  TENANT_SVC --> TENANT_REPO
+  MAPPING_SVC --> MAPPING_REPO
+
+  KC_SVC -->|"Admin REST API"| KEYCLOAK
+  USER_REPO --> MGMT_DB
+  GROUP_REPO --> MGMT_DB
+  ROLE_REPO --> MGMT_DB
+  APP_REPO --> MGMT_DB
+  TENANT_REPO --> MGMT_DB
+  MAPPING_REPO --> MGMT_DB
+```
+
+Key responsibilities:
+
+- User Service (`UserService`): manages user lifecycle (create, update, delete, search). On user creation and update it delegates to `KeycloakService` to create or update the corresponding user in the Keycloak realm. Reads and writes user entities via `UserRepository`.
+- Group Service (`GroupService`): manages group lifecycle and group–member assignments. Persists via `GroupRepository`.
+- Role Service (`RoleService`): manages role definitions and permission assignments per platform app. Persists via `RoleRepository`.
+- Application Service (`ApplicationService`): manages OAuth2 client registrations (name, type, scopes, redirect URIs). On creation and update it delegates to `KeycloakService` to register or update the client in the Keycloak realm. Persists via `ApplicationRepository`.
+- Tenant Service (`TenantService`): manages Optimize-scoped tenants. Persists via `TenantRepository`.
+- Mapping Rule Service (`MappingRuleService`): manages declarative claim-to-role/tenant mapping rules. Persists via `MappingRuleRepository`.
+- Keycloak Admin Service (`KeycloakService`): wraps the Keycloak Admin REST API. Called by `UserService` and `ApplicationService` to synchronize identity data (users, clients, scopes, realm configuration) with Keycloak.
+- Repositories (`UserRepository`, `GroupRepository`, `RoleRepository`, `ApplicationRepository`, `TenantRepository`, `MappingRuleRepository`): Spring Data JPA repositories; each provides standard CRUD operations plus domain-specific query methods backed by the Management Identity PostgreSQL database.
 
 
 ## 6. Runtime view
