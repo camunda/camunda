@@ -17,9 +17,11 @@ const Button: typeof BaseButton = styled(BaseButton)`
   margin-top: var(--cds-spacing-05);
 `;
 
+// TODO: revert this — temporary change to test VR diff reporting on PRs
 const Container = styled.main`
   height: 100%;
   padding: var(--cds-spacing-03);
+  border: 3px solid tomato;
 `;
 
 const CopyrightNotice = styled.span`
