@@ -53,6 +53,8 @@ public enum BpmnElementType {
   // Other
   SEQUENCE_FLOW("sequenceFlow", false),
   MULTI_INSTANCE_BODY(null, true),
+  // Note that a call activity is not considered to be a container element. Whilst it creates a
+  // child process instance, it does not contain direct child elements itself.
   CALL_ACTIVITY("callActivity", false),
 
   BUSINESS_RULE_TASK("businessRuleTask", false),
@@ -60,6 +62,11 @@ public enum BpmnElementType {
   SEND_TASK("sendTask", false);
 
   private final String elementTypeName;
+
+  /**
+   * A container element is defined as an element that contains child elements within, such as a
+   * sub-process.
+   */
   private final boolean isContainerElement;
 
   BpmnElementType(final String elementTypeName, final boolean isContainerElement) {
