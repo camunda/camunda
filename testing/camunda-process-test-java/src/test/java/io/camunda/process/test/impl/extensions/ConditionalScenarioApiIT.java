@@ -28,8 +28,11 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @CamundaProcessTest
+@TestInstance(Lifecycle.PER_CLASS)
 public class ConditionalScenarioApiIT {
 
   private static final String PROCESS_ID = "user-happiness-check";
