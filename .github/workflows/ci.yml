@@ -149,6 +149,27 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  junit-vintage-check:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Lint / JUnit Vintage Engine"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for missing junit-vintage-engine
+        run: .ci/scripts/ci/check-junit-vintage-engine.sh .
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
@@ -776,6 +797,7 @@ jobs:
       - integration-tests
       - java-checks
       - java-unit-tests
+      - junit-vintage-check
       - maven-spotless-linter
       - protobuf-checks
       - spring-boot-compatibility-tests
