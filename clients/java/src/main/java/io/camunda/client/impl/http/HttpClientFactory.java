@@ -172,9 +172,13 @@ public class HttpClientFactory {
         .setResponseTimeout(Timeout.of(config.getDefaultRequestTimeout()))
         // TODO: determine if the existing (gRPC) property makes sense for the HTTP client
         .setConnectionKeepAlive(TimeValue.of(config.getKeepAlive()))
-        // hard cancellation may cause other requests to fail as it will kill the connection; can be
-        // enabled when using HTTP/2
-        .setHardCancellationEnabled(false);
+        // Hard cancellation closes the connection when a request future is cancelled.
+        // With HTTP/1.1, each connection handles one request at a time, so this only
+        // affects the cancelled request. This is critical for long-polling: when the
+        // client closes and cancels pending futures, hard cancellation triggers
+        // IOSessionImpl.close(IMMEDIATE) which sends TCP RST, allowing the server to
+        // detect the disconnect and reactivate locked jobs.
+        .setHardCancellationEnabled(true);
   }
 
   private SSLContext createSslContext() {

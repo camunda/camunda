@@ -25,6 +25,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
@@ -61,6 +64,14 @@ public final class HttpClient implements AutoCloseable {
   private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
 
+  // Tracks all in-flight request futures so they can be cancelled on close().
+  // With hardCancellationEnabled=true (set in HttpClientFactory), cancelling a future
+  // triggers IOSessionImpl.close(IMMEDIATE) which sets SO_LINGER=0 and closes the socket,
+  // sending TCP RST. This allows the server to detect the disconnect and reactivate
+  // any jobs that were activated for the now-dead connection.
+  private final Set<HttpCamundaFuture<?>> pendingFutures = ConcurrentHashMap.newKeySet();
+  private final AtomicBoolean closed = new AtomicBoolean(false);
+
   public HttpClient(
       final CloseableHttpAsyncClient client,
       final ObjectMapper jsonMapper,
@@ -84,6 +95,22 @@ public final class HttpClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    if (!closed.compareAndSet(false, true)) {
+      return;
+    }
+    // Cancel all pending request futures before closing the client. With
+    // hardCancellationEnabled=true, this triggers per-connection IOSessionImpl.close(IMMEDIATE)
+    // which sets SO_LINGER=0 and closes each socket, sending TCP RST to the server.
+    // This is critical for long-polling: without cancellation, the server doesn't know the
+    // client is gone and may activate jobs for a dead connection.
+    if (!pendingFutures.isEmpty()) {
+      LOGGER.debug("Cancelling {} pending HTTP request(s) before close", pendingFutures.size());
+      for (final HttpCamundaFuture<?> future : pendingFutures) {
+        future.cancel(true, null);
+      }
+      pendingFutures.clear();
+    }
+
     client.close(CloseMode.GRACEFUL);
     try {
       client.awaitShutdown(shutdownTimeout);
@@ -382,6 +409,10 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
+    if (closed.get()) {
+      result.completeExceptionally(new ClientException("Client is closed"));
+      return;
+    }
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -423,6 +454,14 @@ public final class HttpClient implements AutoCloseable {
               maxRetries));
     }
 
+    pendingFutures.add(result);
+    result.whenComplete((r, ex) -> pendingFutures.remove(result));
+    // Re-check after registering: if close() ran between the first check and here,
+    // cancel the future that close() missed
+    if (closed.get()) {
+      result.cancel(true, null);
+      return;
+    }
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
