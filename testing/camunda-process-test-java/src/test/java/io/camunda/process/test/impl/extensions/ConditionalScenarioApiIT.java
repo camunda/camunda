@@ -17,42 +17,19 @@ package io.camunda.process.test.impl.extensions;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
+import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.*;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @CamundaProcessTest
-@TestInstance(Lifecycle.PER_CLASS)
 public class ConditionalScenarioApiIT {
-
-  private static final String PROCESS_ID = "user-happiness-check";
-  private static final String USER_TASK_ID = "State_Happiness";
-  private static final String SERVICE_TASK_ID = "Export_Happiness";
-  private static final String JOB_TYPE = "io.camunda:http-json:1";
-
-  private static final BpmnModelInstance PROCESS_MODEL =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .userTask(USER_TASK_ID)
-          .zeebeUserTask()
-          .exclusiveGateway("User_Happy_Gateway")
-          .conditionExpression("=happy")
-          .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeJobRetries("3"))
-          .endEvent()
-          .moveToLastExclusiveGateway()
-          .defaultFlow()
-          .connectTo(USER_TASK_ID)
-          .done();
 
   // injected by the extension
   private CamundaProcessTestContext processTestContext;
@@ -62,11 +39,7 @@ public class ConditionalScenarioApiIT {
   @RepeatedTest(value = 2)
   void shouldCompleteProcessWithConditionalScenarios() {
     // Deploy the process model
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(PROCESS_MODEL, PROCESS_ID + ".bpmn")
-        .send()
-        .join();
+    client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
     final Map<String, Object> unhappy = Collections.singletonMap("happy", false);
     final Map<String, Object> happy = Collections.singletonMap("happy", true);
