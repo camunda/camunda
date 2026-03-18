@@ -46,7 +46,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <configuration combine.self="append">
+        <configuration combine.children="append">
           <ignoredUnusedDeclaredDependencies>
             <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
             <dep>org.apache.logging.log4j:log4j-core</dep>
