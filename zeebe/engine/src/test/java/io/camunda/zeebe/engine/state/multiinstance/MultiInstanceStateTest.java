@@ -31,14 +31,14 @@ public class MultiInstanceStateTest {
   }
 
   @Test
-  void shouldInsertAndGetInputCollection() {
+  void shouldUpsertAndGetInputCollection() {
     // given
     final long key = 123L;
     final List<DirectBuffer> inputCollection =
         List.of(new UnsafeBuffer("foo".getBytes()), new UnsafeBuffer("bar".getBytes()));
 
     // when
-    multiInstanceState.insertInputCollection(key, inputCollection);
+    multiInstanceState.upsertInputCollection(key, inputCollection);
 
     // then
     final Optional<List<DirectBuffer>> result = multiInstanceState.getInputCollection(key);
@@ -53,7 +53,7 @@ public class MultiInstanceStateTest {
     // given
     final long key = 456L;
     final List<DirectBuffer> input = List.of(new UnsafeBuffer("baz".getBytes()));
-    multiInstanceState.insertInputCollection(key, input);
+    multiInstanceState.upsertInputCollection(key, input);
 
     // when
     multiInstanceState.deleteInputCollection(key);
@@ -61,6 +61,25 @@ public class MultiInstanceStateTest {
     // then
     final Optional<List<DirectBuffer>> result = multiInstanceState.getInputCollection(key);
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateExistingInputCollectionOnDuplicateUpsert() {
+    // given
+    final long key = 321L;
+    final List<DirectBuffer> initialCollection =
+        List.of(new UnsafeBuffer("foo".getBytes()), new UnsafeBuffer("bar".getBytes()));
+    multiInstanceState.upsertInputCollection(key, initialCollection);
+
+    // when - calling upsert again with the same key (e.g. on incident resolution re-activation)
+    final List<DirectBuffer> updatedCollection = List.of(new UnsafeBuffer("baz".getBytes()));
+    multiInstanceState.upsertInputCollection(key, updatedCollection);
+
+    // then - the value is overwritten without throwing an exception
+    final Optional<List<DirectBuffer>> result = multiInstanceState.getInputCollection(key);
+    assertThat(result).isPresent();
+    assertThat(result.get()).hasSize(1);
+    assertThat(result.get().getFirst()).isEqualTo(updatedCollection.getFirst());
   }
 
   @Test
