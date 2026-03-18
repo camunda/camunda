@@ -101,4 +101,9 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
   public void setAssertionInterval(final Duration assertionInterval) {
     this.assertionInterval = assertionInterval;
   }
+
+  @Override
+  public Duration getAssertionInterval() {
+    return assertionInterval;
+  }
 }

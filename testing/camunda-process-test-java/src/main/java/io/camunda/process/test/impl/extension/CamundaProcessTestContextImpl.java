@@ -47,6 +47,8 @@ import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
+import io.camunda.process.test.api.behavior.BehaviorCondition;
+import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
@@ -115,6 +117,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -122,7 +125,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaManagementClient camundaManagementClient,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JsonMapper jsonMapper,
-      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper,
+      final ConditionalBehaviorEngine conditionalBehaviorEngine) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
@@ -133,6 +137,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
     this.zeebeJsonMapper = zeebeJsonMapper;
+    this.conditionalBehaviorEngine = conditionalBehaviorEngine;
   }
 
   @Override
@@ -687,6 +692,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               .send()
               .join();
         });
+  }
+
+  @Override
+  public ConditionalBehaviorBuilder when(final BehaviorCondition condition) {
+    return conditionalBehaviorEngine.when(condition);
   }
 
   private void awaitUserTask(

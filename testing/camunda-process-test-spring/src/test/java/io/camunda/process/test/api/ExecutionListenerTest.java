@@ -198,7 +198,7 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  void shouldWireProcessTestContext() throws Exception {
+  void shouldWireProcessTestContext() {
     // given
     final URI connectorsRestApiAddress = URI.create("http://my-host:300");
     when(camundaContainerRuntime.getConnectorsRestApiAddress())
