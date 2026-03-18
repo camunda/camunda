@@ -17,12 +17,12 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
+import org.springframework.ai.util.json.JsonParser;
 
 class McpToolParamsUnwrappedRegistrationTest {
 
   private final CamundaJsonSchemaGenerator schemaGenerator =
-      new CamundaJsonSchemaGenerator(JsonMapper.shared());
+      new CamundaJsonSchemaGenerator(JsonParser.getJsonMapper());
 
   @Test
   void shouldRejectMultipleMcpToolParams() {

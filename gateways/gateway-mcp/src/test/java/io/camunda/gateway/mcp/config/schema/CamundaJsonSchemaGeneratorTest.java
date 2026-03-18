@@ -16,12 +16,13 @@ import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.util.json.JsonParser;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 class CamundaJsonSchemaGeneratorTest {
 
-  private final JsonMapper objectMapper = JsonMapper.shared();
+  private final JsonMapper objectMapper = JsonParser.getJsonMapper();
   private final CamundaJsonSchemaGenerator schemaGenerator =
       new CamundaJsonSchemaGenerator(objectMapper);
 
