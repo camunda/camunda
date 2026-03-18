@@ -596,23 +596,13 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - name: Sanitize branch name for artifact names
-        id: sanitize
+      - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        shell: bash
-        run: |
-          branch="${{ matrix.branch }}"
-          # Replace invalid artifact-name characters (at least '/')
-          safe_branch="${branch//\//-}"
-          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
-
-            - name: Upload json report to GitHub Actions Artifacts
-              if: always()
-              uses: actions/upload-artifact@v7
-              with:
-                name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}
-                path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
-                retention-days: 60
+        uses: actions/upload-artifact@v7
+        with:
+          name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
 
       - name: Observe build status
         if: always()
