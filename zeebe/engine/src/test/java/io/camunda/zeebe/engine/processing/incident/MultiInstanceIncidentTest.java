@@ -559,6 +559,74 @@ public final class MultiInstanceIncidentTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldCompleteProcessAfterResolvingIncidentRaisedAfterInputCollectionEvaluated() {
+    // given
+    final var processId = "multi-instance-with-timer-boundary";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.parallel()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT))
+                            .boundaryEvent(
+                                "timer-boundary",
+                                be ->
+                                    be.cancelActivity(false)
+                                        .timerWithDurationExpression("timerDuration")
+                                        .endEvent("timer-end")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when - create a process instance without the timerDuration variable to ensure an incident is
+    // created
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
+
+    // when - resolving the incident by providing the missing timer duration variable
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getVariableScopeKey())
+        .withDocument(Collections.singletonMap("timerDuration", "PT1H"))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    completeNthJob(processInstanceKey, 1);
+    completeNthJob(processInstanceKey, 2);
+    completeNthJob(processInstanceKey, 3);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .exists())
+        .describedAs("the process instance should have completed normally")
+        .isTrue();
+  }
+
   private BpmnModelInstance createProcessThatModifiesOutputCollection(
       final String processId,
       final String initialValueForCollection,
