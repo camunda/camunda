@@ -102,6 +102,13 @@
       <artifactId>junit</artifactId>
     </dependency>
 
+    <!-- required to run both junit4 and junit 5 as test engines side by side -->
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
