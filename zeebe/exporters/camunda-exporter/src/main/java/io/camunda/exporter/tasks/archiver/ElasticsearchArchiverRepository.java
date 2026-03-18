@@ -19,12 +19,9 @@ import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
@@ -64,11 +61,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 import org.slf4j.Logger;
 
 public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
@@ -521,36 +513,41 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final HistoryConfiguration config) {
     final String indexName = indexTemplateDescriptor.getIndexName();
 
-    Aggregation bucketSortAggregation = Aggregation.of(a -> a
-        .bucketSort(bs -> bs
-            .sort(sort -> sort.field(f -> f.field("_key").order(SortOrder.Asc)))
-            .size(1)
-        )
-    );
+    final Aggregation bucketSortAggregation =
+        Aggregation.of(
+            a ->
+                a.bucketSort(
+                    bs ->
+                        bs.sort(sort -> sort.field(f -> f.field("_key").order(SortOrder.Asc)))
+                            .size(1)));
 
-    Aggregation dateHistogramAggregation = Aggregation.of(a -> a
-        .dateHistogram(dh -> dh
-            .field("endDate")
-            .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
-            .format(config.getElsRolloverDateFormat())
-            .keyed(true)
-        )
-        .aggregations(Map.of("bucketSort", bucketSortAggregation))
-    );
+    final Aggregation dateHistogramAggregation =
+        Aggregation.of(
+            a ->
+                a.dateHistogram(
+                        dh ->
+                            dh.field("endDate")
+                                .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
+                                .format(config.getElsRolloverDateFormat())
+                                .keyed(true))
+                    .aggregations(Map.of("bucketSort", bucketSortAggregation)));
 
-    SearchRequest searchRequest = SearchRequest.of(sr -> sr
-        .index(indexTemplateDescriptor.getFullQualifiedName())
-        .size(0)
-        .aggregations("endDateHistogram", dateHistogramAggregation));
+    final SearchRequest searchRequest =
+        SearchRequest.of(
+            sr ->
+                sr.index(indexTemplateDescriptor.getFullQualifiedName())
+                    .size(0)
+                    .aggregations("endDateHistogram", dateHistogramAggregation));
 
-    CompletableFuture<SearchResponse<Void>> future = client.search(searchRequest, Void.class);
-    return future.thenApply(response -> {
-      Map<String, Aggregate> aggregations = response.aggregations();
-      DateHistogramAggregate histogram = aggregations.get("endDateHistogram").dateHistogram();
-
-      DateHistogramBucket oldest = histogram.buckets().array().getFirst();
-      return oldest.keyAsString();
-    });
+    final CompletableFuture<SearchResponse<Void>> future = client.search(searchRequest, Void.class);
+    return future.thenApply(
+        response -> {
+          final Map<String, Aggregate> aggregations = response.aggregations();
+          final DateHistogramAggregate histogram =
+              aggregations.get("endDateHistogram").dateHistogram();
+          final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
+          return oldest.keyAsString();
+        });
   }
 
   private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
