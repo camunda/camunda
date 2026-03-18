@@ -139,6 +139,9 @@
 ## Agentic AI  ##
 #################
 
+# AI Assistant Instructions
+/CLAUDE.md  @camunda/orchestration-cluster
+
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai
 
