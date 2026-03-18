@@ -17,7 +17,7 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
-  private final Set<InflightActivateJobsRequest<T>> activeRequests = new LinkedHashSet<>();
+  private final Set<InflightActivateJobsRequest<T>> activeRequests = new HashSet<>();
   private final SequencedSet<InflightActivateJobsRequest<T>> pendingRequests =
       new LinkedHashSet<>();
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
