@@ -218,6 +218,7 @@ test.describe('processes page', () => {
     });
 
     await expect(processesPage.processInstancesTable).toBeVisible();
+    await expect(page.getByTestId(/^state-overlay/).first()).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
