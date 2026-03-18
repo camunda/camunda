@@ -529,12 +529,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         Aggregation.of(
             a ->
                 a.dateHistogram(
-                        dh -> (
-                          dh.field("endDate")
-                              .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
-                              .format(config.getElsRolloverDateFormat())
-                              .timeZone(ZoneId.systemDefault().getId()))
-                    )
+                        dh ->
+                            (dh.field("endDate")
+                                .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
+                                .format(config.getElsRolloverDateFormat())
+                                .timeZone(ZoneId.systemDefault().getId())))
                     .aggregations(Map.of("bucketSort", bucketSortAggregation)));
 
     final SearchRequest searchRequest =
