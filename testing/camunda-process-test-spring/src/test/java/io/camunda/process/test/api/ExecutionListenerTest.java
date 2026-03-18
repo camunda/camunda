@@ -171,8 +171,8 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(camundaClientProxy).setClient(camundaClientArgumentCaptor.capture());
-    verify(zeebeClientProxy).setClient(zeebeClientArgumentCaptor.capture());
+    verify(camundaClientProxy).setDelegate(camundaClientArgumentCaptor.capture());
+    verify(zeebeClientProxy).setDelegate(zeebeClientArgumentCaptor.capture());
 
     final CamundaClient camundaClient = camundaClientArgumentCaptor.getValue();
     assertThat(camundaClient).isNotNull();
@@ -214,7 +214,7 @@ public class ExecutionListenerTest {
 
     // then
     verify(camundaProcessTestContextProxy)
-        .setContext(camundaProcessTestContextArgumentCaptor.capture());
+        .setDelegate(camundaProcessTestContextArgumentCaptor.capture());
 
     final CamundaProcessTestContext camundaProcessTestContext =
         camundaProcessTestContextArgumentCaptor.getValue();
@@ -244,7 +244,7 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(testCaseRunnerProxy).setRunner(testCaseRunnerArgumentCaptor.capture());
+    verify(testCaseRunnerProxy).setDelegate(testCaseRunnerArgumentCaptor.capture());
 
     final TestCaseRunner testCaseRunner = testCaseRunnerArgumentCaptor.getValue();
     assertThat(testCaseRunner).isNotNull();
@@ -264,7 +264,7 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(camundaClientProxy).setClient(camundaClientArgumentCaptor.capture());
+    verify(camundaClientProxy).setDelegate(camundaClientArgumentCaptor.capture());
 
     final CamundaClient camundaClient = camundaClientArgumentCaptor.getValue();
     assertThat(camundaClient).isNotNull();
@@ -288,7 +288,7 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(zeebeClientProxy).setClient(zeebeClientArgumentCaptor.capture());
+    verify(zeebeClientProxy).setDelegate(zeebeClientArgumentCaptor.capture());
 
     final ZeebeClient zeebeClient = zeebeClientArgumentCaptor.getValue();
     assertThat(zeebeClient).isNotNull();
@@ -349,9 +349,9 @@ public class ExecutionListenerTest {
         zeebeClientClosingEventArgumentCaptor.getValue();
     assertThat(zeebeClientCreatedEvent.getClient()).isEqualTo(zeebeClientClosingEvent.getClient());
 
-    verify(camundaClientProxy).removeClient();
-    verify(zeebeClientProxy).removeClient();
-    verify(camundaProcessTestContextProxy).removeContext();
+    verify(camundaClientProxy).removeDelegate();
+    verify(zeebeClientProxy).removeDelegate();
+    verify(camundaProcessTestContextProxy).removeDelegate();
   }
 
   @Test
