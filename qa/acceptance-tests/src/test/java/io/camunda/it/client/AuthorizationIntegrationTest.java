@@ -412,60 +412,63 @@ public class AuthorizationIntegrationTest {
   }
 
   @Test
-  void searchShouldReturnAuthorizationsSortedByResourcePropertyNames() {
-    // given: execute all authorization creation commands in parallel
-    final var future1 =
-        camundaClient
-            .newCreateAuthorizationCommand()
-            .ownerId(USER_ID_1)
-            .ownerType(OwnerType.USER)
-            .resourcePropertyName("prop-oscar")
-            .resourceType(ResourceType.USER_TASK)
-            .permissionTypes(UPDATE)
-            .send();
-
-    final var future2 =
-        camundaClient
-            .newCreateAuthorizationCommand()
-            .ownerId(USER_ID_1)
-            .ownerType(OwnerType.USER)
-            .resourcePropertyName("prop-tango")
-            .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(CREATE)
-            .send();
-
-    final var future3 =
-        camundaClient
-            .newCreateAuthorizationCommand()
-            .ownerId(USER_ID_2)
-            .ownerType(OwnerType.USER)
-            .resourcePropertyName("prop-lima")
-            .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(CREATE)
-            .send();
-
-    CompletableFuture.allOf(
-            future1.toCompletableFuture(),
-            future2.toCompletableFuture(),
-            future3.toCompletableFuture())
+  void searchShouldUsAuthorizationKeyAsDiscriminatorForTiedRecordsAndYieldCursors() {
+    // given — two authorizations that are identical on the explicit sort field (ownerType)
+    final var resourceIdPrefix = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-a")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
+        .send()
         .join();
 
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-b")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
+        .send()
+        .join();
+
+    // when / then — sort by ownerType (tied), paginate with limit 1
+    // the authorization key should break the tie and cursors should work
     Awaitility.await()
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              // when
-              final var authorizationsSearchResponse =
+              final var firstPage =
                   camundaClient
                       .newAuthorizationSearchRequest()
-                      .filter(f -> f.resourcePropertyNames("prop-oscar", "prop-tango", "prop-lima"))
-                      .sort(s -> s.resourcePropertyName().desc())
-                      .execute();
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .sort(s -> s.ownerType().asc())
+                      .page(p -> p.limit(1))
+                      .send()
+                      .join();
+              assertThat(firstPage.items()).hasSize(1);
+              assertThat(firstPage.page().endCursor()).isNotNull();
 
-              // then
-              assertThat(authorizationsSearchResponse.items())
-                  .map(Authorization::getResourcePropertyName)
-                  .containsExactly("prop-tango", "prop-oscar", "prop-lima");
+              final var secondPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .sort(s -> s.ownerType().asc())
+                      .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+                      .send()
+                      .join();
+              assertThat(secondPage.items()).hasSize(1);
+              assertThat(secondPage.items().getFirst().getAuthorizationKey())
+                  .isNotEqualTo(firstPage.items().getFirst().getAuthorizationKey());
             });
   }
 
@@ -479,7 +482,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(resourceIdPrefix + "-1")
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(CREATE)
+        .permissionTypes(PermissionType.CREATE)
         .send()
         .join();
 
@@ -489,7 +492,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(resourceIdPrefix + "-2")
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(CREATE)
+        .permissionTypes(PermissionType.CREATE)
         .send()
         .join();
 
@@ -523,7 +526,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(resourceIdPrefix + "-a")
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(CREATE)
+        .permissionTypes(PermissionType.CREATE)
         .send()
         .join();
 
@@ -533,7 +536,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(resourceIdPrefix + "-b")
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(CREATE)
+        .permissionTypes(PermissionType.CREATE)
         .send()
         .join();
 
