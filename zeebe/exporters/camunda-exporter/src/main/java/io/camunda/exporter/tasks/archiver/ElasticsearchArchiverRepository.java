@@ -16,8 +16,15 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
@@ -55,9 +62,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 import org.slf4j.Logger;
 
 public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
@@ -75,7 +86,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
-  private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
 
   public ElasticsearchArchiverRepository(
@@ -468,7 +478,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
+    return getDateOfArchiveIndex(templateDescriptor, endDate, rolloverInterval, config)
         .thenApply(
             date -> {
               final var batchHits =
@@ -504,6 +514,45 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             });
   }
 
+  private CompletableFuture<String> getDateOfArchiveIndex(
+      final IndexTemplateDescriptor indexTemplateDescriptor,
+      final String endDate,
+      final String rolloverInterval,
+      final HistoryConfiguration config) {
+    final String indexName = indexTemplateDescriptor.getIndexName();
+
+    Aggregation bucketSortAggregation = Aggregation.of(a -> a
+        .bucketSort(bs -> bs
+            .sort(sort -> sort.field(f -> f.field("_key").order(SortOrder.Asc)))
+            .size(1)
+        )
+    );
+
+    Aggregation dateHistogramAggregation = Aggregation.of(a -> a
+        .dateHistogram(dh -> dh
+            .field("endDate")
+            .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
+            .format(config.getElsRolloverDateFormat())
+            .keyed(true)
+        )
+        .aggregations(Map.of("bucketSort", bucketSortAggregation))
+    );
+
+    SearchRequest searchRequest = SearchRequest.of(sr -> sr
+        .index(indexTemplateDescriptor.getFullQualifiedName())
+        .size(0)
+        .aggregations("endDateHistogram", dateHistogramAggregation));
+
+    CompletableFuture<SearchResponse<Void>> future = client.search(searchRequest, Void.class);
+    return future.thenApply(response -> {
+      Map<String, Aggregate> aggregations = response.aggregations();
+      DateHistogramAggregate histogram = aggregations.get("endDateHistogram").dateHistogram();
+
+      DateHistogramBucket oldest = histogram.buckets().array().getFirst();
+      return oldest.keyAsString();
+    });
+  }
+
   private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
       final SearchResponse<T> response,
       final String field,
@@ -523,7 +572,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
+    return getDateOfArchiveIndex(templateDescriptor, endDate, rolloverInterval, config)
         .thenApply(
             date -> {
               final var batchHits =
@@ -541,28 +590,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               final List<String> ids = batchHits.stream().map(Hit::id).toList();
               return new BasicArchiveBatch(date, ids);
             });
-  }
-
-  private CompletableFuture<String> getDateOfArchiveIndex(
-      final String endDate,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
-    final String templateIndexName = templateDescriptor.getIndexName();
-    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
-    final CompletableFuture<String> dateFuture =
-        (lastHistoricalArchiverDate == null)
-            ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                fetchMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
-            : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
-
-    return dateFuture.thenApply(
-        date -> {
-          final String nextArchiverDate =
-              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
-          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-          return nextArchiverDate;
-        });
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
