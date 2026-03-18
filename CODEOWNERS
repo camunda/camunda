@@ -10,6 +10,9 @@
 /docs/observability.md       @npepinpe @ChrisKujawa
 /docs/assets/observability*  @npepinpe @ChrisKujawa
 
+# AI Assistant Instructions
+/CLAUDE.md  @camunda/orchestration-cluster
+
 # C8Run by Distro team
 .github/actions/setup-c8run/* @camunda/distribution
 .github/workflows/c8run* @camunda/distribution
