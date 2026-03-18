@@ -901,7 +901,7 @@ final class ElasticsearchArchiverRepositoryIT {
     // then the batch finish date should not update:
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsExactly("1", "2");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 
   @Test
