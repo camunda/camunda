@@ -14,7 +14,7 @@ jobs:
   analyze:
     name: Analyze dependencies
     permissions: {}
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-8-longrunning
     strategy:
       # The matrix is necessary to run separate analyses
       matrix:
