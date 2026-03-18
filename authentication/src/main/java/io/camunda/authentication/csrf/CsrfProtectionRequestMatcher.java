@@ -56,6 +56,7 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
     final String baseRequestUrl;
     try {
       final URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
+      final URI uri = URI.create(request.getRequestURI());
       baseRequestUrl =
           requestUrl.getProtocol()
               + "://"
@@ -64,7 +65,7 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
     } catch (final MalformedURLException e) {
       throw new RuntimeException(e);
     }
-    return referer != null && referer.matches(baseRequestUrl + ".*/swagger-ui.*");
+    return referer != null && referer.matches(Pattern.quote(baseRequestUrl) + ".*/swagger-ui.*");
   }
 
   private Pattern getAllowedPathsPattern() {
@@ -77,7 +78,8 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
         paths.stream()
             .map(path -> path.replace("**", ".*")) // Replace wildcard with regex equivalent
             .collect(Collectors.joining("|", "^(", ")$")); // Combine paths into regex
-    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", allowedPathsPattern);
-    return Pattern.compile(patternAsString);
+    final Pattern compiledPattern = Pattern.compile(patternAsString);
+    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", compiledPattern);
+    return compiledPattern;
   }
 }
