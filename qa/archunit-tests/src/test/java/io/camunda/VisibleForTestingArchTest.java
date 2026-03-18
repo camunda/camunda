@@ -43,7 +43,6 @@ public class VisibleForTestingArchTest {
 
   static final List<String> PUBLIC_ELEMENTS =
       List.of(
-          "io.camunda.application.commons.actor.ActorSchedulerConfiguration",
           "io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR",
           "io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR",
           "io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR",

@@ -9,14 +9,12 @@ package io.camunda.application.commons.actor;
 
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@VisibleForTesting
 public final class ActorSchedulerConfiguration {
 
   private final SchedulerConfiguration schedulerConfiguration;
