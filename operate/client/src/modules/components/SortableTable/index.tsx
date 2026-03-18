@@ -206,6 +206,7 @@ const SortableTable = <
                       };
 
                       const {key, onExpand, ...props} = getRowProps({row});
+                      const expandedRowColSpan = headers.length + 2;
 
                       return (
                         <React.Fragment key={row.id}>
@@ -252,15 +253,15 @@ const SortableTable = <
                           </TableExpandRow>
                           {errorMessage && (
                             <TableExpandedRow
-                              colSpan={headers.length + 2}
+                              colSpan={expandedRowColSpan}
                               $variant="error"
                             >
                               {errorMessage}
                             </TableExpandedRow>
                           )}
-                          {rowExpandedContent ? (
+                          {row.isExpanded ? (
                             <TableExpandedRow
-                              colSpan={headers.length + 2}
+                              colSpan={expandedRowColSpan}
                               $variant="default"
                             >
                               {rowExpandedContent}
