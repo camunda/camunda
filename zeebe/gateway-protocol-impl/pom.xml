@@ -88,10 +88,12 @@
     <plugins>
       <!-- generate Java protobuf code -->
       <plugin>
-        <groupId>org.xolstice.maven.plugins</groupId>
+        <groupId>io.github.ascopes</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
         <configuration>
-          <protoSourceRoot>${proto.dir}</protoSourceRoot>
+          <sourceDirectories>
+            <sourceDirectory>${proto.dir}</sourceDirectory>
+          </sourceDirectories>
         </configuration>
       </plugin>
     </plugins>
