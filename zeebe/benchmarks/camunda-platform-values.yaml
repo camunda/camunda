@@ -136,6 +136,10 @@ zeebe:
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
       zeebe.broker.flowControl.write.limit: 4000
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max)
+    # to change settings like disabling consistency checks without duplicating the full application.yml content.
+    application-override.yml: "# no overrides"
 
   # Zeebe config
   extraVolumes:
@@ -169,92 +173,9 @@ zeebe:
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
-      value: "/usr/local/zeebe/config/application.yml"
-
-  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
-  resources:
-    limits:
-      cpu: 2000m
-      memory: 4Gi
-    requests:
-      cpu: 2000m
-      memory: 4Gi
-
-  nodeSelector:
-    component: benchmark-n2-standard-4
-
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-
-  # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
-  pvcAccessMode: [ "ReadWriteOnce" ]
-  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: 48Gi
-  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
-  pvcStorageClassName: ssd
-
-zeebeGateway:
-  # Replicas defines how many standalone gateways are deployed
-  replicas: 2
-
-  # Image configuration to configure the zeebe-gateway image specifics
-  image:
-    # Image.repository defines which image repository to use
-    repository: camunda/zeebe
-    # Image.registry defines which image registry to use
-    registry: docker.io
-    # Image.tag defines the tag / version which should be used in the chart
-    tag: 8.7-SNAPSHOT
-  # LogLevel defines the log level which is used by the gateway
-  logLevel: debug
-
-  # We set extra configuration to configure additional settings for Broker and Gateway, that are part
-  # of the orchestration cluster.
-  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
-  extraConfiguration:
-    application.yml: |
-      zeebe.gateway.monitoring.enabled: "true"
-      zeebe.gateway.threads.managementThreads: "1"
-
-  # Zeebe config
-  extraVolumes:
-    - name: logs
-      emptyDir: {}
-  ## @param zeebeGateway.extraVolumeMounts can be used to mount extra volumes for the broker pods
-  extraVolumeMounts:
-    - name: logs
-      mountPath: /usr/local/zeebe/logs
-
-  # Env can be used to set extra environment variables in each gateway container
-  env:
-    - name: ZEEBE_LOG_APPENDER
-      value: Stackdriver
-    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
-      value: zeebe
-    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-    - name: ATOMIX_LOG_LEVEL
-      value: INFO
-    # To be able to load a separate/additional configuration
-    # See https://github.com/camunda/camunda-platform-helm/issues/2197
-    - name: SPRING_CONFIG_ADDITIONALLOCATION
-      value: "/usr/local/zeebe/config/application.yml"
-    - name: CAMUNDA_REST_QUERY_ENABLED
-      value: "true"
-
-  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  resources:
-    limits:
-      cpu: 450m
-      memory: 1Gi
-    requests:
-      cpu: 450m
-      memory: 1Gi
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
+      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
 
 # Change these settings to configure a different way to collect metrics
 prometheusServiceMonitor:

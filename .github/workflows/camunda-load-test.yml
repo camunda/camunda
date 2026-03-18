@@ -237,6 +237,7 @@ jobs:
     permissions: { }
     outputs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
+      platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -254,16 +255,31 @@ jobs:
           case "$scenario" in
             latency)
               echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             realistic)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)
               # Output typical configuration directly to avoid quote escaping issues
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
+              # We inject the overrides via --set-file into extraConfiguration[1] (application-override.yml),
+              # which is loaded after (and thus takes priority over) the base application.yml.
+              # All values files define extraConfiguration[1] as application-override.yml (empty by default),
+              # so this override works regardless of which secondary storage type is selected.
+              # Path is relative to the helm working dir: load-tests/setup/$NAMESPACE/
+              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yml'" >> "$GITHUB_OUTPUT"
+              ;;
+            custom)
+              # Use the provided load-test-load inputs
+              echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -305,7 +321,7 @@ jobs:
         name: Build Zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Zeebe Docker Image
         with:
@@ -314,6 +330,16 @@ jobs:
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
           dockerfile: 'Dockerfile'
       - name: Observe build status
         if: always()
@@ -413,7 +439,7 @@ jobs:
         run: |
           cd zeebe/benchmarks/setup/${{ env.NAMESPACE }}
 
-          # Build additional load test configuration
+          # Build load test configuration
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
@@ -424,10 +450,40 @@ jobs:
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
+          # Resolve image registry/repository based on whether official images are used
+          image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+          camunda_repo="${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }}"
+          optimize_repo="${{ inputs.use-official-docker-images && 'camunda/optimize' || 'team-zeebe/optimize' }}"
+          image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+
+          # Build platform configuration
+          additional_platform_config="--set global.image.tag=${image_tag} \
+            --set orchestration.image.registry=${image_registry} \
+            --set orchestration.image.repository=${camunda_repo} \
+            --set orchestration.image.tag=${image_tag}"
+
+          # Append optimize image config if enabled
+          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+            additional_platform_config+=" \
+              --set optimize.image.registry=${image_registry} \
+              --set optimize.image.repository=${optimize_repo} \
+              --set optimize.image.tag=${image_tag}"
+          fi
+
+          # Append user-provided helm values if present
+          if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
+            additional_platform_config+=" ${{ inputs.platform-helm-values }}"
+          fi
+
+          # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
+            additional_platform_config+=" ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
+          fi
+
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }} --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }} --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()
