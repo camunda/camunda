@@ -435,10 +435,11 @@ class ConditionalBehaviorEngineTest {
 
   @Test
   void shouldRearmAfterResetTimeoutWhenConditionNeverResets() {
-    final AtomicInteger actionCount = new AtomicInteger(0);
-
     // use a short reset timeout so the test completes quickly
-    engine.setResetTimeout(Duration.ofMillis(500));
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(500));
+
+    final AtomicInteger actionCount = new AtomicInteger(0);
 
     // condition always passes — reset-wait will hit timeout
     engine.when(() -> {}).then(actionCount::incrementAndGet);

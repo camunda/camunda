@@ -57,7 +57,7 @@ public class ConditionalBehaviorEngine {
   private static final int DEFAULT_MAX_BEHAVIOR_THREADS = 8;
 
   private volatile Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
-  private volatile Duration resetTimeout = DEFAULT_RESET_TIMEOUT;
+  private final Duration resetTimeout;
 
   private final CopyOnWriteArrayList<ConditionalBehavior> behaviors = new CopyOnWriteArrayList<>();
 
@@ -66,6 +66,14 @@ public class ConditionalBehaviorEngine {
   private volatile Runnable contextInitializer;
   private volatile BehaviorEvaluationScope evaluationScope = Runnable::run;
   private ScheduledThreadPoolExecutor executor;
+
+  public ConditionalBehaviorEngine() {
+    this(DEFAULT_RESET_TIMEOUT);
+  }
+
+  ConditionalBehaviorEngine(final Duration resetTimeout) {
+    this.resetTimeout = resetTimeout;
+  }
 
   /**
    * Registers a new conditional behavior. The condition is evaluated periodically on a background
@@ -111,11 +119,6 @@ public class ConditionalBehaviorEngine {
     stopExecutor();
     logSummary();
     behaviors.clear();
-  }
-
-  /** Sets the reset timeout for condition-reset gating. Package-private for testing. */
-  void setResetTimeout(final Duration resetTimeout) {
-    this.resetTimeout = resetTimeout;
   }
 
   private void logSummary() {
