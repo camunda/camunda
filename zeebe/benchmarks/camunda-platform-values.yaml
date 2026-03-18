@@ -113,6 +113,26 @@ zeebe:
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
       zeebe.broker.flowControl.write.limit: 4000
+      zeebe.broker.flowControl.write.throttling.enabled: "true"
+      # Disable the importers
+      camunda.tasklist.importerEnabled: "false"
+      camunda.operate.importerEnabled: "false"
+      camunda.operate.elasticsearch.numberOfShards: 3
+      # Schema management has been moved out of exporter - to be bootstrap at start; once
+      camunda.database.retention.enabled: "true"
+      # 0s causes ILM to move data asap - it is normally the default
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+      camunda.database.retention.minimumAge: "70m"
+      camunda.database.retention.policyName: "camunda-retention-policy"
+      #Metrics:
+      camunda.flags.jfr.metrics: "true"
+      # RocksDB memory limit setting, limits the overall RocksDB memory usage
+      # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+      zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max)
+    # to change settings like disabling consistency checks without duplicating the full application.yml content.
+    application-override.yml: "# no overrides"
 
   # Zeebe config
   extraVolumes:
@@ -218,16 +238,7 @@ zeebeGateway:
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
-      value: "/usr/local/zeebe/config/application.yml"
-
-  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  resources:
-    limits:
-      cpu: 450m
-      memory: 1Gi
-    requests:
-      cpu: 450m
-      memory: 1Gi
+      value: "/usr/local/camunda/config/application.yml"
 
 # Change these settings to configure a different way to collect metrics
 prometheusServiceMonitor:
