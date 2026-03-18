@@ -91,4 +91,11 @@ public interface CamundaAssertAwaitBehavior {
    * @param assertionInterval the assertion's interval
    */
   void setAssertionInterval(final Duration assertionInterval);
+
+  /**
+   * Returns the configured interval between assertion attempts.
+   *
+   * @return the assertion interval
+   */
+  Duration getAssertionInterval();
 }

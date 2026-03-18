@@ -35,6 +35,7 @@ import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.util.Collections;
@@ -104,7 +105,8 @@ public class UpdateVariablesTest {
               camundaManagementClient,
               DevAwaitBehavior.expectSuccess(),
               jsonMapper,
-              zeebeJsonMapper);
+              zeebeJsonMapper,
+              new ConditionalBehaviorEngine());
 
       when(processInstance.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
       when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
@@ -275,7 +277,8 @@ public class UpdateVariablesTest {
               camundaManagementClient,
               DevAwaitBehavior.expectFailure(),
               jsonMapper,
-              zeebeJsonMapper);
+              zeebeJsonMapper,
+              new ConditionalBehaviorEngine());
     }
 
     @Test
