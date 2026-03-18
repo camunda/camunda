@@ -17,53 +17,27 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.process.test.api.assertions.EvaluationAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.AbstractAssert;
 
 /**
- * AssertJ assertion for evaluating arbitrary string values using an LLM judge. This assertion is
- * standalone and not tied to process instance variables.
- *
- * <p>Example usage:
- *
- * <pre>
- *   EvaluationAssertions.assertThat("Hello, how can I help you?")
- *       .satisfiesExpectation("should be a polite greeting");
- *
- *   EvaluationAssertions.assertThat(agentResponse)
- *       .withJudgeConfig(config -&gt; config.withThreshold(0.8))
- *       .satisfiesExpectation("should identify suspicious entries")
- *       .satisfiesExpectation("should recommend an audit");
- * </pre>
+ * AssertJ implementation of {@link EvaluationAssert}. Evaluates string values against
+ * natural-language expectations using an LLM judge.
  */
-public class JudgeEvaluationResultAssert
-    extends AbstractAssert<JudgeEvaluationResultAssert, String> {
+public class EvaluationAssertj extends AbstractAssert<EvaluationAssertj, String>
+    implements EvaluationAssert {
 
   private JudgeConfig judgeConfig;
 
-  public JudgeEvaluationResultAssert(final String actual, final JudgeConfig judgeConfig) {
-    super(actual, JudgeEvaluationResultAssert.class);
+  public EvaluationAssertj(final String actual, final JudgeConfig judgeConfig) {
+    super(actual, EvaluationAssertj.class);
     this.judgeConfig = judgeConfig;
   }
 
-  /**
-   * Modifies the current {@link JudgeConfig} for subsequent judge evaluations in this chain. The
-   * modifier receives the current config (either the global default or a previously set override)
-   * and returns a new config. The global default is not affected.
-   *
-   * <p>Example usage:
-   *
-   * <pre>
-   *   EvaluationAssertions.assertThat("some text")
-   *       .withJudgeConfig(config -&gt; config.withThreshold(0.8))
-   *       .satisfiesExpectation("should be professional");
-   * </pre>
-   *
-   * @param modifier a function that receives the current judge config and returns a modified one
-   * @return this assertion object
-   */
-  public JudgeEvaluationResultAssert withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
+  @Override
+  public EvaluationAssert withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
     if (modifier == null) {
       throw new IllegalArgumentException("modifier must not be null");
     }
@@ -72,14 +46,8 @@ public class JudgeEvaluationResultAssert
     return this;
   }
 
-  /**
-   * Verifies that the actual value satisfies a natural language expectation using an LLM judge.
-   * Uses the threshold from the configured {@link JudgeConfig}.
-   *
-   * @param expectation the natural language expectation
-   * @return this assertion object
-   */
-  public JudgeEvaluationResultAssert satisfiesExpectation(final String expectation) {
+  @Override
+  public EvaluationAssert satisfiesExpectation(final String expectation) {
     assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
