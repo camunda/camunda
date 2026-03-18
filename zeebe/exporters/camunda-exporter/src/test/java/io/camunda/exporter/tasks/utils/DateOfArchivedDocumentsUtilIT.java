@@ -8,7 +8,9 @@
 package io.camunda.exporter.tasks.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import org.junit.jupiter.api.Test;
 
@@ -81,5 +83,29 @@ public class DateOfArchivedDocumentsUtilIT {
             DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
                 "2023-10-02", "2023-09-01", "1M", "yyyy-MM-dd"))
         .isEqualTo("2023-10-02");
+  }
+
+  @Test
+  void shouldParseCalendarIntervalFor1d() {
+    assertThat(DateOfArchivedDocumentsUtil.parseCalendarInterval("1d"))
+        .isEqualTo(CalendarInterval.Day);
+  }
+
+  @Test
+  void shouldParseCalendarIntervalFor3d() {
+    assertThat(DateOfArchivedDocumentsUtil.parseCalendarInterval("3d")).isNull();
+  }
+
+  @Test
+  void shouldParseCalendarIntervalFor1M() {
+    assertThat(DateOfArchivedDocumentsUtil.parseCalendarInterval("1M"))
+        .isEqualTo(CalendarInterval.Month);
+  }
+
+  @Test
+  void shouldThrowExceptionForNullInterval() {
+    assertThatThrownBy(() -> DateOfArchivedDocumentsUtil.parseCalendarInterval(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Interval cannot be null or blank");
   }
 }

@@ -161,6 +161,10 @@ public final class DateOfArchivedDocumentsUtil {
   }
 
   public static CalendarInterval parseCalendarInterval(final String interval) {
+    if (interval == null || interval.isBlank()) {
+      throw new IllegalArgumentException("Interval cannot be null or blank");
+    }
+
     try {
       final CalendarInterval result = CalendarInterval._DESERIALIZER.parse(interval);
       return result;
