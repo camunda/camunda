@@ -7,7 +7,6 @@
  */
 
 import styled from 'styled-components';
-import {styles} from '@carbon/elements';
 import {Layer} from '@carbon/react';
 
 const ExpandedContent = styled(Layer)`
@@ -24,11 +23,6 @@ const ExpandedField = styled.div`
 
 const FieldLabel = styled.span`
   color: var(--cds-text-secondary);
-  ${styles.bodyCompact01};
 `;
 
-const FieldValue = styled.span`
-  ${styles.bodyCompact01};
-`;
-
-export {ExpandedContent, ExpandedField, FieldLabel, FieldValue};
+export {ExpandedContent, ExpandedField, FieldLabel};
