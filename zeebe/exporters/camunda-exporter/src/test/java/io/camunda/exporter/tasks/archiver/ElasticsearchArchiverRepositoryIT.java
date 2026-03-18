@@ -868,7 +868,7 @@ final class ElasticsearchArchiverRepositoryIT {
               assertThat(thirdBatch.isDone()).isTrue();
               assertThat(thirdBatch.get().ids()).containsExactly("5", "6");
               assertThat(thirdBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
             });
   }
 

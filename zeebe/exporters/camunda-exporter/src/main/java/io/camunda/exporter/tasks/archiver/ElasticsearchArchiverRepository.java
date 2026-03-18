@@ -54,6 +54,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -528,10 +529,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         Aggregation.of(
             a ->
                 a.dateHistogram(
-                        dh ->
-                            dh.field("endDate")
-                                .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
-                                .format(config.getElsRolloverDateFormat()))
+                        dh -> (
+                          dh.field("endDate")
+                              .fixedInterval(Time.of(t -> t.time(rolloverInterval)))
+                              .format(config.getElsRolloverDateFormat())
+                              .timeZone(ZoneId.systemDefault().getId()))
+                    )
                     .aggregations(Map.of("bucketSort", bucketSortAggregation)));
 
     final SearchRequest searchRequest =
@@ -549,7 +552,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
           try {
             final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
-            return oldest.keyAsString();
+            String result = oldest.keyAsString();
+            return result;
           } catch (NoSuchElementException _exception) {
             return endDate;
           }
