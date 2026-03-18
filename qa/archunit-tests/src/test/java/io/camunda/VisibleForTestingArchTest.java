@@ -43,12 +43,7 @@ public class VisibleForTestingArchTest {
   static final List<String> EXCLUDED_CLASS_NAMES =
       List.of(
           "io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector",
-          "io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler$AsyncJobStreamRemover",
-          "io.camunda.zeebe.util.micrometer.StatefulGauge",
-          "io.camunda.application.commons.console.ping.PingConsoleTask$RetriableException",
-          "io.camunda.search.schema.IndexMappingDifference$OrderInsensitiveEquivalence",
-          "io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler$JobStreamConsumer",
-          "io.camunda.zeebe.shared.management.ActorClockEndpoint$Response");
+          "io.camunda.zeebe.util.micrometer.StatefulGauge");
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
@@ -69,7 +64,7 @@ public class VisibleForTestingArchTest {
       fields().that().areAnnotatedWith(VisibleForTesting.class).should(fieldAccessedBySelfOrTest());
 
   private static ArchCondition<JavaClass> classAccessedBySelfOrTest() {
-    return new ArchCondition<>("Classes should be accessed from test or self") {
+    return new ArchCondition<>("be accessed from test or self") {
       @Override
       public void check(final JavaClass javaClass, final ConditionEvents events) {
 
@@ -81,7 +76,7 @@ public class VisibleForTestingArchTest {
                         SimpleConditionEvent.violated(
                             violationAccess,
                             String.format(
-                                "Class %s is accessed from %s, which is not a test or self class.",
+                                "Class %s is accessed from %s, which is not a test but still requires extended visibility.",
                                 javaClass.getFullName(),
                                 violationAccess.getOriginOwner().getFullName()))));
       }
@@ -89,7 +84,7 @@ public class VisibleForTestingArchTest {
   }
 
   private static ArchCondition<JavaMethod> methodAccessedBySelfOrTest() {
-    return new ArchCondition<>("Methods should be accessed from test or self") {
+    return new ArchCondition<>("be accessed from test or self") {
       @Override
       public void check(final JavaMethod javaMethod, final ConditionEvents events) {
 
@@ -101,7 +96,7 @@ public class VisibleForTestingArchTest {
                         SimpleConditionEvent.violated(
                             violationCall,
                             String.format(
-                                "Method %s is called from %s, which is not a test or self class.",
+                                "Method %s is called from %s, which is not a test but still requires extended visibility.",
                                 javaMethod.getFullName(),
                                 violationCall.getOriginOwner().getFullName()))));
       }
@@ -109,7 +104,7 @@ public class VisibleForTestingArchTest {
   }
 
   private static ArchCondition<JavaField> fieldAccessedBySelfOrTest() {
-    return new ArchCondition<>("Fields should be accessed from test or self") {
+    return new ArchCondition<>("be accessed from test or self") {
       @Override
       public void check(final JavaField javaField, final ConditionEvents events) {
 
@@ -121,7 +116,7 @@ public class VisibleForTestingArchTest {
                         SimpleConditionEvent.violated(
                             violationAccess,
                             String.format(
-                                "Field %s is accessed from %s, which is not a test or self class.",
+                                "Field %s is accessed from %s, which is not a test but still requires extended visibility.",
                                 javaField.getFullName(),
                                 violationAccess.getOriginOwner().getFullName()))));
       }
@@ -139,9 +134,19 @@ public class VisibleForTestingArchTest {
     return javaClassSource.isPresent() && javaClassSource.get().toString().contains("test");
   }
 
-  private static boolean isCalledBySelf(
-      final JavaClass javaMethodOwner, final JavaClass javaMethodCallOriginOwner) {
-    return javaMethodCallOriginOwner.equals(javaMethodOwner);
+  private static boolean isCalledBySelf(final JavaClass calledClass, final JavaClass callingClass) {
+    // If the calling class is the same as the called class, it's a self-access
+    // This also covers the case of nested classes, as they can access private members of their
+    // enclosing class and vice versa
+    return topLevelClass(callingClass).equals(topLevelClass(calledClass));
+  }
+
+  private static JavaClass topLevelClass(final JavaClass javaClass) {
+    var topLevelClass = javaClass;
+    while (topLevelClass.getEnclosingClass().isPresent()) {
+      topLevelClass = topLevelClass.getEnclosingClass().get();
+    }
+    return topLevelClass;
   }
 
   private static boolean isExcludedClass(final JavaClass javaClass) {
