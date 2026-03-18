@@ -32,6 +32,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -357,6 +358,52 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.businessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldRejectCreateProcessInstanceWhenBusinessIdAlreadyExists() {
+    // given
+    final var businessId = "order-12345";
+    final var processDefinitionId = "bpmnProcessId";
+    final var rejectionReason =
+        "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'"
+            .formatted(businessId, processDefinitionId);
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(rejectionReason, ServiceException.Status.ALREADY_EXISTS)));
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "businessId": "order-12345"
+            }""")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+                "type":"about:blank",
+                "title":"ALREADY_EXISTS",
+                "status":409,
+                "detail":"Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition '%s'",
+                "instance":"/v2/process-instances"
+            }"""
+                .formatted(businessId, processDefinitionId),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -726,41 +773,38 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
-    final var request =
-        """
-            {
-                "processDefinitionKey": "123",
-                "awaitCompletion": true,
-                "businessId": "order-12345"
-            }""";
-
-    final var expectedResponse =
-        """
-            {
-              "processDefinitionKey":"123",
-              "processDefinitionId":"bpmnProcessId",
-              "processDefinitionVersion":-1,
-              "processInstanceKey":"456",
-              "tenantId":"<default>",
-              "variables":{},
-              "tags":[],
-              "businessId":"order-12345"
-            }""";
-
     // when / then
     webClient
         .post()
         .uri(PROCESS_INSTANCES_START_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue(
+            """
+            {
+                "processDefinitionKey": "123",
+                "awaitCompletion": true,
+                "businessId": "order-12345"
+            }""")
         .exchange()
         .expectStatus()
         .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .json(
+            """
+            {
+                "processDefinitionKey":"123",
+                "processDefinitionId":"bpmnProcessId",
+                "processDefinitionVersion":-1,
+                "processInstanceKey":"456",
+                "tenantId":"<default>",
+                "variables":{},
+                "tags":[],
+                "businessId":"order-12345"
+            }""",
+            JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
@@ -768,6 +812,53 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
     assertThat(capturedRequest.businessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldRejectCreateProcessInstanceWithResultWhenBusinessIdAlreadyExists() {
+    // given
+    final var businessId = "order-12345";
+    final var processDefinitionId = "bpmnProcessId";
+    final var rejectionReason =
+        "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'"
+            .formatted(businessId, processDefinitionId);
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(rejectionReason, ServiceException.Status.ALREADY_EXISTS)));
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "processDefinitionId": "bpmnProcessId",
+              "awaitCompletion": true,
+              "businessId": "order-12345"
+            }""")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+                "type":"about:blank",
+                "title":"ALREADY_EXISTS",
+                "status":409,
+                "detail":"Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition '%s'",
+                "instance":"/v2/process-instances"
+            }"""
+                .formatted(businessId, processDefinitionId),
+            JsonCompareMode.STRICT);
   }
 
   @Test
