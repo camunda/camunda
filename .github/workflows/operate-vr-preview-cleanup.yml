@@ -1,0 +1,110 @@
+# description: Weekly cleanup of orphaned Operate VR report preview deployments
+# type: maintenance
+# owner: @camunda/monorepo-devops-team
+---
+name: Operate VR Preview Cleanup
+
+on:
+  schedule:
+    # Run weekly on Sundays at 03:30 UTC, offset from docs cleanup
+    - cron: '30 3 * * 0'
+  workflow_dispatch: {}
+
+# Prevent concurrent cleanup operations to avoid git conflicts
+concurrency:
+  group: operate-vr-preview-cleanup
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cleanup-orphaned-vr-previews:
+    name: Cleanup Orphaned Operate VR Report Previews
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Cleanup orphaned VR report previews
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Fetch gh-pages branch
+          git fetch origin gh-pages:gh-pages 2>/dev/null || {
+            echo "ℹ️ No gh-pages branch found, nothing to clean up"
+            exit 0
+          }
+          git checkout gh-pages
+
+          # Check if vr-preview directory exists
+          [[ ! -d "vr-preview" ]] && { echo "ℹ️ No vr-preview directory found"; exit 0; }
+
+          echo "📁 Current vr-preview contents:"
+          ls -la vr-preview/
+          echo ""
+
+          # Get open PRs and extract preview directories
+          open_prs=$(gh pr list --state open --json number --jq '.[].number' --limit 500 | sort -n)
+          cleaned_count=0
+
+          echo "Open PRs: $(echo "$open_prs" | tr '\n' ' ')"
+
+          # Process each preview directory
+          for dir in vr-preview/pr-*/; do
+            [[ ! -d "$dir" ]] && continue
+
+            pr_num=$(basename "$dir" | sed 's/pr-//')
+            echo "Checking VR preview directory for PR #$pr_num"
+
+            # Check if this PR number exists in the open PRs list
+            if echo "$open_prs" | grep -Fxq "$pr_num"; then
+              echo "✅ PR #$pr_num is open, keeping VR preview"
+            else
+              echo "🗑️ PR #$pr_num not found in open PRs, removing VR preview"
+              echo "   Directory contents:"
+              ls -la "$dir" || echo "   Cannot list directory contents"
+              echo "   Attempting to remove: $dir"
+              if rm -rf "$dir"; then
+                echo "   ✅ Successfully removed $dir"
+                cleaned_count=$((cleaned_count + 1))
+              else
+                exit_code=$?
+                echo "   ❌ Failed to remove $dir"
+                echo "   Error code: $exit_code"
+              fi
+            fi
+          done
+
+          echo "Summary: Purged $cleaned_count orphaned VR preview(s)"
+
+      - name: Commit cleanup changes
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+        with:
+          commit_message: "ci: cleanup orphaned Operate VR report previews"
+          branch: gh-pages
+          file_pattern: "vr-preview/"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout main branch for observe-build-status
+        if: always()
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
