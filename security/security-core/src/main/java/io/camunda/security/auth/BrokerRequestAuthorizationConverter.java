@@ -27,23 +27,23 @@ import java.util.Map;
  *
  * <p>Authorization claims (JWT token claims, group memberships) are only needed for authorization
  * and multi-tenancy checks in the engine, and are skipped when both are disabled. Callers can check
- * {@link #isAuthorizationClaimsEnabled()} to avoid computing these values when not needed.
+ * {@link #shouldIncludeAuthorizationClaims()} to avoid computing these values when not needed.
  */
 public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
-  private final boolean authorizationClaimsEnabled;
+  private final boolean shouldIncludeAuthorizationClaims;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
-    authorizationClaimsEnabled =
+    shouldIncludeAuthorizationClaims =
         securityConfiguration.getAuthorizations().isEnabled()
             || securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
   /** Returns whether authorization claims (token claims, groups) are needed in broker requests. */
-  public boolean isAuthorizationClaimsEnabled() {
-    return authorizationClaimsEnabled;
+  public boolean shouldIncludeAuthorizationClaims() {
+    return shouldIncludeAuthorizationClaims;
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
@@ -76,7 +76,7 @@ public class BrokerRequestAuthorizationConverter {
       claims.put(AUTHORIZED_CLIENT_ID, clientId);
     }
 
-    if (authorizationClaimsEnabled) {
+    if (shouldIncludeAuthorizationClaims) {
       if (!camundaGroupsEnabled && groups != null) {
         claims.put(USER_GROUPS_CLAIMS, groups);
       }

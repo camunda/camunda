@@ -529,7 +529,7 @@ public final class EndpointManager {
 
     List<String> groups = null;
     Map<String, Object> tokenClaims = null;
-    if (authorizationConverter.isAuthorizationClaimsEnabled()) {
+    if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
       groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
       tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
