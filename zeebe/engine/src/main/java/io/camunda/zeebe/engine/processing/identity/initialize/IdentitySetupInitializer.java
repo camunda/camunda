@@ -150,6 +150,11 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         .getGroups()
         .forEach(
             group -> groupConfigurer.configureMembers(group).forEach(setupRecord::addGroupMember));
+    initialization
+        .getGroups()
+        .forEach(
+            group ->
+                groupConfigurer.configureRoleMembers(group).forEach(setupRecord::addRoleMember));
 
     initialization
         .getRoles()
