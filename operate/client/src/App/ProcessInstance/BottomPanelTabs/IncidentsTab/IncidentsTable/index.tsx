@@ -9,7 +9,7 @@
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {observer} from 'mobx-react';
-import {ExpandedContent, ExpandedField, FieldLabel, FieldValue} from './styled';
+import {ExpandedContent, ExpandedField, FieldLabel} from './styled';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
@@ -149,7 +149,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             <ExpandedContent key={incident.incidentKey}>
               <ExpandedField>
                 <FieldLabel>Job ID</FieldLabel>
-                <FieldValue>{incident.jobKey || '—'}</FieldValue>
+                <span>{incident.jobKey || '—'}</span>
               </ExpandedField>
               <ExpandedField>
                 <FieldLabel>Error message</FieldLabel>
