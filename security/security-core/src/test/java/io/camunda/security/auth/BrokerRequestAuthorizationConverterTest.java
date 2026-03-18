@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 public class BrokerRequestAuthorizationConverterTest {
 
   @Test
-  void shouldOnlyContainIdentityClaimsWhenAuthorizationAndMultiTenancyDisabled() {
+  void shouldOnlyContainAuthenticationClaimsWhenAuthorizationAndMultiTenancyDisabled() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
     final var securityConfiguration = new SecurityConfiguration();
