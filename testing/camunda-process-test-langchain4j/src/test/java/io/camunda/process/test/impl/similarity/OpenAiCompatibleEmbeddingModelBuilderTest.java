@@ -34,7 +34,8 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldBuildEmbeddingModelWithoutApiKey(final String apiKey) {
     // given — null or blank apiKey is treated as absent
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig("nomic-embed-text", "http://localhost:11434/v1", apiKey);
+        new OpenAiCompatibleConfig(
+            "nomic-embed-text", "http://localhost:11434/v1", apiKey, null, null);
 
     // when
     final EmbeddingModel embeddingModel = OpenAiCompatibleEmbeddingModelBuilder.build(config);
@@ -67,7 +68,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(model, "http://localhost:11434/v1", null);
+        new OpenAiCompatibleConfig(model, "http://localhost:11434/v1", null, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleEmbeddingModelBuilder.build(config))
@@ -82,7 +83,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig("nomic-embed-text", baseUrl, null);
+        new OpenAiCompatibleConfig("nomic-embed-text", baseUrl, null, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleEmbeddingModelBuilder.build(config))

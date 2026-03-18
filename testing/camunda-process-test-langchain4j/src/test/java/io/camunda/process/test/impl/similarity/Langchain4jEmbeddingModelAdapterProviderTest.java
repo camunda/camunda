@@ -50,7 +50,8 @@ public class Langchain4jEmbeddingModelAdapterProviderTest {
 
   @Test
   void shouldResolveOpenAiProvider() {
-    final var config = new BaseProviderConfig.OpenAiConfig("text-embedding-3-small", "test-key");
+    final var config =
+        new BaseProviderConfig.OpenAiConfig("text-embedding-3-small", "test-key", null, null);
     final Optional<EmbeddingModelAdapter> adapter = EmbeddingModelAdapterResolver.resolve(config);
     assertThat(adapter).isPresent();
   }
@@ -74,7 +75,7 @@ public class Langchain4jEmbeddingModelAdapterProviderTest {
   void shouldResolveOpenAiCompatibleProvider() {
     final var config =
         new BaseProviderConfig.OpenAiCompatibleConfig(
-            "nomic-embed-text", "http://localhost:11434/v1", null);
+            "nomic-embed-text", "http://localhost:11434/v1", null, null, null);
     final Optional<EmbeddingModelAdapter> adapter = EmbeddingModelAdapterResolver.resolve(config);
     assertThat(adapter).isPresent();
   }
@@ -83,7 +84,11 @@ public class Langchain4jEmbeddingModelAdapterProviderTest {
   void shouldResolveAzureOpenAiProvider() {
     final var config =
         new BaseProviderConfig.AzureOpenAiConfig(
-            "text-embedding-3-small", "https://my-resource.openai.azure.com/", "test-key");
+            "text-embedding-3-small",
+            "https://my-resource.openai.azure.com/",
+            "test-key",
+            null,
+            null);
     final Optional<EmbeddingModelAdapter> adapter = EmbeddingModelAdapterResolver.resolve(config);
     assertThat(adapter).isPresent();
   }

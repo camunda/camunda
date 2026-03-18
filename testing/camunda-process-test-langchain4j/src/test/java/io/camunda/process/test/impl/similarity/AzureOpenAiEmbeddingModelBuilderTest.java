@@ -33,7 +33,11 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     // given
     final AzureOpenAiConfig config =
         new AzureOpenAiConfig(
-            "text-embedding-3-small", "https://my-resource.openai.azure.com/", "test-api-key");
+            "text-embedding-3-small",
+            "https://my-resource.openai.azure.com/",
+            "test-api-key",
+            null,
+            null);
 
     // when
     final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
@@ -47,7 +51,11 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     // given
     final AzureOpenAiConfig config =
         new AzureOpenAiConfig(
-            "text-embedding-3-small", "https://my-resource.openai.azure.com/", "test-api-key", 512);
+            "text-embedding-3-small",
+            "https://my-resource.openai.azure.com/",
+            "test-api-key",
+            512,
+            null);
 
     // when
     final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
@@ -80,7 +88,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   void shouldThrowWhenEndpointMissingOrBlank(final String endpoint) {
     // given
     final AzureOpenAiConfig config =
-        new AzureOpenAiConfig("text-embedding-3-small", endpoint, "test-api-key");
+        new AzureOpenAiConfig("text-embedding-3-small", endpoint, "test-api-key", null, null);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
@@ -96,7 +104,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     // given
     final AzureOpenAiConfig config =
         new AzureOpenAiConfig(
-            "text-embedding-3-small", "https://my-resource.openai.azure.com/", apiKey);
+            "text-embedding-3-small", "https://my-resource.openai.azure.com/", apiKey, null, null);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
@@ -111,7 +119,8 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final AzureOpenAiConfig config =
-        new AzureOpenAiConfig(model, "https://my-resource.openai.azure.com/", "test-api-key");
+        new AzureOpenAiConfig(
+            model, "https://my-resource.openai.azure.com/", "test-api-key", null, null);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
