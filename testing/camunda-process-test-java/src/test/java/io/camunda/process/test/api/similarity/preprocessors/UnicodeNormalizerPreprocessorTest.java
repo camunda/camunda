@@ -19,6 +19,8 @@ package io.camunda.process.test.api.similarity.preprocessors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 public class UnicodeNormalizerPreprocessorTest {
 
@@ -42,13 +44,9 @@ public class UnicodeNormalizerPreprocessorTest {
     assertThat(preprocessor.process("hello world")).isEqualTo("hello world");
   }
 
-  @Test
-  void shouldReturnEmptyStringUnchanged() {
-    assertThat(preprocessor.process("")).isEqualTo("");
-  }
-
-  @Test
-  void shouldReturnNullForNullInput() {
-    assertThat(preprocessor.process(null)).isNull();
+  @ParameterizedTest
+  @NullAndEmptySource
+  void shouldReturnNullAndEmptyUnchanged(final String input) {
+    assertThat(preprocessor.process(input)).isEqualTo(input);
   }
 }

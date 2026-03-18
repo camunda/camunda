@@ -42,13 +42,10 @@ class SimilarityEvaluationTest {
     final String text = "hello world";
     final SimilarityEvaluation evaluation =
         new SimilarityEvaluation(
-            SimilarityEvaluationTest::charEmbedding,
-            Collections.<TextPreprocessor>emptyList(),
-            text,
-            text);
+            SimilarityEvaluationTest::charEmbedding, Collections.emptyList(), text);
 
     // when
-    final SimilarityEvaluation.Result result = evaluation.evaluate();
+    final SimilarityEvaluation.Result result = evaluation.evaluate(text);
 
     // then
     assertThat(result.getScore()).isCloseTo(1.0, within(1e-9));
@@ -71,11 +68,10 @@ class SimilarityEvaluationTest {
               return charEmbedding(text);
             },
             preprocessors,
-            "Hello World",
-            "hello world");
+            "Hello World");
 
     // when
-    evaluation.evaluate();
+    evaluation.evaluate("hello world");
 
     // then — both texts should have been lowercased before embedding
     assertThat(embeddedTexts[0]).isEqualTo("hello world");
@@ -90,11 +86,10 @@ class SimilarityEvaluationTest {
         new SimilarityEvaluation(
             text -> text.equals("a") ? new float[] {1.0f, 0.0f} : new float[] {4.0f, 3.0f},
             Collections.emptyList(),
-            "a",
-            "b");
+            "a");
 
     // when
-    final SimilarityEvaluation.Result result = evaluation.evaluate();
+    final SimilarityEvaluation.Result result = evaluation.evaluate("b");
 
     // then
     assertThat(result.getScore()).isCloseTo(0.8, within(1e-9));
@@ -106,10 +101,10 @@ class SimilarityEvaluationTest {
     final String text = "identical";
     final SimilarityEvaluation evaluation =
         new SimilarityEvaluation(
-            SimilarityEvaluationTest::charEmbedding, Collections.emptyList(), text, text);
+            SimilarityEvaluationTest::charEmbedding, Collections.emptyList(), text);
 
     // when
-    final SimilarityEvaluation.Result result = evaluation.evaluate();
+    final SimilarityEvaluation.Result result = evaluation.evaluate(text);
 
     // then
     assertThat(result.passed(0.5)).isTrue();
@@ -123,11 +118,10 @@ class SimilarityEvaluationTest {
         new SimilarityEvaluation(
             text -> text.equals("a") ? new float[] {1.0f, 0.0f} : new float[] {0.0f, 1.0f},
             Collections.emptyList(),
-            "a",
-            "b");
+            "a");
 
     // when
-    final SimilarityEvaluation.Result result = evaluation.evaluate();
+    final SimilarityEvaluation.Result result = evaluation.evaluate("b");
 
     // then
     assertThat(result.getScore()).isEqualTo(0.0);
@@ -152,11 +146,10 @@ class SimilarityEvaluationTest {
               return new float[] {1.0f};
             },
             preprocessors,
-            "x",
-            "y");
+            "x");
 
     // when
-    evaluation.evaluate();
+    evaluation.evaluate("y");
 
     // then — both inputs should have had "AB" appended in order
     assertThat(embeddedTexts[0]).isEqualTo("xAB");

@@ -552,9 +552,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         new SimilarityEvaluation(
             semanticSimilarityConfig.getEmbeddingModel(),
             semanticSimilarityConfig.getPreprocessors(),
-            expectedValue,
-            variableValue);
-    final SimilarityEvaluation.Result result = evaluation.evaluate();
+            expectedValue);
+    final SimilarityEvaluation.Result result = evaluation.evaluate(variableValue);
     LOG.debug("Computed similarity score for variable '{}': {}", variableName, result.getScore());
     final double threshold = semanticSimilarityConfig.getThreshold();
     if (!result.passed(threshold)) {

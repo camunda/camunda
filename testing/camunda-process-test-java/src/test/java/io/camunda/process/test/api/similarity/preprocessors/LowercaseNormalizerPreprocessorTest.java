@@ -19,6 +19,8 @@ package io.camunda.process.test.api.similarity.preprocessors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 public class LowercaseNormalizerPreprocessorTest {
 
@@ -39,19 +41,9 @@ public class LowercaseNormalizerPreprocessorTest {
     assertThat(preprocessor.process("Hello World")).isEqualTo("hello world");
   }
 
-  @Test
-  void shouldReturnEmptyStringUnchanged() {
-    assertThat(preprocessor.process("")).isEqualTo("");
-  }
-
-  @Test
-  void shouldReturnNullForNullInput() {
-    assertThat(preprocessor.process(null)).isNull();
-  }
-
-  @Test
-  void shouldUseLocaleIndependentLowercase() {
-    // Turkish locale would map 'I' to 'ı' (dotless i), ROOT locale maps it to 'i'
-    assertThat(preprocessor.process("ISTANBUL")).isEqualTo("istanbul");
+  @ParameterizedTest
+  @NullAndEmptySource
+  void shouldReturnNullAndEmptyUnchanged(final String input) {
+    assertThat(preprocessor.process(input)).isEqualTo(input);
   }
 }

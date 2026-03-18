@@ -24,26 +24,21 @@ class SimilarityEvaluation {
 
   private final EmbeddingModelAdapter embeddingModel;
   private final List<TextPreprocessor> preprocessors;
-  private final String text1;
-  private final String text2;
+  private final float[] expectedEmbedding;
 
   public SimilarityEvaluation(
       final EmbeddingModelAdapter embeddingModel,
       final List<TextPreprocessor> preprocessors,
-      final String text1,
-      final String text2) {
+      final String expectation) {
     this.embeddingModel = embeddingModel;
     this.preprocessors = preprocessors;
-    this.text1 = text1;
-    this.text2 = text2;
+    expectedEmbedding = embeddingModel.embed(applyPreprocessors(expectation));
   }
 
-  public Result evaluate() {
-    final String processedText1 = applyPreprocessors(text1);
-    final String processedText2 = applyPreprocessors(text2);
-    final float[] expectedEmbedding = embeddingModel.embed(processedText1);
-    final float[] actualEmbedding = embeddingModel.embed(processedText2);
-    final double score = CosineSimilarity.compute(expectedEmbedding, actualEmbedding);
+  public Result evaluate(final String input) {
+    final String processedInput = applyPreprocessors(input);
+    final float[] inputEmbedding = embeddingModel.embed(processedInput);
+    final double score = CosineSimilarity.compute(expectedEmbedding, inputEmbedding);
     return new Result(score);
   }
 
