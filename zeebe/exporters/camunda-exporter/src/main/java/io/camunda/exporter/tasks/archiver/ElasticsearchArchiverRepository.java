@@ -551,8 +551,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
           try {
             final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
-            String result = oldest.keyAsString();
-            return result;
+            return oldest.keyAsString();
           } catch (NoSuchElementException _exception) {
             return endDate;
           }
