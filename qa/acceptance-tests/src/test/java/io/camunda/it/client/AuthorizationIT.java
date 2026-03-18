@@ -546,6 +546,67 @@ public class AuthorizationIT {
   }
 
   @Test
+  void searchShouldUsAuthorizationKeyAsDiscriminatorForTiedRecordsAndYieldCursors() {
+    // given — two authorizations that are identical on the explicit sort field (ownerType)
+    final var resourceIdPrefix = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-a")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-b")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    // when / then — sort by ownerType (tied), paginate with limit 1
+    // the authorization key should break the tie and cursors should work
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var firstPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .sort(s -> s.ownerType().asc())
+                      .page(p -> p.limit(1))
+                      .send()
+                      .join();
+              assertThat(firstPage.items()).hasSize(1);
+              assertThat(firstPage.page().endCursor()).isNotNull();
+
+              final var secondPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .sort(s -> s.ownerType().asc())
+                      .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+                      .send()
+                      .join();
+              assertThat(secondPage.items()).hasSize(1);
+              assertThat(secondPage.items().getFirst().getAuthorizationKey())
+                  .isNotEqualTo(firstPage.items().getFirst().getAuthorizationKey());
+            });
+  }
+
+  @Test
   void searchShouldReturnCursorsWithDefaultSort() {
     // given
     final var resourceIdPrefix = Strings.newRandomValidIdentityId();
