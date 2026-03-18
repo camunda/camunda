@@ -42,6 +42,16 @@ paths:
                 $ref: '#/components/schemas/CreateProcessInstanceResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "409":
+          description: |
+            The process instance creation was rejected due to a business ID uniqueness conflict.
+            This can happen only when Business ID Uniqueness Control is enabled and an
+            active root process instance with the provided business ID already exists
+            for the same process definition and tenant.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
