@@ -86,12 +86,13 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     }
   }
 
-  private ConstraintViolationException findConstraintViolationException(final Exception e) {
-    if (e instanceof ConstraintViolationException) {
-      return (ConstraintViolationException) e;
-    }
-    if (e.getCause() instanceof ConstraintViolationException) {
-      return (ConstraintViolationException) e.getCause();
+  private ConstraintViolationException findConstraintViolationException(final Throwable e) {
+    Throwable current = e;
+    while (current != null) {
+      if (current instanceof ConstraintViolationException cve) {
+        return cve;
+      }
+      current = current.getCause() != current ? current.getCause() : null;
     }
     return null;
   }
