@@ -31,13 +31,11 @@ There can be breaking changes though.
 
 ### Q4
 > What Camunda 8 version is this targeting (8.10, 8.11, later)? Does the SaaS delivery have a different timeline than Self-Managed?
->
+
+**Answer:**
 Ideally all for 8.10. Self-Managed can ship in first phase and SaaS second phase. We can split it and first focus on Self-Managed.
 
 ## Architecture & Exporter Model
-
-**Answer:**
-
 
 ### Q5
 > Should this be implemented as a **Zeebe Exporter** (implementing the `Exporter` SPI, running inside the broker JVM per partition) or as an **external service** consuming from the existing exporters (e.g., reading from Elasticsearch/OpenSearch and forwarding to Kafka)?
@@ -59,35 +57,32 @@ Should be a Exporter.
 
 ### Q8
 > Should this exporter be **additive** (runs alongside the existing camunda-exporter/ES/OS/RDBMS exporter) or could it be a **replacement** for the secondary storage exporter in some deployments?
->
+
+**Answer:** Should be addititive and not be a replacement.
 
 ## Event Types & Filtering
-
-**Answer:**
-
 
 ### Q9
 > The spec says "any event produced by Zeebe." There are 60+ `ValueType` values and 3 `RecordType` values (COMMAND, EVENT, COMMAND_REJECTION). Should **all** combinations be exportable, or only EVENTs (successfully processed records)? Should command rejections be included?
 
-**Answer:**
-
+**Answer:** Only Events, consider making it configurable for the end customer / user.
 
 ### Q10
 > Should the filtering granularity be at the `ValueType` level (e.g., "export all PROCESS_INSTANCE records"), the `Intent` level (e.g., "export only PROCESS_INSTANCE/ELEMENT_COMPLETED"), or both?
 
-**Answer:**
+**Answer:** Consider making it configurable.
 
 
 ### Q11
 > Should there be **variable-level filtering** (include/exclude variables by name pattern, exclude variable values, or filter by BPMN process ID) similar to what the `zeebe/exporter-filter` module already supports?
 
-**Answer:**
+**Answer:** Yes, good idea. 
 
 
 ### Q12
 > Should the audit log transformation layer (`zeebe/exporter-common/auditlog/`) be reused to produce audit-log-shaped events, or should raw Zeebe records be exported as-is, or both options?
 
-**Answer:**
+**Answer:** 
 
 
 ### Q13
@@ -96,9 +91,6 @@ Should be a Exporter.
 **Answer:** Yes
 
 ## Kafka Specifics
-
-**Answer:**
-
 
 ### Q14
 > Which **Kafka client library** should be used? The standard Apache `kafka-clients` library, or a higher-level abstraction like Spring Kafka? What minimum Kafka broker version must be supported?
@@ -109,7 +101,7 @@ Should be a Exporter.
 ### Q15
 > What **serialization format** should records use on the Kafka topic? Options include: (a) JSON (matching existing ES/OS export format), (b) Avro with Schema Registry, (c) Protobuf, (d) configurable. Should there be a schema evolution strategy?
 
-**Answer:**
+**Answer:** Configurable
 
 
 ### Q16
@@ -140,10 +132,9 @@ Should be a Exporter.
 > Should the exporter support **Kafka producer tuning** parameters (e.g., `acks`, `batch.size`, `linger.ms`, `compression.type`, `buffer.memory`, `max.block.ms`) via configuration, or should these be hardcoded to safe defaults?
 >
 
-## Multi-Tenancy & Data Isolation
-
 **Answer:**
 
+## Multi-Tenancy & Data Isolation
 
 ### Q21
 > In a multi-tenant deployment, should events be **filtered by tenant** so that each tenant's events go to a separate topic or Kafka cluster? Or should all tenants' events land on the same topic with `tenantId` as metadata?
@@ -188,7 +179,7 @@ Look at what we support for Kafka connectors today at Camunda and do it the same
 ### Q27
 > How should Kafka credentials (SASL passwords, keystore passwords, OAuth client secrets) be managed? Via broker configuration properties, environment variables, HashiCorp Vault, or all of the above?
 
-**Answer:**
+**Answer:** For SM this should be handled via usual configuration / environment variables similar to others. 
 
 
 ### Q28
@@ -199,12 +190,10 @@ Look at what we support for Kafka connectors today at Camunda and do it the same
 
 ### Q29
 > For compliance, should exported events include the **actor identity** (authenticated user/client who triggered the command), which is available in `record.getAuthorizations()`?
->
-
-## Configuration UX
 
 **Answer:**
 
+## Configuration UX
 
 ### Q30
 > Should the Kafka exporter be configured via **unified `camunda.*` properties** (like RDBMS exporter), **`zeebe.broker.exporters.*` properties** (like ES/OS exporters), or both with migration support?
@@ -234,55 +223,49 @@ Look at what we support for Kafka connectors today at Camunda and do it the same
 > Should topic-to-event-type mapping be configurable at **runtime** (hot-reload) or only at **startup**? The existing exporter framework only supports startup configuration.
 
 **Answer:**
+Startup config is fine.
 
 
 ### Q33
 > Should there be a **validation/dry-run** mode that checks Kafka connectivity and topic existence without starting the export?
->
-
-## Reliability & Performance
 
 **Answer:**
 
+## Reliability & Performance
 
 ### Q34
 > What **throughput target** is expected? Records per second? The existing ES exporter handles thousands of records/second with batched bulk writes — should the Kafka exporter match or exceed this?
 
-**Answer:**
+**Answer:** Ideally match it.
 
 
 ### Q35
 > How should the exporter handle **Kafka unavailability**? Options: (a) block/retry indefinitely (existing exporter pattern — the broker pauses exporting until the target recovers), (b) circuit breaker with bounded buffer, (c) dead-letter queue. Note that blocking is the current default for all Zeebe exporters.
 
-**Answer:**
-
+**Answer:** Consider making it configurable and very clear for end-users.
 
 ### Q36
 > Should there be a **bounded in-memory buffer** with backpressure to the broker when Kafka is slow, or should it follow the existing exporter pattern of "retry until success, blocking all exports"?
 
-**Answer:**
-
+**Answer:** Consider making it configurable and very clear for end-users. 
 
 ### Q37
 > Should the exporter support **batching** to Kafka (buffering N records or M bytes before producing), and if so, what are the default thresholds?
 
-**Answer:**
+**Answer:** 
 
 
 ### Q38
 > How should **record ordering** be guaranteed? Per partition? Per process instance? Global ordering is not feasible with Kafka partitioning — what ordering guarantee is acceptable to users?
->
-
-## Extensibility (Future Targets)
 
 **Answer:**
 
+## Extensibility (Future Targets)
 
 ### Q39
 > For the "easily extensible to Azure Event Hub" requirement — Azure Event Hub has a Kafka-compatible API. Should the architecture assume that future targets (Azure Event Hub, AWS MSK) are just different Kafka configurations, or should there be an abstract `EventStreamTransport` interface with pluggable implementations?
 
-**Answer:**
-
+**Answer:** 
 
 ### Q40
 > For truly non-Kafka targets (AWS SQS/SNS, Google Pub/Sub, AMQP), should the architecture anticipate a **generic event streaming abstraction** from the start, or should Kafka be implemented directly and refactored later?
@@ -292,12 +275,10 @@ Look at what we support for Kafka connectors today at Camunda and do it the same
 
 ### Q41
 > Should the extensibility be at the **configuration level** (different connection properties for different Kafka-compatible systems) or at the **code level** (pluggable transport implementations loaded via SPI)?
->
+
+ **Answer:**
 
 ## Observability & Operations
-
-**Answer:**
-
 
 ### Q42
 > What **metrics** should be exposed? Suggestions: records exported (by type), export latency, Kafka producer errors, batch sizes, buffer utilization. Should these follow the existing Micrometer pattern used by other exporters?
@@ -346,30 +327,28 @@ Look at what we support for Kafka connectors today at Camunda and do it the same
 
 ### Q49
 > Should large variable values be **truncated** in the export (like ES's `ignore_above: 8191`), or always exported in full?
->
-
-## Documentation & Migration
 
 **Answer:**
 
+## Documentation & Migration
 
 ### Q50
 > What documentation artifacts are required? API reference, configuration guide, Confluent Cloud tutorial, IBM Event Streams tutorial, Self-Managed Kafka tutorial, migration guide from community exporter?
 
 **Answer:**
-
+- migration guide from community exporter
+- configuration guide for integration with Kafka SM and Confluent Cloud
 
 ### Q51
 > Should there be **example consumer applications** (e.g., a sample Kafka consumer that writes to a database, or a Kafka Connect sink example)?
 
-**Answer:**
+**Answer:** 
 
 
 ### Q52
 > For customers migrating from the community Zeebe Kafka Exporter, should the new exporter produce **compatible message formats**, or is a breaking change acceptable with migration documentation?
 
-**Answer:**
-
+**Answer:** Ideally compatible
 
 ## Engineering (`plan-eng-clarify`)
 
