@@ -163,8 +163,8 @@ jobs:
         id: wait_checks
         uses: camunda/infra-global-github-actions/wait-for-required-checks@main
         with:
-          repository-owner: ${{ github.event.repository.owner.login }}
-          repository-name: ${{ github.event.repository.name }}
+          repository_owner: ${{ github.event.repository.owner.login }}
+          repository_name: ${{ github.event.repository.name }}
           base_branch: ${{ github.base_ref }}
           head_sha: ${{ github.event.pull_request.head.sha }}
 
