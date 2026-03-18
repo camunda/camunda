@@ -7,9 +7,6 @@
  */
 package io.camunda.gateway.mcp.tool;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.gateway.mcp.tool.incident.IncidentTools;
 import io.camunda.gateway.mcp.tool.process.definition.ProcessDefinitionTools;
@@ -39,6 +36,9 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Regression test to ensure tool schemas remain stable across refactoring.
@@ -62,8 +62,8 @@ class ToolsSchemaRegressionTest extends ToolsTest {
 
   private static final String SNAPSHOT_PATH = "schema/tools-schema-snapshot.json";
 
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+  private static final JsonMapper OBJECT_MAPPER =
+      JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
   // Mock all services that tools depend on
   @MockitoBean private TopologyServices topologyServices;
@@ -83,7 +83,7 @@ class ToolsSchemaRegressionTest extends ToolsTest {
     final Map<String, ObjectNode> actualTools =
         toolsResult.tools().stream()
             .collect(
-                Collectors.toMap(Tool::name, tool -> OBJECT_MAPPER.valueToTree(tool).deepCopy()));
+                Collectors.toMap(Tool::name, tool -> (ObjectNode) OBJECT_MAPPER.valueToTree(tool)));
 
     return Stream.concat(expectedTools.keySet().stream(), actualTools.keySet().stream())
         .distinct()

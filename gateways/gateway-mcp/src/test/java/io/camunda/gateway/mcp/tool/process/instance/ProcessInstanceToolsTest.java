@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
@@ -65,6 +64,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {ProcessInstanceTools.class})
@@ -101,7 +101,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
   @MockitoBean private ProcessInstanceServices processInstanceServices;
   @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private JsonMapper objectMapper;
 
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
