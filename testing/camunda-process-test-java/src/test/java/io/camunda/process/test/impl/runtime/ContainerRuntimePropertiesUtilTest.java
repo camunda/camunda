@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaClientWorkerProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
@@ -585,6 +586,55 @@ public class ContainerRuntimePropertiesUtilTest {
       // The tenantIds are not assigned when in RuntimeMode.REMOTE
       // assertThat(clientBuilder.getDefaultJobWorkerTenantIds()).containsExactlyInAnyOrder("customTenantA", "customTenantB");
       assertThat(clientBuilder.getDefaultJobWorkerStreamEnabled()).isTrue();
+    }
+  }
+
+  @Nested
+  class AssertionPropertiesTest {
+
+    @Test
+    void shouldReturnDefaults() {
+      // given
+      final Properties properties = new Properties();
+
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+
+      // then
+      final AssertionProperties assertionProperties = propertiesUtil.getAssertionProperties();
+      assertThat(assertionProperties.getAssertionTimeout()).isEmpty();
+      assertThat(assertionProperties.getAssertionInterval()).isEmpty();
+    }
+
+    @Test
+    void shouldReturnProperties() {
+      // given
+      final Properties properties = new Properties();
+      properties.put(AssertionProperties.PROPERTY_NAME_ASSERTION_TIMEOUT, "PT1M");
+      properties.put(AssertionProperties.PROPERTY_NAME_ASSERTION_INTERVAL, "PT1S");
+
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+
+      // then
+      final AssertionProperties assertionProperties = propertiesUtil.getAssertionProperties();
+      assertThat(assertionProperties.getAssertionTimeout()).hasValue(Duration.ofMinutes(1));
+      assertThat(assertionProperties.getAssertionInterval()).hasValue(Duration.ofSeconds(1));
+    }
+
+    @Test
+    void shouldReadPropertiesFile() {
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties(
+              "/containerRuntimePropertiesUtil/", emptyGitProperties);
+
+      // then
+      final AssertionProperties assertionProperties = propertiesUtil.getAssertionProperties();
+      assertThat(assertionProperties.getAssertionTimeout()).hasValue(Duration.ofMinutes(5));
+      assertThat(assertionProperties.getAssertionInterval()).hasValue(Duration.ofMillis(500));
     }
   }
 }

@@ -50,11 +50,13 @@ import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -529,6 +531,67 @@ public class ExecutionListenerTest {
       cmcField.set(listener, camundaProcessTestResultCollector);
     } catch (final Throwable t) {
       throw new RuntimeException(t);
+    }
+  }
+
+  @Nested
+  class AssertionConfigurationTest {
+
+    @AfterEach
+    void resetAssertion() {
+      CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
+      CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
+    }
+
+    @Test
+    void shouldSetAssertionTimeoutFromConfig() {
+      // given
+      final Duration assertionTimeout = Duration.ofMinutes(5);
+      final Duration assertionInterval = Duration.ofMillis(123);
+
+      final CamundaProcessTestRuntimeConfiguration configuration =
+          new CamundaProcessTestRuntimeConfiguration();
+      configuration.getAssertion().setTimeout(assertionTimeout);
+      configuration.getAssertion().setInterval(assertionInterval);
+
+      when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+          .thenReturn(configuration);
+
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      listener.beforeTestClass(testContext);
+      listener.beforeTestMethod(testContext);
+
+      // then
+      final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
+      assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
+      assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
+    }
+
+    @Test
+    void shouldNotOverrideAssertionTimeoutIfNotSetInConfig() {
+      // given
+      final Duration assertionTimeout = Duration.ofMinutes(1);
+      final Duration assertionInterval = Duration.ofMillis(50);
+
+      CamundaAssert.setAssertionTimeout(assertionTimeout);
+      CamundaAssert.setAssertionInterval(assertionInterval);
+
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      listener.beforeTestClass(testContext);
+      listener.beforeTestMethod(testContext);
+
+      // then
+      final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
+      assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
+      assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
     }
   }
 }
