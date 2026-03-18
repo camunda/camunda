@@ -70,8 +70,9 @@ components:
       x-semantic-type: ScopeKey
       example: "2251799813683890"
       type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
+      oneOf:
+        - $ref: '#/components/schemas/ProcessInstanceKey'
+        - $ref: '#/components/schemas/ElementInstanceKey'
 
     IncidentKey:
       description: System-generated key for a incident.
