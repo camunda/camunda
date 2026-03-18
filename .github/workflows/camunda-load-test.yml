@@ -274,7 +274,7 @@ jobs:
               # All values files define extraConfiguration[1] as application-override.yml (empty by default),
               # so this override works regardless of which secondary storage type is selected.
               # Path is relative to the helm working dir: load-tests/setup/$NAMESPACE/
-              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yml'" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
