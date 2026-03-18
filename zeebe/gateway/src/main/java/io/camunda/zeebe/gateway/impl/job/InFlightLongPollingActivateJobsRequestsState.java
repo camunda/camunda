@@ -62,37 +62,17 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
     if (!pendingRequests.contains(request)) {
       pendingRequests.offer(request);
     }
-    removeObsoleteRequestsAndUpdateMetrics();
-  }
-
-  public Queue<InflightActivateJobsRequest<T>> getPendingRequests() {
-    removeObsoleteRequestsAndUpdateMetrics();
-    return pendingRequests;
-  }
-
-  private void removeObsoleteRequestsAndUpdateMetrics() {
-    pendingRequests.removeIf(this::isObsolete);
-    activeRequests.removeIf(this::isObsolete);
-    activeRequestsToBeRepeated.removeIf(this::isObsolete);
-    metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
-  }
-
-  private boolean isObsolete(final InflightActivateJobsRequest<T> request) {
-    return request.isTimedOut()
-        || request.isCanceled()
-        || request.isCompleted()
-        || request.isAborted();
+    updatePendingMetrics();
   }
 
   public void removeRequest(final InflightActivateJobsRequest<T> request) {
     pendingRequests.remove(request);
-    removeObsoleteRequestsAndUpdateMetrics();
+    updatePendingMetrics();
   }
 
   public InflightActivateJobsRequest<T> getNextPendingRequest() {
-    removeObsoleteRequestsAndUpdateMetrics();
     final InflightActivateJobsRequest<T> request = pendingRequests.poll();
-    metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
+    updatePendingMetrics();
     return request;
   }
 
@@ -100,6 +80,7 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
     activeRequests.offer(request);
     pendingRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
+    updatePendingMetrics();
   }
 
   public void removeActiveRequest(final InflightActivateJobsRequest<T> request) {
@@ -108,8 +89,11 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public boolean hasActiveRequests() {
-    removeObsoleteRequestsAndUpdateMetrics();
     return !activeRequests.isEmpty();
+  }
+
+  private void updatePendingMetrics() {
+    metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
   }
 
   /**
