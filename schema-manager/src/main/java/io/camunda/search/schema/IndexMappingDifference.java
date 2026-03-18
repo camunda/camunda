@@ -11,7 +11,6 @@ import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -40,6 +39,11 @@ public record IndexMappingDifference(
   public static IndexMappingDifference of(final IndexMapping left, final IndexMapping right) {
     final Map<String, Object> leftMap = left == null ? Map.of() : left.toMap();
     final Map<String, Object> rightMap = right == null ? Map.of() : right.toMap();
+    return of(leftMap, rightMap);
+  }
+
+  public static IndexMappingDifference of(
+      final Map<String, Object> leftMap, final Map<String, Object> rightMap) {
     final MapDifference<String, Object> difference =
         Maps.difference(leftMap, rightMap, OrderInsensitiveEquivalence.equals());
     return new IndexMappingDifference(
@@ -113,8 +117,7 @@ public record IndexMappingDifference(
    *       differences) are treated as equivalent.
    * </ul>
    */
-  @VisibleForTesting
-  public static final class OrderInsensitiveEquivalence extends Equivalence<Object> {
+  private static final class OrderInsensitiveEquivalence extends Equivalence<Object> {
 
     private static final OrderInsensitiveEquivalence INSTANCE = new OrderInsensitiveEquivalence();
 
