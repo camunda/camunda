@@ -173,7 +173,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldUnblockAllRequestsWhenJobsAvailable() throws Exception {
+  public void shouldUnblockOneRequestPerNotificationAndCascade() throws Exception {
     // given
     final int amount = FAILED_RESPONSE_THRESHOLD;
     activateJobsAndWaitUntilBlocked(amount);
@@ -187,14 +187,13 @@ public final class LongPollingActivateJobsTest {
 
     // then
 
-    // the job available notification triggers all three requests again
-    final int invTriggeredByNotification = amount * partitionsCount;
-    // the one request which has a result, re-triggers the remaining requests
-    final int invTriggeredBySuccessfulRequest = (amount - 1) * partitionsCount;
+    // the notification wakes one request, which activates jobs on all partitions
+    final int invTriggeredByNotification = partitionsCount;
+    // that request finds jobs and cascades to the next, which finds nothing and stops
+    final int invTriggeredByCascade = partitionsCount;
     verify(
             activateJobsStub,
-            timeout(2000)
-                .times(firstRound + invTriggeredByNotification + invTriggeredBySuccessfulRequest))
+            timeout(2000).times(firstRound + invTriggeredByNotification + invTriggeredByCascade))
         .handle(any());
   }
 

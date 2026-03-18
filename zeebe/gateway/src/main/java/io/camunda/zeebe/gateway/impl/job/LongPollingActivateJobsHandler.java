@@ -22,7 +22,6 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -119,7 +118,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
    * |           |      |                      |                                               |              |          |                            |                        |
    * |           |      |                      |                                               |              |          |Retrieved                   |                        |
    * |           |      |                      |                                               |              |          |notify                      |                        |
-   * |           |      |                      |  For all pending requests                     |              |          |in between                  |                        |
+   * |           |      |                      |  For next pending request                     |              |          |in between                  |                        |
    * |           |      |                      |                                       +-------|--------------|-------+  |                            |                        |
    * |           |      |                      +---------------------------------------> Internal Activate Jobs Retry <--+                            |                        |
    * |           |      |                                                              +------------------------------+                               |                        |
@@ -294,29 +293,22 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     // get to avoid the creation of a state instance.
     final var state = jobTypeState.get(jobType);
 
-    if (state != null && state.shouldNotifyAndStartNotification()) {
+    if (state != null) {
       LOG.trace("Handle jobs available notification for type {}.", jobType);
       actor.run(
           () -> {
             state.resetFailedAttempts();
             handlePendingRequests(state, jobType);
-            state.completeNotification();
           });
-    } else {
-      LOG.trace("Ignore jobs available notification for type {}.", jobType);
     }
   }
 
   private void handlePendingRequests(
       final InFlightLongPollingActivateJobsRequestsState<T> state, final String jobType) {
-    final Queue<InflightActivateJobsRequest<T>> pendingRequests = state.getPendingRequests();
-
-    if (!pendingRequests.isEmpty()) {
-      pendingRequests.forEach(
-          nextPendingRequest -> {
-            LOG.trace("Unblocking ActivateJobsRequest {}", nextPendingRequest.getRequest());
-            internalActivateJobsRetry(nextPendingRequest);
-          });
+    final var nextPending = state.getNextPendingRequest();
+    if (nextPending != null) {
+      LOG.trace("Unblocking ActivateJobsRequest {}", nextPending.getRequest());
+      internalActivateJobsRetry(nextPending);
     } else {
       if (!state.hasActiveRequests()) {
         jobTypeState.remove(jobType);
