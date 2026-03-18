@@ -96,7 +96,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                 return;
               }
 
-              LOG.debug("Available process instances items: {} ", availableInstances.size());
+              LOG.debug("Available process instances items: {}, instances: {}", availableInstances.size(), availableInstances);
               availableInstances.stream()
                   .map(startedInstances::get)
                   .filter(Objects::nonNull)
