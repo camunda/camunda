@@ -13,6 +13,14 @@ additional_platform_configuration ?=
 # Optional: additional Helm configuration for the load test release.
 # Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
 # See the load test README for example values and guidance.
+# Test parameters — override on the command line or edit defaults here.
+# Example: make install-load-test starter_rate=100 worker_replicas=6
+starter_rate ?=
+starter_replicas ?=
+worker_replicas ?=
+bpmn_process ?=
+payload_path ?=
+
 additional_load_test_configuration ?= --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
 
 # Construct platform values files based on configuration
@@ -113,13 +121,21 @@ install-platform-stable: setup-leader-balancer
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
 install-load-test:
-	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
+	if [ -n "$(starter_rate)" ]; then test_params="$$test_params --set starter.rate=$(starter_rate)"; fi; \
+	if [ -n "$(starter_replicas)" ]; then test_params="$$test_params --set starter.replicas=$(starter_replicas)"; fi; \
+	if [ -n "$(worker_replicas)" ]; then test_params="$$test_params --set workers.worker.replicas=$(worker_replicas)"; fi; \
+	if [ -n "$(bpmn_process)" ]; then test_params="$$test_params --set starter.bpmnXmlPath=$(bpmn_process)"; fi; \
+	if [ -n "$(payload_path)" ]; then test_params="$$test_params --set starter.payloadPath=$(payload_path)"; fi; \
+	cmd="helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
 		--install \
 		--namespace $(namespace) \
 		--reuse-values \
 		--render-subchart-notes \
 		-f load-test-values.yaml \
-		$(additional_load_test_configuration)
+		$$test_params \
+		$(additional_load_test_configuration)"; \
+	eval "$$cmd" && \
+	{ echo "--- $$(date -Iseconds) ---"; echo "$$cmd"; echo ""; } >> runs.log
 
 # Setup leader balancing cronjob
 .PHONY: setup-leader-balancer
