@@ -154,13 +154,19 @@ public class RpaTransformer implements DeploymentResourceTransformer {
       final var failureMessage =
           String.format(
               "Failed to parse resource JSON. '%s': %s",
-              resource.getResourceName(), e.getCause().getMessage());
+              resource.getResourceName(), getFailureExceptionMessage(e));
       return Either.left(new Failure(failureMessage));
     } catch (final IOException e) {
       final var failureMessage =
-          String.format("'%s': %s", resource.getResourceName(), e.getCause().getMessage());
+          String.format("'%s': %s", resource.getResourceName(), getFailureExceptionMessage(e));
       return Either.left(new Failure(failureMessage));
     }
+  }
+
+  private static String getFailureExceptionMessage(final Exception exception) {
+    return Optional.ofNullable(exception.getCause())
+        .map(Throwable::getMessage)
+        .orElse(exception.getMessage());
   }
 
   private Either<Failure, Resource> validateResource(final Resource res) {
