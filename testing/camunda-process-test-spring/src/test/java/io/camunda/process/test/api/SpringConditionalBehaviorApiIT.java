@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
+import static io.camunda.process.test.api.ConditionalBehaviorTestProcess.*;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -26,48 +27,37 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(classes = {SpringConditionalScenarioApiIT.class})
+@SpringBootTest(classes = {SpringConditionalBehaviorApiIT.class})
 @CamundaSpringProcessTest
-public class SpringConditionalScenarioApiIT {
+public class SpringConditionalBehaviorApiIT {
 
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
   @Test
-  void shouldCompleteProcessWithConditionalScenarios() {
+  void shouldCompleteProcessWithConditionalBehaviors() {
     // Deploy
-    client
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("conditionalScenarioApi/scenario-api-test.bpmn")
-        .execute();
+    client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
-    // Setup conditional scenarios
+    // Setup conditional behaviors
     processTestContext
         .when(
             () ->
-                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElement("State_Happiness", 1))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", false)))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", true)));
+                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
 
     processTestContext
         .when(
             () ->
-                assertThatProcessInstance(
-                        ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElements("Export_Happiness"))
-        .then(
-            () ->
-                processTestContext.completeJob(
-                    "io.camunda:http-json:1", Map.of("exportSuccess", true)));
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElements(SERVICE_TASK_ID))
+        .then(() -> processTestContext.completeJob(JOB_TYPE, Map.of("exportSuccess", true)));
 
     // Start the process
     final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("user-happiness-check")
-            .latestVersion()
-            .execute();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
     // Assert
     assertThatProcessInstance(processInstanceEvent)

@@ -29,7 +29,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
-import io.camunda.process.test.impl.extension.ConditionalScenarioEngine;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.judge.ChatModelAdapterResolver;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -125,8 +125,8 @@ public class CamundaProcessTestExtension
   private CamundaManagementClient camundaManagementClient;
 
   private CamundaProcessTestContext camundaProcessTestContext;
-  private final ConditionalScenarioEngine conditionalScenarioEngine =
-      new ConditionalScenarioEngine();
+  private final ConditionalBehaviorEngine conditionalBehaviorEngine =
+      new ConditionalBehaviorEngine();
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
@@ -178,7 +178,7 @@ public class CamundaProcessTestExtension
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
             zeebeJsonMapper,
-            conditionalScenarioEngine);
+            conditionalBehaviorEngine);
 
     // create process coverage
     processCoverage =
@@ -307,8 +307,8 @@ public class CamundaProcessTestExtension
         context.getRequiredTestClass(),
         camundaProcessTestContext.createClient());
 
-    // set up conditional scenario engine for this test
-    conditionalScenarioEngine.start(
+    // set up conditional behavior engine for this test
+    conditionalBehaviorEngine.start(
         () -> CamundaAssert.initialize(dataSource),
         evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation));
   }
@@ -351,8 +351,8 @@ public class CamundaProcessTestExtension
       return;
     }
 
-    // stop conditional scenario engine before cleanup
-    conditionalScenarioEngine.stop();
+    // stop conditional behavior engine before cleanup
+    conditionalBehaviorEngine.stop();
 
     try {
       processCoverage.collectTestRunCoverage(getCoverageTestName(context));

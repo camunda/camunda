@@ -16,9 +16,8 @@
 package io.camunda.process.test.impl.extension;
 
 import io.camunda.process.test.api.CamundaAssert;
-import io.camunda.process.test.api.scenario.ConditionBehaviorChain;
-import io.camunda.process.test.api.scenario.ConditionBehaviorChainActionStep;
-import io.camunda.process.test.api.scenario.ScenarioCondition;
+import io.camunda.process.test.api.behavior.BehaviorCondition;
+import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,84 +30,85 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Background engine that evaluates conditional scenarios and fires their actions.
+ * Background engine that evaluates conditional behaviors and fires their actions.
  *
- * <p>Scenarios are registered via the fluent {@link #when(ScenarioCondition)} API. Each scenario is
+ * <p>Behaviors are registered via the fluent {@link #when(BehaviorCondition)} API. Each behavior is
  * scheduled as an independent task on a {@link ScheduledThreadPoolExecutor} via {@link
  * ScheduledThreadPoolExecutor#scheduleWithFixedDelay}. On each iteration, the condition is checked
  * once (instant probe); if met, the associated action is fired, followed by a tight polling loop
  * ({@code waitForConditionReset}) that waits for the condition to reset before re-arming. This
  * prevents double-firing caused by eventual consistency in the search API.
  *
- * <p>All scenarios are ephemeral — they are cleared after each test. Lifecycle is managed by the
+ * <p>All behaviors are ephemeral — they are cleared after each test. Lifecycle is managed by the
  * test framework through {@link #start} and {@link #stop}:
  *
  * <ul>
  *   <li>{@code start} — called before each test; sets the context initializer for thread-local
  *       propagation and the evaluation scope.
- *   <li>{@code stop} — called after each test; stops the executor and clears all scenarios.
+ *   <li>{@code stop} — called after each test; stops the executor and clears all behaviors.
  * </ul>
  */
-public class ConditionalScenarioEngine {
+public class ConditionalBehaviorEngine {
 
   static final Duration DEFAULT_RESET_TIMEOUT = Duration.ofSeconds(5);
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ConditionalScenarioEngine.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConditionalBehaviorEngine.class);
   private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
-  private static final int DEFAULT_MAX_SCENARIO_THREADS = 8;
+  private static final int DEFAULT_MAX_BEHAVIOR_THREADS = 8;
 
   private final Duration pollInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
   private volatile Duration resetTimeout = DEFAULT_RESET_TIMEOUT;
 
-  private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
+  private final CopyOnWriteArrayList<ConditionalBehavior> behaviors = new CopyOnWriteArrayList<>();
 
   private volatile boolean stopped = false;
 
   private volatile Runnable contextInitializer;
-  private volatile ScenarioEvaluationScope evaluationScope = Runnable::run;
+  private volatile BehaviorEvaluationScope evaluationScope = Runnable::run;
   private ScheduledThreadPoolExecutor executor;
 
   /**
-   * Registers a new conditional scenario. The condition is evaluated periodically on a background
+   * Registers a new conditional behavior. The condition is evaluated periodically on a background
    * thread; when it completes without throwing, the associated action (defined via the returned
-   * step) is fired.
+   * builder) is fired.
    *
    * @param condition a runnable that throws to signal the condition is not met
-   * @return the next step for defining the action
+   * @return the builder for defining the action
    * @throws IllegalArgumentException if condition is null
    */
-  public ConditionBehaviorChain when(final ScenarioCondition condition) {
+  public ConditionalBehaviorBuilder when(final BehaviorCondition condition) {
     if (condition == null) {
       throw new IllegalArgumentException("Condition must not be null");
     }
-    final Scenario scenario =
-        new Scenario(condition, "#" + (scenarios.size() + 1), pollInterval, resetTimeout);
-    scenarios.add(scenario);
-    LOGGER.trace("Registered scenario '{}'", scenario.name);
-    return new ConditionStepImpl(scenario);
+    final ConditionalBehavior behavior =
+        new ConditionalBehavior(
+            condition, "#" + (behaviors.size() + 1), pollInterval, resetTimeout);
+    behaviors.add(behavior);
+    LOGGER.trace("Registered behavior '{}'", behavior.name);
+    return new BuilderImpl(behavior);
   }
 
   /**
    * Activates the engine for a test.
    *
    * @param contextInitializer a runnable executed at the start of each iteration to initialize
-   *     thread-local state (e.g. {@code CamundaAssert.DATA_SOURCE}) on the scenario thread
+   *     thread-local state (e.g. {@code CamundaAssert.DATA_SOURCE}) on the behavior thread
    * @param evaluationScope a scope that wraps the condition check and action firing for each
    *     iteration with the appropriate context, such as an instant-probe await behavior override
    */
   public void start(
-      final Runnable contextInitializer, final ScenarioEvaluationScope evaluationScope) {
+      final Runnable contextInitializer, final BehaviorEvaluationScope evaluationScope) {
     this.contextInitializer = contextInitializer;
     this.evaluationScope = evaluationScope;
     stopped = false;
   }
 
-  /** Deactivates the engine after a test. Stops the executor and clears all scenarios. */
+  /** Deactivates the engine after a test. Stops the executor and clears all behaviors. */
   public void stop() {
     stopped = true;
     stopExecutor();
     logSummary();
-    scenarios.clear();
+    behaviors.clear();
   }
 
   /** Sets the reset timeout for condition-reset gating. Package-private for testing. */
@@ -117,14 +117,14 @@ public class ConditionalScenarioEngine {
   }
 
   private void logSummary() {
-    if (scenarios.isEmpty() || !LOGGER.isDebugEnabled()) {
+    if (behaviors.isEmpty() || !LOGGER.isDebugEnabled()) {
       return;
     }
     final String details =
-        scenarios.stream()
-            .map(Scenario::formatSummary)
+        behaviors.stream()
+            .map(ConditionalBehavior::formatSummary)
             .collect(Collectors.joining("\n  ", "\n  ", ""));
-    LOGGER.debug("Scenario engine summary — {} scenario(s):{}", scenarios.size(), details);
+    LOGGER.debug("Behavior engine summary — {} behavior(s):{}", behaviors.size(), details);
   }
 
   private synchronized void stopExecutor() {
@@ -132,7 +132,7 @@ public class ConditionalScenarioEngine {
       executor.shutdownNow();
       try {
         if (!executor.awaitTermination(SHUTDOWN_TIMEOUT.getSeconds(), TimeUnit.SECONDS)) {
-          LOGGER.warn("Scenario executor did not terminate within {}", SHUTDOWN_TIMEOUT);
+          LOGGER.warn("Behavior executor did not terminate within {}", SHUTDOWN_TIMEOUT);
         }
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -145,14 +145,14 @@ public class ConditionalScenarioEngine {
     if (executor == null) {
       final ScheduledThreadPoolExecutor pool =
           new ScheduledThreadPoolExecutor(
-              DEFAULT_MAX_SCENARIO_THREADS,
+              DEFAULT_MAX_BEHAVIOR_THREADS,
               new ThreadFactory() {
                 private final AtomicInteger threadCount = new AtomicInteger(0);
 
                 @Override
                 public Thread newThread(final Runnable r) {
                   final Thread t =
-                      new Thread(r, "conditional-scenario-" + threadCount.incrementAndGet());
+                      new Thread(r, "conditional-behavior-" + threadCount.incrementAndGet());
                   t.setDaemon(true);
                   return t;
                 }
@@ -162,12 +162,12 @@ public class ConditionalScenarioEngine {
       executor = pool;
       LOGGER.trace(
           "Executor created with core pool size {} and poll interval {}",
-          DEFAULT_MAX_SCENARIO_THREADS,
+          DEFAULT_MAX_BEHAVIOR_THREADS,
           pollInterval);
     }
   }
 
-  private synchronized void scheduleScenario(final Scenario scenario) {
+  private synchronized void scheduleBehavior(final ConditionalBehavior behavior) {
     ensureExecutor();
     if (executor.isShutdown()) {
       return;
@@ -175,18 +175,18 @@ public class ConditionalScenarioEngine {
     executor.scheduleWithFixedDelay(
         () -> {
           try {
-            evaluateScenario(scenario);
+            evaluateBehavior(behavior);
           } catch (final Throwable t) {
-            LOGGER.error("Scenario '{}' evaluation failed unexpectedly", scenario.name, t);
+            LOGGER.error("Behavior '{}' evaluation failed unexpectedly", behavior.name, t);
           }
         },
         pollInterval.toMillis(),
         pollInterval.toMillis(),
         TimeUnit.MILLISECONDS);
-    LOGGER.trace("Scheduled scenario '{}'", scenario.name);
+    LOGGER.trace("Scheduled behavior '{}'", behavior.name);
   }
 
-  private void evaluateScenario(final Scenario scenario) {
+  private void evaluateBehavior(final ConditionalBehavior behavior) {
     if (stopped) {
       return;
     }
@@ -195,16 +195,16 @@ public class ConditionalScenarioEngine {
       try {
         initializer.run();
       } catch (final Throwable t) {
-        LOGGER.debug("Context initializer failed for '{}', skipping iteration", scenario.name, t);
+        LOGGER.debug("Context initializer failed for '{}', skipping iteration", behavior.name, t);
         return;
       }
     }
-    evaluationScope.execute(scenario::evaluate);
+    evaluationScope.execute(behavior::evaluate);
   }
 
-  private static final class Scenario {
+  private static final class ConditionalBehavior {
 
-    private final ScenarioCondition condition;
+    private final BehaviorCondition condition;
     private final Duration pollInterval;
     private final Duration resetTimeout;
     private final List<Runnable> actions = new CopyOnWriteArrayList<>();
@@ -213,8 +213,8 @@ public class ConditionalScenarioEngine {
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile String name;
 
-    Scenario(
-        final ScenarioCondition condition,
+    ConditionalBehavior(
+        final BehaviorCondition condition,
         final String defaultName,
         final Duration pollInterval,
         final Duration resetTimeout) {
@@ -243,7 +243,7 @@ public class ConditionalScenarioEngine {
       } catch (final AssertionError e) {
         return false;
       } catch (final Throwable t) {
-        LOGGER.warn("Scenario '{}' condition threw an unexpected exception", name, t);
+        LOGGER.warn("Behavior '{}' condition threw an unexpected exception", name, t);
         return false;
       }
     }
@@ -278,7 +278,7 @@ public class ConditionalScenarioEngine {
         action.run();
       } catch (final Throwable t) {
         failureCount.incrementAndGet();
-        LOGGER.warn("Scenario '{}' action threw an exception, will retry", name, t);
+        LOGGER.warn("Behavior '{}' action threw an exception, will retry", name, t);
         return;
       }
       actionIndex.set(clampToLastAction(actionIndex.get() + 1));
@@ -300,53 +300,35 @@ public class ConditionalScenarioEngine {
     }
   }
 
-  private final class ConditionStepImpl implements ConditionBehaviorChain {
+  private final class BuilderImpl implements ConditionalBehaviorBuilder {
 
-    private final Scenario scenario;
+    private final ConditionalBehavior behavior;
+    private boolean scheduled = false;
 
-    ConditionStepImpl(final Scenario scenario) {
-      this.scenario = scenario;
+    BuilderImpl(final ConditionalBehavior behavior) {
+      this.behavior = behavior;
     }
 
     @Override
-    public ConditionBehaviorChain as(final String name) {
+    public ConditionalBehaviorBuilder as(final String name) {
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Name must not be null or blank");
       }
-      scenario.name = name;
-      LOGGER.trace("Named scenario '{}'", name);
+      behavior.name = name;
+      LOGGER.trace("Named behavior '{}'", name);
       return this;
     }
 
     @Override
-    public ConditionBehaviorChainActionStep then(final Runnable action) {
+    public ConditionalBehaviorBuilder then(final Runnable action) {
       if (action == null) {
         throw new IllegalArgumentException("Action must not be null");
       }
-      scenario.addAction(action);
-      // Scheduling starts here, before additional .then() actions may be chained. This is safe
-      // because: (1) the initial delay of pollInterval gives the test thread time to complete
-      // the chain, and (2) actions use CopyOnWriteArrayList with clampToLastAction, so even if
-      // the first evaluation runs early, it fires the only available action without skipping any.
-      scheduleScenario(scenario);
-      return new ActionStepImpl(scenario);
-    }
-  }
-
-  private final class ActionStepImpl implements ConditionBehaviorChainActionStep {
-
-    private final Scenario scenario;
-
-    ActionStepImpl(final Scenario scenario) {
-      this.scenario = scenario;
-    }
-
-    @Override
-    public ConditionBehaviorChainActionStep then(final Runnable action) {
-      if (action == null) {
-        throw new IllegalArgumentException("Action must not be null");
+      behavior.addAction(action);
+      if (!scheduled) {
+        scheduleBehavior(behavior);
+        scheduled = true;
       }
-      scenario.addAction(action);
       return this;
     }
   }

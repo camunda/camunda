@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
+import static io.camunda.process.test.api.ConditionalBehaviorTestProcess.*;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -29,12 +30,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Verifies that conditional scenarios registered in {@code @BeforeEach} work correctly across
+ * Verifies that conditional behaviors registered in {@code @BeforeEach} work correctly across
  * multiple test methods in a Spring test context.
  */
-@SpringBootTest(classes = {SpringConditionalScenarioBeforeEachIT.class})
+@SpringBootTest(classes = {SpringConditionalBehaviorBeforeEachIT.class})
 @CamundaSpringProcessTest
-public class SpringConditionalScenarioBeforeEachIT {
+public class SpringConditionalBehaviorBeforeEachIT {
 
   private static final Map<String, Object> EXPORT_VARS =
       Collections.singletonMap("exportSuccess", true);
@@ -43,37 +44,29 @@ public class SpringConditionalScenarioBeforeEachIT {
   @Autowired private CamundaProcessTestContext processTestContext;
 
   @BeforeEach
-  void setupScenarios() {
-    client
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("conditionalScenarioApi/scenario-api-test.bpmn")
-        .execute();
+  void setupBehaviors() {
+    client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
     processTestContext
         .when(
             () ->
-                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElement("State_Happiness", 1))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", false)))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", true)));
+                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
 
     processTestContext
         .when(
             () ->
-                assertThatProcessInstance(
-                        ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElements("Export_Happiness"))
-        .then(() -> processTestContext.completeJob("io.camunda:http-json:1", EXPORT_VARS));
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElements(SERVICE_TASK_ID))
+        .then(() -> processTestContext.completeJob(JOB_TYPE, EXPORT_VARS));
   }
 
   @Test
   void shouldCompleteProcessFirstRun() {
     final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("user-happiness-check")
-            .latestVersion()
-            .execute();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
@@ -84,11 +77,7 @@ public class SpringConditionalScenarioBeforeEachIT {
   @Test
   void shouldCompleteProcessSecondRun() {
     final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("user-happiness-check")
-            .latestVersion()
-            .execute();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()

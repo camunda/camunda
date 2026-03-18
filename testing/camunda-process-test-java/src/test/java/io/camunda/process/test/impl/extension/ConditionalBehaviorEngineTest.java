@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.process.test.api.scenario.ScenarioCondition;
+import io.camunda.process.test.api.behavior.BehaviorCondition;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,13 +31,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ConditionalScenarioEngineTest {
+class ConditionalBehaviorEngineTest {
 
-  private ConditionalScenarioEngine engine;
+  private ConditionalBehaviorEngine engine;
 
   @BeforeEach
   void setUp() {
-    engine = new ConditionalScenarioEngine();
+    engine = new ConditionalBehaviorEngine();
   }
 
   /** Simulates the search API catching up by reopening the gate after a short delay. */
@@ -68,14 +68,14 @@ class ConditionalScenarioEngineTest {
 
   @Test
   void shouldRejectNullAction() {
-    final ScenarioCondition condition = () -> {};
+    final BehaviorCondition condition = () -> {};
     assertThatThrownBy(() -> engine.when(condition).then(null))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldRejectNullChainedAction() {
-    final ScenarioCondition condition = () -> {};
+    final BehaviorCondition condition = () -> {};
     final Runnable action = () -> {};
     assertThatThrownBy(() -> engine.when(condition).then(action).then(null))
         .isInstanceOf(IllegalArgumentException.class);

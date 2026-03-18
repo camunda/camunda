@@ -24,9 +24,9 @@ import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.behavior.BehaviorCondition;
+import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.api.scenario.ConditionBehaviorChain;
-import io.camunda.process.test.api.scenario.ScenarioCondition;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -393,10 +393,10 @@ public interface CamundaProcessTestContext {
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult);
 
   /**
-   * Defines a conditional scenario with the given condition. The condition is a {@link
-   * ScenarioCondition} that throws an {@link AssertionError} when not satisfied (e.g., a CPT
-   * assertion). The scenario evaluates the condition periodically in the background and fires the
-   * associated action when the condition passes.
+   * Defines a conditional behavior with the given condition. The condition is a {@link
+   * BehaviorCondition} that throws an {@link AssertionError} when not satisfied (e.g., a CPT
+   * assertion). The conditional behavior evaluates the condition periodically in the background and
+   * fires the associated action when the condition passes.
    *
    * <p>Example usage:
    *
@@ -407,7 +407,7 @@ public interface CamundaProcessTestContext {
    * </pre>
    *
    * @param condition the condition to evaluate
-   * @return the condition step for defining the action
+   * @return the builder for defining the action
    */
-  ConditionBehaviorChain when(ScenarioCondition condition);
+  ConditionalBehaviorBuilder when(BehaviorCondition condition);
 }

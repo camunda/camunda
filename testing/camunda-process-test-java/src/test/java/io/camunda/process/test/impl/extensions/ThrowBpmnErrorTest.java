@@ -38,7 +38,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
-import io.camunda.process.test.impl.extension.ConditionalScenarioEngine;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.util.Collections;
@@ -112,7 +112,7 @@ public class ThrowBpmnErrorTest {
               DevAwaitBehavior.expectSuccess(),
               jsonMapper,
               zeebeJsonMapper,
-              new ConditionalScenarioEngine());
+              new ConditionalBehaviorEngine());
 
       when(camundaClient
               .newJobSearchRequest()
@@ -272,7 +272,7 @@ public class ThrowBpmnErrorTest {
               DevAwaitBehavior.expectFailure(),
               jsonMapper,
               zeebeJsonMapper,
-              new ConditionalScenarioEngine());
+              new ConditionalBehaviorEngine());
     }
 
     @Test
