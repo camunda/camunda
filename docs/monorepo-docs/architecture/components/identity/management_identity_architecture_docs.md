@@ -7,9 +7,11 @@ toc_max_heading_level: 5
 
 ## 1. Introduction and goals
 
+This documentation is based on [arc42](https://arc42.org/overview) which is a common architecture documentation template for software systems. It is structured into several sections that cover different aspects of the system's architecture, including constraints, system context, solution strategy, building blocks, and runtime view.
+
 ### 1.1 Overview
 
-Management Identity is the Self‑Managed Camunda 8 component that manages authentication and access control for platform‑level applications that sit outside the Orchestration Cluster:
+The Management Identity component in Camunda 8 Self-Managed is used to manage authentication, access, and authorization for components outside the Orchestration Cluster.
 
 - Console
 - Web Modeler
@@ -21,11 +23,13 @@ It is responsible for:
 - Role‑based access control (RBAC) for Console, Web Modeler, and Optimize.
 - Managing users, groups, roles, permissions, tenants (Optimize), and mapping rules.
 
-By design, Management Identity does not control access for the Orchestration Cluster (Zeebe, Operate, Tasklist, Orchestration Cluster APIs). That is handled by Orchestration Cluster Identity, described in the Orchestration Cluster Identity architecture documentation:
+By design, Management Identity does not control access to the Orchestration Cluster. That is handled by Orchestration Cluster Identity, described in the Orchestration Cluster Identity architecture documentation:
 
 - [Orchestration Cluster Identity architecture](identity_architecture_docs.md)
 
 Where concepts (users, groups, roles, mapping rules, tenants, RBAC) overlap between Management Identity and Orchestration Cluster Identity, the Orchestration Cluster Identity document is the primary reference. This document describes only the specifics of Management Identity.
+
+User Guide can be found her: [User Guide](https://docs.camunda.io/docs/self-managed/components/management-identity/overview/)
 
 ### Goals
 
@@ -34,25 +38,6 @@ Where concepts (users, groups, roles, mapping rules, tenants, RBAC) overlap betw
 3. Offer a clear, UI‑driven experience to manage users, groups, roles, applications (clients), and tenants for Optimize.
 4. Keep platform‑level identity concerns separate from runtime (cluster) identity.
 
-### 1.2 Scope
-
-In scope:
-
-- Authentication and authorization for:
-  - Console
-  - Web Modeler
-  - Optimize
-- Management Identity UI and APIs
-- Integration with Keycloak and external OIDC providers
-- Platform‑level tenants for Optimize
-
-Out of scope (covered by Orchestration Cluster Identity):
-
-- Authentication and authorization for Zeebe, Operate, Tasklist, and Orchestration Cluster APIs.
-- Cluster‑local tenants and runtime resource authorizations.
-
-For those topics, see the Orchestration Cluster Identity architecture doc linked above.
-
 
 ## 2. Constraints
 
@@ -60,9 +45,9 @@ For those topics, see the Orchestration Cluster Identity architecture doc linked
   Management Identity runs as its own service (and supporting services such as Keycloak and Postgres) alongside the Orchestration Cluster in Self‑Managed setups.
 
 - Default IdP stack
-  Management Identity is, by default, wired to a packaged Keycloak and its database, but supports:
-  - Using an external existing Keycloak.
-  - Using a generic external OIDC provider via Keycloak’s identity brokering and/or a direct OIDC mode.
+  Management Identity is, by default, wired to a packaged Keycloak and its database but supports:
+  - Using an external existing OIDC provider.
+  - Using an external database.
 
 - Protocols
   Authentication flows are based on OAuth 2.0 and OIDC (authorization code flow for interactive users, client credentials for machine‑to‑machine).
@@ -86,8 +71,8 @@ For those topics, see the Orchestration Cluster Identity architecture doc linked
 title: Management Identity - Business Context
 ---
 flowchart TB
-  USER["Platform user\n(admin, developer, analyst)"]
-  APP_DEV["Application developer\n(job workers, CI/CD)"]
+  USER(["Platform user\n(admin, developer, analyst)"])
+  APP_DEV(["Application developer, job workers, ..."])
   IDP[["Enterprise IdP\n(Keycloak, Entra, Okta, ...)"]]
 
   subgraph PLATFORM["Camunda 8 Platform (Self-Managed)"]
@@ -95,7 +80,7 @@ flowchart TB
     CONSOLE["Console"]
     WEB_MODEL["Web Modeler"]
     OPT["Optimize"]
-    OC_ID["Orchestration Cluster Identity\n(runtime IAM)"]
+    OC_ID["Orchestration Cluster"]
   end
 
   USER -->|"Browser login"| CONSOLE
@@ -116,10 +101,11 @@ Main actors:
 - Platform user: administrators, modelers, and analysts using Console, Web Modeler, and Optimize.
 - Application developer: developers building job workers or integrations against Orchestration Clusters.
 - Management Identity: manages platform‑level authentication and RBAC for Console, Web Modeler, and Optimize.
-- Orchestration Cluster Identity: manages runtime authentication and RBAC for cluster components.
+- Orchestration Cluster: runtime cluster with its own embedded identity service for process execution and task access control.
 - Enterprise IdP: central source of user identities and group claims (via Keycloak or other OIDC providers).
+- Database: stores identity data.
+- Keycloak DB: stores Keycloak realm configuration.
 
-Management Identity and Orchestration Cluster Identity are siblings: they serve different application surfaces but can share common identity concepts (users, groups, roles, mapping rules, tenants) and, over time, converge towards a unified model as described in the Orchestration Cluster Identity architecture doc.
 
 ### 3.2 Technical context
 
@@ -128,30 +114,24 @@ Management Identity and Orchestration Cluster Identity are siblings: they serve 
 title: Management Identity - Technical Context
 ---
 flowchart TB
-  BROWSER["Browser (Console, Web Modeler, Optimize)"]
-  APP_CLIENT["Platform client apps\n(Optimize backend, Console backend, Web Modeler backend)"]
-  IDP[("OIDC IdP / Keycloak")]
-  MGMT_DB[("Management Identity DB\n(Postgres)")]
-  KEYCLOAK_DB[("Keycloak DB")]
+  BROWSER["Browser\n(Console, Web Modeler, Optimize)"]
+  APP_CLIENT["Platform client backends\n(Optimize, Console, Web Modeler)"]
+  IDP[["IdP"]]
+  IDP_UI[["IdP UI"]]
+  MGMT_DB[("Management Identity DB\n(Postgres, ..)")]
+  KEYCLOAK_DB[("Keycloak DB\n(Postgres)")]
 
-  subgraph MGMT_ID["Management Identity"]
-    MGMT_UI["Management Identity UI"]
-    MGMT_API["Management Identity API"]
-    AUTHZ["RBAC / Permissions\n(roles, groups, tenants)"]
-    MAPPING["Mapping rules\n(JWT claims -> roles / tenants)"]
-  end
+  MGMT["`**Management Identity**`"]
 
-  BROWSER -->|"Login / admin UI"| MGMT_UI
-  MGMT_UI --> MGMT_API
-  APP_CLIENT -->|"M2M tokens, user info"| MGMT_API
+  BROWSER -->|"Login"| IDP_UI
+  IDP_UI -.->|"Token"| BROWSER
+  BROWSER -->|"admin UI"| MGMT
+  APP_CLIENT -->|"M2M tokens, user info"| MGMT
 
-  MGMT_API -->|"User, group, role, app, tenant mgmt"| MGMT_DB
-  MGMT_API -->|"RBAC decisions"| AUTHZ
-  MGMT_API -->|"Resolve mapping rules"| MAPPING
+  MGMT -->|"User, group, role, app, tenant mgmt"| MGMT_DB
 
-  MGMT_API -->|"Client registrations,\nrealm config"| IDP
-  IDP -->|"OIDC tokens (users & clients)"| APP_CLIENT
-  IDP -->|"OIDC tokens / login"| BROWSER
+  MGMT -->|"Client registrations,\nrealm config"| IDP
+  APP_CLIENT -->|"OIDC tokens (users & clients)"| IDP
 
   IDP -->|"Users, groups, sessions"| KEYCLOAK_DB
 ```
@@ -162,8 +142,8 @@ Key points:
   - Clients
   - Scopes
   - Redirect URIs
-- Management Identity UI and API allow administrators to manage users, groups, roles, applications (clients), Optimize tenants, and mapping rules.
-- Application backends (Console, Web Modeler, Optimize) use client credentials and/or user tokens issued by the IdP, and consult Management Identity’s RBAC model when enforcing access.
+- Management Identity allows administrators to manage users, groups, roles, applications (clients), Optimize tenants, and mapping rules.
+- Platform client backends (Console, Web Modeler, Optimize) use client credentials and/or user tokens issued by the IdP, and consult Management Identity’s RBAC model when enforcing access.
 
 
 ## 4. Solution strategy
@@ -184,7 +164,7 @@ Key points:
   Mapping rules connect IdP claims (for example groups, attributes) to roles and tenants in Management Identity. Optimize uses these tenants to segment data and access for different business units or customers.
 
 - Alignment with Orchestration Cluster Identity model
-  Where consistent and feasible, Management Identity uses naming and concepts aligned with Orchestration Cluster Identity (users, groups, roles, tenants, mapping rules, authorizations). Details of the shared model and runtime behavior are defined in the Orchestration Cluster Identity architecture doc.
+  Where consistent and possible, Management Identity uses naming and concepts aligned with Orchestration Cluster Identity (users, groups, roles, tenants, mapping rules, authorizations). Details of the shared model and runtime behavior are defined in the Orchestration Cluster Identity architecture doc.
 
 
 ## 5. Building block view
@@ -196,63 +176,46 @@ Key points:
 title: Management Identity - Building Blocks
 ---
 flowchart TB
-  BROWSER["Admin / user browser"]
-  IDP[("Keycloak / OIDC IdP")]
+  BROWSER(["Admin / user browser"])
+  IDP[("IdP")]
   MGMT_DB[("Management Identity DB\n(Postgres)")]
 
   subgraph MGMT_ID["Management Identity"]
     UI["Management Identity UI"]
     API["Management Identity API"]
-    USERS["Users / Groups"]
-    ROLES["Roles / Permissions"]
-    APPS["Applications (clients)"]
-    TENANTS["Optimize Tenants"]
-    RULES["Mapping Rules"]
+
+    subgraph SERVICES["Core Services"]
+      IDENTITY_SVC["Identity Service\n(users, groups, roles, apps)"]
+      AUTHZ_SVC["Authorization Service\n(permissions, mappings)"]
+      TENANT_SVC["Tenant Service\n(Optimize data isolation)"]
+    end
   end
 
-  BROWSER -->|"Admin, user flows"| UI
+  BROWSER --> UI
   UI --> API
-
-  API --> USERS
-  API --> ROLES
-  API --> APPS
-  API --> TENANTS
-  API --> RULES
+  API --> SERVICES
 
   API -->|"Configure clients,\nscopes, realms"| IDP
-  IDP -->|"Tokens"| BROWSER
 
-  USERS --> MGMT_DB
-  ROLES --> MGMT_DB
-  APPS --> MGMT_DB
-  TENANTS --> MGMT_DB
-  RULES --> MGMT_DB
+  SERVICES --> MGMT_DB
 ```
 
-Responsibilities:
+Key responsibilities:
 
-- Management Identity UI
-  Console for administrators to:
-  - Manage users, groups, roles, applications, and tenants.
-  - Define mapping rules.
+- **Management Identity UI**
+  Web-based console for administrators to manage users, groups, roles, applications, and tenants, and define mapping rules.
 
-- Management Identity API
-  Backing services that store and retrieve identity data, render it to the UI, and integrate with the IdP.
+- **Management Identity API**
+  REST service layer that authenticates requests, enforces RBAC, and delegates operations to core services.
 
-- Users and groups
-  Platform‑level principals and groupings for Console, Web Modeler, and Optimize.
+- **Identity Service**
+  Manages identity resources: users, groups, roles, and applications (OAuth2 clients). Synchronizes users and clients with the IdP via the Keycloak Connector.
 
-- Roles and permissions
-  Define what operations users and applications can perform in the platform apps.
+- **Authorization Service**
+  Evaluates RBAC rules, manages permissions for platform apps, and processes mapping rules that connect IdP claims to roles and tenants.
 
-- Applications (clients)
-  Represent platform and external applications that consume tokens (for example Optimize backend, Web Modeler backend, custom tools).
-
-- Tenants (Optimize)
-  Logical partitions for reporting and data isolation in Optimize only.
-
-- Mapping rules
-  Connect IdP token claims to roles, groups, and tenants. The general mapping‑rules concept is shared with Orchestration Cluster Identity; see the mapping rules section in the Orchestration Cluster Identity architecture doc for a more detailed explanation of the pattern.
+- **Tenant Service**
+  Manages Optimize-specific tenants for data isolation and reporting. Applies tenant-based filtering to user and role assignments.
 
 ### 5.2 Management Identity API — Level 2
 
