@@ -1126,7 +1126,11 @@ paths:
         - User task
       operationId: completeUserTask
       summary: Complete user task
-      description: Completes a user task with the given key.
+      description: >
+        Completes a user task with the given key. Completion waits for blocking task listeners on
+        this lifecycle transition. If listener processing is delayed beyond the request timeout,
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -1163,6 +1167,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/{userTaskKey}/assignment:
     post:
@@ -1170,7 +1176,12 @@ paths:
         - User task
       operationId: assignUserTask
       summary: Assign user task
-      description: Assigns a user task with the given key to the given assignee.
+      description: >
+        Assigns a user task with the given key to the given assignee. Assignment waits for
+        blocking task listeners on this lifecycle transition. If listener processing is delayed
+        beyond the request timeout, this endpoint can return 504. Other gateway timeout causes are
+        also possible. Retry with backoff and inspect listener worker availability and logs when
+        this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -1207,6 +1218,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/{userTaskKey}:
     get:
@@ -1251,7 +1264,10 @@ paths:
         - User task
       operationId: updateUserTask
       summary: Update user task
-      description: Update a user task with the given key.
+      description: >
+        Update a user task with the given key. Updates wait for blocking task listeners on this
+        lifecycle transition. If listener processing is delayed beyond the request timeout, this
+        endpoint can return 504.Update a user task with the given key.
       parameters:
         - name: userTaskKey
           in: path
@@ -1288,6 +1304,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/{userTaskKey}/form:
     get:
@@ -1336,7 +1354,12 @@ paths:
         - User task
       operationId: unassignUserTask
       summary: Unassign user task
-      description: Removes the assignee of a task with the given key.
+      description: >
+        Removes the assignee of a task with the given key. Unassignment waits for blocking task
+        listeners on this lifecycle transition. If listener processing is delayed beyond the
+        request timeout, this endpoint can return 504. Other gateway timeout causes are also
+        possible. Retry with backoff and inspect listener worker availability and logs when this
+        repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -1367,6 +1390,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/search:
     post:
@@ -1991,7 +2016,12 @@ paths:
         - Process instance
       operationId: cancelProcessInstance
       summary: Cancel process instance
-      description: Cancels a running process instance. As a cancelation includes more than just the removal of the process instance resource, the cancelation resource must be posted.
+      description: >
+        Cancels a running process instance. As a cancellation includes more than just the removal
+        of the process instance resource, the cancellation resource must be posted. Cancellation
+        can wait on listener-related processing; when that processing does not complete in time,
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: processInstanceKey
           in: path
@@ -2020,6 +2050,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /process-instances/cancellation:
     post:
@@ -5249,6 +5281,10 @@ paths:
       description: |
         Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
         Specify the element instance in the `elementInstanceKey` parameter.
+        Variable updates can be delayed by listener-related processing; if processing exceeds the
+        request timeout, this endpoint can return 504. Other gateway timeout causes are also
+        possible. Retry with backoff and inspect listener worker availability and logs when this
+        repeats.
       parameters:
         - name: elementInstanceKey
           in: path
@@ -5274,6 +5310,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
@@ -12394,6 +12432,33 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
+    GatewayTimeoutTaskListenerBlocking:
+      description: >
+        The request timed out between the gateway and the broker. For these endpoints, this often
+        happens when user task listeners are configured and the corresponding listener job is not
+        completed within the request timeout. Common causes include no available job workers for
+        the listener type, busy or crashed job workers, or delayed job completion. As with any
+        gateway timeout, general timeout causes (for example transient network issues) can also
+        result in a 504 response.
+
+        Troubleshooting:
+        - verify that job workers for the listener type are running and healthy
+        - check worker logs for crashes, retries, and completion failures
+        - check network connectivity between workers, gateway, and broker
+        - retry with backoff after transient failures
+        - fail without retries if a problem persists
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          examples:
+            taskListenerTimeout:
+              value:
+                type: about:blank
+                title: DEADLINE_EXCEEDED
+                status: 504
+                detail: Expected to handle request, but request timed out between gateway and broker
+                instance: /v2/user-tasks/123/completion
   securitySchemes:
     BearerAuth:
       type: http
