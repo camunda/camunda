@@ -7,30 +7,13 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration.CamundaMcpToolAnnotatedBeans;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
-import io.camunda.gateway.mcp.model.McpIncidentFilter;
-import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
-import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
-import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
-import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
-import io.camunda.gateway.mcp.model.McpUserTaskFilter;
-import io.camunda.gateway.mcp.model.McpVariableFilter;
-import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
-import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
-import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
-import java.util.function.Consumer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -49,24 +32,10 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public CamundaJsonSchemaGenerator mcpGatewayJsonSchemaGenerator(final ObjectMapper objectMapper) {
+  public CamundaJsonSchemaGenerator mcpGatewayJsonSchemaGenerator() {
+    final var objectMapper = Jackson2ObjectMapperBuilder.json().build();
+    McpMixinRegistry.registerMixins(objectMapper);
     return new CamundaJsonSchemaGenerator(objectMapper);
-  }
-
-  @Bean("gatewayMcpObjectMapperCustomizer")
-  public Consumer<Jackson2ObjectMapperBuilder> gatewayMcpObjectMapperCustomizer() {
-    final var module =
-        new SimpleModule("gateway-mcp-module")
-            .setMixInAnnotation(IncidentFilter.class, McpIncidentFilter.class)
-            .setMixInAnnotation(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class)
-            .setMixInAnnotation(
-                ProcessInstanceCreationInstruction.class,
-                McpProcessInstanceCreationInstruction.class)
-            .setMixInAnnotation(ProcessInstanceFilter.class, McpProcessInstanceFilter.class)
-            .setMixInAnnotation(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class)
-            .setMixInAnnotation(UserTaskFilter.class, McpUserTaskFilter.class)
-            .setMixInAnnotation(VariableFilter.class, McpVariableFilter.class);
-    return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
   @Bean
