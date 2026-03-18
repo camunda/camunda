@@ -394,18 +394,18 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .jsonPath("$.title")
-        .isEqualTo("ALREADY_EXISTS")
-        .jsonPath("$.status")
-        .isEqualTo(409)
-        .jsonPath("$.detail")
-        .value(
-            detail -> {
-              assertThat((String) detail)
-                  .startsWith("Expected to create instance of process with business id")
-                  .contains("business id '" + businessId + "'")
-                  .contains("process definition '" + processDefinitionId + "'");
-            });
+        .json(
+            """
+            {
+                "type":"about:blank",
+                "title":"ALREADY_EXISTS",
+                "status":409,
+                "detail":"Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition '%s'",
+                "instance":"/v2/process-instances"
+            }"""
+                .formatted(businessId, processDefinitionId),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -854,18 +854,18 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .jsonPath("$.title")
-        .isEqualTo("ALREADY_EXISTS")
-        .jsonPath("$.status")
-        .isEqualTo(409)
-        .jsonPath("$.detail")
-        .value(
-            detail -> {
-              assertThat((String) detail)
-                  .startsWith("Expected to create instance of process with business id")
-                  .contains("business id '" + businessId + "'")
-                  .contains("process definition '" + processDefinitionId + "'");
-            });
+        .json(
+            """
+            {
+                "type":"about:blank",
+                "title":"ALREADY_EXISTS",
+                "status":409,
+                "detail":"Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition '%s'",
+                "instance":"/v2/process-instances"
+            }"""
+                .formatted(businessId, processDefinitionId),
+            JsonCompareMode.STRICT);
   }
 
   @Test
