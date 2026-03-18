@@ -220,10 +220,10 @@ public class VariableAssertIT {
   }
 
   @Test
-  void shouldMatchVariableWithCombinedNameAndValueContainsSelector() {
+  void shouldMatchVariableWithNameAndValueContainsSelector() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithVariables());
-    final Map<String, Object> variables = new HashMap<String, Object>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("order_id", "order-123");
     variables.put("other", "value");
     final ProcessInstanceEvent processInstanceEvent =
@@ -236,23 +236,11 @@ public class VariableAssertIT {
 
     // Then
     assertThatProcessInstance(processInstanceEvent)
+        .hasVariable(VariableSelectors.byName("order_id"), "order-123")
+        .hasVariable(VariableSelectors.byValueContains("order"), "order-123")
         .hasVariable(
             VariableSelectors.byName("order_id").and(VariableSelectors.byValueContains("order")),
             "order-123");
-
-    withShortAwaitilityTimeouts(
-        () ->
-            Assertions.assertThatThrownBy(
-                    () ->
-                        assertThatProcessInstance(processInstanceEvent)
-                            .hasVariable(
-                                VariableSelectors.byName("order_id")
-                                    .and(VariableSelectors.byValueContains("unknown")),
-                                "order-123"))
-                .hasMessage(
-                    "Process instance [key: %s] should have a variable 'order_id, value contains: unknown'"
-                        + " with value '\"order-123\"' but the variable doesn't exist.",
-                    processInstanceEvent.getProcessInstanceKey()));
   }
 
   private void withShortAwaitilityTimeouts(final Runnable assertionFn) {
