@@ -20,6 +20,7 @@ import {validateResponse} from '../../../../json-body-assertions';
 import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/beans/requestBeans';
 import {
   assignUsersToGroup,
+  createUser,
   createGroupAndStoreResponseFields,
   userFromState,
 } from '@requestHelpers';
@@ -28,11 +29,13 @@ import {
   generateUniqueId,
 } from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];
+  state['createdUsernames'] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 3, state);
@@ -45,10 +48,16 @@ test.describe.parallel('Group Users API Tests', () => {
         (value) => typeof value === 'string' && value.startsWith('group'),
       ) as string[]),
     );
+
+    (state['createdUsernames'] as string[]).push(
+      userFromState('groupId2', state),
+      userFromState('groupId3', state),
+    );
   });
 
   test.afterAll(async ({request}) => {
     await cleanupGroups(request, state['createdIds'] as string[]);
+    await cleanupUsers(request, state['createdUsernames'] as string[]);
   });
 
   test('Assign User To Group Not Found', async ({request}) => {
@@ -70,10 +79,15 @@ test.describe.parallel('Group Users API Tests', () => {
   });
 
   test('Assign User To Group', async ({request}) => {
-    const user = 'test-user' + generateUniqueId();
+    const user = await createUser(
+      request,
+      {},
+      'test-user' + generateUniqueId(),
+    );
+    (state['createdUsernames'] as string[]).push(user.username);
     const stateParams: Record<string, string> = {
       groupId: state['groupId1'] as string,
-      username: user,
+      username: user.username,
     };
 
     await expect(async () => {
