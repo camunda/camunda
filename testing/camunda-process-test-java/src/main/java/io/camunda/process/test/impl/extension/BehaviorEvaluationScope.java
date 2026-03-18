@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.scenario;
+package io.camunda.process.test.impl.extension;
 
 /**
- * A step in the condition-behavior chain that allows chaining additional actions for repeated
- * condition matches.
+ * Wraps the entire behavior evaluation cycle (condition checks and action executions) with the
+ * appropriate context, such as an instant-probe await behavior override. The engine delegates to
+ * this scope each polling cycle so that both conditions and actions run within the same context.
  */
-public interface ConditionBehaviorChainActionStep {
+@FunctionalInterface
+public interface BehaviorEvaluationScope {
 
   /**
-   * Chains an additional action for repeated condition matches. Actions are consumed in order:
-   * first match fires the first action, second match fires the second, and the last action repeats
-   * indefinitely.
+   * Executes the given evaluation within the appropriate context.
    *
-   * @param action the action to execute on the next condition match
-   * @return this step for further chaining
+   * @param evaluation the behavior evaluation to run (condition checks and action firings)
    */
-  ConditionBehaviorChainActionStep then(Runnable action);
+  void execute(Runnable evaluation);
 }

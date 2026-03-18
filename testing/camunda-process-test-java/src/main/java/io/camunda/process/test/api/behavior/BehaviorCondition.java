@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.scenario;
+package io.camunda.process.test.api.behavior;
 
 /**
- * Functional interface representing a scenario condition that is evaluated periodically by the
- * conditional scenario engine. A condition is considered met when the method completes without
- * throwing. If the condition is not satisfied, the method should throw an {@link AssertionError},
- * which is typically produced by CPT assertions.
+ * Functional interface representing a condition that is evaluated periodically by the conditional
+ * behavior engine. A condition is considered met when the method completes without throwing. If the
+ * condition is not satisfied, the method should throw an {@link AssertionError}, which is typically
+ * produced by CPT assertions.
  */
 @FunctionalInterface
-public interface ScenarioCondition {
+public interface BehaviorCondition {
 
   /**
    * Verifies whether this condition is currently met. If the condition is not satisfied, an {@link

@@ -36,7 +36,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
-import io.camunda.process.test.impl.extension.ConditionalScenarioEngine;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.util.Collections;
@@ -102,7 +102,7 @@ public class ResolveIncidentTest {
               DevAwaitBehavior.expectSuccess(),
               jsonMapper,
               zeebeJsonMapper,
-              new ConditionalScenarioEngine());
+              new ConditionalBehaviorEngine());
 
       when(camundaClient
               .newIncidentSearchRequest()
@@ -278,7 +278,7 @@ public class ResolveIncidentTest {
               DevAwaitBehavior.expectFailure(),
               jsonMapper,
               zeebeJsonMapper,
-              new ConditionalScenarioEngine());
+              new ConditionalBehaviorEngine());
     }
 
     @Test
