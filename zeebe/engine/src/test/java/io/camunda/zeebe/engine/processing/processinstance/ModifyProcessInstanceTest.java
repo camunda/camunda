@@ -2203,16 +2203,17 @@ public class ModifyProcessInstanceTest {
         .modification()
         .moveElements("A", "B")
         .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then only the multi-instance parent creates a new token at the target
+    // then the multi-instance body is terminated and a single token is created at B
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementIdIn("A", "B")
-                .limit(13L))
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B"))
         .extracting(
             r ->
                 tuple(
@@ -2232,7 +2233,8 @@ public class ModifyProcessInstanceTest {
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
                 BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -2271,16 +2273,17 @@ public class ModifyProcessInstanceTest {
         .modification()
         .moveElements("A", "B")
         .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then both multi-instance parents create a new token at the target
+    // then both multi-instance bodies are terminated and each creates a new token at B
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementIdIn("A", "B")
-                .limit(26L))
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B"))
         .extracting(
             r ->
                 tuple(
@@ -2315,7 +2318,9 @@ public class ModifyProcessInstanceTest {
             tuple(
                 BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
