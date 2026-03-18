@@ -75,7 +75,6 @@ const apiTestMatch = isRDBMSApiTestsOnly
 const apiTestIgnore = [
   'tests/api/v2/clock/*.spec.ts',
   'tests/api/v2/usage-metrics/*.spec.ts',
-  'tests/api/v1/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
