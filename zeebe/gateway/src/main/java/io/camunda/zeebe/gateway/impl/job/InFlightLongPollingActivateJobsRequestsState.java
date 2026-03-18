@@ -10,17 +10,18 @@ package io.camunda.zeebe.gateway.impl.job;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.SequencedSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
   private final Set<InflightActivateJobsRequest<T>> activeRequests = new LinkedHashSet<>();
-  private final Set<InflightActivateJobsRequest<T>> pendingRequests = new LinkedHashSet<>();
+  private final SequencedSet<InflightActivateJobsRequest<T>> pendingRequests =
+      new LinkedHashSet<>();
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
-  private final AtomicInteger failedAttempts = new AtomicInteger();
+  private int failedAttempts;
   private long lastUpdatedTime;
 
   public InFlightLongPollingActivateJobsRequestsState(
@@ -30,12 +31,12 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public void incrementFailedAttempts(final long lastUpdatedTime) {
-    failedAttempts.incrementAndGet();
+    failedAttempts++;
     this.lastUpdatedTime = lastUpdatedTime;
   }
 
   public boolean shouldAttempt(final int attemptThreshold) {
-    return failedAttempts.get() < attemptThreshold;
+    return failedAttempts < attemptThreshold;
   }
 
   public void resetFailedAttempts() {
@@ -43,11 +44,11 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public int getFailedAttempts() {
-    return failedAttempts.get();
+    return failedAttempts;
   }
 
   public void setFailedAttempts(final int failedAttempts) {
-    this.failedAttempts.set(failedAttempts);
+    this.failedAttempts = failedAttempts;
     if (failedAttempts == 0) {
       activeRequestsToBeRepeated.addAll(activeRequests);
     }
