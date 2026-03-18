@@ -1492,6 +1492,180 @@ jobs:
       runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
 
+  operate-fe-test-report:
+    name: "Operate / FE Test Report"
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.operate-ci.result != 'skipped'
+    needs: [detect-changes, operate-ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Download visual regression test results
+        uses: actions/download-artifact@v8
+        with:
+          name: operate-visual-regression-test-results
+          path: vr-test-results
+        continue-on-error: true
+      - name: Publish Visual Regression Test Results
+        if: hashFiles('vr-test-results/**/*.xml') != ''
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: 'vr-test-results/**/*.xml'
+          check_name: 'Operate Visual Regression Test Results'
+          comment_title: 'Operate Visual Regression Test Results'
+          comment_mode: update
+      - name: Extract failed test names from JUnit XML
+        if: always()
+        id: extract-failures
+        run: |
+          if [ -f vr-test-results/vr-results.xml ]; then
+            FAILED=$(grep -c '<failure' vr-test-results/vr-results.xml 2>/dev/null || echo "0")
+            echo "failure_count=$FAILED" >> "$GITHUB_OUTPUT"
+            # Extract failed test names (space before name= to avoid matching classname=)
+            grep -B1 '<failure' vr-test-results/vr-results.xml | grep '<testcase' | sed 's/.* name="\([^"]*\)".*/\1/' > /tmp/failed-tests.txt 2>/dev/null || true
+          else
+            echo "failure_count=0" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Post VR diff comment to PR
+        if: always() && steps.extract-failures.outputs.failure_count > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const failedTests = fs.readFileSync('/tmp/failed-tests.txt', 'utf8').trim().split('\n').filter(Boolean);
+            const failureCount = parseInt('${{ steps.extract-failures.outputs.failure_count }}', 10);
+
+            if (failureCount === 0) return;
+
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const previewUrl = `https://camunda.github.io/camunda/vr-preview/pr-${context.issue.number}/`;
+
+            const rows = failedTests.slice(0, 20).map((name, i) => {
+              const escaped = name.replace(/[`|\\]/g, '\\$&');
+              return `| ${i + 1} | \`${escaped}\` |`;
+            }).join('\n');
+
+            const truncationNote = failedTests.length > 20
+              ? `\n_Showing 20 of ${failedTests.length} failures._\n`
+              : '';
+
+            let body = `## 🔴 Visual Regression Diffs\n\n`;
+            body += `${failureCount} screenshot(s) differ from baseline.\n\n`;
+            body += `### Failed screenshots\n\n`;
+            body += `| # | Test |\n|---|---|\n`;
+            body += rows + '\n';
+            body += truncationNote;
+            body += `\n### 🔍 Inspect changes\n\n`;
+            body += `- [Open Playwright HTML report](${previewUrl})\n`;
+            body += `- [Download report artifact](${runUrl})\n\n`;
+            body += `### ✅ Approve changes\n\n`;
+            body += `Add label: \`update-snapshots\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.body?.includes('## Visual Regression Diffs') &&
+              c.user?.login === 'github-actions[bot]'
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+      - name: Clear VR diff comment when all tests pass
+        if: always() && steps.extract-failures.outputs.failure_count == 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.body?.includes('## Visual Regression Diffs') &&
+              c.user?.login === 'github-actions[bot]'
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: '## Visual Regression Diffs\n\nAll screenshots match baseline. :white_check_mark:',
+              });
+            }
+      - uses: actions/checkout@v6
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  operate-vr-report-preview:
+    name: "Operate / VR Report Preview"
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.operate-ci.result != 'skipped'
+    needs: [detect-changes, operate-ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download VR HTML report
+        uses: actions/download-artifact@v8
+        with:
+          name: operate-visual-regression-report
+          path: vr-report
+        continue-on-error: true
+      - name: Deploy VR Report Preview
+        if: hashFiles('vr-report/**') != ''
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
+        with:
+          source-dir: ./vr-report/
+          preview-branch: gh-pages
+          umbrella-dir: vr-preview
+          action: auto
+          comment: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
   optimize-ci:
     if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
     name: "Optimize"
@@ -1730,6 +1904,8 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - operate-ci
+      - operate-fe-test-report
+      - operate-vr-report-preview
       - optimize-ci
       - protobuf-checks
       - rdbms-integration-tests
