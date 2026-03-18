@@ -43,6 +43,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- required to run both junit4 and junit 5 as test engines side by side -->
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
