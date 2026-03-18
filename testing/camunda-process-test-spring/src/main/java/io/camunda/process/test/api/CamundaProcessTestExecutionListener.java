@@ -202,7 +202,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // set up conditional behavior engine for this test
     conditionalBehaviorEngine.start(
         () -> CamundaAssert.initialize(dataSource),
-        evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation));
+        evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation),
+        CamundaAssert.getAwaitBehavior().getAssertionInterval());
   }
 
   @Override

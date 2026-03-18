@@ -114,7 +114,8 @@ class ConditionalBehaviorEngineTest {
         evaluation -> {
           scopeCallCount.incrementAndGet();
           evaluation.run();
-        });
+        },
+        Duration.ofMillis(100));
 
     engine.when(() -> {}).then(actionCount::incrementAndGet);
 
@@ -140,7 +141,8 @@ class ConditionalBehaviorEngineTest {
           } finally {
             scopeActive.set(false);
           }
-        });
+        },
+        Duration.ofMillis(100));
 
     engine
         .when(() -> {})
