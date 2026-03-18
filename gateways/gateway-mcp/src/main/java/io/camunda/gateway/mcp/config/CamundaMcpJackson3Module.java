@@ -7,19 +7,31 @@
  */
 package io.camunda.gateway.mcp.config;
 
+import io.camunda.gateway.mcp.model.McpIncidentFilter;
+import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
+import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
+import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
+import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
+import io.camunda.gateway.mcp.model.McpUserTaskFilter;
+import io.camunda.gateway.mcp.model.McpVariableFilter;
+import io.camunda.gateway.protocol.model.simple.IncidentFilter;
+import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
+import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
+import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import tools.jackson.core.Version;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
- * Jackson 3 module for registering MCP-specific mixins with Spring AI's JsonParser.
+ * Jackson 3 module that registers MCP-specific mixins to hide internal fields (e.g., {@code
+ * tenantId}) from tool schemas and parameter deserialization.
  *
- * <p>This module is auto-discovered by Spring AI's {@code JsonParser} via the service loader
- * mechanism. It registers mixins that hide internal fields (e.g., {@code tenantId}) from MCP tool
- * parameter deserialization.
- *
- * <p>Spring AI 2.0.0-M3 uses Jackson 3 ({@code tools.jackson.*}) for tool parameter handling in
- * {@code AbstractMcpToolMethodCallback}, so we must register mixins via a Jackson 3 module
- * discoverable by {@code MapperBuilder.findModules()}.
+ * <p>This module is the single source of truth for MCP mixin registrations. It is auto-discovered
+ * by Spring AI's {@code JsonParser} via the service loader mechanism ({@code
+ * META-INF/services/tools.jackson.databind.JacksonModule}), and the same mapper is used by the
+ * schema generator (victools).
  */
 public class CamundaMcpJackson3Module extends SimpleModule {
 
@@ -27,11 +39,17 @@ public class CamundaMcpJackson3Module extends SimpleModule {
 
   public CamundaMcpJackson3Module() {
     super(MODULE_NAME, moduleVersion());
-    McpMixinRegistry.registerMixins(this);
+    setMixInAnnotation(IncidentFilter.class, McpIncidentFilter.class);
+    setMixInAnnotation(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class);
+    setMixInAnnotation(
+        ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class);
+    setMixInAnnotation(ProcessInstanceFilter.class, McpProcessInstanceFilter.class);
+    setMixInAnnotation(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
+    setMixInAnnotation(UserTaskFilter.class, McpUserTaskFilter.class);
+    setMixInAnnotation(VariableFilter.class, McpVariableFilter.class);
   }
 
   private static Version moduleVersion() {
-    // Use the module version from the package (if available)
     final Package pkg = CamundaMcpJackson3Module.class.getPackage();
     if (pkg != null && pkg.getImplementationVersion() != null) {
       try {

@@ -9,8 +9,6 @@ package io.camunda.gateway.mcp.config.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import jakarta.validation.Valid;
@@ -18,12 +16,14 @@ import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 class CamundaJsonSchemaGeneratorTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final JsonMapper jsonMapper = JsonMapper.shared();
   private final CamundaJsonSchemaGenerator schemaGenerator =
-      new CamundaJsonSchemaGenerator(objectMapper);
+      new CamundaJsonSchemaGenerator(jsonMapper);
 
   @Test
   void shouldGenerateMinimalSchemaForMethodWithOnlyFrameworkParams() throws Exception {
@@ -92,7 +92,7 @@ class CamundaJsonSchemaGeneratorTest {
   private JsonNode generateMethodSchema(final String methodName, final Class<?>... paramTypes)
       throws Exception {
     final Method method = TestToolMethods.class.getMethod(methodName, paramTypes);
-    return objectMapper.readTree(schemaGenerator.generateForMethodInput(method));
+    return jsonMapper.readTree(schemaGenerator.generateForMethodInput(method));
   }
 
   private void assertInlinedAddressProperties(final JsonNode schema) {
