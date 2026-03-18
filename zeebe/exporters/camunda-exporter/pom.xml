@@ -281,11 +281,6 @@
       <groupId>jakarta.json</groupId>
       <artifactId>jakarta.json-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-    </dependency>
-
   </dependencies>
 
   <build>
