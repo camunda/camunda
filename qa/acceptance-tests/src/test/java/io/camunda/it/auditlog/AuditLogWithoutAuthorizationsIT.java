@@ -43,6 +43,7 @@ public class AuditLogWithoutAuthorizationsIT {
           .withAuthorizationsDisabled()
           // withAuthenticatedAccess must be done after disabling authorizations as that implicitly
           // set withUnauthenticatedAccess()
+          // TODO: decouple authorizations & authentication setups
           .withAuthenticatedAccess();
 
   @ParameterizedTest
