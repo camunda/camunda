@@ -49,6 +49,13 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- required to run both junit4 and junit 5 as test engines side by side -->
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- TEST CONTAINERS -->
     <dependency>
       <groupId>io.zeebe</groupId>
