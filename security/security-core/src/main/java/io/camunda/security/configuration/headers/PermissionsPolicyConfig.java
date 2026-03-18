@@ -46,7 +46,7 @@ public class PermissionsPolicyConfig {
           + "deferred-fetch-minimal=(), "
           + "display-capture=(), "
           + "encrypted-media=(), "
-          + "fullscreen=(), "
+          + "fullscreen=(self), "
           + "gamepad=(), "
           + "geolocation=(), "
           + "gyroscope=(), "
@@ -80,7 +80,7 @@ public class PermissionsPolicyConfig {
    * <p>Default: accelerometer=(), ambient-light-sensor=(), attribution-reporting=(), autoplay=(),
    * bluetooth=(), browsing-topics=(), camera=(), compute-pressure=(), cross-origin-isolated=(),
    * deferred-fetch=(), deferred-fetch-minimal=(), display-capture=(), encrypted-media=(),
-   * fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), identity-credentials-get=(),
+   * fullscreen=(self), gamepad=(), geolocation=(), gyroscope=(), hid=(), identity-credentials-get=(),
    * idle-detection=(), language-detector=(), local-fonts=(), magnetometer=(), microphone=(),
    * midi=(), otp-credentials=(), payment=(), picture-in-picture=(),
    * publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(),
