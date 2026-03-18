@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class InFlightLongPollingActivateJobsRequestsState<T> {
@@ -24,8 +23,6 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
   private final AtomicInteger failedAttempts = new AtomicInteger();
   private long lastUpdatedTime;
-
-  private final AtomicBoolean ongoingNotification = new AtomicBoolean(false);
 
   public InFlightLongPollingActivateJobsRequestsState(
       final String jobType, final LongPollingMetrics metrics) {
@@ -122,13 +119,5 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
    */
   public boolean shouldBeRepeated(final InflightActivateJobsRequest<T> request) {
     return activeRequestsToBeRepeated.contains(request) && !request.isLongPollingDisabled();
-  }
-
-  public boolean shouldNotifyAndStartNotification() {
-    return ongoingNotification.compareAndSet(false, true);
-  }
-
-  public void completeNotification() {
-    ongoingNotification.set(false);
   }
 }
