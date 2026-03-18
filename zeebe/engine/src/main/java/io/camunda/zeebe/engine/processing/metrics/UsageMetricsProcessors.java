@@ -31,6 +31,7 @@ public class UsageMetricsProcessors {
             UsageMetricIntent.EXPORT,
             new UsageMetricsExportProcessor(
                 processingState.getUsageMetricState(), writers, keyGenerator, clock))
-        .withListener(new UsageMetricsCheckerScheduler(config, clock));
+        .withListener(
+            new UsageMetricsCheckScheduler(config.getUsageMetricsExportInterval(), clock));
   }
 }

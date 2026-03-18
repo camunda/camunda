@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -31,7 +33,7 @@ import org.agrona.collections.MutableInteger;
  * it left off the last time. Otherwise, it starts with the first expired message deadline it can
  * find.
  */
-public final class MessageTimeToLiveCheckScheduler implements Task {
+public final class MessageTimeToLiveCheckScheduler implements Task, StreamProcessorLifecycleAware {
 
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
   private final Duration executionInterval;
@@ -42,7 +44,7 @@ public final class MessageTimeToLiveCheckScheduler implements Task {
   /** This determines whether to run this checker async or not. */
   private final boolean enableMessageTtlCheckerAsync;
 
-  private final ProcessingScheduleService scheduleService;
+  private ProcessingScheduleService scheduleService;
   private final MessageState messageState;
 
   /** Keeps track of the timestamp to compare the message deadlines against. */
@@ -51,21 +53,17 @@ public final class MessageTimeToLiveCheckScheduler implements Task {
   /** Keeps track of where to continue between iterations. */
   private MessageState.Index lastIndex;
 
-  private final InstantSource clock;
+  private InstantSource clock;
 
   public MessageTimeToLiveCheckScheduler(
       final Duration executionInterval,
       final int batchLimit,
       final boolean enableMessageTtlCheckerAsync,
-      final ProcessingScheduleService scheduleService,
-      final MessageState messageState,
-      final InstantSource clock) {
+      final MessageState messageState) {
     this.executionInterval = executionInterval;
     this.batchLimit = batchLimit;
     this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
     this.messageState = messageState;
-    this.scheduleService = scheduleService;
-    this.clock = clock;
     lastIndex = null;
   }
 
@@ -112,6 +110,18 @@ public final class MessageTimeToLiveCheckScheduler implements Task {
 
   private void reschedule(final Duration idleInterval) {
     final var timestamp = clock.millis() + idleInterval.toMillis();
+    if (enableMessageTtlCheckerAsync) {
+      scheduleService.runAtAsync(timestamp, this);
+    } else {
+      scheduleService.runAt(timestamp, this);
+    }
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    scheduleService = context.getScheduleService();
+    clock = context.getClock();
+    final var timestamp = clock.millis() + executionInterval.toMillis();
     if (enableMessageTtlCheckerAsync) {
       scheduleService.runAtAsync(timestamp, this);
     } else {
