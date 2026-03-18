@@ -480,11 +480,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey, final VariableSelector selector) {
     return ensureVariablesAreNotTruncated(
         dataSource.findVariables(
-            filter -> {
-              filter.processInstanceKey(processInstanceKey);
-              filter.scopeKey(processInstanceKey);
-              selector.applyFilter(filter);
-            }));
+            filter ->
+                selector.applyFilter(
+                    filter.processInstanceKey(processInstanceKey).scopeKey(processInstanceKey))));
   }
 
   private List<Variable> findLocalVariablesBySelector(
@@ -493,11 +491,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final VariableSelector selector) {
     return ensureVariablesAreNotTruncated(
         dataSource.findVariables(
-            filter -> {
-              filter.processInstanceKey(processInstanceKey);
-              filter.scopeKey(elementInstanceKey);
-              selector.applyFilter(filter);
-            }));
+            filter ->
+                selector.applyFilter(
+                    filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey))));
   }
 
   private List<Variable> ensureVariablesAreNotTruncated(final List<Variable> variablesToCheck) {
