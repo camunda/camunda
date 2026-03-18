@@ -56,7 +56,6 @@ public class VisibleForTestingArchTest {
           "io.camunda.exporter.tasks.ReschedulingTask.executionCount()",
           "io.camunda.operate.connect.ElasticsearchConnector.setEsClientRepository(io.camunda.search.connect.plugin.PluginRepository)",
           "io.camunda.operate.connect.ElasticsearchConnector.setObjectMapper(com.fasterxml.jackson.databind.ObjectMapper)",
-          "io.camunda.search.schema.IndexMappingDifference$OrderInsensitiveEquivalence",
           "io.camunda.tasklist.connect.ElasticsearchConnector.setTasklistProperties(io.camunda.tasklist.property.TasklistProperties)",
           "io.camunda.tasklist.os.OpenSearchConnector.isHealthy(org.opensearch.client.opensearch.OpenSearchClient)",
           "io.camunda.tasklist.os.OpenSearchConnector.setOsClientRepository(io.camunda.search.connect.plugin.PluginRepository)",

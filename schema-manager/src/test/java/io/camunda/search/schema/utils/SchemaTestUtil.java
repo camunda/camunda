@@ -13,10 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Maps;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.search.schema.IndexMappingDifference.OrderInsensitiveEquivalence;
+import io.camunda.search.schema.IndexMappingDifference;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -98,9 +97,10 @@ public final class SchemaTestUtil {
           TestObjectMapper.objectMapper()
               .convertValue(
                   TestObjectMapper.objectMapper().readTree(expectedMappingsJson).get("mappings"),
-                  Map.class);
+                  new TypeReference<Map<String, Object>>() {});
       final var actualMappingsTree =
-          TestObjectMapper.objectMapper().convertValue(mappings, Map.class);
+          TestObjectMapper.objectMapper()
+              .convertValue(mappings, new TypeReference<Map<String, Object>>() {});
 
       // remove _meta for comparison as it is not part of the mapping validation as the diff
       // is based only on the mapping properties
@@ -112,12 +112,11 @@ public final class SchemaTestUtil {
         // if dynamic is true, skip mappings validation
         return;
       }
-      final var difference =
-          Maps.difference(
-              actualMappingsTree, expectedMappingsTree, OrderInsensitiveEquivalence.equals());
-      assertThat(difference.areEqual())
-          .isTrue()
-          .withFailMessage("Mappings did not match: %s", difference);
+
+      final var difference = IndexMappingDifference.of(actualMappingsTree, expectedMappingsTree);
+      assertThat(difference.equal())
+          .withFailMessage("Mappings did not match: %s", difference)
+          .isTrue();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
