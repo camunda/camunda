@@ -251,6 +251,7 @@
     "customFiltersModalConfirmDeletion": "Confirmar eliminación",
     "customFiltersModalApplyFilters": "Aplicar filtros",
     "customFiltersModalAllProcesses": "Todos los procesos",
+    "customFiltersModalAllTenants": "Todos los arrendatarios",
     "taskFilterPanelCompleted": "Completada",
     "taskFilterPanelControlsAria": "Controles de filtro",
     "taskFilterPanelExpandButton": "Expandir para mostrar filtros",
