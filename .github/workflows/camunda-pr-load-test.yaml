@@ -1,4 +1,6 @@
 # description: Create a Camunda load test for an individual PR. When a PR is closed, the test is cleaned up and removed
+# Supports both 'benchmark' (Elasticsearch) and 'benchmark-rdbms' (PostgreSQL) labels.
+# Images are built once and shared across both benchmarks via reuse-tag.
 # type: CI
 # owner @camunda/reliability-testing
 name: Camunda Pull Request Benchmark
@@ -29,10 +31,12 @@ jobs:
     name: Sanitize Branch Name
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      contents: read
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
       sanitized-name-rdbms: c8-${{ steps.sanitize.outputs.branch_name }}-rdbms
+      image-tag: ${{ steps.image-tag.outputs.image-tag }}
       cluster: ${{ env.CLUSTER }}
       teleport-join-token: ${{ env.TELEPORT_JOIN_TOKEN }}
     steps:
@@ -40,7 +44,16 @@ jobs:
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.event.pull_request.head.ref }}
-          max_length: 44  # reduced to account for load-test prefix "c8-"" and potential suffixes for uniqueness
+          max_length: 44  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
+      # Checkout is only needed on labeled/synchronize to compute the image tag.
+      - uses: actions/checkout@v6
+        if: github.event.action == 'labeled' || github.event.action == 'synchronize'
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Compute image tag
+        id: image-tag
+        if: github.event.action == 'labeled' || github.event.action == 'synchronize'
+        run: echo "image-tag=c8-${{ steps.sanitize.outputs.branch_name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -51,25 +64,48 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  create-benchmark:
-    name: Benchmark
+  build-images:
+    name: Build Images
     needs: sanitize-branch-name
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'labeled' &&
+       (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) ||
+      (github.event.action == 'synchronize' &&
+       (contains(github.event.pull_request.labels.*.name, 'benchmark') ||
+        contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      ref: ${{ github.event.pull_request.head.ref }}
+      image-tag: ${{ needs.sanitize-branch-name.outputs.image-tag }}
+
+  create-benchmark:
+    name: Benchmark
+    needs: [sanitize-branch-name, build-images]
+    # Use always() so this job evaluates even when build-images is skipped (unlabeled/closed events).
+    if: >
+      always() &&
+      needs.sanitize-branch-name.result == 'success' &&
+      (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
+      ((github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref }}
       scenario: 'max'
+      reuse-tag: ${{ needs.sanitize-branch-name.outputs.image-tag }}
 
   create-benchmark-rdbms:
     name: Benchmark RDBMS
-    needs: sanitize-branch-name
+    needs: [sanitize-branch-name, build-images]
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark-rdbms') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
+      always() &&
+      needs.sanitize-branch-name.result == 'success' &&
+      (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
+      ((github.event.action == 'labeled' && github.event.label.name == 'benchmark-rdbms') ||
+       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -77,6 +113,7 @@ jobs:
       ref: ${{ github.event.pull_request.head.ref }}
       scenario: 'max'
       secondary-storage-type: 'postgresql'
+      reuse-tag: ${{ needs.sanitize-branch-name.outputs.image-tag }}
 
   profile-and-comment:
     name: Profile and Comment
