@@ -269,12 +269,14 @@ jobs:
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
               # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
-              # We inject the overrides via --set-file into extraConfiguration[1] (application-override.yml),
+              # We inject the overrides via --set-file into extraConfiguration (application-override.yml),
               # which is loaded after (and thus takes priority over) the base application.yml.
-              # All values files define extraConfiguration[1] as application-override.yml (empty by default),
+              # All values files define extraConfiguration.application-override.yml (empty by default),
               # so this override works regardless of which secondary storage type is selected.
+              # The 8.8 Helm chart expects extraConfiguration as a map (key=filename, value=content),
+              # so we use the map key syntax with escaped dots instead of array indexing.
               # Path is relative to the helm working dir: load-tests/setup/$NAMESPACE/
-              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
