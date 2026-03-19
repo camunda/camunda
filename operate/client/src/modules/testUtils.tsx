@@ -27,7 +27,7 @@ const createRandomId = function* createRandomId(type: string) {
 
 const randomIdIterator = createRandomId('id');
 const randomJobIdIterator = createRandomId('jobId');
-const randomElementInstanceIdIterator = createRandomId('flowNodeInstance');
+const randomElementInstanceIdIterator = createRandomId('elementInstance');
 
 function searchResult<T>(items: T[], totalItems = items.length) {
   return {
