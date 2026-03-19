@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.rest.interceptor.LongPollingDisconnectInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,9 +22,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class LongPollingDisconnectConfig implements WebMvcConfigurer {
 
+  private final LongPollingCfg longPollingCfg;
+
+  public LongPollingDisconnectConfig(final LongPollingCfg longPollingCfg) {
+    this.longPollingCfg = longPollingCfg;
+  }
+
   @Bean
   LongPollingDisconnectInterceptor longPollingDisconnectInterceptor() {
-    return new LongPollingDisconnectInterceptor();
+    return new LongPollingDisconnectInterceptor(longPollingCfg.getRestDisconnectProbeInterval());
   }
 
   @Override

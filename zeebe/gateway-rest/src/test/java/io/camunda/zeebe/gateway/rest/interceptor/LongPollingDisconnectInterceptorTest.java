@@ -33,7 +33,7 @@ class LongPollingDisconnectInterceptorTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    interceptor = new LongPollingDisconnectInterceptor();
+    interceptor = new LongPollingDisconnectInterceptor(500);
     request = mock(HttpServletRequest.class);
     response = mock(HttpServletResponse.class);
     outputStream = mock(ServletOutputStream.class);

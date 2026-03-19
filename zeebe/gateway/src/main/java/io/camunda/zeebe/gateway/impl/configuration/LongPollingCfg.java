@@ -16,6 +16,8 @@ public final class LongPollingCfg {
   private long probeTimeout = ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
   private int minEmptyResponses =
       ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+  private long restDisconnectProbeInterval =
+      ConfigurationDefaults.DEFAULT_REST_DISCONNECT_PROBE_INTERVAL;
 
   public long getTimeout() {
     return timeout;
@@ -50,9 +52,18 @@ public final class LongPollingCfg {
     return this;
   }
 
+  public long getRestDisconnectProbeInterval() {
+    return restDisconnectProbeInterval;
+  }
+
+  public void setRestDisconnectProbeInterval(final long restDisconnectProbeInterval) {
+    this.restDisconnectProbeInterval = restDisconnectProbeInterval;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, timeout, probeTimeout, minEmptyResponses);
+    return Objects.hash(
+        enabled, timeout, probeTimeout, minEmptyResponses, restDisconnectProbeInterval);
   }
 
   @Override
@@ -67,7 +78,8 @@ public final class LongPollingCfg {
     return enabled == that.enabled
         && timeout == that.timeout
         && probeTimeout == that.probeTimeout
-        && minEmptyResponses == that.minEmptyResponses;
+        && minEmptyResponses == that.minEmptyResponses
+        && restDisconnectProbeInterval == that.restDisconnectProbeInterval;
   }
 
   @Override
@@ -81,6 +93,8 @@ public final class LongPollingCfg {
         + probeTimeout
         + ", minEmptyResponses="
         + minEmptyResponses
+        + ", restDisconnectProbeInterval="
+        + restDisconnectProbeInterval
         + '}';
   }
 }

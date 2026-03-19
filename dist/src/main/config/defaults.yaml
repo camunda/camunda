@@ -34,6 +34,10 @@ camunda: # Type: io.camunda.configuration.Camunda
       min-empty-responses: null # Type: Integer, Env: CAMUNDA_API_LONGPOLLING_MINEMPTYRESPONSES
       # Set the probe timeout for long polling in milliseconds
       probe-timeout: null # Type: Long, Env: CAMUNDA_API_LONGPOLLING_PROBETIMEOUT
+      # Set the interval in milliseconds for REST disconnect probes. The server periodically writes a
+      # space character to long-poll responses to detect client disconnects. Only relevant for REST;
+      # gRPC detects disconnects via RST_STREAM natively.
+      rest-disconnect-probe-interval: null # Type: Long, Env: CAMUNDA_API_LONGPOLLING_RESTDISCONNECTPROBEINTERVAL
       # Set the timeout for long polling in milliseconds
       timeout: null # Type: Long, Env: CAMUNDA_API_LONGPOLLING_TIMEOUT
 

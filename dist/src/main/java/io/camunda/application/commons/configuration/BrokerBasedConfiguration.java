@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
+import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
@@ -88,6 +89,11 @@ public class BrokerBasedConfiguration {
     final List<Filter> filters = new FilterRepository().load(filterCfgs).instantiate().toList();
 
     return new RestApiCompositeFilter(filters);
+  }
+
+  @Bean
+  public LongPollingCfg longPollingCfg() {
+    return properties.getGateway().getLongPolling();
   }
 
   @Bean

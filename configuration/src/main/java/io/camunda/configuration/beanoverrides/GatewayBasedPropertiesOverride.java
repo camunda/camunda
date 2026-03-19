@@ -193,6 +193,7 @@ public class GatewayBasedPropertiesOverride {
     longPollingCfg.setTimeout(longPolling.getTimeout());
     longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
+    longPollingCfg.setRestDisconnectProbeInterval(longPolling.getRestDisconnectProbeInterval());
   }
 
   private void populateFromCluster(final GatewayBasedProperties override) {

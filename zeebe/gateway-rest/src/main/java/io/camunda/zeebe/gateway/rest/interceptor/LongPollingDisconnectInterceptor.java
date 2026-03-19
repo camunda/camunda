@@ -47,11 +47,11 @@ public class LongPollingDisconnectInterceptor implements AsyncHandlerInterceptor
 
   private static final Logger LOG = LoggerFactory.getLogger(LongPollingDisconnectInterceptor.class);
 
-  private static final long PROBE_INTERVAL_MS = 500;
-
+  private final long probeIntervalMs;
   private final ScheduledExecutorService scheduler;
 
-  {
+  public LongPollingDisconnectInterceptor(final long probeIntervalMs) {
+    this.probeIntervalMs = probeIntervalMs;
     final var executor =
         new ScheduledThreadPoolExecutor(
             1,
@@ -86,8 +86,8 @@ public class LongPollingDisconnectInterceptor implements AsyncHandlerInterceptor
     final ScheduledFuture<?> probeTask =
         scheduler.scheduleAtFixedRate(
             () -> probeConnection(response, future, active, lock),
-            PROBE_INTERVAL_MS,
-            PROBE_INTERVAL_MS,
+            probeIntervalMs,
+            probeIntervalMs,
             TimeUnit.MILLISECONDS);
 
     // Stop probing when the future completes (normally, exceptionally, or cancelled).

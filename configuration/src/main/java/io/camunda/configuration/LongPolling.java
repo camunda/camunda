@@ -20,14 +20,17 @@ public class LongPolling implements Cloneable {
           "enabled", "zeebe.gateway.longPolling.enabled",
           "timeout", "zeebe.gateway.longPolling.timeout",
           "probeTimeout", "zeebe.gateway.longPolling.probeTimeout",
-          "minEmptyResponses", "zeebe.gateway.longPolling.minEmptyResponses");
+          "minEmptyResponses", "zeebe.gateway.longPolling.minEmptyResponses",
+          "restDisconnectProbeInterval", "zeebe.gateway.longPolling.restDisconnectProbeInterval");
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
           "enabled", "zeebe.broker.gateway.longPolling.enabled",
           "timeout", "zeebe.broker.gateway.longPolling.timeout",
           "probeTimeout", "zeebe.broker.gateway.longPolling.probeTimeout",
-          "minEmptyResponses", "zeebe.broker.gateway.longPolling.minEmptyResponses");
+          "minEmptyResponses", "zeebe.broker.gateway.longPolling.minEmptyResponses",
+          "restDisconnectProbeInterval",
+              "zeebe.broker.gateway.longPolling.restDisconnectProbeInterval");
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
@@ -39,6 +42,14 @@ public class LongPolling implements Cloneable {
 
   /** Set the probe timeout for long polling in milliseconds */
   private long probeTimeout = ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
+
+  /**
+   * Set the interval in milliseconds for REST disconnect probes. The server periodically writes a
+   * space character to long-poll responses to detect client disconnects. Only relevant for REST;
+   * gRPC detects disconnects via RST_STREAM natively.
+   */
+  private long restDisconnectProbeInterval =
+      ConfigurationDefaults.DEFAULT_REST_DISCONNECT_PROBE_INTERVAL;
 
   /**
    * Set the number of minimum empty responses, a minimum number of responses with jobCount of 0
@@ -97,6 +108,19 @@ public class LongPolling implements Cloneable {
 
   public void setMinEmptyResponses(final int minEmptyResponses) {
     this.minEmptyResponses = minEmptyResponses;
+  }
+
+  public long getRestDisconnectProbeInterval() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".rest-disconnect-probe-interval",
+        restDisconnectProbeInterval,
+        Long.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("restDisconnectProbeInterval")));
+  }
+
+  public void setRestDisconnectProbeInterval(final long restDisconnectProbeInterval) {
+    this.restDisconnectProbeInterval = restDisconnectProbeInterval;
   }
 
   @Override

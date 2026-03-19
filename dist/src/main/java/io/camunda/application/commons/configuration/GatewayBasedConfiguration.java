@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
@@ -66,6 +67,11 @@ public final class GatewayBasedConfiguration {
     final List<Filter> filters = new FilterRepository().load(filterCfgs).instantiate().toList();
 
     return new RestApiCompositeFilter(filters);
+  }
+
+  @Bean
+  public LongPollingCfg longPollingCfg() {
+    return properties.getLongPolling();
   }
 
   @Bean

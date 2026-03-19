@@ -65,6 +65,10 @@ public class ContainerRuntimeEnvs {
       "LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS";
   public static final String CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS = "LOGGING_LEVEL_ORG_MYBATIS";
 
+  // Long polling
+  public static final String CAMUNDA_ENV_REST_DISCONNECT_PROBE_INTERVAL =
+      "CAMUNDA_API_LONGPOLLING_RESTDISCONNECTPROBEINTERVAL";
+
   // Connectors
   public static final String CONNECTORS_ENV_LOG_APPENDER = "CONNECTORS_LOG_APPENDER";
   public static final String CONNECTORS_ENV_CAMUNDA_CLIENT_GRPC_ADDRESS =
