@@ -23,6 +23,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -218,6 +219,30 @@ public class VariableAssertIT {
         .hasLocalVariables("user-task-child-id", expectedVariables);
   }
 
+  @Test
+  void shouldMatchVariableWithNameAndValueContainsSelector() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithVariables());
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("order_id", "order-123");
+    variables.put("other", "value");
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(variables)
+            .send()
+            .join();
+
+    // Then
+    assertThatProcessInstance(processInstanceEvent)
+        .hasVariable(VariableSelectors.byName("order_id"), "order-123")
+        .hasVariable(VariableSelectors.byValueContains("order"), "order-123")
+        .hasVariable(
+            VariableSelectors.byName("order_id").and(VariableSelectors.byValueContains("order")),
+            "order-123");
+  }
+
   private void withShortAwaitilityTimeouts(final Runnable assertionFn) {
     CamundaAssert.setAssertionTimeout(Duration.ofSeconds(5));
 
@@ -267,6 +292,13 @@ public class VariableAssertIT {
         .zeebeOutputExpression("\"B\"", "shadowed_variable")
         .zeebeUserTask()
         .endEvent("child-end")
+        .done();
+  }
+
+  private BpmnModelInstance processModelWithVariables() {
+    return Bpmn.createExecutableProcess("test-process-variables")
+        .startEvent()
+        .endEvent("success-end")
         .done();
   }
 
