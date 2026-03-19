@@ -191,6 +191,75 @@ describe('<CollapsiblePanel />', () => {
     );
   });
 
+  it('should include tenantId in custom filter link when tenant is set', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(),
+    });
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'all',
+        assignee: 'all',
+        tenant: '<default>',
+      },
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: 'Expand to show filters'}),
+    );
+
+    expect(screen.getByRole('link', {name: 'Custom'})).toHaveAttribute(
+      'href',
+      '/?tenantId=%3Cdefault%3E&filter=custom',
+    );
+  });
+
+  it('should not include tenantId in custom filter link when tenant is empty string', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(),
+    });
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'all',
+        assignee: 'all',
+        tenant: '',
+      },
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: 'Expand to show filters'}),
+    );
+
+    expect(screen.getByRole('link', {name: 'Custom'})).toHaveAttribute(
+      'href',
+      '/?filter=custom',
+    );
+  });
+
+  it('should clean up tenantId when switching from custom filter with tenant to built-in filter', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(['/?filter=custom&tenantId=%3Cdefault%3E']),
+    });
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'all',
+        assignee: 'all',
+        tenant: '<default>',
+      },
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: 'Expand to show filters'}),
+    );
+
+    expect(screen.getByRole('link', {name: 'All open tasks'})).toHaveAttribute(
+      'href',
+      '/?filter=all-open',
+    );
+  });
+
   it('should not erase existing search params', async () => {
     const {user} = render(<CollapsiblePanel />, {
       wrapper: createWrapper(['/tasks?filter=completed&foo=bar']),
