@@ -908,11 +908,6 @@ final class ElasticsearchArchiverRepositoryIT {
             new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
 
     final var repository = createRepository();
-    // we have an already existing Zeebe index with a date of 3 days ago.
-    testClient
-        .indices()
-        .create(
-            r -> r.index(zeebeIndex + "_" + dateFormatter.format(now.minus(Duration.ofDays(3)))));
 
     createBatchOperationIndex();
     documents.forEach(doc -> index(batchOperationIndex, doc));
@@ -922,7 +917,8 @@ final class ElasticsearchArchiverRepositoryIT {
     // then the batch finish date should update since zeebe index should be excluded:
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsExactly("1", "2");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
+    assertThat(batch.finishDate())
+        .isEqualTo(bucketStart(now.minus(Duration.ofDays(1)), 3, dateFormatter));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
