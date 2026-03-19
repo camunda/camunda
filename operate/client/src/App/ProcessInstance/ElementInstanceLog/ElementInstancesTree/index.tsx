@@ -20,6 +20,8 @@ import {
   NodeContainer,
   TreeNode,
 } from './styled';
+import {ErrorMessage} from '../styled';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {Bar} from './Bar';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
@@ -39,6 +41,10 @@ import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const TREE_NODE_HEIGHT = 32;
+const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
+  'Instance History',
+  'this instance history',
+);
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
   'PROCESS',
   'MULTI_INSTANCE_BODY',
@@ -822,11 +828,20 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       return elementInstancesTreeStore.reset;
     }, []);
 
-    if (
-      elementInstancesTreeStore.state.nodes.get(
-        processInstance.processInstanceKey,
-      )?.status === 'error'
-    ) {
+    const rootNodeData = elementInstancesTreeStore.state.nodes.get(
+      processInstance.processInstanceKey,
+    );
+
+    if (rootNodeData?.status === 'error-permissions') {
+      return (
+        <ErrorMessage
+          message={INSTANCE_HISTORY_FORBIDDEN.message}
+          additionalInfo={INSTANCE_HISTORY_FORBIDDEN.additionalInfo}
+        />
+      );
+    }
+
+    if (rootNodeData?.status === 'error') {
       return errorMessage;
     }
 

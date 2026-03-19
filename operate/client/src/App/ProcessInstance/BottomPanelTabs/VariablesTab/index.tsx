@@ -16,6 +16,7 @@ import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariablesFinalForm} from './VariablesFinalForm';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 
 const VariablesTab: React.FC = observer(() => {
@@ -23,19 +24,19 @@ const VariablesTab: React.FC = observer(() => {
   const scopeKey = useVariableScopeKey();
 
   if (displayStatus === 'error') {
+    const isForbidden =
+      isRequestError(error) &&
+      error?.response?.status === HTTP_STATUS_FORBIDDEN;
+    const forbidden = getForbiddenPermissionsError('Variables', 'variables');
     return (
       <EmptyMessageContainer>
         <ErrorMessage
           message={
-            isRequestError(error) &&
-            error?.response?.status === HTTP_STATUS_FORBIDDEN
-              ? 'Missing permissions to access Variables'
-              : 'Variables could not be fetched'
+            isForbidden ? forbidden.message : 'Variables could not be fetched'
           }
           additionalInfo={
-            isRequestError(error) &&
-            error?.response?.status === HTTP_STATUS_FORBIDDEN
-              ? 'Please contact your organization owner or admin to give you the necessary permissions to access variables'
+            isForbidden
+              ? forbidden.additionalInfo
               : 'Refresh the page to try again'
           }
         />
