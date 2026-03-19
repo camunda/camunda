@@ -212,6 +212,8 @@ test.describe('modifications', () => {
 
     await processInstancePage.diagram.clickElement('check order items');
 
+    await page.getByRole('link', {name: /variables/i}).click();
+
     const firstVariableValueInput = page
       .getByRole('textbox', {
         name: /value/i,
