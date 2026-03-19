@@ -405,8 +405,8 @@ public final class PublishActor extends Actor {
       }
       final long highestPos = entry.getApplicationEntry().highestPosition();
       if (highestPos > truncateUpToPosition) {
-        // The earliest entry's highestPosition already exceeds our boundary — nothing safe to
-        // remove yet.
+        // seekToAsqn() fell back to the first entry (no entry with highestPosition ≤ boundary
+        // exists yet) — nothing safe to remove.
         return;
       }
       final var logCompactor = server.getServer().getContext().getLogCompactor();

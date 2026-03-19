@@ -229,8 +229,8 @@ public final class CoordinatorActor extends Actor {
         // Boundary has not advanced; no need to issue another truncation request.
         continue;
       }
-      final PublishActor actor = publishActors.get(partitionId);
-      if (actor == null) {
+      final PublishActor publishActor = publishActors.get(partitionId);
+      if (publishActor == null) {
         continue;
       }
       lastTruncatedBoundary.put(partitionId, boundary);
@@ -239,7 +239,7 @@ public final class CoordinatorActor extends Actor {
           partitionId,
           boundary,
           last);
-      actor.truncate(boundary);
+      publishActor.truncate(boundary);
     }
   }
 
