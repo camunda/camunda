@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.judge;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
@@ -43,5 +44,14 @@ public interface ProviderConfig {
    */
   default Map<String, String> getCustomProperties() {
     return Collections.emptyMap();
+  }
+
+  /**
+   * Returns the timeout for LLM API calls, or {@code null} to use the provider's default timeout.
+   *
+   * @return the configured timeout, or {@code null} if not set
+   */
+  default Duration getTimeout() {
+    return null;
   }
 }

@@ -18,31 +18,35 @@ package io.camunda.process.test.impl.judge;
 import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class OpenAiCompatibleChatModelBuilder {
+final class AzureOpenAiChatModelBuilder {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OpenAiCompatibleChatModelBuilder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzureOpenAiChatModelBuilder.class);
 
-  private OpenAiCompatibleChatModelBuilder() {}
+  private AzureOpenAiChatModelBuilder() {}
 
-  static ChatModel build(final BaseProviderConfig.OpenAiCompatibleConfig config) {
-    LOG.debug("Building OpenAI-compatible chat model");
+  static ChatModel build(final BaseProviderConfig.AzureOpenAiConfig config) {
+    LOG.debug("Building Azure OpenAI chat model");
 
-    final String model = require(config.getModel(), "model", "openai-compatible");
-    final String baseUrl = require(config.getBaseUrl(), "baseUrl", "openai-compatible");
+    final String model = require(config.getModel(), "model", "azure-openai");
+    final String endpoint = require(config.getEndpoint(), "endpoint", "azure-openai");
 
-    final OpenAiChatModel.OpenAiChatModelBuilder builder =
-        OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
+    final AzureOpenAiChatModel.Builder builder =
+        AzureOpenAiChatModel.builder().endpoint(endpoint).deploymentName(model);
 
     if (hasText(config.getApiKey())) {
-      LOG.debug("Using configured API key");
+      LOG.debug("Using API key authentication");
       builder.apiKey(config.getApiKey().trim());
     } else {
-      LOG.debug("No API key configured, building without authentication");
+      LOG.debug(
+          "No API key configured, falling back to DefaultAzureCredential "
+              + "(environment, workload identity, managed identity, Azure CLI)");
+      builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
     }
 
     if (config.getTimeout() != null) {
@@ -52,8 +56,8 @@ final class OpenAiCompatibleChatModelBuilder {
 
     final ChatModel chatModel = builder.build();
     LOG.debug(
-        "Successfully built OpenAI-compatible chat model with baseUrl '{}' and model '{}'",
-        baseUrl,
+        "Successfully built Azure OpenAI chat model with endpoint '{}' and deployment '{}'",
+        endpoint,
         model);
     return chatModel;
   }

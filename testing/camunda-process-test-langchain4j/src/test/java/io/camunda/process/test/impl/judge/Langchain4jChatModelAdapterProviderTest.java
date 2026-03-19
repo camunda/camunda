@@ -63,6 +63,11 @@ public class Langchain4jChatModelAdapterProviderTest {
             "openai-compatible",
             new OpenAiCompatibleChatModelAdapterProvider(),
             new BaseProviderConfig.OpenAiCompatibleConfig(
-                "mistral-7b", "http://localhost:11434/v1", null)));
+                "mistral-7b", "http://localhost:11434/v1", null)),
+        Arguments.of(
+            "azure-openai",
+            new AzureOpenAiChatModelAdapterProvider(),
+            new BaseProviderConfig.AzureOpenAiConfig(
+                "gpt-4o", "https://my-resource.openai.azure.com/", "test-key")));
   }
 }

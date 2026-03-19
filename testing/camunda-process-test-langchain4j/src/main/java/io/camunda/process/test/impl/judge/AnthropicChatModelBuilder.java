@@ -34,8 +34,15 @@ final class AnthropicChatModelBuilder {
     final String model = require(config.getModel(), "model", "anthropic");
     final String apiKey = require(config.getApiKey(), "apiKey", "anthropic");
 
-    final ChatModel chatModel =
-        AnthropicChatModel.builder().apiKey(apiKey).modelName(model).build();
+    final AnthropicChatModel.AnthropicChatModelBuilder builder =
+        AnthropicChatModel.builder().apiKey(apiKey).modelName(model);
+
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
+
+    final ChatModel chatModel = builder.build();
     LOG.debug("Successfully built Anthropic chat model with model '{}'", model);
     return chatModel;
   }
