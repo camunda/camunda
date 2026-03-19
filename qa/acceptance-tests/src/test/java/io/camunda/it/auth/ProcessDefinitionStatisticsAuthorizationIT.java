@@ -41,7 +41,6 @@ class ProcessDefinitionStatisticsAuthorizationIT {
   private static final String TEST_USERNAME_READ_PROCESS_INSTANCE = "testUserReadProcessInstance";
   private static final String TEST_USERNAME_READ_SPECIFIC_PROCESS_INSTANCE =
       "testUserReadSpecificProcessInstance";
-
   private static final String SPECIFIC_PROCESS_ID = "process-auth-specific";
 
   @UserDefinition
@@ -83,17 +82,11 @@ class ProcessDefinitionStatisticsAuthorizationIT {
   void shouldReturnEmptyStatisticsForReadProcessDefinitionPermission(
       @Authenticated(TEST_USERNAME_READ_PROCESS_DEFINITION) final CamundaClient userClient) {
     // given
-    final var processDefinitionKey = deployCompleteBPMN();
-    createInstance(processDefinitionKey);
-    createInstance(processDefinitionKey);
-    waitForProcessInstances(
-        camundaClient,
-        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
-        2);
+    final long processDefinitionKey = createProcessInstances(deployCompleteBPMN(), 2);
 
     // when
     final var actual =
-        userClient.newProcessDefinitionElementStatisticsRequest(processDefinitionKey).send().join();
+        userClient.newProcessDefinitionElementStatisticsRequest(processDefinitionKey).execute();
 
     // then
     assertThat(actual).isEmpty();
@@ -103,17 +96,11 @@ class ProcessDefinitionStatisticsAuthorizationIT {
   void shouldAllowReadProcessInstancePermission(
       @Authenticated(TEST_USERNAME_READ_PROCESS_INSTANCE) final CamundaClient userClient) {
     // given
-    final var processDefinitionKey = deployCompleteBPMN();
-    createInstance(processDefinitionKey);
-    createInstance(processDefinitionKey);
-    waitForProcessInstances(
-        camundaClient,
-        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
-        2);
+    final long processDefinitionKey = createProcessInstances(deployCompleteBPMN(), 2);
 
     // when
     final var actual =
-        userClient.newProcessDefinitionElementStatisticsRequest(processDefinitionKey).send().join();
+        userClient.newProcessDefinitionElementStatisticsRequest(processDefinitionKey).execute();
 
     // then
     assertThat(actual).hasSize(2);
@@ -123,24 +110,8 @@ class ProcessDefinitionStatisticsAuthorizationIT {
   void shouldAllowReadProcessInstancePermissionForSpecificProcess(
       @Authenticated(TEST_USERNAME_READ_SPECIFIC_PROCESS_INSTANCE) final CamundaClient userClient) {
     // given
-    final var allowedProcessDefinitionKey = deployCompleteSpecificBPMN();
-    final var notAllowedProcessDefinitionKey = deployCompleteBPMN();
-    createInstance(allowedProcessDefinitionKey);
-    createInstance(allowedProcessDefinitionKey);
-    createInstance(notAllowedProcessDefinitionKey);
-
-    waitForProcessInstances(
-        camundaClient,
-        f ->
-            f.processDefinitionKey(allowedProcessDefinitionKey)
-                .state(ProcessInstanceState.COMPLETED),
-        2);
-    waitForProcessInstances(
-        camundaClient,
-        f ->
-            f.processDefinitionKey(notAllowedProcessDefinitionKey)
-                .state(ProcessInstanceState.COMPLETED),
-        1);
+    final var allowedProcessDefinitionKey = createProcessInstances(deployCompleteSpecificBPMN(), 1);
+    final var notAllowedProcessDefinitionKey = createProcessInstances(deployCompleteBPMN(), 2);
 
     // when
     final var allowedActual =
@@ -150,13 +121,29 @@ class ProcessDefinitionStatisticsAuthorizationIT {
             .join();
     final var notAllowedActual =
         userClient
-            .newProcessDefinitionElementStatisticsRequest(allowedProcessDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(notAllowedProcessDefinitionKey)
             .send()
             .join();
 
     // then
     assertThat(allowedActual).hasSize(2);
     assertThat(notAllowedActual).isEmpty();
+  }
+
+  private long createProcessInstances(
+      final long processDefinitionKey, final int numberOfInstances) {
+    for (int i = 0; i < numberOfInstances; i++) {
+      camundaClient
+          .newCreateInstanceCommand()
+          .processDefinitionKey(processDefinitionKey)
+          .send()
+          .join();
+    }
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        numberOfInstances);
+    return processDefinitionKey;
   }
 
   private static long deployCompleteBPMN() {
@@ -175,14 +162,6 @@ class ProcessDefinitionStatisticsAuthorizationIT {
         .getProcesses()
         .getFirst()
         .getProcessDefinitionKey();
-  }
-
-  private static void createInstance(final long processDefinitionKey) {
-    camundaClient
-        .newCreateInstanceCommand()
-        .processDefinitionKey(processDefinitionKey)
-        .send()
-        .join();
   }
 
   private static io.camunda.client.api.response.DeploymentEvent deployResource(
