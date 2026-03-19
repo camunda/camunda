@@ -57,12 +57,7 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
   @Override
   public SearchQueryResult<AuthorizationEntity> search(
       final AuthorizationQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    final var dbSort =
-        convertSort(
-            query.sort(),
-            AuthorizationSearchColumn.OWNER_ID,
-            AuthorizationSearchColumn.OWNER_TYPE,
-            AuthorizationSearchColumn.RESOURCE_TYPE);
+    final var dbSort = convertSort(query.sort(), AuthorizationSearchColumn.AUTHORIZATION_KEY);
     final var dbQuery =
         AuthorizationDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
