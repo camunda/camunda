@@ -108,7 +108,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   private void cleanUpStaleInstances() {
-    // clean up stale instances which exceeded the max duration - to safe memory
+    // clean up stale instances which exceeded the max duration - to save memory
     final long nanoTime = clock.getNanos();
     final var instancesWhereTimeExceededDeadline =
         startedInstances.values().stream()
