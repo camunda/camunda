@@ -103,7 +103,8 @@ test.describe.serial('Group Users API Tests', () => {
       },
     );
 
-    await assertConflictRequest(res);
+    // await assertConflictRequest(res);
+    await assertBadRequest(res, "meow");
   });
 
   test('Search Users For Group', async ({request}) => {
