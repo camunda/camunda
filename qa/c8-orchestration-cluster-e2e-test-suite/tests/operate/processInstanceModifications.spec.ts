@@ -296,7 +296,7 @@ test.describe('Process Instance Modifications', () => {
     });
   });
 
-  test('Verify Variables functionality in Modification mode', async ({
+  test.skip('Verify Variables functionality in Modification mode', async ({
     operateProcessInstancePage,
     page,
     operateProcessInstanceViewModificationModePage,

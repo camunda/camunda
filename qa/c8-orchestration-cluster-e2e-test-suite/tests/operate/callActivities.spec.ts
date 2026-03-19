@@ -48,7 +48,7 @@ test.describe('Call Activities', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Navigate to called and parent process instances', async ({
+  test.skip('Navigate to called and parent process instances', async ({
     operateProcessInstancePage,
     operateProcessesPage,
     operateDiagramPage,

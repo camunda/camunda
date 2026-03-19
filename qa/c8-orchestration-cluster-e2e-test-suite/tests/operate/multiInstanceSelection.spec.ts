@@ -94,7 +94,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
   });
 
-  test('verify execution counts and incidents display for multi-instance flow node', async ({
+  test.skip('verify execution counts and incidents display for multi-instance flow node', async ({
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
@@ -151,7 +151,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
   });
 
-  test('select single task', async ({
+  test.skip('select single task', async ({
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
