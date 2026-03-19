@@ -515,8 +515,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String endDate,
       final String rolloverInterval,
       final HistoryConfiguration config) {
-    final String indexName = indexTemplateDescriptor.getIndexName();
-
     final Aggregation bucketSortAggregation =
         Aggregation.of(
             a ->
