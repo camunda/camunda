@@ -9,20 +9,22 @@ package io.camunda.gateway.mcp.config.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
-import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.util.json.JsonParser;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 class CamundaJsonSchemaGeneratorTest {
 
-  private final CamundaJsonSchemaGenerator schemaGenerator = new CamundaJsonSchemaGenerator();
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final JsonMapper objectMapper = JsonParser.getJsonMapper();
+  private final CamundaJsonSchemaGenerator schemaGenerator =
+      new CamundaJsonSchemaGenerator(objectMapper);
 
   @Test
   void shouldGenerateMinimalSchemaForMethodWithOnlyFrameworkParams() throws Exception {

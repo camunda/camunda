@@ -14,6 +14,7 @@ import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -29,10 +30,16 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnMcpGatewayEnabled
 public class CamundaMcpToolSpecificationsAutoConfiguration {
 
+  /**
+   * Creates the JSON schema generator using Spring AI's {@link JsonParser#getJsonMapper()}.
+   *
+   * <p>This Jackson 3 mapper already has MCP mixins registered via SPI ({@link
+   * CamundaMcpJackson3Module}), so no additional mixin configuration is needed.
+   */
   @Bean
   @ConditionalOnMissingBean
   public CamundaJsonSchemaGenerator mcpGatewayJsonSchemaGenerator() {
-    return new CamundaJsonSchemaGenerator(McpObjectMapperUtilities.getObjectMapper());
+    return new CamundaJsonSchemaGenerator(JsonParser.getJsonMapper());
   }
 
   @Bean
