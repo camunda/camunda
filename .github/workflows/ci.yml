@@ -32,6 +32,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
+      validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
@@ -56,8 +57,156 @@ jobs:
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
       - run: |
+<<<<<<< HEAD
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) $ACTIONLINT_VERSION
           ./actionlint -shellcheck '' -ignore 'property "vault_.+" is not defined in object type' -ignore 'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
+=======
+          curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
+          ./conftest test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  commitlint:
+    if: needs.detect-changes.outputs.commitlint == 'true'
+    name: "Lint / Commitlint"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Determine fetch depth for checkout
+        id: depth
+        run: |
+          echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ steps.depth.outputs.depth }}
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          commitDepth: ${{ github.event.pull_request.commits }}
+          helpURL: https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines
+      - name: Post failure hint
+        if: failure()
+        run: echo "::error::Found commit message guideline violations! Check https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines and in exceptional cases, document the reasoning and add the ci:ignore-commitlint PR label."
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  maven-spotless-linter:
+    if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
+    name: "Lint / Maven Spotless"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: maven-spotless-linter
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: ./mvnw spotless:check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  junit-vintage-check:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Lint / JUnit Vintage Engine"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for missing junit-vintage-engine
+        run: .ci/scripts/ci/check-junit-vintage-engine.sh .
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          
+  validate-pom-metadata:
+    if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
+    name: "Lint / Flattened POM Metadata"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: validate-pom-metadata
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Install xmllint
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+      - name: Generate flattened POMs
+        run: ./mvnw -B -T1C -DskipChecks=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+      - name: Validate flattened POM metadata
+        run: bash .github/scripts/validate-flattened-poms.sh
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  codeowners-check:
+    if: needs.detect-changes.outputs.codeowners-check == 'true'
+    name: "Lint / Codeowners"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/codeowners-setup-cli
+      - name: Check for unowned files
+        run: |
+          set -euo pipefail
+          unowned="$(codeowners-cli unowned --root ./)"
+          if [[ -n "${unowned}" ]]; then
+            echo -e "::error::The following files have no owner in .codeowners:\n${unowned}\n\n"
+            echo "Please add ownership rules for these files in .codeowners"
+            exit 1
+          fi
+          echo "All files have owners."
+>>>>>>> 17d969ebd0b (feat: lint flatten pom on ci run)
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -293,6 +442,16 @@ jobs:
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
+<<<<<<< HEAD
+=======
+      - rdbms-integration-tests
+      - renovatelint
+      - setup-tests
+      - tasklist-ci
+      - validate-pom-metadata
+      - zeebe-ci
+      - zeebe-unit-tests
+>>>>>>> 17d969ebd0b (feat: lint flatten pom on ci run)
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs

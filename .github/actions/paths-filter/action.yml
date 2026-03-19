@@ -21,6 +21,13 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
       }}
+  validate-pom-metadata:
+    description: Output whether flattened POM metadata validation should be run
+    value: >-
+      ${{
+          steps.filter-common.outputs.maven-change == 'true' ||
+          steps.filter-common.outputs.validate-pom-metadata-extra-change == 'true'
+      }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -75,6 +82,11 @@ runs:
           - 'dist/**'
           - 'parent/**'
           - '**/pom.xml'
+
+        validate-pom-metadata-extra-change:
+          - 'mvnw'
+          - 'mvnw.cmd'
+          - '.github/scripts/validate-flattened-poms.sh'
 
         dockerfile-change:
           - 'Dockerfile'
