@@ -33,6 +33,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final MeterRegistry registry;
   private final Duration availabilityCheckInterval;
   private final Clock clock;
+  private final Timer dataAvailabilityQueryDurationTimer;
 
   public ProcessInstanceStartMeter(
       final Clock clock,
@@ -45,6 +46,9 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     partitionToTimerMap = new ConcurrentHashMap<>();
     startedInstances = new ConcurrentHashMap<>();
     piCheckExecutorService = scheduledExecutorService;
+    dataAvailabilityQueryDurationTimer =
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION)
+            .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
   }
@@ -81,12 +85,18 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     }
 
     LOG.debug("Current instances awaiting {}", startedInstances.size());
+    final var startQueryTime = clock.getNanos();
     availabilityChecker
         .findAvailableInstances(List.copyOf(startedInstances.keySet()))
         .whenCompleteAsync(
             (availableInstances, error) -> {
+              final var endQueryTime = clock.getNanos();
+              dataAvailabilityQueryDurationTimer.record(
+                  endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+
               if (error != null) {
                 LOG.error("Error while checking for available process instances", error);
+
                 return;
               }
 
