@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
+<<<<<<< HEAD
 # Validates generated .flattened-pom.xml files contain required Maven Central metadata
 # (name, description, url, licenses, developers, scm), and packaging when the source POM is non-jar.
 
+=======
+>>>>>>> 17d969eb (feat: lint flatten pom on ci run)
 set -euo pipefail
 
 if ! command -v xmllint >/dev/null 2>&1; then
@@ -18,6 +21,7 @@ fi
 
 required_tags=(name description url licenses developers scm)
 
+<<<<<<< HEAD
 validate_xml_well_formed() {
   local file_path="$1"
   local error_output
@@ -42,6 +46,17 @@ flattened_poms_found=0
 
 while IFS= read -r flattened_pom; do
   flattened_poms_found=$((flattened_poms_found + 1))
+=======
+read_xml_value() {
+  local file_path="$1"
+  local tag_name="$2"
+  xmllint --xpath "string(/*[local-name()='project']/*[local-name()='${tag_name}'])" "${file_path}" 2>/dev/null || true
+}
+
+failures=0
+
+while IFS= read -r flattened_pom; do
+>>>>>>> 17d969eb (feat: lint flatten pom on ci run)
   module_dir="$(dirname "${flattened_pom}")"
   source_pom="${module_dir}/pom.xml"
 
@@ -49,6 +64,7 @@ while IFS= read -r flattened_pom; do
     source_pom="pom.xml"
   fi
 
+<<<<<<< HEAD
   if ! validate_xml_well_formed "${flattened_pom}"; then
     failures=$((failures + 1))
     continue
@@ -59,6 +75,8 @@ while IFS= read -r flattened_pom; do
     continue
   fi
 
+=======
+>>>>>>> 17d969eb (feat: lint flatten pom on ci run)
   missing_tags=()
   for tag in "${required_tags[@]}"; do
     value="$(read_xml_value "${flattened_pom}" "${tag}")"
@@ -86,12 +104,15 @@ while IFS= read -r flattened_pom; do
   fi
 done < <(find "${search_roots[@]}" -name '.flattened-pom.xml' -type f | sort)
 
+<<<<<<< HEAD
 if [[ "${flattened_poms_found}" -eq 0 ]]; then
   echo "Validation failed: no .flattened-pom.xml files were found under: ${search_roots[*]}" >&2
   echo "  Fix: ensure flattening runs before validation (e.g. process-resources with flatten plugin enabled)." >&2
   exit 1
 fi
 
+=======
+>>>>>>> 17d969eb (feat: lint flatten pom on ci run)
 if [[ "${failures}" -gt 0 ]]; then
   echo "Validation failed: ${failures} flattened POM file(s) are missing required metadata." >&2
   exit 1
