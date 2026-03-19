@@ -41,6 +41,10 @@ import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const TREE_NODE_HEIGHT = 32;
+const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
+  'Instance History',
+  'this instance history',
+);
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
   'PROCESS',
   'MULTI_INSTANCE_BODY',
@@ -829,14 +833,10 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
     );
 
     if (rootNodeData?.status === 'error-permissions') {
-      const forbidden = getForbiddenPermissionsError(
-        'Instance History',
-        'this instance history',
-      );
       return (
         <ErrorMessage
-          message={forbidden.message}
-          additionalInfo={forbidden.additionalInfo}
+          message={INSTANCE_HISTORY_FORBIDDEN.message}
+          additionalInfo={INSTANCE_HISTORY_FORBIDDEN.additionalInfo}
         />
       );
     }
