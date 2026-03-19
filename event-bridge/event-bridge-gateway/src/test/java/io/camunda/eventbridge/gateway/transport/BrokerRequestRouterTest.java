@@ -460,6 +460,96 @@ class BrokerRequestRouterTest {
   }
 
   // -------------------------------------------------------------------------
+  // FetchAssignment (coordinator)
+
+  @Nested
+  class FetchAssignment {
+
+    @Test
+    void shouldReturnAssignedPartitionsAndGenerationOnSuccess() throws Exception {
+      // given
+      final byte[] response = buildFetchAssignmentResponse(ErrorCode.NONE, 3L, List.of(0, 1, 2));
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR),
+              eq(MessageTypes.FETCH_ASSIGNMENT_REQUEST),
+              any(),
+              any(Duration.class)))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final SbeCodec.FetchAssignmentResult result = router.fetchAssignment("grp", "c0").get();
+
+      // then
+      assertThat(result.errorCode()).isEqualTo(ErrorCode.NONE);
+      assertThat(result.generation()).isEqualTo(3L);
+      assertThat(result.assignedPartitions()).containsExactly(0, 1, 2);
+    }
+
+    @Test
+    void shouldRetryOnTransportErrorForFetchAssignment() throws Exception {
+      // given – first attempt fails with ConnectException, second succeeds
+      final byte[] response = buildFetchAssignmentResponse(ErrorCode.NONE, 5L, List.of(0));
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR),
+              eq(MessageTypes.FETCH_ASSIGNMENT_REQUEST),
+              any(),
+              any(Duration.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ConnectException("refused")))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final SbeCodec.FetchAssignmentResult result = router.fetchAssignment("grp", "c0").get();
+
+      // then
+      assertThat(result.errorCode()).isEqualTo(ErrorCode.NONE);
+      assertThat(result.generation()).isEqualTo(5L);
+      assertThat(result.assignedPartitions()).containsExactly(0);
+      verify(messagingService, times(2))
+          .sendAndReceive(
+              any(), eq(MessageTypes.FETCH_ASSIGNMENT_REQUEST), any(), any(Duration.class));
+    }
+
+    @Test
+    void shouldSurfaceCoordinatorUnavailableResponseWithoutRetry() {
+      // given – coordinator responds with COORDINATOR_UNAVAILABLE (no retry for coordinator ops)
+      final byte[] response =
+          buildFetchAssignmentResponse(ErrorCode.COORDINATOR_UNAVAILABLE, 0L, List.of());
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR),
+              eq(MessageTypes.FETCH_ASSIGNMENT_REQUEST),
+              any(),
+              any(Duration.class)))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when / then
+      assertThatThrownBy(() -> router.fetchAssignment("grp", "c0").get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+
+      verify(messagingService, times(1))
+          .sendAndReceive(
+              any(), eq(MessageTypes.FETCH_ASSIGNMENT_REQUEST), any(), any(Duration.class));
+    }
+
+    @Test
+    void shouldFailWhenCoordinatorAddressUnknown() {
+      // given
+      when(topologyService.getCoordinatorAddress()).thenReturn(Optional.empty());
+
+      // when / then
+      assertThatThrownBy(() -> router.fetchAssignment("grp", "c0").get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+
+      verify(messagingService, times(0)).sendAndReceive(any(), any(), any(), any(Duration.class));
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // No MessagingService (no AtomixCluster)
 
   @Nested
@@ -514,6 +604,18 @@ class BrokerRequestRouterTest {
 
       assertThatThrownBy(
               () -> routerWithoutCluster.commitOffset(PARTITION_0, "grp", "c0", 100L, 1L).get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+    }
+
+    @Test
+    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForFetchAssignment() {
+      final BrokerRequestRouter routerWithoutCluster =
+          new BrokerRequestRouter(/* cluster= */ null, topologyService);
+
+      assertThatThrownBy(() -> routerWithoutCluster.fetchAssignment("grp", "c0").get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -700,6 +802,29 @@ class BrokerRequestRouterTest {
     final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer(64);
 
     encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).errorMessage("");
+
+    return copyBytes(
+        buf,
+        io.camunda.eventbridge.core.protocol.MessageHeaderEncoder.ENCODED_LENGTH
+            + encoder.encodedLength());
+  }
+
+  /** Builds a {@code FetchAssignmentResponse} byte array. */
+  private static byte[] buildFetchAssignmentResponse(
+      final ErrorCode errorCode, final long generation, final List<Integer> partitions) {
+    final io.camunda.eventbridge.core.protocol.MessageHeaderEncoder headerEncoder =
+        new io.camunda.eventbridge.core.protocol.MessageHeaderEncoder();
+    final io.camunda.eventbridge.core.protocol.FetchAssignmentResponseEncoder encoder =
+        new io.camunda.eventbridge.core.protocol.FetchAssignmentResponseEncoder();
+    final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer(128);
+
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).generation(generation);
+
+    final var apGroup = encoder.assignedPartitionsCount(partitions.size());
+    for (final int partitionId : partitions) {
+      apGroup.next().partitionId(partitionId);
+    }
+    encoder.errorMessage("");
 
     return copyBytes(
         buf,

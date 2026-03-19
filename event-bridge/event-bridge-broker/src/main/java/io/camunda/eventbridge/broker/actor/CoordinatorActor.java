@@ -267,7 +267,7 @@ public final class CoordinatorActor extends Actor {
   public record AssignmentResult(List<Integer> assignedPartitions, long generation) {}
 
   public static final class ConsumerNotRegisteredException extends RuntimeException {
-    ConsumerNotRegisteredException(final String groupId, final String consumerId) {
+    public ConsumerNotRegisteredException(final String groupId, final String consumerId) {
       super("Consumer not registered: groupId=" + groupId + ", consumerId=" + consumerId);
     }
   }

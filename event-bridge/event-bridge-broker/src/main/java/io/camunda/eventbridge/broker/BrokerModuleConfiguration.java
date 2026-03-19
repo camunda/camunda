@@ -15,6 +15,7 @@ import io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry;
 import io.camunda.eventbridge.broker.offset.OffsetStore;
 import io.camunda.eventbridge.broker.partition.PartitionBootstrap;
 import io.camunda.eventbridge.broker.topology.TopologyService;
+import io.camunda.eventbridge.broker.transport.BrokerRequestDispatcher;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -116,6 +117,30 @@ public class BrokerModuleConfiguration {
   }
 
   /**
+   * Creates the {@link BrokerRequestDispatcher} that registers Netty message handlers when an
+   * {@link AtomixCluster} bean is present. Returns {@code null} (no bean registered) when no
+   * cluster is available, e.g. in unit-test contexts.
+   *
+   * <p>The dispatcher must be started <em>before</em> the HTTP server accepts requests so that the
+   * broker is ready to serve gateway-routed requests as soon as clients can reach the gateway.
+   */
+  @Bean
+  public BrokerRequestDispatcher brokerRequestDispatcher(
+      @Autowired(required = false) final AtomixCluster cluster,
+      final Map<Integer, PublishActor> publishActors,
+      final Map<Integer, PollActor> pollActors,
+      final CoordinatorActor coordinatorActor) {
+    if (cluster == null) {
+      LOG.info(
+          "No AtomixCluster bean present; skipping BrokerRequestDispatcher registration "
+              + "(Netty handlers will not be registered)");
+      return null;
+    }
+    return new BrokerRequestDispatcher(
+        cluster.getMessagingService(), publishActors, pollActors, coordinatorActor);
+  }
+
+  /**
    * Creates the {@link PartitionBootstrap} that starts RAFT partitions when an {@link
    * AtomixCluster} bean is present. Returns {@code null} (no bean registered) when no cluster is
    * available, e.g. in unit-test contexts.
@@ -154,7 +179,8 @@ public class BrokerModuleConfiguration {
       final TopologyService topologyService,
       final EventBridgeProperties properties,
       @Autowired(required = false) final AtomixCluster cluster,
-      @Autowired(required = false) final PartitionBootstrap partitionBootstrap) {
+      @Autowired(required = false) final PartitionBootstrap partitionBootstrap,
+      @Autowired(required = false) final BrokerRequestDispatcher brokerRequestDispatcher) {
     return new SmartLifecycle() {
       private volatile boolean running = false;
 
@@ -173,6 +199,10 @@ public class BrokerModuleConfiguration {
                   + "(RAFT partition bootstrap and leader routing via SWIM gossip disabled)");
         }
 
+        if (brokerRequestDispatcher != null) {
+          brokerRequestDispatcher.start();
+        }
+
         if (partitionBootstrap != null) {
           partitionBootstrap.start();
         }
@@ -186,6 +216,10 @@ public class BrokerModuleConfiguration {
 
         if (partitionBootstrap != null) {
           partitionBootstrap.stop();
+        }
+
+        if (brokerRequestDispatcher != null) {
+          brokerRequestDispatcher.stop();
         }
 
         coordinatorActor.closeAsync();

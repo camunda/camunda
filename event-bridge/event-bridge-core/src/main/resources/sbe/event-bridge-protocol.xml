@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  SBE message schema for the Event Bridge internal protocol (gateway ↔ broker).
+
+  Schema ID: 200 (chosen to avoid collision with Zeebe's existing schemas).
+  All variable-length fields use the standard varDataEncoding composite from common-types.xml.
+  Groups use the standard groupSizeEncoding composite.
+-->
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+  package="io.camunda.eventbridge.core.protocol"
+  id="200"
+  version="1"
+  semanticVersion="${project.version}"
+  description="Event Bridge Protocol Schema"
+  byteOrder="littleEndian">
+
+  <!-- =====================================================================
+       Shared types
+       ===================================================================== -->
+  <types>
+
+    <composite name="messageHeader" description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="templateId" primitiveType="uint16"/>
+      <type name="schemaId" primitiveType="uint16"/>
+      <type name="version" primitiveType="uint16"/>
+    </composite>
+
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
+      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+    </composite>
+
+    <composite name="groupSizeEncoding" description="Repeating group dimensions">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="numInGroup" primitiveType="uint16" semanticType="NumInGroup"/>
+    </composite>
+
+    <!-- Error codes shared across response messages -->
+    <enum name="ErrorCode" encodingType="uint8">
+      <validValue name="NONE">0</validValue>
+      <validValue name="PARTITION_NOT_FOUND">1</validValue>
+      <validValue name="LEADER_UNAVAILABLE">2</validValue>
+      <validValue name="INVALID_REQUEST">3</validValue>
+      <validValue name="CONSUMER_NOT_REGISTERED">4</validValue>
+      <validValue name="COORDINATOR_UNAVAILABLE">5</validValue>
+      <validValue name="POSITION_TRUNCATED">6</validValue>
+      <validValue name="INVALID_PARAMETER">7</validValue>
+      <validValue name="PARTITION_NOT_ASSIGNED">8</validValue>
+      <validValue name="STALE_GENERATION">9</validValue>
+      <validValue name="REBALANCE_IN_PROGRESS">10</validValue>
+    </enum>
+
+  </types>
+
+  <!-- =====================================================================
+       PublishBatchRequest (templateId=1): gateway → partition leader
+       Carries a batch of raw event payloads to be appended to a partition.
+       ===================================================================== -->
+  <sbe:message name="PublishBatchRequest" id="1" description="Publish a batch of events to a partition">
+    <field name="partitionId" id="1" type="int32"/>
+    <group name="events" id="2" dimensionType="groupSizeEncoding">
+      <data name="payload" id="3" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
+
+  <!-- =====================================================================
+       PublishBatchResponse (templateId=2): partition leader → gateway
+       ===================================================================== -->
+  <sbe:message name="PublishBatchResponse" id="2" description="Result of publishing a batch">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <group name="positions" id="2" dimensionType="groupSizeEncoding">
+      <field name="position" id="3" type="int64"/>
+    </group>
+    <data name="errorMessage" id="4" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       PollRequest (templateId=3): gateway → partition leader
+       ===================================================================== -->
+  <sbe:message name="PollRequest" id="3" description="Pull events from a partition log">
+    <field name="partitionId" id="1" type="int32"/>
+    <field name="fromPosition" id="2" type="int64"/>
+    <field name="maxRecords" id="3" type="int32"/>
+    <field name="serverWaitMs" id="4" type="int32"/>
+    <field name="generation" id="5" type="int64"/>
+    <data name="groupId" id="6" type="varDataEncoding"/>
+    <data name="consumerId" id="7" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       PollResponse (templateId=4): partition leader → gateway
+       ===================================================================== -->
+  <sbe:message name="PollResponse" id="4" description="Polled events or rebalance notification">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <field name="nextPosition" id="2" type="int64"/>
+    <field name="generation" id="3" type="int64"/>
+    <group name="events" id="4" dimensionType="groupSizeEncoding">
+      <field name="position" id="5" type="int64"/>
+      <data name="payload" id="6" type="varDataEncoding"/>
+    </group>
+    <group name="assignedPartitions" id="7" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="8" type="int32"/>
+    </group>
+    <data name="errorMessage" id="9" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       CommitOffsetRequest (templateId=5): gateway → coordinator
+       ===================================================================== -->
+  <sbe:message name="CommitOffsetRequest" id="5" description="Commit consumed offset for a partition">
+    <field name="partitionId" id="1" type="int32"/>
+    <field name="position" id="2" type="int64"/>
+    <field name="generation" id="3" type="int64"/>
+    <data name="groupId" id="4" type="varDataEncoding"/>
+    <data name="consumerId" id="5" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       CommitOffsetResponse (templateId=6): coordinator → gateway
+       ===================================================================== -->
+  <sbe:message name="CommitOffsetResponse" id="6" description="Result of committing an offset">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <data name="errorMessage" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       HeartbeatRequest (templateId=7): gateway → coordinator (Broker-0)
+       ===================================================================== -->
+  <sbe:message name="HeartbeatRequest" id="7" description="Consumer liveness signal">
+    <data name="groupId" id="1" type="varDataEncoding"/>
+    <data name="consumerId" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       HeartbeatResponse (templateId=8): coordinator → gateway
+       ===================================================================== -->
+  <sbe:message name="HeartbeatResponse" id="8" description="Result of a heartbeat">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <field name="generation" id="2" type="int64"/>
+    <data name="errorMessage" id="3" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       SubscribeRequest (templateId=9): gateway → coordinator
+       ===================================================================== -->
+  <sbe:message name="SubscribeRequest" id="9" description="Register consumer and trigger rebalance">
+    <data name="groupId" id="1" type="varDataEncoding"/>
+    <data name="consumerId" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       SubscribeResponse (templateId=10): coordinator → gateway
+       ===================================================================== -->
+  <sbe:message name="SubscribeResponse" id="10" description="Subscribe result with assigned partitions">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <field name="generation" id="2" type="int64"/>
+    <group name="assignedPartitions" id="3" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="4" type="int32"/>
+    </group>
+    <data name="errorMessage" id="5" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       OffsetSnapshotPayload (templateId=11): broker internal snapshot
+       Serialized into the RAFT snapshot directory; carries all committed
+       consumer offsets so they survive broker restart and failover.
+       ===================================================================== -->
+  <sbe:message name="OffsetSnapshotPayload" id="11" description="Serialized consumer offset state for snapshots">
+    <group name="offsets" id="1" dimensionType="groupSizeEncoding">
+      <field name="committedPosition" id="2" type="int64"/>
+      <data name="groupId" id="3" type="varDataEncoding"/>
+      <data name="consumerId" id="4" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
+
+  <!-- =====================================================================
+       TruncateRequest (templateId=12): coordinator → partition leader
+       Instructs the partition leader to truncate the log up to the given
+       position (exclusive upper bound of entries safe to remove).
+       ===================================================================== -->
+  <sbe:message name="TruncateRequest" id="12" description="Instruct a partition leader to truncate its log">
+    <field name="partitionId" id="1" type="int32"/>
+    <field name="truncateUpToPosition" id="2" type="int64"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       TruncateResponse (templateId=13): partition leader → coordinator
+       ===================================================================== -->
+  <sbe:message name="TruncateResponse" id="13" description="Result of a truncate request">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <data name="errorMessage" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       LatestPositionRequest (templateId=14): gateway → partition leader
+       Used by clients who want tail-start semantics before their first poll.
+       ===================================================================== -->
+  <sbe:message name="LatestPositionRequest" id="14" description="Query the highest committed position on a partition">
+    <field name="partitionId" id="1" type="int32"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       LatestPositionResponse (templateId=15): partition leader → gateway
+       ===================================================================== -->
+  <sbe:message name="LatestPositionResponse" id="15" description="Highest committed position">
+    <field name="position" id="1" type="int64"/>
+    <field name="errorCode" id="2" type="ErrorCode"/>
+    <data name="errorMessage" id="3" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       FetchAssignmentRequest (templateId=16): gateway → coordinator
+       Used to query the current partition assignment for a consumer without
+       triggering a rebalance (e.g. after coordinator recovery).
+       ===================================================================== -->
+  <sbe:message name="FetchAssignmentRequest" id="16" description="Query current partition assignment without rebalancing">
+    <data name="groupId" id="1" type="varDataEncoding"/>
+    <data name="consumerId" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       FetchAssignmentResponse (templateId=17): coordinator → gateway
+       ===================================================================== -->
+  <sbe:message name="FetchAssignmentResponse" id="17" description="Current partition assignment for a consumer">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <field name="generation" id="2" type="int64"/>
+    <group name="assignedPartitions" id="3" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="4" type="int32"/>
+    </group>
+    <data name="errorMessage" id="5" type="varDataEncoding"/>
+  </sbe:message>
+
+</sbe:messageSchema>
