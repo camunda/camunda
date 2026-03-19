@@ -118,6 +118,15 @@ const test = base.extend<PlaywrightFixtures>({
     await use(new OperateProcessesPage(page));
   },
   operateProcessInstancePage: async ({page}, use) => {
+    await page.addInitScript(() => {
+      const current = JSON.parse(
+        window.localStorage.getItem('sharedState') || '{}',
+      );
+      window.localStorage.setItem(
+        'sharedState',
+        JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
+      );
+    });
     await use(new OperateProcessInstancePage(page));
   },
   operateDecisionInstancePage: async ({page}, use) => {

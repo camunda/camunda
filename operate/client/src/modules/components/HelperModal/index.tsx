@@ -17,6 +17,8 @@ type Props = {
   onClose: () => void;
   onSubmit: () => void;
   localStorageKey: string;
+  primaryButtonText?: string;
+  secondaryButtonText?: string;
 };
 
 /**
@@ -31,14 +33,16 @@ const HelperModal: React.FC<Props> = ({
   onClose,
   onSubmit,
   localStorageKey,
+  primaryButtonText = 'Continue',
+  secondaryButtonText = 'Cancel',
 }) => {
   return (
     <Modal
       open={open}
       preventCloseOnClickOutside
       modalHeading={title}
-      primaryButtonText="Continue"
-      secondaryButtonText="Cancel"
+      primaryButtonText={primaryButtonText}
+      secondaryButtonText={secondaryButtonText}
       onRequestSubmit={onSubmit}
       onRequestClose={onClose}
       onSecondarySubmit={onClose}
