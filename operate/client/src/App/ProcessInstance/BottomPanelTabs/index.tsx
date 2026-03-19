@@ -33,7 +33,6 @@ const BottomPanelTabs: React.FC = () => {
       key: 'incidents',
       selected: currentPage === 'process-details-incidents',
       title: 'Incidents',
-      ariaLabel: `${incidentsCount}`,
       visible: hasIncident,
       tagText: incidentsCount,
     },

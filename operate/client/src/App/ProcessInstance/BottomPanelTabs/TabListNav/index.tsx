@@ -17,7 +17,6 @@ type Props = {
   items: Array<{
     key: string;
     title: string;
-    ariaLabel?: string;
     label: string;
     selected: boolean;
     to: Partial<Path>;
@@ -33,46 +32,39 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   return (
     <Nav className={cn(className, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(
-          ({key, title, label, selected, to, visible, tagText, ariaLabel}) => {
-            const isHidden = visible === false;
-            return (
-              <Button
-                key={key}
-                type="button"
-                role="link"
-                aria-label={label}
-                aria-current={selected ? 'page' : undefined}
-                className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
-                  hidden: isHidden,
-                  ['cds--tabs__nav-item--selected']: selected,
-                })}
-                hidden={isHidden}
-                aria-hidden={isHidden}
-                onClick={() =>
-                  navigate({
-                    ...location,
-                    ...to,
-                  })
-                }
-              >
-                <div className="cds--tabs__nav-item-label-wrapper">
-                  <span
-                    className="cds--tabs__nav-item-label"
-                    aria-label={ariaLabel}
-                  >
-                    {title}
-                  </span>
-                  {tagText !== undefined && (
-                    <Tag size="sm" type="red" aria-hidden>
-                      {tagText}
-                    </Tag>
-                  )}
-                </div>
-              </Button>
-            );
-          },
-        )}
+        {items.map(({key, title, label, selected, to, visible, tagText}) => {
+          const isHidden = visible === false;
+          return (
+            <Button
+              key={key}
+              type="button"
+              role="link"
+              aria-label={label}
+              aria-current={selected ? 'page' : undefined}
+              className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
+                hidden: isHidden,
+                ['cds--tabs__nav-item--selected']: selected,
+              })}
+              hidden={isHidden}
+              aria-hidden={isHidden}
+              onClick={() =>
+                navigate({
+                  ...location,
+                  ...to,
+                })
+              }
+            >
+              <div className="cds--tabs__nav-item-label-wrapper">
+                <span className="cds--tabs__nav-item-label">{title}</span>
+                {tagText !== undefined && (
+                  <Tag size="sm" type="red">
+                    {tagText}
+                  </Tag>
+                )}
+              </div>
+            </Button>
+          );
+        })}
       </div>
     </Nav>
   );
