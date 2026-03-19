@@ -28,6 +28,16 @@ const BottomPanelTabs: React.FC = () => {
   );
   const tabItems = [
     {
+      label: 'Incidents',
+      to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
+      key: 'incidents',
+      selected: currentPage === 'process-details-incidents',
+      title: 'Incidents',
+      ariaLabel: `${incidentsCount}`,
+      visible: hasIncident,
+      tagText: incidentsCount,
+    },
+    {
       label: 'Details',
       to: {pathname: Paths.processInstanceDetails({processInstanceId})},
       key: 'details',
@@ -42,15 +52,6 @@ const BottomPanelTabs: React.FC = () => {
       selected: currentPage === 'process-details-variables',
       title: 'Variables',
       visible: true,
-    },
-    {
-      label: 'Incidents',
-      to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
-      key: 'incidents',
-      selected: currentPage === 'process-details-incidents',
-      title: 'Incidents',
-      visible: hasIncident,
-      count: incidentsCount,
     },
     {
       label: 'Input Mappings',

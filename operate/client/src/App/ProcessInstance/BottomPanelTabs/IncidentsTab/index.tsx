@@ -92,7 +92,7 @@ const IncidentsTab: React.FC = observer(() => {
 
   return (
     <Container>
-      <PanelHeader title="Incidents" count={totalIncidentsCount} size="sm">
+      <PanelHeader count={totalIncidentsCount} size="sm">
         <IncidentsFilter />
       </PanelHeader>
       <IncidentsTable
