@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -50,6 +51,11 @@ import org.opensearch.client.opensearch._types.Slices;
 import org.opensearch.client.opensearch._types.SlicesCalculation;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
+import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregate;
+import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -70,6 +76,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.builder().calculation(SlicesCalculation.Auto).build();
+  private static final String DATE_AGGREGATION_NAME = "endDateHistogram";
 
   private final int partitionId;
   private final HistoryConfiguration config;
@@ -653,7 +660,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final String endDate =
         hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
+    return getDateOfArchiveIndex(templateDescriptor, endDate, rolloverInterval, config)
         .thenApply(
             date -> {
               final var batchHits =
@@ -709,7 +716,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final String endDate =
         hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
+    return getDateOfArchiveIndex(templateDescriptor, endDate, rolloverInterval, config)
         .thenApply(
             date -> {
               final var batchHits =
@@ -730,28 +737,63 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   private CompletableFuture<String> getDateOfArchiveIndex(
+      final IndexTemplateDescriptor indexTemplateDescriptor,
       final String endDate,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
-    final String templateIndexName = templateDescriptor.getIndexName();
-    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
-    final CompletableFuture<String> dateFuture;
-    try {
-      dateFuture =
-          (lastHistoricalArchiverDate == null)
-              ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                  fetchIndexMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
-              : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
-    }
-    return dateFuture.thenApply(
-        date -> {
-          final String nextArchiverDate =
-              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
-          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-          return nextArchiverDate;
+      final String rolloverInterval,
+      final HistoryConfiguration config) {
+    final Aggregation bucketSortAggregation =
+        Aggregation.of(
+            a ->
+                a.bucketSort(
+                    bs ->
+                        bs.sort(sort -> sort.field(f -> f.field("_key").order(SortOrder.Asc)))
+                            .size(1)));
+
+    final Aggregation dateHistogramAggregation =
+        Aggregation.of(
+            a ->
+                a.dateHistogram(
+                        dh -> {
+                          dh.field("endDate").format(config.getElsRolloverDateFormat());
+
+                          // we support rolloverIntervals in both calendar (e.g., "month") and
+                          // fixed (e.g., "3d") formats. First, we try to parse it as a calendar
+                          // interval, and if that fails, we treat it as a fixed.
+                          final CalendarInterval calendarInterval =
+                              DateOfArchivedDocumentsUtil.parseOsCalendarInterval(rolloverInterval);
+                          if (calendarInterval != null) {
+                            dh.calendarInterval(calendarInterval);
+                          } else {
+                            dh.fixedInterval(Time.of(t -> t.time(rolloverInterval)));
+                          }
+
+                          return dh;
+                        })
+                    .aggregations(Map.of("bucketSort", bucketSortAggregation)));
+
+    final SearchRequest searchRequest =
+        SearchRequest.of(
+            sr ->
+                sr.index(indexTemplateDescriptor.getFullQualifiedName())
+                    .size(0)
+                    .aggregations(DATE_AGGREGATION_NAME, dateHistogramAggregation));
+
+    final CompletableFuture<SearchResponse<Void>> future = client.search(searchRequest, Void.class);
+    return future.thenApply(
+        response -> {
+          final Map<String, Aggregate> aggregations = response.aggregations();
+          if (aggregations == null) {
+            return endDate;
+          }
+
+          final DateHistogramAggregate histogram =
+              aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
+          try {
+            final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
+            return oldest.keyAsString();
+          } catch (NoSuchElementException _exception) {
+            return endDate;
+          }
         });
   }
 

@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.tasks.util;
 
-import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -32,6 +31,7 @@ public final class DateOfArchivedDocumentsUtil {
   private static final Pattern TEMPORAL_PATTERN = Pattern.compile("(\\d+)" + "([smhdwMy])");
   private static final String DATE_PATTERN = "yyyy-MM-dd";
   private static final String DATE_AND_HOUR_PATTERN = "yyyy-MM-dd-HH";
+  private static final String NULL_BLANK_INTERVAL_ERROR = "Interval cannot be null or blank";
 
   public static String calculateDateOfArchiveIndexForBatch(
       final String dateOfArchiveBatch,
@@ -160,13 +160,33 @@ public final class DateOfArchivedDocumentsUtil {
     }
   }
 
-  public static CalendarInterval parseCalendarInterval(final String interval) {
+  public static co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval
+      parseEsCalendarInterval(final String interval) {
     if (interval == null || interval.isBlank()) {
-      throw new IllegalArgumentException("Interval cannot be null or blank");
+      throw new IllegalArgumentException(NULL_BLANK_INTERVAL_ERROR);
     }
 
     try {
-      final CalendarInterval result = CalendarInterval._DESERIALIZER.parse(interval);
+      final co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval result =
+          co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval._DESERIALIZER.parse(
+              interval);
+      return result;
+    } catch (NoSuchElementException exception) {
+      return null;
+    }
+  }
+
+  public static org.opensearch.client.opensearch._types.aggregations.CalendarInterval
+      parseOsCalendarInterval(final String interval) {
+
+    if (interval == null || interval.isBlank()) {
+      throw new IllegalArgumentException(NULL_BLANK_INTERVAL_ERROR);
+    }
+
+    try {
+      final org.opensearch.client.opensearch._types.aggregations.CalendarInterval result =
+          org.opensearch.client.opensearch._types.aggregations.CalendarInterval._DESERIALIZER.parse(
+              interval);
       return result;
     } catch (NoSuchElementException exception) {
       return null;

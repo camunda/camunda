@@ -534,7 +534,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                           // fixed (e.g., "3d") formats. First, we try to parse it as a calendar
                           // interval, and if that fails, we treat it as a fixed.
                           final CalendarInterval calendarInterval =
-                              DateOfArchivedDocumentsUtil.parseCalendarInterval(rolloverInterval);
+                              DateOfArchivedDocumentsUtil.parseEsCalendarInterval(rolloverInterval);
                           if (calendarInterval != null) {
                             dh.calendarInterval(calendarInterval);
                           } else {
