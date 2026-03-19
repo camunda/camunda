@@ -18,6 +18,7 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 
 const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
   return (
@@ -35,9 +36,10 @@ const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
   );
 });
 
-const FORBIDDEN_MESSAGE = 'Missing permissions to access Instance History';
-const FORBIDDEN_ADDITIONAL_INFO =
-  'Please contact your organization owner or admin to give you the necessary permissions to access this instance history';
+const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
+  'Instance History',
+  'this instance history',
+);
 
 const ElementInstanceLog: React.FC = observer(() => {
   const {
@@ -71,12 +73,12 @@ const ElementInstanceLog: React.FC = observer(() => {
         <ErrorMessage
           message={
             isForbidden
-              ? FORBIDDEN_MESSAGE
+              ? INSTANCE_HISTORY_FORBIDDEN.message
               : 'Instance History could not be fetched'
           }
           additionalInfo={
             isForbidden
-              ? FORBIDDEN_ADDITIONAL_INFO
+              ? INSTANCE_HISTORY_FORBIDDEN.additionalInfo
               : 'Refresh the page to try again'
           }
         />

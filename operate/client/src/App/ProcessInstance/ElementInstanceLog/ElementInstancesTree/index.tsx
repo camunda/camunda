@@ -21,6 +21,7 @@ import {
   TreeNode,
 } from './styled';
 import {ErrorMessage} from '../styled';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {Bar} from './Bar';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
@@ -828,10 +829,14 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
     );
 
     if (rootNodeData?.status === 'error-permissions') {
+      const forbidden = getForbiddenPermissionsError(
+        'Instance History',
+        'this instance history',
+      );
       return (
         <ErrorMessage
-          message="Missing permissions to access Instance History"
-          additionalInfo="Please contact your organization owner or admin to give you the necessary permissions to access this instance history"
+          message={forbidden.message}
+          additionalInfo={forbidden.additionalInfo}
         />
       );
     }
