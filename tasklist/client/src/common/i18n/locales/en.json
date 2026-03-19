@@ -219,6 +219,7 @@
     "customFiltersModalConfirmDeletion": "Confirm deletion",
     "customFiltersModalApplyFilters": "Apply filters",
     "customFiltersModalAllProcesses": "All processes",
+    "customFiltersModalAllTenants": "All tenants",
     "taskFilterPanelControlsAria": "Filter controls",
     "taskFilterPanelExpandButton": "Expand to show filters",
     "taskFilterPanelFilterButton": "Filter tasks",

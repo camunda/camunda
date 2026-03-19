@@ -63,7 +63,7 @@ function prepareCustomFiltersParams(
     params.processDefinitionKey = bpmnProcess!;
   }
 
-  if (tenant !== undefined) {
+  if (tenant !== undefined && tenant !== '') {
     if (clientMode === 'v1') {
       params.tenantIds = JSON.stringify([tenant]);
     } else {
