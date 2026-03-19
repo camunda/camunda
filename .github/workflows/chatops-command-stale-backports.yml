@@ -1,0 +1,138 @@
+# type: CI Helper - ChatOps
+# owner: @camunda/monorepo-devops-team
+---
+name: chatops-command-stale-backports
+
+on:
+  repository_dispatch:
+    types: [stale-backports-command]
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  chatops-command-stale-backports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          {
+            echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract target branch from command arguments
+        id: args
+        env:
+          COMMAND_ARGS: ${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
+        run: |
+          target_branch=""
+          if [[ -n "$COMMAND_ARGS" ]]; then
+            # Accept "8.8" or "stable/8.8" format
+            if [[ "$COMMAND_ARGS" =~ ^stable/ ]]; then
+              target_branch="$COMMAND_ARGS"
+            elif [[ "$COMMAND_ARGS" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              target_branch="stable/$COMMAND_ARGS"
+            fi
+          fi
+          echo "target_branch=$target_branch" >> "$GITHUB_OUTPUT"
+          echo "📌 Target branch: ${target_branch:-all}"
+
+      - name: Collect stale backport PRs
+        id: collect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          STALE_HOURS_THRESHOLD: "2"
+          TARGET_BRANCH: ${{ steps.args.outputs.target_branch }}
+        run: |
+          chmod +x .ci/scripts/stale-backport-scripts/collect-stale-backports.sh
+          stale_data=$(.ci/scripts/stale-backport-scripts/collect-stale-backports.sh)
+
+          total_stale=$(echo "$stale_data" | jq '[.[].backport_prs | length] | add // 0')
+
+          {
+            echo "stale_data<<STALE_EOF"
+            echo "$stale_data"
+            echo "STALE_EOF"
+            echo "total_stale=$total_stale"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Format result as Markdown
+        id: format
+        env:
+          STALE_DATA: ${{ steps.collect.outputs.stale_data }}
+          TOTAL_STALE: ${{ steps.collect.outputs.total_stale }}
+          TARGET_BRANCH: ${{ steps.args.outputs.target_branch }}
+        run: |
+          branch_note=""
+          if [[ -n "$TARGET_BRANCH" ]]; then
+            branch_note=" for \`$TARGET_BRANCH\`"
+          fi
+
+          if [[ "$TOTAL_STALE" -eq 0 ]]; then
+            result="## ✅ No Stale Backport PRs${branch_note}\n\nAll backport PRs are merged or up to date."
+          else
+            result="## ⏰ Stale Backport PRs${branch_note}\n\nFound **${TOTAL_STALE}** stale backport PR(s):\n\n"
+            result+=$(echo "$STALE_DATA" | jq -r '.[] |
+              "### 📌 [#\(.original_pr_number // "?") — \(.original_pr_title // "Unknown")](\(.original_pr_url // ""))\n" +
+              "**Author:** \(.original_pr_author // "unknown")\n\n" +
+              "| Backport PR | Target Branch | Age | Draft |\n" +
+              "|-------------|---------------|-----|-------|\n" +
+              (.backport_prs[] |
+                "| [#\(.backport_pr_number)](\(.backport_pr_url)) | `\(.target_branch)` | \(if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h" end) | \(if .is_draft then "⚠️ Yes" else "No" end) |"
+              ) + "\n"
+            ')
+          fi
+
+          result+=$'\n\n---\n🔗 [Workflow run]('"${{ steps.vars.outputs.run_url }}"')'
+
+          {
+            echo "result<<RESULT_EOF"
+            echo -e "$result"
+            echo "RESULT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post result as PR comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
+          body: "${{ steps.format.outputs.result }}"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
