@@ -101,7 +101,6 @@ const routes = createRoutesFromElements(
           return {Component: ProcessInstance};
         }}
       >
-        <Route index element={<DefaultTabRedirect />} />
         <Route
           path={Paths.processInstanceVariables({isRelative: true})}
           lazy={async () => {
@@ -158,6 +157,7 @@ const routes = createRoutesFromElements(
             return {Component: OperationsLogTab};
           }}
         />
+        <Route path="*" element={<DefaultTabRedirect />} />
       </Route>
       <Route
         path={Paths.decisions()}
