@@ -12,9 +12,18 @@ on:
       - synchronize
       - closed
 
+# Group all benchmark labeled events together so that adding the second label cancels the
+# first run and starts a new one that deploys both benchmarks — giving a single visible
+# check in the PR. Unlabeled, synchronize, closed and non-benchmark labels stay separate.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ github.event.label.name || github.event.action }}
-  cancel-in-progress: false
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{
+      github.event.action == 'labeled'
+      && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')
+      && 'benchmark-labeled'
+      || format('{0}-{1}', github.event.action, github.event.label.name || '')
+    }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -83,11 +92,14 @@ jobs:
     name: Benchmark
     needs: [sanitize-branch-name, build-images]
     # Use always() so this job evaluates even when build-images is skipped (unlabeled/closed events).
+    # Trigger on either benchmark label being added, but only deploy if 'benchmark' is on the PR.
     if: >
       always() &&
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
-      ((github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      ((github.event.action == 'labeled' &&
+        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms') &&
+        contains(github.event.pull_request.labels.*.name, 'benchmark')) ||
        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
@@ -104,7 +116,9 @@ jobs:
       always() &&
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
-      ((github.event.action == 'labeled' && github.event.label.name == 'benchmark-rdbms') ||
+      ((github.event.action == 'labeled' &&
+        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms') &&
+        contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')) ||
        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
