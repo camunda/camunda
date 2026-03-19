@@ -12,16 +12,17 @@ on:
       - synchronize
       - closed
 
-# Group all benchmark labeled events together so that adding the second label cancels the
-# first run and starts a new one that deploys both benchmarks — giving a single visible
-# check in the PR. Unlabeled, synchronize, closed and non-benchmark labels stay separate.
+# All benchmark-related events (label/unlabel/push/close) share one concurrency group per PR
+# so that removing a label cancels the in-progress build, and a new push replaces a stale one.
+# Non-benchmark label events get their own isolated group.
 concurrency:
   group: >-
     ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{
-      github.event.action == 'labeled'
-      && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')
-      && 'benchmark-labeled'
-      || format('{0}-{1}', github.event.action, github.event.label.name || '')
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize'
+       || github.event.action == 'closed')
+      && 'benchmark'
+      || format('other-{0}', github.event.label.name)
     }}
   cancel-in-progress: true
 
