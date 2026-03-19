@@ -81,7 +81,7 @@ describe('IncidentsTable', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Element')).toBeInTheDocument();
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe('IncidentsTable', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Element')).toBeInTheDocument();
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();

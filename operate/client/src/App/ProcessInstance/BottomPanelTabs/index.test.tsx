@@ -207,9 +207,9 @@ describe('<BottomPanelTabs />', () => {
 
     const tabs = screen.getAllByRole('link');
     expect(tabs).toHaveLength(7);
-    expect(tabs[0]).toHaveAccessibleName('Details');
-    expect(tabs[1]).toHaveAccessibleName('Variables');
-    expect(tabs[2]).toHaveAccessibleName('Incidents');
+    expect(tabs[0]).toHaveAccessibleName('Incidents');
+    expect(tabs[1]).toHaveAccessibleName('Details');
+    expect(tabs[2]).toHaveAccessibleName('Variables');
     expect(tabs[3]).toHaveAccessibleName('Input Mappings');
     expect(tabs[4]).toHaveAccessibleName('Output Mappings');
     expect(tabs[5]).toHaveAccessibleName('Listeners');

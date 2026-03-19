@@ -84,7 +84,7 @@ describe('IncidentsTab', () => {
     );
 
     const table = within(screen.getByRole('table'));
-    expect(table.getByText(/^Incident Type/)).toBeInTheDocument();
+    expect(table.getByText(/^Type/)).toBeInTheDocument();
     expect(table.getByText(/^Failing Element/)).toBeInTheDocument();
     expect(table.getByText(/^Job Id/)).toBeInTheDocument();
     expect(table.getByText(/^Creation Date/)).toBeInTheDocument();
@@ -123,7 +123,6 @@ describe('IncidentsTab', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    expect(screen.getByText(/Incidents/)).toBeInTheDocument();
     expect(screen.getByText(/2 results/)).toBeInTheDocument();
   });
 
