@@ -1,0 +1,8 @@
+camunda:
+  security:
+    authentication:
+      method: OIDC
+      oidc:
+        username-claim: preferred_username
+        client-id-claim: azp
+        prefer-username-claim: true
