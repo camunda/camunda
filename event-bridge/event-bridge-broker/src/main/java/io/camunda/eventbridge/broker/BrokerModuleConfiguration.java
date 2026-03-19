@@ -214,12 +214,12 @@ public class BrokerModuleConfiguration {
       public void stop() {
         LOG.info("Stopping Event Bridge broker actors");
 
-        if (partitionBootstrap != null) {
-          partitionBootstrap.stop();
-        }
-
         if (brokerRequestDispatcher != null) {
           brokerRequestDispatcher.stop();
+        }
+
+        if (partitionBootstrap != null) {
+          partitionBootstrap.stop();
         }
 
         coordinatorActor.closeAsync();

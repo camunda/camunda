@@ -242,6 +242,24 @@ final class BrokerRequestDispatcherTest {
       assertThat(decoded.errorCode()).isEqualTo(ErrorCode.POSITION_TRUNCATED);
       assertThat(decoded.errorMessage()).contains("100");
     }
+
+    @Test
+    void shouldReturnInvalidRequestOnInvalidPosition() throws Exception {
+      // given
+      final byte[] req = encodePollRequest(PARTITION_0, "g1", "c1", 5L, 10, 0, 1L);
+      final var future = new CompletableActorFuture<PollActor.PollResult>();
+      future.completeExceptionally(new PollActor.InvalidPositionException(-2L));
+      when(pollActor.poll(anyLong(), anyInt(), anyInt())).thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.FETCH_REQUEST).apply(SENDER, req).get();
+
+      // then
+      final var decoded = decodePollResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.INVALID_REQUEST);
+      assertThat(decoded.errorMessage()).contains("Invalid fromPosition");
+    }
   }
 
   // ---------------------------------------------------------------------------
