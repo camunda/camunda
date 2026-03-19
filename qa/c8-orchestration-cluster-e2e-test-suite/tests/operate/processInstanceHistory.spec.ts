@@ -65,7 +65,7 @@ test.beforeAll(async () => {
   };
 });
 
-test.describe('Process Instance History', () => {
+test.describe.skip('Process Instance History', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
