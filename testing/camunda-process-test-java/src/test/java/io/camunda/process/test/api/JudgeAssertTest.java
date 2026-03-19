@@ -428,8 +428,12 @@ public class JudgeAssertTest {
     @CamundaAssertExpectFailure
     void shouldFailWhenLocalVariableScoreBelowThreshold() {
       // given
+      final AtomicInteger callCount = new AtomicInteger(0);
       final ChatModelAdapter mockModel =
-          prompt -> "{\"score\": 0.2, \"reasoning\": \"Poor match.\"}";
+          prompt -> {
+            callCount.incrementAndGet();
+            return "{\"score\": 0.2, \"reasoning\": \"Poor match.\"}";
+          };
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       when(camundaDataSource.findElementInstances(any()))
@@ -456,6 +460,9 @@ public class JudgeAssertTest {
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("did not satisfy judge expectation")
           .hasMessageContaining("Score: 0.20");
+
+      // expect that the judge assertion is only being called once
+      assertThat(callCount).hasValue(1);
     }
 
     @Test
