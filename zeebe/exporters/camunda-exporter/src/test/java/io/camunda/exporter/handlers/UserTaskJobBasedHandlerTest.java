@@ -328,7 +328,7 @@ public class UserTaskJobBasedHandlerTest {
     processCache.put(
         processDefinitionKey,
         new CachedProcessEntity(
-            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node")));
+            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node"), false));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));
