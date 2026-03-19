@@ -47,7 +47,7 @@ public class PartitionController {
   public ResponseEntity<?> getLatestPosition(@PathVariable final int partitionId) {
     final PublishActor actor = publishActors.get(partitionId);
     if (actor == null) {
-      return ResponseEntity.badRequest()
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
           .body(
               new ErrorResponse(
                   "PARTITION_NOT_FOUND", "Partition " + partitionId + " does not exist"));

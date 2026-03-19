@@ -57,7 +57,10 @@ public class HeartbeatController {
             .body(HeartbeatResponse.error("CONSUMER_NOT_REGISTERED", e.getCause().getMessage()));
       }
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-          .body(HeartbeatResponse.error("COORDINATOR_UNAVAILABLE", e.getCause().getMessage()));
+          .body(
+              HeartbeatResponse.error(
+                  "COORDINATOR_UNAVAILABLE",
+                  e.getCause() != null ? e.getCause().getMessage() : "Coordinator unavailable"));
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
