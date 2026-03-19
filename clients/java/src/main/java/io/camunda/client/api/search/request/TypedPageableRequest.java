@@ -15,9 +15,22 @@
  */
 package io.camunda.client.api.search.request;
 
+import io.camunda.client.api.search.page.SearchPagination;
 import java.util.function.Consumer;
 
-public interface TypedPageableRequest<SELF extends TypedPageableRequest<SELF>> {
+/**
+ * Interface for typed pagination support in search requests.
+ *
+ * <p>This interface enforces type-safe pagination models for search endpoints, similar to how
+ * {@link TypedSortableRequest} enforces sort type safety.
+ *
+ * @param <P> the pagination model type (e.g., {@link
+ *     io.camunda.client.api.search.page.CursorForwardPage}, {@link
+ *     io.camunda.client.api.search.page.AnyPage})
+ * @param <SELF> the concrete request type for fluent method chaining
+ */
+public interface TypedPageableRequest<
+    P extends SearchPagination<P>, SELF extends TypedPageableRequest<P, SELF>> {
 
   /**
    * Support for pagination.
@@ -25,7 +38,7 @@ public interface TypedPageableRequest<SELF extends TypedPageableRequest<SELF>> {
    * @param value the next page
    * @return the builder for the search request
    */
-  SELF page(final SearchRequestPage value);
+  SELF page(final P value);
 
   /**
    * Provides a fluent builder to support pagination.
@@ -33,5 +46,5 @@ public interface TypedPageableRequest<SELF extends TypedPageableRequest<SELF>> {
    * @param fn consumer to support pagination
    * @return the builder for the search request
    */
-  SELF page(final Consumer<SearchRequestPage> fn);
+  SELF page(final Consumer<P> fn);
 }

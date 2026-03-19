@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.statistics.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.cursorForwardPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.statistics.request.JobTimeSeriesStatisticsRequest;
 import io.camunda.client.api.statistics.response.JobTimeSeriesStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -96,7 +96,7 @@ public class JobTimeSeriesStatisticsRequestImpl
   }
 
   @Override
-  public JobTimeSeriesStatisticsRequest page(final SearchRequestPage value) {
+  public JobTimeSeriesStatisticsRequest page(final CursorForwardPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(new CursorForwardPagination().limit(page.getLimit()).after(page.getAfter()));
     return this;
@@ -104,7 +104,7 @@ public class JobTimeSeriesStatisticsRequestImpl
 
   @Override
   public JobTimeSeriesStatisticsRequest page(
-      final java.util.function.Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+      final java.util.function.Consumer<CursorForwardPage> fn) {
+    return page(cursorForwardPage(fn));
   }
 }

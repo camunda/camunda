@@ -16,10 +16,14 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 
 public interface DecisionDefinitionSearchRequest
     extends TypedSearchRequest<
-            DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionSearchRequest>,
+            DecisionDefinitionFilter,
+            DecisionDefinitionSort,
+            AnyPage,
+            DecisionDefinitionSearchRequest>,
         FinalSearchRequestStep<DecisionDefinition> {}

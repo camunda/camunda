@@ -15,8 +15,8 @@
  */
 package io.camunda.client.api.statistics.request;
 
+import io.camunda.client.api.search.page.OffsetPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestOffsetPage;
 import io.camunda.client.api.search.request.TypedSortableRequest;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
@@ -32,7 +32,7 @@ public interface ProcessDefinitionInstanceVersionStatisticsRequest
             ProcessDefinitionInstanceVersionStatisticsRequest>,
         FinalSearchRequestStep<ProcessDefinitionInstanceVersionStatistics> {
 
-  ProcessDefinitionInstanceVersionStatisticsRequest page(SearchRequestOffsetPage value);
+  ProcessDefinitionInstanceVersionStatisticsRequest page(OffsetPage value);
 
-  ProcessDefinitionInstanceVersionStatisticsRequest page(Consumer<SearchRequestOffsetPage> fn);
+  ProcessDefinitionInstanceVersionStatisticsRequest page(Consumer<OffsetPage> fn);
 }

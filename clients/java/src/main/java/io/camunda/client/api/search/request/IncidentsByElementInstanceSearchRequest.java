@@ -16,11 +16,12 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.sort.IncidentSort;
 
 public interface IncidentsByElementInstanceSearchRequest
     extends TypedSearchRequest<
-            IncidentFilter, IncidentSort, IncidentsByElementInstanceSearchRequest>,
-        TypedPageableRequest<IncidentsByElementInstanceSearchRequest>,
+            IncidentFilter, IncidentSort, AnyPage, IncidentsByElementInstanceSearchRequest>,
+        TypedPageableRequest<AnyPage, IncidentsByElementInstanceSearchRequest>,
         FinalSearchRequestStep<Incident> {}
