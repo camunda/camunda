@@ -25,4 +25,22 @@ const FieldLabel = styled.span`
   color: var(--cds-text-secondary);
 `;
 
-export {ExpandedContent, ExpandedField, FieldLabel};
+const ErrorMessageCell = styled.div`
+  max-width: 404px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const FlexContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export {
+  ExpandedContent,
+  ExpandedField,
+  FieldLabel,
+  ErrorMessageCell,
+  FlexContainer,
+};
