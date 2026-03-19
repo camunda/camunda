@@ -1,0 +1,151 @@
+{
+  "agents": {
+    "pm": {
+      "invocations": 25,
+      "totalElapsedMs": 2860005,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 6,
+        "claude-opus-4-6": 19
+      }
+    },
+    "recovery": {
+      "invocations": 2,
+      "totalElapsedMs": 1,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 2
+      }
+    },
+    "reviewer": {
+      "invocations": 20,
+      "totalElapsedMs": 2350102,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 20
+      }
+    },
+    "reviser": {
+      "invocations": 33,
+      "totalElapsedMs": 19905647,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 33
+      }
+    },
+    "plan-eng-clarify-3": {
+      "invocations": 2,
+      "totalElapsedMs": 2904780,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 2
+      }
+    },
+    "plan-design-clarify-5": {
+      "invocations": 2,
+      "totalElapsedMs": 203208,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 2
+      }
+    },
+    "analyst": {
+      "invocations": 2,
+      "totalElapsedMs": 1031913,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 2
+      }
+    },
+    "cross-reviewer": {
+      "invocations": 12,
+      "totalElapsedMs": 1270988,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "gpt-5.3-codex": 12
+      }
+    },
+    "Designer": {
+      "invocations": 1,
+      "totalElapsedMs": 186824,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "PM": {
+      "invocations": 1,
+      "totalElapsedMs": 223934,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "Engineer": {
+      "invocations": 1,
+      "totalElapsedMs": 228852,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "design-reviewer": {
+      "invocations": 3,
+      "totalElapsedMs": 242938,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 3
+      }
+    },
+    "designer": {
+      "invocations": 1,
+      "totalElapsedMs": 1090354,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "code-reviewer": {
+      "invocations": 52,
+      "totalElapsedMs": 4290159,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 52
+      }
+    },
+    "tester": {
+      "invocations": 32,
+      "totalElapsedMs": 4666431,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 32
+      }
+    },
+    "engineer": {
+      "invocations": 46,
+      "totalElapsedMs": 45119134,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 46
+      }
+    }
+  },
+  "totalRuns": 3,
+  "lastUpdated": "2026-03-19T14:24:51.207Z"
+}

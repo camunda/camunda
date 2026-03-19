@@ -1,0 +1,28 @@
+{
+  "mode": "plan",
+  "completedPhases": [
+    "plan-prereqs-0",
+    "plan-clarify-1"
+  ],
+  "spec": "## Task\n\nBased on the existing Log Stream, RAFT, and SWIM implementation existing in Zeebe, implement a new application called \"Event Bridge\". The idea is that an orchstration cluster can directly export events to the event bridge. The \"Event Bridge\" itself a replicated and partitioned event hub that stores the ingested events. Therefore, the event bridge must use the already existing Log Stream application to store them in partitions. A partition gets replicated according to the existing RAFT implementation.",
+  "engDecisions": "",
+  "designDecisions": "",
+  "analysis": "",
+  "issueBody": "Based on the existing Log Stream, RAFT, and SWIM implementation existing in Zeebe, implement a new application called \"Event Bridge\". The idea is that an orchstration cluster can directly export events to the event bridge. The \"Event Bridge\" itself a replicated and partitioned event hub that stores the ingested events. Therefore, the event bridge must use the already existing Log Stream application to store them in partitions. A partition gets replicated according to the existing RAFT implementation.",
+  "runId": "2026-03-18T15-04-47-327Z",
+  "tasks": [],
+  "designSpec": "",
+  "streamResults": [],
+  "sessionLog": {
+    "prereq-analyze": {
+      "sessionId": "5529fcc2-2d68-4b26-a0e2-b2263995e5df",
+      "agent": "pm",
+      "role": "pm"
+    },
+    "plan-clarify-1": {
+      "sessionId": "24236350-32d5-4ee2-9d4b-f7132a121d65",
+      "agent": "planner",
+      "role": "pm"
+    }
+  }
+}
