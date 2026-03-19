@@ -764,6 +764,22 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
   ProcessInstanceAssert hasVariableSimilarTo(String variableName, String expectedValue);
 
   /**
+   * Verifies that a process variable matching the selector is semantically similar to an expected
+   * value using text embeddings. Uses the threshold from the configured {@link
+   * SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until a matching variable exists, then evaluates semantic similarity
+   * once.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasVariableSimilarTo(
+      VariableSelector variableSelector, String expectedValue);
+
+  /**
    * Verifies that a local variable's value is semantically similar to an expected value using text
    * embeddings. Uses the default threshold from the configured {@link SemanticSimilarityConfig}.
    *
@@ -791,4 +807,21 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
    */
   ProcessInstanceAssert hasLocalVariableSimilarTo(
       ElementSelector selector, String variableName, String expectedValue);
+
+  /**
+   * Verifies that a local variable matching the selector is semantically similar to an expected
+   * value using text embeddings. Uses the threshold from the configured {@link
+   * SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until a matching variable exists, then evaluates semantic similarity
+   * once.
+   *
+   * @param elementSelector the selector for the BPMN element
+   * @param variableSelector the selector to identify the variable
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSimilarTo(
+      ElementSelector elementSelector, VariableSelector variableSelector, String expectedValue);
 }

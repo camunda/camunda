@@ -561,7 +561,15 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasVariableSimilarTo(
       final String variableName, final String expectedValue) {
-    variableAssertj.hasVariableSimilarTo(getProcessInstanceKey(), variableName, expectedValue);
+    variableAssertj.hasVariableSimilarTo(
+        getProcessInstanceKey(), VariableSelectors.byName(variableName), expectedValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSimilarTo(
+      final VariableSelector variableSelector, final String expectedValue) {
+    variableAssertj.hasVariableSimilarTo(getProcessInstanceKey(), variableSelector, expectedValue);
     return this;
   }
 
@@ -569,7 +577,10 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssert hasLocalVariableSimilarTo(
       final String elementId, final String variableName, final String expectedValue) {
     variableAssertj.hasLocalVariableSimilarTo(
-        getProcessInstanceKey(), elementSelector.apply(elementId), variableName, expectedValue);
+        getProcessInstanceKey(),
+        elementSelector.apply(elementId),
+        VariableSelectors.byName(variableName),
+        expectedValue);
     return this;
   }
 
@@ -577,7 +588,17 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssert hasLocalVariableSimilarTo(
       final ElementSelector selector, final String variableName, final String expectedValue) {
     variableAssertj.hasLocalVariableSimilarTo(
-        getProcessInstanceKey(), selector, variableName, expectedValue);
+        getProcessInstanceKey(), selector, VariableSelectors.byName(variableName), expectedValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSimilarTo(
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final String expectedValue) {
+    variableAssertj.hasLocalVariableSimilarTo(
+        getProcessInstanceKey(), elementSelector, variableSelector, expectedValue);
     return this;
   }
 

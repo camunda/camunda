@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.similarity.preprocessors.UnicodeNormalizerPreprocessor;
@@ -101,13 +102,12 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
 
       final Variable variable = newVariable("result", "\"Hello, World!\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then - passes because cosine(x,x) = 1.0 >= 0.8
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasVariableSimilarTo("result", "Hello there");
+          .hasVariableSimilarTo(VariableSelectors.byName("result"), "Hello there");
     }
 
     @Test
@@ -120,8 +120,7 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
 
       final Variable variable = newVariable("result", "\"Hello, World!\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then - passes because 0.8 >= 0.8 (inclusive)
@@ -139,8 +138,7 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
 
       final Variable variable = newVariable("result", "\"Hello, World!\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then - fails because 0.0 < 0.8; message includes score, threshold, and values
@@ -161,8 +159,7 @@ public class SemanticSimilarityAssertTest {
       // given
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.emptyList());
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       Assertions.assertThatThrownBy(
@@ -210,8 +207,7 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
 
       final Variable variable = newVariable("result", variableValue);
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then
@@ -416,15 +412,14 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(globalModel));
 
       final Variable variable = VariableBuilder.newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then — override model always returns identical vectors so similarity == 1.0 (passes)
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .withSemanticSimilarityConfig(
               c -> SemanticSimilarityConfig.defaults().withEmbeddingModelAdapter(overrideModel))
-          .hasVariableSimilarTo("result", "Hello");
+          .hasVariableSimilarTo(VariableSelectors.byName("result"), "Hello");
     }
 
     @Test
@@ -446,8 +441,7 @@ public class SemanticSimilarityAssertTest {
 
       final Variable varA = VariableBuilder.newVariable("varA", "\"value A\"");
       final Variable varB = VariableBuilder.newVariable("varB", "\"value B\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(java.util.Arrays.asList(varA, varB));
+      when(camundaDataSource.findVariables(any())).thenReturn(java.util.Arrays.asList(varA, varB));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
@@ -489,8 +483,7 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(globalModel));
 
       final Variable variable = VariableBuilder.newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when — use override on first chain
@@ -523,8 +516,7 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(capturingModel));
 
       final Variable variable = newVariable("result", "  Hello WORLD  ");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
@@ -545,8 +537,7 @@ public class SemanticSimilarityAssertTest {
           SemanticSimilarityConfig.of(embeddingModel).withoutPreprocessors());
 
       final Variable variable = newVariable("result", "  Hello WORLD  ");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then — identical vectors even without preprocessing → passes
@@ -571,8 +562,7 @@ public class SemanticSimilarityAssertTest {
               .withPreprocessors(new WhitespaceNormalizerPreprocessor()));
 
       final Variable variable = newVariable("result", "hello");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
@@ -602,8 +592,7 @@ public class SemanticSimilarityAssertTest {
                       .andThen(new WhitespaceNormalizerPreprocessor())));
 
       final Variable variable = newVariable("result", "hello");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when

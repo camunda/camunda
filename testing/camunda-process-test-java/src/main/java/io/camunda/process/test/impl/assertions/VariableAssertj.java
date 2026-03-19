@@ -509,21 +509,23 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   public void hasVariableSimilarTo(
-      final long processInstanceKey, final String variableName, final String expectedValue) {
+      final long processInstanceKey,
+      final VariableSelector variableSelector,
+      final String expectedValue) {
 
     assertSimilarityCheckHasAllRequiredSettings();
     assertExpectationNotEmpty(expectedValue);
 
     hasVariableSatisfies(
-        variableName,
-        rawValue -> evaluateSimilarity(variableName, expectedValue, rawValue),
-        () -> getGlobalProcessInstanceVariables(processInstanceKey));
+        variableSelector,
+        rawValue -> evaluateSimilarity(variableSelector.describe(), expectedValue, rawValue),
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   public void hasLocalVariableSimilarTo(
       final long processInstanceKey,
       final ElementSelector selector,
-      final String variableName,
+      final VariableSelector variableSelector,
       final String expectedValue) {
 
     assertSimilarityCheckHasAllRequiredSettings();
@@ -534,11 +536,12 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         selector,
         instance ->
             hasVariableSatisfies(
-                variableName,
-                rawValue -> evaluateSimilarity(variableName, expectedValue, rawValue),
+                variableSelector,
+                rawValue ->
+                    evaluateSimilarity(variableSelector.describe(), expectedValue, rawValue),
                 () ->
-                    getLocalProcessInstanceVariables(
-                        processInstanceKey, instance.getElementInstanceKey())));
+                    findLocalVariablesBySelector(
+                        processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
   }
 
   private void evaluateSimilarity(
