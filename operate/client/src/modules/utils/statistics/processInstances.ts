@@ -12,15 +12,15 @@ function getInstancesCount(
   data: ProcessDefinitionStatistic[],
   elementId?: string,
 ) {
-  const flowNodeStatistics = data.find(
+  const elementStatistics = data.find(
     (statistics) => statistics.elementId === elementId,
   );
 
-  if (flowNodeStatistics === undefined) {
+  if (elementStatistics === undefined) {
     return 0;
   }
 
-  return flowNodeStatistics.active + flowNodeStatistics.incidents;
+  return elementStatistics.active + elementStatistics.incidents;
 }
 
 export {getInstancesCount};

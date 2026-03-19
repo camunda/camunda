@@ -94,7 +94,7 @@ const DiagramPanel: React.FC = observer(() => {
   } = useListViewXml({
     processDefinitionKey: selectedDefinitionKey,
   });
-  const selectableIds = processDefinitionXML?.selectableFlowNodes.map(
+  const selectableIds = processDefinitionXML?.selectableElements.map(
     (element) => element.id,
   );
 
@@ -118,8 +118,8 @@ const DiagramPanel: React.FC = observer(() => {
       },
     },
     {
-      sourceFlowNodeId: flowNodeId,
-      targetFlowNodeId: selectedTargetElementId ?? undefined,
+      sourceElementId: flowNodeId,
+      targetElementId: selectedTargetElementId ?? undefined,
     },
     selectedDefinitionKey,
     batchModificationStore.state.isEnabled,
