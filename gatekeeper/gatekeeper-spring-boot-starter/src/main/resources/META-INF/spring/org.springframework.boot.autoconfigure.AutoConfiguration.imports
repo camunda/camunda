@@ -1,0 +1,6 @@
+io.camunda.gatekeeper.spring.autoconfigure.GatekeeperAuthAutoConfiguration
+io.camunda.gatekeeper.spring.autoconfigure.GatekeeperOidcAutoConfiguration
+io.camunda.gatekeeper.spring.autoconfigure.GatekeeperBasicAuthAutoConfiguration
+io.camunda.gatekeeper.spring.autoconfigure.GatekeeperSecurityFilterChainAutoConfiguration
+io.camunda.gatekeeper.spring.autoconfigure.GatekeeperSessionAutoConfiguration
+io.camunda.gatekeeper.spring.autoconfigure.GatekeeperWebappFiltersAutoConfiguration
