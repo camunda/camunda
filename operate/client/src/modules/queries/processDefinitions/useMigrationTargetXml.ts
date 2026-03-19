@@ -19,16 +19,16 @@ const getMigrationTargetXmlParser =
   ({
     xml,
     diagramModel,
-    selectableFlowNodes,
+    selectableElements,
   }: {
     xml: string;
     diagramModel: DiagramModel;
-    selectableFlowNodes: BusinessObject[];
+    selectableElements: BusinessObject[];
   }) => {
     return {
       xml,
       diagramModel,
-      selectableFlowNodes: selectableFlowNodes
+      selectableElements: selectableElements
         .filter(isMigratableElement)
         .filter((targetElement) => {
           return (

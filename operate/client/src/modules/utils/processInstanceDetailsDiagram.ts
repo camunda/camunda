@@ -15,51 +15,51 @@ import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import type {AncestorScopeType} from 'modules/stores/modifications';
 
 const checkScope = (
-  parentFlowNode: BusinessObject | undefined,
-  totalRunningInstancesByFlowNode: Record<string, number> | undefined,
+  parentElement: BusinessObject | undefined,
+  totalRunningInstancesByElement: Record<string, number> | undefined,
   predicate: (count: number) => boolean,
 ): boolean => {
-  if (!parentFlowNode) {
+  if (!parentElement) {
     return false;
   }
 
-  const count = totalRunningInstancesByFlowNode?.[parentFlowNode.id] ?? 0;
+  const count = totalRunningInstancesByElement?.[parentElement.id] ?? 0;
 
   if (predicate(count)) {
     return true;
   }
 
   if (
-    !isSubProcess(parentFlowNode.$parent) &&
-    !isAdHocSubProcess(parentFlowNode.$parent)
+    !isSubProcess(parentElement.$parent) &&
+    !isAdHocSubProcess(parentElement.$parent)
   ) {
     return false;
   }
 
   return checkScope(
-    parentFlowNode.$parent,
-    totalRunningInstancesByFlowNode,
+    parentElement.$parent,
+    totalRunningInstancesByElement,
     predicate,
   );
 };
 
 const hasMultipleScopes = (
-  parentFlowNode?: BusinessObject,
-  totalRunningInstancesByFlowNode?: Record<string, number>,
+  parentElement?: BusinessObject,
+  totalRunningInstancesByElement?: Record<string, number>,
 ): boolean =>
   checkScope(
-    parentFlowNode,
-    totalRunningInstancesByFlowNode,
+    parentElement,
+    totalRunningInstancesByElement,
     (count) => count > 1,
   );
 
 const hasSingleScope = (
-  parentFlowNode?: BusinessObject,
-  totalRunningInstancesByFlowNode?: Record<string, number>,
+  parentElement?: BusinessObject,
+  totalRunningInstancesByElement?: Record<string, number>,
 ): boolean =>
   checkScope(
-    parentFlowNode,
-    totalRunningInstancesByFlowNode,
+    parentElement,
+    totalRunningInstancesByElement,
     (count) => count === 1,
   );
 
@@ -103,7 +103,7 @@ const areInSameRunningScope = (
   businessObjects: BusinessObjects,
   sourceElementId: string,
   targetElementId: string,
-  totalRunningInstancesByFlowNode?: Record<string, number>,
+  totalRunningInstancesByElement?: Record<string, number>,
 ): boolean => {
   const sourceElement = businessObjects[sourceElementId];
   const targetElement = businessObjects[targetElementId];
@@ -120,8 +120,7 @@ const areInSameRunningScope = (
   }
 
   if (sourceParent.id === targetParent.id) {
-    const runningCount =
-      totalRunningInstancesByFlowNode?.[sourceParent.id] ?? 0;
+    const runningCount = totalRunningInstancesByElement?.[sourceParent.id] ?? 0;
     return runningCount > 0;
   }
 
@@ -130,21 +129,21 @@ const areInSameRunningScope = (
 
 const getAncestorScopeType = (
   businessObjects: BusinessObjects,
-  sourceFlowNodeId: string,
-  targetFlowNodeId: string,
-  totalRunningInstancesByFlowNode?: Record<string, number>,
+  sourceElementId: string,
+  targetElementId: string,
+  totalRunningInstancesByElement?: Record<string, number>,
 ): AncestorScopeType => {
-  const targetFlowNode = businessObjects[targetFlowNodeId];
+  const targetElement = businessObjects[targetElementId];
 
-  if (!hasMultipleScopes(targetFlowNode, totalRunningInstancesByFlowNode)) {
+  if (!hasMultipleScopes(targetElement, totalRunningInstancesByElement)) {
     return;
   }
 
   const inSameScope = areInSameRunningScope(
     businessObjects,
-    sourceFlowNodeId,
-    targetFlowNodeId,
-    totalRunningInstancesByFlowNode,
+    sourceElementId,
+    targetElementId,
+    totalRunningInstancesByElement,
   );
 
   return inSameScope ? 'sourceParent' : 'inferred';
