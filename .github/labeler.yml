@@ -23,4 +23,9 @@ component/c8run:
           - '.github/workflows/c8run-build.yaml'
           - '.github/workflows/c8run-release.yaml'
           - '.github/actions/setup-c8run/action.yml'
+benchmark:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/camunda-load-test.yml'
+          - 'load-tests/**'
 
