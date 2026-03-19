@@ -15,20 +15,45 @@ fi
 
 required_tags=(name description url licenses developers scm)
 
+validate_xml_well_formed() {
+  local file_path="$1"
+  local error_output
+  if ! error_output="$(xmllint --noout "${file_path}" 2>&1)"; then
+    echo "ERROR: ${file_path} is not a well-formed XML file." >&2
+    echo "  xmllint output:" >&2
+    while IFS= read -r line; do
+      echo "    ${line}" >&2
+    done <<< "${error_output}"
+    return 1
+  fi
+}
+
 read_xml_value() {
   local file_path="$1"
   local tag_name="$2"
-  xmllint --xpath "string(/*[local-name()='project']/*[local-name()='${tag_name}'])" "${file_path}" 2>/dev/null || true
+  xmllint --xpath "normalize-space(string(/*[local-name()='project']/*[local-name()='${tag_name}']))" "${file_path}"
 }
 
 failures=0
+flattened_poms_found=0
 
 while IFS= read -r flattened_pom; do
+  flattened_poms_found=$((flattened_poms_found + 1))
   module_dir="$(dirname "${flattened_pom}")"
   source_pom="${module_dir}/pom.xml"
 
   if [[ ! -f "${source_pom}" ]]; then
     source_pom="pom.xml"
+  fi
+
+  if ! validate_xml_well_formed "${flattened_pom}"; then
+    failures=$((failures + 1))
+    continue
+  fi
+
+  if ! validate_xml_well_formed "${source_pom}"; then
+    failures=$((failures + 1))
+    continue
   fi
 
   missing_tags=()
@@ -57,6 +82,12 @@ while IFS= read -r flattened_pom; do
     echo "  Fix: add/adjust metadata in ${source_pom} so flatten produces required values." >&2
   fi
 done < <(find "${search_roots[@]}" -name '.flattened-pom.xml' -type f | sort)
+
+if [[ "${flattened_poms_found}" -eq 0 ]]; then
+  echo "Validation failed: no .flattened-pom.xml files were found under: ${search_roots[*]}" >&2
+  echo "  Fix: ensure flattening runs before validation (e.g. process-resources with flatten plugin enabled)." >&2
+  exit 1
+fi
 
 if [[ "${failures}" -gt 0 ]]; then
   echo "Validation failed: ${failures} flattened POM file(s) are missing required metadata." >&2
