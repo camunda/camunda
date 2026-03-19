@@ -10,8 +10,10 @@ package io.camunda.eventbridge.broker.partition;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.eventbridge.broker.actor.PollActor;
 import io.camunda.eventbridge.broker.actor.PublishActor;
 import io.camunda.eventbridge.broker.logstream.EventBridgeLogStorage;
+import io.camunda.eventbridge.broker.topology.TopologyBroadcaster;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -24,17 +26,20 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li><strong>LEADER</strong>: creates an {@link EventBridgeLogStorage} backed by the RAFT
- *       appender, builds a {@link LogStream} on top of it, and calls {@link PublishActor#connect}
- *       with the live writer and reader so that publish and poll requests can proceed.
+ *       appender, builds a {@link LogStream} on top of it, calls {@link PublishActor#connect} with
+ *       the live writer and reader so that publish requests can proceed, calls {@link
+ *       PollActor#connect(LogStream)} so that poll/fetch requests can read from the log, and
+ *       notifies the {@link TopologyBroadcaster} so that the SWIM properties are updated for
+ *       gateway routing.
  *   <li><strong>FOLLOWER / INACTIVE / CANDIDATE</strong>: calls {@link PublishActor#disconnect} and
- *       closes the {@link LogStream}, leaving the actor in a "not-leader" state where requests
- *       return a clear error.
+ *       {@link PollActor#disconnect()}, closes the {@link LogStream}, and notifies the {@link
+ *       TopologyBroadcaster} to remove the partition-leader property from SWIM.
  * </ul>
  *
  * <p>The role-change callback is invoked on RAFT's internal thread. The {@link LogStream} and
- * {@link EventBridgeLogStorage} are created synchronously on that thread; the actor connection is
- * posted to the actor's own thread via {@link PublishActor#connect}/{@link
- * PublishActor#disconnect}.
+ * {@link EventBridgeLogStorage} are created synchronously on that thread; the actor connections are
+ * posted to each actor's own thread via {@link PublishActor#connect}/{@link
+ * PublishActor#disconnect} and {@link PollActor#connect}/{@link PollActor#disconnect()}.
  */
 public final class EventBridgePartition implements RaftRoleChangeListener {
 
@@ -46,6 +51,8 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
   private final int partitionId;
   private final RaftPartition raftPartition;
   private final PublishActor publishActor;
+  private final PollActor pollActor;
+  private final TopologyBroadcaster topologyBroadcaster;
 
   /** Non-null only while this node is leader. */
   private EventBridgeLogStorage logStorage;
@@ -54,10 +61,16 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
   private LogStream logStream;
 
   public EventBridgePartition(
-      final int partitionId, final RaftPartition raftPartition, final PublishActor publishActor) {
+      final int partitionId,
+      final RaftPartition raftPartition,
+      final PublishActor publishActor,
+      final PollActor pollActor,
+      final TopologyBroadcaster topologyBroadcaster) {
     this.partitionId = partitionId;
     this.raftPartition = raftPartition;
     this.publishActor = publishActor;
+    this.pollActor = pollActor;
+    this.topologyBroadcaster = topologyBroadcaster;
     raftPartition.addRoleChangeListener(this);
   }
 
@@ -68,8 +81,11 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
   public void onNewRole(final Role newRole, final long newTerm) {
     LOG.info("Partition {} role change → {} (term {})", partitionId, newRole, newTerm);
     if (newRole == Role.LEADER) {
-      transitionToLeader();
+      transitionToLeader(newTerm);
     } else {
+      // Remove from SWIM *before* disconnecting the actor so the gateway stops routing new
+      // requests here immediately; in-flight requests finish before the actor is torn down.
+      topologyBroadcaster.onLostLeadership(partitionId, newRole);
       transitionToNonLeader(newRole);
     }
   }
@@ -96,7 +112,7 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
   // -------------------------------------------------------------------------
   // Private helpers
 
-  private void transitionToLeader() {
+  private void transitionToLeader(final long newTerm) {
     // Always tear down any pre-existing LogStream before creating a new one, regardless of
     // whether the new server/appender are available. Doing this here prevents leaking the
     // old LogStream when the server or appender are unavailable on re-election.
@@ -136,9 +152,17 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
             .build();
 
     // Wire writer and reader to the PublishActor (posted to its own actor thread).
-    publishActor.connect(logStream.newLogStreamWriter(), logStream.newLogStreamReader());
+    publishActor.connect(logStream.newLogStreamWriter(), logStream.newLogStreamReader(), server);
 
-    LOG.info("Partition {} LogStream connected to PublishActor", partitionId);
+    // Wire the PollActor to the LogStream so it can read events and register for long-poll
+    // notifications. PollActor opens its own dedicated reader.
+    pollActor.connect(logStream);
+
+    // Advertise leadership in SWIM *after* the LogStream is fully wired so the gateway
+    // does not route requests here before we can serve them.
+    topologyBroadcaster.onBecameLeader(partitionId, newTerm);
+
+    LOG.info("Partition {} LogStream connected to PublishActor and PollActor", partitionId);
   }
 
   private void transitionToNonLeader(final Role newRole) {
@@ -147,12 +171,17 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
       return;
     }
 
-    // Disconnect the actor first so in-flight publishes fail cleanly.
+    // Disconnect both actors first so in-flight requests fail cleanly before the LogStream is
+    // closed. PollActor must be disconnected before closeLogStreamIfPresent() because it holds a
+    // reference to the LogStream's record-available listener.
     publishActor.disconnect();
+    pollActor.disconnect();
     closeLogStreamIfPresent();
 
     LOG.info(
-        "Partition {} LogStream disconnected from PublishActor (role={})", partitionId, newRole);
+        "Partition {} LogStream disconnected from PublishActor and PollActor (role={})",
+        partitionId,
+        newRole);
   }
 
   private void closeLogStreamIfPresent() {

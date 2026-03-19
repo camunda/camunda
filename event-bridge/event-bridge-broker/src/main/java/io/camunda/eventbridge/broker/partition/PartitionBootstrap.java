@@ -11,7 +11,9 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.camunda.eventbridge.broker.actor.PollActor;
 import io.camunda.eventbridge.broker.actor.PublishActor;
+import io.camunda.eventbridge.broker.topology.TopologyBroadcaster;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
@@ -42,7 +44,7 @@ import org.slf4j.LoggerFactory;
  *       io.atomix.raft.partition.RaftPartition}) and calls {@code bootstrap()} on it.
  *   <li>Registers a {@link io.atomix.raft.RaftRoleChangeListener} via the partition so that {@link
  *       PublishActor#connect}/{@link PublishActor#disconnect} are called on every leader
- *       transition.
+ *       transition, and the {@link TopologyBroadcaster} keeps SWIM properties up-to-date.
  * </ol>
  *
  * <p>Bootstrap is asynchronous; RAFT leader election and initial log catch-up proceed in the
@@ -64,6 +66,7 @@ public final class PartitionBootstrap {
   private final ActorScheduler actorScheduler;
   private final EventBridgeProperties properties;
   private final Map<Integer, PublishActor> publishActors;
+  private final Map<Integer, PollActor> pollActors;
   private final MeterRegistry meterRegistry;
   private final EventBridgePartitionFactory partitionFactory;
 
@@ -77,11 +80,13 @@ public final class PartitionBootstrap {
       final ActorScheduler actorScheduler,
       final EventBridgeProperties properties,
       final Map<Integer, PublishActor> publishActors,
+      final Map<Integer, PollActor> pollActors,
       final MeterRegistry meterRegistry) {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
     this.publishActors = publishActors;
+    this.pollActors = pollActors;
     this.meterRegistry = meterRegistry;
     this.partitionFactory = new EventBridgePartitionFactory(properties);
   }
@@ -103,22 +108,35 @@ public final class PartitionBootstrap {
     final var managementService =
         new DefaultPartitionManagementService(membershipService, cluster.getCommunicationService());
 
-    final var localMemberId = membershipService.getLocalMember().id();
+    final var localMember = membershipService.getLocalMember();
+    final var localMemberId = localMember.id();
     final var allMembers = membershipService.getMembers();
     final int replicationFactor = properties.raft().replicationFactor();
     final Set<MemberId> raftMembers = buildMemberSet(localMemberId, allMembers, replicationFactor);
 
+    // Create the broadcaster that publishes leadership changes into SWIM member properties.
+    final var topologyBroadcaster = new TopologyBroadcaster(localMember, localMemberId.id());
+
+    // The coordinator broker advertises its identity once at startup; this is a static property
+    // that does not change with partition leadership transitions.
+    final boolean isCoordinator = properties.coordinator().brokerId().equals(localMemberId.id());
+    if (isCoordinator) {
+      topologyBroadcaster.advertiseCoordinator();
+    }
+
     final int partitionCount = properties.broker().partitionCount();
     LOG.info(
         "Bootstrapping {} Event Bridge partition(s) with replication factor {} "
-            + "(local member: {}, raft members: {})",
+            + "(local member: {}, raft members: {}, isCoordinator: {})",
         partitionCount,
         replicationFactor,
         localMemberId,
-        raftMembers);
+        raftMembers,
+        isCoordinator);
 
     for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
-      bootstrapPartition(partitionId, raftMembers, localMemberId, managementService);
+      bootstrapPartition(
+          partitionId, raftMembers, localMemberId, managementService, topologyBroadcaster);
     }
   }
 
@@ -152,7 +170,8 @@ public final class PartitionBootstrap {
       final int partitionId,
       final Set<MemberId> members,
       final MemberId localMemberId,
-      final DefaultPartitionManagementService managementService) {
+      final DefaultPartitionManagementService managementService,
+      final TopologyBroadcaster topologyBroadcaster) {
 
     // FileBasedSnapshotStore manages its own snapshots/ and pending-snapshots/ subdirectories
     // internally; pass the partition root directory (same convention as SnapshotStoreStep).
@@ -168,6 +187,14 @@ public final class PartitionBootstrap {
     if (publishActor == null) {
       LOG.error(
           "No PublishActor registered for partition {}; skipping RAFT bootstrap for that partition",
+          partitionId);
+      return;
+    }
+
+    final var pollActor = pollActors.get(partitionId);
+    if (pollActor == null) {
+      LOG.error(
+          "No PollActor registered for partition {}; skipping RAFT bootstrap for that partition",
           partitionId);
       return;
     }
@@ -194,7 +221,8 @@ public final class PartitionBootstrap {
                       partitionId, members, localMemberId, partitionDir, meterRegistry);
 
               final var partition =
-                  new EventBridgePartition(partitionId, raftPartition, publishActor);
+                  new EventBridgePartition(
+                      partitionId, raftPartition, publishActor, pollActor, topologyBroadcaster);
               partitions.add(partition);
 
               raftPartition
