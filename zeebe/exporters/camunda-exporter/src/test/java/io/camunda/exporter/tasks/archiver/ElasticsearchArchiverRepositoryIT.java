@@ -1378,9 +1378,9 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   /**
-   * computes the start of the epoch-aligned bucket that a given date falls into, for a given
-   * interval size. It's date-independent — no matter what day you run the test, it will always
-   * compute the correct expected bucket boundary to match what Elasticsearch returns. *
+   * We use this method to count days the same way ES does. This is needed because, by simply using
+   * Java relative dates, if the number of days between epoch and the date is not divisible by the
+   * rollover interval, the rest causes a lost day in the count.
    */
   private static String bucketStart(
       final Instant date, final int intervalDays, final DateTimeFormatter formatter) {
