@@ -74,6 +74,7 @@ function getUserTaskAuditLogsQueryOptions(
 
       return previousPage;
     },
+    refetchInterval: 5000,
   });
 }
 
