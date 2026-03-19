@@ -15,23 +15,29 @@ import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
 import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
+import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
- * Integration test for standalone decision instances (evaluated without a process context).
- * These instances have processDefinitionKey=0 and processInstanceKey=0, which can trigger
+ * Integration test for standalone decision instances (evaluated without a process context). These
+ * instances have processDefinitionKey=0 and processInstanceKey=0, which can trigger
  * ClassCastException if Jackson deserializes them as Integer instead of Long.
  */
 public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
-  private final String evaluationDate = "2024-02-15T22:40:10.834+0000";
   private static final String DECISION_RESULT = "\"standalone result\"";
+  private final String evaluationDate = "2024-02-15T22:40:10.834+0000";
 
-  @Autowired private DecisionInstanceDao dao;
+  @Qualifier("ElasticsearchDecisionInstanceDaoV1")
+  @Autowired
+  private DecisionInstanceDao dao;
+
   @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
   @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
@@ -48,8 +54,8 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setKey(9999999999999999L)
             .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
             .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(evaluationDate))
-            .setProcessDefinitionKey(0L)  // Zero for standalone decisions
-            .setProcessInstanceKey(0L)    // Zero for standalone decisions
+            .setProcessDefinitionKey(-1) // -1 for standalone decisions
+            .setProcessInstanceKey(-1) // -1 for standalone decisions
             .setDecisionId("standaloneDecision")
             .setDecisionDefinitionId("9999999999999998")
             .setDecisionName("Standalone Decision")
@@ -66,8 +72,8 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setKey(9999999999999997L)
             .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
             .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(evaluationDate))
-            .setProcessDefinitionKey(0L)
-            .setProcessInstanceKey(0L)
+            .setProcessDefinitionKey(-1)
+            .setProcessInstanceKey(-1)
             .setDecisionId("anotherStandaloneDecision")
             .setDecisionDefinitionId("9999999999999996")
             .setDecisionName("Another Standalone Decision")
@@ -89,10 +95,13 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
     assertThat(results.getItems()).isNotEmpty();
 
     // Find our standalone decision instances
-    final var standaloneDecisions = results.getItems().stream()
-        .filter(di -> "standaloneDecision".equals(di.getDecisionId())
-                   || "anotherStandaloneDecision".equals(di.getDecisionId()))
-        .toList();
+    final var standaloneDecisions =
+        results.getItems().stream()
+            .filter(
+                di ->
+                    "standaloneDecision".equals(di.getDecisionId())
+                        || "anotherStandaloneDecision".equals(di.getDecisionId()))
+            .toList();
 
     assertThat(standaloneDecisions).hasSize(2);
 
@@ -100,11 +109,11 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
     for (final DecisionInstance decision : standaloneDecisions) {
       assertThat(decision.getProcessDefinitionKey())
           .isNotNull()
-          .isEqualTo(0L)
+          .isEqualTo(-1L)
           .isInstanceOf(Long.class);
       assertThat(decision.getProcessInstanceKey())
           .isNotNull()
-          .isEqualTo(0L)
+          .isEqualTo(-1L)
           .isInstanceOf(Long.class);
       assertThat(decision.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
     }
@@ -123,11 +132,11 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
     // Verify zero values are correctly deserialized
     assertThat(decision.getProcessDefinitionKey())
         .isNotNull()
-        .isEqualTo(0L)
+        .isEqualTo(-1L)
         .isInstanceOf(Long.class);
     assertThat(decision.getProcessInstanceKey())
         .isNotNull()
-        .isEqualTo(0L)
+        .isEqualTo(-1L)
         .isInstanceOf(Long.class);
   }
 
@@ -137,7 +146,7 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
     final Results<DecisionInstance> results =
         dao.search(
             new Query<DecisionInstance>()
-                .setFilter(new DecisionInstance().setProcessDefinitionKey(0L)));
+                .setFilter(new DecisionInstance().setProcessDefinitionKey(-1L)));
 
     // Then standalone decisions should be found
     assertThat(results.getTotal()).isGreaterThanOrEqualTo(2);
@@ -147,7 +156,7 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
     // All returned decisions should have processDefinitionKey=0
     assertThat(decisions)
-        .allMatch(d -> d.getProcessDefinitionKey() != null && d.getProcessDefinitionKey() == 0L);
+        .allMatch(d -> d.getProcessDefinitionKey() != null && d.getProcessDefinitionKey() == -1L);
   }
 
   @Test
@@ -156,16 +165,17 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
     final Results<DecisionInstance> results =
         dao.search(
             new Query<DecisionInstance>()
-                .setFilter(new DecisionInstance().setProcessDefinitionKey(0L))
-                .setSort(Query.Sort.listOf(DecisionInstance.DECISION_VERSION, Query.Sort.Order.ASC)));
+                .setFilter(new DecisionInstance().setProcessDefinitionKey(-1L))
+                .setSort(Sort.listOf(DecisionInstance.DECISION_VERSION, Order.ASC)));
 
     // Then sorting should work correctly
     assertThat(results.getItems()).isNotEmpty();
 
-    final var versions = results.getItems().stream()
-        .filter(d -> d.getProcessDefinitionKey() == 0L)
-        .map(DecisionInstance::getDecisionVersion)
-        .toList();
+    final var versions =
+        results.getItems().stream()
+            .filter(d -> d.getProcessDefinitionKey() == -1L)
+            .map(DecisionInstance::getDecisionVersion)
+            .toList();
 
     assertThat(versions).isSorted();
   }
