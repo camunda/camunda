@@ -15,6 +15,7 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -634,7 +635,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         },
       );
 
-      await assertBadRequest(res, 'For input string: \"meow\"');
+      await assertInvalidArgument(res, 400, `The provided itemKey \'${invalidFilterValue}\' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`);
     }).toPass(defaultAssertionOptions);
   });
 });

@@ -15,6 +15,7 @@ import {
 import {
   assertBadRequest,
   assertForbiddenRequest,
+  assertInvalidArgument,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -313,7 +314,7 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(res, 'For input string: \"notANumber\"');
+      await assertInvalidArgument(res, 400, `The provided processInstanceKey 'notANumber' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`);
     }).toPass(defaultAssertionOptions);
   });
 

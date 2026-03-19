@@ -15,6 +15,7 @@ import {
   assertBadRequest,
   assertUnauthorizedRequest,
   encode,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {
   CORRELATE_MESSAGE,
@@ -354,8 +355,8 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       },
     );
-    await assertBadRequest(res, `For input string: \"${invalidFieldValue}\"`);
-  });
+    await assertInvalidArgument(res, 400, `The provided processInstanceKey \'${invalidFieldValue}\' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`)
+      });
 
   test('Search Message Subscriptions - 401 Unauthorized', async ({request}) => {
     const res = await request.post(
