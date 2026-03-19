@@ -25,6 +25,7 @@ import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
@@ -36,11 +37,11 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
       Arrays.asList(IncidentState.ACTIVE, IncidentState.PENDING, IncidentState.MIGRATED);
 
   private final CamundaDataSource dataSource;
-  private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
 
   protected IncidentAssertj(
       final CamundaDataSource dataSource,
-      final CamundaAssertAwaitBehavior awaitBehavior,
+      final Supplier<CamundaAssertAwaitBehavior> awaitBehavior,
       final String failureMessagePrefix) {
     super(failureMessagePrefix, IncidentAssertj.class);
     this.dataSource = dataSource;
@@ -82,7 +83,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
 
   private void awaitIncidentAssertion(
       final Consumer<IncidentFilter> filter, final Consumer<List<Incident>> assertion) {
-    awaitBehavior.untilAsserted(() -> dataSource.findIncidents(filter), assertion);
+    awaitBehavior.get().untilAsserted(() -> dataSource.findIncidents(filter), assertion);
   }
 
   private String collectIncidentReports(final List<Incident> incidents) {

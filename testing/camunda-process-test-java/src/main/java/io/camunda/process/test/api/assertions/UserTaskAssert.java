@@ -18,7 +18,7 @@ package io.camunda.process.test.api.assertions;
 import java.util.List;
 
 /** The assertion object to verify a user task. */
-public interface UserTaskAssert {
+public interface UserTaskAssert extends WithAssertionConfiguration<UserTaskAssert> {
   /**
    * Verifies that the user task is created. The verification fails if the task is completed,
    * cancelled, failed or not created.

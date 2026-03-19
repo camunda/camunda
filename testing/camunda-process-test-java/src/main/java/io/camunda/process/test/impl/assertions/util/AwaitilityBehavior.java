@@ -91,4 +91,12 @@ public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
   public void setAssertionTimeout(final Duration assertionTimeout) {
     this.assertionTimeout = assertionTimeout;
   }
+
+  @Override
+  public CamundaAssertAwaitBehavior withAssertionTimeout(final Duration assertionTimeout) {
+    final AwaitilityBehavior newInstance = new AwaitilityBehavior();
+    newInstance.setAssertionTimeout(assertionTimeout);
+    newInstance.setAssertionInterval(assertionInterval);
+    return newInstance;
+  }
 }

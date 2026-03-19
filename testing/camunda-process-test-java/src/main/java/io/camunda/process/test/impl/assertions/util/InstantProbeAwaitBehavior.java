@@ -60,4 +60,11 @@ public class InstantProbeAwaitBehavior implements CamundaAssertAwaitBehavior {
   public void setAssertionTimeout(final Duration assertionTimeout) {
     // no-op — instant probing has no timeout
   }
+
+  @Override
+  public CamundaAssertAwaitBehavior withAssertionTimeout(final Duration assertionTimeout) {
+    final InstantProbeAwaitBehavior newInstance = new InstantProbeAwaitBehavior();
+    newInstance.setAssertionTimeout(assertionTimeout);
+    return newInstance;
+  }
 }
