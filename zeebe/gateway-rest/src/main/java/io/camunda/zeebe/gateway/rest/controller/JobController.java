@@ -49,7 +49,6 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
@@ -87,13 +86,12 @@ public class JobController {
   @CamundaPostMapping(path = "/activation")
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest,
-      final HttpServletRequest httpServletRequest,
-      final HttpServletResponse httpServletResponse) {
+      final HttpServletRequest httpServletRequest) {
     return RequestMapper.toJobsActivationRequest(
             activationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            req -> activateJobs(req, httpServletRequest, httpServletResponse));
+            req -> activateJobs(req, httpServletRequest));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/failure")
@@ -181,18 +179,13 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
-      final ActivateJobsRequest activationRequest,
-      final HttpServletRequest httpServletRequest,
-      final HttpServletResponse httpServletResponse) {
+      final ActivateJobsRequest activationRequest, final HttpServletRequest httpServletRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     // Store the future as a request attribute so the LongPollingDisconnectInterceptor
     // can start periodic connection probes to cancel it on client disconnect
     httpServletRequest.setAttribute(
         LongPollingDisconnectInterceptor.ACTIVATE_JOBS_FUTURE_ATTR, result);
     final var responseObserver = responseObserverProvider.apply(result);
-    // Give the observer access to the servlet response so it can probe the connection
-    // in onNext() before accepting activated jobs
-    responseObserver.setServletResponse(httpServletResponse);
     jobServices.activateJobs(
         activationRequest,
         responseObserver,
