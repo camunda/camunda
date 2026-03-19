@@ -101,7 +101,6 @@ public class UserTaskVariableHandler
             v -> {
               final Map<String, Object> updateFields = new HashMap<>();
               updateFields.put(TaskTemplate.VARIABLE_VALUE, v.getValue());
-              updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, v.getFullValue());
               updateFields.put(TaskTemplate.IS_TRUNCATED, v.getIsTruncated());
               batchRequest.upsertWithRouting(
                   indexName, v.getId(), v, updateFields, String.valueOf(v.getProcessInstanceId()));
@@ -132,7 +131,7 @@ public class UserTaskVariableHandler
       final Record<VariableRecordValue> record, final TaskVariableEntity taskVariable) {
     if (record.getValue().getValue().length() > variableSizeThreshold) {
       taskVariable.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
-      taskVariable.setFullValue(record.getValue().getValue());
+      taskVariable.setFullValue(null);
       taskVariable.setIsTruncated(true);
     } else {
       taskVariable.setValue(record.getValue().getValue());

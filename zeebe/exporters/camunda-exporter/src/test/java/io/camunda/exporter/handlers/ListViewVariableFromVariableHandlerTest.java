@@ -33,8 +33,9 @@ public class ListViewVariableFromVariableHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
+  private final int variableSizeThreshold = 100;
   private final ListViewVariableFromVariableHandler underTest =
-      new ListViewVariableFromVariableHandler(indexName);
+      new ListViewVariableFromVariableHandler(indexName, variableSizeThreshold);
 
   @Test
   public void testGetHandledValueType() {
@@ -152,5 +153,53 @@ public class ListViewVariableFromVariableHandlerTest {
     assertThat(entity.getVarName()).isEqualTo(variableRecord.getValue().getName());
     assertThat(entity.getVarValue()).isEqualTo(variableRecord.getValue().getValue());
     assertThat(entity.getTenantId()).isEqualTo(variableRecord.getValue().getTenantId());
+  }
+
+  @Test
+  void shouldTruncateVarValueWhenExceedsThreshold() {
+    // given
+    final String longValue = "v".repeat(variableSizeThreshold + 50);
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withValue(longValue)
+                            .build()));
+
+    // when
+    final VariableForListViewEntity entity = new VariableForListViewEntity();
+    underTest.updateEntity(variableRecord, entity);
+
+    // then
+    assertThat(entity.getVarValue()).hasSize(variableSizeThreshold);
+    assertThat(entity.getVarValue()).isEqualTo("v".repeat(variableSizeThreshold));
+  }
+
+  @Test
+  void shouldNotTruncateVarValueWhenBelowThreshold() {
+    // given
+    final String shortValue = "v".repeat(variableSizeThreshold - 10);
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withValue(shortValue)
+                            .build()));
+
+    // when
+    final VariableForListViewEntity entity = new VariableForListViewEntity();
+    underTest.updateEntity(variableRecord, entity);
+
+    // then
+    assertThat(entity.getVarValue()).hasSize(variableSizeThreshold - 10);
+    assertThat(entity.getVarValue()).isEqualTo(shortValue);
   }
 }
