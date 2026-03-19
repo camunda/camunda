@@ -191,7 +191,7 @@ public final class PartitionBootstrap {
               }
               final var raftPartition =
                   partitionFactory.createPartition(
-                      partitionId, members, localMemberId, meterRegistry);
+                      partitionId, members, localMemberId, partitionDir, meterRegistry);
 
               final var partition =
                   new EventBridgePartition(partitionId, raftPartition, publishActor);
