@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.agrona.DirectBuffer;
 
 /**
@@ -84,6 +85,7 @@ public final class EventLogAppendEntry implements LogAppendEntry {
     final var meta = new RecordMetadata();
     meta.recordType(RecordType.NULL_VAL);
     meta.valueType(ValueType.NULL_VAL);
+    meta.intent(Intent.UNKNOWN);
     return meta;
   }
 }

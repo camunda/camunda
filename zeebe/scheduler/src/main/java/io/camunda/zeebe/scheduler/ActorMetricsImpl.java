@@ -65,7 +65,7 @@ final class ActorMetricsImpl implements ActorMetrics {
 
   @Override
   public boolean isEnabled() {
-    return true;
+    return false;
   }
 
   @Override

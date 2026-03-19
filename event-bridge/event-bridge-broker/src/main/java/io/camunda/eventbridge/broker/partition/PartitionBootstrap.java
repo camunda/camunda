@@ -222,7 +222,8 @@ public final class PartitionBootstrap {
 
               final var partition =
                   new EventBridgePartition(
-                      partitionId, raftPartition, publishActor, pollActor, topologyBroadcaster);
+                      partitionId, raftPartition, publishActor, pollActor, topologyBroadcaster,
+                      meterRegistry);
               partitions.add(partition);
 
               raftPartition

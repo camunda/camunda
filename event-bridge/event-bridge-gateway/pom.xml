@@ -103,6 +103,25 @@
       <artifactId>json-path</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Integration test: Event Bridge client for end-to-end HTTP testing -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Integration test: Awaitility for async waiting -->
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Integration test: Micrometer for ActorScheduler metrics (optional bean) -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>

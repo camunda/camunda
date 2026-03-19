@@ -38,7 +38,10 @@ public enum Profile {
   INSECURE("insecure"),
 
   // indicating legacy standalone application
-  STANDALONE("standalone");
+  STANDALONE("standalone"),
+
+  // Event Bridge component
+  EVENT_BRIDGE("event-bridge");
 
   private final String id;
 

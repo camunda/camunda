@@ -104,6 +104,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-gateway</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker-client</artifactId>
     </dependency>
 
@@ -994,6 +1000,10 @@
             <program>
               <id>cdbg</id>
               <mainClass>io.camunda.debug.cli.Main</mainClass>
+            </program>
+            <program>
+              <id>event-bridge</id>
+              <mainClass>io.camunda.application.StandaloneEventBridge</mainClass>
             </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>

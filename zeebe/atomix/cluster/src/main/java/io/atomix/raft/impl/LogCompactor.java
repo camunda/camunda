@@ -76,6 +76,19 @@ public final class LogCompactor {
   }
 
   /**
+   * Sets the compactable index to the given value and immediately compacts the log up to it,
+   * ignoring the replication threshold. Intended for external callers (e.g. Event Bridge) that
+   * track consumed positions independently and drive compaction explicitly.
+   *
+   * @param index the RAFT log index up to which entries may be deleted
+   * @return {@code true} if any log entries were deleted, {@code false} otherwise
+   */
+  public boolean compactUpTo(final long index) {
+    setCompactableIndex(index);
+    return compactIgnoringReplicationThreshold();
+  }
+
+  /**
    * Assumes our snapshots are being taken asynchronously, and we regularly update the compactable
    * index. It can happen that nothing is compacted (e.g. there are no snapshots since the last
    * compaction).

@@ -14,6 +14,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.storage.log.RaftLogFlusher;
+import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -134,6 +135,7 @@ public final class EventBridgePartitionFactory {
     // Do not register on legacy Zeebe RAFT subjects.
     config.setSendOnLegacySubject(false);
     config.setReceiveOnLegacySubject(false);
+    config.setEntryValidator(new NoopEntryValidator());
     return config;
   }
 

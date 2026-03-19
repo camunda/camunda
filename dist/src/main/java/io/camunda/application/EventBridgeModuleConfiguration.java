@@ -110,7 +110,7 @@ public class EventBridgeModuleConfiguration {
             Version.from(VersionUtil.getVersion()),
             "EventBridge-" + clusterCfg.nodeId(),
             meterRegistry);
-    atomixCluster.start();
+    atomixCluster.start().join();
     return atomixCluster;
   }
 

@@ -15,6 +15,8 @@ import io.camunda.eventbridge.broker.actor.PublishActor;
 import io.camunda.eventbridge.broker.logstream.EventBridgeLogStorage;
 import io.camunda.eventbridge.broker.topology.TopologyBroadcaster;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,8 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
   private final PublishActor publishActor;
   private final PollActor pollActor;
   private final TopologyBroadcaster topologyBroadcaster;
+  private final InstantSource clock;
+  private final MeterRegistry meterRegistry;
 
   /** Non-null only while this node is leader. */
   private EventBridgeLogStorage logStorage;
@@ -65,12 +69,33 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
       final RaftPartition raftPartition,
       final PublishActor publishActor,
       final PollActor pollActor,
-      final TopologyBroadcaster topologyBroadcaster) {
+      final TopologyBroadcaster topologyBroadcaster,
+      final MeterRegistry meterRegistry) {
+    this(
+        partitionId,
+        raftPartition,
+        publishActor,
+        pollActor,
+        topologyBroadcaster,
+        meterRegistry,
+        InstantSource.system());
+  }
+
+  EventBridgePartition(
+      final int partitionId,
+      final RaftPartition raftPartition,
+      final PublishActor publishActor,
+      final PollActor pollActor,
+      final TopologyBroadcaster topologyBroadcaster,
+      final MeterRegistry meterRegistry,
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.raftPartition = raftPartition;
     this.publishActor = publishActor;
     this.pollActor = pollActor;
     this.topologyBroadcaster = topologyBroadcaster;
+    this.meterRegistry = meterRegistry;
+    this.clock = clock;
     raftPartition.addRoleChangeListener(this);
   }
 
@@ -149,6 +174,8 @@ public final class EventBridgePartition implements RaftRoleChangeListener {
             .withLogName("event-bridge-" + partitionId)
             .withPartitionId(partitionId)
             .withMaxFragmentSize(DEFAULT_MAX_FRAGMENT_SIZE)
+            .withClock(clock)
+            .withMeterRegistry(meterRegistry)
             .build();
 
     // Wire writer and reader to the PublishActor (posted to its own actor thread).
