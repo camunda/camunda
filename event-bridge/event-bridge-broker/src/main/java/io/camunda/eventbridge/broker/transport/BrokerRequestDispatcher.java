@@ -224,7 +224,7 @@ public final class BrokerRequestDispatcher {
     return actor
         .getLatestPosition()
         .toCompletableFuture()
-        .thenApply(pos -> BrokerSbeCodec.encodeLatestPosition(ErrorCode.NULL_VAL, pos, ""))
+        .thenApply(pos -> BrokerSbeCodec.encodeLatestPosition(ErrorCode.NONE, pos, ""))
         .exceptionally(
             t -> {
               LOG.error(
@@ -284,7 +284,7 @@ public final class BrokerRequestDispatcher {
     return coordinatorActor
         .heartbeat(req.groupId(), req.consumerId())
         .toCompletableFuture()
-        .thenApply(generation -> BrokerSbeCodec.encodeHeartbeat(ErrorCode.NULL_VAL, generation, ""))
+        .thenApply(generation -> BrokerSbeCodec.encodeHeartbeat(ErrorCode.NONE, generation, ""))
         .exceptionally(
             t -> {
               final Throwable cause = unwrap(t);
@@ -318,7 +318,7 @@ public final class BrokerRequestDispatcher {
     return coordinatorActor
         .commitOffset(req.groupId(), req.consumerId(), req.partitionId(), req.position())
         .toCompletableFuture()
-        .thenApply(ignored -> BrokerSbeCodec.encodeCommitOffset(ErrorCode.NULL_VAL, ""))
+        .thenApply(ignored -> BrokerSbeCodec.encodeCommitOffset(ErrorCode.NONE, ""))
         .exceptionally(
             t -> {
               final Throwable cause = unwrap(t);

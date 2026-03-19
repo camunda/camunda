@@ -144,7 +144,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodePublishBatchResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
       assertThat(decoded.positions()).containsExactly(10L);
     }
 
@@ -204,7 +204,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodePollResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
       assertThat(decoded.nextPosition()).isEqualTo(102L);
       assertThat(decoded.events()).hasSize(1);
       assertThat(decoded.events().get(0).position()).isEqualTo(101L);
@@ -264,7 +264,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodeLatestPositionResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
       assertThat(decoded.position()).isEqualTo(500L);
     }
 
@@ -303,7 +303,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodeSubscribeResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
       assertThat(decoded.generation()).isEqualTo(3L);
       assertThat(decoded.assignedPartitions()).containsExactly(0, 1);
     }
@@ -346,7 +346,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodeHeartbeatResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
       assertThat(decoded.generation()).isEqualTo(7L);
     }
 
@@ -390,7 +390,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodeCommitOffsetResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
     }
 
     @Test
@@ -433,7 +433,7 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodeFetchAssignmentResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NULL_VAL);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
       assertThat(decoded.generation()).isEqualTo(5L);
       assertThat(decoded.assignedPartitions()).containsExactly(0);
     }

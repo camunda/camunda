@@ -84,7 +84,7 @@ public final class BrokerSbeCodec {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(INITIAL_BUFFER_SIZE);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final PublishBatchResponseEncoder encoder = new PublishBatchResponseEncoder();
-    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(ErrorCode.NULL_VAL);
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(ErrorCode.NONE);
 
     final PublishBatchResponseEncoder.PositionsEncoder posEnc =
         encoder.positionsCount(positions.size());
@@ -165,7 +165,7 @@ public final class BrokerSbeCodec {
     final PollResponseEncoder encoder = new PollResponseEncoder();
     encoder
         .wrapAndApplyHeader(buf, 0, headerEncoder)
-        .errorCode(ErrorCode.NULL_VAL)
+        .errorCode(ErrorCode.NONE)
         .nextPosition(nextPosition)
         .generation(generation);
 
@@ -231,7 +231,7 @@ public final class BrokerSbeCodec {
   /**
    * Encodes a {@code CommitOffsetResponse} SBE message.
    *
-   * @param errorCode error code ({@link ErrorCode#NULL_VAL} for success)
+   * @param errorCode error code ({@link ErrorCode#NONE} for success)
    * @param message error message (empty string for success)
    * @return fully-framed byte array
    */
@@ -267,7 +267,7 @@ public final class BrokerSbeCodec {
   /**
    * Encodes a {@code HeartbeatResponse} SBE message.
    *
-   * @param errorCode error code ({@link ErrorCode#NULL_VAL} for success)
+   * @param errorCode error code ({@link ErrorCode#NONE} for success)
    * @param generation current rebalance generation (0 on error)
    * @param message error message (empty string for success)
    * @return fully-framed byte array
@@ -320,7 +320,7 @@ public final class BrokerSbeCodec {
     final SubscribeResponseEncoder encoder = new SubscribeResponseEncoder();
     encoder
         .wrapAndApplyHeader(buf, 0, headerEncoder)
-        .errorCode(ErrorCode.NULL_VAL)
+        .errorCode(ErrorCode.NONE)
         .generation(generation);
 
     final SubscribeResponseEncoder.AssignedPartitionsEncoder apEnc =
@@ -384,7 +384,7 @@ public final class BrokerSbeCodec {
     final FetchAssignmentResponseEncoder encoder = new FetchAssignmentResponseEncoder();
     encoder
         .wrapAndApplyHeader(buf, 0, headerEncoder)
-        .errorCode(ErrorCode.NULL_VAL)
+        .errorCode(ErrorCode.NONE)
         .generation(generation);
 
     final FetchAssignmentResponseEncoder.AssignedPartitionsEncoder apEnc =
@@ -433,7 +433,7 @@ public final class BrokerSbeCodec {
   /**
    * Encodes a {@code LatestPositionResponse} SBE message.
    *
-   * @param errorCode error code ({@link ErrorCode#NULL_VAL} for success)
+   * @param errorCode error code ({@link ErrorCode#NONE} for success)
    * @param position the latest committed log position (0 if error)
    * @param message error message (empty string for success)
    * @return fully-framed byte array
