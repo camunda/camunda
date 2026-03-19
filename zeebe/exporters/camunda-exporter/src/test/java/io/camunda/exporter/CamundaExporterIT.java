@@ -245,11 +245,11 @@ final class CamundaExporterIT {
 
     final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
+    // first one won't fail as the flush is async
     exporter.export(record);
 
-    // the export above fails in the async supplier, and it requires a call to .join that future so
-    // that the error is surfaced
-    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
+    // the actual error will only be observed on the next flush attempt
+    assertThatThrownBy(() -> exporter.export(record))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("Connection refused");
 
@@ -262,7 +262,7 @@ final class CamundaExporterIT {
     final var record2 =
         generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
     exporter.export(record2);
-    exporter.close();
+    exporter.close(); // forces a flush and wait for it to complete
 
     await()
         .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
@@ -419,10 +419,14 @@ final class CamundaExporterIT {
 
     // act
     exporter.export(record);
-    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
+    // flushes are async so calling 2nd time to ensure the first record is flushed and error is
+    // observed
+    assertThatThrownBy(() -> exporter.export(record))
         .isInstanceOf(ExporterException.class)
         .rootCause()
         .isInstanceOf(PersistenceException.class);
+
+    assertThat(controller.getPosition()).isEqualTo(-1L);
   }
 
   @TestTemplate

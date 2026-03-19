@@ -345,8 +345,6 @@ public class CamundaExporter implements Exporter {
       if (now - lastFlushTimestamp >= flushDelayMs) {
         flush();
       }
-    } catch (final ExporterException e) {
-      throw e;
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
       now = context.clock().millis();

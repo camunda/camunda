@@ -73,7 +73,7 @@ final class CamundaExporterTest {
 
   @BeforeEach
   void beforeEach() {
-    stubbedClientAdapterInUse = new StubClientAdapter();
+    stubbedClientAdapterInUse = spy(new StubClientAdapter());
     mockedClientAdapterFactory
         .when(() -> ClientAdapter.of(configuration.getConnect()))
         .thenReturn(stubbedClientAdapterInUse);
@@ -514,7 +514,7 @@ final class CamundaExporterTest {
     }
 
     @Test
-    void shouldPropagateAsyncFlushErrorOnScheduledFlush() {
+    void shouldNotPropagateAsyncFlushErrorOnScheduledFlush() {
       // given
       final var failingAdapter = new FailingBatchRequestClientAdapter();
       mockedClientAdapterFactory
@@ -533,9 +533,8 @@ final class CamundaExporterTest {
 
       // then
       final var initialPosition = testController.getPosition();
-      assertThatThrownBy(() -> testController.runScheduledTasks(Duration.ofHours(1)))
-          .isInstanceOf(ExporterException.class)
-          .hasRootCauseInstanceOf(PersistenceException.class);
+      testController.runScheduledTasks(Duration.ofHours(1));
+
       assertThat(testController.getPosition()).isEqualTo(initialPosition);
     }
   }
