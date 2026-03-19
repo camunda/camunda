@@ -120,7 +120,7 @@ describe('InstanceHeader', () => {
       wrapper: Wrapper,
     });
 
-    expect(await screen.findByText('2 Incidents')).toBeInTheDocument();
+    expect(await screen.findByText('2 incidents')).toBeInTheDocument();
     expect(screen.getByTestId(`INCIDENT-icon`)).toBeInTheDocument();
     expect(
       screen.getByText(failedInstance.processDefinitionName),

@@ -131,6 +131,6 @@ describe('<Header />', () => {
     expect(
       screen.getByText(invoiceClassification.decisionDefinitionName),
     ).toBeInTheDocument();
-    expect(screen.getByText('1 Incident')).toBeInTheDocument();
+    expect(screen.getByText('1 incident')).toBeInTheDocument();
   });
 });
