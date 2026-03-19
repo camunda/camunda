@@ -259,14 +259,16 @@ const SortableTable = <
                               {errorMessage}
                             </TableExpandedRow>
                           )}
-                          {row.isExpanded ? (
+                          {rowExpandedContent ? (
                             <TableExpandedRow
                               colSpan={expandedRowColSpan}
                               $variant="default"
                             >
                               {rowExpandedContent}
                             </TableExpandedRow>
-                          ) : null}
+                          ) : (
+                            rowExpandedContent
+                          )}
                         </React.Fragment>
                       );
                     })}
