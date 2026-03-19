@@ -686,8 +686,7 @@ strict contract DTOs (`StrictSearchQueryResult<GeneratedXxxStrictContract>` for 
 `GeneratedXxxStrictContract` for single-entity responses). Jackson serializes these directly.
 
 The `toProtocol()` result mapper layer (145 generated files) has been deleted. Adapters call
-`GeneratedSearchQueryResponseMapper` directly instead of going through
-`SearchQueryResponseMapper.adaptType()`.
+`SearchQueryResponseMapper` directly for search response mapping.
 
 **Completed — `@JsonProperty` annotations (complete):** All strict contract record components
 now carry `@JsonProperty("fieldName")` annotations for explicit field-name documentation and
@@ -713,22 +712,27 @@ Remaining step to complete the unified pipeline:
 generated controllers (Spring route registration precedence). Deleting them is a cleanup task
 that can be done incrementally per tag, once each generated replacement is validated.
 
-### Eliminate service-layer coupling from the generator (Stage 4 — in progress)
+### Eliminate service-layer coupling from the generator (Stage 4 — complete)
 
 **Completed — dead Phase 4 classification pipeline (removed):** The 10 hand-maintained lookup
 maps (`MUTATION_VOID_HINTS`, `MUTATION_RESPONSE_HINTS`, `GET_BY_KEY_HINTS`, etc.) and the
 classification pipeline that consumed them were dead code. Removed (~1000 lines).
 
-**In progress — Phase 3 search query mapper tables:** The generator still contains three
-hand-maintained tables (`REQUEST_ENTRIES`, `RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`)
-that encode service-layer implementation knowledge as string literals — query builder factory
-method names, sort option builder references, filter mapper expressions, entity class names,
-contract adapter class names. None of this information is in the OpenAPI spec. It is internal
-wiring of the `io.camunda.search.*` module that the generator has no business knowing.
+**Completed — Phase 3 search query mapper tables (removed):** The three hand-maintained tables
+(`REQUEST_ENTRIES`, `RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) that encoded
+service-layer implementation knowledge as string literals have been eliminated.
 
-These tables drive `GeneratedSearchQueryRequestMapper` and
-`GeneratedSearchQueryResponseMapper`, which adapters currently call. The wiring must move into
-the hand-written adapter layer where it belongs.
+All mechanical methods from `GeneratedSearchQueryRequestMapper` and
+`GeneratedSearchQueryResponseMapper` were inlined into the hand-written
+`SearchQueryRequestMapper` and `SearchQueryResponseMapper`. The generated mapper files were
+deleted and the Phase 3 generation code was removed from the generator (~562 lines).
+
+The 22 `Default*ServiceAdapter` implementations were updated to reference the hand-written
+mappers directly. All 1606 tests pass with 0 failures.
+
+`REQUEST_ENTRIES` and the `RequestEntry` record are retained — they drive Phase 3.5 (search
+query request DTO generation), which is spec-adjacent work that reads filter/sort/page
+structure from the search query entries.
 
 ## Implementation roadmap
 
@@ -779,7 +783,7 @@ from `SearchQueryResponseMapper`'s `<T> T adaptType()` pattern).
 - Runtime-validated: 601 Playwright e2e API tests passed, 0 failures.
 
 **Delivered — unified type pipeline (complete):**
-- Adapters call `GeneratedSearchQueryResponseMapper` directly — no `adaptType()` indirection.
+- Adapters call `SearchQueryResponseMapper` directly for search response mapping.
 - 145 `toProtocol()` result mapper files deleted (dead code). Generator no longer produces them.
 - Strict contracts (`GeneratedXxxStrictContract`) are the runtime serialization type — Jackson
 serializes them directly to JSON. Record component names match API field names.
@@ -926,58 +930,32 @@ renderers.
 **Remaining:**
 - Delete superseded hand-written controllers (36 files — cleanup after full validation).
 
-### Stage 4 — Eliminate service-layer coupling from the generator (in progress)
+### Stage 4 — Eliminate service-layer coupling from the generator (complete)
 
-The Phase 4 classification pipeline (10 lookup maps, ~1000 lines of dead code) has been removed.
+The Phase 4 classification pipeline (10 lookup maps, ~1000 lines of dead code) and the Phase 3
+search query mapper tables (`RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) have been
+removed. The generated mapper files (`GeneratedSearchQueryRequestMapper`,
+`GeneratedSearchQueryResponseMapper`) have been deleted.
 
-The remaining coupling is the Phase 3 search query mapper tables (`REQUEST_ENTRIES`,
-`RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) — three hand-maintained registries that
-encode service-layer implementation details (query builder method names, sort option references,
-filter mapper expressions, entity types, contract adapter types) as string literals inside the
-generator. These ~200 lines of wiring couple the generator to `io.camunda.search.*` internals
-that it should have zero knowledge of.
+All mechanical methods were inlined into the hand-written `SearchQueryRequestMapper` and
+`SearchQueryResponseMapper`. The 22 `Default*ServiceAdapter` files reference the hand-written
+mappers directly. Phase 3 generation code removed from the generator (~562 lines).
 
-**Design principle:** The generator's scope is strictly the OpenAPI specification. Everything
-the generator produces must be derivable from the spec alone (schema shapes, routes, operationIds,
-constraints, `x-` extensions). Anything that couples to service-layer internals (query builders,
-filter mappers, sort options, entity types, adapter method names) belongs in the hand-written
-service adapter implementations.
+`REQUEST_ENTRIES` and `RequestEntry` are retained for Phase 3.5 (search query request DTO
+generation).
 
-The tables exist because Stage 3 had two concurrent concerns:
-
-1. **Generating the spec-derived layer** — thin controllers, strict contract DTOs, validator
-   interfaces, adapter interfaces. This is the generator's permanent responsibility.
-2. **Migrating legacy controller logic** — extracting service-layer wiring (search query
-   decomposition, response mapping, statistics aggregation) out of the old hand-written
-   controllers into the new hand-written adapter/validator layer.
-
-The tables serve concern (2): they let the generator produce mechanical mapper classes
-(`GeneratedSearchQueryRequestMapper`, `GeneratedSearchQueryResponseMapper`) as transitional
-scaffolding during migration. Once the adapter implementations stabilize and the legacy
-controllers are deleted, the tables and the generated mapper classes they drive should be
-eliminated.
-
-**Target state:**
-- The generator produces only spec-derived artifacts: DTOs, controllers,
-adapter interfaces, and scaffold stubs (with TODO markers for new endpoints).
-- `Default*ServiceAdapter` files are hand-written (not regenerated). They own the
-filter/sort/page decomposition, query builder calls, entity-to-contract mapping, and
-service invocations.
-- `GeneratedSearchQueryRequestMapper` and `GeneratedSearchQueryResponseMapper` are either
-absorbed into the adapter implementations or refactored into shared utility classes that
-the adapters call — either way, their wiring data is no longer in the generator.
-- The generator has zero knowledge of `SearchQueryBuilders`, `SortOptionBuilders`,
-`SearchQueryFilterMapper`, or any `io.camunda.search.*` types.
-
-**Scope:**
-1. Remove `REQUEST_ENTRIES`, `RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES` from the
-generator.
-2. Remove Phase 3 (generated request/response mapper generation) from the generator.
-3. Stabilize the `Default*ServiceAdapter` implementations as the permanent, hand-written
-adapter layer — these own all service-layer coupling.
-4. For new endpoints, the generator produces a scaffold adapter implementation with TODO
-stubs showing the developer exactly what to implement. The scaffold has no service-layer
-wiring — just method signatures and a `// TODO: implement` body.
+**Delivered:**
+- 53 response mapper methods inlined from `GeneratedSearchQueryResponseMapper` into
+`SearchQueryResponseMapper`.
+- 31 non-strict request mapper methods inlined + 33 strict overloads + 1 validation helper
+added to `SearchQueryRequestMapper` from `GeneratedSearchQueryRequestMapper`.
+- 22 adapter files updated to import/call hand-written mappers directly.
+- 2 generated mapper files deleted.
+- Phase 3 generation code removed: `renderSearchQueryResponseMapper()`,
+`renderSearchQueryRequestMapper()`, `ResponseWrapperEntry`, `SingleEntityEntry`,
+`RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES` — 562 lines removed.
+- Net change: -2209 lines across 27 files.
+- All 1606 tests pass, 0 failures.
 
 ## Non-goals
 
@@ -987,7 +965,11 @@ wiring — just method signatures and a `// TODO: implement` body.
 - Do not encode service-layer knowledge (query builders, entity types, filter mappers) in the
   generator. The generator reads only the OpenAPI spec.
 
-## Search query mapper generation
+## Search query mapper generation (historical — Stage 4 removed this)
+
+> **Note:** This section documents the Phase 3 generated mapper approach that was used during
+> Stage 3 development. Stage 4 inlined all generated methods into the hand-written mappers and
+> removed the generation code. Retained for architectural context.
 
 ### Problem
 
@@ -1020,12 +1002,12 @@ The hand-written files (`SearchQueryResponseMapper`, `SearchQueryRequestMapper`)
 non-mechanical methods and delegate mechanical calls to the generated classes. This preserves
 backward compatibility for callers.
 
-> **Transitional artifact.** The generated mapper classes and the registry tables that drive them
-> (`REQUEST_ENTRIES`, `RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) are Stage 3 migration
-> scaffolding. They couple the generator to service-layer internals (query builders, entity types,
-> filter/sort mappers). Stage 4 will eliminate this coupling by moving the wiring into the
-> hand-written `Default*ServiceAdapter` implementations. See
-> [Stage 4](#stage-4--eliminate-service-layer-coupling-from-the-generator).
+> **Historical note (Stage 4 completed).** The generated mapper classes and the registry tables
+> that drove them (`RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) were Stage 3 migration
+> scaffolding. Stage 4 inlined all generated methods into the hand-written
+> `SearchQueryRequestMapper` and `SearchQueryResponseMapper`, deleted the generated files, and
+> removed the generation code from the generator. See
+> [Stage 4](#stage-4--eliminate-service-layer-coupling-from-the-generator-complete).
 
 ### Why same package for request mapper?
 
