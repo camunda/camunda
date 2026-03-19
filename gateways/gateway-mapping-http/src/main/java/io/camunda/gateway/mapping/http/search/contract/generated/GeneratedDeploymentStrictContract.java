@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/DeploymentResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,20 +16,19 @@ import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentStrictContract(
-    String deploymentKey,
-    String tenantId,
-    java.util.List<GeneratedDeploymentMetadataStrictContract> deployments
-) {
+    @JsonProperty("deploymentKey") String deploymentKey,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("deployments")
+        java.util.List<GeneratedDeploymentMetadataStrictContract> deployments) {
 
   public GeneratedDeploymentStrictContract {
-    Objects.requireNonNull(deploymentKey, "deploymentKey is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(deployments, "deployments is required and must not be null");
+    Objects.requireNonNull(deploymentKey, "No deploymentKey provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(deployments, "No deployments provided.");
   }
 
   public static String coerceDeploymentKey(final Object value) {
@@ -48,14 +45,15 @@ public record GeneratedDeploymentStrictContract(
         "deploymentKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-  public static java.util.List<GeneratedDeploymentMetadataStrictContract> coerceDeployments(final Object value) {
+  public static java.util.List<GeneratedDeploymentMetadataStrictContract> coerceDeployments(
+      final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "deployments must be a List of GeneratedDeploymentMetadataStrictContract, but was " + value.getClass().getName());
+          "deployments must be a List of GeneratedDeploymentMetadataStrictContract, but was "
+              + value.getClass().getName());
     }
 
     final var result = new ArrayList<GeneratedDeploymentMetadataStrictContract>(listValue.size());
@@ -74,13 +72,12 @@ public record GeneratedDeploymentStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
-
   public static DeploymentKeyStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements DeploymentKeyStep, TenantIdStep, DeploymentsStep, OptionalStep {
+  public static final class Builder
+      implements DeploymentKeyStep, TenantIdStep, DeploymentsStep, OptionalStep {
     private Object deploymentKey;
     private String tenantId;
     private Object deployments;
@@ -104,6 +101,7 @@ public record GeneratedDeploymentStrictContract(
       this.deployments = deployments;
       return this;
     }
+
     @Override
     public GeneratedDeploymentStrictContract build() {
       return new GeneratedDeploymentStrictContract(
@@ -129,14 +127,14 @@ public record GeneratedDeploymentStrictContract(
     GeneratedDeploymentStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef DEPLOYMENT_KEY = ContractPolicy.field("DeploymentResult", "deploymentKey");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DeploymentResult", "tenantId");
-    public static final ContractPolicy.FieldRef DEPLOYMENTS = ContractPolicy.field("DeploymentResult", "deployments");
+    public static final ContractPolicy.FieldRef DEPLOYMENT_KEY =
+        ContractPolicy.field("DeploymentResult", "deploymentKey");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("DeploymentResult", "tenantId");
+    public static final ContractPolicy.FieldRef DEPLOYMENTS =
+        ContractPolicy.field("DeploymentResult", "deployments");
 
     private Fields() {}
   }
-
-
 }

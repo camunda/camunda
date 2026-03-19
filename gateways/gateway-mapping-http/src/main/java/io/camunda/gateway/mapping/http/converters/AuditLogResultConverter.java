@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.protocol.model.AuditLogResultEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 
 public final class AuditLogResultConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof AuditLogResultEnum;
+    return value instanceof GeneratedAuditLogResultEnum;
   }
 
   @Override
@@ -22,21 +22,24 @@ public final class AuditLogResultConverter implements CustomConverter<String> {
     if (value == null) {
       return null;
     }
-    if (value instanceof final AuditLogResultEnum resultEnum) {
+    if (value instanceof final GeneratedAuditLogResultEnum resultEnum) {
       return toInternalResultAsString(resultEnum);
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
             .formatted(
-                value, value.getClass().getSimpleName(), AuditLogResultEnum.class.getSimpleName()));
+                value,
+                value.getClass().getSimpleName(),
+                GeneratedAuditLogResultEnum.class.getSimpleName()));
   }
 
-  public static String toInternalResultAsString(final AuditLogResultEnum resultEnum) {
+  public static String toInternalResultAsString(final GeneratedAuditLogResultEnum resultEnum) {
     final AuditLogOperationResult internalType = toInternalResult(resultEnum);
     return internalType == null ? null : internalType.name();
   }
 
-  public static AuditLogOperationResult toInternalResult(final AuditLogResultEnum resultEnum) {
+  public static AuditLogOperationResult toInternalResult(
+      final GeneratedAuditLogResultEnum resultEnum) {
     if (resultEnum == null) {
       return null;
     }

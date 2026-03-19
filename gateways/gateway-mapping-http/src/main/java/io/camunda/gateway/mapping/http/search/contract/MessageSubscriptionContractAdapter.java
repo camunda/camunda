@@ -10,9 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import java.util.List;
 
@@ -38,7 +38,8 @@ public final class MessageSubscriptionContractAdapter {
         .messageSubscriptionState(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(
-                    entity.messageSubscriptionState(), MessageSubscriptionStateEnum::fromValue),
+                    entity.messageSubscriptionState(),
+                    GeneratedMessageSubscriptionStateEnum::fromValue),
                 Fields.MESSAGE_SUBSCRIPTION_STATE,
                 entity))
         .lastUpdatedDate(

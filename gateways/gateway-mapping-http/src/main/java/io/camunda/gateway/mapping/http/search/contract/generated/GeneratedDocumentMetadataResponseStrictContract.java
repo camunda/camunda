@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/documents.yaml#/components/schemas/DocumentMetadataResponse
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,25 +16,23 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDocumentMetadataResponseStrictContract(
-    String contentType,
-    String fileName,
-    @Nullable String expiresAt,
-    Long size,
-    @Nullable String processDefinitionId,
-    @Nullable String processInstanceKey,
-    java.util.Map<String, Object> customProperties
-) {
+    @JsonProperty("contentType") String contentType,
+    @JsonProperty("fileName") String fileName,
+    @JsonProperty("expiresAt") @Nullable String expiresAt,
+    @JsonProperty("size") Long size,
+    @JsonProperty("processDefinitionId") @Nullable String processDefinitionId,
+    @JsonProperty("processInstanceKey") @Nullable String processInstanceKey,
+    @JsonProperty("customProperties") java.util.Map<String, Object> customProperties) {
 
   public GeneratedDocumentMetadataResponseStrictContract {
-    Objects.requireNonNull(contentType, "contentType is required and must not be null");
-    Objects.requireNonNull(fileName, "fileName is required and must not be null");
-    Objects.requireNonNull(size, "size is required and must not be null");
-    Objects.requireNonNull(customProperties, "customProperties is required and must not be null");
+    Objects.requireNonNull(contentType, "No contentType provided.");
+    Objects.requireNonNull(fileName, "No fileName provided.");
+    Objects.requireNonNull(size, "No size provided.");
+    Objects.requireNonNull(customProperties, "No customProperties provided.");
   }
 
   public static String coerceProcessInstanceKey(final Object value) {
@@ -53,13 +49,12 @@ public record GeneratedDocumentMetadataResponseStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static ContentTypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ContentTypeStep, FileNameStep, SizeStep, CustomPropertiesStep, OptionalStep {
+  public static final class Builder
+      implements ContentTypeStep, FileNameStep, SizeStep, CustomPropertiesStep, OptionalStep {
     private String contentType;
     private String fileName;
     private String expiresAt;
@@ -101,11 +96,11 @@ public record GeneratedDocumentMetadataResponseStrictContract(
     }
 
     @Override
-    public OptionalStep expiresAt(final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep expiresAt(
+        final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy) {
       this.expiresAt = policy.apply(expiresAt, Fields.EXPIRES_AT, null);
       return this;
     }
-
 
     @Override
     public OptionalStep processDefinitionId(final @Nullable String processDefinitionId) {
@@ -114,11 +109,13 @@ public record GeneratedDocumentMetadataResponseStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionId(final @Nullable String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
-      this.processDefinitionId = policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
+    public OptionalStep processDefinitionId(
+        final @Nullable String processDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionId =
+          policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
-
 
     @Override
     public OptionalStep processInstanceKey(final @Nullable String processInstanceKey) {
@@ -132,13 +129,17 @@ public record GeneratedDocumentMetadataResponseStrictContract(
       return this;
     }
 
-    public Builder processInstanceKey(final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder processInstanceKey(
+        final @Nullable String processInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(
+        final @Nullable Object processInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
@@ -173,40 +174,46 @@ public record GeneratedDocumentMetadataResponseStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep expiresAt(final @Nullable String expiresAt);
+    OptionalStep expiresAt(final @Nullable String expiresAt);
 
-  OptionalStep expiresAt(final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep expiresAt(
+        final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy);
 
+    OptionalStep processDefinitionId(final @Nullable String processDefinitionId);
 
-  OptionalStep processDefinitionId(final @Nullable String processDefinitionId);
+    OptionalStep processDefinitionId(
+        final @Nullable String processDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep processDefinitionId(final @Nullable String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
 
+    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
-  OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
+    OptionalStep processInstanceKey(
+        final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
-
-  OptionalStep processInstanceKey(final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
-
-  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
-
+    OptionalStep processInstanceKey(
+        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedDocumentMetadataResponseStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CONTENT_TYPE = ContractPolicy.field("DocumentMetadataResponse", "contentType");
-    public static final ContractPolicy.FieldRef FILE_NAME = ContractPolicy.field("DocumentMetadataResponse", "fileName");
-    public static final ContractPolicy.FieldRef EXPIRES_AT = ContractPolicy.field("DocumentMetadataResponse", "expiresAt");
-    public static final ContractPolicy.FieldRef SIZE = ContractPolicy.field("DocumentMetadataResponse", "size");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("DocumentMetadataResponse", "processDefinitionId");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("DocumentMetadataResponse", "processInstanceKey");
-    public static final ContractPolicy.FieldRef CUSTOM_PROPERTIES = ContractPolicy.field("DocumentMetadataResponse", "customProperties");
+    public static final ContractPolicy.FieldRef CONTENT_TYPE =
+        ContractPolicy.field("DocumentMetadataResponse", "contentType");
+    public static final ContractPolicy.FieldRef FILE_NAME =
+        ContractPolicy.field("DocumentMetadataResponse", "fileName");
+    public static final ContractPolicy.FieldRef EXPIRES_AT =
+        ContractPolicy.field("DocumentMetadataResponse", "expiresAt");
+    public static final ContractPolicy.FieldRef SIZE =
+        ContractPolicy.field("DocumentMetadataResponse", "size");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
+        ContractPolicy.field("DocumentMetadataResponse", "processDefinitionId");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("DocumentMetadataResponse", "processInstanceKey");
+    public static final ContractPolicy.FieldRef CUSTOM_PROPERTIES =
+        ContractPolicy.field("DocumentMetadataResponse", "customProperties");
 
     private Fields() {}
   }
-
-
 }

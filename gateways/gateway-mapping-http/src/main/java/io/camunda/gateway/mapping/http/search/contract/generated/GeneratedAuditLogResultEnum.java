@@ -1,0 +1,45 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.search.contract.generated;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import jakarta.annotation.Generated;
+
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public enum GeneratedAuditLogResultEnum {
+  FAIL("FAIL"),
+
+  SUCCESS("SUCCESS");
+
+  private final String value;
+
+  GeneratedAuditLogResultEnum(String value) {
+    this.value = value;
+  }
+
+  @JsonValue
+  public String getValue() {
+    return value;
+  }
+
+  @Override
+  public String toString() {
+    return String.valueOf(value);
+  }
+
+  @JsonCreator
+  public static GeneratedAuditLogResultEnum fromValue(String value) {
+    for (GeneratedAuditLogResultEnum b : GeneratedAuditLogResultEnum.values()) {
+      if (b.value.equalsIgnoreCase(value)) {
+        return b;
+      }
+    }
+    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+  }
+}

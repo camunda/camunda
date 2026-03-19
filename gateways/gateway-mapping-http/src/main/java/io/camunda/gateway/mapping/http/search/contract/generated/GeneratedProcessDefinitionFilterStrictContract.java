@@ -4,34 +4,55 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/process-definitions.yaml#/components/schemas/ProcessDefinitionFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessDefinitionFilterStrictContract(
-    @Nullable Object name,
-    @Nullable Boolean isLatestVersion,
-    @Nullable String resourceName,
-    @Nullable Integer version,
-    @Nullable String versionTag,
-    @Nullable Object processDefinitionId,
-    @Nullable String tenantId,
-    @Nullable String processDefinitionKey,
-    @Nullable Boolean hasStartForm
-) {
+    @JsonProperty("name") @Nullable GeneratedStringFilterPropertyStrictContract name,
+    @JsonProperty("isLatestVersion") @Nullable Boolean isLatestVersion,
+    @JsonProperty("resourceName") @Nullable String resourceName,
+    @JsonProperty("version") @Nullable Integer version,
+    @JsonProperty("versionTag") @Nullable String versionTag,
+    @JsonProperty("processDefinitionId")
+        @Nullable GeneratedStringFilterPropertyStrictContract processDefinitionId,
+    @JsonProperty("tenantId") @Nullable String tenantId,
+    @JsonProperty("processDefinitionKey") @Nullable String processDefinitionKey,
+    @JsonProperty("hasStartForm") @Nullable Boolean hasStartForm) {
+
+  public GeneratedProcessDefinitionFilterStrictContract {
+    if (tenantId != null)
+      if (tenantId.isBlank()) throw new IllegalArgumentException("tenantId must not be blank");
+    if (tenantId != null)
+      if (tenantId.length() > 256)
+        throw new IllegalArgumentException(
+            "The provided tenantId exceeds the limit of 256 characters.");
+    if (tenantId != null)
+      if (!tenantId.matches("^(<default>|[A-Za-z0-9_@.+-]+)$"))
+        throw new IllegalArgumentException(
+            "The provided tenantId contains illegal characters. It must match the pattern '^(<default>|[A-Za-z0-9_@.+-]+)$'.");
+    if (processDefinitionKey != null)
+      if (processDefinitionKey.isBlank())
+        throw new IllegalArgumentException("processDefinitionKey must not be blank");
+    if (processDefinitionKey != null)
+      if (processDefinitionKey.length() > 25)
+        throw new IllegalArgumentException(
+            "The provided processDefinitionKey exceeds the limit of 25 characters.");
+    if (processDefinitionKey != null)
+      if (!processDefinitionKey.matches("^-?[0-9]+$"))
+        throw new IllegalArgumentException(
+            "The provided processDefinitionKey contains illegal characters. It must match the pattern '^-?[0-9]+$'.");
+  }
 
   public static String coerceProcessDefinitionKey(final Object value) {
     if (value == null) {
@@ -47,19 +68,17 @@ public record GeneratedProcessDefinitionFilterStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static OptionalStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements OptionalStep {
-    private Object name;
+    private GeneratedStringFilterPropertyStrictContract name;
     private Boolean isLatestVersion;
     private String resourceName;
     private Integer version;
     private String versionTag;
-    private Object processDefinitionId;
+    private GeneratedStringFilterPropertyStrictContract processDefinitionId;
     private String tenantId;
     private Object processDefinitionKey;
     private Boolean hasStartForm;
@@ -67,17 +86,18 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep name(final @Nullable Object name) {
+    public OptionalStep name(final @Nullable GeneratedStringFilterPropertyStrictContract name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep name(
+        final @Nullable GeneratedStringFilterPropertyStrictContract name,
+        final ContractPolicy.FieldPolicy<GeneratedStringFilterPropertyStrictContract> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
-
 
     @Override
     public OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion) {
@@ -86,11 +106,11 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep isLatestVersion(
+        final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isLatestVersion = policy.apply(isLatestVersion, Fields.IS_LATEST_VERSION, null);
       return this;
     }
-
 
     @Override
     public OptionalStep resourceName(final @Nullable String resourceName) {
@@ -99,11 +119,11 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep resourceName(final @Nullable String resourceName, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep resourceName(
+        final @Nullable String resourceName, final ContractPolicy.FieldPolicy<String> policy) {
       this.resourceName = policy.apply(resourceName, Fields.RESOURCE_NAME, null);
       return this;
     }
-
 
     @Override
     public OptionalStep version(final @Nullable Integer version) {
@@ -112,11 +132,11 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep version(final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep version(
+        final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.version = policy.apply(version, Fields.VERSION, null);
       return this;
     }
-
 
     @Override
     public OptionalStep versionTag(final @Nullable String versionTag) {
@@ -125,24 +145,27 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep versionTag(final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep versionTag(
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
       this.versionTag = policy.apply(versionTag, Fields.VERSION_TAG, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId) {
+    public OptionalStep processDefinitionId(
+        final @Nullable GeneratedStringFilterPropertyStrictContract processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionId = policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
+    public OptionalStep processDefinitionId(
+        final @Nullable GeneratedStringFilterPropertyStrictContract processDefinitionId,
+        final ContractPolicy.FieldPolicy<GeneratedStringFilterPropertyStrictContract> policy) {
+      this.processDefinitionId =
+          policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
-
 
     @Override
     public OptionalStep tenantId(final @Nullable String tenantId) {
@@ -151,11 +174,11 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
-
 
     @Override
     public OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey) {
@@ -169,17 +192,22 @@ public record GeneratedProcessDefinitionFilterStrictContract(
       return this;
     }
 
-    public Builder processDefinitionKey(final @Nullable String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
-      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+    public Builder processDefinitionKey(
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionKey =
+          policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+    public OptionalStep processDefinitionKey(
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionKey =
+          policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
-
 
     @Override
     public OptionalStep hasStartForm(final @Nullable Boolean hasStartForm) {
@@ -188,7 +216,8 @@ public record GeneratedProcessDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep hasStartForm(final @Nullable Boolean hasStartForm, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep hasStartForm(
+        final @Nullable Boolean hasStartForm, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.hasStartForm = policy.apply(hasStartForm, Fields.HAS_START_FORM, null);
       return this;
     }
@@ -209,72 +238,84 @@ public record GeneratedProcessDefinitionFilterStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep name(final @Nullable Object name);
+    OptionalStep name(final @Nullable GeneratedStringFilterPropertyStrictContract name);
 
-  OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep name(
+        final @Nullable GeneratedStringFilterPropertyStrictContract name,
+        final ContractPolicy.FieldPolicy<GeneratedStringFilterPropertyStrictContract> policy);
 
+    OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion);
 
-  OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion);
+    OptionalStep isLatestVersion(
+        final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-  OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep resourceName(final @Nullable String resourceName);
 
+    OptionalStep resourceName(
+        final @Nullable String resourceName, final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep resourceName(final @Nullable String resourceName);
+    OptionalStep version(final @Nullable Integer version);
 
-  OptionalStep resourceName(final @Nullable String resourceName, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep version(
+        final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
 
+    OptionalStep versionTag(final @Nullable String versionTag);
 
-  OptionalStep version(final @Nullable Integer version);
+    OptionalStep versionTag(
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep version(final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep processDefinitionId(
+        final @Nullable GeneratedStringFilterPropertyStrictContract processDefinitionId);
 
+    OptionalStep processDefinitionId(
+        final @Nullable GeneratedStringFilterPropertyStrictContract processDefinitionId,
+        final ContractPolicy.FieldPolicy<GeneratedStringFilterPropertyStrictContract> policy);
 
-  OptionalStep versionTag(final @Nullable String versionTag);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-  OptionalStep versionTag(final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
+    OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
 
-  OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
+    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
-  OptionalStep processDefinitionId(final @Nullable Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep processDefinitionKey(
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
+    OptionalStep processDefinitionKey(
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-  OptionalStep tenantId(final @Nullable String tenantId);
+    OptionalStep hasStartForm(final @Nullable Boolean hasStartForm);
 
-  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
-
-
-  OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
-
-  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
-
-  OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
-
-  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
-
-
-  OptionalStep hasStartForm(final @Nullable Boolean hasStartForm);
-
-  OptionalStep hasStartForm(final @Nullable Boolean hasStartForm, final ContractPolicy.FieldPolicy<Boolean> policy);
-
+    OptionalStep hasStartForm(
+        final @Nullable Boolean hasStartForm, final ContractPolicy.FieldPolicy<Boolean> policy);
 
     GeneratedProcessDefinitionFilterStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("ProcessDefinitionFilter", "name");
-    public static final ContractPolicy.FieldRef IS_LATEST_VERSION = ContractPolicy.field("ProcessDefinitionFilter", "isLatestVersion");
-    public static final ContractPolicy.FieldRef RESOURCE_NAME = ContractPolicy.field("ProcessDefinitionFilter", "resourceName");
-    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("ProcessDefinitionFilter", "version");
-    public static final ContractPolicy.FieldRef VERSION_TAG = ContractPolicy.field("ProcessDefinitionFilter", "versionTag");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("ProcessDefinitionFilter", "processDefinitionId");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("ProcessDefinitionFilter", "tenantId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessDefinitionFilter", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef HAS_START_FORM = ContractPolicy.field("ProcessDefinitionFilter", "hasStartForm");
+    public static final ContractPolicy.FieldRef NAME =
+        ContractPolicy.field("ProcessDefinitionFilter", "name");
+    public static final ContractPolicy.FieldRef IS_LATEST_VERSION =
+        ContractPolicy.field("ProcessDefinitionFilter", "isLatestVersion");
+    public static final ContractPolicy.FieldRef RESOURCE_NAME =
+        ContractPolicy.field("ProcessDefinitionFilter", "resourceName");
+    public static final ContractPolicy.FieldRef VERSION =
+        ContractPolicy.field("ProcessDefinitionFilter", "version");
+    public static final ContractPolicy.FieldRef VERSION_TAG =
+        ContractPolicy.field("ProcessDefinitionFilter", "versionTag");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
+        ContractPolicy.field("ProcessDefinitionFilter", "processDefinitionId");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("ProcessDefinitionFilter", "tenantId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
+        ContractPolicy.field("ProcessDefinitionFilter", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef HAS_START_FORM =
+        ContractPolicy.field("ProcessDefinitionFilter", "hasStartForm");
 
     private Fields() {}
   }
-
-
 }

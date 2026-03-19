@@ -160,7 +160,8 @@ class RequestMapperTest {
       final long resourceKey = 12345L;
 
       // when
-      final var result = RequestMapper.toResourceDeletion(resourceKey, null);
+      final var result =
+          RequestMapper.toResourceDeletion(resourceKey, (DeleteResourceRequest) null);
 
       // then
       assertThat(result.isRight()).isTrue();
@@ -240,8 +241,8 @@ class RequestMapperTest {
     }
 
     @Test
-    void shouldRejectResourceDeletionWithInvalidOperationReference() {
-      // given
+    void shouldMapResourceDeletionWithZeroOperationReference() {
+      // given — operationReference constraint is now enforced by the strict contract
       final long resourceKey = 44444L;
       final var deleteRequest = new DeleteResourceRequest().operationReference(0L);
 
@@ -249,11 +250,10 @@ class RequestMapperTest {
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
 
       // then
-      assertThat(result.isLeft()).isTrue();
-      final var problemDetail = result.getLeft();
-      assertThat(problemDetail.getStatus()).isEqualTo(400);
-      assertThat(problemDetail.getDetail()).contains("operationReference");
-      assertThat(problemDetail.getDetail()).contains("> 0");
+      assertThat(result.isRight()).isTrue();
+      final var request = result.get();
+      assertThat(request.resourceKey()).isEqualTo(resourceKey);
+      assertThat(request.operationReference()).isEqualTo(0L);
     }
   }
 

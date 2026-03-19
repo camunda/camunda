@@ -4,40 +4,36 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobErrorStatisticsItem
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobErrorStatisticsItemStrictContract(
-    String errorCode,
-    String errorMessage,
-    Integer workers
-) {
+    @JsonProperty("errorCode") String errorCode,
+    @JsonProperty("errorMessage") String errorMessage,
+    @JsonProperty("workers") Integer workers) {
 
   public GeneratedJobErrorStatisticsItemStrictContract {
-    Objects.requireNonNull(errorCode, "errorCode is required and must not be null");
-    Objects.requireNonNull(errorMessage, "errorMessage is required and must not be null");
-    Objects.requireNonNull(workers, "workers is required and must not be null");
+    Objects.requireNonNull(errorCode, "No errorCode provided.");
+    Objects.requireNonNull(errorMessage, "No errorMessage provided.");
+    Objects.requireNonNull(workers, "No workers provided.");
   }
-
 
   public static ErrorCodeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ErrorCodeStep, ErrorMessageStep, WorkersStep, OptionalStep {
+  public static final class Builder
+      implements ErrorCodeStep, ErrorMessageStep, WorkersStep, OptionalStep {
     private String errorCode;
     private String errorMessage;
     private Integer workers;
@@ -61,12 +57,11 @@ public record GeneratedJobErrorStatisticsItemStrictContract(
       this.workers = workers;
       return this;
     }
+
     @Override
     public GeneratedJobErrorStatisticsItemStrictContract build() {
       return new GeneratedJobErrorStatisticsItemStrictContract(
-          this.errorCode,
-          this.errorMessage,
-          this.workers);
+          this.errorCode, this.errorMessage, this.workers);
     }
   }
 
@@ -86,14 +81,14 @@ public record GeneratedJobErrorStatisticsItemStrictContract(
     GeneratedJobErrorStatisticsItemStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ERROR_CODE = ContractPolicy.field("JobErrorStatisticsItem", "errorCode");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("JobErrorStatisticsItem", "errorMessage");
-    public static final ContractPolicy.FieldRef WORKERS = ContractPolicy.field("JobErrorStatisticsItem", "workers");
+    public static final ContractPolicy.FieldRef ERROR_CODE =
+        ContractPolicy.field("JobErrorStatisticsItem", "errorCode");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
+        ContractPolicy.field("JobErrorStatisticsItem", "errorMessage");
+    public static final ContractPolicy.FieldRef WORKERS =
+        ContractPolicy.field("JobErrorStatisticsItem", "workers");
 
     private Fields() {}
   }
-
-
 }

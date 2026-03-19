@@ -26,6 +26,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionDefinitionServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionDefinitionController;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -36,11 +38,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = DecisionDefinitionController.class)
+@Import(DefaultDecisionDefinitionServiceAdapter.class)
+@WebMvcTest(value = GeneratedDecisionDefinitionController.class)
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -295,7 +299,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "status": 400,
               "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionDefinitionKey, decisionDefinitionId, name, version, decisionRequirementsId, decisionRequirementsKey, decisionRequirementsName, decisionRequirementsVersion, tenantId]",
               "instance": "%s"
@@ -414,9 +418,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "status": 400,
-              "detail": "Failed to convert 'decisionDefinitionKey' with value: 'invalidKey'",
+              "detail": "For input string: \\"invalidKey\\"",
               "instance": "/v2/decision-definitions/invalidKey/xml"
             }""";
 

@@ -4,122 +4,150 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobTypeStatisticsQueryResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
-import java.util.ArrayList;
-import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
-
+import org.jspecify.annotations.Nullable;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobTypeStatisticsQueryStrictContract(
-    GeneratedSearchQueryPageResponseStrictContract page,
-    java.util.List<GeneratedJobTypeStatisticsItemStrictContract> items
-) {
+    @JsonProperty("filter") @Nullable GeneratedJobTypeStatisticsFilterStrictContract filter,
+    @JsonProperty("page") @Nullable GeneratedCursorForwardPaginationStrictContract page) {
 
-  public GeneratedJobTypeStatisticsQueryStrictContract {
-    Objects.requireNonNull(page, "page is required and must not be null");
-    Objects.requireNonNull(items, "items is required and must not be null");
-  }
-
-  public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
+  public static GeneratedJobTypeStatisticsFilterStrictContract coerceFilter(final Object value) {
     if (value == null) {
       return null;
     }
-    if (value instanceof GeneratedSearchQueryPageResponseStrictContract strictValue) {
+    if (value instanceof GeneratedJobTypeStatisticsFilterStrictContract strictValue) {
       return strictValue;
     }
 
     throw new IllegalArgumentException(
-        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was " + value.getClass().getName());
+        "filter must be a GeneratedJobTypeStatisticsFilterStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-  public static java.util.List<GeneratedJobTypeStatisticsItemStrictContract> coerceItems(final Object value) {
+  public static GeneratedCursorForwardPaginationStrictContract coercePage(final Object value) {
     if (value == null) {
       return null;
     }
-    if (!(value instanceof java.util.List<?> listValue)) {
-      throw new IllegalArgumentException(
-          "items must be a List of GeneratedJobTypeStatisticsItemStrictContract, but was " + value.getClass().getName());
+    if (value instanceof GeneratedCursorForwardPaginationStrictContract strictValue) {
+      return strictValue;
     }
 
-    final var result = new ArrayList<GeneratedJobTypeStatisticsItemStrictContract>(listValue.size());
-    for (final var item : listValue) {
-      if (item == null) {
-        result.add(null);
-      } else if (item instanceof GeneratedJobTypeStatisticsItemStrictContract strictItem) {
-        result.add(strictItem);
-
-      } else {
-        throw new IllegalArgumentException(
-            "items must contain only GeneratedJobTypeStatisticsItemStrictContract items, but got "
-                + item.getClass().getName());
-      }
-    }
-    return java.util.List.copyOf(result);
+    throw new IllegalArgumentException(
+        "page must be a GeneratedCursorForwardPaginationStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-
-  public static PageStep builder() {
+  public static OptionalStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements PageStep, ItemsStep, OptionalStep {
+  public static final class Builder implements OptionalStep {
+    private Object filter;
     private Object page;
-    private Object items;
 
     private Builder() {}
 
     @Override
-    public ItemsStep page(final Object page) {
+    public OptionalStep filter(
+        final @Nullable GeneratedJobTypeStatisticsFilterStrictContract filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    @Override
+    public OptionalStep filter(final @Nullable Object filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    public Builder filter(
+        final @Nullable GeneratedJobTypeStatisticsFilterStrictContract filter,
+        final ContractPolicy.FieldPolicy<GeneratedJobTypeStatisticsFilterStrictContract> policy) {
+      this.filter = policy.apply(filter, Fields.FILTER, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.filter = policy.apply(filter, Fields.FILTER, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(final @Nullable GeneratedCursorForwardPaginationStrictContract page) {
       this.page = page;
       return this;
     }
 
     @Override
-    public OptionalStep items(final Object items) {
-      this.items = items;
+    public OptionalStep page(final @Nullable Object page) {
+      this.page = page;
       return this;
     }
+
+    public Builder page(
+        final @Nullable GeneratedCursorForwardPaginationStrictContract page,
+        final ContractPolicy.FieldPolicy<GeneratedCursorForwardPaginationStrictContract> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(
+        final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
     @Override
     public GeneratedJobTypeStatisticsQueryStrictContract build() {
       return new GeneratedJobTypeStatisticsQueryStrictContract(
-          coercePage(this.page),
-          coerceItems(this.items));
+          coerceFilter(this.filter), coercePage(this.page));
     }
   }
 
-  public interface PageStep {
-    ItemsStep page(final Object page);
-  }
-
-  public interface ItemsStep {
-    OptionalStep items(final Object items);
-  }
-
   public interface OptionalStep {
+    OptionalStep filter(final @Nullable GeneratedJobTypeStatisticsFilterStrictContract filter);
+
+    OptionalStep filter(final @Nullable Object filter);
+
+    OptionalStep filter(
+        final @Nullable GeneratedJobTypeStatisticsFilterStrictContract filter,
+        final ContractPolicy.FieldPolicy<GeneratedJobTypeStatisticsFilterStrictContract> policy);
+
+    OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+
+    OptionalStep page(final @Nullable GeneratedCursorForwardPaginationStrictContract page);
+
+    OptionalStep page(final @Nullable Object page);
+
+    OptionalStep page(
+        final @Nullable GeneratedCursorForwardPaginationStrictContract page,
+        final ContractPolicy.FieldPolicy<GeneratedCursorForwardPaginationStrictContract> policy);
+
+    OptionalStep page(final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy);
+
     GeneratedJobTypeStatisticsQueryStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("JobTypeStatisticsQueryResult", "page");
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("JobTypeStatisticsQueryResult", "items");
+    public static final ContractPolicy.FieldRef FILTER =
+        ContractPolicy.field("JobTypeStatisticsQuery", "filter");
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("JobTypeStatisticsQuery", "page");
 
     private Fields() {}
   }
-
-
 }

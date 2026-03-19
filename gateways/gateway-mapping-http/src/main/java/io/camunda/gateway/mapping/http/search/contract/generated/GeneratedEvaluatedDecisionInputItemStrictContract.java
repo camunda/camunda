@@ -4,40 +4,36 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/decision-instances.yaml#/components/schemas/EvaluatedDecisionInputItem
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedEvaluatedDecisionInputItemStrictContract(
-    String inputId,
-    String inputName,
-    String inputValue
-) {
+    @JsonProperty("inputId") String inputId,
+    @JsonProperty("inputName") String inputName,
+    @JsonProperty("inputValue") String inputValue) {
 
   public GeneratedEvaluatedDecisionInputItemStrictContract {
-    Objects.requireNonNull(inputId, "inputId is required and must not be null");
-    Objects.requireNonNull(inputName, "inputName is required and must not be null");
-    Objects.requireNonNull(inputValue, "inputValue is required and must not be null");
+    Objects.requireNonNull(inputId, "No inputId provided.");
+    Objects.requireNonNull(inputName, "No inputName provided.");
+    Objects.requireNonNull(inputValue, "No inputValue provided.");
   }
-
 
   public static InputIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements InputIdStep, InputNameStep, InputValueStep, OptionalStep {
+  public static final class Builder
+      implements InputIdStep, InputNameStep, InputValueStep, OptionalStep {
     private String inputId;
     private String inputName;
     private String inputValue;
@@ -61,12 +57,11 @@ public record GeneratedEvaluatedDecisionInputItemStrictContract(
       this.inputValue = inputValue;
       return this;
     }
+
     @Override
     public GeneratedEvaluatedDecisionInputItemStrictContract build() {
       return new GeneratedEvaluatedDecisionInputItemStrictContract(
-          this.inputId,
-          this.inputName,
-          this.inputValue);
+          this.inputId, this.inputName, this.inputValue);
     }
   }
 
@@ -86,14 +81,14 @@ public record GeneratedEvaluatedDecisionInputItemStrictContract(
     GeneratedEvaluatedDecisionInputItemStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef INPUT_ID = ContractPolicy.field("EvaluatedDecisionInputItem", "inputId");
-    public static final ContractPolicy.FieldRef INPUT_NAME = ContractPolicy.field("EvaluatedDecisionInputItem", "inputName");
-    public static final ContractPolicy.FieldRef INPUT_VALUE = ContractPolicy.field("EvaluatedDecisionInputItem", "inputValue");
+    public static final ContractPolicy.FieldRef INPUT_ID =
+        ContractPolicy.field("EvaluatedDecisionInputItem", "inputId");
+    public static final ContractPolicy.FieldRef INPUT_NAME =
+        ContractPolicy.field("EvaluatedDecisionInputItem", "inputName");
+    public static final ContractPolicy.FieldRef INPUT_VALUE =
+        ContractPolicy.field("EvaluatedDecisionInputItem", "inputValue");
 
     private Fields() {}
   }
-
-
 }

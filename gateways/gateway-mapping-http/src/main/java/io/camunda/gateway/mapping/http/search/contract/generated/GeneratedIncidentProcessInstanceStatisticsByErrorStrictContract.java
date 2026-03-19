@@ -4,40 +4,40 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/incidents.yaml#/components/schemas/IncidentProcessInstanceStatisticsByErrorResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
-    Integer errorHashCode,
-    String errorMessage,
-    Long activeInstancesWithErrorCount
-) {
+    @JsonProperty("errorHashCode") Integer errorHashCode,
+    @JsonProperty("errorMessage") String errorMessage,
+    @JsonProperty("activeInstancesWithErrorCount") Long activeInstancesWithErrorCount) {
 
   public GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract {
-    Objects.requireNonNull(errorHashCode, "errorHashCode is required and must not be null");
-    Objects.requireNonNull(errorMessage, "errorMessage is required and must not be null");
-    Objects.requireNonNull(activeInstancesWithErrorCount, "activeInstancesWithErrorCount is required and must not be null");
+    Objects.requireNonNull(errorHashCode, "No errorHashCode provided.");
+    Objects.requireNonNull(errorMessage, "No errorMessage provided.");
+    Objects.requireNonNull(
+        activeInstancesWithErrorCount, "No activeInstancesWithErrorCount provided.");
   }
-
 
   public static ErrorHashCodeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ErrorHashCodeStep, ErrorMessageStep, ActiveInstancesWithErrorCountStep, OptionalStep {
+  public static final class Builder
+      implements ErrorHashCodeStep,
+          ErrorMessageStep,
+          ActiveInstancesWithErrorCountStep,
+          OptionalStep {
     private Integer errorHashCode;
     private String errorMessage;
     private Long activeInstancesWithErrorCount;
@@ -61,12 +61,11 @@ public record GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
       this.activeInstancesWithErrorCount = activeInstancesWithErrorCount;
       return this;
     }
+
     @Override
     public GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract build() {
       return new GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
-          this.errorHashCode,
-          this.errorMessage,
-          this.activeInstancesWithErrorCount);
+          this.errorHashCode, this.errorMessage, this.activeInstancesWithErrorCount);
     }
   }
 
@@ -86,14 +85,15 @@ public record GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
     GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ERROR_HASH_CODE = ContractPolicy.field("IncidentProcessInstanceStatisticsByErrorResult", "errorHashCode");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("IncidentProcessInstanceStatisticsByErrorResult", "errorMessage");
-    public static final ContractPolicy.FieldRef ACTIVE_INSTANCES_WITH_ERROR_COUNT = ContractPolicy.field("IncidentProcessInstanceStatisticsByErrorResult", "activeInstancesWithErrorCount");
+    public static final ContractPolicy.FieldRef ERROR_HASH_CODE =
+        ContractPolicy.field("IncidentProcessInstanceStatisticsByErrorResult", "errorHashCode");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
+        ContractPolicy.field("IncidentProcessInstanceStatisticsByErrorResult", "errorMessage");
+    public static final ContractPolicy.FieldRef ACTIVE_INSTANCES_WITH_ERROR_COUNT =
+        ContractPolicy.field(
+            "IncidentProcessInstanceStatisticsByErrorResult", "activeInstancesWithErrorCount");
 
     private Fields() {}
   }
-
-
 }

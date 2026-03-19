@@ -8,6 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
@@ -54,5 +56,23 @@ public class TenantMapper {
     return RequestMapper.getResult(
         tenantRequestValidator.validateMemberRequest(tenantId, memberId, entityType),
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
+  }
+
+  // ---- Strict contract methods (direct field access) ----
+
+  public Either<ProblemDetail, TenantRequest> toTenantCreateDto(
+      final GeneratedTenantCreateRequestStrictContract request) {
+    return toTenantCreateDto(
+        new TenantCreateRequest()
+            .tenantId(request.tenantId())
+            .name(request.name())
+            .description(request.description()));
+  }
+
+  public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
+      final String tenantId, final GeneratedTenantUpdateRequestStrictContract request) {
+    return toTenantUpdateDto(
+        tenantId,
+        new TenantUpdateRequest().name(request.name()).description(request.description()));
   }
 }

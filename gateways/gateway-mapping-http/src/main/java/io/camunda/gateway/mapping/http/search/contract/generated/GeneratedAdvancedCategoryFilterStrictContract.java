@@ -4,158 +4,230 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/audit-logs.yaml#/components/schemas/AdvancedCategoryFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
+@JsonDeserialize(using = JsonDeserializer.None.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdvancedCategoryFilterStrictContract(
-    io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum eq,
-    io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum neq,
-    @Nullable Boolean exists,
-    java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> in,
-    @Nullable String like
-) {
-
+    @JsonProperty("$eq")
+        io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $eq,
+    @JsonProperty("$neq")
+        io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $neq,
+    @JsonProperty("$exists") @Nullable Boolean $exists,
+    @JsonProperty("$in")
+        java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            $in,
+    @JsonProperty("$like") @Nullable String $like)
+    implements GeneratedCategoryFilterPropertyStrictContract {
 
   public static OptionalStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements OptionalStep {
-    private io.camunda.gateway.protocol.model.AuditLogCategoryEnum eq;
-    private io.camunda.gateway.protocol.model.AuditLogCategoryEnum neq;
-    private Boolean exists;
-    private java.util.List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> in;
-    private String like;
+    private io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum
+        $eq;
+    private io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum
+        $neq;
+    private Boolean $exists;
+    private java.util.List<
+            io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum>
+        $in;
+    private String $like;
 
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum eq) {
-      this.eq = eq;
+    public OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $eq) {
+      this.$eq = $eq;
       return this;
     }
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> policy) {
-      this.eq = policy.apply(eq, Fields.EQ, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum neq) {
-      this.neq = neq;
-      return this;
-    }
-
-    @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> policy) {
-      this.neq = policy.apply(neq, Fields.NEQ, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep exists(final @Nullable Boolean exists) {
-      this.exists = exists;
+    public OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $eq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            policy) {
+      this.$eq = policy.apply($eq, Fields.$EQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
-      this.exists = policy.apply(exists, Fields.EXISTS, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> in) {
-      this.in = in;
+    public OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $neq) {
+      this.$neq = $neq;
       return this;
     }
 
     @Override
-    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum>> policy) {
-      this.in = policy.apply(in, Fields.IN, null);
+    public OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $neq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            policy) {
+      this.$neq = policy.apply($neq, Fields.$NEQ, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep like(final @Nullable String like) {
-      this.like = like;
+    public OptionalStep $exists(final @Nullable Boolean $exists) {
+      this.$exists = $exists;
       return this;
     }
 
     @Override
-    public OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
-      this.like = policy.apply(like, Fields.LIKE, null);
+    public OptionalStep $exists(
+        final @Nullable Boolean $exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+      this.$exists = policy.apply($exists, Fields.$EXISTS, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            $in) {
+      this.$in = $in;
+      return this;
+    }
+
+    @Override
+    public OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            $in,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    io.camunda.gateway.mapping.http.search.contract.generated
+                        .GeneratedAuditLogCategoryEnum>>
+            policy) {
+      this.$in = policy.apply($in, Fields.$IN, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep $like(final @Nullable String $like) {
+      this.$like = $like;
+      return this;
+    }
+
+    @Override
+    public OptionalStep $like(
+        final @Nullable String $like, final ContractPolicy.FieldPolicy<String> policy) {
+      this.$like = policy.apply($like, Fields.$LIKE, null);
       return this;
     }
 
     @Override
     public GeneratedAdvancedCategoryFilterStrictContract build() {
       return new GeneratedAdvancedCategoryFilterStrictContract(
-          this.eq,
-          this.neq,
-          this.exists,
-          this.in,
-          this.like);
+          this.$eq, this.$neq, this.$exists, this.$in, this.$like);
     }
   }
 
   public interface OptionalStep {
-  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum eq);
+    OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $eq);
 
-  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> policy);
+    OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $eq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            policy);
 
+    OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $neq);
 
-  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum neq);
+    OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogCategoryEnum
+            $neq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            policy);
 
-  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogCategoryEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> policy);
+    OptionalStep $exists(final @Nullable Boolean $exists);
 
+    OptionalStep $exists(
+        final @Nullable Boolean $exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-  OptionalStep exists(final @Nullable Boolean exists);
+    OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            $in);
 
-  OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogCategoryEnum>
+            $in,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    io.camunda.gateway.mapping.http.search.contract.generated
+                        .GeneratedAuditLogCategoryEnum>>
+            policy);
 
+    OptionalStep $like(final @Nullable String $like);
 
-  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> in);
-
-  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.AuditLogCategoryEnum>> policy);
-
-
-  OptionalStep like(final @Nullable String like);
-
-  OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep $like(
+        final @Nullable String $like, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAdvancedCategoryFilterStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EQ = ContractPolicy.field("AdvancedCategoryFilter", "$eq");
-    public static final ContractPolicy.FieldRef NEQ = ContractPolicy.field("AdvancedCategoryFilter", "$neq");
-    public static final ContractPolicy.FieldRef EXISTS = ContractPolicy.field("AdvancedCategoryFilter", "$exists");
-    public static final ContractPolicy.FieldRef IN = ContractPolicy.field("AdvancedCategoryFilter", "$in");
-    public static final ContractPolicy.FieldRef LIKE = ContractPolicy.field("AdvancedCategoryFilter", "$like");
+    public static final ContractPolicy.FieldRef $EQ =
+        ContractPolicy.field("AdvancedCategoryFilter", "$eq");
+    public static final ContractPolicy.FieldRef $NEQ =
+        ContractPolicy.field("AdvancedCategoryFilter", "$neq");
+    public static final ContractPolicy.FieldRef $EXISTS =
+        ContractPolicy.field("AdvancedCategoryFilter", "$exists");
+    public static final ContractPolicy.FieldRef $IN =
+        ContractPolicy.field("AdvancedCategoryFilter", "$in");
+    public static final ContractPolicy.FieldRef $LIKE =
+        ContractPolicy.field("AdvancedCategoryFilter", "$like");
 
     private Fields() {}
   }
-
-
 }

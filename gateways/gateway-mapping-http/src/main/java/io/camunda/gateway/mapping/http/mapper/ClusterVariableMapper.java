@@ -8,6 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateClusterVariableRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateClusterVariableRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
@@ -66,5 +68,33 @@ public class ClusterVariableMapper {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateGlobalClusterVariableRequest(name),
         () -> new ClusterVariableRequest(name, null, null));
+  }
+
+  // ---- Strict contract methods (direct field access) ----
+
+  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
+      final GeneratedCreateClusterVariableRequestStrictContract request) {
+    return toGlobalClusterVariableCreateRequest(
+        new CreateClusterVariableRequest().name(request.name()).value(request.value()));
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableCreateRequest(
+      final GeneratedCreateClusterVariableRequestStrictContract request, final String tenantId) {
+    return toTenantClusterVariableCreateRequest(
+        new CreateClusterVariableRequest().name(request.name()).value(request.value()), tenantId);
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableUpdateRequest(
+      final String name, final GeneratedUpdateClusterVariableRequestStrictContract request) {
+    return toGlobalClusterVariableUpdateRequest(
+        name, new UpdateClusterVariableRequest().value(request.value()));
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableUpdateRequest(
+      final String name,
+      final GeneratedUpdateClusterVariableRequestStrictContract request,
+      final String tenantId) {
+    return toTenantClusterVariableUpdateRequest(
+        name, new UpdateClusterVariableRequest().value(request.value()), tenantId);
   }
 }

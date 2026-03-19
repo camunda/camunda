@@ -30,6 +30,8 @@ import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultRoleServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedRoleController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -45,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -56,7 +59,8 @@ public class RoleControllerTest {
   static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
-  @WebMvcTest(RoleController.class)
+  @Import(DefaultRoleServiceAdapter.class)
+  @WebMvcTest(GeneratedRoleController.class)
   class DefaultRoleControllerTest extends RestControllerTest {
 
     @MockitoBean private RoleServices roleServices;
@@ -1240,7 +1244,8 @@ public class RoleControllerTest {
   }
 
   @Nested
-  @WebMvcTest(RoleController.class)
+  @Import(DefaultRoleServiceAdapter.class)
+  @WebMvcTest(GeneratedRoleController.class)
   class ByogEnabledRoleControllerTest extends RestControllerTest {
 
     @MockitoBean private RoleServices roleServices;

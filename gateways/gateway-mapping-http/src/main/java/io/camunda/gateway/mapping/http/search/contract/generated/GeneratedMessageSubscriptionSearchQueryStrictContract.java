@@ -4,32 +4,27 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/messages.yaml#/components/schemas/MessageSubscriptionSearchQueryResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessageSubscriptionSearchQueryStrictContract(
-    GeneratedSearchQueryPageResponseStrictContract page,
-    java.util.List<GeneratedMessageSubscriptionStrictContract> items
-) {
+    @JsonProperty("page") GeneratedSearchQueryPageResponseStrictContract page,
+    @JsonProperty("items") java.util.List<GeneratedMessageSubscriptionStrictContract> items) {
 
   public GeneratedMessageSubscriptionSearchQueryStrictContract {
-    Objects.requireNonNull(page, "page is required and must not be null");
-    Objects.requireNonNull(items, "items is required and must not be null");
+    Objects.requireNonNull(page, "No page provided.");
+    Objects.requireNonNull(items, "No items provided.");
   }
 
   public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
@@ -41,17 +36,19 @@ public record GeneratedMessageSubscriptionSearchQueryStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was " + value.getClass().getName());
+        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-  public static java.util.List<GeneratedMessageSubscriptionStrictContract> coerceItems(final Object value) {
+  public static java.util.List<GeneratedMessageSubscriptionStrictContract> coerceItems(
+      final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "items must be a List of GeneratedMessageSubscriptionStrictContract, but was " + value.getClass().getName());
+          "items must be a List of GeneratedMessageSubscriptionStrictContract, but was "
+              + value.getClass().getName());
     }
 
     final var result = new ArrayList<GeneratedMessageSubscriptionStrictContract>(listValue.size());
@@ -69,8 +66,6 @@ public record GeneratedMessageSubscriptionSearchQueryStrictContract(
     }
     return java.util.List.copyOf(result);
   }
-
-
 
   public static PageStep builder() {
     return new Builder();
@@ -93,11 +88,11 @@ public record GeneratedMessageSubscriptionSearchQueryStrictContract(
       this.items = items;
       return this;
     }
+
     @Override
     public GeneratedMessageSubscriptionSearchQueryStrictContract build() {
       return new GeneratedMessageSubscriptionSearchQueryStrictContract(
-          coercePage(this.page),
-          coerceItems(this.items));
+          coercePage(this.page), coerceItems(this.items));
     }
   }
 
@@ -113,13 +108,12 @@ public record GeneratedMessageSubscriptionSearchQueryStrictContract(
     GeneratedMessageSubscriptionSearchQueryStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("MessageSubscriptionSearchQueryResult", "page");
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("MessageSubscriptionSearchQueryResult", "items");
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("MessageSubscriptionSearchQueryResult", "page");
+    public static final ContractPolicy.FieldRef ITEMS =
+        ContractPolicy.field("MessageSubscriptionSearchQueryResult", "items");
 
     private Fields() {}
   }
-
-
 }

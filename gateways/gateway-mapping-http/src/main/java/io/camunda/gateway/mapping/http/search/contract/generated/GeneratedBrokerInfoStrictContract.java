@@ -4,47 +4,44 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/cluster.yaml#/components/schemas/BrokerInfo
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBrokerInfoStrictContract(
-    Integer nodeId,
-    String host,
-    Integer port,
-    java.util.List<GeneratedPartitionStrictContract> partitions,
-    String version
-) {
+    @JsonProperty("nodeId") Integer nodeId,
+    @JsonProperty("host") String host,
+    @JsonProperty("port") Integer port,
+    @JsonProperty("partitions") java.util.List<GeneratedPartitionStrictContract> partitions,
+    @JsonProperty("version") String version) {
 
   public GeneratedBrokerInfoStrictContract {
-    Objects.requireNonNull(nodeId, "nodeId is required and must not be null");
-    Objects.requireNonNull(host, "host is required and must not be null");
-    Objects.requireNonNull(port, "port is required and must not be null");
-    Objects.requireNonNull(partitions, "partitions is required and must not be null");
-    Objects.requireNonNull(version, "version is required and must not be null");
+    Objects.requireNonNull(nodeId, "No nodeId provided.");
+    Objects.requireNonNull(host, "No host provided.");
+    Objects.requireNonNull(port, "No port provided.");
+    Objects.requireNonNull(partitions, "No partitions provided.");
+    Objects.requireNonNull(version, "No version provided.");
   }
 
-  public static java.util.List<GeneratedPartitionStrictContract> coercePartitions(final Object value) {
+  public static java.util.List<GeneratedPartitionStrictContract> coercePartitions(
+      final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "partitions must be a List of GeneratedPartitionStrictContract, but was " + value.getClass().getName());
+          "partitions must be a List of GeneratedPartitionStrictContract, but was "
+              + value.getClass().getName());
     }
 
     final var result = new ArrayList<GeneratedPartitionStrictContract>(listValue.size());
@@ -63,13 +60,12 @@ public record GeneratedBrokerInfoStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
-
   public static NodeIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements NodeIdStep, HostStep, PortStep, PartitionsStep, VersionStep, OptionalStep {
+  public static final class Builder
+      implements NodeIdStep, HostStep, PortStep, PartitionsStep, VersionStep, OptionalStep {
     private Integer nodeId;
     private String host;
     private Integer port;
@@ -107,14 +103,11 @@ public record GeneratedBrokerInfoStrictContract(
       this.version = version;
       return this;
     }
+
     @Override
     public GeneratedBrokerInfoStrictContract build() {
       return new GeneratedBrokerInfoStrictContract(
-          this.nodeId,
-          this.host,
-          this.port,
-          coercePartitions(this.partitions),
-          this.version);
+          this.nodeId, this.host, this.port, coercePartitions(this.partitions), this.version);
     }
   }
 
@@ -142,16 +135,16 @@ public record GeneratedBrokerInfoStrictContract(
     GeneratedBrokerInfoStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NODE_ID = ContractPolicy.field("BrokerInfo", "nodeId");
+    public static final ContractPolicy.FieldRef NODE_ID =
+        ContractPolicy.field("BrokerInfo", "nodeId");
     public static final ContractPolicy.FieldRef HOST = ContractPolicy.field("BrokerInfo", "host");
     public static final ContractPolicy.FieldRef PORT = ContractPolicy.field("BrokerInfo", "port");
-    public static final ContractPolicy.FieldRef PARTITIONS = ContractPolicy.field("BrokerInfo", "partitions");
-    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("BrokerInfo", "version");
+    public static final ContractPolicy.FieldRef PARTITIONS =
+        ContractPolicy.field("BrokerInfo", "partitions");
+    public static final ContractPolicy.FieldRef VERSION =
+        ContractPolicy.field("BrokerInfo", "version");
 
     private Fields() {}
   }
-
-
 }

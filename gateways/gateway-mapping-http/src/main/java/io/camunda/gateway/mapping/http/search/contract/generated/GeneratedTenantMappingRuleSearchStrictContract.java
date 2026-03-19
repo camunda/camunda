@@ -4,32 +4,27 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/tenants.yaml#/components/schemas/TenantMappingRuleSearchResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedTenantMappingRuleSearchStrictContract(
-    GeneratedSearchQueryPageResponseStrictContract page,
-    java.util.List<GeneratedMappingRuleStrictContract> items
-) {
+    @JsonProperty("page") GeneratedSearchQueryPageResponseStrictContract page,
+    @JsonProperty("items") java.util.List<GeneratedMappingRuleStrictContract> items) {
 
   public GeneratedTenantMappingRuleSearchStrictContract {
-    Objects.requireNonNull(page, "page is required and must not be null");
-    Objects.requireNonNull(items, "items is required and must not be null");
+    Objects.requireNonNull(page, "No page provided.");
+    Objects.requireNonNull(items, "No items provided.");
   }
 
   public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
@@ -41,9 +36,9 @@ public record GeneratedTenantMappingRuleSearchStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was " + value.getClass().getName());
+        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was "
+            + value.getClass().getName());
   }
-
 
   public static java.util.List<GeneratedMappingRuleStrictContract> coerceItems(final Object value) {
     if (value == null) {
@@ -51,7 +46,8 @@ public record GeneratedTenantMappingRuleSearchStrictContract(
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "items must be a List of GeneratedMappingRuleStrictContract, but was " + value.getClass().getName());
+          "items must be a List of GeneratedMappingRuleStrictContract, but was "
+              + value.getClass().getName());
     }
 
     final var result = new ArrayList<GeneratedMappingRuleStrictContract>(listValue.size());
@@ -69,8 +65,6 @@ public record GeneratedTenantMappingRuleSearchStrictContract(
     }
     return java.util.List.copyOf(result);
   }
-
-
 
   public static PageStep builder() {
     return new Builder();
@@ -93,11 +87,11 @@ public record GeneratedTenantMappingRuleSearchStrictContract(
       this.items = items;
       return this;
     }
+
     @Override
     public GeneratedTenantMappingRuleSearchStrictContract build() {
       return new GeneratedTenantMappingRuleSearchStrictContract(
-          coercePage(this.page),
-          coerceItems(this.items));
+          coercePage(this.page), coerceItems(this.items));
     }
   }
 
@@ -113,13 +107,12 @@ public record GeneratedTenantMappingRuleSearchStrictContract(
     GeneratedTenantMappingRuleSearchStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("TenantMappingRuleSearchResult", "page");
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("TenantMappingRuleSearchResult", "items");
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("TenantMappingRuleSearchResult", "page");
+    public static final ContractPolicy.FieldRef ITEMS =
+        ContractPolicy.field("TenantMappingRuleSearchResult", "items");
 
     private Fields() {}
   }
-
-
 }

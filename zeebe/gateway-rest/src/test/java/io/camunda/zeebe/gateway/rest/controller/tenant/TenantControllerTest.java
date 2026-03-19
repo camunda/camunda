@@ -32,6 +32,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultTenantServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedTenantController;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -63,13 +65,15 @@ public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
-  // When building the expected error messages including this regex, for some reason the backslashes
-  // disappear and have to be doubled to prevent that.
-  private static final String TENANT_ID_PATTERN =
+  // Strict contracts validate request body tenantId against the OpenAPI spec pattern.
+  private static final String STRICT_TENANT_ID_PATTERN = "^[A-Za-z0-9_@.+-]+$";
+  // Path parameter tenantIds still go through domain validation (IdentifierValidator).
+  private static final String DOMAIN_TENANT_ID_PATTERN =
       IdentifierValidator.TENANT_ID_MASK.pattern().replace("\\", "\\\\");
 
   @Nested
-  @WebMvcTest(TenantController.class)
+  @Import(DefaultTenantServiceAdapter.class)
+  @WebMvcTest(GeneratedTenantController.class)
   public class TenantsApiEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
@@ -203,7 +207,7 @@ public class TenantControllerTest {
         strings = {
           "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
           "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
-          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r", "foo~", "foo@"
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r", "foo~"
         })
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
@@ -230,7 +234,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_ID_PATTERN, TENANT_BASE_URL),
+                  .formatted(STRICT_TENANT_ID_PATTERN, TENANT_BASE_URL),
               JsonCompareMode.STRICT);
 
       // then
@@ -260,7 +264,7 @@ public class TenantControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided tenantId exceeds the limit of 31 characters.",
+              "detail": "The provided tenantId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
                   .formatted(TENANT_BASE_URL),
@@ -455,7 +459,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_ID_PATTERN, uri),
+                  .formatted(DOMAIN_TENANT_ID_PATTERN, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -555,7 +559,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_ID_PATTERN, uri),
+                  .formatted(DOMAIN_TENANT_ID_PATTERN, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -620,7 +624,8 @@ public class TenantControllerTest {
   }
 
   @Nested
-  @WebMvcTest(TenantController.class)
+  @Import(DefaultTenantServiceAdapter.class)
+  @WebMvcTest(GeneratedTenantController.class)
   public class TenantsApiEnabledAndByogEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
@@ -700,8 +705,8 @@ public class TenantControllerTest {
   }
 
   @Nested
-  @WebMvcTest(TenantController.class)
-  @Import(ApiFiltersConfiguration.class)
+  @Import({DefaultTenantServiceAdapter.class, ApiFiltersConfiguration.class})
+  @WebMvcTest(GeneratedTenantController.class)
   @TestPropertySource(properties = "camunda.security.multiTenancy.apiEnabled=false")
   public class TenantsApiDisabledTest extends RestControllerTest {
     public static final String FORBIDDEN_MESSAGE =

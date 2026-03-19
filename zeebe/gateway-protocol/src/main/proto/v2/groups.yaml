@@ -3,6 +3,7 @@ paths:
   /groups:
     post:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: createGroup
@@ -34,6 +35,7 @@ paths:
   /groups/search:
     post:
       x-eventually-consistent: true
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: searchGroups
@@ -64,6 +66,7 @@ paths:
   /groups/{groupId}:
     get:
       x-eventually-consistent: true
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: getGroup
@@ -98,6 +101,7 @@ paths:
 
     put:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: updateGroup
@@ -140,6 +144,7 @@ paths:
 
     delete:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: deleteGroup
@@ -171,6 +176,7 @@ paths:
   /groups/{groupId}/users/{username}:
     put:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: assignUserToGroup
@@ -217,6 +223,7 @@ paths:
 
     delete:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: unassignUserFromGroup
@@ -258,6 +265,7 @@ paths:
   /groups/{groupId}/users/search:
     post:
       x-eventually-consistent: true
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: searchUsersForGroup
@@ -301,6 +309,7 @@ paths:
   /groups/{groupId}/clients/{clientId}:
     put:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: assignClientToGroup
@@ -347,6 +356,7 @@ paths:
 
     delete:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: unassignClientFromGroup
@@ -388,6 +398,7 @@ paths:
   /groups/{groupId}/clients/search:
     post:
       x-eventually-consistent: true
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: searchClientsForGroup
@@ -431,6 +442,7 @@ paths:
   /groups/{groupId}/mapping-rules/{mappingRuleId}:
     put:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: assignMappingRuleToGroup
@@ -475,6 +487,7 @@ paths:
 
     delete:
       x-eventually-consistent: false
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: unassignMappingRuleFromGroup
@@ -514,6 +527,7 @@ paths:
   /groups/{groupId}/mapping-rules/search:
     post:
       x-eventually-consistent: true
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: searchMappingRulesForGroup
@@ -557,6 +571,7 @@ paths:
   /groups/{groupId}/roles/search:
     post:
       x-eventually-consistent: true
+      x-spring-conditional: io.camunda.authentication.ConditionalOnCamundaGroupsEnabled
       tags:
         - Group
       operationId: searchRolesForGroup

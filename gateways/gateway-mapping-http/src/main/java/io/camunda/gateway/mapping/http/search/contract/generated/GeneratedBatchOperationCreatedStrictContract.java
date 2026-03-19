@@ -4,40 +4,40 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/batch-operations.yaml#/components/schemas/BatchOperationCreatedResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBatchOperationCreatedStrictContract(
-    String batchOperationKey,
-    io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType
-) {
+    @JsonProperty("batchOperationKey") String batchOperationKey,
+    @JsonProperty("batchOperationType")
+        io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum
+            batchOperationType) {
 
   public GeneratedBatchOperationCreatedStrictContract {
-    Objects.requireNonNull(batchOperationKey, "batchOperationKey is required and must not be null");
-    Objects.requireNonNull(batchOperationType, "batchOperationType is required and must not be null");
+    Objects.requireNonNull(batchOperationKey, "No batchOperationKey provided.");
+    Objects.requireNonNull(batchOperationType, "No batchOperationType provided.");
   }
-
 
   public static BatchOperationKeyStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements BatchOperationKeyStep, BatchOperationTypeStep, OptionalStep {
+  public static final class Builder
+      implements BatchOperationKeyStep, BatchOperationTypeStep, OptionalStep {
     private String batchOperationKey;
-    private io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType;
+    private io.camunda.gateway.mapping.http.search.contract.generated
+            .GeneratedBatchOperationTypeEnum
+        batchOperationType;
 
     private Builder() {}
 
@@ -48,15 +48,18 @@ public record GeneratedBatchOperationCreatedStrictContract(
     }
 
     @Override
-    public OptionalStep batchOperationType(final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType) {
+    public OptionalStep batchOperationType(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedBatchOperationTypeEnum
+            batchOperationType) {
       this.batchOperationType = batchOperationType;
       return this;
     }
+
     @Override
     public GeneratedBatchOperationCreatedStrictContract build() {
       return new GeneratedBatchOperationCreatedStrictContract(
-          this.batchOperationKey,
-          this.batchOperationType);
+          this.batchOperationKey, this.batchOperationType);
     }
   }
 
@@ -65,20 +68,22 @@ public record GeneratedBatchOperationCreatedStrictContract(
   }
 
   public interface BatchOperationTypeStep {
-    OptionalStep batchOperationType(final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType);
+    OptionalStep batchOperationType(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedBatchOperationTypeEnum
+            batchOperationType);
   }
 
   public interface OptionalStep {
     GeneratedBatchOperationCreatedStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef BATCH_OPERATION_KEY = ContractPolicy.field("BatchOperationCreatedResult", "batchOperationKey");
-    public static final ContractPolicy.FieldRef BATCH_OPERATION_TYPE = ContractPolicy.field("BatchOperationCreatedResult", "batchOperationType");
+    public static final ContractPolicy.FieldRef BATCH_OPERATION_KEY =
+        ContractPolicy.field("BatchOperationCreatedResult", "batchOperationKey");
+    public static final ContractPolicy.FieldRef BATCH_OPERATION_TYPE =
+        ContractPolicy.field("BatchOperationCreatedResult", "batchOperationType");
 
     private Fields() {}
   }
-
-
 }

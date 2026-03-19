@@ -32,6 +32,8 @@ import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultJobServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedJobController;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
@@ -50,12 +52,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(JobController.class)
+@Import(DefaultJobServiceAdapter.class)
+@WebMvcTest(GeneratedJobController.class)
 public class JobControllerTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
@@ -2442,7 +2446,8 @@ public class JobControllerTest extends RestControllerTest {
                 {
                   "filter": {
                     "from": "2024-07-28T15:51:28.071Z",
-                    "to": "2024-07-29T15:51:28.071Z"
+                    "to": "2024-07-29T15:51:28.071Z",
+                    "jobType": "fetch-customer-data"
                   }
                 }""",
             "/v2/jobs/statistics/by-workers"),

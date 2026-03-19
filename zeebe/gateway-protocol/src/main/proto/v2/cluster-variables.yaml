@@ -5,6 +5,7 @@ paths:
     post:
       operationId: createGlobalClusterVariable
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Cluster Variable
       summary: Create a global-scoped cluster variable
@@ -34,6 +35,7 @@ paths:
     post:
       operationId: createTenantClusterVariable
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Cluster Variable
       summary: Create a tenant-scoped cluster variable
@@ -140,6 +142,7 @@ paths:
     put:
       operationId: updateGlobalClusterVariable
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Cluster Variable
       summary: Update a global-scoped cluster variable
@@ -183,6 +186,7 @@ paths:
     delete:
       operationId: deleteGlobalClusterVariable
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Cluster Variable
       summary: Delete a global-scoped cluster variable
@@ -256,6 +260,7 @@ paths:
     put:
       operationId: updateTenantClusterVariable
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Cluster Variable
       summary: Update a tenant-scoped cluster variable
@@ -305,6 +310,7 @@ paths:
     delete:
       operationId: deleteTenantClusterVariable
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Cluster Variable
       summary: Delete a tenant-scoped cluster variable

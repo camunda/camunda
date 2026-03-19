@@ -28,9 +28,9 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
  *   <li>All generated strict contract DTOs follow the {@code Generated*StrictContract} naming
  *       convention (provenance — the {@code @Generated} source annotation has SOURCE retention and
  *       is not available for runtime/bytecode checks).
- *   <li>Generated strict contract DTOs do not depend on protocol-model search entity types
- *       ({@code io.camunda.search.entities}), ensuring clean separation between the internal
- *       domain model and the external API contract.
+ *   <li>Generated strict contract DTOs do not depend on protocol-model search entity types ({@code
+ *       io.camunda.search.entities}), ensuring clean separation between the internal domain model
+ *       and the external API contract.
  * </ol>
  */
 @AnalyzeClasses(

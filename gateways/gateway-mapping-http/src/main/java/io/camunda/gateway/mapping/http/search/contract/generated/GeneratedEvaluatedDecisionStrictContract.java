@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/decision-definitions.yaml#/components/schemas/EvaluatedDecisionResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,46 +16,50 @@ import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedEvaluatedDecisionStrictContract(
-    String decisionDefinitionId,
-    String decisionDefinitionName,
-    Integer decisionDefinitionVersion,
-    String decisionDefinitionType,
-    String output,
-    String tenantId,
-    java.util.List<GeneratedMatchedDecisionRuleItemStrictContract> matchedRules,
-    java.util.List<GeneratedEvaluatedDecisionInputItemStrictContract> evaluatedInputs,
-    String decisionDefinitionKey,
-    String decisionEvaluationInstanceKey
-) {
+    @JsonProperty("decisionDefinitionId") String decisionDefinitionId,
+    @JsonProperty("decisionDefinitionName") String decisionDefinitionName,
+    @JsonProperty("decisionDefinitionVersion") Integer decisionDefinitionVersion,
+    @JsonProperty("decisionDefinitionType") String decisionDefinitionType,
+    @JsonProperty("output") String output,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("matchedRules")
+        java.util.List<GeneratedMatchedDecisionRuleItemStrictContract> matchedRules,
+    @JsonProperty("evaluatedInputs")
+        java.util.List<GeneratedEvaluatedDecisionInputItemStrictContract> evaluatedInputs,
+    @JsonProperty("decisionDefinitionKey") String decisionDefinitionKey,
+    @JsonProperty("decisionEvaluationInstanceKey") String decisionEvaluationInstanceKey) {
 
   public GeneratedEvaluatedDecisionStrictContract {
-    Objects.requireNonNull(decisionDefinitionId, "decisionDefinitionId is required and must not be null");
-    Objects.requireNonNull(decisionDefinitionName, "decisionDefinitionName is required and must not be null");
-    Objects.requireNonNull(decisionDefinitionVersion, "decisionDefinitionVersion is required and must not be null");
-    Objects.requireNonNull(decisionDefinitionType, "decisionDefinitionType is required and must not be null");
-    Objects.requireNonNull(output, "output is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(matchedRules, "matchedRules is required and must not be null");
-    Objects.requireNonNull(evaluatedInputs, "evaluatedInputs is required and must not be null");
-    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey is required and must not be null");
-    Objects.requireNonNull(decisionEvaluationInstanceKey, "decisionEvaluationInstanceKey is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionId, "No decisionDefinitionId provided.");
+    Objects.requireNonNull(decisionDefinitionName, "No decisionDefinitionName provided.");
+    Objects.requireNonNull(decisionDefinitionVersion, "No decisionDefinitionVersion provided.");
+    Objects.requireNonNull(decisionDefinitionType, "No decisionDefinitionType provided.");
+    Objects.requireNonNull(output, "No output provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(matchedRules, "No matchedRules provided.");
+    Objects.requireNonNull(evaluatedInputs, "No evaluatedInputs provided.");
+    Objects.requireNonNull(decisionDefinitionKey, "No decisionDefinitionKey provided.");
+    Objects.requireNonNull(
+        decisionEvaluationInstanceKey, "No decisionEvaluationInstanceKey provided.");
   }
 
-  public static java.util.List<GeneratedMatchedDecisionRuleItemStrictContract> coerceMatchedRules(final Object value) {
+  public static java.util.List<GeneratedMatchedDecisionRuleItemStrictContract> coerceMatchedRules(
+      final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "matchedRules must be a List of GeneratedMatchedDecisionRuleItemStrictContract, but was " + value.getClass().getName());
+          "matchedRules must be a List of GeneratedMatchedDecisionRuleItemStrictContract, but was "
+              + value.getClass().getName());
     }
 
-    final var result = new ArrayList<GeneratedMatchedDecisionRuleItemStrictContract>(listValue.size());
+    final var result =
+        new ArrayList<GeneratedMatchedDecisionRuleItemStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
@@ -73,17 +75,19 @@ public record GeneratedEvaluatedDecisionStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
-  public static java.util.List<GeneratedEvaluatedDecisionInputItemStrictContract> coerceEvaluatedInputs(final Object value) {
+  public static java.util.List<GeneratedEvaluatedDecisionInputItemStrictContract>
+      coerceEvaluatedInputs(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "evaluatedInputs must be a List of GeneratedEvaluatedDecisionInputItemStrictContract, but was " + value.getClass().getName());
+          "evaluatedInputs must be a List of GeneratedEvaluatedDecisionInputItemStrictContract, but was "
+              + value.getClass().getName());
     }
 
-    final var result = new ArrayList<GeneratedEvaluatedDecisionInputItemStrictContract>(listValue.size());
+    final var result =
+        new ArrayList<GeneratedEvaluatedDecisionInputItemStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
@@ -99,7 +103,6 @@ public record GeneratedEvaluatedDecisionStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
   public static String coerceDecisionDefinitionKey(final Object value) {
     if (value == null) {
       return null;
@@ -114,7 +117,6 @@ public record GeneratedEvaluatedDecisionStrictContract(
         "decisionDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceDecisionEvaluationInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -126,16 +128,26 @@ public record GeneratedEvaluatedDecisionStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "decisionEvaluationInstanceKey must be a String or Number, but was " + value.getClass().getName());
+        "decisionEvaluationInstanceKey must be a String or Number, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static DecisionDefinitionIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements DecisionDefinitionIdStep, DecisionDefinitionNameStep, DecisionDefinitionVersionStep, DecisionDefinitionTypeStep, OutputStep, TenantIdStep, MatchedRulesStep, EvaluatedInputsStep, DecisionDefinitionKeyStep, DecisionEvaluationInstanceKeyStep, OptionalStep {
+  public static final class Builder
+      implements DecisionDefinitionIdStep,
+          DecisionDefinitionNameStep,
+          DecisionDefinitionVersionStep,
+          DecisionDefinitionTypeStep,
+          OutputStep,
+          TenantIdStep,
+          MatchedRulesStep,
+          EvaluatedInputsStep,
+          DecisionDefinitionKeyStep,
+          DecisionEvaluationInstanceKeyStep,
+          OptionalStep {
     private String decisionDefinitionId;
     private String decisionDefinitionName;
     private Integer decisionDefinitionVersion;
@@ -156,13 +168,15 @@ public record GeneratedEvaluatedDecisionStrictContract(
     }
 
     @Override
-    public DecisionDefinitionVersionStep decisionDefinitionName(final String decisionDefinitionName) {
+    public DecisionDefinitionVersionStep decisionDefinitionName(
+        final String decisionDefinitionName) {
       this.decisionDefinitionName = decisionDefinitionName;
       return this;
     }
 
     @Override
-    public DecisionDefinitionTypeStep decisionDefinitionVersion(final Integer decisionDefinitionVersion) {
+    public DecisionDefinitionTypeStep decisionDefinitionVersion(
+        final Integer decisionDefinitionVersion) {
       this.decisionDefinitionVersion = decisionDefinitionVersion;
       return this;
     }
@@ -198,7 +212,8 @@ public record GeneratedEvaluatedDecisionStrictContract(
     }
 
     @Override
-    public DecisionEvaluationInstanceKeyStep decisionDefinitionKey(final Object decisionDefinitionKey) {
+    public DecisionEvaluationInstanceKeyStep decisionDefinitionKey(
+        final Object decisionDefinitionKey) {
       this.decisionDefinitionKey = decisionDefinitionKey;
       return this;
     }
@@ -208,6 +223,7 @@ public record GeneratedEvaluatedDecisionStrictContract(
       this.decisionEvaluationInstanceKey = decisionEvaluationInstanceKey;
       return this;
     }
+
     @Override
     public GeneratedEvaluatedDecisionStrictContract build() {
       return new GeneratedEvaluatedDecisionStrictContract(
@@ -268,21 +284,28 @@ public record GeneratedEvaluatedDecisionStrictContract(
     GeneratedEvaluatedDecisionStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID = ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionId");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_NAME = ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionName");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_VERSION = ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionVersion");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_TYPE = ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionType");
-    public static final ContractPolicy.FieldRef OUTPUT = ContractPolicy.field("EvaluatedDecisionResult", "output");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("EvaluatedDecisionResult", "tenantId");
-    public static final ContractPolicy.FieldRef MATCHED_RULES = ContractPolicy.field("EvaluatedDecisionResult", "matchedRules");
-    public static final ContractPolicy.FieldRef EVALUATED_INPUTS = ContractPolicy.field("EvaluatedDecisionResult", "evaluatedInputs");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY = ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionKey");
-    public static final ContractPolicy.FieldRef DECISION_EVALUATION_INSTANCE_KEY = ContractPolicy.field("EvaluatedDecisionResult", "decisionEvaluationInstanceKey");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID =
+        ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionId");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_NAME =
+        ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionName");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_VERSION =
+        ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionVersion");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_TYPE =
+        ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionType");
+    public static final ContractPolicy.FieldRef OUTPUT =
+        ContractPolicy.field("EvaluatedDecisionResult", "output");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("EvaluatedDecisionResult", "tenantId");
+    public static final ContractPolicy.FieldRef MATCHED_RULES =
+        ContractPolicy.field("EvaluatedDecisionResult", "matchedRules");
+    public static final ContractPolicy.FieldRef EVALUATED_INPUTS =
+        ContractPolicy.field("EvaluatedDecisionResult", "evaluatedInputs");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY =
+        ContractPolicy.field("EvaluatedDecisionResult", "decisionDefinitionKey");
+    public static final ContractPolicy.FieldRef DECISION_EVALUATION_INSTANCE_KEY =
+        ContractPolicy.field("EvaluatedDecisionResult", "decisionEvaluationInstanceKey");
 
     private Fields() {}
   }
-
-
 }

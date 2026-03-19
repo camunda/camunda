@@ -4,55 +4,69 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/global-listeners.yaml#/components/schemas/GlobalTaskListenerResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalTaskListenerStrictContract(
-    String type,
-    Integer retries,
-    Boolean afterNonGlobal,
-    Integer priority,
-    java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes,
-    String id,
-    io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source
-) {
+    @JsonProperty("type") String type,
+    @JsonProperty("retries") Integer retries,
+    @JsonProperty("afterNonGlobal") Boolean afterNonGlobal,
+    @JsonProperty("priority") Integer priority,
+    @JsonProperty("eventTypes")
+        java.util.List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedGlobalTaskListenerEventTypeEnum>
+            eventTypes,
+    @JsonProperty("id") String id,
+    @JsonProperty("source")
+        io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalListenerSourceEnum
+            source) {
 
   public GeneratedGlobalTaskListenerStrictContract {
-    Objects.requireNonNull(type, "type is required and must not be null");
-    Objects.requireNonNull(retries, "retries is required and must not be null");
-    Objects.requireNonNull(afterNonGlobal, "afterNonGlobal is required and must not be null");
-    Objects.requireNonNull(priority, "priority is required and must not be null");
-    Objects.requireNonNull(eventTypes, "eventTypes is required and must not be null");
-    Objects.requireNonNull(id, "id is required and must not be null");
-    Objects.requireNonNull(source, "source is required and must not be null");
+    Objects.requireNonNull(type, "No type provided.");
+    Objects.requireNonNull(retries, "No retries provided.");
+    Objects.requireNonNull(afterNonGlobal, "No afterNonGlobal provided.");
+    Objects.requireNonNull(priority, "No priority provided.");
+    Objects.requireNonNull(eventTypes, "No eventTypes provided.");
+    Objects.requireNonNull(id, "No id provided.");
+    Objects.requireNonNull(source, "No source provided.");
   }
-
 
   public static TypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements TypeStep, RetriesStep, AfterNonGlobalStep, PriorityStep, EventTypesStep, IdStep, SourceStep, OptionalStep {
+  public static final class Builder
+      implements TypeStep,
+          RetriesStep,
+          AfterNonGlobalStep,
+          PriorityStep,
+          EventTypesStep,
+          IdStep,
+          SourceStep,
+          OptionalStep {
     private String type;
     private Integer retries;
     private Boolean afterNonGlobal;
     private Integer priority;
-    private java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes;
+    private java.util.List<
+            io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedGlobalTaskListenerEventTypeEnum>
+        eventTypes;
     private String id;
-    private io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source;
+    private io.camunda.gateway.mapping.http.search.contract.generated
+            .GeneratedGlobalListenerSourceEnum
+        source;
 
     private Builder() {}
 
@@ -81,7 +95,11 @@ public record GeneratedGlobalTaskListenerStrictContract(
     }
 
     @Override
-    public IdStep eventTypes(final java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes) {
+    public IdStep eventTypes(
+        final java.util.List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedGlobalTaskListenerEventTypeEnum>
+            eventTypes) {
       this.eventTypes = eventTypes;
       return this;
     }
@@ -93,10 +111,14 @@ public record GeneratedGlobalTaskListenerStrictContract(
     }
 
     @Override
-    public OptionalStep source(final io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source) {
+    public OptionalStep source(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedGlobalListenerSourceEnum
+            source) {
       this.source = source;
       return this;
     }
+
     @Override
     public GeneratedGlobalTaskListenerStrictContract build() {
       return new GeneratedGlobalTaskListenerStrictContract(
@@ -127,7 +149,11 @@ public record GeneratedGlobalTaskListenerStrictContract(
   }
 
   public interface EventTypesStep {
-    IdStep eventTypes(final java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes);
+    IdStep eventTypes(
+        final java.util.List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedGlobalTaskListenerEventTypeEnum>
+            eventTypes);
   }
 
   public interface IdStep {
@@ -135,25 +161,32 @@ public record GeneratedGlobalTaskListenerStrictContract(
   }
 
   public interface SourceStep {
-    OptionalStep source(final io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source);
+    OptionalStep source(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedGlobalListenerSourceEnum
+            source);
   }
 
   public interface OptionalStep {
     GeneratedGlobalTaskListenerStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("GlobalTaskListenerResult", "type");
-    public static final ContractPolicy.FieldRef RETRIES = ContractPolicy.field("GlobalTaskListenerResult", "retries");
-    public static final ContractPolicy.FieldRef AFTER_NON_GLOBAL = ContractPolicy.field("GlobalTaskListenerResult", "afterNonGlobal");
-    public static final ContractPolicy.FieldRef PRIORITY = ContractPolicy.field("GlobalTaskListenerResult", "priority");
-    public static final ContractPolicy.FieldRef EVENT_TYPES = ContractPolicy.field("GlobalTaskListenerResult", "eventTypes");
-    public static final ContractPolicy.FieldRef ID = ContractPolicy.field("GlobalTaskListenerResult", "id");
-    public static final ContractPolicy.FieldRef SOURCE = ContractPolicy.field("GlobalTaskListenerResult", "source");
+    public static final ContractPolicy.FieldRef TYPE =
+        ContractPolicy.field("GlobalTaskListenerResult", "type");
+    public static final ContractPolicy.FieldRef RETRIES =
+        ContractPolicy.field("GlobalTaskListenerResult", "retries");
+    public static final ContractPolicy.FieldRef AFTER_NON_GLOBAL =
+        ContractPolicy.field("GlobalTaskListenerResult", "afterNonGlobal");
+    public static final ContractPolicy.FieldRef PRIORITY =
+        ContractPolicy.field("GlobalTaskListenerResult", "priority");
+    public static final ContractPolicy.FieldRef EVENT_TYPES =
+        ContractPolicy.field("GlobalTaskListenerResult", "eventTypes");
+    public static final ContractPolicy.FieldRef ID =
+        ContractPolicy.field("GlobalTaskListenerResult", "id");
+    public static final ContractPolicy.FieldRef SOURCE =
+        ContractPolicy.field("GlobalTaskListenerResult", "source");
 
     private Fields() {}
   }
-
-
 }

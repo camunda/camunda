@@ -32,6 +32,8 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
@@ -60,13 +62,15 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = ProcessInstanceController.class)
+@Import(DefaultProcessInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedProcessInstanceController.class)
 public class ProcessInstanceControllerTest extends RestControllerTest {
 
   static final String EXPECTED_START_RESPONSE =
@@ -783,7 +787,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"Bad Request",
                 "status":400,
-                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required",
+                "detail":"Failed to read request",
                 "instance":"/v2/process-instances"
              }""";
 
@@ -820,7 +824,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"Bad Request",
                 "status":400,
-                "detail":"Only one of [processDefinitionId, processDefinitionKey] is allowed",
+                "detail":"Request property [processDefinitionKey] cannot be parsed",
                 "instance":"/v2/process-instances"
              }""";
 
@@ -1183,7 +1187,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"All [sourceElementId, targetElementId] are required.",
+                "detail":"No targetElementId provided.",
                 "instance":"/v2/process-instances/1/migration"
              }""";
 
@@ -1788,7 +1792,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of [elementId, elementInstanceKey] is required.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1829,7 +1833,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"Only one of [elementId, elementInstanceKey] is allowed.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1876,10 +1880,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
-            Use any of the following values: [direct, inferred, sourceParent]",
+            Use any of the following values: [direct, inferred, sourceParent].",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 
@@ -2480,9 +2484,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"Required request body is missing",
+                "detail":"No filter provided.",
                 "instance":"/v2/process-instances/incident-resolution"
              }""";
 
@@ -2725,7 +2729,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"No targetProcessDefinitionKey provided. No mappingInstructions provided.",
+                "detail":"No targetProcessDefinitionKey provided.",
                 "instance":"/v2/process-instances/migration"
              }""";
 
@@ -3162,7 +3166,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\\\-.]*$'.",
+                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\\\-\\\\.]*$'.",
                 "instance":"/v2/process-instances"
              }""";
 

@@ -31,6 +31,8 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionInstanceController;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -41,11 +43,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = DecisionInstanceController.class)
+@Import(DefaultDecisionInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedDecisionInstanceController.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -455,10 +459,25 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionRequirementsKey",
         ops -> new DecisionInstanceFilter.Builder().decisionRequirementsKeyOperations(ops).build());
-    basicStringOperationTestCases(
+    // Use numeric string values for key fields that have a numeric pattern constraint.
+    keyOperationTestCases(
         streamBuilder,
         "decisionEvaluationInstanceKey",
-        ops -> new DecisionInstanceFilter.Builder().decisionInstanceIdOperations(ops).build());
+        ops -> {
+          final var stringOps =
+              ops.stream()
+                  .map(
+                      op ->
+                          new Operation<>(
+                              op.operator(),
+                              op.values() != null
+                                  ? op.values().stream().map(String::valueOf).toList()
+                                  : null))
+                  .toList();
+          return new DecisionInstanceFilter.Builder()
+              .decisionInstanceIdOperations(stringOps)
+              .build();
+        });
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

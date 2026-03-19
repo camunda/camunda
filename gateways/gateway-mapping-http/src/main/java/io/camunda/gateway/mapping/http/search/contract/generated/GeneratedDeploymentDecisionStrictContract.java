@@ -4,41 +4,37 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/DeploymentDecisionResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentDecisionStrictContract(
-    String decisionDefinitionId,
-    Integer version,
-    String name,
-    String tenantId,
-    String decisionRequirementsId,
-    String decisionDefinitionKey,
-    String decisionRequirementsKey
-) {
+    @JsonProperty("decisionDefinitionId") String decisionDefinitionId,
+    @JsonProperty("version") Integer version,
+    @JsonProperty("name") String name,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("decisionRequirementsId") String decisionRequirementsId,
+    @JsonProperty("decisionDefinitionKey") String decisionDefinitionKey,
+    @JsonProperty("decisionRequirementsKey") String decisionRequirementsKey) {
 
   public GeneratedDeploymentDecisionStrictContract {
-    Objects.requireNonNull(decisionDefinitionId, "decisionDefinitionId is required and must not be null");
-    Objects.requireNonNull(version, "version is required and must not be null");
-    Objects.requireNonNull(name, "name is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(decisionRequirementsId, "decisionRequirementsId is required and must not be null");
-    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey is required and must not be null");
-    Objects.requireNonNull(decisionRequirementsKey, "decisionRequirementsKey is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionId, "No decisionDefinitionId provided.");
+    Objects.requireNonNull(version, "No version provided.");
+    Objects.requireNonNull(name, "No name provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(decisionRequirementsId, "No decisionRequirementsId provided.");
+    Objects.requireNonNull(decisionDefinitionKey, "No decisionDefinitionKey provided.");
+    Objects.requireNonNull(decisionRequirementsKey, "No decisionRequirementsKey provided.");
   }
 
   public static String coerceDecisionDefinitionKey(final Object value) {
@@ -55,7 +51,6 @@ public record GeneratedDeploymentDecisionStrictContract(
         "decisionDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceDecisionRequirementsKey(final Object value) {
     if (value == null) {
       return null;
@@ -67,16 +62,23 @@ public record GeneratedDeploymentDecisionStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "decisionRequirementsKey must be a String or Number, but was " + value.getClass().getName());
+        "decisionRequirementsKey must be a String or Number, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static DecisionDefinitionIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements DecisionDefinitionIdStep, VersionStep, NameStep, TenantIdStep, DecisionRequirementsIdStep, DecisionDefinitionKeyStep, DecisionRequirementsKeyStep, OptionalStep {
+  public static final class Builder
+      implements DecisionDefinitionIdStep,
+          VersionStep,
+          NameStep,
+          TenantIdStep,
+          DecisionRequirementsIdStep,
+          DecisionDefinitionKeyStep,
+          DecisionRequirementsKeyStep,
+          OptionalStep {
     private String decisionDefinitionId;
     private Integer version;
     private String name;
@@ -128,6 +130,7 @@ public record GeneratedDeploymentDecisionStrictContract(
       this.decisionRequirementsKey = decisionRequirementsKey;
       return this;
     }
+
     @Override
     public GeneratedDeploymentDecisionStrictContract build() {
       return new GeneratedDeploymentDecisionStrictContract(
@@ -173,18 +176,22 @@ public record GeneratedDeploymentDecisionStrictContract(
     GeneratedDeploymentDecisionStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID = ContractPolicy.field("DeploymentDecisionResult", "decisionDefinitionId");
-    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("DeploymentDecisionResult", "version");
-    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("DeploymentDecisionResult", "name");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DeploymentDecisionResult", "tenantId");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_ID = ContractPolicy.field("DeploymentDecisionResult", "decisionRequirementsId");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY = ContractPolicy.field("DeploymentDecisionResult", "decisionDefinitionKey");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_KEY = ContractPolicy.field("DeploymentDecisionResult", "decisionRequirementsKey");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID =
+        ContractPolicy.field("DeploymentDecisionResult", "decisionDefinitionId");
+    public static final ContractPolicy.FieldRef VERSION =
+        ContractPolicy.field("DeploymentDecisionResult", "version");
+    public static final ContractPolicy.FieldRef NAME =
+        ContractPolicy.field("DeploymentDecisionResult", "name");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("DeploymentDecisionResult", "tenantId");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_ID =
+        ContractPolicy.field("DeploymentDecisionResult", "decisionRequirementsId");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY =
+        ContractPolicy.field("DeploymentDecisionResult", "decisionDefinitionKey");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_KEY =
+        ContractPolicy.field("DeploymentDecisionResult", "decisionRequirementsKey");
 
     private Fields() {}
   }
-
-
 }

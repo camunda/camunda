@@ -4,158 +4,233 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/AdvancedProcessInstanceStateFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
+@JsonDeserialize(using = JsonDeserializer.None.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdvancedProcessInstanceStateFilterStrictContract(
-    io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum eq,
-    io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum neq,
-    @Nullable Boolean exists,
-    java.util.@Nullable List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> in,
-    @Nullable String like
-) {
-
+    @JsonProperty("$eq")
+        io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $eq,
+    @JsonProperty("$neq")
+        io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $neq,
+    @JsonProperty("$exists") @Nullable Boolean $exists,
+    @JsonProperty("$in")
+        java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            $in,
+    @JsonProperty("$like") @Nullable String $like)
+    implements GeneratedProcessInstanceStateFilterPropertyStrictContract {
 
   public static OptionalStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements OptionalStep {
-    private io.camunda.gateway.protocol.model.ProcessInstanceStateEnum eq;
-    private io.camunda.gateway.protocol.model.ProcessInstanceStateEnum neq;
-    private Boolean exists;
-    private java.util.List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> in;
-    private String like;
+    private io.camunda.gateway.mapping.http.search.contract.generated
+            .GeneratedProcessInstanceStateEnum
+        $eq;
+    private io.camunda.gateway.mapping.http.search.contract.generated
+            .GeneratedProcessInstanceStateEnum
+        $neq;
+    private Boolean $exists;
+    private java.util.List<
+            io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedProcessInstanceStateEnum>
+        $in;
+    private String $like;
 
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum eq) {
-      this.eq = eq;
+    public OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $eq) {
+      this.$eq = $eq;
       return this;
     }
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> policy) {
-      this.eq = policy.apply(eq, Fields.EQ, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum neq) {
-      this.neq = neq;
-      return this;
-    }
-
-    @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> policy) {
-      this.neq = policy.apply(neq, Fields.NEQ, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep exists(final @Nullable Boolean exists) {
-      this.exists = exists;
+    public OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $eq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            policy) {
+      this.$eq = policy.apply($eq, Fields.$EQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
-      this.exists = policy.apply(exists, Fields.EXISTS, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> in) {
-      this.in = in;
+    public OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $neq) {
+      this.$neq = $neq;
       return this;
     }
 
     @Override
-    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum>> policy) {
-      this.in = policy.apply(in, Fields.IN, null);
+    public OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $neq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            policy) {
+      this.$neq = policy.apply($neq, Fields.$NEQ, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep like(final @Nullable String like) {
-      this.like = like;
+    public OptionalStep $exists(final @Nullable Boolean $exists) {
+      this.$exists = $exists;
       return this;
     }
 
     @Override
-    public OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
-      this.like = policy.apply(like, Fields.LIKE, null);
+    public OptionalStep $exists(
+        final @Nullable Boolean $exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+      this.$exists = policy.apply($exists, Fields.$EXISTS, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            $in) {
+      this.$in = $in;
+      return this;
+    }
+
+    @Override
+    public OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            $in,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    io.camunda.gateway.mapping.http.search.contract.generated
+                        .GeneratedProcessInstanceStateEnum>>
+            policy) {
+      this.$in = policy.apply($in, Fields.$IN, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep $like(final @Nullable String $like) {
+      this.$like = $like;
+      return this;
+    }
+
+    @Override
+    public OptionalStep $like(
+        final @Nullable String $like, final ContractPolicy.FieldPolicy<String> policy) {
+      this.$like = policy.apply($like, Fields.$LIKE, null);
       return this;
     }
 
     @Override
     public GeneratedAdvancedProcessInstanceStateFilterStrictContract build() {
       return new GeneratedAdvancedProcessInstanceStateFilterStrictContract(
-          this.eq,
-          this.neq,
-          this.exists,
-          this.in,
-          this.like);
+          this.$eq, this.$neq, this.$exists, this.$in, this.$like);
     }
   }
 
   public interface OptionalStep {
-  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum eq);
+    OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $eq);
 
-  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> policy);
+    OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $eq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            policy);
 
+    OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $neq);
 
-  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum neq);
+    OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedProcessInstanceStateEnum
+            $neq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            policy);
 
-  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceStateEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> policy);
+    OptionalStep $exists(final @Nullable Boolean $exists);
 
+    OptionalStep $exists(
+        final @Nullable Boolean $exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-  OptionalStep exists(final @Nullable Boolean exists);
+    OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            $in);
 
-  OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedProcessInstanceStateEnum>
+            $in,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    io.camunda.gateway.mapping.http.search.contract.generated
+                        .GeneratedProcessInstanceStateEnum>>
+            policy);
 
+    OptionalStep $like(final @Nullable String $like);
 
-  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> in);
-
-  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.ProcessInstanceStateEnum>> policy);
-
-
-  OptionalStep like(final @Nullable String like);
-
-  OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep $like(
+        final @Nullable String $like, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAdvancedProcessInstanceStateFilterStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EQ = ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$eq");
-    public static final ContractPolicy.FieldRef NEQ = ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$neq");
-    public static final ContractPolicy.FieldRef EXISTS = ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$exists");
-    public static final ContractPolicy.FieldRef IN = ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$in");
-    public static final ContractPolicy.FieldRef LIKE = ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$like");
+    public static final ContractPolicy.FieldRef $EQ =
+        ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$eq");
+    public static final ContractPolicy.FieldRef $NEQ =
+        ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$neq");
+    public static final ContractPolicy.FieldRef $EXISTS =
+        ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$exists");
+    public static final ContractPolicy.FieldRef $IN =
+        ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$in");
+    public static final ContractPolicy.FieldRef $LIKE =
+        ContractPolicy.field("AdvancedProcessInstanceStateFilter", "$like");
 
     private Fields() {}
   }
-
-
 }

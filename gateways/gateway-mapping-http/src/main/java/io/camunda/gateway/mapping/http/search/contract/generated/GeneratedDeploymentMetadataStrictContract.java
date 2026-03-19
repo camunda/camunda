@@ -4,32 +4,31 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/DeploymentMetadataResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentMetadataStrictContract(
-    @Nullable GeneratedDeploymentProcessStrictContract processDefinition,
-    @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition,
-    @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements,
-    @Nullable GeneratedDeploymentFormStrictContract form,
-    @Nullable GeneratedDeploymentResourceStrictContract resource
-) {
+    @JsonProperty("processDefinition")
+        @Nullable GeneratedDeploymentProcessStrictContract processDefinition,
+    @JsonProperty("decisionDefinition")
+        @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition,
+    @JsonProperty("decisionRequirements")
+        @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements,
+    @JsonProperty("form") @Nullable GeneratedDeploymentFormStrictContract form,
+    @JsonProperty("resource") @Nullable GeneratedDeploymentResourceStrictContract resource) {
 
-  public static GeneratedDeploymentProcessStrictContract coerceProcessDefinition(final Object value) {
+  public static GeneratedDeploymentProcessStrictContract coerceProcessDefinition(
+      final Object value) {
     if (value == null) {
       return null;
     }
@@ -38,11 +37,12 @@ public record GeneratedDeploymentMetadataStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "processDefinition must be a GeneratedDeploymentProcessStrictContract, but was " + value.getClass().getName());
+        "processDefinition must be a GeneratedDeploymentProcessStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-  public static GeneratedDeploymentDecisionStrictContract coerceDecisionDefinition(final Object value) {
+  public static GeneratedDeploymentDecisionStrictContract coerceDecisionDefinition(
+      final Object value) {
     if (value == null) {
       return null;
     }
@@ -51,11 +51,12 @@ public record GeneratedDeploymentMetadataStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "decisionDefinition must be a GeneratedDeploymentDecisionStrictContract, but was " + value.getClass().getName());
+        "decisionDefinition must be a GeneratedDeploymentDecisionStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-  public static GeneratedDeploymentDecisionRequirementsStrictContract coerceDecisionRequirements(final Object value) {
+  public static GeneratedDeploymentDecisionRequirementsStrictContract coerceDecisionRequirements(
+      final Object value) {
     if (value == null) {
       return null;
     }
@@ -64,9 +65,9 @@ public record GeneratedDeploymentMetadataStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "decisionRequirements must be a GeneratedDeploymentDecisionRequirementsStrictContract, but was " + value.getClass().getName());
+        "decisionRequirements must be a GeneratedDeploymentDecisionRequirementsStrictContract, but was "
+            + value.getClass().getName());
   }
-
 
   public static GeneratedDeploymentFormStrictContract coerceForm(final Object value) {
     if (value == null) {
@@ -77,9 +78,9 @@ public record GeneratedDeploymentMetadataStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "form must be a GeneratedDeploymentFormStrictContract, but was " + value.getClass().getName());
+        "form must be a GeneratedDeploymentFormStrictContract, but was "
+            + value.getClass().getName());
   }
-
 
   public static GeneratedDeploymentResourceStrictContract coerceResource(final Object value) {
     if (value == null) {
@@ -90,10 +91,9 @@ public record GeneratedDeploymentMetadataStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "resource must be a GeneratedDeploymentResourceStrictContract, but was " + value.getClass().getName());
+        "resource must be a GeneratedDeploymentResourceStrictContract, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static OptionalStep builder() {
     return new Builder();
@@ -109,7 +109,8 @@ public record GeneratedDeploymentMetadataStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep processDefinition(final @Nullable GeneratedDeploymentProcessStrictContract processDefinition) {
+    public OptionalStep processDefinition(
+        final @Nullable GeneratedDeploymentProcessStrictContract processDefinition) {
       this.processDefinition = processDefinition;
       return this;
     }
@@ -120,20 +121,23 @@ public record GeneratedDeploymentMetadataStrictContract(
       return this;
     }
 
-    public Builder processDefinition(final @Nullable GeneratedDeploymentProcessStrictContract processDefinition, final ContractPolicy.FieldPolicy<GeneratedDeploymentProcessStrictContract> policy) {
+    public Builder processDefinition(
+        final @Nullable GeneratedDeploymentProcessStrictContract processDefinition,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentProcessStrictContract> policy) {
       this.processDefinition = policy.apply(processDefinition, Fields.PROCESS_DEFINITION, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinition(final @Nullable Object processDefinition, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processDefinition(
+        final @Nullable Object processDefinition, final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinition = policy.apply(processDefinition, Fields.PROCESS_DEFINITION, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep decisionDefinition(final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition) {
+    public OptionalStep decisionDefinition(
+        final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition) {
       this.decisionDefinition = decisionDefinition;
       return this;
     }
@@ -144,20 +148,25 @@ public record GeneratedDeploymentMetadataStrictContract(
       return this;
     }
 
-    public Builder decisionDefinition(final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition, final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionStrictContract> policy) {
+    public Builder decisionDefinition(
+        final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionStrictContract> policy) {
       this.decisionDefinition = policy.apply(decisionDefinition, Fields.DECISION_DEFINITION, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionDefinition(final @Nullable Object decisionDefinition, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep decisionDefinition(
+        final @Nullable Object decisionDefinition,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.decisionDefinition = policy.apply(decisionDefinition, Fields.DECISION_DEFINITION, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep decisionRequirements(final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements) {
+    public OptionalStep decisionRequirements(
+        final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract
+            decisionRequirements) {
       this.decisionRequirements = decisionRequirements;
       return this;
     }
@@ -168,17 +177,23 @@ public record GeneratedDeploymentMetadataStrictContract(
       return this;
     }
 
-    public Builder decisionRequirements(final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements, final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionRequirementsStrictContract> policy) {
-      this.decisionRequirements = policy.apply(decisionRequirements, Fields.DECISION_REQUIREMENTS, null);
+    public Builder decisionRequirements(
+        final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionRequirementsStrictContract>
+            policy) {
+      this.decisionRequirements =
+          policy.apply(decisionRequirements, Fields.DECISION_REQUIREMENTS, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirements(final @Nullable Object decisionRequirements, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.decisionRequirements = policy.apply(decisionRequirements, Fields.DECISION_REQUIREMENTS, null);
+    public OptionalStep decisionRequirements(
+        final @Nullable Object decisionRequirements,
+        final ContractPolicy.FieldPolicy<Object> policy) {
+      this.decisionRequirements =
+          policy.apply(decisionRequirements, Fields.DECISION_REQUIREMENTS, null);
       return this;
     }
-
 
     @Override
     public OptionalStep form(final @Nullable GeneratedDeploymentFormStrictContract form) {
@@ -192,20 +207,23 @@ public record GeneratedDeploymentMetadataStrictContract(
       return this;
     }
 
-    public Builder form(final @Nullable GeneratedDeploymentFormStrictContract form, final ContractPolicy.FieldPolicy<GeneratedDeploymentFormStrictContract> policy) {
+    public Builder form(
+        final @Nullable GeneratedDeploymentFormStrictContract form,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentFormStrictContract> policy) {
       this.form = policy.apply(form, Fields.FORM, null);
       return this;
     }
 
     @Override
-    public OptionalStep form(final @Nullable Object form, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep form(
+        final @Nullable Object form, final ContractPolicy.FieldPolicy<Object> policy) {
       this.form = policy.apply(form, Fields.FORM, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep resource(final @Nullable GeneratedDeploymentResourceStrictContract resource) {
+    public OptionalStep resource(
+        final @Nullable GeneratedDeploymentResourceStrictContract resource) {
       this.resource = resource;
       return this;
     }
@@ -216,13 +234,16 @@ public record GeneratedDeploymentMetadataStrictContract(
       return this;
     }
 
-    public Builder resource(final @Nullable GeneratedDeploymentResourceStrictContract resource, final ContractPolicy.FieldPolicy<GeneratedDeploymentResourceStrictContract> policy) {
+    public Builder resource(
+        final @Nullable GeneratedDeploymentResourceStrictContract resource,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentResourceStrictContract> policy) {
       this.resource = policy.apply(resource, Fields.RESOURCE, null);
       return this;
     }
 
     @Override
-    public OptionalStep resource(final @Nullable Object resource, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep resource(
+        final @Nullable Object resource, final ContractPolicy.FieldPolicy<Object> policy) {
       this.resource = policy.apply(resource, Fields.RESOURCE, null);
       return this;
     }
@@ -239,64 +260,80 @@ public record GeneratedDeploymentMetadataStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep processDefinition(final @Nullable GeneratedDeploymentProcessStrictContract processDefinition);
+    OptionalStep processDefinition(
+        final @Nullable GeneratedDeploymentProcessStrictContract processDefinition);
 
-  OptionalStep processDefinition(final @Nullable Object processDefinition);
+    OptionalStep processDefinition(final @Nullable Object processDefinition);
 
-  OptionalStep processDefinition(final @Nullable GeneratedDeploymentProcessStrictContract processDefinition, final ContractPolicy.FieldPolicy<GeneratedDeploymentProcessStrictContract> policy);
+    OptionalStep processDefinition(
+        final @Nullable GeneratedDeploymentProcessStrictContract processDefinition,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentProcessStrictContract> policy);
 
-  OptionalStep processDefinition(final @Nullable Object processDefinition, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep processDefinition(
+        final @Nullable Object processDefinition, final ContractPolicy.FieldPolicy<Object> policy);
 
+    OptionalStep decisionDefinition(
+        final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition);
 
-  OptionalStep decisionDefinition(final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition);
+    OptionalStep decisionDefinition(final @Nullable Object decisionDefinition);
 
-  OptionalStep decisionDefinition(final @Nullable Object decisionDefinition);
+    OptionalStep decisionDefinition(
+        final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionStrictContract> policy);
 
-  OptionalStep decisionDefinition(final @Nullable GeneratedDeploymentDecisionStrictContract decisionDefinition, final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionStrictContract> policy);
+    OptionalStep decisionDefinition(
+        final @Nullable Object decisionDefinition, final ContractPolicy.FieldPolicy<Object> policy);
 
-  OptionalStep decisionDefinition(final @Nullable Object decisionDefinition, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep decisionRequirements(
+        final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements);
 
+    OptionalStep decisionRequirements(final @Nullable Object decisionRequirements);
 
-  OptionalStep decisionRequirements(final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements);
+    OptionalStep decisionRequirements(
+        final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionRequirementsStrictContract>
+            policy);
 
-  OptionalStep decisionRequirements(final @Nullable Object decisionRequirements);
+    OptionalStep decisionRequirements(
+        final @Nullable Object decisionRequirements,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-  OptionalStep decisionRequirements(final @Nullable GeneratedDeploymentDecisionRequirementsStrictContract decisionRequirements, final ContractPolicy.FieldPolicy<GeneratedDeploymentDecisionRequirementsStrictContract> policy);
+    OptionalStep form(final @Nullable GeneratedDeploymentFormStrictContract form);
 
-  OptionalStep decisionRequirements(final @Nullable Object decisionRequirements, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep form(final @Nullable Object form);
 
+    OptionalStep form(
+        final @Nullable GeneratedDeploymentFormStrictContract form,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentFormStrictContract> policy);
 
-  OptionalStep form(final @Nullable GeneratedDeploymentFormStrictContract form);
+    OptionalStep form(final @Nullable Object form, final ContractPolicy.FieldPolicy<Object> policy);
 
-  OptionalStep form(final @Nullable Object form);
+    OptionalStep resource(final @Nullable GeneratedDeploymentResourceStrictContract resource);
 
-  OptionalStep form(final @Nullable GeneratedDeploymentFormStrictContract form, final ContractPolicy.FieldPolicy<GeneratedDeploymentFormStrictContract> policy);
+    OptionalStep resource(final @Nullable Object resource);
 
-  OptionalStep form(final @Nullable Object form, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep resource(
+        final @Nullable GeneratedDeploymentResourceStrictContract resource,
+        final ContractPolicy.FieldPolicy<GeneratedDeploymentResourceStrictContract> policy);
 
-
-  OptionalStep resource(final @Nullable GeneratedDeploymentResourceStrictContract resource);
-
-  OptionalStep resource(final @Nullable Object resource);
-
-  OptionalStep resource(final @Nullable GeneratedDeploymentResourceStrictContract resource, final ContractPolicy.FieldPolicy<GeneratedDeploymentResourceStrictContract> policy);
-
-  OptionalStep resource(final @Nullable Object resource, final ContractPolicy.FieldPolicy<Object> policy);
-
+    OptionalStep resource(
+        final @Nullable Object resource, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedDeploymentMetadataStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION = ContractPolicy.field("DeploymentMetadataResult", "processDefinition");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION = ContractPolicy.field("DeploymentMetadataResult", "decisionDefinition");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS = ContractPolicy.field("DeploymentMetadataResult", "decisionRequirements");
-    public static final ContractPolicy.FieldRef FORM = ContractPolicy.field("DeploymentMetadataResult", "form");
-    public static final ContractPolicy.FieldRef RESOURCE = ContractPolicy.field("DeploymentMetadataResult", "resource");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION =
+        ContractPolicy.field("DeploymentMetadataResult", "processDefinition");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION =
+        ContractPolicy.field("DeploymentMetadataResult", "decisionDefinition");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS =
+        ContractPolicy.field("DeploymentMetadataResult", "decisionRequirements");
+    public static final ContractPolicy.FieldRef FORM =
+        ContractPolicy.field("DeploymentMetadataResult", "form");
+    public static final ContractPolicy.FieldRef RESOURCE =
+        ContractPolicy.field("DeploymentMetadataResult", "resource");
 
     private Fields() {}
   }
-
-
 }

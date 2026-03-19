@@ -18,7 +18,6 @@ import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.Changeset;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -50,16 +49,7 @@ public final class UserTaskRequestValidator {
             final Changeset changeset = updateRequest.getChangeset();
             validateDate(changeset.getDueDate(), "due date", violations);
             validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
-            validatePriority(changeset.getPriority(), violations);
           }
         });
-  }
-
-  private static void validatePriority(final Integer priority, final List<String> violations) {
-    if (priority != null && (priority < 0 || priority > 100)) {
-      violations.add(
-          ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "priority", priority, "within the [0,100] range"));
-    }
   }
 }

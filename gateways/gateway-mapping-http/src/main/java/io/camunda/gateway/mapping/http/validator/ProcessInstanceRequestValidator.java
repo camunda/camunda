@@ -14,12 +14,10 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
-import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
@@ -57,18 +55,17 @@ public class ProcessInstanceRequestValidator {
     return validateByKey((ProcessInstanceCreationInstructionByKey) request);
   }
 
+  /**
+   * Validate only the tags for strict contract paths (other fields validated by spec constraints).
+   */
+  public static Optional<ProblemDetail> validateCreateProcessInstanceTags(final Set<String> tags) {
+    return validate(violations -> validateTags(tags, violations));
+  }
+
   private static Optional<ProblemDetail> validateByKey(
       final ProcessInstanceCreationInstructionByKey request) {
     return validate(
         violations -> {
-          if (request.getProcessDefinitionKey() == null) {
-            violations.add(
-                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
-                    List.of("processDefinitionId", "processDefinitionKey")));
-          }
-          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
-          validateOperationReference(request.getOperationReference(), violations);
-          validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -77,14 +74,6 @@ public class ProcessInstanceRequestValidator {
       final ProcessInstanceCreationInstructionById request) {
     return validate(
         violations -> {
-          if (request.getProcessDefinitionId() == null) {
-            violations.add(
-                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
-                    List.of("processDefinitionId", "processDefinitionKey")));
-          }
-          validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
-          validateOperationReference(request.getOperationReference(), violations);
-          validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -112,6 +101,11 @@ public class ProcessInstanceRequestValidator {
             validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
           }
 
+          if (byKeySet) {
+            validateKeyFormat(
+                request.getProcessDefinitionKey(), "processDefinitionKey", violations);
+          }
+
           final var versionSet =
               request.getProcessDefinitionVersion() != null
                   && request.getProcessDefinitionVersion() != -1;
@@ -131,12 +125,7 @@ public class ProcessInstanceRequestValidator {
 
   public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(
       final CancelProcessInstanceRequest request) {
-    return validate(
-        violations -> {
-          if (request != null) {
-            validateOperationReference(request.getOperationReference(), violations);
-          }
-        });
+    return Optional.empty();
   }
 
   public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
@@ -153,16 +142,6 @@ public class ProcessInstanceRequestValidator {
             return;
           }
 
-          if (migrationPlan.getTargetProcessDefinitionKey() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
-          } else {
-            // Validate targetProcessDefinitionKey format
-            validateKeyFormat(
-                migrationPlan.getTargetProcessDefinitionKey(),
-                "targetProcessDefinitionKey",
-                violations);
-          }
-
           if (migrationPlan.getMappingInstructions() == null
               || migrationPlan.getMappingInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
@@ -176,20 +155,12 @@ public class ProcessInstanceRequestValidator {
       final ProcessInstanceMigrationInstruction request) {
     return validate(
         violations -> {
-          if (request.getTargetProcessDefinitionKey() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
-          } else {
-            // Validate targetProcessDefinitionKey format
-            validateKeyFormat(
-                request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
-          }
           if (request.getMappingInstructions() == null
               || request.getMappingInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
           } else {
             validateMappingInstructions(request.getMappingInstructions(), violations);
           }
-          validateOperationReference(request.getOperationReference(), violations);
         });
   }
 
@@ -200,7 +171,6 @@ public class ProcessInstanceRequestValidator {
           validateActivateInstructions(request.getActivateInstructions(), violations);
           validateTerminateInstructions(request.getTerminateInstructions(), violations);
           validateMoveInstructions(request.getMoveInstructions(), violations);
-          validateOperationReference(request.getOperationReference(), violations);
         });
   }
 
@@ -241,12 +211,6 @@ public class ProcessInstanceRequestValidator {
         (instruction) -> instruction.getElementId() != null,
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
-    instructions.forEach(
-        instruction ->
-            validateKeyFormat(
-                instruction.getAncestorElementInstanceKey(),
-                "ancestorElementInstanceKey",
-                violations));
     final var variableInstructions =
         instructions.stream()
             .flatMap(instruction -> instruction.getVariableInstructions().stream())
@@ -267,8 +231,6 @@ public class ProcessInstanceRequestValidator {
               instanceof final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
             if (byKey.getElementInstanceKey() == null) {
               violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
-            } else {
-              validateKeyFormat(byKey.getElementInstanceKey(), "elementInstanceKey", violations);
             }
           } else {
             final String elementId =
@@ -292,8 +254,7 @@ public class ProcessInstanceRequestValidator {
               }
             }
             case final SourceElementInstanceKeyInstruction byKey -> {
-              validateKeyFormat(
-                  byKey.getSourceElementInstanceKey(), "sourceElementInstanceKey", violations);
+              // Key format validation is now handled by the strict contract
             }
             case null -> {
               violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementInstruction"));
@@ -310,14 +271,6 @@ public class ProcessInstanceRequestValidator {
             instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
-    instructions.forEach(
-        instruction -> {
-          if (instruction.getAncestorScopeInstruction()
-              instanceof final DirectAncestorKeyInstruction direct) {
-            validateKeyFormat(
-                direct.getAncestorElementInstanceKey(), "ancestorElementInstanceKey", violations);
-          }
-        });
     final var variableInstructions =
         instructions.stream()
             .flatMap(instruction -> instruction.getVariableInstructions().stream())

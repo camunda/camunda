@@ -10,15 +10,15 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogActorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogEntityTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
-import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogResultEnum;
-import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.AuditLogEntity;
 import java.util.List;
 
@@ -37,32 +37,35 @@ public final class AuditLogContractAdapter {
         .entityKey(ContractPolicy.requireNonNull(entity.entityKey(), Fields.ENTITY_KEY, entity))
         .entityType(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.entityType(), AuditLogEntityTypeEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.entityType(), GeneratedAuditLogEntityTypeEnum::fromValue),
                 Fields.ENTITY_TYPE,
                 entity))
         .operationType(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(
-                    entity.operationType(), AuditLogOperationTypeEnum::fromValue),
+                    entity.operationType(), GeneratedAuditLogOperationTypeEnum::fromValue),
                 Fields.OPERATION_TYPE,
                 entity))
         .timestamp(
             ContractPolicy.requireNonNull(formatDate(entity.timestamp()), Fields.TIMESTAMP, entity))
         .result(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.result(), AuditLogResultEnum::fromValue),
+                ContractPolicy.mapEnum(entity.result(), GeneratedAuditLogResultEnum::fromValue),
                 Fields.RESULT,
                 entity))
         .category(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.category(), AuditLogCategoryEnum::fromValue),
+                ContractPolicy.mapEnum(entity.category(), GeneratedAuditLogCategoryEnum::fromValue),
                 Fields.CATEGORY,
                 entity))
         .batchOperationKey(KeyUtil.keyToString(entity.batchOperationKey()))
         .batchOperationType(
-            ContractPolicy.mapEnum(entity.batchOperationType(), BatchOperationTypeEnum::fromValue))
+            ContractPolicy.mapEnum(
+                entity.batchOperationType(), GeneratedBatchOperationTypeEnum::fromValue))
         .actorId(entity.actorId())
-        .actorType(ContractPolicy.mapEnum(entity.actorType(), AuditLogActorTypeEnum::fromValue))
+        .actorType(
+            ContractPolicy.mapEnum(entity.actorType(), GeneratedAuditLogActorTypeEnum::fromValue))
         .agentElementId(entity.agentElementId())
         .tenantId(entity.tenantId())
         .annotation(entity.annotation())
@@ -83,7 +86,8 @@ public final class AuditLogContractAdapter {
         .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
         .relatedEntityKey(entity.relatedEntityKey())
         .relatedEntityType(
-            ContractPolicy.mapEnum(entity.relatedEntityType(), AuditLogEntityTypeEnum::fromValue))
+            ContractPolicy.mapEnum(
+                entity.relatedEntityType(), GeneratedAuditLogEntityTypeEnum::fromValue))
         .entityDescription(entity.entityDescription())
         .build();
   }

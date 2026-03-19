@@ -26,6 +26,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -52,7 +54,8 @@ public class UserControllerTest {
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
-  @WebMvcTest(UserController.class)
+  @Import(DefaultUserServiceAdapter.class)
+  @WebMvcTest(GeneratedUserController.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=basic")
   public class CamundaUsersEnabledTest extends RestControllerTest {
 
@@ -418,10 +421,13 @@ public class UserControllerTest {
   }
 
   @Nested
-  @WebMvcTest(UserController.class)
-  @Import(ApiFiltersConfiguration.class)
+  @Import({DefaultUserServiceAdapter.class, ApiFiltersConfiguration.class})
+  @WebMvcTest(GeneratedUserController.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=oidc")
   public class CamundaUsersDisabledTest extends RestControllerTest {
+
+    @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean UserServices userServices;
 
     public static final String FORBIDDEN_MESSAGE =
         """

@@ -10,14 +10,14 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceGetQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionInputItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionOutputItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMatchedDecisionRuleItemStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
-import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
-import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
@@ -46,29 +46,29 @@ public final class DecisionInstanceContractAdapter {
     return toStrictContract(entity);
   }
 
-  public static DecisionInstanceGetQueryResult toGetProjection(
+  public static GeneratedDecisionInstanceGetQueryStrictContract toGetProjection(
       final DecisionInstanceEntity entity) {
-    final var strictContractView = toStrictContract(entity);
-    return new DecisionInstanceGetQueryResult()
-        .decisionEvaluationKey(strictContractView.decisionEvaluationKey())
-        .decisionEvaluationInstanceKey(strictContractView.decisionEvaluationInstanceKey())
-        .state(strictContractView.state())
-        .evaluationDate(strictContractView.evaluationDate())
-        .evaluationFailure(strictContractView.evaluationFailure())
-        .processDefinitionKey(strictContractView.processDefinitionKey())
-        .processInstanceKey(strictContractView.processInstanceKey())
-        .rootProcessInstanceKey(strictContractView.rootProcessInstanceKey())
-        .elementInstanceKey(strictContractView.elementInstanceKey())
-        .decisionDefinitionKey(strictContractView.decisionDefinitionKey())
-        .decisionDefinitionId(strictContractView.decisionDefinitionId())
-        .decisionDefinitionName(strictContractView.decisionDefinitionName())
-        .decisionDefinitionVersion(strictContractView.decisionDefinitionVersion())
-        .decisionDefinitionType(strictContractView.decisionDefinitionType())
-        .rootDecisionDefinitionKey(strictContractView.rootDecisionDefinitionKey())
-        .result(strictContractView.result())
-        .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
-        .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
-        .tenantId(strictContractView.tenantId());
+    final var sc = toStrictContract(entity);
+    return new GeneratedDecisionInstanceGetQueryStrictContract(
+        sc.decisionDefinitionId(),
+        sc.decisionDefinitionKey(),
+        sc.decisionDefinitionName(),
+        sc.decisionDefinitionType(),
+        sc.decisionDefinitionVersion(),
+        sc.decisionEvaluationInstanceKey(),
+        sc.decisionEvaluationKey(),
+        sc.elementInstanceKey(),
+        sc.evaluationDate(),
+        sc.evaluationFailure(),
+        sc.processDefinitionKey(),
+        sc.processInstanceKey(),
+        sc.result(),
+        sc.rootDecisionDefinitionKey(),
+        sc.rootProcessInstanceKey(),
+        sc.state(),
+        sc.tenantId(),
+        toEvaluatedInputs(entity.evaluatedInputs()),
+        toMatchedRules(entity.evaluatedOutputs()));
   }
 
   private static GeneratedDecisionInstanceStrictContract toStrictContract(
@@ -116,7 +116,7 @@ public final class DecisionInstanceContractAdapter {
         .build();
   }
 
-  private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(
+  private static List<GeneratedEvaluatedDecisionInputItemStrictContract> toEvaluatedInputs(
       final List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
     if (decisionInstanceInputEntities == null) {
       return null;
@@ -124,14 +124,12 @@ public final class DecisionInstanceContractAdapter {
     return decisionInstanceInputEntities.stream()
         .map(
             input ->
-                new EvaluatedDecisionInputItem()
-                    .inputId(input.inputId())
-                    .inputName(input.inputName())
-                    .inputValue(input.inputValue()))
+                new GeneratedEvaluatedDecisionInputItemStrictContract(
+                    input.inputId(), input.inputName(), input.inputValue()))
         .toList();
   }
 
-  private static List<MatchedDecisionRuleItem> toMatchedRules(
+  private static List<GeneratedMatchedDecisionRuleItemStrictContract> toMatchedRules(
       final List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
     if (decisionInstanceOutputEntities == null) {
       return null;
@@ -144,45 +142,46 @@ public final class DecisionInstanceContractAdapter {
             entry -> {
               final var ruleIdentifier = entry.getKey();
               final var outputs = entry.getValue();
-              return new MatchedDecisionRuleItem()
-                  .ruleId(ruleIdentifier.ruleId())
-                  .ruleIndex(ruleIdentifier.ruleIndex())
-                  .evaluatedOutputs(
-                      outputs.stream()
-                          .map(
-                              output ->
-                                  new EvaluatedDecisionOutputItem()
-                                      .outputId(output.outputId())
-                                      .outputName(output.outputName())
-                                      .outputValue(output.outputValue()))
-                          .toList());
+              return new GeneratedMatchedDecisionRuleItemStrictContract(
+                  ruleIdentifier.ruleId(),
+                  ruleIdentifier.ruleIndex(),
+                  outputs.stream()
+                      .map(
+                          output ->
+                              new GeneratedEvaluatedDecisionOutputItemStrictContract(
+                                  output.outputId(),
+                                  output.outputName(),
+                                  output.outputValue(),
+                                  null,
+                                  null))
+                      .toList());
             })
         .toList();
   }
 
-  private static DecisionInstanceStateEnum toDecisionInstanceStateEnum(
+  private static GeneratedDecisionInstanceStateEnum toDecisionInstanceStateEnum(
       final DecisionInstanceState state) {
     if (state == null) {
       return null;
     }
     return switch (state) {
-      case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
-      case FAILED -> DecisionInstanceStateEnum.FAILED;
-      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
-      default -> DecisionInstanceStateEnum.UNKNOWN;
+      case EVALUATED -> GeneratedDecisionInstanceStateEnum.EVALUATED;
+      case FAILED -> GeneratedDecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED -> GeneratedDecisionInstanceStateEnum.UNSPECIFIED;
+      default -> GeneratedDecisionInstanceStateEnum.UNKNOWN;
     };
   }
 
-  private static DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+  private static GeneratedDecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
       final DecisionDefinitionType decisionDefinitionType) {
     if (decisionDefinitionType == null) {
       return null;
     }
     return switch (decisionDefinitionType) {
-      case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
-      case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
-      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
-      default -> DecisionDefinitionTypeEnum.UNKNOWN;
+      case DECISION_TABLE -> GeneratedDecisionDefinitionTypeEnum.DECISION_TABLE;
+      case LITERAL_EXPRESSION -> GeneratedDecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED -> GeneratedDecisionDefinitionTypeEnum.UNSPECIFIED;
+      default -> GeneratedDecisionDefinitionTypeEnum.UNKNOWN;
     };
   }
 

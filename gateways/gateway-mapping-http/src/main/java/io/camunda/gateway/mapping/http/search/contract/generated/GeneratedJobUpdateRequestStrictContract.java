@@ -4,31 +4,30 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml#/components/schemas/JobUpdateRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobUpdateRequestStrictContract(
-    GeneratedJobChangesetStrictContract changeset,
-    @Nullable Long operationReference
-) {
+    @JsonProperty("changeset") GeneratedJobChangesetStrictContract changeset,
+    @JsonProperty("operationReference") @Nullable Long operationReference) {
 
   public GeneratedJobUpdateRequestStrictContract {
-    Objects.requireNonNull(changeset, "changeset is required and must not be null");
+    Objects.requireNonNull(changeset, "No changeset provided.");
+    if (operationReference != null)
+      if (operationReference < 1L)
+        throw new IllegalArgumentException(
+            "The value for operationReference is '" + operationReference + "' but must be > 0.");
   }
 
   public static GeneratedJobChangesetStrictContract coerceChangeset(final Object value) {
@@ -40,10 +39,9 @@ public record GeneratedJobUpdateRequestStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "changeset must be a GeneratedJobChangesetStrictContract, but was " + value.getClass().getName());
+        "changeset must be a GeneratedJobChangesetStrictContract, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static ChangesetStep builder() {
     return new Builder();
@@ -68,7 +66,8 @@ public record GeneratedJobUpdateRequestStrictContract(
     }
 
     @Override
-    public OptionalStep operationReference(final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep operationReference(
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
@@ -76,8 +75,7 @@ public record GeneratedJobUpdateRequestStrictContract(
     @Override
     public GeneratedJobUpdateRequestStrictContract build() {
       return new GeneratedJobUpdateRequestStrictContract(
-          coerceChangeset(this.changeset),
-          this.operationReference);
+          coerceChangeset(this.changeset), this.operationReference);
     }
   }
 
@@ -86,21 +84,20 @@ public record GeneratedJobUpdateRequestStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep operationReference(final @Nullable Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
-  OptionalStep operationReference(final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
-
+    OptionalStep operationReference(
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     GeneratedJobUpdateRequestStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CHANGESET = ContractPolicy.field("JobUpdateRequest", "changeset");
-    public static final ContractPolicy.FieldRef OPERATION_REFERENCE = ContractPolicy.field("JobUpdateRequest", "operationReference");
+    public static final ContractPolicy.FieldRef CHANGESET =
+        ContractPolicy.field("JobUpdateRequest", "changeset");
+    public static final ContractPolicy.FieldRef OPERATION_REFERENCE =
+        ContractPolicy.field("JobUpdateRequest", "operationReference");
 
     private Fields() {}
   }
-
-
 }

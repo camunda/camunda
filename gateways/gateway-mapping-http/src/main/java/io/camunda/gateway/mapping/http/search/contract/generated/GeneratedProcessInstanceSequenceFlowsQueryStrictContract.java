@@ -4,42 +4,41 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceSequenceFlowsQueryResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceSequenceFlowsQueryStrictContract(
-    java.util.List<GeneratedProcessInstanceSequenceFlowStrictContract> items
-) {
+    @JsonProperty("items")
+        java.util.List<GeneratedProcessInstanceSequenceFlowStrictContract> items) {
 
   public GeneratedProcessInstanceSequenceFlowsQueryStrictContract {
-    Objects.requireNonNull(items, "items is required and must not be null");
+    Objects.requireNonNull(items, "No items provided.");
   }
 
-  public static java.util.List<GeneratedProcessInstanceSequenceFlowStrictContract> coerceItems(final Object value) {
+  public static java.util.List<GeneratedProcessInstanceSequenceFlowStrictContract> coerceItems(
+      final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "items must be a List of GeneratedProcessInstanceSequenceFlowStrictContract, but was " + value.getClass().getName());
+          "items must be a List of GeneratedProcessInstanceSequenceFlowStrictContract, but was "
+              + value.getClass().getName());
     }
 
-    final var result = new ArrayList<GeneratedProcessInstanceSequenceFlowStrictContract>(listValue.size());
+    final var result =
+        new ArrayList<GeneratedProcessInstanceSequenceFlowStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
@@ -55,8 +54,6 @@ public record GeneratedProcessInstanceSequenceFlowsQueryStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
-
   public static ItemsStep builder() {
     return new Builder();
   }
@@ -71,10 +68,10 @@ public record GeneratedProcessInstanceSequenceFlowsQueryStrictContract(
       this.items = items;
       return this;
     }
+
     @Override
     public GeneratedProcessInstanceSequenceFlowsQueryStrictContract build() {
-      return new GeneratedProcessInstanceSequenceFlowsQueryStrictContract(
-          coerceItems(this.items));
+      return new GeneratedProcessInstanceSequenceFlowsQueryStrictContract(coerceItems(this.items));
     }
   }
 
@@ -86,12 +83,10 @@ public record GeneratedProcessInstanceSequenceFlowsQueryStrictContract(
     GeneratedProcessInstanceSequenceFlowsQueryStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("ProcessInstanceSequenceFlowsQueryResult", "items");
+    public static final ContractPolicy.FieldRef ITEMS =
+        ContractPolicy.field("ProcessInstanceSequenceFlowsQueryResult", "items");
 
     private Fields() {}
   }
-
-
 }

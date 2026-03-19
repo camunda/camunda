@@ -4,158 +4,230 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/audit-logs.yaml#/components/schemas/AdvancedResultFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
+@JsonDeserialize(using = JsonDeserializer.None.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdvancedResultFilterStrictContract(
-    io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum eq,
-    io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum neq,
-    @Nullable Boolean exists,
-    java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogResultEnum> in,
-    @Nullable String like
-) {
-
+    @JsonProperty("$eq")
+        io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $eq,
+    @JsonProperty("$neq")
+        io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $neq,
+    @JsonProperty("$exists") @Nullable Boolean $exists,
+    @JsonProperty("$in")
+        java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            $in,
+    @JsonProperty("$like") @Nullable String $like)
+    implements GeneratedAuditLogResultFilterPropertyStrictContract {
 
   public static OptionalStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements OptionalStep {
-    private io.camunda.gateway.protocol.model.AuditLogResultEnum eq;
-    private io.camunda.gateway.protocol.model.AuditLogResultEnum neq;
-    private Boolean exists;
-    private java.util.List<io.camunda.gateway.protocol.model.AuditLogResultEnum> in;
-    private String like;
+    private io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum
+        $eq;
+    private io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum
+        $neq;
+    private Boolean $exists;
+    private java.util.List<
+            io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum>
+        $in;
+    private String $like;
 
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum eq) {
-      this.eq = eq;
+    public OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $eq) {
+      this.$eq = $eq;
       return this;
     }
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum> policy) {
-      this.eq = policy.apply(eq, Fields.EQ, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum neq) {
-      this.neq = neq;
-      return this;
-    }
-
-    @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum> policy) {
-      this.neq = policy.apply(neq, Fields.NEQ, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep exists(final @Nullable Boolean exists) {
-      this.exists = exists;
+    public OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $eq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            policy) {
+      this.$eq = policy.apply($eq, Fields.$EQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
-      this.exists = policy.apply(exists, Fields.EXISTS, null);
-      return this;
-    }
-
-
-    @Override
-    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogResultEnum> in) {
-      this.in = in;
+    public OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $neq) {
+      this.$neq = $neq;
       return this;
     }
 
     @Override
-    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogResultEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.AuditLogResultEnum>> policy) {
-      this.in = policy.apply(in, Fields.IN, null);
+    public OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $neq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            policy) {
+      this.$neq = policy.apply($neq, Fields.$NEQ, null);
       return this;
     }
 
-
     @Override
-    public OptionalStep like(final @Nullable String like) {
-      this.like = like;
+    public OptionalStep $exists(final @Nullable Boolean $exists) {
+      this.$exists = $exists;
       return this;
     }
 
     @Override
-    public OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
-      this.like = policy.apply(like, Fields.LIKE, null);
+    public OptionalStep $exists(
+        final @Nullable Boolean $exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+      this.$exists = policy.apply($exists, Fields.$EXISTS, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            $in) {
+      this.$in = $in;
+      return this;
+    }
+
+    @Override
+    public OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            $in,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    io.camunda.gateway.mapping.http.search.contract.generated
+                        .GeneratedAuditLogResultEnum>>
+            policy) {
+      this.$in = policy.apply($in, Fields.$IN, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep $like(final @Nullable String $like) {
+      this.$like = $like;
+      return this;
+    }
+
+    @Override
+    public OptionalStep $like(
+        final @Nullable String $like, final ContractPolicy.FieldPolicy<String> policy) {
+      this.$like = policy.apply($like, Fields.$LIKE, null);
       return this;
     }
 
     @Override
     public GeneratedAdvancedResultFilterStrictContract build() {
       return new GeneratedAdvancedResultFilterStrictContract(
-          this.eq,
-          this.neq,
-          this.exists,
-          this.in,
-          this.like);
+          this.$eq, this.$neq, this.$exists, this.$in, this.$like);
     }
   }
 
   public interface OptionalStep {
-  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum eq);
+    OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $eq);
 
-  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum> policy);
+    OptionalStep $eq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $eq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            policy);
 
+    OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $neq);
 
-  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum neq);
+    OptionalStep $neq(
+        final io.camunda.gateway.mapping.http.search.contract.generated.@Nullable
+            GeneratedAuditLogResultEnum
+            $neq,
+        final ContractPolicy.FieldPolicy<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            policy);
 
-  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogResultEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum> policy);
+    OptionalStep $exists(final @Nullable Boolean $exists);
 
+    OptionalStep $exists(
+        final @Nullable Boolean $exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-  OptionalStep exists(final @Nullable Boolean exists);
+    OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            $in);
 
-  OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep $in(
+        final java.util.@Nullable List<
+                io.camunda.gateway.mapping.http.search.contract.generated
+                    .GeneratedAuditLogResultEnum>
+            $in,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    io.camunda.gateway.mapping.http.search.contract.generated
+                        .GeneratedAuditLogResultEnum>>
+            policy);
 
+    OptionalStep $like(final @Nullable String $like);
 
-  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogResultEnum> in);
-
-  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogResultEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.AuditLogResultEnum>> policy);
-
-
-  OptionalStep like(final @Nullable String like);
-
-  OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep $like(
+        final @Nullable String $like, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAdvancedResultFilterStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EQ = ContractPolicy.field("AdvancedResultFilter", "$eq");
-    public static final ContractPolicy.FieldRef NEQ = ContractPolicy.field("AdvancedResultFilter", "$neq");
-    public static final ContractPolicy.FieldRef EXISTS = ContractPolicy.field("AdvancedResultFilter", "$exists");
-    public static final ContractPolicy.FieldRef IN = ContractPolicy.field("AdvancedResultFilter", "$in");
-    public static final ContractPolicy.FieldRef LIKE = ContractPolicy.field("AdvancedResultFilter", "$like");
+    public static final ContractPolicy.FieldRef $EQ =
+        ContractPolicy.field("AdvancedResultFilter", "$eq");
+    public static final ContractPolicy.FieldRef $NEQ =
+        ContractPolicy.field("AdvancedResultFilter", "$neq");
+    public static final ContractPolicy.FieldRef $EXISTS =
+        ContractPolicy.field("AdvancedResultFilter", "$exists");
+    public static final ContractPolicy.FieldRef $IN =
+        ContractPolicy.field("AdvancedResultFilter", "$in");
+    public static final ContractPolicy.FieldRef $LIKE =
+        ContractPolicy.field("AdvancedResultFilter", "$like");
 
     private Fields() {}
   }
-
-
 }

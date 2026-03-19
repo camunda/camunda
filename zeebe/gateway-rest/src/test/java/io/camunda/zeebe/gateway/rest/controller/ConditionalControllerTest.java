@@ -21,6 +21,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultConditionalServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedConditionalController;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -35,12 +37,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = ConditionalController.class)
+@Import(DefaultConditionalServiceAdapter.class)
+@WebMvcTest(value = GeneratedConditionalController.class)
 public class ConditionalControllerTest extends RestControllerTest {
 
   static final String CONDITIONAL_EVALUATION_URL = "/v2/conditionals/evaluation";
@@ -108,7 +112,8 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "processDefinitionKey": "123",
-            "tenantId": "tenantId"
+            "tenantId": "tenantId",
+            "variables": {}
         }""";
 
     final var expectedBody =
@@ -145,7 +150,8 @@ public class ConditionalControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "processDefinitionKey": "123"
+            "processDefinitionKey": "123",
+            "variables": {}
         }""";
 
     final var expectedBody =
@@ -237,9 +243,9 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "type":"about:blank",
-            "title":"Bad Request",
+            "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Request property [unexpectedField] cannot be parsed",
+            "detail":"No variables provided.",
             "instance":"/v2/conditionals/evaluation"
          }""";
 

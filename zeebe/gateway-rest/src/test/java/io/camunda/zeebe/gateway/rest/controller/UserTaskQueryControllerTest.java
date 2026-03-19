@@ -32,6 +32,8 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserTaskServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserTaskController;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -47,11 +49,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = UserTaskController.class)
+@Import(DefaultUserTaskServiceAdapter.class)
+@WebMvcTest(value = GeneratedUserTaskController.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_USER_TASK_KEY = 0L;
@@ -176,7 +180,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "annotation": null,
             "batchOperationKey": null,
             "batchOperationType": null,
-            "category": null,
+            "category": "USER_TASKS",
             "decisionDefinitionId": null,
             "decisionDefinitionKey": null,
             "decisionEvaluationKey": null,
@@ -185,21 +189,21 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "deploymentKey": null,
             "elementInstanceKey": null,
             "entityDescription": null,
-            "entityKey": null,
-            "entityType": null,
+            "entityKey": "100",
+            "entityType": "USER_TASK",
             "formKey": null,
             "jobKey": null,
-            "operationType": null,
+            "operationType": "UPDATE",
             "processDefinitionId": null,
             "processDefinitionKey": null,
             "processInstanceKey": null,
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "result": null,
+            "result": "SUCCESS",
             "rootProcessInstanceKey": null,
             "tenantId": null,
-            "timestamp": null,
+            "timestamp": "2024-01-01T00:00:00.000Z",
             "userTaskKey": null
           },
           {
@@ -210,7 +214,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "annotation": null,
             "batchOperationKey": null,
             "batchOperationType": null,
-            "category": null,
+            "category": "USER_TASKS",
             "decisionDefinitionId": null,
             "decisionDefinitionKey": null,
             "decisionEvaluationKey": null,
@@ -219,21 +223,21 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "deploymentKey": null,
             "elementInstanceKey": null,
             "entityDescription": null,
-            "entityKey": null,
-            "entityType": null,
+            "entityKey": "200",
+            "entityType": "USER_TASK",
             "formKey": null,
             "jobKey": null,
-            "operationType": null,
+            "operationType": "CREATE",
             "processDefinitionId": null,
             "processDefinitionKey": null,
             "processInstanceKey": null,
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "result": null,
+            "result": "SUCCESS",
             "rootProcessInstanceKey": null,
             "tenantId": null,
-            "timestamp": null,
+            "timestamp": "2024-01-02T00:00:00.000Z",
             "userTaskKey": null
           }
         ],
@@ -342,8 +346,26 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .total(2L)
           .items(
               List.of(
-                  new AuditLogEntity.Builder().auditLogKey("1").actorId("1").build(),
-                  new AuditLogEntity.Builder().auditLogKey("2").actorId("2").build()))
+                  new AuditLogEntity.Builder()
+                      .auditLogKey("1")
+                      .actorId("1")
+                      .entityKey("100")
+                      .entityType(AuditLogEntity.AuditLogEntityType.USER_TASK)
+                      .operationType(AuditLogEntity.AuditLogOperationType.UPDATE)
+                      .timestamp(OffsetDateTime.parse("2024-01-01T00:00:00Z"))
+                      .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+                      .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+                      .build(),
+                  new AuditLogEntity.Builder()
+                      .auditLogKey("2")
+                      .actorId("2")
+                      .entityKey("200")
+                      .entityType(AuditLogEntity.AuditLogEntityType.USER_TASK)
+                      .operationType(AuditLogEntity.AuditLogOperationType.CREATE)
+                      .timestamp(OffsetDateTime.parse("2024-01-02T00:00:00Z"))
+                      .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+                      .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+                      .build()))
           .startCursor("0")
           .endCursor("1")
           .build();
@@ -548,7 +570,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "INVALID_ARGUMENT",
                           "status": 400,
-                          "detail": "Variable value must not be null.",
+                          "detail": "No value provided.",
                           "instance": "%s"
                         }""",
             USER_TASKS_SEARCH_URL);
@@ -635,7 +657,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "INVALID_ARGUMENT",
                           "status": 400,
-                          "detail": "Variable value must not be null.",
+                          "detail": "No value provided.",
                           "instance": "%s"
                         }""",
             USER_TASKS_SEARCH_URL);
@@ -675,7 +697,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                           "instance": "%s"
@@ -717,7 +739,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name]",
                           "instance": "%s"
@@ -760,7 +782,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "INVALID_ARGUMENT",
                           "status": 400,
-                          "detail": "Sort field must not be null.",
+                          "detail": "No field provided.",
                           "instance": "%s"
                         }""",
             USER_TASKS_SEARCH_URL);
@@ -798,7 +820,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Only one of [from, after, before] is allowed.",
                           "instance": "%s"

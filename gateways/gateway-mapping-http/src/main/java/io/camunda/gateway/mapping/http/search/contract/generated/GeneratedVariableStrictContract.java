@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/variables.yaml#/components/schemas/VariableResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,27 +16,25 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedVariableStrictContract(
-    String name,
-    String tenantId,
-    String variableKey,
-    String scopeKey,
-    String processInstanceKey,
-    @Nullable String rootProcessInstanceKey,
-    String value
-) {
+    @JsonProperty("name") String name,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("variableKey") String variableKey,
+    @JsonProperty("scopeKey") String scopeKey,
+    @JsonProperty("processInstanceKey") String processInstanceKey,
+    @JsonProperty("rootProcessInstanceKey") @Nullable String rootProcessInstanceKey,
+    @JsonProperty("value") String value) {
 
   public GeneratedVariableStrictContract {
-    Objects.requireNonNull(name, "name is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(variableKey, "variableKey is required and must not be null");
-    Objects.requireNonNull(scopeKey, "scopeKey is required and must not be null");
-    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
-    Objects.requireNonNull(value, "value is required and must not be null");
+    Objects.requireNonNull(name, "No name provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(variableKey, "No variableKey provided.");
+    Objects.requireNonNull(scopeKey, "No scopeKey provided.");
+    Objects.requireNonNull(processInstanceKey, "No processInstanceKey provided.");
+    Objects.requireNonNull(value, "No value provided.");
   }
 
   public static String coerceVariableKey(final Object value) {
@@ -55,7 +51,6 @@ public record GeneratedVariableStrictContract(
         "variableKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceScopeKey(final Object value) {
     if (value == null) {
       return null;
@@ -69,7 +64,6 @@ public record GeneratedVariableStrictContract(
     throw new IllegalArgumentException(
         "scopeKey must be a String or Number, but was " + value.getClass().getName());
   }
-
 
   public static String coerceProcessInstanceKey(final Object value) {
     if (value == null) {
@@ -85,7 +79,6 @@ public record GeneratedVariableStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceRootProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -100,13 +93,18 @@ public record GeneratedVariableStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static NameStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements NameStep, TenantIdStep, VariableKeyStep, ScopeKeyStep, ProcessInstanceKeyStep, ValueStep, OptionalStep {
+  public static final class Builder
+      implements NameStep,
+          TenantIdStep,
+          VariableKeyStep,
+          ScopeKeyStep,
+          ProcessInstanceKeyStep,
+          ValueStep,
+          OptionalStep {
     private String name;
     private String tenantId;
     private Object variableKey;
@@ -165,14 +163,20 @@ public record GeneratedVariableStrictContract(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
-      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public Builder rootProcessInstanceKey(
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
@@ -214,30 +218,37 @@ public record GeneratedVariableStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
-
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedVariableStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("VariableResult", "name");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("VariableResult", "tenantId");
-    public static final ContractPolicy.FieldRef VARIABLE_KEY = ContractPolicy.field("VariableResult", "variableKey");
-    public static final ContractPolicy.FieldRef SCOPE_KEY = ContractPolicy.field("VariableResult", "scopeKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("VariableResult", "processInstanceKey");
-    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY = ContractPolicy.field("VariableResult", "rootProcessInstanceKey");
-    public static final ContractPolicy.FieldRef VALUE = ContractPolicy.field("VariableResult", "value");
+    public static final ContractPolicy.FieldRef NAME =
+        ContractPolicy.field("VariableResult", "name");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("VariableResult", "tenantId");
+    public static final ContractPolicy.FieldRef VARIABLE_KEY =
+        ContractPolicy.field("VariableResult", "variableKey");
+    public static final ContractPolicy.FieldRef SCOPE_KEY =
+        ContractPolicy.field("VariableResult", "scopeKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("VariableResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("VariableResult", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef VALUE =
+        ContractPolicy.field("VariableResult", "value");
 
     private Fields() {}
   }
-
-
 }

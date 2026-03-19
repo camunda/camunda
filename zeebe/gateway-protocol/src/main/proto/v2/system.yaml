@@ -83,6 +83,7 @@ paths:
         - System
       operationId: getSystemConfiguration
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       summary: System configuration (alpha)
       description: |
         Returns the current system configuration. The response is an envelope

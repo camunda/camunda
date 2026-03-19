@@ -4,36 +4,31 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobTimeSeriesStatisticsFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobTimeSeriesStatisticsFilterStrictContract(
-    String from,
-    String to,
-    String jobType,
-    @Nullable String resolution
-) {
+    @JsonProperty("from") String from,
+    @JsonProperty("to") String to,
+    @JsonProperty("jobType") String jobType,
+    @JsonProperty("resolution") @Nullable String resolution) {
 
   public GeneratedJobTimeSeriesStatisticsFilterStrictContract {
-    Objects.requireNonNull(from, "from is required and must not be null");
-    Objects.requireNonNull(to, "to is required and must not be null");
-    Objects.requireNonNull(jobType, "jobType is required and must not be null");
+    Objects.requireNonNull(from, "No from provided.");
+    Objects.requireNonNull(to, "No to provided.");
+    Objects.requireNonNull(jobType, "No jobType provided.");
   }
-
 
   public static FromStep builder() {
     return new Builder();
@@ -72,7 +67,8 @@ public record GeneratedJobTimeSeriesStatisticsFilterStrictContract(
     }
 
     @Override
-    public OptionalStep resolution(final @Nullable String resolution, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep resolution(
+        final @Nullable String resolution, final ContractPolicy.FieldPolicy<String> policy) {
       this.resolution = policy.apply(resolution, Fields.RESOLUTION, null);
       return this;
     }
@@ -80,10 +76,7 @@ public record GeneratedJobTimeSeriesStatisticsFilterStrictContract(
     @Override
     public GeneratedJobTimeSeriesStatisticsFilterStrictContract build() {
       return new GeneratedJobTimeSeriesStatisticsFilterStrictContract(
-          this.from,
-          this.to,
-          this.jobType,
-          this.resolution);
+          this.from, this.to, this.jobType, this.resolution);
     }
   }
 
@@ -100,23 +93,24 @@ public record GeneratedJobTimeSeriesStatisticsFilterStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep resolution(final @Nullable String resolution);
+    OptionalStep resolution(final @Nullable String resolution);
 
-  OptionalStep resolution(final @Nullable String resolution, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep resolution(
+        final @Nullable String resolution, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedJobTimeSeriesStatisticsFilterStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FROM = ContractPolicy.field("JobTimeSeriesStatisticsFilter", "from");
-    public static final ContractPolicy.FieldRef TO = ContractPolicy.field("JobTimeSeriesStatisticsFilter", "to");
-    public static final ContractPolicy.FieldRef JOB_TYPE = ContractPolicy.field("JobTimeSeriesStatisticsFilter", "jobType");
-    public static final ContractPolicy.FieldRef RESOLUTION = ContractPolicy.field("JobTimeSeriesStatisticsFilter", "resolution");
+    public static final ContractPolicy.FieldRef FROM =
+        ContractPolicy.field("JobTimeSeriesStatisticsFilter", "from");
+    public static final ContractPolicy.FieldRef TO =
+        ContractPolicy.field("JobTimeSeriesStatisticsFilter", "to");
+    public static final ContractPolicy.FieldRef JOB_TYPE =
+        ContractPolicy.field("JobTimeSeriesStatisticsFilter", "jobType");
+    public static final ContractPolicy.FieldRef RESOLUTION =
+        ContractPolicy.field("JobTimeSeriesStatisticsFilter", "resolution");
 
     private Fields() {}
   }
-
-
 }

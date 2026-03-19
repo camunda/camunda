@@ -10,9 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.util.List;
 
@@ -41,7 +41,8 @@ public final class ElementInstanceContractAdapter {
                 entity.type() != null ? entity.type().name() : null, Fields.TYPE, entity))
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), ElementInstanceStateEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.state(), GeneratedElementInstanceStateEnum::fromValue),
                 Fields.STATE,
                 entity))
         .hasIncident(

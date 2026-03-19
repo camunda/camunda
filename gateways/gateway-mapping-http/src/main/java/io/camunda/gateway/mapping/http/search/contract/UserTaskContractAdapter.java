@@ -10,9 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.search.entities.UserTaskEntity;
 import java.util.List;
 
@@ -28,7 +28,7 @@ public final class UserTaskContractAdapter {
     return GeneratedUserTaskStrictContract.builder()
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), UserTaskStateEnum::fromValue),
+                ContractPolicy.mapEnum(entity.state(), GeneratedUserTaskStateEnum::fromValue),
                 Fields.STATE,
                 entity))
         .elementId(ContractPolicy.requireNonNull(entity.elementId(), Fields.ELEMENT_ID, entity))

@@ -26,8 +26,7 @@ public class RequestExecutor {
    * <p>If the broker call fails, the {@code CompletionException} is unwrapped and re-thrown so that
    * the global exception handler receives the original exception.
    */
-  public static <T> ResponseEntity<Void> executeSync(
-      final Supplier<CompletableFuture<T>> method) {
+  public static <T> ResponseEntity<Void> executeSync(final Supplier<CompletableFuture<T>> method) {
     try {
       method.get().join();
       return ResponseEntity.noContent().build();

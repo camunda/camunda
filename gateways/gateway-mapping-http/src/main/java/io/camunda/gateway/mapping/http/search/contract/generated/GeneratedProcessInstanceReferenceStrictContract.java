@@ -4,31 +4,27 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/conditionals.yaml#/components/schemas/ProcessInstanceReference
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceReferenceStrictContract(
-    String processDefinitionKey,
-    String processInstanceKey
-) {
+    @JsonProperty("processDefinitionKey") String processDefinitionKey,
+    @JsonProperty("processInstanceKey") String processInstanceKey) {
 
   public GeneratedProcessInstanceReferenceStrictContract {
-    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
-    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionKey, "No processDefinitionKey provided.");
+    Objects.requireNonNull(processInstanceKey, "No processInstanceKey provided.");
   }
 
   public static String coerceProcessDefinitionKey(final Object value) {
@@ -45,7 +41,6 @@ public record GeneratedProcessInstanceReferenceStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -60,13 +55,12 @@ public record GeneratedProcessInstanceReferenceStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static ProcessDefinitionKeyStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ProcessDefinitionKeyStep, ProcessInstanceKeyStep, OptionalStep {
+  public static final class Builder
+      implements ProcessDefinitionKeyStep, ProcessInstanceKeyStep, OptionalStep {
     private Object processDefinitionKey;
     private Object processInstanceKey;
 
@@ -83,6 +77,7 @@ public record GeneratedProcessInstanceReferenceStrictContract(
       this.processInstanceKey = processInstanceKey;
       return this;
     }
+
     @Override
     public GeneratedProcessInstanceReferenceStrictContract build() {
       return new GeneratedProcessInstanceReferenceStrictContract(
@@ -103,13 +98,12 @@ public record GeneratedProcessInstanceReferenceStrictContract(
     GeneratedProcessInstanceReferenceStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessInstanceReference", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceReference", "processInstanceKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
+        ContractPolicy.field("ProcessInstanceReference", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("ProcessInstanceReference", "processInstanceKey");
 
     private Fields() {}
   }
-
-
 }

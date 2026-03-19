@@ -10,11 +10,11 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobSearchStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobListenerEventTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.JobKindEnum;
-import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.JobStateEnum;
 import io.camunda.search.entities.JobEntity;
 import java.util.List;
 
@@ -39,11 +39,13 @@ public final class JobContractAdapter {
         .jobKey(ContractPolicy.requireNonNull(entity.jobKey(), Fields.JOB_KEY, entity))
         .kind(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.kind(), JobKindEnum::fromValue), Fields.KIND, entity))
+                ContractPolicy.mapEnum(entity.kind(), GeneratedJobKindEnum::fromValue),
+                Fields.KIND,
+                entity))
         .listenerEventType(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(
-                    entity.listenerEventType(), JobListenerEventTypeEnum::fromValue),
+                    entity.listenerEventType(), GeneratedJobListenerEventTypeEnum::fromValue),
                 Fields.LISTENER_EVENT_TYPE,
                 entity))
         .processDefinitionId(
@@ -58,7 +60,7 @@ public final class JobContractAdapter {
         .retries(ContractPolicy.requireNonNull(entity.retries(), Fields.RETRIES, entity))
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), JobStateEnum::fromValue),
+                ContractPolicy.mapEnum(entity.state(), GeneratedJobStateEnum::fromValue),
                 Fields.STATE,
                 entity))
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))

@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
 
 public class DecisionInstanceStateConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return (value instanceof DecisionInstanceStateEnum);
+    return (value instanceof GeneratedDecisionInstanceStateEnum);
   }
 
   @Override
@@ -22,7 +22,7 @@ public class DecisionInstanceStateConverter implements CustomConverter<String> {
     if (value == null) {
       return null;
     }
-    if (value instanceof final DecisionInstanceStateEnum decisionInstanceStateEnum) {
+    if (value instanceof final GeneratedDecisionInstanceStateEnum decisionInstanceStateEnum) {
       return toInternalStateAsString(decisionInstanceStateEnum);
     }
     throw new IllegalArgumentException(
@@ -30,18 +30,18 @@ public class DecisionInstanceStateConverter implements CustomConverter<String> {
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                DecisionInstanceStateEnum.class.getSimpleName()));
+                GeneratedDecisionInstanceStateEnum.class.getSimpleName()));
   }
 
   public static String toInternalStateAsString(
-      final DecisionInstanceStateEnum decisionInstanceStateEnum) {
+      final GeneratedDecisionInstanceStateEnum decisionInstanceStateEnum) {
     final DecisionInstanceEntity.DecisionInstanceState internalState =
         toInternalState(decisionInstanceStateEnum);
     return (internalState == null) ? null : internalState.name();
   }
 
   public static DecisionInstanceEntity.DecisionInstanceState toInternalState(
-      final DecisionInstanceStateEnum decisionInstanceStateEnum) {
+      final GeneratedDecisionInstanceStateEnum decisionInstanceStateEnum) {
     if (decisionInstanceStateEnum == null) {
       return null;
     }

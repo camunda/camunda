@@ -30,6 +30,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultGroupServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedGroupController;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -55,10 +57,15 @@ public class GroupControllerTest {
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
-  @WebMvcTest(GroupController.class)
-  @Import(ApiFiltersConfiguration.class)
+  @Import({DefaultGroupServiceAdapter.class, ApiFiltersConfiguration.class})
+  @WebMvcTest(GeneratedGroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
   public class CamundaGroupsDisabledTest extends RestControllerTest {
+
+    @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean GroupServices groupServices;
+    @MockitoBean MappingRuleServices mappingRuleServices;
+    @MockitoBean RoleServices roleServices;
 
     public static final String FORBIDDEN_MESSAGE =
         """
@@ -208,7 +215,8 @@ public class GroupControllerTest {
   }
 
   @Nested
-  @WebMvcTest(GroupController.class)
+  @Import(DefaultGroupServiceAdapter.class)
+  @WebMvcTest(GeneratedGroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;

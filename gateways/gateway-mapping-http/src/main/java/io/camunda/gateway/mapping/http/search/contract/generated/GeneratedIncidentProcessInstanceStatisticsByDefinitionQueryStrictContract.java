@@ -4,122 +4,225 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/incidents.yaml#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionQueryResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
-
+import org.jspecify.annotations.Nullable;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract(
-    GeneratedSearchQueryPageResponseStrictContract page,
-    java.util.List<GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract> items
-) {
+    @JsonProperty("filter")
+        GeneratedIncidentProcessInstanceStatisticsByDefinitionFilterStrictContract filter,
+    @JsonProperty("page") @Nullable GeneratedOffsetPaginationStrictContract page,
+    @JsonProperty("sort")
+        java.util.@Nullable List<
+                GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>
+            sort) {
 
   public GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract {
-    Objects.requireNonNull(page, "page is required and must not be null");
-    Objects.requireNonNull(items, "items is required and must not be null");
+    Objects.requireNonNull(filter, "No filter provided.");
   }
 
-  public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
+  public static GeneratedIncidentProcessInstanceStatisticsByDefinitionFilterStrictContract
+      coerceFilter(final Object value) {
     if (value == null) {
       return null;
     }
-    if (value instanceof GeneratedSearchQueryPageResponseStrictContract strictValue) {
+    if (value
+        instanceof
+        GeneratedIncidentProcessInstanceStatisticsByDefinitionFilterStrictContract strictValue) {
       return strictValue;
     }
 
     throw new IllegalArgumentException(
-        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was " + value.getClass().getName());
+        "filter must be a GeneratedIncidentProcessInstanceStatisticsByDefinitionFilterStrictContract, but was "
+            + value.getClass().getName());
   }
 
+  public static GeneratedOffsetPaginationStrictContract coercePage(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof GeneratedOffsetPaginationStrictContract strictValue) {
+      return strictValue;
+    }
 
-  public static java.util.List<GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract> coerceItems(final Object value) {
+    throw new IllegalArgumentException(
+        "page must be a GeneratedOffsetPaginationStrictContract, but was "
+            + value.getClass().getName());
+  }
+
+  public static java.util.List<
+          GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>
+      coerceSort(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "items must be a List of GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract, but was " + value.getClass().getName());
+          "sort must be a List of GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract, but was "
+              + value.getClass().getName());
     }
 
-    final var result = new ArrayList<GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract>(listValue.size());
+    final var result =
+        new ArrayList<
+            GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>(
+            listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
-      } else if (item instanceof GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract strictItem) {
+      } else if (item
+          instanceof
+          GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract
+              strictItem) {
         result.add(strictItem);
 
       } else {
         throw new IllegalArgumentException(
-            "items must contain only GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract items, but got "
+            "sort must contain only GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract items, but got "
                 + item.getClass().getName());
       }
     }
     return java.util.List.copyOf(result);
   }
 
-
-
-  public static PageStep builder() {
+  public static FilterStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements PageStep, ItemsStep, OptionalStep {
+  public static final class Builder implements FilterStep, OptionalStep {
+    private Object filter;
     private Object page;
-    private Object items;
+    private Object sort;
 
     private Builder() {}
 
     @Override
-    public ItemsStep page(final Object page) {
+    public OptionalStep filter(final Object filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(final @Nullable GeneratedOffsetPaginationStrictContract page) {
       this.page = page;
       return this;
     }
 
     @Override
-    public OptionalStep items(final Object items) {
-      this.items = items;
+    public OptionalStep page(final @Nullable Object page) {
+      this.page = page;
       return this;
     }
+
+    public Builder page(
+        final @Nullable GeneratedOffsetPaginationStrictContract page,
+        final ContractPolicy.FieldPolicy<GeneratedOffsetPaginationStrictContract> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(
+        final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep sort(
+        final java.util.@Nullable List<
+                GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>
+            sort) {
+      this.sort = sort;
+      return this;
+    }
+
+    @Override
+    public OptionalStep sort(final @Nullable Object sort) {
+      this.sort = sort;
+      return this;
+    }
+
+    public Builder sort(
+        final java.util.@Nullable List<
+                GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>
+            sort,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>>
+            policy) {
+      this.sort = policy.apply(sort, Fields.SORT, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep sort(
+        final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.sort = policy.apply(sort, Fields.SORT, null);
+      return this;
+    }
+
     @Override
     public GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract build() {
       return new GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract(
-          coercePage(this.page),
-          coerceItems(this.items));
+          coerceFilter(this.filter), coercePage(this.page), coerceSort(this.sort));
     }
   }
 
-  public interface PageStep {
-    ItemsStep page(final Object page);
-  }
-
-  public interface ItemsStep {
-    OptionalStep items(final Object items);
+  public interface FilterStep {
+    OptionalStep filter(final Object filter);
   }
 
   public interface OptionalStep {
+    OptionalStep page(final @Nullable GeneratedOffsetPaginationStrictContract page);
+
+    OptionalStep page(final @Nullable Object page);
+
+    OptionalStep page(
+        final @Nullable GeneratedOffsetPaginationStrictContract page,
+        final ContractPolicy.FieldPolicy<GeneratedOffsetPaginationStrictContract> policy);
+
+    OptionalStep page(final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy);
+
+    OptionalStep sort(
+        final java.util.@Nullable List<
+                GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>
+            sort);
+
+    OptionalStep sort(final @Nullable Object sort);
+
+    OptionalStep sort(
+        final java.util.@Nullable List<
+                GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>
+            sort,
+        final ContractPolicy.FieldPolicy<
+                java.util.List<
+                    GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySortRequestStrictContract>>
+            policy);
+
+    OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
+
     GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionQueryResult", "page");
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionQueryResult", "items");
+    public static final ContractPolicy.FieldRef FILTER =
+        ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionQuery", "filter");
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionQuery", "page");
+    public static final ContractPolicy.FieldRef SORT =
+        ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionQuery", "sort");
 
     private Fields() {}
   }
-
-
 }

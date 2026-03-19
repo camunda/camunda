@@ -13,14 +13,18 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = ProcessInstanceController.class)
+@Import(DefaultProcessInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedProcessInstanceController.class)
 public class FaultyControllerTest extends RestControllerTest {
 
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";

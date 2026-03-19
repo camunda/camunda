@@ -27,6 +27,8 @@ import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDocumentServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDocumentController;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -38,12 +40,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(DocumentController.class)
+@Import(DefaultDocumentServiceAdapter.class)
+@WebMvcTest(GeneratedDocumentController.class)
 public class DocumentControllerTest extends RestControllerTest {
 
   static final String DOCUMENTS_BASE_URL = "/v2/documents";
@@ -489,7 +493,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-\\.]*$'.");
 
     verify(documentServices, never()).createDocument(any(), any());
   }
@@ -711,7 +715,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-\\.]*$'.");
 
     verify(documentServices, never()).createDocumentBatch(any(), any());
   }

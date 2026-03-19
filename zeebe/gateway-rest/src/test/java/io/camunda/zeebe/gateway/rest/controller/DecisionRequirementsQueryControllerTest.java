@@ -26,6 +26,8 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionRequirementsServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionRequirementsController;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -36,11 +38,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = DecisionRequirementsController.class)
+@Import(DefaultDecisionRequirementsServiceAdapter.class)
+@WebMvcTest(value = GeneratedDecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -291,7 +295,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionRequirementsKey, decisionRequirementsName, version, decisionRequirementsId, tenantId]",
                   "instance": "%s"
@@ -534,9 +538,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         """
             {
               "type": "about:blank",
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "status": 400,
-              "detail": "Failed to convert 'decisionRequirementsKey' with value: 'invalidKey'",
+              "detail": "For input string: \\"invalidKey\\"",
               "instance": "/v2/decision-requirements/invalidKey/xml"
             }""";
     webClient

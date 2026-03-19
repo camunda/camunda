@@ -9,10 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalListenerSourceEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerEventTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
 import io.camunda.search.entities.GlobalListenerEntity;
 import java.util.List;
 
@@ -35,14 +35,15 @@ public final class GlobalTaskListenerContractAdapter {
         .eventTypes(
             ContractPolicy.requireNonNull(
                 entity.eventTypes().stream()
-                    .map(GlobalTaskListenerEventTypeEnum::fromValue)
+                    .map(GeneratedGlobalTaskListenerEventTypeEnum::fromValue)
                     .toList(),
                 Fields.EVENT_TYPES,
                 entity))
         .id(ContractPolicy.requireNonNull(entity.listenerId(), Fields.ID, entity))
         .source(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.source(), GlobalListenerSourceEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.source(), GeneratedGlobalListenerSourceEnum::fromValue),
                 Fields.SOURCE,
                 entity))
         .build();

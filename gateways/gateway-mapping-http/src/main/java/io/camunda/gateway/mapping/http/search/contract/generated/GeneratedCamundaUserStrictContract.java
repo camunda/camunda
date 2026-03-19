@@ -4,45 +4,40 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/authentication.yaml#/components/schemas/CamundaUserResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedCamundaUserStrictContract(
-    @Nullable String username,
-    @Nullable String displayName,
-    @Nullable String email,
-    java.util.List<String> authorizedComponents,
-    java.util.List<GeneratedTenantStrictContract> tenants,
-    java.util.List<String> groups,
-    java.util.List<String> roles,
-    @Nullable String salesPlanType,
-    java.util.Map<String, String> c8Links,
-    Boolean canLogout
-) {
+    @JsonProperty("username") @Nullable String username,
+    @JsonProperty("displayName") @Nullable String displayName,
+    @JsonProperty("email") @Nullable String email,
+    @JsonProperty("authorizedComponents") java.util.List<String> authorizedComponents,
+    @JsonProperty("tenants") java.util.List<GeneratedTenantStrictContract> tenants,
+    @JsonProperty("groups") java.util.List<String> groups,
+    @JsonProperty("roles") java.util.List<String> roles,
+    @JsonProperty("salesPlanType") @Nullable String salesPlanType,
+    @JsonProperty("c8Links") java.util.Map<String, String> c8Links,
+    @JsonProperty("canLogout") Boolean canLogout) {
 
   public GeneratedCamundaUserStrictContract {
-    Objects.requireNonNull(authorizedComponents, "authorizedComponents is required and must not be null");
-    Objects.requireNonNull(tenants, "tenants is required and must not be null");
-    Objects.requireNonNull(groups, "groups is required and must not be null");
-    Objects.requireNonNull(roles, "roles is required and must not be null");
-    Objects.requireNonNull(c8Links, "c8Links is required and must not be null");
-    Objects.requireNonNull(canLogout, "canLogout is required and must not be null");
+    Objects.requireNonNull(authorizedComponents, "No authorizedComponents provided.");
+    Objects.requireNonNull(tenants, "No tenants provided.");
+    Objects.requireNonNull(groups, "No groups provided.");
+    Objects.requireNonNull(roles, "No roles provided.");
+    Objects.requireNonNull(c8Links, "No c8Links provided.");
+    Objects.requireNonNull(canLogout, "No canLogout provided.");
   }
 
   public static java.util.List<GeneratedTenantStrictContract> coerceTenants(final Object value) {
@@ -51,7 +46,8 @@ public record GeneratedCamundaUserStrictContract(
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "tenants must be a List of GeneratedTenantStrictContract, but was " + value.getClass().getName());
+          "tenants must be a List of GeneratedTenantStrictContract, but was "
+              + value.getClass().getName());
     }
 
     final var result = new ArrayList<GeneratedTenantStrictContract>(listValue.size());
@@ -70,13 +66,18 @@ public record GeneratedCamundaUserStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
-
   public static AuthorizedComponentsStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements AuthorizedComponentsStep, TenantsStep, GroupsStep, RolesStep, C8LinksStep, CanLogoutStep, OptionalStep {
+  public static final class Builder
+      implements AuthorizedComponentsStep,
+          TenantsStep,
+          GroupsStep,
+          RolesStep,
+          C8LinksStep,
+          CanLogoutStep,
+          OptionalStep {
     private String username;
     private String displayName;
     private String email;
@@ -133,11 +134,11 @@ public record GeneratedCamundaUserStrictContract(
     }
 
     @Override
-    public OptionalStep username(final @Nullable String username, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep username(
+        final @Nullable String username, final ContractPolicy.FieldPolicy<String> policy) {
       this.username = policy.apply(username, Fields.USERNAME, null);
       return this;
     }
-
 
     @Override
     public OptionalStep displayName(final @Nullable String displayName) {
@@ -146,11 +147,11 @@ public record GeneratedCamundaUserStrictContract(
     }
 
     @Override
-    public OptionalStep displayName(final @Nullable String displayName, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep displayName(
+        final @Nullable String displayName, final ContractPolicy.FieldPolicy<String> policy) {
       this.displayName = policy.apply(displayName, Fields.DISPLAY_NAME, null);
       return this;
     }
-
 
     @Override
     public OptionalStep email(final @Nullable String email) {
@@ -159,11 +160,11 @@ public record GeneratedCamundaUserStrictContract(
     }
 
     @Override
-    public OptionalStep email(final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep email(
+        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy) {
       this.email = policy.apply(email, Fields.EMAIL, null);
       return this;
     }
-
 
     @Override
     public OptionalStep salesPlanType(final @Nullable String salesPlanType) {
@@ -172,7 +173,8 @@ public record GeneratedCamundaUserStrictContract(
     }
 
     @Override
-    public OptionalStep salesPlanType(final @Nullable String salesPlanType, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep salesPlanType(
+        final @Nullable String salesPlanType, final ContractPolicy.FieldPolicy<String> policy) {
       this.salesPlanType = policy.apply(salesPlanType, Fields.SALES_PLAN_TYPE, null);
       return this;
     }
@@ -218,44 +220,51 @@ public record GeneratedCamundaUserStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep username(final @Nullable String username);
+    OptionalStep username(final @Nullable String username);
 
-  OptionalStep username(final @Nullable String username, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep username(
+        final @Nullable String username, final ContractPolicy.FieldPolicy<String> policy);
 
+    OptionalStep displayName(final @Nullable String displayName);
 
-  OptionalStep displayName(final @Nullable String displayName);
+    OptionalStep displayName(
+        final @Nullable String displayName, final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep displayName(final @Nullable String displayName, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep email(final @Nullable String email);
 
+    OptionalStep email(
+        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep email(final @Nullable String email);
+    OptionalStep salesPlanType(final @Nullable String salesPlanType);
 
-  OptionalStep email(final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy);
-
-
-  OptionalStep salesPlanType(final @Nullable String salesPlanType);
-
-  OptionalStep salesPlanType(final @Nullable String salesPlanType, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep salesPlanType(
+        final @Nullable String salesPlanType, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedCamundaUserStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef USERNAME = ContractPolicy.field("CamundaUserResult", "username");
-    public static final ContractPolicy.FieldRef DISPLAY_NAME = ContractPolicy.field("CamundaUserResult", "displayName");
-    public static final ContractPolicy.FieldRef EMAIL = ContractPolicy.field("CamundaUserResult", "email");
-    public static final ContractPolicy.FieldRef AUTHORIZED_COMPONENTS = ContractPolicy.field("CamundaUserResult", "authorizedComponents");
-    public static final ContractPolicy.FieldRef TENANTS = ContractPolicy.field("CamundaUserResult", "tenants");
-    public static final ContractPolicy.FieldRef GROUPS = ContractPolicy.field("CamundaUserResult", "groups");
-    public static final ContractPolicy.FieldRef ROLES = ContractPolicy.field("CamundaUserResult", "roles");
-    public static final ContractPolicy.FieldRef SALES_PLAN_TYPE = ContractPolicy.field("CamundaUserResult", "salesPlanType");
-    public static final ContractPolicy.FieldRef C8_LINKS = ContractPolicy.field("CamundaUserResult", "c8Links");
-    public static final ContractPolicy.FieldRef CAN_LOGOUT = ContractPolicy.field("CamundaUserResult", "canLogout");
+    public static final ContractPolicy.FieldRef USERNAME =
+        ContractPolicy.field("CamundaUserResult", "username");
+    public static final ContractPolicy.FieldRef DISPLAY_NAME =
+        ContractPolicy.field("CamundaUserResult", "displayName");
+    public static final ContractPolicy.FieldRef EMAIL =
+        ContractPolicy.field("CamundaUserResult", "email");
+    public static final ContractPolicy.FieldRef AUTHORIZED_COMPONENTS =
+        ContractPolicy.field("CamundaUserResult", "authorizedComponents");
+    public static final ContractPolicy.FieldRef TENANTS =
+        ContractPolicy.field("CamundaUserResult", "tenants");
+    public static final ContractPolicy.FieldRef GROUPS =
+        ContractPolicy.field("CamundaUserResult", "groups");
+    public static final ContractPolicy.FieldRef ROLES =
+        ContractPolicy.field("CamundaUserResult", "roles");
+    public static final ContractPolicy.FieldRef SALES_PLAN_TYPE =
+        ContractPolicy.field("CamundaUserResult", "salesPlanType");
+    public static final ContractPolicy.FieldRef C8_LINKS =
+        ContractPolicy.field("CamundaUserResult", "c8Links");
+    public static final ContractPolicy.FieldRef CAN_LOGOUT =
+        ContractPolicy.field("CamundaUserResult", "canLogout");
 
     private Fields() {}
   }
-
-
 }

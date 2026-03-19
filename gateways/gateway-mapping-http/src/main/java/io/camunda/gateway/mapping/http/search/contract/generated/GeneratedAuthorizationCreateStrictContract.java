@@ -4,29 +4,25 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/authorizations.yaml#/components/schemas/AuthorizationCreateResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAuthorizationCreateStrictContract(
-    String authorizationKey
-) {
+    @JsonProperty("authorizationKey") String authorizationKey) {
 
   public GeneratedAuthorizationCreateStrictContract {
-    Objects.requireNonNull(authorizationKey, "authorizationKey is required and must not be null");
+    Objects.requireNonNull(authorizationKey, "No authorizationKey provided.");
   }
 
   public static String coerceAuthorizationKey(final Object value) {
@@ -43,8 +39,6 @@ public record GeneratedAuthorizationCreateStrictContract(
         "authorizationKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static AuthorizationKeyStep builder() {
     return new Builder();
   }
@@ -59,6 +53,7 @@ public record GeneratedAuthorizationCreateStrictContract(
       this.authorizationKey = authorizationKey;
       return this;
     }
+
     @Override
     public GeneratedAuthorizationCreateStrictContract build() {
       return new GeneratedAuthorizationCreateStrictContract(
@@ -74,12 +69,10 @@ public record GeneratedAuthorizationCreateStrictContract(
     GeneratedAuthorizationCreateStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef AUTHORIZATION_KEY = ContractPolicy.field("AuthorizationCreateResult", "authorizationKey");
+    public static final ContractPolicy.FieldRef AUTHORIZATION_KEY =
+        ContractPolicy.field("AuthorizationCreateResult", "authorizationKey");
 
     private Fields() {}
   }
-
-
 }

@@ -4,30 +4,24 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/tenants.yaml#/components/schemas/TenantGroupResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedTenantGroupStrictContract(
-    String groupId
-) {
+public record GeneratedTenantGroupStrictContract(@JsonProperty("groupId") String groupId) {
 
   public GeneratedTenantGroupStrictContract {
-    Objects.requireNonNull(groupId, "groupId is required and must not be null");
+    Objects.requireNonNull(groupId, "No groupId provided.");
   }
-
 
   public static GroupIdStep builder() {
     return new Builder();
@@ -43,10 +37,10 @@ public record GeneratedTenantGroupStrictContract(
       this.groupId = groupId;
       return this;
     }
+
     @Override
     public GeneratedTenantGroupStrictContract build() {
-      return new GeneratedTenantGroupStrictContract(
-          this.groupId);
+      return new GeneratedTenantGroupStrictContract(this.groupId);
     }
   }
 
@@ -58,12 +52,10 @@ public record GeneratedTenantGroupStrictContract(
     GeneratedTenantGroupStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef GROUP_ID = ContractPolicy.field("TenantGroupResult", "groupId");
+    public static final ContractPolicy.FieldRef GROUP_ID =
+        ContractPolicy.field("TenantGroupResult", "groupId");
 
     private Fields() {}
   }
-
-
 }

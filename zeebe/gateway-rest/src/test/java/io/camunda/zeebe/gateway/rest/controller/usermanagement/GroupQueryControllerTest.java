@@ -34,6 +34,8 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultGroupServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedGroupController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -45,11 +47,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = GroupController.class)
+@Import(DefaultGroupServiceAdapter.class)
+@WebMvcTest(value = GeneratedGroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -909,7 +913,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
@@ -930,7 +934,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [name, groupId]",
                       "instance": "%s"
@@ -952,7 +956,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "INVALID_ARGUMENT",
                       "status": 400,
-                      "detail": "Sort field must not be null.",
+                      "detail": "No field provided.",
                       "instance": "%s"
                     }""",
                 endpoint)),
@@ -969,7 +973,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Only one of [from, after, before] is allowed.",
                       "instance": "%s"

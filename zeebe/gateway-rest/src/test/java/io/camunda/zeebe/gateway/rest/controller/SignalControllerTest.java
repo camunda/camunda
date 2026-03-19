@@ -18,6 +18,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSignalServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedSignalController;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -26,12 +28,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
-@WebMvcTest(SignalController.class)
+@Import(DefaultSignalServiceAdapter.class)
+@WebMvcTest(GeneratedSignalController.class)
 public class SignalControllerTest extends RestControllerTest {
 
   private static final String SIGNALS_BASE_URL = "/v2/signals";

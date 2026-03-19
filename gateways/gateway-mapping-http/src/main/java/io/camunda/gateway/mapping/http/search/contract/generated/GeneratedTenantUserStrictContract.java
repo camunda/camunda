@@ -4,30 +4,24 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/tenants.yaml#/components/schemas/TenantUserResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedTenantUserStrictContract(
-    String username
-) {
+public record GeneratedTenantUserStrictContract(@JsonProperty("username") String username) {
 
   public GeneratedTenantUserStrictContract {
-    Objects.requireNonNull(username, "username is required and must not be null");
+    Objects.requireNonNull(username, "No username provided.");
   }
-
 
   public static UsernameStep builder() {
     return new Builder();
@@ -43,10 +37,10 @@ public record GeneratedTenantUserStrictContract(
       this.username = username;
       return this;
     }
+
     @Override
     public GeneratedTenantUserStrictContract build() {
-      return new GeneratedTenantUserStrictContract(
-          this.username);
+      return new GeneratedTenantUserStrictContract(this.username);
     }
   }
 
@@ -58,12 +52,10 @@ public record GeneratedTenantUserStrictContract(
     GeneratedTenantUserStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef USERNAME = ContractPolicy.field("TenantUserResult", "username");
+    public static final ContractPolicy.FieldRef USERNAME =
+        ContractPolicy.field("TenantUserResult", "username");
 
     private Fields() {}
   }
-
-
 }

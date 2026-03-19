@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/batch-operations.yaml#/components/schemas/BatchOperationItemResponse
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,27 +16,27 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBatchOperationItemResponseStrictContract(
-    io.camunda.gateway.protocol.model.BatchOperationTypeEnum operationType,
-    String batchOperationKey,
-    String itemKey,
-    String processInstanceKey,
-    @Nullable String rootProcessInstanceKey,
-    String state,
-    @Nullable String processedDate,
-    @Nullable String errorMessage
-) {
+    @JsonProperty("operationType")
+        io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum
+            operationType,
+    @JsonProperty("batchOperationKey") String batchOperationKey,
+    @JsonProperty("itemKey") String itemKey,
+    @JsonProperty("processInstanceKey") String processInstanceKey,
+    @JsonProperty("rootProcessInstanceKey") @Nullable String rootProcessInstanceKey,
+    @JsonProperty("state") String state,
+    @JsonProperty("processedDate") @Nullable String processedDate,
+    @JsonProperty("errorMessage") @Nullable String errorMessage) {
 
   public GeneratedBatchOperationItemResponseStrictContract {
-    Objects.requireNonNull(operationType, "operationType is required and must not be null");
-    Objects.requireNonNull(batchOperationKey, "batchOperationKey is required and must not be null");
-    Objects.requireNonNull(itemKey, "itemKey is required and must not be null");
-    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
-    Objects.requireNonNull(state, "state is required and must not be null");
+    Objects.requireNonNull(operationType, "No operationType provided.");
+    Objects.requireNonNull(batchOperationKey, "No batchOperationKey provided.");
+    Objects.requireNonNull(itemKey, "No itemKey provided.");
+    Objects.requireNonNull(processInstanceKey, "No processInstanceKey provided.");
+    Objects.requireNonNull(state, "No state provided.");
   }
 
   public static String coerceProcessInstanceKey(final Object value) {
@@ -55,7 +53,6 @@ public record GeneratedBatchOperationItemResponseStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceRootProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -70,14 +67,20 @@ public record GeneratedBatchOperationItemResponseStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static OperationTypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements OperationTypeStep, BatchOperationKeyStep, ItemKeyStep, ProcessInstanceKeyStep, StateStep, OptionalStep {
-    private io.camunda.gateway.protocol.model.BatchOperationTypeEnum operationType;
+  public static final class Builder
+      implements OperationTypeStep,
+          BatchOperationKeyStep,
+          ItemKeyStep,
+          ProcessInstanceKeyStep,
+          StateStep,
+          OptionalStep {
+    private io.camunda.gateway.mapping.http.search.contract.generated
+            .GeneratedBatchOperationTypeEnum
+        operationType;
     private String batchOperationKey;
     private String itemKey;
     private Object processInstanceKey;
@@ -89,7 +92,10 @@ public record GeneratedBatchOperationItemResponseStrictContract(
     private Builder() {}
 
     @Override
-    public BatchOperationKeyStep operationType(final io.camunda.gateway.protocol.model.BatchOperationTypeEnum operationType) {
+    public BatchOperationKeyStep operationType(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedBatchOperationTypeEnum
+            operationType) {
       this.operationType = operationType;
       return this;
     }
@@ -130,17 +136,22 @@ public record GeneratedBatchOperationItemResponseStrictContract(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
-      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public Builder rootProcessInstanceKey(
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
-
 
     @Override
     public OptionalStep processedDate(final @Nullable String processedDate) {
@@ -149,11 +160,11 @@ public record GeneratedBatchOperationItemResponseStrictContract(
     }
 
     @Override
-    public OptionalStep processedDate(final @Nullable String processedDate, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep processedDate(
+        final @Nullable String processedDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.processedDate = policy.apply(processedDate, Fields.PROCESSED_DATE, null);
       return this;
     }
-
 
     @Override
     public OptionalStep errorMessage(final @Nullable String errorMessage) {
@@ -162,7 +173,8 @@ public record GeneratedBatchOperationItemResponseStrictContract(
     }
 
     @Override
-    public OptionalStep errorMessage(final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep errorMessage(
+        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
@@ -182,7 +194,10 @@ public record GeneratedBatchOperationItemResponseStrictContract(
   }
 
   public interface OperationTypeStep {
-    BatchOperationKeyStep operationType(final io.camunda.gateway.protocol.model.BatchOperationTypeEnum operationType);
+    BatchOperationKeyStep operationType(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedBatchOperationTypeEnum
+            operationType);
   }
 
   public interface BatchOperationKeyStep {
@@ -202,41 +217,49 @@ public record GeneratedBatchOperationItemResponseStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
+    OptionalStep processedDate(final @Nullable String processedDate);
 
-  OptionalStep processedDate(final @Nullable String processedDate);
+    OptionalStep processedDate(
+        final @Nullable String processedDate, final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep processedDate(final @Nullable String processedDate, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep errorMessage(final @Nullable String errorMessage);
 
-
-  OptionalStep errorMessage(final @Nullable String errorMessage);
-
-  OptionalStep errorMessage(final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep errorMessage(
+        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedBatchOperationItemResponseStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef OPERATION_TYPE = ContractPolicy.field("BatchOperationItemResponse", "operationType");
-    public static final ContractPolicy.FieldRef BATCH_OPERATION_KEY = ContractPolicy.field("BatchOperationItemResponse", "batchOperationKey");
-    public static final ContractPolicy.FieldRef ITEM_KEY = ContractPolicy.field("BatchOperationItemResponse", "itemKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("BatchOperationItemResponse", "processInstanceKey");
-    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY = ContractPolicy.field("BatchOperationItemResponse", "rootProcessInstanceKey");
-    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("BatchOperationItemResponse", "state");
-    public static final ContractPolicy.FieldRef PROCESSED_DATE = ContractPolicy.field("BatchOperationItemResponse", "processedDate");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("BatchOperationItemResponse", "errorMessage");
+    public static final ContractPolicy.FieldRef OPERATION_TYPE =
+        ContractPolicy.field("BatchOperationItemResponse", "operationType");
+    public static final ContractPolicy.FieldRef BATCH_OPERATION_KEY =
+        ContractPolicy.field("BatchOperationItemResponse", "batchOperationKey");
+    public static final ContractPolicy.FieldRef ITEM_KEY =
+        ContractPolicy.field("BatchOperationItemResponse", "itemKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("BatchOperationItemResponse", "processInstanceKey");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("BatchOperationItemResponse", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef STATE =
+        ContractPolicy.field("BatchOperationItemResponse", "state");
+    public static final ContractPolicy.FieldRef PROCESSED_DATE =
+        ContractPolicy.field("BatchOperationItemResponse", "processedDate");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
+        ContractPolicy.field("BatchOperationItemResponse", "errorMessage");
 
     private Fields() {}
   }
-
-
 }

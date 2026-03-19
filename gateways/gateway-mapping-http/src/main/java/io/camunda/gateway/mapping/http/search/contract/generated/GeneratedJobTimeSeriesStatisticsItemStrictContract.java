@@ -4,35 +4,30 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobTimeSeriesStatisticsItem
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
-
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobTimeSeriesStatisticsItemStrictContract(
-    String time,
-    GeneratedStatusMetricStrictContract created,
-    GeneratedStatusMetricStrictContract completed,
-    GeneratedStatusMetricStrictContract failed
-) {
+    @JsonProperty("time") String time,
+    @JsonProperty("created") GeneratedStatusMetricStrictContract created,
+    @JsonProperty("completed") GeneratedStatusMetricStrictContract completed,
+    @JsonProperty("failed") GeneratedStatusMetricStrictContract failed) {
 
   public GeneratedJobTimeSeriesStatisticsItemStrictContract {
-    Objects.requireNonNull(time, "time is required and must not be null");
-    Objects.requireNonNull(created, "created is required and must not be null");
-    Objects.requireNonNull(completed, "completed is required and must not be null");
-    Objects.requireNonNull(failed, "failed is required and must not be null");
+    Objects.requireNonNull(time, "No time provided.");
+    Objects.requireNonNull(created, "No created provided.");
+    Objects.requireNonNull(completed, "No completed provided.");
+    Objects.requireNonNull(failed, "No failed provided.");
   }
 
   public static GeneratedStatusMetricStrictContract coerceCreated(final Object value) {
@@ -44,9 +39,9 @@ public record GeneratedJobTimeSeriesStatisticsItemStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "created must be a GeneratedStatusMetricStrictContract, but was " + value.getClass().getName());
+        "created must be a GeneratedStatusMetricStrictContract, but was "
+            + value.getClass().getName());
   }
-
 
   public static GeneratedStatusMetricStrictContract coerceCompleted(final Object value) {
     if (value == null) {
@@ -57,9 +52,9 @@ public record GeneratedJobTimeSeriesStatisticsItemStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "completed must be a GeneratedStatusMetricStrictContract, but was " + value.getClass().getName());
+        "completed must be a GeneratedStatusMetricStrictContract, but was "
+            + value.getClass().getName());
   }
-
 
   public static GeneratedStatusMetricStrictContract coerceFailed(final Object value) {
     if (value == null) {
@@ -70,16 +65,16 @@ public record GeneratedJobTimeSeriesStatisticsItemStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "failed must be a GeneratedStatusMetricStrictContract, but was " + value.getClass().getName());
+        "failed must be a GeneratedStatusMetricStrictContract, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static TimeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements TimeStep, CreatedStep, CompletedStep, FailedStep, OptionalStep {
+  public static final class Builder
+      implements TimeStep, CreatedStep, CompletedStep, FailedStep, OptionalStep {
     private String time;
     private Object created;
     private Object completed;
@@ -110,6 +105,7 @@ public record GeneratedJobTimeSeriesStatisticsItemStrictContract(
       this.failed = failed;
       return this;
     }
+
     @Override
     public GeneratedJobTimeSeriesStatisticsItemStrictContract build() {
       return new GeneratedJobTimeSeriesStatisticsItemStrictContract(
@@ -140,15 +136,16 @@ public record GeneratedJobTimeSeriesStatisticsItemStrictContract(
     GeneratedJobTimeSeriesStatisticsItemStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TIME = ContractPolicy.field("JobTimeSeriesStatisticsItem", "time");
-    public static final ContractPolicy.FieldRef CREATED = ContractPolicy.field("JobTimeSeriesStatisticsItem", "created");
-    public static final ContractPolicy.FieldRef COMPLETED = ContractPolicy.field("JobTimeSeriesStatisticsItem", "completed");
-    public static final ContractPolicy.FieldRef FAILED = ContractPolicy.field("JobTimeSeriesStatisticsItem", "failed");
+    public static final ContractPolicy.FieldRef TIME =
+        ContractPolicy.field("JobTimeSeriesStatisticsItem", "time");
+    public static final ContractPolicy.FieldRef CREATED =
+        ContractPolicy.field("JobTimeSeriesStatisticsItem", "created");
+    public static final ContractPolicy.FieldRef COMPLETED =
+        ContractPolicy.field("JobTimeSeriesStatisticsItem", "completed");
+    public static final ContractPolicy.FieldRef FAILED =
+        ContractPolicy.field("JobTimeSeriesStatisticsItem", "failed");
 
     private Fields() {}
   }
-
-
 }

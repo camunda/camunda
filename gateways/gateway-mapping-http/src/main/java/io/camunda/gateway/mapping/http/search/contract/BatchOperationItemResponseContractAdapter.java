@@ -11,9 +11,9 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract.Fields;
 
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 
 /**
@@ -31,7 +31,8 @@ public final class BatchOperationItemResponseContractAdapter {
     return GeneratedBatchOperationItemResponseStrictContract.builder()
         .operationType(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.operationType(), GeneratedBatchOperationTypeEnum::fromValue),
                 Fields.OPERATION_TYPE,
                 entity))
         .batchOperationKey(

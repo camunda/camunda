@@ -4,32 +4,26 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/groups.yaml#/components/schemas/GroupUpdateRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGroupUpdateRequestStrictContract(
-    String name,
-    @Nullable String description
-) {
+    @JsonProperty("name") String name, @JsonProperty("description") @Nullable String description) {
 
   public GeneratedGroupUpdateRequestStrictContract {
-    Objects.requireNonNull(name, "name is required and must not be null");
+    Objects.requireNonNull(name, "No name provided.");
   }
-
 
   public static NameStep builder() {
     return new Builder();
@@ -54,16 +48,15 @@ public record GeneratedGroupUpdateRequestStrictContract(
     }
 
     @Override
-    public OptionalStep description(final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep description(
+        final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy) {
       this.description = policy.apply(description, Fields.DESCRIPTION, null);
       return this;
     }
 
     @Override
     public GeneratedGroupUpdateRequestStrictContract build() {
-      return new GeneratedGroupUpdateRequestStrictContract(
-          this.name,
-          this.description);
+      return new GeneratedGroupUpdateRequestStrictContract(this.name, this.description);
     }
   }
 
@@ -72,21 +65,20 @@ public record GeneratedGroupUpdateRequestStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep description(final @Nullable String description);
+    OptionalStep description(final @Nullable String description);
 
-  OptionalStep description(final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep description(
+        final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedGroupUpdateRequestStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("GroupUpdateRequest", "name");
-    public static final ContractPolicy.FieldRef DESCRIPTION = ContractPolicy.field("GroupUpdateRequest", "description");
+    public static final ContractPolicy.FieldRef NAME =
+        ContractPolicy.field("GroupUpdateRequest", "name");
+    public static final ContractPolicy.FieldRef DESCRIPTION =
+        ContractPolicy.field("GroupUpdateRequest", "description");
 
     private Fields() {}
   }
-
-
 }

@@ -4,30 +4,24 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/roles.yaml#/components/schemas/RoleClientResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedRoleClientStrictContract(
-    String clientId
-) {
+public record GeneratedRoleClientStrictContract(@JsonProperty("clientId") String clientId) {
 
   public GeneratedRoleClientStrictContract {
-    Objects.requireNonNull(clientId, "clientId is required and must not be null");
+    Objects.requireNonNull(clientId, "No clientId provided.");
   }
-
 
   public static ClientIdStep builder() {
     return new Builder();
@@ -43,10 +37,10 @@ public record GeneratedRoleClientStrictContract(
       this.clientId = clientId;
       return this;
     }
+
     @Override
     public GeneratedRoleClientStrictContract build() {
-      return new GeneratedRoleClientStrictContract(
-          this.clientId);
+      return new GeneratedRoleClientStrictContract(this.clientId);
     }
   }
 
@@ -58,12 +52,10 @@ public record GeneratedRoleClientStrictContract(
     GeneratedRoleClientStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CLIENT_ID = ContractPolicy.field("RoleClientResult", "clientId");
+    public static final ContractPolicy.FieldRef CLIENT_ID =
+        ContractPolicy.field("RoleClientResult", "clientId");
 
     private Fields() {}
   }
-
-
 }

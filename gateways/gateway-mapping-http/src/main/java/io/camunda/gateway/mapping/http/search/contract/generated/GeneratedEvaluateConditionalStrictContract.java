@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/conditionals.yaml#/components/schemas/EvaluateConditionalResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,20 +16,19 @@ import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedEvaluateConditionalStrictContract(
-    String conditionalEvaluationKey,
-    String tenantId,
-    java.util.List<GeneratedProcessInstanceReferenceStrictContract> processInstances
-) {
+    @JsonProperty("conditionalEvaluationKey") String conditionalEvaluationKey,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("processInstances")
+        java.util.List<GeneratedProcessInstanceReferenceStrictContract> processInstances) {
 
   public GeneratedEvaluateConditionalStrictContract {
-    Objects.requireNonNull(conditionalEvaluationKey, "conditionalEvaluationKey is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(processInstances, "processInstances is required and must not be null");
+    Objects.requireNonNull(conditionalEvaluationKey, "No conditionalEvaluationKey provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(processInstances, "No processInstances provided.");
   }
 
   public static String coerceConditionalEvaluationKey(final Object value) {
@@ -45,20 +42,23 @@ public record GeneratedEvaluateConditionalStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "conditionalEvaluationKey must be a String or Number, but was " + value.getClass().getName());
+        "conditionalEvaluationKey must be a String or Number, but was "
+            + value.getClass().getName());
   }
 
-
-  public static java.util.List<GeneratedProcessInstanceReferenceStrictContract> coerceProcessInstances(final Object value) {
+  public static java.util.List<GeneratedProcessInstanceReferenceStrictContract>
+      coerceProcessInstances(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "processInstances must be a List of GeneratedProcessInstanceReferenceStrictContract, but was " + value.getClass().getName());
+          "processInstances must be a List of GeneratedProcessInstanceReferenceStrictContract, but was "
+              + value.getClass().getName());
     }
 
-    final var result = new ArrayList<GeneratedProcessInstanceReferenceStrictContract>(listValue.size());
+    final var result =
+        new ArrayList<GeneratedProcessInstanceReferenceStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
@@ -74,13 +74,12 @@ public record GeneratedEvaluateConditionalStrictContract(
     return java.util.List.copyOf(result);
   }
 
-
-
   public static ConditionalEvaluationKeyStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ConditionalEvaluationKeyStep, TenantIdStep, ProcessInstancesStep, OptionalStep {
+  public static final class Builder
+      implements ConditionalEvaluationKeyStep, TenantIdStep, ProcessInstancesStep, OptionalStep {
     private Object conditionalEvaluationKey;
     private String tenantId;
     private Object processInstances;
@@ -104,6 +103,7 @@ public record GeneratedEvaluateConditionalStrictContract(
       this.processInstances = processInstances;
       return this;
     }
+
     @Override
     public GeneratedEvaluateConditionalStrictContract build() {
       return new GeneratedEvaluateConditionalStrictContract(
@@ -129,14 +129,14 @@ public record GeneratedEvaluateConditionalStrictContract(
     GeneratedEvaluateConditionalStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CONDITIONAL_EVALUATION_KEY = ContractPolicy.field("EvaluateConditionalResult", "conditionalEvaluationKey");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("EvaluateConditionalResult", "tenantId");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCES = ContractPolicy.field("EvaluateConditionalResult", "processInstances");
+    public static final ContractPolicy.FieldRef CONDITIONAL_EVALUATION_KEY =
+        ContractPolicy.field("EvaluateConditionalResult", "conditionalEvaluationKey");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("EvaluateConditionalResult", "tenantId");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCES =
+        ContractPolicy.field("EvaluateConditionalResult", "processInstances");
 
     private Fields() {}
   }
-
-
 }

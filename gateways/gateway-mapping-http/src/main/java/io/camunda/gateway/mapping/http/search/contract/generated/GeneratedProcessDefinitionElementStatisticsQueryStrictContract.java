@@ -4,94 +4,102 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/process-definitions.yaml#/components/schemas/ProcessDefinitionElementStatisticsQueryResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
-import java.util.ArrayList;
-import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
-
+import org.jspecify.annotations.Nullable;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessDefinitionElementStatisticsQueryStrictContract(
-    java.util.List<GeneratedProcessElementStatisticsStrictContract> items
-) {
+    @JsonProperty("filter")
+        @Nullable GeneratedProcessDefinitionStatisticsFilterStrictContract filter) {
 
-  public GeneratedProcessDefinitionElementStatisticsQueryStrictContract {
-    Objects.requireNonNull(items, "items is required and must not be null");
-  }
-
-  public static java.util.List<GeneratedProcessElementStatisticsStrictContract> coerceItems(final Object value) {
+  public static GeneratedProcessDefinitionStatisticsFilterStrictContract coerceFilter(
+      final Object value) {
     if (value == null) {
       return null;
     }
-    if (!(value instanceof java.util.List<?> listValue)) {
-      throw new IllegalArgumentException(
-          "items must be a List of GeneratedProcessElementStatisticsStrictContract, but was " + value.getClass().getName());
+    if (value instanceof GeneratedProcessDefinitionStatisticsFilterStrictContract strictValue) {
+      return strictValue;
     }
 
-    final var result = new ArrayList<GeneratedProcessElementStatisticsStrictContract>(listValue.size());
-    for (final var item : listValue) {
-      if (item == null) {
-        result.add(null);
-      } else if (item instanceof GeneratedProcessElementStatisticsStrictContract strictItem) {
-        result.add(strictItem);
-
-      } else {
-        throw new IllegalArgumentException(
-            "items must contain only GeneratedProcessElementStatisticsStrictContract items, but got "
-                + item.getClass().getName());
-      }
-    }
-    return java.util.List.copyOf(result);
+    throw new IllegalArgumentException(
+        "filter must be a GeneratedProcessDefinitionStatisticsFilterStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-
-  public static ItemsStep builder() {
+  public static OptionalStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ItemsStep, OptionalStep {
-    private Object items;
+  public static final class Builder implements OptionalStep {
+    private Object filter;
 
     private Builder() {}
 
     @Override
-    public OptionalStep items(final Object items) {
-      this.items = items;
+    public OptionalStep filter(
+        final @Nullable GeneratedProcessDefinitionStatisticsFilterStrictContract filter) {
+      this.filter = filter;
       return this;
     }
+
+    @Override
+    public OptionalStep filter(final @Nullable Object filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    public Builder filter(
+        final @Nullable GeneratedProcessDefinitionStatisticsFilterStrictContract filter,
+        final ContractPolicy.FieldPolicy<GeneratedProcessDefinitionStatisticsFilterStrictContract>
+            policy) {
+      this.filter = policy.apply(filter, Fields.FILTER, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.filter = policy.apply(filter, Fields.FILTER, null);
+      return this;
+    }
+
     @Override
     public GeneratedProcessDefinitionElementStatisticsQueryStrictContract build() {
       return new GeneratedProcessDefinitionElementStatisticsQueryStrictContract(
-          coerceItems(this.items));
+          coerceFilter(this.filter));
     }
   }
 
-  public interface ItemsStep {
-    OptionalStep items(final Object items);
-  }
-
   public interface OptionalStep {
+    OptionalStep filter(
+        final @Nullable GeneratedProcessDefinitionStatisticsFilterStrictContract filter);
+
+    OptionalStep filter(final @Nullable Object filter);
+
+    OptionalStep filter(
+        final @Nullable GeneratedProcessDefinitionStatisticsFilterStrictContract filter,
+        final ContractPolicy.FieldPolicy<GeneratedProcessDefinitionStatisticsFilterStrictContract>
+            policy);
+
+    OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+
     GeneratedProcessDefinitionElementStatisticsQueryStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("ProcessDefinitionElementStatisticsQueryResult", "items");
+    public static final ContractPolicy.FieldRef FILTER =
+        ContractPolicy.field("ProcessDefinitionElementStatisticsQuery", "filter");
 
     private Fields() {}
   }
-
-
 }

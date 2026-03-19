@@ -8,6 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
 import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
@@ -50,5 +52,22 @@ public class GroupMapper {
     return RequestMapper.getResult(
         groupRequestValidator.validateMemberRequest(groupId, memberId, entityType),
         () -> new GroupMemberDTO(groupId, memberId, entityType));
+  }
+
+  // ---- Strict contract methods (direct field access) ----
+
+  public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
+      final GeneratedGroupCreateRequestStrictContract request) {
+    return toGroupCreateRequest(
+        new GroupCreateRequest()
+            .groupId(request.groupId())
+            .name(request.name())
+            .description(request.description()));
+  }
+
+  public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
+      final GeneratedGroupUpdateRequestStrictContract request, final String groupId) {
+    return toGroupUpdateRequest(
+        new GroupUpdateRequest().name(request.name()).description(request.description()), groupId);
   }
 }

@@ -4,122 +4,127 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobWorkerStatisticsQueryResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
-import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
-
+import org.jspecify.annotations.Nullable;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobWorkerStatisticsQueryStrictContract(
-    GeneratedSearchQueryPageResponseStrictContract page,
-    java.util.List<GeneratedJobWorkerStatisticsItemStrictContract> items
-) {
+    @JsonProperty("filter") GeneratedJobWorkerStatisticsFilterStrictContract filter,
+    @JsonProperty("page") @Nullable GeneratedCursorForwardPaginationStrictContract page) {
 
   public GeneratedJobWorkerStatisticsQueryStrictContract {
-    Objects.requireNonNull(page, "page is required and must not be null");
-    Objects.requireNonNull(items, "items is required and must not be null");
+    Objects.requireNonNull(filter, "No filter provided.");
   }
 
-  public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
+  public static GeneratedJobWorkerStatisticsFilterStrictContract coerceFilter(final Object value) {
     if (value == null) {
       return null;
     }
-    if (value instanceof GeneratedSearchQueryPageResponseStrictContract strictValue) {
+    if (value instanceof GeneratedJobWorkerStatisticsFilterStrictContract strictValue) {
       return strictValue;
     }
 
     throw new IllegalArgumentException(
-        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was " + value.getClass().getName());
+        "filter must be a GeneratedJobWorkerStatisticsFilterStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-  public static java.util.List<GeneratedJobWorkerStatisticsItemStrictContract> coerceItems(final Object value) {
+  public static GeneratedCursorForwardPaginationStrictContract coercePage(final Object value) {
     if (value == null) {
       return null;
     }
-    if (!(value instanceof java.util.List<?> listValue)) {
-      throw new IllegalArgumentException(
-          "items must be a List of GeneratedJobWorkerStatisticsItemStrictContract, but was " + value.getClass().getName());
+    if (value instanceof GeneratedCursorForwardPaginationStrictContract strictValue) {
+      return strictValue;
     }
 
-    final var result = new ArrayList<GeneratedJobWorkerStatisticsItemStrictContract>(listValue.size());
-    for (final var item : listValue) {
-      if (item == null) {
-        result.add(null);
-      } else if (item instanceof GeneratedJobWorkerStatisticsItemStrictContract strictItem) {
-        result.add(strictItem);
-
-      } else {
-        throw new IllegalArgumentException(
-            "items must contain only GeneratedJobWorkerStatisticsItemStrictContract items, but got "
-                + item.getClass().getName());
-      }
-    }
-    return java.util.List.copyOf(result);
+    throw new IllegalArgumentException(
+        "page must be a GeneratedCursorForwardPaginationStrictContract, but was "
+            + value.getClass().getName());
   }
 
-
-
-  public static PageStep builder() {
+  public static FilterStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements PageStep, ItemsStep, OptionalStep {
+  public static final class Builder implements FilterStep, OptionalStep {
+    private Object filter;
     private Object page;
-    private Object items;
 
     private Builder() {}
 
     @Override
-    public ItemsStep page(final Object page) {
+    public OptionalStep filter(final Object filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(final @Nullable GeneratedCursorForwardPaginationStrictContract page) {
       this.page = page;
       return this;
     }
 
     @Override
-    public OptionalStep items(final Object items) {
-      this.items = items;
+    public OptionalStep page(final @Nullable Object page) {
+      this.page = page;
       return this;
     }
+
+    public Builder page(
+        final @Nullable GeneratedCursorForwardPaginationStrictContract page,
+        final ContractPolicy.FieldPolicy<GeneratedCursorForwardPaginationStrictContract> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(
+        final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
     @Override
     public GeneratedJobWorkerStatisticsQueryStrictContract build() {
       return new GeneratedJobWorkerStatisticsQueryStrictContract(
-          coercePage(this.page),
-          coerceItems(this.items));
+          coerceFilter(this.filter), coercePage(this.page));
     }
   }
 
-  public interface PageStep {
-    ItemsStep page(final Object page);
-  }
-
-  public interface ItemsStep {
-    OptionalStep items(final Object items);
+  public interface FilterStep {
+    OptionalStep filter(final Object filter);
   }
 
   public interface OptionalStep {
+    OptionalStep page(final @Nullable GeneratedCursorForwardPaginationStrictContract page);
+
+    OptionalStep page(final @Nullable Object page);
+
+    OptionalStep page(
+        final @Nullable GeneratedCursorForwardPaginationStrictContract page,
+        final ContractPolicy.FieldPolicy<GeneratedCursorForwardPaginationStrictContract> policy);
+
+    OptionalStep page(final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy);
+
     GeneratedJobWorkerStatisticsQueryStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("JobWorkerStatisticsQueryResult", "page");
-    public static final ContractPolicy.FieldRef ITEMS = ContractPolicy.field("JobWorkerStatisticsQueryResult", "items");
+    public static final ContractPolicy.FieldRef FILTER =
+        ContractPolicy.field("JobWorkerStatisticsQuery", "filter");
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("JobWorkerStatisticsQuery", "page");
 
     private Fields() {}
   }
-
-
 }

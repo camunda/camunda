@@ -4,34 +4,39 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/messages.yaml#/components/schemas/MessageCorrelationRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessageCorrelationRequestStrictContract(
-    String name,
-    @Nullable String correlationKey,
-    java.util.@Nullable Map<String, Object> variables,
-    @Nullable String tenantId
-) {
+    @JsonProperty("name") String name,
+    @JsonProperty("correlationKey") @Nullable String correlationKey,
+    @JsonProperty("variables") java.util.@Nullable Map<String, Object> variables,
+    @JsonProperty("tenantId") @Nullable String tenantId) {
 
   public GeneratedMessageCorrelationRequestStrictContract {
-    Objects.requireNonNull(name, "name is required and must not be null");
+    Objects.requireNonNull(name, "No name provided.");
+    if (tenantId != null)
+      if (tenantId.isBlank()) throw new IllegalArgumentException("tenantId must not be blank");
+    if (tenantId != null)
+      if (tenantId.length() > 256)
+        throw new IllegalArgumentException(
+            "The provided tenantId exceeds the limit of 256 characters.");
+    if (tenantId != null)
+      if (!tenantId.matches("^(<default>|[A-Za-z0-9_@.+-]+)$"))
+        throw new IllegalArgumentException(
+            "The provided tenantId contains illegal characters. It must match the pattern '^(<default>|[A-Za-z0-9_@.+-]+)$'.");
   }
-
 
   public static NameStep builder() {
     return new Builder();
@@ -58,11 +63,11 @@ public record GeneratedMessageCorrelationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep correlationKey(final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep correlationKey(
+        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.correlationKey = policy.apply(correlationKey, Fields.CORRELATION_KEY, null);
       return this;
     }
-
 
     @Override
     public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
@@ -71,11 +76,12 @@ public record GeneratedMessageCorrelationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep variables(
+        final java.util.@Nullable Map<String, Object> variables,
+        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
-
 
     @Override
     public OptionalStep tenantId(final @Nullable String tenantId) {
@@ -84,7 +90,8 @@ public record GeneratedMessageCorrelationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
@@ -92,10 +99,7 @@ public record GeneratedMessageCorrelationRequestStrictContract(
     @Override
     public GeneratedMessageCorrelationRequestStrictContract build() {
       return new GeneratedMessageCorrelationRequestStrictContract(
-          this.name,
-          this.correlationKey,
-          this.variables,
-          this.tenantId);
+          this.name, this.correlationKey, this.variables, this.tenantId);
     }
   }
 
@@ -104,33 +108,35 @@ public record GeneratedMessageCorrelationRequestStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep correlationKey(final @Nullable String correlationKey);
+    OptionalStep correlationKey(final @Nullable String correlationKey);
 
-  OptionalStep correlationKey(final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep correlationKey(
+        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
 
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
-  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
+    OptionalStep variables(
+        final java.util.@Nullable Map<String, Object> variables,
+        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-
-  OptionalStep tenantId(final @Nullable String tenantId);
-
-  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedMessageCorrelationRequestStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("MessageCorrelationRequest", "name");
-    public static final ContractPolicy.FieldRef CORRELATION_KEY = ContractPolicy.field("MessageCorrelationRequest", "correlationKey");
-    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("MessageCorrelationRequest", "variables");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("MessageCorrelationRequest", "tenantId");
+    public static final ContractPolicy.FieldRef NAME =
+        ContractPolicy.field("MessageCorrelationRequest", "name");
+    public static final ContractPolicy.FieldRef CORRELATION_KEY =
+        ContractPolicy.field("MessageCorrelationRequest", "correlationKey");
+    public static final ContractPolicy.FieldRef VARIABLES =
+        ContractPolicy.field("MessageCorrelationRequest", "variables");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("MessageCorrelationRequest", "tenantId");
 
     private Fields() {}
   }
-
-
 }

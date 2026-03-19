@@ -4,13 +4,11 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml#/components/schemas/ActivatedJobResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
@@ -18,50 +16,51 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedActivatedJobStrictContract(
-    String type,
-    String processDefinitionId,
-    Integer processDefinitionVersion,
-    String elementId,
-    java.util.Map<String, Object> customHeaders,
-    String worker,
-    Integer retries,
-    Long deadline,
-    java.util.Map<String, Object> variables,
-    String tenantId,
-    String jobKey,
-    String processInstanceKey,
-    String processDefinitionKey,
-    String elementInstanceKey,
-    io.camunda.gateway.protocol.model.JobKindEnum kind,
-    io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType,
-    @Nullable GeneratedUserTaskPropertiesStrictContract userTask,
-    java.util.Set<String> tags,
-    @Nullable String rootProcessInstanceKey
-) {
+    @JsonProperty("type") String type,
+    @JsonProperty("processDefinitionId") String processDefinitionId,
+    @JsonProperty("processDefinitionVersion") Integer processDefinitionVersion,
+    @JsonProperty("elementId") String elementId,
+    @JsonProperty("customHeaders") java.util.Map<String, Object> customHeaders,
+    @JsonProperty("worker") String worker,
+    @JsonProperty("retries") Integer retries,
+    @JsonProperty("deadline") Long deadline,
+    @JsonProperty("variables") java.util.Map<String, Object> variables,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("jobKey") String jobKey,
+    @JsonProperty("processInstanceKey") String processInstanceKey,
+    @JsonProperty("processDefinitionKey") String processDefinitionKey,
+    @JsonProperty("elementInstanceKey") String elementInstanceKey,
+    @JsonProperty("kind")
+        io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum kind,
+    @JsonProperty("listenerEventType")
+        io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobListenerEventTypeEnum
+            listenerEventType,
+    @JsonProperty("userTask") @Nullable GeneratedUserTaskPropertiesStrictContract userTask,
+    @JsonProperty("tags") java.util.Set<String> tags,
+    @JsonProperty("rootProcessInstanceKey") @Nullable String rootProcessInstanceKey) {
 
   public GeneratedActivatedJobStrictContract {
-    Objects.requireNonNull(type, "type is required and must not be null");
-    Objects.requireNonNull(processDefinitionId, "processDefinitionId is required and must not be null");
-    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion is required and must not be null");
-    Objects.requireNonNull(elementId, "elementId is required and must not be null");
-    Objects.requireNonNull(customHeaders, "customHeaders is required and must not be null");
-    Objects.requireNonNull(worker, "worker is required and must not be null");
-    Objects.requireNonNull(retries, "retries is required and must not be null");
-    Objects.requireNonNull(deadline, "deadline is required and must not be null");
-    Objects.requireNonNull(variables, "variables is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(jobKey, "jobKey is required and must not be null");
-    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
-    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
-    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey is required and must not be null");
-    Objects.requireNonNull(kind, "kind is required and must not be null");
-    Objects.requireNonNull(listenerEventType, "listenerEventType is required and must not be null");
-    Objects.requireNonNull(tags, "tags is required and must not be null");
+    Objects.requireNonNull(type, "No type provided.");
+    Objects.requireNonNull(processDefinitionId, "No processDefinitionId provided.");
+    Objects.requireNonNull(processDefinitionVersion, "No processDefinitionVersion provided.");
+    Objects.requireNonNull(elementId, "No elementId provided.");
+    Objects.requireNonNull(customHeaders, "No customHeaders provided.");
+    Objects.requireNonNull(worker, "No worker provided.");
+    Objects.requireNonNull(retries, "No retries provided.");
+    Objects.requireNonNull(deadline, "No deadline provided.");
+    Objects.requireNonNull(variables, "No variables provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(jobKey, "No jobKey provided.");
+    Objects.requireNonNull(processInstanceKey, "No processInstanceKey provided.");
+    Objects.requireNonNull(processDefinitionKey, "No processDefinitionKey provided.");
+    Objects.requireNonNull(elementInstanceKey, "No elementInstanceKey provided.");
+    Objects.requireNonNull(kind, "No kind provided.");
+    Objects.requireNonNull(listenerEventType, "No listenerEventType provided.");
+    Objects.requireNonNull(tags, "No tags provided.");
   }
 
   public static String coerceJobKey(final Object value) {
@@ -78,7 +77,6 @@ public record GeneratedActivatedJobStrictContract(
         "jobKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -92,7 +90,6 @@ public record GeneratedActivatedJobStrictContract(
     throw new IllegalArgumentException(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
-
 
   public static String coerceProcessDefinitionKey(final Object value) {
     if (value == null) {
@@ -108,7 +105,6 @@ public record GeneratedActivatedJobStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceElementInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -123,7 +119,6 @@ public record GeneratedActivatedJobStrictContract(
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static GeneratedUserTaskPropertiesStrictContract coerceUserTask(final Object value) {
     if (value == null) {
       return null;
@@ -133,9 +128,9 @@ public record GeneratedActivatedJobStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "userTask must be a GeneratedUserTaskPropertiesStrictContract, but was " + value.getClass().getName());
+        "userTask must be a GeneratedUserTaskPropertiesStrictContract, but was "
+            + value.getClass().getName());
   }
-
 
   public static String coerceRootProcessInstanceKey(final Object value) {
     if (value == null) {
@@ -151,13 +146,29 @@ public record GeneratedActivatedJobStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static TypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements TypeStep, ProcessDefinitionIdStep, ProcessDefinitionVersionStep, ElementIdStep, CustomHeadersStep, WorkerStep, RetriesStep, DeadlineStep, VariablesStep, TenantIdStep, JobKeyStep, ProcessInstanceKeyStep, ProcessDefinitionKeyStep, ElementInstanceKeyStep, KindStep, ListenerEventTypeStep, TagsStep, OptionalStep {
+  public static final class Builder
+      implements TypeStep,
+          ProcessDefinitionIdStep,
+          ProcessDefinitionVersionStep,
+          ElementIdStep,
+          CustomHeadersStep,
+          WorkerStep,
+          RetriesStep,
+          DeadlineStep,
+          VariablesStep,
+          TenantIdStep,
+          JobKeyStep,
+          ProcessInstanceKeyStep,
+          ProcessDefinitionKeyStep,
+          ElementInstanceKeyStep,
+          KindStep,
+          ListenerEventTypeStep,
+          TagsStep,
+          OptionalStep {
     private String type;
     private String processDefinitionId;
     private Integer processDefinitionVersion;
@@ -172,8 +183,10 @@ public record GeneratedActivatedJobStrictContract(
     private Object processInstanceKey;
     private Object processDefinitionKey;
     private Object elementInstanceKey;
-    private io.camunda.gateway.protocol.model.JobKindEnum kind;
-    private io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType;
+    private io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum kind;
+    private io.camunda.gateway.mapping.http.search.contract.generated
+            .GeneratedJobListenerEventTypeEnum
+        listenerEventType;
     private Object userTask;
     private java.util.Set<String> tags;
     private Object rootProcessInstanceKey;
@@ -265,13 +278,17 @@ public record GeneratedActivatedJobStrictContract(
     }
 
     @Override
-    public ListenerEventTypeStep kind(final io.camunda.gateway.protocol.model.JobKindEnum kind) {
+    public ListenerEventTypeStep kind(
+        final io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum kind) {
       this.kind = kind;
       return this;
     }
 
     @Override
-    public TagsStep listenerEventType(final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType) {
+    public TagsStep listenerEventType(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedJobListenerEventTypeEnum
+            listenerEventType) {
       this.listenerEventType = listenerEventType;
       return this;
     }
@@ -283,7 +300,8 @@ public record GeneratedActivatedJobStrictContract(
     }
 
     @Override
-    public OptionalStep userTask(final @Nullable GeneratedUserTaskPropertiesStrictContract userTask) {
+    public OptionalStep userTask(
+        final @Nullable GeneratedUserTaskPropertiesStrictContract userTask) {
       this.userTask = userTask;
       return this;
     }
@@ -294,17 +312,19 @@ public record GeneratedActivatedJobStrictContract(
       return this;
     }
 
-    public Builder userTask(final @Nullable GeneratedUserTaskPropertiesStrictContract userTask, final ContractPolicy.FieldPolicy<GeneratedUserTaskPropertiesStrictContract> policy) {
+    public Builder userTask(
+        final @Nullable GeneratedUserTaskPropertiesStrictContract userTask,
+        final ContractPolicy.FieldPolicy<GeneratedUserTaskPropertiesStrictContract> policy) {
       this.userTask = policy.apply(userTask, Fields.USER_TASK, null);
       return this;
     }
 
     @Override
-    public OptionalStep userTask(final @Nullable Object userTask, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep userTask(
+        final @Nullable Object userTask, final ContractPolicy.FieldPolicy<Object> policy) {
       this.userTask = policy.apply(userTask, Fields.USER_TASK, null);
       return this;
     }
-
 
     @Override
     public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
@@ -318,14 +338,20 @@ public record GeneratedActivatedJobStrictContract(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
-      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public Builder rootProcessInstanceKey(
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
@@ -411,11 +437,15 @@ public record GeneratedActivatedJobStrictContract(
   }
 
   public interface KindStep {
-    ListenerEventTypeStep kind(final io.camunda.gateway.protocol.model.JobKindEnum kind);
+    ListenerEventTypeStep kind(
+        final io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum kind);
   }
 
   public interface ListenerEventTypeStep {
-    TagsStep listenerEventType(final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType);
+    TagsStep listenerEventType(
+        final io.camunda.gateway.mapping.http.search.contract.generated
+                .GeneratedJobListenerEventTypeEnum
+            listenerEventType);
   }
 
   public interface TagsStep {
@@ -423,51 +453,72 @@ public record GeneratedActivatedJobStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep userTask(final @Nullable GeneratedUserTaskPropertiesStrictContract userTask);
+    OptionalStep userTask(final @Nullable GeneratedUserTaskPropertiesStrictContract userTask);
 
-  OptionalStep userTask(final @Nullable Object userTask);
+    OptionalStep userTask(final @Nullable Object userTask);
 
-  OptionalStep userTask(final @Nullable GeneratedUserTaskPropertiesStrictContract userTask, final ContractPolicy.FieldPolicy<GeneratedUserTaskPropertiesStrictContract> policy);
+    OptionalStep userTask(
+        final @Nullable GeneratedUserTaskPropertiesStrictContract userTask,
+        final ContractPolicy.FieldPolicy<GeneratedUserTaskPropertiesStrictContract> policy);
 
-  OptionalStep userTask(final @Nullable Object userTask, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep userTask(
+        final @Nullable Object userTask, final ContractPolicy.FieldPolicy<Object> policy);
 
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
-
-  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
-
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedActivatedJobStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("ActivatedJobResult", "type");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("ActivatedJobResult", "processDefinitionId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION = ContractPolicy.field("ActivatedJobResult", "processDefinitionVersion");
-    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("ActivatedJobResult", "elementId");
-    public static final ContractPolicy.FieldRef CUSTOM_HEADERS = ContractPolicy.field("ActivatedJobResult", "customHeaders");
-    public static final ContractPolicy.FieldRef WORKER = ContractPolicy.field("ActivatedJobResult", "worker");
-    public static final ContractPolicy.FieldRef RETRIES = ContractPolicy.field("ActivatedJobResult", "retries");
-    public static final ContractPolicy.FieldRef DEADLINE = ContractPolicy.field("ActivatedJobResult", "deadline");
-    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("ActivatedJobResult", "variables");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("ActivatedJobResult", "tenantId");
-    public static final ContractPolicy.FieldRef JOB_KEY = ContractPolicy.field("ActivatedJobResult", "jobKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("ActivatedJobResult", "processInstanceKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("ActivatedJobResult", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("ActivatedJobResult", "elementInstanceKey");
-    public static final ContractPolicy.FieldRef KIND = ContractPolicy.field("ActivatedJobResult", "kind");
-    public static final ContractPolicy.FieldRef LISTENER_EVENT_TYPE = ContractPolicy.field("ActivatedJobResult", "listenerEventType");
-    public static final ContractPolicy.FieldRef USER_TASK = ContractPolicy.field("ActivatedJobResult", "userTask");
-    public static final ContractPolicy.FieldRef TAGS = ContractPolicy.field("ActivatedJobResult", "tags");
-    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY = ContractPolicy.field("ActivatedJobResult", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef TYPE =
+        ContractPolicy.field("ActivatedJobResult", "type");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
+        ContractPolicy.field("ActivatedJobResult", "processDefinitionId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION =
+        ContractPolicy.field("ActivatedJobResult", "processDefinitionVersion");
+    public static final ContractPolicy.FieldRef ELEMENT_ID =
+        ContractPolicy.field("ActivatedJobResult", "elementId");
+    public static final ContractPolicy.FieldRef CUSTOM_HEADERS =
+        ContractPolicy.field("ActivatedJobResult", "customHeaders");
+    public static final ContractPolicy.FieldRef WORKER =
+        ContractPolicy.field("ActivatedJobResult", "worker");
+    public static final ContractPolicy.FieldRef RETRIES =
+        ContractPolicy.field("ActivatedJobResult", "retries");
+    public static final ContractPolicy.FieldRef DEADLINE =
+        ContractPolicy.field("ActivatedJobResult", "deadline");
+    public static final ContractPolicy.FieldRef VARIABLES =
+        ContractPolicy.field("ActivatedJobResult", "variables");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("ActivatedJobResult", "tenantId");
+    public static final ContractPolicy.FieldRef JOB_KEY =
+        ContractPolicy.field("ActivatedJobResult", "jobKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("ActivatedJobResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
+        ContractPolicy.field("ActivatedJobResult", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
+        ContractPolicy.field("ActivatedJobResult", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef KIND =
+        ContractPolicy.field("ActivatedJobResult", "kind");
+    public static final ContractPolicy.FieldRef LISTENER_EVENT_TYPE =
+        ContractPolicy.field("ActivatedJobResult", "listenerEventType");
+    public static final ContractPolicy.FieldRef USER_TASK =
+        ContractPolicy.field("ActivatedJobResult", "userTask");
+    public static final ContractPolicy.FieldRef TAGS =
+        ContractPolicy.field("ActivatedJobResult", "tags");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("ActivatedJobResult", "rootProcessInstanceKey");
 
     private Fields() {}
   }
-
-
 }

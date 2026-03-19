@@ -4,34 +4,31 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/DeleteResourceResponse
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeleteResourceResponseStrictContract(
-    String resourceKey,
-    @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation
-) {
+    @JsonProperty("resourceKey") String resourceKey,
+    @JsonProperty("batchOperation")
+        @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation) {
 
   public GeneratedDeleteResourceResponseStrictContract {
-    Objects.requireNonNull(resourceKey, "resourceKey is required and must not be null");
+    Objects.requireNonNull(resourceKey, "No resourceKey provided.");
   }
 
-  public static GeneratedBatchOperationCreatedStrictContract coerceBatchOperation(final Object value) {
+  public static GeneratedBatchOperationCreatedStrictContract coerceBatchOperation(
+      final Object value) {
     if (value == null) {
       return null;
     }
@@ -40,10 +37,9 @@ public record GeneratedDeleteResourceResponseStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "batchOperation must be a GeneratedBatchOperationCreatedStrictContract, but was " + value.getClass().getName());
+        "batchOperation must be a GeneratedBatchOperationCreatedStrictContract, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static ResourceKeyStep builder() {
     return new Builder();
@@ -62,7 +58,8 @@ public record GeneratedDeleteResourceResponseStrictContract(
     }
 
     @Override
-    public OptionalStep batchOperation(final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation) {
+    public OptionalStep batchOperation(
+        final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation) {
       this.batchOperation = batchOperation;
       return this;
     }
@@ -73,13 +70,16 @@ public record GeneratedDeleteResourceResponseStrictContract(
       return this;
     }
 
-    public Builder batchOperation(final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation, final ContractPolicy.FieldPolicy<GeneratedBatchOperationCreatedStrictContract> policy) {
+    public Builder batchOperation(
+        final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation,
+        final ContractPolicy.FieldPolicy<GeneratedBatchOperationCreatedStrictContract> policy) {
       this.batchOperation = policy.apply(batchOperation, Fields.BATCH_OPERATION, null);
       return this;
     }
 
     @Override
-    public OptionalStep batchOperation(final @Nullable Object batchOperation, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep batchOperation(
+        final @Nullable Object batchOperation, final ContractPolicy.FieldPolicy<Object> policy) {
       this.batchOperation = policy.apply(batchOperation, Fields.BATCH_OPERATION, null);
       return this;
     }
@@ -87,8 +87,7 @@ public record GeneratedDeleteResourceResponseStrictContract(
     @Override
     public GeneratedDeleteResourceResponseStrictContract build() {
       return new GeneratedDeleteResourceResponseStrictContract(
-          this.resourceKey,
-          coerceBatchOperation(this.batchOperation));
+          this.resourceKey, coerceBatchOperation(this.batchOperation));
     }
   }
 
@@ -97,25 +96,27 @@ public record GeneratedDeleteResourceResponseStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep batchOperation(final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation);
+    OptionalStep batchOperation(
+        final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation);
 
-  OptionalStep batchOperation(final @Nullable Object batchOperation);
+    OptionalStep batchOperation(final @Nullable Object batchOperation);
 
-  OptionalStep batchOperation(final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation, final ContractPolicy.FieldPolicy<GeneratedBatchOperationCreatedStrictContract> policy);
+    OptionalStep batchOperation(
+        final @Nullable GeneratedBatchOperationCreatedStrictContract batchOperation,
+        final ContractPolicy.FieldPolicy<GeneratedBatchOperationCreatedStrictContract> policy);
 
-  OptionalStep batchOperation(final @Nullable Object batchOperation, final ContractPolicy.FieldPolicy<Object> policy);
-
+    OptionalStep batchOperation(
+        final @Nullable Object batchOperation, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedDeleteResourceResponseStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef RESOURCE_KEY = ContractPolicy.field("DeleteResourceResponse", "resourceKey");
-    public static final ContractPolicy.FieldRef BATCH_OPERATION = ContractPolicy.field("DeleteResourceResponse", "batchOperation");
+    public static final ContractPolicy.FieldRef RESOURCE_KEY =
+        ContractPolicy.field("DeleteResourceResponse", "resourceKey");
+    public static final ContractPolicy.FieldRef BATCH_OPERATION =
+        ContractPolicy.field("DeleteResourceResponse", "batchOperation");
 
     private Fields() {}
   }
-
-
 }

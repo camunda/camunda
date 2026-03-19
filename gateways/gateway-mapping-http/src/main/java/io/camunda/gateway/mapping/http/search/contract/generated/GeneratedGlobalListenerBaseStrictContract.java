@@ -4,29 +4,24 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/global-listeners.yaml#/components/schemas/GlobalListenerBase
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalListenerBaseStrictContract(
-    @Nullable String type,
-    @Nullable Integer retries,
-    @Nullable Boolean afterNonGlobal,
-    @Nullable Integer priority
-) {
-
+    @JsonProperty("type") @Nullable String type,
+    @JsonProperty("retries") @Nullable Integer retries,
+    @JsonProperty("afterNonGlobal") @Nullable Boolean afterNonGlobal,
+    @JsonProperty("priority") @Nullable Integer priority) {
 
   public static OptionalStep builder() {
     return new Builder();
@@ -47,11 +42,11 @@ public record GeneratedGlobalListenerBaseStrictContract(
     }
 
     @Override
-    public OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep type(
+        final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
       this.type = policy.apply(type, Fields.TYPE, null);
       return this;
     }
-
 
     @Override
     public OptionalStep retries(final @Nullable Integer retries) {
@@ -60,11 +55,11 @@ public record GeneratedGlobalListenerBaseStrictContract(
     }
 
     @Override
-    public OptionalStep retries(final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep retries(
+        final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.retries = policy.apply(retries, Fields.RETRIES, null);
       return this;
     }
-
 
     @Override
     public OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal) {
@@ -73,11 +68,11 @@ public record GeneratedGlobalListenerBaseStrictContract(
     }
 
     @Override
-    public OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep afterNonGlobal(
+        final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.afterNonGlobal = policy.apply(afterNonGlobal, Fields.AFTER_NON_GLOBAL, null);
       return this;
     }
-
 
     @Override
     public OptionalStep priority(final @Nullable Integer priority) {
@@ -86,7 +81,8 @@ public record GeneratedGlobalListenerBaseStrictContract(
     }
 
     @Override
-    public OptionalStep priority(final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep priority(
+        final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.priority = policy.apply(priority, Fields.PRIORITY, null);
       return this;
     }
@@ -94,46 +90,43 @@ public record GeneratedGlobalListenerBaseStrictContract(
     @Override
     public GeneratedGlobalListenerBaseStrictContract build() {
       return new GeneratedGlobalListenerBaseStrictContract(
-          this.type,
-          this.retries,
-          this.afterNonGlobal,
-          this.priority);
+          this.type, this.retries, this.afterNonGlobal, this.priority);
     }
   }
 
   public interface OptionalStep {
-  OptionalStep type(final @Nullable String type);
+    OptionalStep type(final @Nullable String type);
 
-  OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
 
+    OptionalStep retries(final @Nullable Integer retries);
 
-  OptionalStep retries(final @Nullable Integer retries);
+    OptionalStep retries(
+        final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
 
-  OptionalStep retries(final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal);
 
+    OptionalStep afterNonGlobal(
+        final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-  OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal);
+    OptionalStep priority(final @Nullable Integer priority);
 
-  OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy);
-
-
-  OptionalStep priority(final @Nullable Integer priority);
-
-  OptionalStep priority(final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy);
-
+    OptionalStep priority(
+        final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy);
 
     GeneratedGlobalListenerBaseStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("GlobalListenerBase", "type");
-    public static final ContractPolicy.FieldRef RETRIES = ContractPolicy.field("GlobalListenerBase", "retries");
-    public static final ContractPolicy.FieldRef AFTER_NON_GLOBAL = ContractPolicy.field("GlobalListenerBase", "afterNonGlobal");
-    public static final ContractPolicy.FieldRef PRIORITY = ContractPolicy.field("GlobalListenerBase", "priority");
+    public static final ContractPolicy.FieldRef TYPE =
+        ContractPolicy.field("GlobalListenerBase", "type");
+    public static final ContractPolicy.FieldRef RETRIES =
+        ContractPolicy.field("GlobalListenerBase", "retries");
+    public static final ContractPolicy.FieldRef AFTER_NON_GLOBAL =
+        ContractPolicy.field("GlobalListenerBase", "afterNonGlobal");
+    public static final ContractPolicy.FieldRef PRIORITY =
+        ContractPolicy.field("GlobalListenerBase", "priority");
 
     private Fields() {}
   }
-
-
 }

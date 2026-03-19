@@ -4,46 +4,47 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/ResourceResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedResourceStrictContract(
-    String resourceName,
-    Integer version,
-    @Nullable String versionTag,
-    String resourceId,
-    String tenantId,
-    String resourceKey
-) {
+    @JsonProperty("resourceName") String resourceName,
+    @JsonProperty("version") Integer version,
+    @JsonProperty("versionTag") @Nullable String versionTag,
+    @JsonProperty("resourceId") String resourceId,
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("resourceKey") String resourceKey) {
 
   public GeneratedResourceStrictContract {
-    Objects.requireNonNull(resourceName, "resourceName is required and must not be null");
-    Objects.requireNonNull(version, "version is required and must not be null");
-    Objects.requireNonNull(resourceId, "resourceId is required and must not be null");
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(resourceKey, "resourceKey is required and must not be null");
+    Objects.requireNonNull(resourceName, "No resourceName provided.");
+    Objects.requireNonNull(version, "No version provided.");
+    Objects.requireNonNull(resourceId, "No resourceId provided.");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(resourceKey, "No resourceKey provided.");
   }
-
 
   public static ResourceNameStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ResourceNameStep, VersionStep, ResourceIdStep, TenantIdStep, ResourceKeyStep, OptionalStep {
+  public static final class Builder
+      implements ResourceNameStep,
+          VersionStep,
+          ResourceIdStep,
+          TenantIdStep,
+          ResourceKeyStep,
+          OptionalStep {
     private String resourceName;
     private Integer version;
     private String versionTag;
@@ -90,7 +91,8 @@ public record GeneratedResourceStrictContract(
     }
 
     @Override
-    public OptionalStep versionTag(final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep versionTag(
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
       this.versionTag = policy.apply(versionTag, Fields.VERSION_TAG, null);
       return this;
     }
@@ -128,25 +130,28 @@ public record GeneratedResourceStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep versionTag(final @Nullable String versionTag);
+    OptionalStep versionTag(final @Nullable String versionTag);
 
-  OptionalStep versionTag(final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep versionTag(
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedResourceStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef RESOURCE_NAME = ContractPolicy.field("ResourceResult", "resourceName");
-    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("ResourceResult", "version");
-    public static final ContractPolicy.FieldRef VERSION_TAG = ContractPolicy.field("ResourceResult", "versionTag");
-    public static final ContractPolicy.FieldRef RESOURCE_ID = ContractPolicy.field("ResourceResult", "resourceId");
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("ResourceResult", "tenantId");
-    public static final ContractPolicy.FieldRef RESOURCE_KEY = ContractPolicy.field("ResourceResult", "resourceKey");
+    public static final ContractPolicy.FieldRef RESOURCE_NAME =
+        ContractPolicy.field("ResourceResult", "resourceName");
+    public static final ContractPolicy.FieldRef VERSION =
+        ContractPolicy.field("ResourceResult", "version");
+    public static final ContractPolicy.FieldRef VERSION_TAG =
+        ContractPolicy.field("ResourceResult", "versionTag");
+    public static final ContractPolicy.FieldRef RESOURCE_ID =
+        ContractPolicy.field("ResourceResult", "resourceId");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("ResourceResult", "tenantId");
+    public static final ContractPolicy.FieldRef RESOURCE_KEY =
+        ContractPolicy.field("ResourceResult", "resourceKey");
 
     private Fields() {}
   }
-
-
 }

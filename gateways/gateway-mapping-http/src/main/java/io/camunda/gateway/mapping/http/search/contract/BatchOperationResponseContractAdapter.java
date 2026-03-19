@@ -10,12 +10,12 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogActorTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationErrorStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
-import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
-import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationEntity;
 
 /**
@@ -39,12 +39,13 @@ public final class BatchOperationResponseContractAdapter {
                 entity.batchOperationKey(), Fields.BATCH_OPERATION_KEY, entity))
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), BatchOperationStateEnum::fromValue),
+                ContractPolicy.mapEnum(entity.state(), GeneratedBatchOperationStateEnum::fromValue),
                 Fields.STATE,
                 entity))
         .batchOperationType(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.operationType(), GeneratedBatchOperationTypeEnum::fromValue),
                 Fields.BATCH_OPERATION_TYPE,
                 entity))
         .operationsTotalCount(
@@ -65,7 +66,8 @@ public final class BatchOperationResponseContractAdapter {
                 entity))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
-        .actorType(ContractPolicy.mapEnum(entity.actorType(), AuditLogActorTypeEnum::fromValue))
+        .actorType(
+            ContractPolicy.mapEnum(entity.actorType(), GeneratedAuditLogActorTypeEnum::fromValue))
         .actorId(entity.actorId())
         .build();
   }

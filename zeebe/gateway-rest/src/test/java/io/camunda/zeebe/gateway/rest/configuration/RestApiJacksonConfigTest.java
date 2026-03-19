@@ -14,16 +14,19 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = {ProcessInstanceController.class})
+@Import(DefaultProcessInstanceServiceAdapter.class)
+@WebMvcTest(value = {GeneratedProcessInstanceController.class})
 public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
 
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
@@ -35,9 +38,11 @@ public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"true", "false", "5", "5.5", "[1,2,3]"})
+  @ValueSource(strings = {"true", "false", "5.5", "[1,2,3]"})
   void shouldYieldBadRequestForQueryViolatingFilterTypeStringRequest(final String invalidValue) {
-    // given
+    // given — processDefinitionKey is a LongKey filter property (oneOf: [string, AdvancedFilter]).
+    // The custom deserializer accepts VALUE_STRING and VALUE_NUMBER_INT (long keys can be numeric),
+    // but rejects booleans, floats, and arrays.
     final var request =
         """
             {
@@ -76,9 +81,12 @@ public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"true", "false", "\"5\"", "5.5", "[1,2,3]"})
+  @ValueSource(strings = {"true", "false", "5.5", "[1,2,3]"})
   void shouldYieldBadRequestForQueryViolatingFilterTypeIntRequest(final String invalidValue) {
-    // given
+    // given — processDefinitionVersion is an Integer filter property (oneOf: [integer,
+    // AdvancedFilter]).
+    // The custom deserializer accepts VALUE_NUMBER_INT and VALUE_STRING (parsed as int),
+    // but rejects booleans, floats, and arrays.
     final var request =
         """
             {

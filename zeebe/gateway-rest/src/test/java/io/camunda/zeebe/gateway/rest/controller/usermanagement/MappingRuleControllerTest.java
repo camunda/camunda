@@ -21,6 +21,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultMappingRuleServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedMappingRuleController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -29,11 +31,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(MappingRuleController.class)
+@Import(DefaultMappingRuleServiceAdapter.class)
+@WebMvcTest(GeneratedMappingRuleController.class)
 public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";

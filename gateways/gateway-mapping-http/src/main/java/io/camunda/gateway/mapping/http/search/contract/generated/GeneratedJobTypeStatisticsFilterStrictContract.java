@@ -4,34 +4,29 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobTypeStatisticsFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobTypeStatisticsFilterStrictContract(
-    String from,
-    String to,
-    @Nullable Object jobType
-) {
+    @JsonProperty("from") String from,
+    @JsonProperty("to") String to,
+    @JsonProperty("jobType") @Nullable GeneratedStringFilterPropertyStrictContract jobType) {
 
   public GeneratedJobTypeStatisticsFilterStrictContract {
-    Objects.requireNonNull(from, "from is required and must not be null");
-    Objects.requireNonNull(to, "to is required and must not be null");
+    Objects.requireNonNull(from, "No from provided.");
+    Objects.requireNonNull(to, "No to provided.");
   }
-
 
   public static FromStep builder() {
     return new Builder();
@@ -40,7 +35,7 @@ public record GeneratedJobTypeStatisticsFilterStrictContract(
   public static final class Builder implements FromStep, ToStep, OptionalStep {
     private String from;
     private String to;
-    private Object jobType;
+    private GeneratedStringFilterPropertyStrictContract jobType;
 
     private Builder() {}
 
@@ -57,23 +52,23 @@ public record GeneratedJobTypeStatisticsFilterStrictContract(
     }
 
     @Override
-    public OptionalStep jobType(final @Nullable Object jobType) {
+    public OptionalStep jobType(
+        final @Nullable GeneratedStringFilterPropertyStrictContract jobType) {
       this.jobType = jobType;
       return this;
     }
 
     @Override
-    public OptionalStep jobType(final @Nullable Object jobType, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep jobType(
+        final @Nullable GeneratedStringFilterPropertyStrictContract jobType,
+        final ContractPolicy.FieldPolicy<GeneratedStringFilterPropertyStrictContract> policy) {
       this.jobType = policy.apply(jobType, Fields.JOB_TYPE, null);
       return this;
     }
 
     @Override
     public GeneratedJobTypeStatisticsFilterStrictContract build() {
-      return new GeneratedJobTypeStatisticsFilterStrictContract(
-          this.from,
-          this.to,
-          this.jobType);
+      return new GeneratedJobTypeStatisticsFilterStrictContract(this.from, this.to, this.jobType);
     }
   }
 
@@ -86,22 +81,23 @@ public record GeneratedJobTypeStatisticsFilterStrictContract(
   }
 
   public interface OptionalStep {
-  OptionalStep jobType(final @Nullable Object jobType);
+    OptionalStep jobType(final @Nullable GeneratedStringFilterPropertyStrictContract jobType);
 
-  OptionalStep jobType(final @Nullable Object jobType, final ContractPolicy.FieldPolicy<Object> policy);
-
+    OptionalStep jobType(
+        final @Nullable GeneratedStringFilterPropertyStrictContract jobType,
+        final ContractPolicy.FieldPolicy<GeneratedStringFilterPropertyStrictContract> policy);
 
     GeneratedJobTypeStatisticsFilterStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FROM = ContractPolicy.field("JobTypeStatisticsFilter", "from");
-    public static final ContractPolicy.FieldRef TO = ContractPolicy.field("JobTypeStatisticsFilter", "to");
-    public static final ContractPolicy.FieldRef JOB_TYPE = ContractPolicy.field("JobTypeStatisticsFilter", "jobType");
+    public static final ContractPolicy.FieldRef FROM =
+        ContractPolicy.field("JobTypeStatisticsFilter", "from");
+    public static final ContractPolicy.FieldRef TO =
+        ContractPolicy.field("JobTypeStatisticsFilter", "to");
+    public static final ContractPolicy.FieldRef JOB_TYPE =
+        ContractPolicy.field("JobTypeStatisticsFilter", "jobType");
 
     private Fields() {}
   }
-
-
 }

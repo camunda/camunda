@@ -4,32 +4,31 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceCreationTerminateInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
+@JsonDeserialize(using = JsonDeserializer.None.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceCreationTerminateInstructionStrictContract(
-    @Nullable String type,
-    String afterElementId
-) {
+    @JsonProperty("type") @Nullable String type,
+    @JsonProperty("afterElementId") String afterElementId)
+    implements GeneratedProcessInstanceCreationRuntimeInstructionStrictContract {
 
   public GeneratedProcessInstanceCreationTerminateInstructionStrictContract {
-    Objects.requireNonNull(afterElementId, "afterElementId is required and must not be null");
+    Objects.requireNonNull(afterElementId, "No afterElementId provided.");
   }
-
 
   public static AfterElementIdStep builder() {
     return new Builder();
@@ -54,7 +53,8 @@ public record GeneratedProcessInstanceCreationTerminateInstructionStrictContract
     }
 
     @Override
-    public OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep type(
+        final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
       this.type = policy.apply(type, Fields.TYPE, null);
       return this;
     }
@@ -62,8 +62,7 @@ public record GeneratedProcessInstanceCreationTerminateInstructionStrictContract
     @Override
     public GeneratedProcessInstanceCreationTerminateInstructionStrictContract build() {
       return new GeneratedProcessInstanceCreationTerminateInstructionStrictContract(
-          this.type,
-          this.afterElementId);
+          this.type, this.afterElementId);
     }
   }
 
@@ -72,21 +71,19 @@ public record GeneratedProcessInstanceCreationTerminateInstructionStrictContract
   }
 
   public interface OptionalStep {
-  OptionalStep type(final @Nullable String type);
+    OptionalStep type(final @Nullable String type);
 
-  OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
-
+    OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedProcessInstanceCreationTerminateInstructionStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("ProcessInstanceCreationTerminateInstruction", "type");
-    public static final ContractPolicy.FieldRef AFTER_ELEMENT_ID = ContractPolicy.field("ProcessInstanceCreationTerminateInstruction", "afterElementId");
+    public static final ContractPolicy.FieldRef TYPE =
+        ContractPolicy.field("ProcessInstanceCreationTerminateInstruction", "type");
+    public static final ContractPolicy.FieldRef AFTER_ELEMENT_ID =
+        ContractPolicy.field("ProcessInstanceCreationTerminateInstruction", "afterElementId");
 
     private Fields() {}
   }
-
-
 }

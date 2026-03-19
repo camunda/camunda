@@ -4,32 +4,26 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/documents.yaml#/components/schemas/DocumentLink
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDocumentLinkStrictContract(
-    String url,
-    String expiresAt
-) {
+    @JsonProperty("url") String url, @JsonProperty("expiresAt") String expiresAt) {
 
   public GeneratedDocumentLinkStrictContract {
-    Objects.requireNonNull(url, "url is required and must not be null");
-    Objects.requireNonNull(expiresAt, "expiresAt is required and must not be null");
+    Objects.requireNonNull(url, "No url provided.");
+    Objects.requireNonNull(expiresAt, "No expiresAt provided.");
   }
-
 
   public static UrlStep builder() {
     return new Builder();
@@ -52,11 +46,10 @@ public record GeneratedDocumentLinkStrictContract(
       this.expiresAt = expiresAt;
       return this;
     }
+
     @Override
     public GeneratedDocumentLinkStrictContract build() {
-      return new GeneratedDocumentLinkStrictContract(
-          this.url,
-          this.expiresAt);
+      return new GeneratedDocumentLinkStrictContract(this.url, this.expiresAt);
     }
   }
 
@@ -72,13 +65,11 @@ public record GeneratedDocumentLinkStrictContract(
     GeneratedDocumentLinkStrictContract build();
   }
 
-
   public static final class Fields {
     public static final ContractPolicy.FieldRef URL = ContractPolicy.field("DocumentLink", "url");
-    public static final ContractPolicy.FieldRef EXPIRES_AT = ContractPolicy.field("DocumentLink", "expiresAt");
+    public static final ContractPolicy.FieldRef EXPIRES_AT =
+        ContractPolicy.field("DocumentLink", "expiresAt");
 
     private Fields() {}
   }
-
-
 }

@@ -10,10 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract.Fields;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
-import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import java.util.List;
 
@@ -32,7 +32,8 @@ public final class IncidentContractAdapter {
                 entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
         .errorType(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.errorType(), IncidentErrorTypeEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.errorType(), GeneratedIncidentErrorTypeEnum::fromValue),
                 Fields.ERROR_TYPE,
                 entity))
         .errorMessage(
@@ -44,8 +45,8 @@ public final class IncidentContractAdapter {
         .state(
             ContractPolicy.requireNonNull(
                 entity.state() != null
-                    ? IncidentStateEnum.fromValue(entity.state().name())
-                    : IncidentStateEnum.UNKNOWN,
+                    ? GeneratedIncidentStateEnum.fromValue(entity.state().name())
+                    : GeneratedIncidentStateEnum.UNKNOWN,
                 Fields.STATE,
                 entity))
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))

@@ -3,6 +3,8 @@ paths:
   /authentication/me:
     get:
       x-eventually-consistent: false
+      x-spring-profile: consolidated-auth
+      x-spring-conditional: io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled
       tags:
         - Authentication
       operationId: getAuthentication

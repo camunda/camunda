@@ -4,33 +4,29 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/messages.yaml#/components/schemas/MessageCorrelationResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessageCorrelationStrictContract(
-    String tenantId,
-    String messageKey,
-    String processInstanceKey
-) {
+    @JsonProperty("tenantId") String tenantId,
+    @JsonProperty("messageKey") String messageKey,
+    @JsonProperty("processInstanceKey") String processInstanceKey) {
 
   public GeneratedMessageCorrelationStrictContract {
-    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(messageKey, "messageKey is required and must not be null");
-    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
+    Objects.requireNonNull(tenantId, "No tenantId provided.");
+    Objects.requireNonNull(messageKey, "No messageKey provided.");
+    Objects.requireNonNull(processInstanceKey, "No processInstanceKey provided.");
   }
 
   public static String coerceMessageKey(final Object value) {
@@ -47,7 +43,6 @@ public record GeneratedMessageCorrelationStrictContract(
         "messageKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
   public static String coerceProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -62,13 +57,12 @@ public record GeneratedMessageCorrelationStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static TenantIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements TenantIdStep, MessageKeyStep, ProcessInstanceKeyStep, OptionalStep {
+  public static final class Builder
+      implements TenantIdStep, MessageKeyStep, ProcessInstanceKeyStep, OptionalStep {
     private String tenantId;
     private Object messageKey;
     private Object processInstanceKey;
@@ -92,6 +86,7 @@ public record GeneratedMessageCorrelationStrictContract(
       this.processInstanceKey = processInstanceKey;
       return this;
     }
+
     @Override
     public GeneratedMessageCorrelationStrictContract build() {
       return new GeneratedMessageCorrelationStrictContract(
@@ -117,14 +112,14 @@ public record GeneratedMessageCorrelationStrictContract(
     GeneratedMessageCorrelationStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("MessageCorrelationResult", "tenantId");
-    public static final ContractPolicy.FieldRef MESSAGE_KEY = ContractPolicy.field("MessageCorrelationResult", "messageKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("MessageCorrelationResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("MessageCorrelationResult", "tenantId");
+    public static final ContractPolicy.FieldRef MESSAGE_KEY =
+        ContractPolicy.field("MessageCorrelationResult", "messageKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("MessageCorrelationResult", "processInstanceKey");
 
     private Fields() {}
   }
-
-
 }

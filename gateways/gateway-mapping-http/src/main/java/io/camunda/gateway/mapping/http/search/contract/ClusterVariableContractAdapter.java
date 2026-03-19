@@ -7,10 +7,10 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableScopeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.search.entities.ClusterVariableEntity;
 import java.util.List;
 
@@ -40,7 +40,8 @@ public final class ClusterVariableContractAdapter {
                 entity.name(), GeneratedClusterVariableSearchStrictContract.Fields.NAME, entity))
         .scope(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.scope(), ClusterVariableScopeEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.scope(), GeneratedClusterVariableScopeEnum::fromValue),
                 GeneratedClusterVariableSearchStrictContract.Fields.SCOPE,
                 entity))
         .value(
@@ -68,7 +69,8 @@ public final class ClusterVariableContractAdapter {
                 entity.name(), GeneratedClusterVariableStrictContract.Fields.NAME, entity))
         .scope(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.scope(), ClusterVariableScopeEnum::fromValue),
+                ContractPolicy.mapEnum(
+                    entity.scope(), GeneratedClusterVariableScopeEnum::fromValue),
                 GeneratedClusterVariableStrictContract.Fields.SCOPE,
                 entity))
         .value(

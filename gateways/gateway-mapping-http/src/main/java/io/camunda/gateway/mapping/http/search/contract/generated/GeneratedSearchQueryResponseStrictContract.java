@@ -4,29 +4,24 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/search-models.yaml#/components/schemas/SearchQueryResponse
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
-
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedSearchQueryResponseStrictContract(
-    GeneratedSearchQueryPageResponseStrictContract page
-) {
+    @JsonProperty("page") GeneratedSearchQueryPageResponseStrictContract page) {
 
   public GeneratedSearchQueryResponseStrictContract {
-    Objects.requireNonNull(page, "page is required and must not be null");
+    Objects.requireNonNull(page, "No page provided.");
   }
 
   public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
@@ -38,10 +33,9 @@ public record GeneratedSearchQueryResponseStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was " + value.getClass().getName());
+        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was "
+            + value.getClass().getName());
   }
-
-
 
   public static PageStep builder() {
     return new Builder();
@@ -57,10 +51,10 @@ public record GeneratedSearchQueryResponseStrictContract(
       this.page = page;
       return this;
     }
+
     @Override
     public GeneratedSearchQueryResponseStrictContract build() {
-      return new GeneratedSearchQueryResponseStrictContract(
-          coercePage(this.page));
+      return new GeneratedSearchQueryResponseStrictContract(coercePage(this.page));
     }
   }
 
@@ -72,12 +66,10 @@ public record GeneratedSearchQueryResponseStrictContract(
     GeneratedSearchQueryResponseStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("SearchQueryResponse", "page");
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("SearchQueryResponse", "page");
 
     private Fields() {}
   }
-
-
 }

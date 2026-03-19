@@ -4,29 +4,37 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceModificationTerminateByKeyInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
-
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
+@JsonDeserialize(using = JsonDeserializer.None.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract(
-    String elementInstanceKey
-) {
+    @JsonProperty("elementInstanceKey") String elementInstanceKey)
+    implements GeneratedProcessInstanceModificationTerminateInstructionStrictContract {
 
   public GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract {
-    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey is required and must not be null");
+    Objects.requireNonNull(elementInstanceKey, "No elementInstanceKey provided.");
+    if (elementInstanceKey.isBlank())
+      throw new IllegalArgumentException("elementInstanceKey must not be blank");
+    if (elementInstanceKey.length() > 25)
+      throw new IllegalArgumentException(
+          "The provided elementInstanceKey exceeds the limit of 25 characters.");
+    if (!elementInstanceKey.matches("^-?[0-9]+$"))
+      throw new IllegalArgumentException(
+          "The provided elementInstanceKey contains illegal characters. It must match the pattern '^-?[0-9]+$'.");
   }
 
   public static String coerceElementInstanceKey(final Object value) {
@@ -43,8 +51,6 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-
-
   public static ElementInstanceKeyStep builder() {
     return new Builder();
   }
@@ -59,6 +65,7 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
+
     @Override
     public GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract build() {
       return new GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract(
@@ -74,12 +81,11 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
     GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract build();
   }
 
-
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceModificationTerminateByKeyInstruction", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
+        ContractPolicy.field(
+            "ProcessInstanceModificationTerminateByKeyInstruction", "elementInstanceKey");
 
     private Fields() {}
   }
-
-
 }
