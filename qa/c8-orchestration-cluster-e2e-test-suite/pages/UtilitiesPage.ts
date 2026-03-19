@@ -31,11 +31,14 @@ export async function navigateToApp(
   }
 }
 
-export async function hideModificationHelperModal(page: Page): Promise<void> {
+export async function hideHelperModals(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.setItem(
       'sharedState',
-      JSON.stringify({hideModificationHelperModal: true}),
+      JSON.stringify({
+        hideModificationHelperModal: true,
+        hideProcessInstanceHelperModal: true,
+      }),
     );
   });
 }

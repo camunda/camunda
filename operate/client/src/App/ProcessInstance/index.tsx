@@ -11,7 +11,9 @@ import {InstanceDetail} from '../Layout/InstanceDetail';
 import {Breadcrumb} from './Breadcrumb';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
+import {getStateLocally} from 'modules/utils/localStorage';
+import {ProcessInstanceHelperModal} from './ProcessInstanceHelperModal';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -123,6 +125,10 @@ const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
   const {clearSelection} = useProcessInstanceElementSelection();
+
+  const [isInfoModalOpen, setInfoModalOpen] = useState(
+    () => !getStateLocally()?.hideProcessInstanceHelperModal,
+  );
 
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
@@ -330,6 +336,12 @@ const ProcessInstance: React.FC = observer(() => {
             By leaving this page, all planned modification/s will be discarded.
           </p>
         </Modal>
+      )}
+      {isInfoModalOpen && (
+        <ProcessInstanceHelperModal
+          open={isInfoModalOpen}
+          onClose={() => setInfoModalOpen(false)}
+        />
       )}
     </ProcessDefinitionKeyContext.Provider>
   );

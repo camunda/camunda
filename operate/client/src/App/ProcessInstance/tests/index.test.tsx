@@ -15,12 +15,18 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {createVariable} from 'modules/testUtils';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {getProcessDefinitionName} from 'modules/utils/instance';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 vi.mock('modules/utils/bpmn');
 
 describe('ProcessInstance', () => {
   beforeEach(() => {
+    storeStateLocally({hideProcessInstanceHelperModal: true});
     mockRequests();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it('should render and set the page title', async () => {
@@ -125,5 +131,43 @@ describe('ProcessInstance', () => {
 
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+
+  it('should show helper modal on first load', async () => {
+    localStorage.clear();
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+
+    expect(
+      screen.getByText('New Process Instance Details'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /learn more/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /dismiss/i})).toBeInTheDocument();
+  });
+
+  it('should close helper modal when "Dismiss" is clicked', async () => {
+    localStorage.clear();
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+
+    expect(
+      screen.getByText('New Process Instance Details'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /dismiss/i}));
+
+    expect(
+      screen.queryByText('New Process Instance Details'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not show info modal when previously dismissed', async () => {
+    storeStateLocally({hideProcessInstanceHelperModal: true});
+
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+
+    expect(
+      screen.queryByText('New Process Instance Details'),
+    ).not.toBeInTheDocument();
   });
 });

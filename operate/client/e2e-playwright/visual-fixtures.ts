@@ -66,6 +66,15 @@ const test = base.extend<VisualFixture>({
     await use(new Dashboard(page));
   },
   processInstancePage: async ({page}, use) => {
+    await page.addInitScript(() => {
+      const current = JSON.parse(
+        window.localStorage.getItem('sharedState') || '{}',
+      );
+      window.localStorage.setItem(
+        'sharedState',
+        JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
+      );
+    });
     await use(new ProcessInstance(page));
   },
   decisionsPage: async ({page}, use) => {
