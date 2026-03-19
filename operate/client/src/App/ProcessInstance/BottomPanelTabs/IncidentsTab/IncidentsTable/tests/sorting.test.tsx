@@ -36,7 +36,7 @@ describe('Sorting', () => {
     );
 
     expect(screen.getByText('Job Id')).toBeEnabled();
-    expect(screen.getByText('Incident Type')).toBeEnabled();
+    expect(screen.getByText('Type')).toBeEnabled();
     expect(screen.getByText('Failing Element')).toBeEnabled();
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
