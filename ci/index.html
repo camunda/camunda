@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI & Automation","item":"https://camunda.github.io/camunda/ci"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.9181a4df.css">
-<script src="/camunda/assets/js/runtime~main.cd63ef0a.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.f915f46e.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.f849b751.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.e567c6da.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -382,7 +382,7 @@
 <li class="">Allow actions in any <a href="https://github.com/enterprises/camunda/organizations" target="_blank" rel="noopener noreferrer" class="">Camunda GitHub Enterprise organization</a> like <code>camunda</code>, <code>bpmn-io</code>, etc.</li>
 <li class="">Allow specific actions from 3rd parties that we need (full list see below).</li>
 </ul>
-<p>If you need to use a 3rd party action not on the list, <a href="#issue-tracking" class="">create an issue</a> explaining the motivation and tag the Monorepo CI DRI for further discussion.</p>
+<p>If you need to use a 3rd party action not on the list, ask the Monorepo DevOps team via Slack and explain the motivation.</p>
 <details class="details_lb9f alert alert--info details_b_Ee" data-collapsed="true"><summary>Details</summary><div><div class="collapsibleContent_i85q"><p></p><summary>List of allowed 3rd party actions and reusable workflows</summary>
 EnricoMi/publish-unit-test-result-action@<em>,
 YunaBraska/java-info-action@</em>,
@@ -395,23 +395,25 @@ browser-actions/setup-firefox@</em>,
 bufbuild/buf-action@<em>,
 cloudposse/github-action-matrix-outputs-read@</em>,
 cloudposse/github-action-matrix-outputs-write@<em>,
-codex-/return-dispatch@</em>,
-dcarbone/install-jq-action@<em>,
-deadsnakes/action@</em>,
-dlavrenuek/conventional-changelog-action@<em>,
-docker/build-push-action@</em>,
-docker/login-action@<em>,
-docker/metadata-action@</em>,
-docker/setup-buildx-action@<em>,
-docker/setup-qemu-action@</em>,
-dorny/paths-filter@<em>,
-fjogeleit/http-request-action@</em>,
-geekyeggo/delete-artifact@<em>,
-golangci/golangci-lint-action@</em>,
-google-github-actions/auth@<em>,
-google-github-actions/get-gke-credentials@</em>,
-google-github-actions/setup-gcloud@<em>,
-hadolint/hadolint-action@</em>,
+clowdhaus/argo-cd-action@</em>,
+codex-/return-dispatch@<em>,
+dcarbone/install-jq-action@</em>,
+deadsnakes/action@<em>,
+dlavrenuek/conventional-changelog-action@</em>,
+docker/build-push-action@<em>,
+docker/login-action@</em>,
+docker/metadata-action@<em>,
+docker/setup-buildx-action@</em>,
+docker/setup-qemu-action@<em>,
+dorny/paths-filter@</em>,
+fjogeleit/http-request-action@<em>,
+geekyeggo/delete-artifact@</em>,
+golangci/golangci-lint-action@<em>,
+google-github-actions/auth@</em>,
+google-github-actions/get-gke-credentials@<em>,
+google-github-actions/setup-gcloud@</em>,
+hadolint/hadolint-action@<em>,
+hashicorp/setup-terraform@</em>,
 hashicorp/vault-action@<em>,
 hoverkraft-tech/compose-action@</em>,
 jamesives/github-pages-deploy-action@<em>,
@@ -442,10 +444,11 @@ snyk/actions/setup@</em>,
 stCarolas/setup-maven@<em>,
 stefanzweifel/git-auto-commit-action@</em>,
 teleport-actions/auth-k8s@<em>,
-teleport-actions/setup@</em>,
-test-summary/action@<em>,
-tibdex/github-app-token@</em>,
-wagoid/commitlint-github-action@*,<p></p></div></div></details>
+teleport-actions/auth@</em>,
+teleport-actions/setup@<em>,
+test-summary/action@</em>,
+tibdex/github-app-token@<em>,
+wagoid/commitlint-github-action@</em>,<p></p></div></div></details>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="preview-environments">Preview Environments<a href="#preview-environments" class="hash-link" aria-label="Direct link to Preview Environments" title="Direct link to Preview Environments" translate="no">​</a></h2>
 <p>Engineers can request Preview Environments for specific Pull Requests of the C8 monorepo to be available via a designated URL, to allow more thorough testing and demonstration of the product features before the feature branches are merged into the base branch. For the C8 monorepo the components Identity, Operate, Optimize, Tasklist and Zeebe will get provisioned based on the <a href="https://github.com/camunda/camunda-platform-helm/" target="_blank" rel="noopener noreferrer" class="">camunda-platform</a> Helm chart.</p>
 <p>Assign the <a href="https://github.com/camunda/camunda/labels/deploy-preview" target="_blank" rel="noopener noreferrer" class=""><code>deploy-preview</code></a> label to any PR to request creation of a Preview Environment. The following base branches are supported, with their corresponding Helm chart versions:</p>
