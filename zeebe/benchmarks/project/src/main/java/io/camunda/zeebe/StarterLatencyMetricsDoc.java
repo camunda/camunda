@@ -60,6 +60,46 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * The data availability query duration. It measures the individual time for each search query
+   * which we use to track the data availability of a process instance creation.
+   */
+  DATA_AVAILABILITY_QUERY_DURATION {
+
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(500),
+      Duration.ofSeconds(1),
+      Duration.ofMillis(2500),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(15),
+      Duration.ofSeconds(30),
+      Duration.ofSeconds(45),
+      Duration.ofSeconds(60),
+      Duration.ofSeconds(90),
+    };
+
+    @Override
+    public String getDescription() {
+      return "The data availability query duration. It measures the individual time for each search query, which we use to track the data availability of a process instance creation.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.data.availability.query.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+  },
+
+  /**
    * The response latency when starting process instances. It measures the time from sending the
    * request to receiving the response.
    */
