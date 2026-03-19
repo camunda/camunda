@@ -9,10 +9,13 @@ package io.camunda.it.cluster;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -20,7 +23,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
-import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.auth.Authenticated;
@@ -29,7 +31,6 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -113,24 +114,10 @@ public class ClusterMultiplePartitionsBatchOperationIT {
     assertThat(result).isNotNull();
 
     // and
-    Awaitility.await("should complete batch operation")
-        .atMost(Duration.ofSeconds(15))
-        .pollInterval(Duration.ofMillis(100))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              // and
-              final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
-              assertThat(batch).isNotNull();
-              assertThat(batch.getEndDate()).isNotNull();
-              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
-              assertThat(batch.getOperationsTotalCount())
-                  .isEqualTo(ACTIVE_PROCESS_INSTANCES.size());
-              assertThat(batch.getOperationsCompletedCount())
-                  .isEqualTo(ACTIVE_PROCESS_INSTANCES.size());
-              assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
-            });
+    waitForBatchOperationWithCorrectTotalCount(
+        camundaClient, batchOperationKey, ACTIVE_PROCESS_INSTANCES.size());
+    waitForBatchOperationCompleted(
+        camundaClient, batchOperationKey, ACTIVE_PROCESS_INSTANCES.size(), 0);
 
     // Now wait until all process instances are terminated
     final var activeKeys =
@@ -140,17 +127,28 @@ public class ClusterMultiplePartitionsBatchOperationIT {
     }
 
     // and
-    final var itemsObj =
-        camundaClient
-            .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationKey(batchOperationKey))
-            .send()
-            .join();
-    final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
+    Awaitility.await("should find all batch operation items")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var itemsObj =
+                  camundaClient
+                      .newBatchOperationItemsSearchRequest()
+                      .filter(f -> f.batchOperationKey(batchOperationKey))
+                      .send()
+                      .join();
+              final var itemKeys =
+                  itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
 
-    assertThat(itemsObj.items()).hasSize(ACTIVE_PROCESS_INSTANCES.size());
-    assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
-        .containsExactly(BatchOperationItemState.COMPLETED);
-    assertThat(itemKeys).containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));
+              assertThat(itemsObj.items()).hasSize(ACTIVE_PROCESS_INSTANCES.size());
+              assertThat(
+                      itemsObj.items().stream()
+                          .map(BatchOperationItem::getStatus)
+                          .distinct()
+                          .toList())
+                  .containsExactly(BatchOperationItemState.COMPLETED);
+              assertThat(itemKeys).containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));
+            });
   }
 }
