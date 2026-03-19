@@ -16,11 +16,14 @@ import {
   jsonHeaders,
 } from '../http';
 import {expect} from '@playwright/test';
-import {createMappingRule, createRole} from './role-requestHelpers';
 import {CREATE_NEW_GROUP, groupRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {validateResponse} from 'json-body-assertions';
-import { createUser } from './user-requestHelpers';
+import{
+  createMappingRule,
+  createRole,
+  createUser,
+} from '@requestHelpers';
 
 export async function assignUsersToGroup(
   request: APIRequestContext,
