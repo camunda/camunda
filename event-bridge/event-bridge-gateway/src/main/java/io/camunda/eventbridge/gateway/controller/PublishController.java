@@ -99,18 +99,24 @@ public class PublishController {
                   "PARTITION_NOT_FOUND", "Partition " + partitionId + " does not exist"));
     }
 
-    // Per-event size limit — iterates events once; also extracts payloads for the actor call
+    // Per-event size limit — iterates events once; also extracts payloads for the actor call.
+    // The iterator performs lazy frame validation and may throw IllegalArgumentException for
+    // structurally malformed frames that passed the header-only construction-time checks.
     final int maxEventBytes = properties.publish().maxEventBytes();
     final List<byte[]> payloads = new ArrayList<>(batch.getCount());
-    for (final EventData event : batch.getEvents()) {
-      if (event.sizeInBytes() > maxEventBytes) {
-        return ResponseEntity.badRequest()
-            .body(
-                new ErrorResponse(
-                    "PAYLOAD_TOO_LARGE",
-                    "Event payload exceeds maximum size of " + maxEventBytes + " bytes"));
+    try {
+      for (final EventData event : batch.getEvents()) {
+        if (event.sizeInBytes() > maxEventBytes) {
+          return ResponseEntity.badRequest()
+              .body(
+                  new ErrorResponse(
+                      "PAYLOAD_TOO_LARGE",
+                      "Event payload exceeds maximum size of " + maxEventBytes + " bytes"));
+        }
+        payloads.add(event.body());
       }
-      payloads.add(event.body());
+    } catch (final IllegalArgumentException e) {
+      return ResponseEntity.badRequest().body(new ErrorResponse("INVALID_REQUEST", e.getMessage()));
     }
 
     try {

@@ -135,6 +135,27 @@ class PublishControllerTest {
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.error").value("INVALID_REQUEST"));
     }
+
+    @Test
+    void shouldReturn400InvalidRequestForMalformedFramePassingHeaderValidation() throws Exception {
+      // given — valid header (total-size=17, payload-size=1, count=1) but the frame
+      // declares size=999 which reads past the buffer end; caught during lazy iteration
+      final var buf = ByteBuffer.allocate(17).order(ByteOrder.BIG_ENDIAN);
+      buf.putInt(17); // total-size matches buffer length (passes fromBytes checks)
+      buf.putInt(1); // payload-size
+      buf.putInt(1); // count = 1 event
+      buf.putInt(999); // frame declares 999 bytes but only 1 byte remains → IAE during iteration
+      buf.put((byte) 0); // single byte of "data"
+
+      // when / then — must be 400, not 500
+      mockMvc
+          .perform(
+              post("/v1/events/" + PARTITION_0)
+                  .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                  .content(buf.array()))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.error").value("INVALID_REQUEST"));
+    }
   }
 
   @Nested
