@@ -172,8 +172,10 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+      - name: Bootstrap Zeebe build tools
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -Dquickly=true -pl build-tools -am install
       - name: Generate flattened POMs
-        run: ./mvnw -B -T1C -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
       - name: Validate flattened POM metadata
         run: bash .github/scripts/validate-flattened-poms.sh
       - name: Observe build status
