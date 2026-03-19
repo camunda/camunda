@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -280,6 +281,77 @@ public class ElementAssertTest {
                   + "\t- 'element_C': completed\n"
                   + "\t- 'element_D': not activated",
               PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldUseByElementTypeSelector() {
+      // given
+      final ElementInstance elementInstanceA =
+          ElementInstanceBuilder.newActiveElementInstance("A", PROCESS_INSTANCE_KEY)
+              .setType(ElementInstanceType.SERVICE_TASK)
+              .build();
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstanceA));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElements(ElementSelectors.byElementType(ElementInstanceType.SERVICE_TASK));
+
+      verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
+
+      elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(elementInstanceFilter).type(ElementInstanceType.SERVICE_TASK);
+    }
+
+    @Test
+    void shouldUseByElementInstanceKeySelector() {
+      // given
+      final long elementInstanceKey = 42L;
+      final ElementInstance elementInstanceA =
+          ElementInstanceBuilder.newActiveElementInstance("A", PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(elementInstanceKey)
+              .build();
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstanceA));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElements(ElementSelectors.byElementInstanceKey(elementInstanceKey));
+
+      verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
+
+      elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(elementInstanceFilter).elementInstanceKey(elementInstanceKey);
+    }
+
+    @Test
+    void shouldUseByStateSelector() {
+      // given
+      final ElementInstance elementInstanceA =
+          ElementInstanceBuilder.newActiveElementInstance("A", PROCESS_INSTANCE_KEY).build();
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstanceA));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElements(ElementSelectors.byState(ElementInstanceState.ACTIVE));
+
+      verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
+
+      elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(elementInstanceFilter).state(ElementInstanceState.ACTIVE);
     }
   }
 
