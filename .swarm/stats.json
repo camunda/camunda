@@ -35,8 +35,17 @@
       "models": {
         "claude-opus-4-6": 1
       }
+    },
+    "Verifier": {
+      "invocations": 1,
+      "totalElapsedMs": 138792,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 1
+      }
     }
   },
   "totalRuns": 0,
-  "lastUpdated": "2026-03-16T16:26:06.060Z"
+  "lastUpdated": "2026-03-19T10:27:00.121Z"
 }
