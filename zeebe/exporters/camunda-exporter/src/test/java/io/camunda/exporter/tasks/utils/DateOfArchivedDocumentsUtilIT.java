@@ -87,24 +87,32 @@ public class DateOfArchivedDocumentsUtilIT {
 
   @Test
   void shouldParseCalendarIntervalFor1d() {
-    assertThat(DateOfArchivedDocumentsUtil.parseCalendarInterval("1d"))
+    assertThat(DateOfArchivedDocumentsUtil.parseEsCalendarInterval("1d"))
+        .isEqualTo(CalendarInterval.Day);
+    assertThat(DateOfArchivedDocumentsUtil.parseOsCalendarInterval("1d"))
         .isEqualTo(CalendarInterval.Day);
   }
 
   @Test
   void shouldParseCalendarIntervalFor3d() {
-    assertThat(DateOfArchivedDocumentsUtil.parseCalendarInterval("3d")).isNull();
+    assertThat(DateOfArchivedDocumentsUtil.parseEsCalendarInterval("3d")).isNull();
+    assertThat(DateOfArchivedDocumentsUtil.parseOsCalendarInterval("3d")).isNull();
   }
 
   @Test
   void shouldParseCalendarIntervalFor1M() {
-    assertThat(DateOfArchivedDocumentsUtil.parseCalendarInterval("1M"))
+    assertThat(DateOfArchivedDocumentsUtil.parseEsCalendarInterval("1M"))
+        .isEqualTo(CalendarInterval.Month);
+    assertThat(DateOfArchivedDocumentsUtil.parseOsCalendarInterval("1M"))
         .isEqualTo(CalendarInterval.Month);
   }
 
   @Test
   void shouldThrowExceptionForNullInterval() {
-    assertThatThrownBy(() -> DateOfArchivedDocumentsUtil.parseCalendarInterval(null))
+    assertThatThrownBy(() -> DateOfArchivedDocumentsUtil.parseEsCalendarInterval(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Interval cannot be null or blank");
+    assertThatThrownBy(() -> DateOfArchivedDocumentsUtil.parseOsCalendarInterval(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Interval cannot be null or blank");
   }

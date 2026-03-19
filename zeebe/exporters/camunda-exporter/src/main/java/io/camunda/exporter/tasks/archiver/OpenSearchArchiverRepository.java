@@ -778,23 +778,28 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     .size(0)
                     .aggregations(DATE_AGGREGATION_NAME, dateHistogramAggregation));
 
-    final CompletableFuture<SearchResponse<Void>> future = client.search(searchRequest, Void.class);
-    return future.thenApply(
-        response -> {
-          final Map<String, Aggregate> aggregations = response.aggregations();
-          if (aggregations == null) {
-            return endDate;
-          }
+    try {
+      final CompletableFuture<SearchResponse<Void>> future =
+          client.search(searchRequest, Void.class);
+      return future.thenApply(
+          response -> {
+            final Map<String, Aggregate> aggregations = response.aggregations();
+            if (aggregations == null) {
+              return endDate;
+            }
 
-          final DateHistogramAggregate histogram =
-              aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
-          try {
-            final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
-            return oldest.keyAsString();
-          } catch (NoSuchElementException _exception) {
-            return endDate;
-          }
-        });
+            final DateHistogramAggregate histogram =
+                aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
+            try {
+              final DateHistogramBucket oldest = histogram.buckets().array().getFirst();
+              return oldest.keyAsString();
+            } catch (NoSuchElementException _exception) {
+              return endDate;
+            }
+          });
+    } catch (IOException exception) {
+      throw new RuntimeException(exception);
+    }
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
