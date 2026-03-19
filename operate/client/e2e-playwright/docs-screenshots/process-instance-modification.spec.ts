@@ -210,7 +210,9 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    const addVariableButton = await page.getByRole('button', {
+    await page.getByRole('link', {name: /variables/i}).click();
+
+    const addVariableButton = page.getByRole('button', {
       name: /add variable/i,
     });
 
