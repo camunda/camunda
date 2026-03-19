@@ -12,7 +12,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ github.event.label.name || github.event.action }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 defaults:
   run:
