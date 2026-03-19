@@ -58,6 +58,7 @@ test.describe.parallel('Update Authorization API', () => {
     };
     let userAuthorizationKey: string;
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -318,13 +319,13 @@ test.describe.parallel('Update Authorization API', () => {
           );
           expect(getAuthRes.status()).toBe(200);
           await validateResponse(
-          {
-            path: '/authorizations/{authorizationKey}',
-            method: 'GET',
-            status: '200',
-          },
-          getAuthRes,
-        );
+            {
+              path: '/authorizations/{authorizationKey}',
+              method: 'GET',
+              status: '200',
+            },
+            getAuthRes,
+          );
 
           const authBody = await getAuthRes.json();
           verifyAuthorizationFields(authBody, expectedGroupAuthorization);
@@ -411,6 +412,7 @@ test.describe.parallel('Update Authorization API', () => {
       resourceId: `${originalGroup.groupId}`,
       permissionTypes: ['UPDATE', 'READ'],
     };
+
     await test.step('Update mapping rule authorization with new ownerId, resourceId and permissionTypes', async () => {
       const authRes = await request.put(
         buildUrl(`/authorizations/${mappingRuleAuthorizationKey}`),
@@ -566,12 +568,14 @@ test.describe.parallel('Update Authorization API', () => {
       password: string;
     };
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
         await cleanupUsers(request, [user.username]);
       });
     });
+
     let userAuthorizationKey: string;
 
     await test.step('Setup - Grant user necessary authorizations', async () => {
@@ -649,6 +653,7 @@ test.describe.parallel('Update Authorization API', () => {
     };
     let userAuthorizationKey: string;
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -710,6 +715,7 @@ test.describe.parallel('Update Authorization API', () => {
     };
     let notExistingUserAuthorizationKey = '9999999999999999';
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -857,6 +863,7 @@ test.describe.parallel('Update Authorization API', () => {
     };
     let userAuthorizationKey: string;
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -912,6 +919,7 @@ test.describe.parallel('Update Authorization API', () => {
     };
     let userAuthorizationKey: string;
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -973,6 +981,7 @@ test.describe.parallel('Update Authorization API', () => {
     };
     let userAuthorizationKey: string;
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -1018,6 +1027,7 @@ test.describe.parallel('Update Authorization API', () => {
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
+
     await test.step('Update user authorization to add UPDATE permission', async () => {
       await expect(async () => {
         const authRes = await request.put(

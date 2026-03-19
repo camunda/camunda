@@ -21,6 +21,7 @@ import {validateResponse} from '../../../../json-body-assertions';
 test.describe.parallel('Cancel Process instance Tests', () => {
   test('Cancel Process Instance - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -103,6 +104,7 @@ test.describe.parallel('Cancel Process instance Tests', () => {
 
   test('Double Cancel Process Instance - Not Found', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),

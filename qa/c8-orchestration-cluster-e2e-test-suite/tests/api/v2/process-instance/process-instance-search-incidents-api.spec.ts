@@ -36,6 +36,7 @@ test.describe.parallel('Process Instance Search Incidents Tests', () => {
     request,
   }) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create process instances that will generate incidents', async () => {
       const processInstances = await createInstances(
         'processWithThreeParallelTasks',
@@ -88,6 +89,7 @@ test.describe.parallel('Process Instance Search Incidents Tests', () => {
         })
         .toPass(defaultAssertionOptions);
     });
+
     await cancelProcessInstance(localState['processInstanceKey'] as string);
   });
 

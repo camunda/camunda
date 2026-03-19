@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export interface CorrelatedMessageSubscription {
   correlationKey: string;

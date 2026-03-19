@@ -28,9 +28,7 @@ import {
   createGroup,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
-import {
-  CREATE_CUSTOM_AUTHORIZATION_BODY,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
@@ -41,6 +39,7 @@ test.describe
     name: string;
     description: string;
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create group for Authorization tests', async () => {
       successGroup = await createGroup(request);
@@ -153,6 +152,7 @@ test.describe
     name: string;
     description: string;
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create group for Authorization tests', async () => {
       failGroup = await createGroup(request);
@@ -336,6 +336,7 @@ test.describe('Create Authorization for Group - Forbidden', () => {
       ]);
     },
   );
+
   test('Create Authorization for group - 403 Forbidden', async ({request}) => {
     await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(

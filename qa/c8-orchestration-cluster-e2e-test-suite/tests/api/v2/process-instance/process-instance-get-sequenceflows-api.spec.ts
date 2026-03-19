@@ -26,6 +26,7 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
 
   test('Get Process Instance Sequence Flows - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance for the sequence flow', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),

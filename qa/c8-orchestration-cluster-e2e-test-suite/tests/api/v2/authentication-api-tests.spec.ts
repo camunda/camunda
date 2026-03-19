@@ -84,7 +84,6 @@ test.describe.parallel('Authentication API Tests', () => {
         });
       }
 
-      
       await assertStatusCode(res, 200);
       await validateResponse(
         {

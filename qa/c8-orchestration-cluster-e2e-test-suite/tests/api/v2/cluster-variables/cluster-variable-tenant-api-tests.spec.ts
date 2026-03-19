@@ -15,9 +15,7 @@ import {
   assertBadRequest,
   assertStatusCode,
 } from '../../../../utils/http';
-import {
-  CREATE_CLUSTER_VARIABLE,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CLUSTER_VARIABLE} from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createTenantClusterVariable,
@@ -158,7 +156,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      
+
       await assertStatusCode(res, 200);
       const json = await res.json();
       validateResponseShape(

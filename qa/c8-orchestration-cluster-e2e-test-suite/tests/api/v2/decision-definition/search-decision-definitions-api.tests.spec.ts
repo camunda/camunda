@@ -295,7 +295,7 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           data: {filter},
         },
       );
-      
+
       await validateResponse(
         {
           path: '/decision-definitions/search',
@@ -654,7 +654,7 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
         res,
       );
-      
+
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 1,
         totalItemGreaterThan: 1,

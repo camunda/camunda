@@ -140,8 +140,8 @@ export async function createGroupAndStoreResponseFields(
         path: '/groups',
         method: 'POST',
         status: '201',
-       },
-       res,
+      },
+      res,
     );
     const json = await res.json();
     assertRequiredFields(json, groupRequiredFields);

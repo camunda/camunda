@@ -87,6 +87,7 @@ test.describe('Process Instances Table', () => {
       processB_v_1.processInstanceKey,
       processB_v_2.processInstanceKey,
     ];
+
     await test.step('Extract process instance keys and filter by the extracted values', async () => {
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',

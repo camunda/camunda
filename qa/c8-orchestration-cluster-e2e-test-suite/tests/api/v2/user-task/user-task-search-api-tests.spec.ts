@@ -23,7 +23,9 @@ test.describe.parallel('Search User Task Tests', () => {
     setupProcessInstanceForTests('process_with_multiple_user_tasks');
 
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Search user tasks - success', async ({request}) => {

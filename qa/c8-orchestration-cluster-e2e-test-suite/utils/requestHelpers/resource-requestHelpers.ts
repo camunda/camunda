@@ -16,7 +16,6 @@ export function validateProcessDefinitionDeployment(
   expectedResourceName: string,
   expectedProcessDefinitionId: string,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processDeployment = deployments.find(
     (d) => (d as any).processDefinition != null,
   ) as any;
@@ -38,7 +37,6 @@ export function validateFormDeployment(
   expectedResourceName: string,
   expectedFormId: string,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formDeployment = deployments.find(
     (d) => (d as any).form != null,
   ) as any;
@@ -58,7 +56,6 @@ export function validateDecisionDefinitionDeployment(
   expectedDecisionDefinitionId: string,
   expectedName: string,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const decisionDeployment = deployments.find(
     (d) => (d as any).decisionDefinition != null,
   ) as any;
@@ -89,7 +86,6 @@ export function validateDecisionRequirementsDeployment(
   expectedDecisionRequirementsId: string,
   expectedDecisionRequirementsName: string,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const decisionRequirementsDeployment = deployments.find(
     (d) => (d as any).decisionRequirements != null,
   ) as any;
@@ -124,7 +120,6 @@ export function validateRpaDeployment(
   expectedResourceName: string,
   expectedRpaId: string,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rpaDeployment = deployments.find(
     (d) => (d as any).resource != null,
   ) as any;

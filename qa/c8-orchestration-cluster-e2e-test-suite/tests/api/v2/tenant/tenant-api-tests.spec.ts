@@ -261,6 +261,7 @@ test.describe.parallel('Tenants API Tests', () => {
 
   test('Delete tenant', async ({request}) => {
     const p = {tenantId: state['tenantId3'] as string};
+
     await test.step('Delete tenant 204', async () => {
       await expect(async () => {
         const res = await request.delete(buildUrl('/tenants/{tenantId}', p), {
@@ -467,13 +468,13 @@ test.describe.parallel('Tenants API Tests', () => {
     });
 
     await validateResponse(
-        {
-          path: '/tenants/search',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
+      {
+        path: '/tenants/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
 
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

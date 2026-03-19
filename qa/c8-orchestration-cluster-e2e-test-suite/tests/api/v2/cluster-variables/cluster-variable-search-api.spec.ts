@@ -496,7 +496,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
           status: '200',
         },
         responseBody,
-      );      
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,

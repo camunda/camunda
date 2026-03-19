@@ -237,6 +237,7 @@ test.describe
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,
@@ -336,6 +337,7 @@ test.describe
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,

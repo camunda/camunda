@@ -114,6 +114,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     request,
   }) => {
     const unknownKey = '2251799813999999';
+
     await test.step('Cancel unknown batch operation', async () => {
       const res = await cancelBatchOperation(request, unknownKey);
       await assertNotFoundRequest(

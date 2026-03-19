@@ -13,6 +13,7 @@ import {validateResponseShape} from '../../../../json-body-assertions';
 import {getProcessDefinitionKey} from '@requestHelpers';
 
 const PROCESS_INSTANCE_ENDPOINT = '/process-instances';
+
 test.describe.parallel('Process instance Tests', () => {
   test.beforeAll(async () => {
     await deploy(['./resources/process_with_task_listener.bpmn']);
@@ -98,6 +99,7 @@ test.describe.parallel('Process instance Tests', () => {
     request,
   }) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create Process Instance by Process Definition Id to get the Key', async () => {
       const res = await request.post(buildUrl(PROCESS_INSTANCE_ENDPOINT), {
         headers: jsonHeaders(),
@@ -155,6 +157,7 @@ test.describe.parallel('Process instance Tests', () => {
   }) => {
     await deploy(['./resources/process_instance_api_test.bpmn']);
     const localState: Record<string, unknown> = {};
+
     await test.step('Create Process Instance by Process Definition Id to get the Key', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -203,6 +206,7 @@ test.describe.parallel('Process instance Tests', () => {
     request,
   }) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create Process Instance by Process Definition Id to get the Key', async () => {
       localState['processDefinitionKey'] = await getProcessDefinitionKey(
         request,

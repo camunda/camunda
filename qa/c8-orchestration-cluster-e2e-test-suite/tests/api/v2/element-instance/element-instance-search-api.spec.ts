@@ -212,7 +212,7 @@ test.describe('Element Instance Search API', () => {
           status: '200',
         },
         res,
-      );  
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(expectedTotal);
       expect(body.items.length).toBeGreaterThanOrEqual(expectedTotal);

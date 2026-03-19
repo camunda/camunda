@@ -21,6 +21,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Definition Search API', () => {
   const state: Record<string, unknown> = {};
+
   test.beforeAll(async () => {
     await deploy([
       './resources/process_definition_tests_1.bpmn',

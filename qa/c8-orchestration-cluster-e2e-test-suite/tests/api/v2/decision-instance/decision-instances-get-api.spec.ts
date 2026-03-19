@@ -22,9 +22,7 @@ import {
   DecisionInstance,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
-import {
-  decisionInstanceRequiredFields,
-} from 'utils/beans/requestBeans';
+import {decisionInstanceRequiredFields} from 'utils/beans/requestBeans';
 
 test.describe.parallel('Search Decision Instances API Tests', () => {
   let decisionInstances: DecisionInstance[] = [];

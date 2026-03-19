@@ -183,17 +183,15 @@ export async function assertClusterVariableUpdate(
     });
 
     await assertStatusCode(res, 200);
-    
+
     // Determine the correct path for validation based on scope
-    const path = expectedScope === 'GLOBAL' 
-      ? '/cluster-variables/global/{name}' as const
-      : '/cluster-variables/tenants/{tenantId}/{name}' as const;
-    
-    await validateResponse(
-      {path, method: 'PUT', status: '200'},
-      res,
-    );
-    
+    const path =
+      expectedScope === 'GLOBAL'
+        ? ('/cluster-variables/global/{name}' as const)
+        : ('/cluster-variables/tenants/{tenantId}/{name}' as const);
+
+    await validateResponse({path, method: 'PUT', status: '200'}, res);
+
     const json = await res.json();
     expect(json.name).toBe(expectedName);
     expect(json.scope).toBe(expectedScope);

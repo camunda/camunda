@@ -134,6 +134,7 @@ test.describe('Process Instances Filters', () => {
         'Always fails',
       );
     });
+
     await test.step('Select same flow node again and see filter is removed', async () => {
       await operateProcessesPage.diagram.clickFlowNode('alwaysFails');
 

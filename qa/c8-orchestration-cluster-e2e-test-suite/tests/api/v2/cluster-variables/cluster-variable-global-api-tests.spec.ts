@@ -15,9 +15,7 @@ import {
   assertBadRequest,
   assertStatusCode,
 } from '../../../../utils/http';
-import {
-  CREATE_CLUSTER_VARIABLE,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CLUSTER_VARIABLE} from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createGlobalClusterVariable,

@@ -50,6 +50,7 @@ test.describe.parallel('Delete Authorization API', () => {
       password: string;
     };
     let userAuthorizationKey: string;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -234,6 +235,7 @@ test.describe.parallel('Delete Authorization API', () => {
       password: string;
     };
     let userAuthorizationKey: string;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {

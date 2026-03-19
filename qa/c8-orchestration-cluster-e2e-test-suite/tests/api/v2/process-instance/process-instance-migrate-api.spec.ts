@@ -48,6 +48,7 @@ test.describe.serial('Test process instance migrate API', () => {
       processInstanceKey: '',
       processDefinitionKey: '',
     };
+
     await test.step('Create process instance of version 1', async () => {
       await createInstances('test_migration_process', 1, 1).then((instance) => {
         localState.processInstanceKey = instance[0].processInstanceKey;
@@ -118,6 +119,7 @@ test.describe.serial('Test process instance migrate API', () => {
       processInstanceKey: '',
       processDefinitionKey: '',
     };
+
     await test.step('Create process-instance of version 1', async () => {
       await createInstances('test_migration_process', 1, 1).then((instance) => {
         localState.processInstanceKey = instance[0].processInstanceKey;

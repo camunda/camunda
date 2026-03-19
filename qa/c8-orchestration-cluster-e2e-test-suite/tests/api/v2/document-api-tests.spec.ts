@@ -28,7 +28,7 @@ import {
   CREATE_TXT_DOC_RESPONSE_BODY,
   CREATE_TXT_DOC_RESPONSE_WITH_METADATA,
   CREATE_TXT_DOCUMENT_REQUEST,
-  documentFileContent
+  documentFileContent,
 } from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
@@ -238,7 +238,7 @@ test.describe.parallel('Document API Tests', () => {
         ),
         {headers: defaultHeaders()},
       );
-      
+
       await assertStatusCode(res, 200);
       const text = await res.text();
       expect(text).toBe(documentFileContent(state['fileName1'] as string));
@@ -326,7 +326,10 @@ test.describe.parallel('Document API Tests', () => {
           }),
           {headers: jsonHeaders()},
         );
-        await assertNotFoundRequest(res, `Document with id '${state.documentId2}' not found`);
+        await assertNotFoundRequest(
+          res,
+          `Document with id '${state.documentId2}' not found`,
+        );
       }).toPass(defaultAssertionOptions);
     });
   });

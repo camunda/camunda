@@ -268,6 +268,7 @@ test.describe.parallel('Roles API Tests', () => {
 
   test('Delete Role', async ({request}) => {
     const p = {roleId: state['roleId3'] as string};
+
     await test.step('Delete Role 204', async () => {
       await expect(async () => {
         const res = await request.delete(buildUrl('/roles/{roleId}', p), {
@@ -335,7 +336,7 @@ test.describe.parallel('Roles API Tests', () => {
         },
         res,
       );
-      
+
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 2,
         totalItemGreaterThan: 2,
@@ -482,13 +483,13 @@ test.describe.parallel('Roles API Tests', () => {
     });
 
     await validateResponse(
-        {
-          path: '/roles/search',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
+      {
+        path: '/roles/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
 
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

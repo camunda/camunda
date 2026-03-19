@@ -69,7 +69,10 @@ test.describe('Correlate Message API Tests', () => {
         variables: {foo: 'bar'},
       },
     });
-    await assertNotFoundRequest(res, 'Command \'CORRELATE\' rejected with code \'NOT_FOUND\': Expected to find subscription for message with name \'invalidMessageName\' and correlation key \'invalidKey\', but none was found.');
+    await assertNotFoundRequest(
+      res,
+      "Command 'CORRELATE' rejected with code 'NOT_FOUND': Expected to find subscription for message with name 'invalidMessageName' and correlation key 'invalidKey', but none was found.",
+    );
   });
 
   test('Correlate Message Invalid Tenant', async ({request}) => {
@@ -81,7 +84,11 @@ test.describe('Correlate Message API Tests', () => {
       headers: jsonHeaders(),
       data: updatedBody,
     });
-    await assertInvalidArgument(res, 400, 'Expected to handle request Correlate Message with tenant identifier');
+    await assertInvalidArgument(
+      res,
+      400,
+      'Expected to handle request Correlate Message with tenant identifier',
+    );
   });
 
   test('Correlate Message Flow', async ({request}) => {

@@ -95,6 +95,7 @@ test.describe('Job Completion API Tests', () => {
 
   test('Complete Job - conflict 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Activate a job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,

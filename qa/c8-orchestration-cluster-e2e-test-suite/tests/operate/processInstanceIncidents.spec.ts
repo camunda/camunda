@@ -68,7 +68,10 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test.skip('Resolve an incident', async ({page, operateProcessInstancePage}) => {
+  test.skip('Resolve an incident', async ({
+    page,
+    operateProcessInstancePage,
+  }) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
@@ -173,7 +176,10 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test.skip('Cancel an instance', async ({operateProcessInstancePage, page}) => {
+  test.skip('Cancel an instance', async ({
+    operateProcessInstancePage,
+    page,
+  }) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -247,9 +253,7 @@ test.describe('Process Instance', () => {
     await test.step('Navigate to fill form flow node', async () => {
       await page.keyboard.press('ArrowRight');
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
-      await expect(
-        diagramHelper.getFlowNode('fill form'),
-      ).toBeVisible();
+      await expect(diagramHelper.getFlowNode('fill form')).toBeVisible();
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
 
       await waitForAssertion({
@@ -288,9 +292,7 @@ test.describe('Process Instance', () => {
     await test.step('Drill down into sub process', async () => {
       await operateProcessInstancePage.drilldownButton.click();
 
-      await expect(
-        diagramHelper.getFlowNode('fill form'),
-      ).toBeVisible();
+      await expect(diagramHelper.getFlowNode('fill form')).toBeVisible();
     });
   });
 

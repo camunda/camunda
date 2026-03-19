@@ -20,7 +20,7 @@ import {
   authorizationRequiredFieldsWithoutPermissionTypes,
   authorizedComponentRequiredFields,
 } from '../beans/requestBeans';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export interface Authorization {
   ownerId: string;
@@ -75,10 +75,10 @@ export async function grantUserResourceAuthorization(
     {
       path: '/authorizations',
       method: 'POST',
-      status: '201',  
+      status: '201',
     },
     authRes,
-   );
+  );
   const authBody = await authRes.json();
   assertRequiredFields(authBody, ['authorizationKey']);
   return {
