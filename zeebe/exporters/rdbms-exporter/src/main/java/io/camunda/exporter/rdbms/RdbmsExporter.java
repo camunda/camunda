@@ -218,14 +218,16 @@ public final class RdbmsExporter {
               record.getValueType());
         }
       }
-      // Update lastPosition once per record, after all handlers have processed it
-      lastPosition = record.getPosition();
     } else {
       LOG.trace(
           "[RDBMS Exporter P{}] No registered handler found for {}",
           partitionId,
           record.getValueType());
     }
+
+    // Always update lastPosition for every record, including ignored ones, so that the exporter
+    // position is advanced even when no handler processes the record.
+    lastPosition = record.getPosition();
 
     if (exported) {
       // Track the oldest record timestamp in the current batch
