@@ -21,7 +21,7 @@ import io.camunda.zeebe.client.ZeebeClient;
  * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient object
  * under the hood.
  */
-public class ZeebeClientProxy extends AbstractClientProxy<ZeebeClient> {
+public class ZeebeClientProxy extends AbstractInvocationHandler<ZeebeClient> {
   @Override
   protected Class<ZeebeClient> getDelegateClass() {
     return ZeebeClient.class;
