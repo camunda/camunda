@@ -26,16 +26,16 @@ jobs:
       extra-values: |
         zeebe:
           image:
-            tag: SNAPSHOT
+            tag: 8.10-SNAPSHOT
         operate:
           image:
-            tag: SNAPSHOT
+            tag: 8.10-SNAPSHOT
         tasklist:
           image:
-            tag: SNAPSHOT
+            tag: 8.10-SNAPSHOT
         optimize:
           image:
-            tag: 8-SNAPSHOT
+            tag: 8.10-SNAPSHOT
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;

@@ -30,6 +30,27 @@ Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) a
   * Maven artifacts with version `8.7.0-SNAPSHOT` for **Optimize**
   * Docker images with tag `8.7-SNAPSHOT` for **[Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.7-SNAPSHOT)**
 
+#### Which Docker Tag Should I Use?
+
+> **Use `X.Y-SNAPSHOT` (e.g. `8.10-SNAPSHOT`) for all new configurations.** The unversioned `SNAPSHOT` (and Optimize's `8-SNAPSHOT`) tags are **deprecated** and will be **removed in 8.11**.
+
+| Tag | Example | Recommended? | Notes |
+|-----|---------|:---:|-------|
+| `X.Y-SNAPSHOT` | `camunda/zeebe:8.10-SNAPSHOT` | ✅ **Yes** | Pinned to a specific minor. Stays on that minor even after a release when `main` bumps to the next version.|
+| `SNAPSHOT` | `camunda/zeebe:SNAPSHOT` | ⚠️ **Deprecated** | **Not recommended.** Follows `main` only. Silently shifts to the next minor when `main` bumps version after a release, breaking reproducibility. **Will be removed in 8.11.** |
+| `8-SNAPSHOT` | `camunda/optimize:8-SNAPSHOT` | ⚠️ **Deprecated** | Optimize-specific legacy tag. Same risks as `SNAPSHOT`. **Will be removed in 8.11.** Use `X.Y-SNAPSHOT` instead. |
+
+**Why does this matter?** When `main` bumps from e.g. `8.10.0-SNAPSHOT` to `8.11.0-SNAPSHOT`, the bare `SNAPSHOT` tag silently changes minor version. Any pipeline, docker-compose file, or test that pins to `SNAPSHOT` will get a different minor without warning — causing snapshot-drift incidents.
+
+**Tag handoff at release time**: When a new minor is released and `main` bumps to `8.11.0-SNAPSHOT`:
+* `SNAPSHOT` / `8-SNAPSHOT` → immediately starts pointing to 8.11 builds (breaking change for anyone expecting 8.10)
+* `8.10-SNAPSHOT` from `main` → stops being updated from `main`; now updated from `stable/8.10` instead (seamless handoff, no breakage)
+
+**Migration timeline**:
+* **Now (8.10 alpha)**: Both `SNAPSHOT` and `X.Y-SNAPSHOT` are published. Migrate your configs to `X.Y-SNAPSHOT`.
+* **8.10 minor release**: Adoption window ends. All internal configs should use `X.Y-SNAPSHOT`.
+* **8.11 minor release**: CI pipelines will **stop producing** bare `SNAPSHOT` and `8-SNAPSHOT` tags. Existing tags will be **deleted from DockerHub**. Any config still referencing these tags will break.
+
 ## Issue Tracking
 
 All problems, bugs and feature requests regarding the CI of the [C8 monorepo CI](https://github.com/camunda/camunda/actions) are tracked using [GitHub Issues](https://github.com/camunda/camunda/issues).
