@@ -259,8 +259,7 @@ final class CamundaExporterIT {
     // given
     createSchemas(config);
     final var valueType = ValueType.USER;
-    final Record record =
-        generateRecordWithSupportedBrokerVersion(valueType, UserIntent.CREATED);
+    final Record record = generateRecordWithSupportedBrokerVersion(valueType, UserIntent.CREATED);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
