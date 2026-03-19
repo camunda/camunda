@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
@@ -15,7 +15,6 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertStatusCode,
-  assertBadRequest,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/beans/requestBeans';
@@ -27,15 +26,14 @@ import {
 } from '@requestHelpers';
 import {
   defaultAssertionOptions,
-  generateUniqueId,
 } from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
-import { sleep } from 'utils/sleep';
-import { create } from 'domain';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
 
 /* eslint-disable playwright/expect-expect */
-test.describe.serial('Group Users API Tests', () => {
+test.describe.parallel('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
+  const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
   state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
@@ -53,6 +51,9 @@ test.describe.serial('Group Users API Tests', () => {
 
   test.afterAll(async ({request}) => {
     await cleanupGroups(request, state['createdIds'] as string[]);
+    for (const cleanup of cleanups) {
+      await cleanup(request);
+    }
   });
 
   test('Assign User To Group Not Found', async ({request}) => {
@@ -75,6 +76,9 @@ test.describe.serial('Group Users API Tests', () => {
 
   test('Assign User To Group', async ({request}) => {
     const user = await createUser(request, state);
+    cleanups.push(async (request) => {
+      await cleanupUsers(request, [user.username]);
+    });
     const stateParams: Record<string, string> = {
       groupId: state['groupId1'] as string,
       username: user.username,

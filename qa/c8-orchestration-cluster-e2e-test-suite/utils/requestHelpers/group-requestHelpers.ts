@@ -34,7 +34,6 @@ export async function assignUsersToGroup(
       groupId: groupId,
       username: user.username,
     };
-    await expect(async () => {
     const res = await request.put(
       buildUrl('/groups/{groupId}/users/{username}', stateParams),
       {
@@ -42,7 +41,6 @@ export async function assignUsersToGroup(
       },
     );
     await assertStatusCode(res, 204);
-    }).toPass(defaultAssertionOptions);
     state[`username${groupId}${i}`] = user.username;
   }
 }
