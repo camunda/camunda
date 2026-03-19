@@ -31,9 +31,12 @@ public class ListViewVariableFromVariableHandler
       LoggerFactory.getLogger(ListViewVariableFromVariableHandler.class);
 
   private final String indexName;
+  private final int variableSizeThreshold;
 
-  public ListViewVariableFromVariableHandler(final String indexName) {
+  public ListViewVariableFromVariableHandler(
+      final String indexName, final int variableSizeThreshold) {
     this.indexName = indexName;
+    this.variableSizeThreshold = variableSizeThreshold;
   }
 
   @Override
@@ -70,6 +73,10 @@ public class ListViewVariableFromVariableHandler
   public void updateEntity(
       final Record<VariableRecordValue> record, final VariableForListViewEntity entity) {
     final var recordValue = record.getValue();
+    final String value = recordValue.getValue();
+    final String truncatedValue =
+        value.length() > variableSizeThreshold ? value.substring(0, variableSizeThreshold) : value;
+
     entity
         .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
         .setKey(record.getKey())
@@ -78,7 +85,7 @@ public class ListViewVariableFromVariableHandler
         .setScopeKey(recordValue.getScopeKey())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setVarName(recordValue.getName())
-        .setVarValue(recordValue.getValue())
+        .setVarValue(truncatedValue)
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     // set parent

@@ -159,7 +159,6 @@ public class UserTaskVariableHandlerTest {
     final List<String> capturedRoutings = routingCaptor.getAllValues();
 
     final Map<String, Object> updateFieldsMap = new HashMap<>();
-    updateFieldsMap.put(TaskTemplate.VARIABLE_FULL_VALUE, null);
     updateFieldsMap.put(TaskTemplate.VARIABLE_VALUE, "value");
     updateFieldsMap.put(TaskTemplate.IS_TRUNCATED, false);
 
@@ -332,8 +331,7 @@ public class UserTaskVariableHandlerTest {
     assertThat(batch.getVariables()).hasSize(1);
     final var variableEntity = batch.getVariables().get(0);
     assertThat(variableEntity.getValue()).isEqualTo("v".repeat(underTest.variableSizeThreshold));
-    assertThat(variableEntity.getFullValue())
-        .isEqualTo("v".repeat(underTest.variableSizeThreshold + 1));
+    assertThat(variableEntity.getFullValue()).isNull();
     assertThat(variableEntity.getIsTruncated()).isTrue();
   }
 
