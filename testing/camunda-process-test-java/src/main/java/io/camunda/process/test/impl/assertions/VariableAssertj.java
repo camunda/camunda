@@ -561,10 +561,11 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     final double threshold = semanticSimilarityConfig.getThreshold();
     if (!result.passed(threshold)) {
       fail(
-          "%s variable '%s' similarity score %s is below threshold %.2f.\n"
-              + "  Expected: %s\n"
-              + "  Actual: %s",
-          actual, variableName, result.getScore(), threshold, expectedValue, variableValue);
+          "%s variable '%s' did not satisfy similarity check.\n"
+              + "  Expectation: %s\n"
+              + "  Actual value: %s\n"
+              + "  Score: %s (threshold: %.2f)\n",
+          actual, variableName, expectedValue, variableValue, result.getScore(), threshold);
     }
   }
 

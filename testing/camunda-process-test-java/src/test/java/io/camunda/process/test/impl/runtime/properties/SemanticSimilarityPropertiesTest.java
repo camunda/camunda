@@ -165,7 +165,7 @@ public class SemanticSimilarityPropertiesTest {
   }
 
   @Test
-  void shouldCreateBaseProviderConfigForUnknownProvider() {
+  void shouldCreateGenericConfigForUnknownProvider() {
     // given
     final Properties properties = new Properties();
     properties.setProperty("similarity.embeddingModel.provider", "my-custom-embedder");

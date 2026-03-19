@@ -18,6 +18,9 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -26,7 +29,6 @@ import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
-import io.camunda.process.test.api.similarity.preprocessors.UnicodeNormalizerPreprocessor;
 import io.camunda.process.test.api.similarity.preprocessors.WhitespaceNormalizerPreprocessor;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -147,10 +150,10 @@ public class SemanticSimilarityAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSimilarTo("result", "Hello there"))
           .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("variable 'result' similarity score 0.0")
-          .hasMessageContaining("is below threshold 0.80")
-          .hasMessageContaining("Expected: Hello there")
-          .hasMessageContaining("Actual: \"Hello, World!\"");
+          .hasMessageContaining("variable 'result' did not satisfy similarity check")
+          .hasMessageContaining("Expectation: Hello there")
+          .hasMessageContaining("Actual value: \"Hello, World!\"")
+          .hasMessageContaining("Score: 0.0 (threshold: 0.80)");
     }
 
     @Test
@@ -424,23 +427,14 @@ public class SemanticSimilarityAssertTest {
 
     @Test
     void shouldSwitchBetweenSimilarityConfigsInSameChain() {
-      // given — two models that capture which one was called
-      final boolean[] modelACalled = {false};
-      final boolean[] modelBCalled = {false};
+      // given
+      final EmbeddingModelAdapter modelA = mock(EmbeddingModelAdapter.class);
+      when(modelA.embed(any())).thenReturn(UNIT_VEC_X);
+      final EmbeddingModelAdapter modelB = mock(EmbeddingModelAdapter.class);
+      when(modelB.embed(any())).thenReturn(UNIT_VEC_X);
 
-      final EmbeddingModelAdapter modelA =
-          text -> {
-            modelACalled[0] = true;
-            return UNIT_VEC_X;
-          };
-      final EmbeddingModelAdapter modelB =
-          text -> {
-            modelBCalled[0] = true;
-            return UNIT_VEC_X;
-          };
-
-      final Variable varA = VariableBuilder.newVariable("varA", "\"value A\"");
-      final Variable varB = VariableBuilder.newVariable("varB", "\"value B\"");
+      final Variable varA = VariableBuilder.newVariable("varA", "value A");
+      final Variable varB = VariableBuilder.newVariable("varB", "value B");
       when(camundaDataSource.findVariables(any())).thenReturn(java.util.Arrays.asList(varA, varB));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -452,8 +446,8 @@ public class SemanticSimilarityAssertTest {
           .hasVariableSimilarTo("varB", "value B");
 
       // then
-      Assertions.assertThat(modelACalled[0]).isTrue();
-      Assertions.assertThat(modelBCalled[0]).isTrue();
+      verify(modelA, times(2)).embed("value a");
+      verify(modelB, times(2)).embed("value b");
     }
 
     @Test
@@ -472,17 +466,14 @@ public class SemanticSimilarityAssertTest {
 
     @Test
     void shouldNotAffectGlobalDefaultForNewAssertThatCalls() {
-      // given — global model captures calls, override model also captures
-      final boolean[] globalCalled = {false};
-      final EmbeddingModelAdapter globalModel =
-          text -> {
-            globalCalled[0] = true;
-            return UNIT_VEC_X;
-          };
-      final EmbeddingModelAdapter overrideModel = text -> UNIT_VEC_X;
+      // given
+      final EmbeddingModelAdapter globalModel = mock(EmbeddingModelAdapter.class);
+      when(globalModel.embed(any())).thenReturn(UNIT_VEC_X);
+      final EmbeddingModelAdapter overrideModel = mock(EmbeddingModelAdapter.class);
+      when(overrideModel.embed(any())).thenReturn(UNIT_VEC_X);
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(globalModel));
 
-      final Variable variable = VariableBuilder.newVariable("result", "\"Hello\"");
+      final Variable variable = VariableBuilder.newVariable("result", "Hi");
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -492,11 +483,13 @@ public class SemanticSimilarityAssertTest {
           .hasVariableSimilarTo("result", "Hello");
 
       // then — new assertThat uses global default
-      globalCalled[0] = false;
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSimilarTo("result", "Hello");
 
-      Assertions.assertThat(globalCalled[0]).isTrue();
+      verify(globalModel).embed("hello");
+      verify(globalModel).embed("hi");
+      verify(overrideModel).embed("hello");
+      verify(overrideModel).embed("hi");
     }
   }
 
@@ -505,60 +498,60 @@ public class SemanticSimilarityAssertTest {
 
     @Test
     void shouldApplyDefaultPreprocessorsBeforeEmbedding() {
-      // given — capture the strings passed to embed()
-      final String[] capturedTexts = new String[2];
-      final int[] callCount = {0};
-      final EmbeddingModelAdapter capturingModel =
-          text -> {
-            capturedTexts[callCount[0]++] = text;
-            return UNIT_VEC_X;
-          };
-      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(capturingModel));
+      // given
+      final EmbeddingModelAdapter model = mock(EmbeddingModelAdapter.class);
+      final ArgumentCaptor<String> textCaptor = ArgumentCaptor.forClass(String.class);
+      when(model.embed(textCaptor.capture())).thenReturn(UNIT_VEC_X);
 
-      final Variable variable = newVariable("result", "  Hello WORLD  ");
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      final Variable variable = newVariable("result", "  Hello World \n");
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasVariableSimilarTo("result", "  Hello  WORLD  ");
+          .hasVariableSimilarTo("result", "  Hello a\u0301 WORLD  ");
 
       // then — default preprocessors: unicode → whitespace → lowercase
-      Assertions.assertThat(capturedTexts[0]).isEqualTo("hello world"); // expected
-      Assertions.assertThat(capturedTexts[1]).isEqualTo("hello world"); // actual
+      Assertions.assertThat(textCaptor.getAllValues()).hasSize(2);
+      Assertions.assertThat(textCaptor.getAllValues().get(0))
+          .isEqualTo("hello \u00E1 world"); // expected
+      Assertions.assertThat(textCaptor.getAllValues().get(1)).isEqualTo("hello world"); // actual
     }
 
     @Test
     void shouldPassWithAllPreprocessorsDisabledViaWithoutPreprocessors() {
-      // given — all preprocessors disabled; stubs use the original unmodified strings
-      when(embeddingModel.embed("Hello World")).thenReturn(UNIT_VEC_X);
-      when(embeddingModel.embed("  Hello WORLD  ")).thenReturn(UNIT_VEC_X);
+      final String variableValue = "  Hello a\u0301 WORLD  ";
+      final String expectation = "Hello a\u0301 World";
+      // given
+      when(embeddingModel.embed(any())).thenReturn(UNIT_VEC_X);
+      when(embeddingModel.embed(variableValue)).thenReturn(UNIT_VEC_X);
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(embeddingModel).withoutPreprocessors());
 
-      final Variable variable = newVariable("result", "  Hello WORLD  ");
+      final Variable variable = newVariable("result", variableValue);
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then — identical vectors even without preprocessing → passes
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasVariableSimilarTo("result", "Hello World");
+          .hasVariableSimilarTo("result", expectation);
+
+      // none of the default preprocessors are applied
+      verify(embeddingModel).embed(expectation);
+      verify(embeddingModel).embed(variableValue);
     }
 
     @Test
     void shouldApplyCustomPreprocessorPipeline() {
-      // given — whitespace only, no lowercase; capture first embed call (expected)
-      final String[] capturedExpected = {null};
-      final int[] callCount = {0};
-      final EmbeddingModelAdapter capturingModel =
-          text -> {
-            if (callCount[0]++ == 0) {
-              capturedExpected[0] = text;
-            }
-            return UNIT_VEC_X;
-          };
+      // given
+      final EmbeddingModelAdapter model = mock(EmbeddingModelAdapter.class);
+      final ArgumentCaptor<String> textCaptor = ArgumentCaptor.forClass(String.class);
+      when(model.embed(textCaptor.capture())).thenReturn(UNIT_VEC_X);
+
       CamundaAssert.setSemanticSimilarityConfig(
-          SemanticSimilarityConfig.of(capturingModel)
+          SemanticSimilarityConfig.of(model)
               .withPreprocessors(new WhitespaceNormalizerPreprocessor()));
 
       final Variable variable = newVariable("result", "hello");
@@ -570,26 +563,20 @@ public class SemanticSimilarityAssertTest {
           .hasVariableSimilarTo("result", "  Hello  World  ");
 
       // then — whitespace collapsed but case preserved (lowercase not in pipeline)
-      Assertions.assertThat(capturedExpected[0]).isEqualTo("Hello World");
+      Assertions.assertThat(textCaptor.getAllValues().get(0)).isEqualTo("Hello World");
     }
 
     @Test
     void shouldChainPreprocessorsViaAndThen() {
-      // given — unicode + whitespace chained via andThen, no lowercase; capture first embed call
-      final String[] capturedExpected = {null};
-      final int[] callCount = {0};
-      final EmbeddingModelAdapter capturingModel =
-          text -> {
-            if (callCount[0]++ == 0) {
-              capturedExpected[0] = text;
-            }
-            return UNIT_VEC_X;
-          };
+      // given
+      final EmbeddingModelAdapter model = mock(EmbeddingModelAdapter.class);
+      final ArgumentCaptor<String> textCaptor = ArgumentCaptor.forClass(String.class);
+      when(model.embed(textCaptor.capture())).thenReturn(UNIT_VEC_X);
       CamundaAssert.setSemanticSimilarityConfig(
-          SemanticSimilarityConfig.of(capturingModel)
+          SemanticSimilarityConfig.of(model)
               .withPreprocessors(
-                  new UnicodeNormalizerPreprocessor()
-                      .andThen(new WhitespaceNormalizerPreprocessor())));
+                  new WhitespaceNormalizerPreprocessor()
+                      .andThen(text -> text.replaceAll("Hello", " Hi"))));
 
       final Variable variable = newVariable("result", "hello");
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
@@ -599,8 +586,8 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSimilarTo("result", "  Hello  World  ");
 
-      // then — unicode applied then whitespace collapsed; case preserved
-      Assertions.assertThat(capturedExpected[0]).isEqualTo("Hello World");
+      // then — whitespace collapsed then text replaced; case preserved
+      Assertions.assertThat(textCaptor.getAllValues().get(0)).isEqualTo(" Hi World");
     }
   }
 }

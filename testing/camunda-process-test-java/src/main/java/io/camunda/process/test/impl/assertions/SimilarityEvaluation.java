@@ -20,7 +20,7 @@ import io.camunda.process.test.api.similarity.preprocessors.TextPreprocessor;
 import java.util.List;
 
 /** An evaluation that uses text embeddings to assess semantic similarity between two texts. */
-class SimilarityEvaluation {
+public class SimilarityEvaluation {
 
   private final EmbeddingModelAdapter embeddingModel;
   private final List<TextPreprocessor> preprocessors;
@@ -51,7 +51,7 @@ class SimilarityEvaluation {
   }
 
   /** The result of a semantic similarity evaluation, containing a score. */
-  static class Result {
+  public static class Result {
 
     private final double score;
 
