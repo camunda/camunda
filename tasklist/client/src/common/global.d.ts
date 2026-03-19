@@ -33,7 +33,6 @@ export declare global {
       clusterId?: null | string;
       mixpanelToken?: null | string;
       mixpanelAPIHost?: null | string;
-      isResourcePermissionsEnabled?: boolean;
       isMultiTenancyEnabled?: boolean;
       maxRequestSize?: number;
       clientMode?: 'v1' | 'v2';

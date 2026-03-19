@@ -31,26 +31,11 @@ public class ClientConfig {
   public String databaseType;
 
   // Cloud related properties for mixpanel events
-  @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
   public String organizationId;
-
-  @Value("${CAMUNDA_TASKLIST_CLOUD_CLUSTERID:#{null}}")
   public String clusterId;
-
-  @Value("${CAMUNDA_TASKLIST_CLOUD_STAGE:#{null}}")
   public String stage;
-
-  @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN:#{null}}")
   public String mixpanelToken;
-
-  @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST:#{null}}")
   public String mixpanelAPIHost;
-
-  @Value("${CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED:#{false}}")
-  public boolean isResourcePermissionsEnabled;
-
-  @Value("${CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED:#{true}}")
-  public boolean isUserAccessRestrictionsEnabled;
 
   public long maxRequestSize;
 
@@ -77,5 +62,10 @@ public class ClientConfig {
     maxRequestSize = maxRequestSizeConfigValue.toBytes();
     clientMode = isV2ModeEnabled ? "v2" : "v1";
     databaseType = environmentService.getDatabaseType();
+    organizationId = tasklistProperties.getCloud().getOrganizationId();
+    clusterId = tasklistProperties.getCloud().getClusterId();
+    stage = tasklistProperties.getCloud().getStage();
+    mixpanelToken = tasklistProperties.getCloud().getMixpanelToken();
+    mixpanelAPIHost = tasklistProperties.getCloud().getMixpanelAPIHost();
   }
 }

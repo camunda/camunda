@@ -11,12 +11,29 @@ import java.util.Objects;
 
 public class CloudProperties {
 
+  private String organizationId;
+
   private String permissionUrl;
   private String permissionAudience;
 
   private String clusterId;
 
   private String consoleUrl;
+
+  private String stage;
+
+  private String mixpanelToken;
+
+  private String mixpanelAPIHost;
+
+  public String getOrganizationId() {
+    return organizationId;
+  }
+
+  public CloudProperties setOrganizationId(final String organizationId) {
+    this.organizationId = organizationId;
+    return this;
+  }
 
   public String getPermissionUrl() {
     return permissionUrl;
@@ -52,8 +69,48 @@ public class CloudProperties {
     return this;
   }
 
+  public String getStage() {
+    return stage;
+  }
+
+  public CloudProperties setStage(final String stage) {
+    this.stage = stage;
+    return this;
+  }
+
+  public String getMixpanelToken() {
+    return mixpanelToken;
+  }
+
+  public CloudProperties setMixpanelToken(final String mixpanelToken) {
+    this.mixpanelToken = mixpanelToken;
+    return this;
+  }
+
+  public String getMixpanelAPIHost() {
+    return mixpanelAPIHost;
+  }
+
+  public CloudProperties setMixpanelAPIHost(final String mixpanelAPIHost) {
+    this.mixpanelAPIHost = mixpanelAPIHost;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        organizationId,
+        permissionUrl,
+        permissionAudience,
+        clusterId,
+        consoleUrl,
+        stage,
+        mixpanelToken,
+        mixpanelAPIHost);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -61,14 +118,13 @@ public class CloudProperties {
       return false;
     }
     final CloudProperties that = (CloudProperties) o;
-    return Objects.equals(permissionUrl, that.permissionUrl)
+    return Objects.equals(organizationId, that.organizationId)
+        && Objects.equals(permissionUrl, that.permissionUrl)
         && Objects.equals(permissionAudience, that.permissionAudience)
         && Objects.equals(clusterId, that.clusterId)
-        && Objects.equals(consoleUrl, that.consoleUrl);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(permissionUrl, permissionAudience, clusterId, consoleUrl);
+        && Objects.equals(consoleUrl, that.consoleUrl)
+        && Objects.equals(stage, that.stage)
+        && Objects.equals(mixpanelToken, that.mixpanelToken)
+        && Objects.equals(mixpanelAPIHost, that.mixpanelAPIHost);
   }
 }
