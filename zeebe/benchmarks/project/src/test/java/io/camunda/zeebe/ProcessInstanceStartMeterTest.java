@@ -20,6 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,7 @@ public class ProcessInstanceStartMeterTest {
     availabilityChecker = CompletableFuture::completedFuture;
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
+            System::nanoTime,
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ofMillis(1),
@@ -132,6 +135,7 @@ public class ProcessInstanceStartMeterTest {
     // given
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
+            System::nanoTime,
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ZERO,
@@ -148,6 +152,42 @@ public class ProcessInstanceStartMeterTest {
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer())
         .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
+  }
+
+  @Test
+  public void shouldRecordMetricAfterMaxDuration() {
+    // given
+    final AtomicLong time = new AtomicLong();
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            time::get,
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
+            CompletableFuture::completedFuture);
+    processInstanceStartMeter.start();
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+
+    // when
+    time.set(System.nanoTime() + Duration.ofSeconds(90).toNanos());
+
+    // then
+    Awaitility.await()
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                    .timer()
+                    .count(),
+            (count) -> assertThat(count).isOne());
+    assertThat(
+            meterRegistry
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                .timer()
+                .totalTime(TimeUnit.MILLISECONDS))
+        .isGreaterThan(Duration.ofSeconds(90).toMillis());
   }
 
   @Test
