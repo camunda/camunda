@@ -41,7 +41,7 @@ def extract_enum_maps():
                 pairs = re.findall(r'(\w+)\("([^"]+)"\)', match.group(1))
                 class_name = f.replace(".java", "")
                 enum_maps[class_name] = dict(pairs)
-    
+
     # Also extract SortOrderEnum
     sort_order_path = os.path.join(PROTO_MODEL_DIR, "SortOrderEnum.java")
     if os.path.exists(sort_order_path):
@@ -50,7 +50,7 @@ def extract_enum_maps():
         if match:
             pairs = re.findall(r'(\w+)\("([^"]+)"\)', match.group(1))
             enum_maps["SortOrderEnum"] = dict(pairs)
-    
+
     return enum_maps
 
 
@@ -83,7 +83,7 @@ def convert_sort_mapper(enum_maps):
         r"final (\w+(?:\.\w+)*) field,",
         re.MULTILINE
     )
-    
+
     method_info = []  # list of (method_name, field_type, sort_class, mapping)
     for match in apply_pattern.finditer(content):
         method_name = match.group(1)
@@ -93,7 +93,7 @@ def convert_sort_mapper(enum_maps):
         if not mapping:
             print(f"  WARNING: No enum mapping found for {sort_class} in method {method_name}")
         method_info.append((method_name, field_type, sort_class, mapping))
-    
+
     print(f"  Found {len(method_info)} applyXxxSortField methods to convert")
 
     # ---- Pass 2: Apply all changes ----
@@ -116,7 +116,7 @@ def convert_sort_mapper(enum_maps):
         # Replace parameter type
         old_param = f"final {field_type} field"
         content = content.replace(old_param, "final String field", 1)
-        
+
         # Replace enum case constants with string literals
         for enum_const, json_value in mapping.items():
             old_case = f"case {enum_const} ->"
@@ -128,13 +128,13 @@ def convert_sort_mapper(enum_maps):
         "r -> createFrom(r.getField(), r.getOrder())",
         "r -> createFrom(\n            r.getField() != null ? r.getField().getValue() : null,\n            r.getOrder() != null ? r.getOrder().getValue() : null)"
     )
-    
+
     # Step 4: Change createFrom signature
     content = content.replace(
         "private static <T> SearchQuerySortRequest<T> createFrom(\n      final T field, final SortOrderEnum order) {\n    return new SearchQuerySortRequest<T>(field, order);",
         'private static SearchQuerySortRequest createFrom(\n      final String field, final String order) {\n    return new SearchQuerySortRequest(field, order);'
     )
-    
+
     # Step 5: Change toSearchQuerySort signature — remove F type parameter
     content = content.replace(
         "static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>\n      Either<List<String>, T> toSearchQuerySort(\n          final List<SearchQuerySortRequest<F>> sorting,\n          final Supplier<B> builderSupplier,\n          final BiFunction<F, B, List<String>> sortFieldMapper)",
@@ -144,13 +144,13 @@ def convert_sort_mapper(enum_maps):
         "for (final SearchQuerySortRequest<F> sort : sorting)",
         "for (final SearchQuerySortRequest sort : sorting)"
     )
-    
+
     # Step 6: Change applySortOrder from SortOrderEnum to String
     content = content.replace(
         "private static void applySortOrder(\n      final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {\n    if (order == SortOrderEnum.DESC) {",
         'private static void applySortOrder(\n      final String order, final SortOption.AbstractBuilder<?> builder) {\n    if ("desc".equals(order)) {'
     )
-    
+
     # Step 7: Change all fromXxx return types from generic to non-generic
     content = re.sub(
         r"List<SearchQuerySortRequest<[\w.]+>>",
@@ -163,7 +163,7 @@ def convert_sort_mapper(enum_maps):
         "List<SearchQuerySortRequest>",
         content
     )
-    
+
     # Step 8: Handle GlobalTaskListener special case
     # This method constructs protocol model objects with enum references
     # Replace FieldEnum references with string literals
@@ -171,7 +171,7 @@ def convert_sort_mapper(enum_maps):
     content = content.replace("FieldEnum.PRIORITY", '"priority"')
     content = content.replace("FieldEnum.ID", '"id"')
     content = content.replace("SortOrderEnum.DESC", '"desc"')
-    
+
     # Replace new GlobalTaskListenerSearchQuerySortRequest(...) with SearchQuerySortRequest
     content = re.sub(
         r'new GlobalTaskListenerSearchQuerySortRequest\("afterNonGlobal"\)',
@@ -188,10 +188,10 @@ def convert_sort_mapper(enum_maps):
         'new SearchQuerySortRequest("id", null)',
         content
     )
-    
+
     with open(SORT_MAPPER_PATH, "w") as f:
         f.write(content)
-    
+
     # Report changes
     old_lines = original_content.split("\n")
     new_lines_list = content.split("\n")
@@ -207,13 +207,13 @@ def main():
     for name, mapping in sorted(enum_maps.items()):
         if name != "SortOrderEnum":
             print(f"    {name}: {len(mapping)} values")
-    
+
     print("\nConverting SearchQuerySortRequest record...")
     convert_sort_request_record()
-    
+
     print("\nConverting SearchQuerySortRequestMapper...")
     convert_sort_mapper(enum_maps)
-    
+
     print("\nDone!")
 
 

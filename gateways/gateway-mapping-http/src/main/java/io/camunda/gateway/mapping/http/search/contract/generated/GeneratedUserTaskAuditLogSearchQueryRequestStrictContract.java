@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -18,5 +20,5 @@ import org.jspecify.annotations.Nullable;
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
     @Nullable GeneratedSearchQueryPageRequestStrictContract page,
-    @Nullable List<Object> sort,
+    @Nullable List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
     @Nullable GeneratedUserTaskAuditLogFilterStrictContract filter) {}

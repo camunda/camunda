@@ -44,9 +44,16 @@ public class GenerateContractMappingPoc {
   private static final Set<String> AVAILABLE_STRICT_CONTRACTS = new LinkedHashSet<>();
 
   /**
+   * Maps spec search query schema names to their Phase 3.5 request DTO class names.
+   * Populated by discoverSearchQuerySchemas() in main(). Used by resolveSchemaType()
+   * to route search request schemas to the correct DTO instead of the result DTO.
+   */
+  private static final Map<String, String> SEARCH_REQUEST_DTO_MAP = new LinkedHashMap<>();
+
+  /**
    * Result schemas whose "Result" suffix must NOT be stripped by dtoClassName() because
    * the base name also exists as a schema (e.g. FooQuery + FooQueryResult). SearchQuery
-   * collisions are excluded — they are handled by SEARCH_REQUEST_DTO_OVERRIDES instead.
+   * collisions are excluded — they are handled by SEARCH_REQUEST_DTO_MAP instead.
    * Populated during schema loading in main().
    */
   private static final Set<String> RETAINED_RESULT_SCHEMAS = new LinkedHashSet<>();
@@ -318,22 +325,28 @@ public class GenerateContractMappingPoc {
     System.out.println(dtoCount + " strict contract DTOs generated.");
 
     // Phase 3.5: Generate flat page request DTO and search query request DTOs.
+    // Discover search query schemas directly from the spec (schemas extending SearchQueryRequest).
+    final var searchQuerySchemas = discoverSearchQuerySchemas(allSchemas);
+    System.out.println(searchQuerySchemas.size() + " search query request schemas discovered from spec.");
+
     final var flatPageFile = packagePath.resolve("GeneratedSearchQueryPageRequestStrictContract.java");
     Files.writeString(flatPageFile, renderFlatPageRequestDto(), StandardCharsets.UTF_8);
     System.out.println("generated: " + ROOT.relativize(flatPageFile));
 
     int searchRequestDtoCount = 0;
-    for (var e : REQUEST_ENTRIES) {
-      final var sortContract = dtoClassName(e.requestClass().replace("SearchQuery", "SearchQuerySortRequest"));
-      // Derive unique entity name from requestClass (e.g. "RoleUserSearchQueryRequest" → "RoleUser")
-      final var entityName = requestEntityName(e);
-      final var requestDtoName = "Generated" + entityName + "SearchQueryRequestStrictContract";
-      final var sortContractClass = findSortContractClass(e, packagePath);
-      final var filterParamFqn = extractFilterParamFqn(e);
+    for (var sqe : searchQuerySchemas) {
+      final var requestDtoName = sqe.requestDtoName();
+      final var sortContractClass = sqe.sortSchemaName() != null
+          ? dtoClassName(sqe.sortSchemaName()) : null;
+      final var filterContractFqn = sqe.filterSchemaName() != null
+          ? TARGET_PACKAGE + "." + dtoClassName(sqe.filterSchemaName()) : null;
       final var requestDtoFile = packagePath.resolve(requestDtoName + ".java");
       Files.writeString(requestDtoFile, renderSearchQueryRequestDto(
-          requestDtoName, sortContractClass, filterParamFqn), StandardCharsets.UTF_8);
+          requestDtoName, sortContractClass, filterContractFqn), StandardCharsets.UTF_8);
       System.out.println("generated: " + ROOT.relativize(requestDtoFile));
+
+      // Populate the override map so resolveSchemaType() routes this schema to the request DTO.
+      SEARCH_REQUEST_DTO_MAP.put(sqe.schemaName(), requestDtoName);
       searchRequestDtoCount++;
     }
     System.out.println(searchRequestDtoCount + " search query request DTOs generated.");
@@ -605,6 +618,76 @@ public class GenerateContractMappingPoc {
 
   private static boolean isContractSchema(SchemaDef schema) {
     return !schema.node().properties().isEmpty() || !schema.node().allOfRefs().isEmpty();
+  }
+
+  // -- Search query schema discovery (spec-driven) --
+
+  /**
+   * A search query request schema discovered from the spec. Contains only spec-derived data:
+   * the schema name, entity name (for the request DTO class name), and the sort/filter schema
+   * names extracted from the schema's properties.
+   */
+  private record SearchQuerySchemaEntry(
+      String schemaName,
+      String entityName,
+      String sortSchemaName,
+      String filterSchemaName) {
+
+    String requestDtoName() {
+      return "Generated" + entityName + "SearchQueryRequestStrictContract";
+    }
+  }
+
+  /**
+   * Discovers all search query request schemas by walking allSchemas for schemas whose allOfRefs
+   * include SearchQueryRequest. For each, extracts the sort and filter schema names from the
+   * schema's own properties (sort.items.$ref and filter.allOfRefs).
+   *
+   * <p>This replaces the hand-maintained REQUEST_ENTRIES table — the spec is the single source
+   * of truth for which schemas are search query requests and what their sort/filter types are.
+   */
+  private static List<SearchQuerySchemaEntry> discoverSearchQuerySchemas(
+      Map<SchemaKey, SchemaDef> allSchemas) {
+    var entries = new ArrayList<SearchQuerySchemaEntry>();
+
+    for (var schemaDef : allSchemas.values()) {
+      final var node = schemaDef.node();
+
+      // A search query request schema extends SearchQueryRequest via allOf.
+      boolean extendsSearchQueryRequest = node.allOfRefs().stream()
+          .anyMatch(ref -> ref.contains("/schemas/SearchQueryRequest"));
+      if (!extendsSearchQueryRequest) continue;
+
+      final var schemaName = schemaDef.schemaName();
+
+      // Derive entity name: strip "SearchQuery", "SearchQueryRequest" suffixes.
+      var entityName = schemaName
+          .replace("SearchQueryRequest", "")
+          .replace("SearchQuery", "");
+
+      // Extract sort schema from properties.sort.items.$ref
+      String sortSchemaName = null;
+      final var sortProp = node.properties().get("sort");
+      if (sortProp != null && sortProp.items() != null && sortProp.items().ref() != null) {
+        sortSchemaName = toSchemaKey(sortProp.items().ref(), schemaDef.fileName()).schemaName();
+      }
+
+      // Extract filter schema from properties.filter.allOfRefs or properties.filter.$ref
+      String filterSchemaName = null;
+      final var filterProp = node.properties().get("filter");
+      if (filterProp != null) {
+        if (!filterProp.allOfRefs().isEmpty()) {
+          filterSchemaName = toSchemaKey(filterProp.allOfRefs().get(0), schemaDef.fileName()).schemaName();
+        } else if (filterProp.ref() != null) {
+          filterSchemaName = toSchemaKey(filterProp.ref(), schemaDef.fileName()).schemaName();
+        }
+      }
+
+      entries.add(new SearchQuerySchemaEntry(schemaName, entityName, sortSchemaName, filterSchemaName));
+    }
+
+    entries.sort(Comparator.comparing(SearchQuerySchemaEntry::schemaName));
+    return entries;
   }
 
   /** Returns true if the schema is a polymorphic oneOf with branch $refs. */
@@ -972,7 +1055,7 @@ public enum %s {
   private static String dtoClassName(String schemaName) {
     // Strip "Result" suffix UNLESS it would collide with an existing schema.
     // SearchQuery collisions (e.g. FooSearchQuery/FooSearchQueryResult) are handled
-    // separately by SEARCH_REQUEST_DTO_OVERRIDES and always strip "Result".
+    // separately by SEARCH_REQUEST_DTO_MAP and always strip "Result".
     if (schemaName.endsWith("Result") && !RETAINED_RESULT_SCHEMAS.contains(schemaName)) {
       return "Generated" + schemaName.substring(0, schemaName.length() - 6) + "StrictContract";
     }
@@ -2955,193 +3038,6 @@ public final class %s {
 
   private record PropertyWithContext(Node node, String fileName) {}
 
-  // ---------------------------------------------------------------------------
-  // Phase 3.5 supporting data: Search query request entries
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Describes a mechanical search-query request method: request → page + sort + filter → query.
-   * Used by Phase 3.5 to generate search query request DTOs.
-   */
-  /**
-   * Describes a mechanical search-query request method: request → page + sort + filter → query.
-   *
-   * @param methodName     method name suffix, e.g. "Incident" → "toIncidentQuery"
-   * @param requestClass   simple name of request type (protocol model)
-   * @param queryClass     simple name of query type (search query)
-   * @param queryImport    fully-qualified import for query type (null => io.camunda.search.query.{queryClass})
-   * @param builderMethod  SearchQueryBuilders method name, e.g. "incidentSearchQuery"
-   * @param sortFromMethod SearchQuerySortRequestMapper::from... method name
-   * @param sortOptionRef  SortOptionBuilders method reference name, e.g. "incident"
-   * @param sortFieldMethod SearchQuerySortRequestMapper::apply... method name
-   * @param filterExpr     filter expression, e.g. "SearchQueryFilterMapper.toIncidentFilter(request.getFilter())"
-   */
-  private record RequestEntry(
-      String methodName,
-      String requestClass,
-      String queryClass,
-      String queryImport,
-      String builderMethod,
-      String sortFromMethod,
-      String sortOptionRef,
-      String sortFieldMethod,
-      String filterExpr) {
-
-    RequestEntry(
-        String methodName,
-        String requestClass,
-        String queryClass,
-        String builderMethod,
-        String sortFromMethod,
-        String sortOptionRef,
-        String sortFieldMethod,
-        String filterExpr) {
-      this(methodName, requestClass, queryClass, null, builderMethod,
-           sortFromMethod, sortOptionRef, sortFieldMethod, filterExpr);
-    }
-  }
-
-  // -- Request mapper entries --
-
-  private static final List<RequestEntry> REQUEST_ENTRIES = List.of(
-      new RequestEntry("ProcessInstance", "ProcessInstanceSearchQuery", "ProcessInstanceQuery",
-          "processInstanceSearchQuery", "fromProcessInstanceSearchQuerySortRequest",
-          "processInstance", "applyProcessInstanceSortField",
-          "SearchQueryFilterMapper.toProcessInstanceFilter(request.getFilter())"),
-      new RequestEntry("Job", "JobSearchQuery", "JobQuery",
-          "jobSearchQuery", "fromJobSearchQuerySortRequest",
-          "job", "applyJobSortField",
-          "SearchQueryFilterMapper.toJobFilter(request.getFilter())"),
-      new RequestEntry("Role", "RoleSearchQueryRequest", "RoleQuery",
-          "roleSearchQuery", "fromRoleSearchQuerySortRequest",
-          "role", "applyRoleSortField",
-          "SearchQueryFilterMapper.toRoleFilter(request.getFilter())"),
-      // Role member overloads
-      new RequestEntry("RoleMember", "RoleUserSearchQueryRequest", "RoleMemberQuery",
-          "roleMemberSearchQuery", "fromRoleUserSearchQuerySortRequest",
-          "roleMember", "applyRoleUserSortField",
-          "FilterBuilders.roleMember().build()"),
-      new RequestEntry("RoleMember", "RoleGroupSearchQueryRequest", "RoleMemberQuery",
-          "roleMemberSearchQuery", "fromRoleGroupSearchQuerySortRequest",
-          "roleMember", "applyRoleGroupSortField",
-          "FilterBuilders.roleMember().build()"),
-      new RequestEntry("RoleMember", "RoleClientSearchQueryRequest", "RoleMemberQuery",
-          "roleMemberSearchQuery", "fromRoleClientSearchQuerySortRequest",
-          "roleMember", "applyRoleClientSortField",
-          "FilterBuilders.roleMember().build()"),
-      new RequestEntry("Group", "GroupSearchQueryRequest", "GroupQuery",
-          "groupSearchQuery", "fromGroupSearchQuerySortRequest",
-          "group", "applyGroupSortField",
-          "SearchQueryFilterMapper.toGroupFilter(request.getFilter())"),
-      // Group member overloads
-      new RequestEntry("GroupMember", "GroupUserSearchQueryRequest", "GroupMemberQuery",
-          "groupMemberSearchQuery", "fromGroupUserSearchQuerySortRequest",
-          "groupMember", "applyGroupUserSortField",
-          "FilterBuilders.groupMember().build()"),
-      new RequestEntry("GroupMember", "GroupClientSearchQueryRequest", "GroupMemberQuery",
-          "groupMemberSearchQuery", "fromGroupClientSearchQuerySortRequest",
-          "groupMember", "applyGroupClientSortField",
-          "FilterBuilders.groupMember().build()"),
-      new RequestEntry("Tenant", "TenantSearchQueryRequest", "TenantQuery",
-          "tenantSearchQuery", "fromTenantSearchQuerySortRequest",
-          "tenant", "applyTenantSortField",
-          "SearchQueryFilterMapper.toTenantFilter(request.getFilter())"),
-      // Tenant member overloads
-      new RequestEntry("TenantMember", "TenantGroupSearchQueryRequest", "TenantMemberQuery",
-          "tenantMemberSearchQuery", "fromTenantGroupSearchQuerySortRequest",
-          "tenantMember", "applyTenantGroupSortField",
-          "FilterBuilders.tenantMember().build()"),
-      new RequestEntry("TenantMember", "TenantUserSearchQueryRequest", "TenantMemberQuery",
-          "tenantMemberSearchQuery", "fromTenantUserSearchQuerySortRequest",
-          "tenantMember", "applyTenantUserSortField",
-          "FilterBuilders.tenantMember().build()"),
-      new RequestEntry("TenantMember", "TenantClientSearchQueryRequest", "TenantMemberQuery",
-          "tenantMemberSearchQuery", "fromTenantClientSearchQuerySortRequest",
-          "tenantMember", "applyTenantClientSortField",
-          "FilterBuilders.tenantMember().build()"),
-      new RequestEntry("MappingRule", "MappingRuleSearchQueryRequest", "MappingRuleQuery",
-          "mappingRuleSearchQuery", "fromMappingRuleSearchQuerySortRequest",
-          "mappingRule", "applyMappingRuleSortField",
-          "SearchQueryFilterMapper.toMappingRuleFilter(request.getFilter())"),
-      new RequestEntry("ProcessDefinition", "ProcessDefinitionSearchQuery", "ProcessDefinitionQuery",
-          "processDefinitionSearchQuery", "fromProcessDefinitionSearchQuerySortRequest",
-          "processDefinition", "applyProcessDefinitionSortField",
-          "SearchQueryFilterMapper.toProcessDefinitionFilter(request.getFilter())"),
-      new RequestEntry("DecisionDefinition", "DecisionDefinitionSearchQuery", "DecisionDefinitionQuery",
-          "decisionDefinitionSearchQuery", "fromDecisionDefinitionSearchQuerySortRequest",
-          "decisionDefinition", "applyDecisionDefinitionSortField",
-          "SearchQueryFilterMapper.toDecisionDefinitionFilter(request.getFilter())"),
-      new RequestEntry("DecisionRequirements", "DecisionRequirementsSearchQuery", "DecisionRequirementsQuery",
-          "decisionRequirementsSearchQuery", "fromDecisionRequirementsSearchQuerySortRequest",
-          "decisionRequirements", "applyDecisionRequirementsSortField",
-          "SearchQueryFilterMapper.toDecisionRequirementsFilter(request.getFilter())"),
-      new RequestEntry("ElementInstance", "ElementInstanceSearchQuery", "FlowNodeInstanceQuery",
-          "flownodeInstanceSearchQuery", "fromElementInstanceSearchQuerySortRequest",
-          "flowNodeInstance", "applyElementInstanceSortField",
-          "SearchQueryFilterMapper.toElementInstanceFilter(request.getFilter())"),
-      new RequestEntry("DecisionInstance", "DecisionInstanceSearchQuery", "DecisionInstanceQuery",
-          "decisionInstanceSearchQuery", "fromDecisionInstanceSearchQuerySortRequest",
-          "decisionInstance", "applyDecisionInstanceSortField",
-          "SearchQueryFilterMapper.toDecisionInstanceFilter(request.getFilter())"),
-      new RequestEntry("UserTask", "UserTaskSearchQuery", "UserTaskQuery",
-          "userTaskSearchQuery", "fromUserTaskSearchQuerySortRequest",
-          "userTask", "applyUserTaskSortField",
-          "SearchQueryFilterMapper.toUserTaskFilter(request.getFilter())"),
-      new RequestEntry("UserTaskVariable", "UserTaskVariableSearchQueryRequest", "VariableQuery",
-          "variableSearchQuery", "fromUserTaskVariableSearchQuerySortRequest",
-          "variable", "applyUserTaskVariableSortField",
-          "SearchQueryFilterMapper.toUserTaskVariableFilter(request.getFilter())"),
-      new RequestEntry("Variable", "VariableSearchQuery", "VariableQuery",
-          "variableSearchQuery", "fromVariableSearchQuerySortRequest",
-          "variable", "applyVariableSortField",
-          "SearchQueryFilterMapper.toVariableFilter(request.getFilter())"),
-      new RequestEntry("ClusterVariable", "ClusterVariableSearchQueryRequest", "ClusterVariableQuery",
-          "clusterVariableSearchQuery", "fromClusterVariableSearchQuerySortRequest",
-          "clusterVariable", "applyClusterVariableSortField",
-          "SearchQueryFilterMapper.toClusterVariableFilter(request.getFilter())"),
-      new RequestEntry("User", "UserSearchQueryRequest", "UserQuery",
-          "userSearchQuery", "fromUserSearchQuerySortRequest",
-          "user", "applyUserSortField",
-          "SearchQueryFilterMapper.toUserFilter(request.getFilter())"),
-      new RequestEntry("Incident", "IncidentSearchQuery", "IncidentQuery",
-          "incidentSearchQuery", "fromIncidentSearchQuerySortRequest",
-          "incident", "applyIncidentSortField",
-          "SearchQueryFilterMapper.toIncidentFilter(request.getFilter())"),
-      new RequestEntry("BatchOperation", "BatchOperationSearchQuery", "BatchOperationQuery",
-          "batchOperationQuery", "fromBatchOperationSearchQuerySortRequest",
-          "batchOperation", "applyBatchOperationSortField",
-          "SearchQueryFilterMapper.toBatchOperationFilter(request.getFilter())"),
-      new RequestEntry("BatchOperationItem", "BatchOperationItemSearchQuery", "BatchOperationItemQuery",
-          "batchOperationItemQuery", "fromBatchOperationItemSearchQuerySortRequest",
-          "batchOperationItem", "applyBatchOperationItemSortField",
-          "SearchQueryFilterMapper.toBatchOperationItemFilter(request.getFilter())"),
-      new RequestEntry("Authorization", "AuthorizationSearchQuery", "AuthorizationQuery",
-          "authorizationSearchQuery", "fromAuthorizationSearchQuerySortRequest",
-          "authorization", "applyAuthorizationSortField",
-          "SearchQueryFilterMapper.toAuthorizationFilter(request.getFilter())"),
-      new RequestEntry("AuditLog", "AuditLogSearchQueryRequest", "AuditLogQuery",
-          "auditLogSearchQuery", "fromAuditLogSearchQuerySortRequest",
-          "auditLog", "applyAuditLogSortField",
-          "SearchQueryFilterMapper.toAuditLogFilter(request.getFilter())"),
-      new RequestEntry("UserTaskAuditLog", "UserTaskAuditLogSearchQueryRequest", "AuditLogQuery",
-          "auditLogSearchQuery", "fromUserTaskAuditLogSearchRequest",
-          "auditLog", "applyAuditLogSortField",
-          "SearchQueryFilterMapper.toUserTaskAuditLogFilter(request.getFilter())"),
-      new RequestEntry("MessageSubscription", "MessageSubscriptionSearchQuery", "MessageSubscriptionQuery",
-          "messageSubscriptionSearchQuery", "fromMessageSubscriptionSearchQuerySortRequest",
-          "messageSubscription", "applyMessageSubscriptionSortField",
-          "SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter())"),
-      new RequestEntry("CorrelatedMessageSubscription", "CorrelatedMessageSubscriptionSearchQuery",
-          "CorrelatedMessageSubscriptionQuery",
-          "correlatedMessageSubscriptionSearchQuery",
-          "fromCorrelatedMessageSubscriptionSearchQuerySortRequest",
-          "correlatedMessageSubscription", "applyCorrelatedMessageSubscriptionSortField",
-          "SearchQueryFilterMapper.toCorrelatedMessageSubscriptionFilter(request.getFilter())"),
-      new RequestEntry("GlobalTaskListener", "GlobalTaskListenerSearchQueryRequest", "GlobalListenerQuery",
-          "globalListenerSearchQuery", "fromGlobalTaskListenerSearchQuerySortRequest",
-          "globalListener", "applyGlobalTaskListenerSortField",
-          "SearchQueryFilterMapper.toGlobalTaskListenerFilter(request.getFilter())"));
-
   /**
    * Force specific schema fields to be nullable even when the spec declares them required.
    * Format: "SchemaName.fieldName".  The CursorForwardPagination 'after' cursor is required
@@ -3160,20 +3056,6 @@ public final class %s {
       "CreateClusterVariableRequest.value", "Object",
       "UpdateClusterVariableRequest.value", "Object"
   );
-
-  /**
-   * Maps protocol model request class names (from REQUEST_ENTRIES) to their Phase 3.5
-   * request DTO class names. Used by resolveSchemaType to resolve search query request body
-   * schemas to the correct strict contract (the request DTO, not the result DTO).
-   */
-  private static final Map<String, String> SEARCH_REQUEST_DTO_OVERRIDES =
-      REQUEST_ENTRIES.stream()
-          .collect(Collectors.toMap(
-              RequestEntry::requestClass,
-              e -> "Generated" + requestEntityName(e) + "SearchQueryRequestStrictContract",
-              (a, b) -> a));
-
-  // -- Phase 3.5: Search query request DTO generation --
 
   private static String renderFlatPageRequestDto() {
     return """
@@ -3205,100 +3087,6 @@ public record GeneratedSearchQueryPageRequestStrictContract(
 """.formatted(TARGET_PACKAGE);
   }
 
-  /**
-   * Derives a unique entity name from the requestClass, e.g.:
-   * "ProcessInstanceSearchQuery" → "ProcessInstance"
-   * "RoleUserSearchQueryRequest" → "RoleUser"
-   */
-  private static String requestEntityName(RequestEntry e) {
-    return e.requestClass()
-        .replace("SearchQueryRequest", "")
-        .replace("SearchQuery", "");
-  }
-
-  /** Known filter parameter types that use non-standard names in the protocol model. */
-  private static final Map<String, String> FILTER_PARAM_OVERRIDES = Map.of(
-      "toClusterVariableFilter", "ClusterVariableSearchQueryFilterRequest",
-      "toUserTaskAuditLogFilter", "UserTaskAuditLogFilter",
-      "toUserTaskVariableFilter", "UserTaskVariableFilter",
-      "toGlobalTaskListenerFilter", "GlobalTaskListenerSearchQueryFilterRequest");
-
-  // Map: filter method name part → strict contract class name (overrides for non-standard naming)
-  private static final Map<String, String> FILTER_CONTRACT_OVERRIDES = Map.of(
-      "ClusterVariableFilter", "GeneratedClusterVariableSearchQueryFilterRequestStrictContract",
-      "GlobalTaskListenerFilter", "GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract");
-
-  /**
-   * Extracts the strict contract filter class name for a REQUEST_ENTRY's filterExpr.
-   * Returns null for entries that use FilterBuilders (no filter parameter).
-   */
-  private static String extractFilterParamFqn(RequestEntry e) {
-    var expr = e.filterExpr();
-    if (!expr.contains("request.getFilter()")) {
-      return null; // FilterBuilders.xxx().build() — no filter parameter
-    }
-    var m = java.util.regex.Pattern.compile("(to\\w+Filter)\\(").matcher(expr);
-    if (!m.find()) return null;
-    var methodName = m.group(1);
-    // Extract the filter schema name: toXxxFilter → XxxFilter
-    var filterSimple = methodName.substring(2); // strip "to"
-    // Check for override
-    var overrideClass = FILTER_CONTRACT_OVERRIDES.get(filterSimple);
-    if (overrideClass != null) {
-      return TARGET_PACKAGE + "." + overrideClass;
-    }
-    // Standard pattern: XxxFilter → GeneratedXxxFilterStrictContract
-    return TARGET_PACKAGE + "." + dtoClassName(filterSimple);
-  }
-
-  /** Finds the strict contract sort request class for a REQUEST_ENTRY. */
-  private static String findSortContractClass(RequestEntry e, Path packagePath) {
-    // Try common naming patterns
-    String[] candidates = {
-        dtoClassName(e.requestClass().replace("SearchQuery", "SearchQuerySortRequest")),
-        dtoClassName(e.requestClass().replace("SearchQuery", "SearchQuerySortRequest")
-            .replace("Request", "")),
-        dtoClassName(e.requestClass() + "SortRequest"),
-    };
-    for (var c : candidates) {
-      if (Files.exists(packagePath.resolve(c + ".java"))) {
-        return c;
-      }
-    }
-    // Fallback: use the sortFromMethod name to derive it
-    // e.g., sortFromMethod = "fromProcessInstanceSearchQuerySortRequest"
-    String methodName = e.sortFromMethod();
-    if (methodName.startsWith("from")) {
-      String schemaName = methodName.substring(4); // strip "from"
-      String candidate = dtoClassName(schemaName);
-      if (Files.exists(packagePath.resolve(candidate + ".java"))) {
-        return candidate;
-      }
-    }
-    return null; // no sort contract found
-  }
-
-  /** Finds the strict contract filter class for a REQUEST_ENTRY. */
-  private static String findFilterContractClass(RequestEntry e, Path packagePath) {
-    // Extract filter class from filterExpr
-    // e.g., "SearchQueryFilterMapper.toProcessInstanceFilter(request.getFilter())"
-    // → filter schema name is "ProcessInstanceFilter"
-    String filterExpr = e.filterExpr();
-    if (filterExpr.contains("FilterBuilders.")) {
-      return null; // no filter type, uses FilterBuilders directly
-    }
-    var matcher = java.util.regex.Pattern.compile(
-        "SearchQueryFilterMapper\\.to(\\w+)\\(").matcher(filterExpr);
-    if (matcher.find()) {
-      String filterMethodName = matcher.group(1);
-      // filterMethodName = "ProcessInstanceFilter" → schema name
-      String candidate = dtoClassName(filterMethodName);
-      if (Files.exists(packagePath.resolve(candidate + ".java"))) {
-        return candidate;
-      }
-    }
-    return null;
-  }
 
   private static String renderSearchQueryRequestDto(
       String className, String sortContractClass, String filterContractClass) {
@@ -4126,17 +3914,16 @@ public record %s(
    * Resolves a spec schema name to the Java type name to use in generated code.
    * Prefers strict contract types when available, falling back to protocol model types.
    *
-   * Special handling for search query schemas: The protocol model collapses request/result
-   * into one name (e.g. "ProcessInstanceSearchQuery"), but the spec has both
-   * "ProcessInstanceSearchQuery" (result: page/items) and the request body (filter/sort/page).
-   * dtoClassName strips "Result", causing both to map to the same class name — with the
-   * result schema overwriting the request. SEARCH_REQUEST_DTO_OVERRIDES maps the protocol
-   * model request class to the correct Phase 3.5 request DTO.
+   * Special handling for search query schemas: The spec has both a request schema
+   * (with filter/sort/page) and a result schema (with page/items) for each search
+   * endpoint. dtoClassName strips "Result", which could cause both to map to the
+   * same class name. SEARCH_REQUEST_DTO_MAP routes request schemas to the correct
+   * Phase 3.5 request DTO.
    */
   private static String resolveSchemaType(String schemaName) {
     if (schemaName == null) return null;
-    // Check Phase 3.5 search query request DTO overrides first.
-    final var searchRequestDto = SEARCH_REQUEST_DTO_OVERRIDES.get(schemaName);
+    // Check Phase 3.5 search query request DTO map first.
+    final var searchRequestDto = SEARCH_REQUEST_DTO_MAP.get(schemaName);
     if (searchRequestDto != null) return searchRequestDto;
     if (AVAILABLE_STRICT_CONTRACTS.contains(schemaName)) return dtoClassName(schemaName);
     if (AVAILABLE_PROTOCOL_TYPES.contains(schemaName)) return schemaName;
