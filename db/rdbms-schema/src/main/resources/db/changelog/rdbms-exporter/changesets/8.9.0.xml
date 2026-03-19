@@ -1184,6 +1184,30 @@
     </sql>
   </changeSet>
 
+  <!-- The most common queries are on process instances with incident -->
+  <changeSet id="create_process_instance_has_incident_index" author="camunda">
+    <!-- mariadb and h2 do not support partial indices and a regular index would
+    have very bad performance due to the very poor selectivity -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_HAS_INCIDENT"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_HAS_INCIDENT
+        ON ${prefix}PROCESS_INSTANCE ((NUM_INCIDENTS > 0))
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_HAS_INCIDENT
+        ON ${prefix}PROCESS_INSTANCE (NUM_INCIDENTS) WHERE NUM_INCIDENTS > 0
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_HAS_INCIDENT
+        ON ${prefix}PROCESS_INSTANCE (CASE WHEN NUM_INCIDENTS > 0 THEN NUM_INCIDENTS END)
+    </sql>
+  </changeSet>
+
   <!-- Default sort column for process_instance is start_date so we index it to enable index-sort-scans -->
   <changeSet id="create_index_process_instance_start_date" author="camunda">
     <createIndex tableName="${prefix}PROCESS_INSTANCE"
