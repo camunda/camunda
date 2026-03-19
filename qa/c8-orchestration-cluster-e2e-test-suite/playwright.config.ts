@@ -25,8 +25,10 @@ function getTestTypeLabel(): string {
   }
   if (isApiTestsOnly) {
     const database = process.env.DATABASE
-      ? ` - Database ${process.env.DATABASE}`
-      : '';
+        ? ` - Database ${process.env.DATABASE}${
+            process.env.DB_NAME ? ` (${process.env.DB_NAME})` : ''
+        }`
+        : '';
     return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}${database}`;
   }
   const tasklistMode = isV2ModeEnabled ? 'V2' : 'V1';
