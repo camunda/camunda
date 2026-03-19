@@ -29,7 +29,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'true' }}
-      MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '60' }}
+      MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '180' }}
     
     steps:
       - name: Checkout repository
