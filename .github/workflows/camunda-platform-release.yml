@@ -269,6 +269,11 @@ jobs:
           echo "Identity version:"
           ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=version.identity -q -DforceStdout || echo "Failed to get Identity version"
           echo ""
+      - name: Validate flattened POM metadata
+        if: ${{ inputs.dryRun }}
+        uses: ./.github/actions/validate-pom-metadata
+        with:
+          search-root: target/checkout
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
