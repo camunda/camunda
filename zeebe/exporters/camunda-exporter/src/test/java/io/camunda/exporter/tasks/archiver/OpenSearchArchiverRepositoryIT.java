@@ -925,6 +925,7 @@ final class OpenSearchArchiverRepositoryIT {
             new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions()));
     final var repository = createRepository(genericClientSpy);
     final var captor = ArgumentCaptor.forClass(Request.class);
+    final int templateCount = resourceProvider.getIndexTemplateDescriptors().size();
 
     // when
     repository.setLifeCycleToAllIndexes();
@@ -936,15 +937,16 @@ final class OpenSearchArchiverRepositoryIT {
                 verify(
                         genericClientSpy,
                         times(
-                            40) // number of index templates * 2 (for change policy requests and add
-                        // policy requests)
+                            templateCount
+                                * 2) // each template triggers an add policy and a change policy
+                        // request
                         )
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
         .filteredOn(req -> req.getEndpoint().contains("_ism/add"))
-        .hasSize(18)
+        .hasSize(templateCount)
         .allSatisfy(
             request -> {
               final var indexPattern =
