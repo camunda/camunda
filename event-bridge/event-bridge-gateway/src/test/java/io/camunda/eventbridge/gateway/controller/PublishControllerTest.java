@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -85,7 +85,7 @@ class PublishControllerTest {
     void shouldReturn200WithLogPositions() throws Exception {
       // given
       final var batch = smallBatch(new byte[] {1, 2}, new byte[] {3, 4});
-      when(publishActor.publishBatch(anyList()))
+      when(publishActor.publishBatch(any(EventDataBatch.class)))
           .thenReturn(CompletableActorFuture.completed(List.of(101L, 102L)));
 
       // when / then

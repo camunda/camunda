@@ -21,6 +21,13 @@
   <name>Event Bridge Client</name>
 
   <dependencies>
+    <!-- event-bridge-core for EventDataBatch binary protocol -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Jackson for JSON HTTP communication -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

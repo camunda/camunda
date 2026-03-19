@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.transport;
 
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.protocol.CommitOffsetRequestDecoder;
 import io.camunda.eventbridge.core.protocol.CommitOffsetResponseEncoder;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
@@ -24,7 +25,6 @@ import io.camunda.eventbridge.core.protocol.PublishBatchRequestDecoder;
 import io.camunda.eventbridge.core.protocol.PublishBatchResponseEncoder;
 import io.camunda.eventbridge.core.protocol.SubscribeRequestDecoder;
 import io.camunda.eventbridge.core.protocol.SubscribeResponseEncoder;
-import java.util.ArrayList;
 import java.util.List;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,7 +49,7 @@ public final class BrokerSbeCodec {
   // PublishBatch
 
   /** Decoded content of a {@code PublishBatchRequest}. */
-  public record PublishBatchRequest(int partitionId, List<byte[]> payloads) {}
+  public record PublishBatchRequest(int partitionId, EventDataBatch eventBatch) {}
 
   /**
    * Decodes a {@code PublishBatchRequest} SBE message.
@@ -64,14 +64,10 @@ public final class BrokerSbeCodec {
     decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
 
     final int partitionId = decoder.partitionId();
-    final List<byte[]> payloads = new ArrayList<>();
-    for (final PublishBatchRequestDecoder.EventsDecoder evt : decoder.events()) {
-      final int len = evt.payloadLength();
-      final byte[] payload = new byte[len];
-      evt.getPayload(payload, 0, len);
-      payloads.add(payload);
-    }
-    return new PublishBatchRequest(partitionId, payloads);
+    final int batchLen = decoder.eventBatchLength();
+    final byte[] batchBytes = new byte[batchLen];
+    decoder.getEventBatch(batchBytes, 0, batchLen);
+    return new PublishBatchRequest(partitionId, EventDataBatch.fromBytes(batchBytes));
   }
 
   /**

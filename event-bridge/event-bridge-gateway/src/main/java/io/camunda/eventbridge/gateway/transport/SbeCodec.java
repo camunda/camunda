@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.gateway.transport;
 
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.protocol.CommitOffsetRequestEncoder;
 import io.camunda.eventbridge.core.protocol.CommitOffsetResponseDecoder;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
@@ -48,19 +49,17 @@ public final class SbeCodec {
    * Encodes a {@code PublishBatchRequest} SBE message.
    *
    * @param partitionId target partition
-   * @param payloads raw event byte arrays (one per event)
+   * @param batch the event batch to publish
    * @return fully-framed byte array (header + body)
    */
-  public static byte[] encodePublishBatch(final int partitionId, final List<byte[]> payloads) {
+  public static byte[] encodePublishBatch(final int partitionId, final EventDataBatch batch) {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(INITIAL_BUFFER_SIZE);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final PublishBatchRequestEncoder encoder = new PublishBatchRequestEncoder();
     encoder.wrapAndApplyHeader(buf, 0, headerEncoder).partitionId(partitionId);
 
-    final PublishBatchRequestEncoder.EventsEncoder events = encoder.eventsCount(payloads.size());
-    for (final byte[] payload : payloads) {
-      events.next().putPayload(payload, 0, payload.length);
-    }
+    final byte[] batchBytes = batch.toBytes();
+    encoder.putEventBatch(batchBytes, 0, batchBytes.length);
 
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }

@@ -9,6 +9,8 @@ package io.camunda.eventbridge.broker.actor;
 
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.eventbridge.broker.logstream.LogRecordAwaiter;
+import io.camunda.eventbridge.core.EventData;
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.logappend.EventLogAppendEntry;
 import io.camunda.eventbridge.core.logappend.RawEventRecordValue;
@@ -137,10 +139,10 @@ public final class PublishActor extends Actor {
   /**
    * Publishes a batch of raw event payloads to the log. Each event receives its own log position.
    *
-   * @param payloads raw event byte arrays, one per event
+   * @param batch the batch of events to publish
    * @return a future that resolves to the list of log positions assigned to each event in order
    */
-  public ActorFuture<List<Long>> publishBatch(final List<byte[]> payloads) {
+  public ActorFuture<List<Long>> publishBatch(final EventDataBatch batch) {
     final var result = new CompletableActorFuture<List<Long>>();
     actor.call(
         () -> {
@@ -150,22 +152,63 @@ public final class PublishActor extends Actor {
                     "Partition " + partitionId + " is not yet leader; LogStream not connected."));
             return;
           }
-          final var entries =
-              new ArrayList<io.camunda.zeebe.logstreams.log.LogAppendEntry>(payloads.size());
-          for (final byte[] payload : payloads) {
-            final var entry = new EventLogAppendEntry();
-            entry.wrap(-1L, payload);
-            entries.add(entry);
+          final int count = batch.getCount();
+          final int maxBatchSize = properties.publish().maxBatchSize();
+          if (count < 0) {
+            result.completeExceptionally(
+                new IllegalArgumentException("Invalid batch count: " + count));
+            return;
+          }
+          if (count > maxBatchSize) {
+            result.completeExceptionally(
+                new IllegalArgumentException(
+                    "Batch size "
+                        + count
+                        + " exceeds maximum allowed batch size of "
+                        + maxBatchSize));
+            return;
+          }
+          final int maxBatchBytes = properties.publish().maxBatchBytes();
+          if (batch.getSizeInBytes() > maxBatchBytes) {
+            result.completeExceptionally(
+                new IllegalArgumentException(
+                    "Batch payload "
+                        + batch.getSizeInBytes()
+                        + " bytes exceeds maximum of "
+                        + maxBatchBytes
+                        + " bytes"));
+            return;
+          }
+          final int maxEventBytes = properties.publish().maxEventBytes();
+          final var entries = new ArrayList<io.camunda.zeebe.logstreams.log.LogAppendEntry>(count);
+          try {
+            for (final EventData event : batch.getEvents()) {
+              final byte[] body = event.body();
+              if (body.length > maxEventBytes) {
+                throw new IllegalArgumentException(
+                    "Event size "
+                        + body.length
+                        + " bytes exceeds maximum allowed event size of "
+                        + maxEventBytes
+                        + " bytes");
+              }
+              final var entry = new EventLogAppendEntry();
+              entry.wrap(-1L, body);
+              entries.add(entry);
+            }
+          } catch (final IllegalArgumentException e) {
+            result.completeExceptionally(e);
+            return;
           }
           final var writeResult = logStreamWriter.tryWrite(WriteContext.internal(), entries, -1);
           if (writeResult.isRight()) {
             // The LogStreamWriter returns the highest position in the batch.
             // Positions are sequential: highestPos - n + 1 … highestPos
             final long highest = writeResult.get();
-            final int count = payloads.size();
-            final List<Long> positions = new ArrayList<>(count);
-            for (int i = 0; i < count; i++) {
-              positions.add(highest - (count - 1 - i));
+            final int actualCount = entries.size();
+            final List<Long> positions = new ArrayList<>(actualCount);
+            for (int i = 0; i < actualCount; i++) {
+              positions.add(highest - (actualCount - 1 - i));
             }
             notifyAwaiters();
             result.complete(positions);

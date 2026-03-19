@@ -16,6 +16,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.eventbridge.core.EventData;
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.logappend.RawEventRecordValue;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -24,7 +26,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -74,6 +75,15 @@ class PublishActorTest {
   // ---------------------------------------------------------------------------
   // publishBatch
 
+  /** Creates an {@link EventDataBatch} containing the given payloads, using generous limits. */
+  private static EventDataBatch batchOf(final byte[]... payloads) {
+    final var batch = EventDataBatch.create(10_000_000, 1_000_000, 10_000);
+    for (final byte[] payload : payloads) {
+      batch.tryAdd(new EventData(payload));
+    }
+    return batch;
+  }
+
   @Nested
   class PublishBatch {
 
@@ -83,7 +93,7 @@ class PublishActorTest {
       when(writer.tryWrite(any(), anyList(), anyLong())).thenReturn(Either.right(1001L));
 
       // when
-      final var positions = actor.publishBatch(List.of(new byte[] {1, 2, 3})).join();
+      final var positions = actor.publishBatch(batchOf(new byte[] {1, 2, 3})).join();
 
       // then
       assertThat(positions).containsExactly(1001L);
@@ -96,7 +106,7 @@ class PublishActorTest {
 
       // when
       final var positions =
-          actor.publishBatch(List.of(new byte[] {1}, new byte[] {2}, new byte[] {3})).join();
+          actor.publishBatch(batchOf(new byte[] {1}, new byte[] {2}, new byte[] {3})).join();
 
       // then
       assertThat(positions).containsExactly(1001L, 1002L, 1003L);
@@ -111,7 +121,7 @@ class PublishActorTest {
       final var positions =
           actor
               .publishBatch(
-                  List.of(new byte[1], new byte[1], new byte[1], new byte[1], new byte[1]))
+                  batchOf(new byte[1], new byte[1], new byte[1], new byte[1], new byte[1]))
               .join();
 
       // then — positions should be [16, 17, 18, 19, 20]
@@ -127,7 +137,7 @@ class PublishActorTest {
           .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
 
       // when
-      final var future = actor.publishBatch(List.of(new byte[] {0}));
+      final var future = actor.publishBatch(batchOf(new byte[] {0}));
 
       // then
       assertThat(future).failsWithin(java.time.Duration.ofSeconds(5));
@@ -142,7 +152,7 @@ class PublishActorTest {
       actor.disconnect().join();
 
       // when
-      final var future = actor.publishBatch(List.of(new byte[] {0}));
+      final var future = actor.publishBatch(batchOf(new byte[] {0}));
 
       // then
       assertThat(future).failsWithin(java.time.Duration.ofSeconds(5));
@@ -155,7 +165,7 @@ class PublishActorTest {
 
       // when
       try {
-        actor.publishBatch(List.of(new byte[] {0})).join();
+        actor.publishBatch(batchOf(new byte[] {0})).join();
       } catch (final Exception ignored) {
         // expected — future completes exceptionally when disconnected
       }
@@ -175,7 +185,7 @@ class PublishActorTest {
       actor.connect(newWriter, newReader).join();
 
       // when
-      final var positions = actor.publishBatch(List.of(new byte[] {1})).join();
+      final var positions = actor.publishBatch(batchOf(new byte[] {1})).join();
 
       // then
       assertThat(positions).containsExactly(5L);
@@ -246,7 +256,7 @@ class PublishActorTest {
       final var awaitFuture = actor.awaitRecords(0, 5_000);
 
       // when — write one event; notifyAwaiters is called inside publishBatch
-      actor.publishBatch(List.of(new byte[] {42})).join();
+      actor.publishBatch(batchOf(new byte[] {42})).join();
 
       // then — the parked future should complete (woken by notify)
       assertThat(awaitFuture).succeedsWithin(java.time.Duration.ofSeconds(5));
@@ -270,7 +280,7 @@ class PublishActorTest {
 
       // Force completion by writing a batch immediately.
       when(writer.tryWrite(any(), anyList(), anyLong())).thenReturn(Either.right(1L));
-      actor.publishBatch(List.of(new byte[] {1})).join();
+      actor.publishBatch(batchOf(new byte[] {1})).join();
 
       assertThat(awaitFuture).succeedsWithin(java.time.Duration.ofSeconds(5));
     }
@@ -293,7 +303,7 @@ class PublishActorTest {
       final var future2 = actor.awaitRecords(0, 5_000);
 
       // when — single write notifies all awaiters
-      actor.publishBatch(List.of(new byte[] {1})).join();
+      actor.publishBatch(batchOf(new byte[] {1})).join();
 
       // then
       assertThat(future1).succeedsWithin(java.time.Duration.ofSeconds(5));
@@ -313,7 +323,7 @@ class PublishActorTest {
       actor.disconnect().join();
 
       // when / then
-      assertThat(actor.publishBatch(List.of(new byte[] {0})))
+      assertThat(actor.publishBatch(batchOf(new byte[] {0})))
           .failsWithin(java.time.Duration.ofSeconds(5));
     }
 
@@ -328,7 +338,7 @@ class PublishActorTest {
       actor.connect(newWriter, newReader).join();
 
       // when
-      final var positions = actor.publishBatch(List.of(new byte[] {7})).join();
+      final var positions = actor.publishBatch(batchOf(new byte[] {7})).join();
 
       // then
       assertThat(positions).containsExactly(99L);

@@ -41,7 +41,9 @@ public record EventBridgeProperties(
     if (retention == null) retention = new RetentionProperties(1_000_000);
     if (raft == null) raft = new RaftProperties(1);
     if (cluster == null)
-      cluster = new ClusterProperties("event-bridge", "broker-0", "0.0.0.0", 26502, null, null, List.of());
+      cluster =
+          new ClusterProperties(
+              "event-bridge", "broker-0", "0.0.0.0", 26502, null, null, List.of());
   }
 
   /**

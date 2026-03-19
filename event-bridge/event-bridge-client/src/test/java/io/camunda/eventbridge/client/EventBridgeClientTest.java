@@ -18,7 +18,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import java.util.Base64;
+import io.camunda.eventbridge.core.EventData;
+import io.camunda.eventbridge.core.EventDataBatch;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,9 +52,12 @@ class EventBridgeClientTest {
 
       final byte[] payload1 = {1, 2, 3};
       final byte[] payload2 = {4, 5, 6};
+      final EventDataBatch batch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      batch.tryAdd(new EventData(payload1));
+      batch.tryAdd(new EventData(payload2));
 
       // when
-      final List<Long> positions = client.publishBatch(0, List.of(payload1, payload2)).get();
+      final List<Long> positions = client.publishBatch(0, batch).get();
 
       // then
       assertThat(positions).containsExactly(1001L, 1002L);
@@ -72,7 +76,9 @@ class EventBridgeClientTest {
                           "{\"error\":\"PARTITION_NOT_FOUND\",\"message\":\"No such partition\"}")));
 
       // when / then
-      assertThatThrownBy(() -> client.publishBatch(99, List.of(new byte[] {1})).get())
+      final EventDataBatch batch99 = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      batch99.tryAdd(new EventData(new byte[] {1}));
+      assertThatThrownBy(() -> client.publishBatch(99, batch99).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(EventBridgeException.class)
           .hasMessageContaining("400");
@@ -90,22 +96,24 @@ class EventBridgeClientTest {
                       .withBody("{\"error\":\"LEADER_UNAVAILABLE\",\"message\":\"No leader\"}")));
 
       // when / then
-      assertThatThrownBy(() -> client.publishBatch(0, List.of(new byte[] {1})).get())
+      final EventDataBatch batch503 = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      batch503.tryAdd(new EventData(new byte[] {1}));
+      assertThatThrownBy(() -> client.publishBatch(0, batch503).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(EventBridgeException.class)
           .hasMessageContaining("503");
     }
 
     @Test
-    void shouldEncodePayloadsAsBase64InRequest() throws Exception {
+    void shouldSendBatchAsBinaryOctetStream() throws Exception {
       // given
       final byte[] payload = {0x01, 0x02, 0x03};
-      final String expectedBase64 = Base64.getEncoder().encodeToString(payload);
+      final EventDataBatch batch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      batch.tryAdd(new EventData(payload));
 
       stubFor(
           post(urlEqualTo("/v1/events/0"))
-              .withRequestBody(
-                  com.github.tomakehurst.wiremock.client.WireMock.containing(expectedBase64))
+              .withHeader("Content-Type", WireMock.equalTo("application/octet-stream"))
               .willReturn(
                   aResponse()
                       .withStatus(200)
@@ -113,7 +121,7 @@ class EventBridgeClientTest {
                       .withBody("{\"positions\":[42]}")));
 
       // when
-      final List<Long> positions = client.publishBatch(0, List.of(payload)).get();
+      final List<Long> positions = client.publishBatch(0, batch).get();
 
       // then
       assertThat(positions).containsExactly(42L);
@@ -130,8 +138,11 @@ class EventBridgeClientTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody("{\"positions\":[500]}")));
 
+      final EventDataBatch batch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      batch.tryAdd(new EventData(new byte[] {9, 8, 7}));
+
       // when
-      final List<Long> positions = client.publishBatch(2, List.of(new byte[] {9, 8, 7})).get();
+      final List<Long> positions = client.publishBatch(2, batch).get();
 
       // then
       assertThat(positions).containsExactly(500L);
@@ -151,29 +162,34 @@ class EventBridgeClientTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody("{\"positions\":[1]}")));
 
+      final EventDataBatch trailingBatch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      trailingBatch.tryAdd(new EventData(new byte[] {1}));
+
       // when — request must go to /v1/events/0, not //v1/events/0
-      final List<Long> positions =
-          trailingSlashClient.publishBatch(0, List.of(new byte[] {1})).get();
+      final List<Long> positions = trailingSlashClient.publishBatch(0, trailingBatch).get();
 
       // then
       assertThat(positions).containsExactly(1L);
     }
 
     @Test
-    void shouldSendApplicationJsonContentTypeHeader(final WireMockRuntimeInfo wmRuntimeInfo)
+    void shouldSendApplicationOctetStreamContentTypeHeader(final WireMockRuntimeInfo wmRuntimeInfo)
         throws Exception {
       // given
       stubFor(
           post(urlEqualTo("/v1/events/0"))
-              .withHeader("Content-Type", WireMock.containing("application/json"))
+              .withHeader("Content-Type", WireMock.equalTo("application/octet-stream"))
               .willReturn(
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
                       .withBody("{\"positions\":[10]}")));
 
+      final EventDataBatch batch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
+      batch.tryAdd(new EventData(new byte[] {1}));
+
       // when
-      final List<Long> positions = client.publishBatch(0, List.of(new byte[] {1})).get();
+      final List<Long> positions = client.publishBatch(0, batch).get();
 
       // then — WireMock only matches the stub if Content-Type is present; positions returned means
       // header was correct

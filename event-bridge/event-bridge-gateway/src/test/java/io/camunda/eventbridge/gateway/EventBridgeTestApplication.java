@@ -32,8 +32,8 @@ import org.springframework.context.annotation.Import;
  * Minimal Spring Boot configuration for {@link StandaloneEventBridgeIT}.
  *
  * <p>Provides the two cross-cutting infrastructure beans — {@link ActorScheduler} and {@link
- * AtomixCluster} — that the broker module requires, plus imports
- * {@link EventBridgeGatewayConfiguration} (which in turn imports the broker module).
+ * AtomixCluster} — that the broker module requires, plus imports {@link
+ * EventBridgeGatewayConfiguration} (which in turn imports the broker module).
  *
  * <p>The {@code event-bridge-gateway} module does not declare Spring Security or Camunda Identity
  * on its classpath, so no authentication filter chain is registered and all HTTP endpoints are

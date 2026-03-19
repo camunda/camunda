@@ -500,10 +500,14 @@ final class BrokerRequestDispatcherTest {
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final PublishBatchRequestEncoder encoder = new PublishBatchRequestEncoder();
     encoder.wrapAndApplyHeader(buf, 0, headerEncoder).partitionId(partitionId);
-    final PublishBatchRequestEncoder.EventsEncoder evts = encoder.eventsCount(payloads.size());
+    final io.camunda.eventbridge.core.EventDataBatch batch =
+        io.camunda.eventbridge.core.EventDataBatch.create(
+            Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
     for (final byte[] payload : payloads) {
-      evts.next().putPayload(payload, 0, payload.length);
+      batch.tryAdd(new io.camunda.eventbridge.core.EventData(payload));
     }
+    final byte[] batchBytes = batch.toBytes();
+    encoder.putEventBatch(batchBytes, 0, batchBytes.length);
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }
 

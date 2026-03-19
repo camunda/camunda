@@ -15,7 +15,6 @@ import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.ErrorResponse;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PublishBatchResponse;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -99,11 +98,10 @@ public class PublishController {
                   "PARTITION_NOT_FOUND", "Partition " + partitionId + " does not exist"));
     }
 
-    // Per-event size limit — iterates events once; also extracts payloads for the actor call.
+    // Per-event size limit — iterates events once for validation before forwarding to the actor.
     // The iterator performs lazy frame validation and may throw IllegalArgumentException for
     // structurally malformed frames that passed the header-only construction-time checks.
     final int maxEventBytes = properties.publish().maxEventBytes();
-    final List<byte[]> payloads = new ArrayList<>(batch.getCount());
     try {
       for (final EventData event : batch.getEvents()) {
         if (event.sizeInBytes() > maxEventBytes) {
@@ -113,14 +111,13 @@ public class PublishController {
                       "PAYLOAD_TOO_LARGE",
                       "Event payload exceeds maximum size of " + maxEventBytes + " bytes"));
         }
-        payloads.add(event.body());
       }
     } catch (final IllegalArgumentException e) {
       return ResponseEntity.badRequest().body(new ErrorResponse("INVALID_REQUEST", e.getMessage()));
     }
 
     try {
-      final List<Long> positions = actor.publishBatch(payloads).get();
+      final List<Long> positions = actor.publishBatch(batch).get();
       return ResponseEntity.ok(new PublishBatchResponse(positions));
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();

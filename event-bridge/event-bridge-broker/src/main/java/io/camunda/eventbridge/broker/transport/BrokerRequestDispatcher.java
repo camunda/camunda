@@ -141,11 +141,16 @@ public final class BrokerRequestDispatcher {
     }
 
     return actor
-        .publishBatch(req.payloads())
+        .publishBatch(req.eventBatch())
         .toCompletableFuture()
         .thenApply(BrokerSbeCodec::encodePublishBatchSuccess)
         .exceptionally(
             t -> {
+              final Throwable cause = unwrap(t);
+              if (cause instanceof IllegalArgumentException) {
+                return BrokerSbeCodec.encodePublishBatchError(
+                    ErrorCode.INVALID_REQUEST, rootMessage(t));
+              }
               LOG.error("Publish failed on partition {} (sender={})", req.partitionId(), sender, t);
               return BrokerSbeCodec.encodePublishBatchError(
                   ErrorCode.LEADER_UNAVAILABLE, rootMessage(t));

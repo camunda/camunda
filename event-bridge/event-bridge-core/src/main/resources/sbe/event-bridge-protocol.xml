@@ -9,7 +9,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   package="io.camunda.eventbridge.core.protocol"
   id="200"
-  version="1"
+  version="2"
   semanticVersion="${project.version}"
   description="Event Bridge Protocol Schema"
   byteOrder="littleEndian">
@@ -59,9 +59,7 @@
        ===================================================================== -->
   <sbe:message name="PublishBatchRequest" id="1" description="Publish a batch of events to a partition">
     <field name="partitionId" id="1" type="int32"/>
-    <group name="events" id="2" dimensionType="groupSizeEncoding">
-      <data name="payload" id="3" type="varDataEncoding"/>
-    </group>
+    <data name="eventBatch" id="2" type="varDataEncoding"/>
   </sbe:message>
 
   <!-- =====================================================================

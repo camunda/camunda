@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.eventbridge.core.EventDataBatch;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -15,7 +16,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -66,38 +66,30 @@ public final class EventBridgeClient {
    * Publishes a batch of raw binary events to the given partition.
    *
    * @param partitionId target partition
-   * @param events raw event payloads, one per event
+   * @param batch the event batch to publish
    * @return a future resolving to the list of log positions assigned to each event in order
    * @throws EventBridgeException (exceptionally) on HTTP 4xx/5xx
    */
   public CompletableFuture<List<Long>> publishBatch(
-      final int partitionId, final List<byte[]> events) {
+      final int partitionId, final EventDataBatch batch) {
     return CompletableFuture.supplyAsync(
         () -> {
-          final var encodedEvents = new ArrayList<String>(events.size());
-          for (final byte[] e : events) {
-            encodedEvents.add(Base64.getEncoder().encodeToString(e));
-          }
-          final Map<String, Object> body = Map.of("events", encodedEvents);
-          final String json;
-          try {
-            json = objectMapper.writeValueAsString(body);
-          } catch (final IOException e) {
-            throw new EventBridgeException("Failed to serialize publish request", e);
-          }
+          final byte[] body = batch.toBytes();
 
           final var request =
               HttpRequest.newBuilder()
                   .uri(URI.create(gatewayUrl + "/v1/events/" + partitionId))
-                  .header("Content-Type", "application/json")
-                  .POST(HttpRequest.BodyPublishers.ofString(json))
+                  .header("Content-Type", "application/octet-stream")
+                  .POST(HttpRequest.BodyPublishers.ofByteArray(body))
                   .build();
 
           final HttpResponse<String> response;
           try {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
           } catch (final IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
             throw new EventBridgeException("HTTP request failed", e);
           }
 
@@ -111,7 +103,7 @@ public final class EventBridgeClient {
             final var result =
                 (Map<String, Object>) objectMapper.readValue(response.body(), Map.class);
             @SuppressWarnings("unchecked")
-            final List<Number> positions = (List<Number>) result.get("positions");
+            final List<Number> positions = (List<Number>) result.get("logPositions");
             final var longPositions = new ArrayList<Long>(positions.size());
             for (final Number n : positions) {
               longPositions.add(n.longValue());
@@ -152,7 +144,9 @@ public final class EventBridgeClient {
           try {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
           } catch (final IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
             throw new EventBridgeException("HTTP request failed", e);
           }
 
@@ -196,7 +190,9 @@ public final class EventBridgeClient {
     try {
       response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (final IOException | InterruptedException e) {
-      if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       throw new EventBridgeException("HTTP request failed", e);
     }
 

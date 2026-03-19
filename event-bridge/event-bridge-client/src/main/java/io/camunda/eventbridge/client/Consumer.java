@@ -145,8 +145,7 @@ public final class Consumer {
         () -> {
           checkNotClosed();
           final var httpClient = client.getHttpClient();
-          final String url =
-              client.getGatewayUrl() + "/v1/events/" + partitionId + "/commit";
+          final String url = client.getGatewayUrl() + "/v1/events/" + partitionId + "/commit";
           final String jsonBody;
           try {
             jsonBody =
