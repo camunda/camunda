@@ -70,6 +70,12 @@ class GlobalExceptionHandlerTest {
       return body.field();
     }
 
+    /** Endpoint that only accepts {@code application/octet-stream} — other types trigger 415. */
+    @PostMapping(value = "/octet-stream-only", consumes = "application/octet-stream")
+    String withOctetStream(@RequestBody final byte[] body) {
+      return "ok";
+    }
+
     /**
      * Endpoint that always throws — verifies the catch-all handler maps unknown exceptions to 500.
      */
@@ -121,10 +127,7 @@ class GlobalExceptionHandlerTest {
       // given: body contains invalid JSON that cannot be deserialized
       // when
       mockMvc
-          .perform(
-              post("/test/body")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{bad json"))
+          .perform(post("/test/body").contentType(MediaType.APPLICATION_JSON).content("{bad json"))
           // then
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.error").value("INVALID_REQUEST"))
@@ -144,7 +147,24 @@ class GlobalExceptionHandlerTest {
           // then
           .andExpect(status().isMethodNotAllowed())
           .andExpect(jsonPath("$.error").value("METHOD_NOT_ALLOWED"))
-          .andExpect(jsonPath("$.message").value("HTTP method 'POST' is not supported for this endpoint"));
+          .andExpect(
+              jsonPath("$.message").value("HTTP method 'POST' is not supported for this endpoint"));
+    }
+  }
+
+  @Nested
+  class UnsupportedMediaType {
+
+    @Test
+    void shouldReturn415WithUnsupportedMediaTypeError() throws Exception {
+      // given: endpoint accepts only application/octet-stream; sending JSON triggers 415
+      // when
+      mockMvc
+          .perform(
+              post("/test/octet-stream-only").contentType(MediaType.APPLICATION_JSON).content("{}"))
+          // then
+          .andExpect(status().isUnsupportedMediaType())
+          .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"));
     }
   }
 

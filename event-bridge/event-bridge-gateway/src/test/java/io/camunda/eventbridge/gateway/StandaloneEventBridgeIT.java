@@ -14,6 +14,8 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.core.EventData;
+import io.camunda.eventbridge.core.EventDataBatch;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
@@ -116,8 +118,7 @@ public class StandaloneEventBridgeIT {
         .timeout(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(500))
         .untilAsserted(
-            () ->
-                assertThatCode(() -> client.getLatestPosition(0)).doesNotThrowAnyException());
+            () -> assertThatCode(() -> client.getLatestPosition(0)).doesNotThrowAnyException());
   }
 
   // -------------------------------------------------------------------------
@@ -139,8 +140,13 @@ public class StandaloneEventBridgeIT {
             "world".getBytes(StandardCharsets.UTF_8),
             "event-bridge".getBytes(StandardCharsets.UTF_8));
 
+    final var batch = EventDataBatch.create(10 * 1024 * 1024, 1024 * 1024, 1000);
+    for (final byte[] event : events) {
+      batch.tryAdd(new EventData(event));
+    }
+
     // when
-    final List<Long> positions = client.publishBatch(0, events).get(10, TimeUnit.SECONDS);
+    final List<Long> positions = client.publishBatch(0, batch).get(10, TimeUnit.SECONDS);
 
     // then
     assertThat(positions).hasSize(3).doesNotContainNull();
@@ -198,8 +204,10 @@ public class StandaloneEventBridgeIT {
     final byte[] payload2 = "poll-event-two".getBytes(StandardCharsets.UTF_8);
 
     // Publish before subscribing so events are already in the log when poll is called.
-    final List<Long> positions =
-        client.publishBatch(0, List.of(payload1, payload2)).get(10, TimeUnit.SECONDS);
+    final var batchToPublish = EventDataBatch.create(10 * 1024 * 1024, 1024 * 1024, 1000);
+    batchToPublish.tryAdd(new EventData(payload1));
+    batchToPublish.tryAdd(new EventData(payload2));
+    final List<Long> positions = client.publishBatch(0, batchToPublish).get(10, TimeUnit.SECONDS);
     assertThat(positions).hasSize(2);
     final long pos1 = positions.get(0);
     final long pos2 = positions.get(1);
@@ -244,10 +252,9 @@ public class StandaloneEventBridgeIT {
   void shouldCommitOffsetIdempotently() throws Exception {
     // given
     final var client = newClient();
-    final List<Long> positions =
-        client
-            .publishBatch(0, List.of("commit-event".getBytes(StandardCharsets.UTF_8)))
-            .get(10, TimeUnit.SECONDS);
+    final var commitBatch = EventDataBatch.create(10 * 1024 * 1024, 1024 * 1024, 1000);
+    commitBatch.tryAdd(new EventData("commit-event".getBytes(StandardCharsets.UTF_8)));
+    final List<Long> positions = client.publishBatch(0, commitBatch).get(10, TimeUnit.SECONDS);
     final long position = positions.get(0);
 
     final Consumer consumer =

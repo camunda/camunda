@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.broker.topology.TopologyService;
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
 import io.camunda.eventbridge.core.protocol.MessageHeaderDecoder;
 import io.camunda.eventbridge.core.transport.MessageTypes;
@@ -119,19 +120,19 @@ public class BrokerRequestRouter {
   // Partition leader operations
 
   /**
-   * Publishes a batch of raw event payloads to the given partition.
+   * Publishes an event batch to the given partition.
    *
    * @param partitionId target partition
-   * @param payloads raw event byte arrays (one per event)
+   * @param batch the event batch to publish
    * @return future that resolves to the list of log positions assigned to each event in order;
    *     completes exceptionally with {@link BrokerException} on error
    */
   public CompletableFuture<List<Long>> publishBatch(
-      final int partitionId, final List<byte[]> payloads) {
+      final int partitionId, final EventDataBatch batch) {
     if (messagingService == null) {
       return unavailable("MessagingService not available (no AtomixCluster)");
     }
-    final byte[] request = SbeCodec.encodePublishBatch(partitionId, payloads);
+    final byte[] request = SbeCodec.encodePublishBatch(partitionId, batch);
     return sendToLeader(partitionId, MessageTypes.PRODUCE_REQUEST, request, DEFAULT_TIMEOUT_MS)
         .thenApply(
             bytes -> {

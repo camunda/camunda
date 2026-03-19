@@ -20,6 +20,8 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.broker.topology.TopologyService;
+import io.camunda.eventbridge.core.EventData;
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
 import io.camunda.eventbridge.core.transport.MessageTypes;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.PollParams;
@@ -83,7 +85,7 @@ class BrokerRequestRouterTest {
       // when
       final List<Long> positions =
           router
-              .publishBatch(PARTITION_0, List.of(new byte[] {1}, new byte[] {2}, new byte[] {3}))
+              .publishBatch(PARTITION_0, multiBatch(new byte[] {1}, new byte[] {2}, new byte[] {3}))
               .get();
 
       // then
@@ -100,7 +102,8 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(successResponse));
 
       // when
-      final List<Long> positions = router.publishBatch(PARTITION_0, List.of(new byte[] {1})).get();
+      final List<Long> positions =
+          router.publishBatch(PARTITION_0, singleEventBatch(new byte[] {1})).get();
 
       // then
       assertThat(positions).containsExactly(200L);
@@ -120,7 +123,8 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(successResponse));
 
       // when
-      final List<Long> positions = router.publishBatch(PARTITION_0, List.of(new byte[] {1})).get();
+      final List<Long> positions =
+          router.publishBatch(PARTITION_0, singleEventBatch(new byte[] {1})).get();
 
       // then
       assertThat(positions).containsExactly(300L);
@@ -137,7 +141,8 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.failedFuture(new ConnectException("refused")));
 
       // when / then
-      assertThatThrownBy(() -> router.publishBatch(PARTITION_0, List.of(new byte[] {1})).get())
+      assertThatThrownBy(
+              () -> router.publishBatch(PARTITION_0, singleEventBatch(new byte[] {1})).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class);
 
@@ -152,7 +157,8 @@ class BrokerRequestRouterTest {
       when(topologyService.getLeaderAddress(PARTITION_0)).thenReturn(Optional.empty());
 
       // when / then
-      assertThatThrownBy(() -> router.publishBatch(PARTITION_0, List.of(new byte[] {1})).get())
+      assertThatThrownBy(
+              () -> router.publishBatch(PARTITION_0, singleEventBatch(new byte[] {1})).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class);
 
@@ -168,7 +174,8 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(errorResponse));
 
       // when / then
-      assertThatThrownBy(() -> router.publishBatch(PARTITION_0, List.of(new byte[] {1})).get())
+      assertThatThrownBy(
+              () -> router.publishBatch(PARTITION_0, singleEventBatch(new byte[] {1})).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -563,7 +570,10 @@ class BrokerRequestRouterTest {
 
       // when / then – partition operation returns LEADER_UNAVAILABLE
       assertThatThrownBy(
-              () -> routerWithoutCluster.publishBatch(PARTITION_0, List.of(new byte[] {1})).get())
+              () ->
+                  routerWithoutCluster
+                      .publishBatch(PARTITION_0, singleEventBatch(new byte[] {1}))
+                      .get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -836,5 +846,21 @@ class BrokerRequestRouterTest {
     final byte[] result = new byte[length];
     buf.getBytes(0, result, 0, length);
     return result;
+  }
+
+  /** Creates a single-event {@link EventDataBatch} for use in publish tests. */
+  private static EventDataBatch singleEventBatch(final byte[] body) {
+    final var batch = EventDataBatch.create(10 * 1024 * 1024, 1024 * 1024, 1000);
+    batch.tryAdd(new EventData(body));
+    return batch;
+  }
+
+  /** Creates a multi-event {@link EventDataBatch} for use in publish tests. */
+  private static EventDataBatch multiBatch(final byte[]... bodies) {
+    final var batch = EventDataBatch.create(10 * 1024 * 1024, 1024 * 1024, 1000);
+    for (final byte[] body : bodies) {
+      batch.tryAdd(new EventData(body));
+    }
+    return batch;
   }
 }

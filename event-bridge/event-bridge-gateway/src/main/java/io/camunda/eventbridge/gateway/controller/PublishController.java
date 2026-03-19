@@ -7,13 +7,15 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
+import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
 import io.camunda.eventbridge.broker.actor.PublishActor;
+import io.camunda.eventbridge.core.EventData;
+import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.ErrorResponse;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PublishRequest;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PublishResponse;
+import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PublishBatchResponse;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -30,10 +32,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Handles event publish requests: {@code POST /v1/events/{partitionId}}.
  *
- * <p>Validates the batch size and individual event payload sizes configured via {@link
- * EventBridgeProperties}, then routes to the {@link PublishActor} for the requested partition. Each
- * batch is written as a single RAFT log entry; individual events within the batch receive
- * sequential log positions.
+ * <p>Accepts {@code Content-Type: application/octet-stream} only. The request body must be a valid
+ * {@link EventDataBatch} binary serialisation. Validates batch-level and per-event size limits
+ * configured via {@link EventBridgeProperties}, then routes to the {@link PublishActor} for the
+ * requested partition. Each batch is written as a single RAFT log entry; individual events within
+ * the batch receive sequential log positions.
  */
 @RestController
 @RequestMapping("/v1/events")
@@ -51,28 +54,43 @@ public class PublishController {
   }
 
   /**
-   * Publishes a batch of base64-encoded events to the given partition.
+   * Publishes a binary-framed batch of events to the given partition.
    *
    * <p>Returns the log positions assigned to each event in input order.
    */
-  @PostMapping("/{partitionId}")
+  @PostMapping(value = "/{partitionId}", consumes = APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<?> publish(
-      @PathVariable final int partitionId, @RequestBody final PublishRequest request) {
+      @PathVariable final int partitionId, @RequestBody final byte[] requestBody) {
 
-    if (request == null || request.events() == null || request.events().isEmpty()) {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("INVALID_REQUEST", "events must be a non-empty array"));
+    // Deserialise and validate the binary framing
+    final EventDataBatch batch;
+    try {
+      batch = EventDataBatch.fromBytes(requestBody);
+    } catch (final IllegalArgumentException e) {
+      return ResponseEntity.badRequest().body(new ErrorResponse("INVALID_REQUEST", e.getMessage()));
     }
 
-    final int maxBatch = properties.publish().maxBatchSize();
-    if (request.events().size() > maxBatch) {
+    // Batch-level event count limit (uses framing header — no event iteration)
+    final int maxBatchSize = properties.publish().maxBatchSize();
+    if (batch.getCount() > maxBatchSize) {
       return ResponseEntity.badRequest()
           .body(
               new ErrorResponse(
-                  "BATCH_TOO_LARGE",
-                  "Batch exceeds the maximum allowed size of " + maxBatch + " events"));
+                  "PAYLOAD_TOO_LARGE",
+                  "Batch exceeds maximum allowed size of " + maxBatchSize + " events"));
     }
 
+    // Batch-level total payload size limit (uses framing header — no event iteration)
+    final int maxBatchBytes = properties.publish().maxBatchBytes();
+    if (batch.getSizeInBytes() > maxBatchBytes) {
+      return ResponseEntity.badRequest()
+          .body(
+              new ErrorResponse(
+                  "PAYLOAD_TOO_LARGE",
+                  "Batch payload exceeds maximum of " + maxBatchBytes + " bytes"));
+    }
+
+    // Partition lookup
     final PublishActor actor = publishActors.get(partitionId);
     if (actor == null) {
       return ResponseEntity.badRequest()
@@ -81,30 +99,23 @@ public class PublishController {
                   "PARTITION_NOT_FOUND", "Partition " + partitionId + " does not exist"));
     }
 
-    final List<byte[]> payloads = new ArrayList<>(request.events().size());
-    for (final String encoded : request.events()) {
-      final byte[] decoded;
-      try {
-        decoded = Base64.getDecoder().decode(encoded);
-      } catch (final IllegalArgumentException e) {
-        return ResponseEntity.badRequest()
-            .body(new ErrorResponse("INVALID_REQUEST", "Event payload is not valid Base64"));
-      }
-      if (decoded.length > properties.publish().maxEventBytes()) {
+    // Per-event size limit — iterates events once; also extracts payloads for the actor call
+    final int maxEventBytes = properties.publish().maxEventBytes();
+    final List<byte[]> payloads = new ArrayList<>(batch.getCount());
+    for (final EventData event : batch.getEvents()) {
+      if (event.sizeInBytes() > maxEventBytes) {
         return ResponseEntity.badRequest()
             .body(
                 new ErrorResponse(
                     "PAYLOAD_TOO_LARGE",
-                    "Event payload exceeds maximum size of "
-                        + properties.publish().maxEventBytes()
-                        + " bytes"));
+                    "Event payload exceeds maximum size of " + maxEventBytes + " bytes"));
       }
-      payloads.add(decoded);
+      payloads.add(event.body());
     }
 
     try {
       final List<Long> positions = actor.publishBatch(payloads).get();
-      return ResponseEntity.ok(new PublishResponse(positions));
+      return ResponseEntity.ok(new PublishBatchResponse(positions));
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)

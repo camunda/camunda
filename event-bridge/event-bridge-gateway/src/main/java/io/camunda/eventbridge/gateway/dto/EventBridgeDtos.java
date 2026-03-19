@@ -18,9 +18,7 @@ public final class EventBridgeDtos {
   // -------------------------------------------------------------------------
   // Publish
 
-  public record PublishRequest(List<String> events) {}
-
-  public record PublishResponse(List<Long> positions) {}
+  public record PublishBatchResponse(List<Long> logPositions) {}
 
   // -------------------------------------------------------------------------
   // Poll

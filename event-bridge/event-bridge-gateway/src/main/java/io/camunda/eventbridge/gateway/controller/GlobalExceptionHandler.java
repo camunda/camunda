@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,8 +24,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * Global exception handler for the Event Bridge gateway.
  *
  * <p>Maps common Spring MVC exceptions (missing/malformed request parameters, unreadable request
- * bodies) to structured {@link ErrorResponse} JSON bodies. Uncaught exceptions are caught as a
- * last resort and returned as {@code 500 Internal Server Error} to avoid leaking stack traces.
+ * bodies) to structured {@link ErrorResponse} JSON bodies. Uncaught exceptions are caught as a last
+ * resort and returned as {@code 500 Internal Server Error} to avoid leaking stack traces.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -55,8 +56,7 @@ public class GlobalExceptionHandler {
     return ResponseEntity.badRequest()
         .body(
             new ErrorResponse(
-                "INVALID_REQUEST",
-                "Parameter '" + param + "' must be a valid " + typeName));
+                "INVALID_REQUEST", "Parameter '" + param + "' must be a valid " + typeName));
   }
 
   /**
@@ -82,6 +82,22 @@ public class GlobalExceptionHandler {
             new ErrorResponse(
                 "METHOD_NOT_ALLOWED",
                 "HTTP method '" + ex.getMethod() + "' is not supported for this endpoint"));
+  }
+
+  /**
+   * Unsupported or absent {@code Content-Type} header — e.g. {@code application/json} sent to an
+   * endpoint that only accepts {@code application/octet-stream}.
+   */
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(
+      final HttpMediaTypeNotSupportedException ex) {
+    final String contentType =
+        ex.getContentType() != null ? ex.getContentType().toString() : "none";
+    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+        .body(
+            new ErrorResponse(
+                "UNSUPPORTED_MEDIA_TYPE",
+                "Content-Type '" + contentType + "' is not supported for this endpoint"));
   }
 
   /**
