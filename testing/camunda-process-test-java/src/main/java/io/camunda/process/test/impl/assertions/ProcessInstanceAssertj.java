@@ -24,6 +24,8 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.process.test.api.assertions.VariableSelector;
+import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.Arrays;
@@ -276,7 +278,15 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
-    variableAssertj.hasVariable(getProcessInstanceKey(), variableName, variableValue);
+    variableAssertj.hasVariable(
+        getProcessInstanceKey(), VariableSelectors.byName(variableName), variableValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariable(
+      final VariableSelector variableSelector, final Object variableValue) {
+    variableAssertj.hasVariable(getProcessInstanceKey(), variableSelector, variableValue);
     return this;
   }
 
@@ -284,7 +294,10 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssert hasLocalVariable(
       final String elementId, final String variableName, final Object variableValue) {
     variableAssertj.hasLocalVariable(
-        getProcessInstanceKey(), elementSelector.apply(elementId), variableName, variableValue);
+        getProcessInstanceKey(),
+        elementSelector.apply(elementId),
+        VariableSelectors.byName(variableName),
+        variableValue);
     return this;
   }
 
@@ -292,7 +305,17 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssert hasLocalVariable(
       final ElementSelector selector, final String variableName, final Object variableValue) {
     variableAssertj.hasLocalVariable(
-        getProcessInstanceKey(), selector, variableName, variableValue);
+        getProcessInstanceKey(), selector, VariableSelectors.byName(variableName), variableValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariable(
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final Object variableValue) {
+    variableAssertj.hasLocalVariable(
+        getProcessInstanceKey(), elementSelector, variableSelector, variableValue);
     return this;
   }
 
@@ -303,7 +326,21 @@ public class ProcessInstanceAssertj
       final ThrowingConsumer<T> requirement) {
 
     variableAssertj.hasVariableSatisfies(
-        getProcessInstanceKey(), variableName, variableValueType, requirement);
+        getProcessInstanceKey(),
+        VariableSelectors.byName(variableName),
+        variableValueType,
+        requirement);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasVariableSatisfies(
+      final VariableSelector variableSelector,
+      final Class<T> variableValueType,
+      final ThrowingConsumer<T> requirement) {
+
+    variableAssertj.hasVariableSatisfies(
+        getProcessInstanceKey(), variableSelector, variableValueType, requirement);
     return this;
   }
 
@@ -315,7 +352,10 @@ public class ProcessInstanceAssertj
       final ThrowingConsumer<T> requirement) {
 
     return hasLocalVariableSatisfies(
-        elementSelector.apply(elementId), variableName, variableValueType, requirement);
+        elementSelector.apply(elementId),
+        VariableSelectors.byName(variableName),
+        variableValueType,
+        requirement);
   }
 
   @Override
@@ -326,7 +366,23 @@ public class ProcessInstanceAssertj
       final ThrowingConsumer<T> requirement) {
 
     variableAssertj.hasLocalVariableSatisfies(
-        getProcessInstanceKey(), selector, variableName, variableValueType, requirement);
+        getProcessInstanceKey(),
+        selector,
+        VariableSelectors.byName(variableName),
+        variableValueType,
+        requirement);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final Class<T> variableValueType,
+      final ThrowingConsumer<T> requirement) {
+
+    variableAssertj.hasLocalVariableSatisfies(
+        getProcessInstanceKey(), elementSelector, variableSelector, variableValueType, requirement);
     return this;
   }
 
@@ -423,7 +479,16 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasVariableSatisfiesJudge(
       final String variableName, final String expectation) {
-    variableAssertj.hasVariableSatisfiesJudge(getProcessInstanceKey(), variableName, expectation);
+    variableAssertj.hasVariableSatisfiesJudge(
+        getProcessInstanceKey(), VariableSelectors.byName(variableName), expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesJudge(
+      final VariableSelector variableSelector, final String expectation) {
+    variableAssertj.hasVariableSatisfiesJudge(
+        getProcessInstanceKey(), variableSelector, expectation);
     return this;
   }
 
@@ -431,7 +496,10 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       final String elementId, final String variableName, final String expectation) {
     variableAssertj.hasLocalVariableSatisfiesJudge(
-        getProcessInstanceKey(), elementSelector.apply(elementId), variableName, expectation);
+        getProcessInstanceKey(),
+        elementSelector.apply(elementId),
+        VariableSelectors.byName(variableName),
+        expectation);
     return this;
   }
 
@@ -439,7 +507,17 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       final ElementSelector selector, final String variableName, final String expectation) {
     variableAssertj.hasLocalVariableSatisfiesJudge(
-        getProcessInstanceKey(), selector, variableName, expectation);
+        getProcessInstanceKey(), selector, VariableSelectors.byName(variableName), expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final String expectation) {
+    variableAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(), elementSelector, variableSelector, expectation);
     return this;
   }
 
