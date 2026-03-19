@@ -105,10 +105,23 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   @Override
   public int flush() {
     synchronized (queue) {
+      // Call pre-flush listeners before checking if the queue is empty.
+      // Pre-flush listeners may add items to the queue (e.g., exporter position updates),
+      // ensuring they are persisted even when no handler-processed records were queued
+      // in the current flush interval (e.g., all records were ignored).
+      if (!preFlushListeners.isEmpty()) {
+        LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
+        preFlushListeners.forEach(PreFlushListener::onPreFlush);
+      }
+
       if (queue.isEmpty()) {
         LOG.trace(
             "[RDBMS ExecutionQueue, Partition {}] Skip Flushing because execution queue is empty",
             partitionId);
+        // Still call post-flush listeners so the broker position gets updated.
+        if (!postFlushListeners.isEmpty()) {
+          postFlushListeners.forEach(PostFlushListener::onPostFlush);
+        }
         return 0;
       }
 
@@ -214,11 +227,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         queue.size());
 
     final var startMillis = System.currentTimeMillis();
-
-    if (!preFlushListeners.isEmpty()) {
-      LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
-      preFlushListeners.forEach(PreFlushListener::onPreFlush);
-    }
 
     final var session =
         sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);

@@ -176,6 +176,55 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
+  public void whenFlushIsCalledOnEmptyQueuePreAndPostFlushListenersShouldBeCalled() {
+    // given
+    final var preFlushListener = mock(PreFlushListener.class);
+    final var postFlushListener = mock(PostFlushListener.class);
+    executionQueue.registerPreFlushListener(preFlushListener);
+    executionQueue.registerPostFlushListener(postFlushListener);
+
+    // when
+    executionQueue.flush();
+
+    // then - listeners are called even when queue is empty
+    verify(preFlushListener).onPreFlush();
+    verify(postFlushListener).onPostFlush();
+    verifyNoInteractions(sqlSessionFactory);
+  }
+
+  @Test
+  public void whenFlushIsCalledOnEmptyQueueAndPreFlushListenerAddsItemTheItemIsFlushed() {
+    // given
+    final var preFlushItem =
+        new QueueItem(
+            ContextType.EXPORTER_POSITION,
+            WriteStatementType.UPDATE,
+            1L,
+            "statement1",
+            "parameter1");
+    final var preFlushListener = mock(PreFlushListener.class);
+    final var postFlushListener = mock(PostFlushListener.class);
+    Mockito.doAnswer(
+            invocation -> {
+              executionQueue.executeInQueue(preFlushItem);
+              return null;
+            })
+        .when(preFlushListener)
+        .onPreFlush();
+    executionQueue.registerPreFlushListener(preFlushListener);
+    executionQueue.registerPostFlushListener(postFlushListener);
+
+    // when
+    executionQueue.flush();
+
+    // then - item added by pre-flush listener is flushed and post-flush listener is called
+    verify(preFlushListener).onPreFlush();
+    verify(session).update(preFlushItem.statementId(), preFlushItem.parameter());
+    verify(session).commit();
+    verify(postFlushListener).onPostFlush();
+  }
+
+  @Test
   public void whenFlushIsCalledFlushListenersAreCalled() {
     final var item1 =
         new QueueItem(
