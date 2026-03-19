@@ -466,16 +466,58 @@ class BrokerRequestRouterTest {
   class NoMessagingService {
 
     @Test
-    void shouldFailFastWhenNoCluster() {
+    void shouldFailFastWithLeaderUnavailableWhenNoClusterForPartitionOp() {
       // given – router with no AtomixCluster
       final BrokerRequestRouter routerWithoutCluster =
           new BrokerRequestRouter(/* cluster= */ null, topologyService);
 
-      // when / then
+      // when / then – partition operation returns LEADER_UNAVAILABLE
       assertThatThrownBy(
               () -> routerWithoutCluster.publishBatch(PARTITION_0, List.of(new byte[] {1})).get())
           .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(BrokerException.class);
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.LEADER_UNAVAILABLE);
+    }
+
+    @Test
+    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForSubscribe() {
+      // given
+      final BrokerRequestRouter routerWithoutCluster =
+          new BrokerRequestRouter(/* cluster= */ null, topologyService);
+
+      // when / then – coordinator operation must return COORDINATOR_UNAVAILABLE, not
+      // LEADER_UNAVAILABLE
+      assertThatThrownBy(() -> routerWithoutCluster.subscribe("grp", "c0").get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+    }
+
+    @Test
+    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForHeartbeat() {
+      final BrokerRequestRouter routerWithoutCluster =
+          new BrokerRequestRouter(/* cluster= */ null, topologyService);
+
+      assertThatThrownBy(() -> routerWithoutCluster.heartbeat("grp", "c0").get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+    }
+
+    @Test
+    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForCommitOffset() {
+      final BrokerRequestRouter routerWithoutCluster =
+          new BrokerRequestRouter(/* cluster= */ null, topologyService);
+
+      assertThatThrownBy(
+              () -> routerWithoutCluster.commitOffset(PARTITION_0, "grp", "c0", 100L, 1L).get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
     }
   }
 

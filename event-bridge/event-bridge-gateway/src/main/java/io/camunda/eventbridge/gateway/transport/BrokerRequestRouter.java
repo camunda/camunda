@@ -27,6 +27,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -61,7 +63,21 @@ import org.springframework.stereotype.Component;
  * the coordinator address resolved from {@link TopologyService}. If the coordinator address is
  * unknown, the operation fails immediately with {@link ErrorCode#COORDINATOR_UNAVAILABLE}.
  *
- * <h2>Availability</h2>
+ * <h2>Empty-address retries</h2>
+ *
+ * <p>When {@link TopologyService} returns an empty address (leader or coordinator unknown), the
+ * attempt is counted against the {@value #MAX_ATTEMPTS} budget and the loop recurses immediately
+ * without making a network call. This means that if the routing table has never been populated
+ * (e.g. SWIM gossip has not yet converged), all {@value #MAX_ATTEMPTS} address-lookup checks may
+ * complete without any I/O. Each empty-address check is logged at {@code DEBUG} level with the
+ * label <em>"no I/O"</em> to make this visible in logs.
+ *
+ * <h2>Retry delay</h2>
+ *
+ * <p>A fixed delay of {@value #RETRY_DELAY_MS} ms is inserted before each retry (whether caused by
+ * a transport failure, a retryable response, or an unknown address). This gives SWIM gossip time to
+ * converge and prevents tight retry loops from saturating the thread pool when the leader is
+ * temporarily unavailable.
  *
  * <p>This component requires an {@link AtomixCluster} bean in the Spring context (the bean is
  * optional; without it the router is inoperative and all methods return failed futures). The {@link
@@ -80,6 +96,12 @@ public class BrokerRequestRouter {
 
   /** Default network round-trip timeout for non-poll operations. */
   static final int DEFAULT_TIMEOUT_MS = 5_000;
+
+  /**
+   * Fixed delay in milliseconds inserted before every retry (transport failure, retryable response,
+   * or unknown address). Gives SWIM gossip time to converge between attempts.
+   */
+  static final int RETRY_DELAY_MS = 50;
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerRequestRouter.class);
 
@@ -187,7 +209,8 @@ public class BrokerRequestRouter {
   public CompletableFuture<SubscribeResult> subscribe(
       final String groupId, final String consumerId) {
     if (messagingService == null) {
-      return unavailable("MessagingService not available (no AtomixCluster)");
+      return unavailable(
+          ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
     final byte[] request = SbeCodec.encodeSubscribe(groupId, consumerId);
     return sendToCoordinator(MessageTypes.SUBSCRIBE_REQUEST, request)
@@ -209,7 +232,8 @@ public class BrokerRequestRouter {
    */
   public CompletableFuture<Long> heartbeat(final String groupId, final String consumerId) {
     if (messagingService == null) {
-      return unavailable("MessagingService not available (no AtomixCluster)");
+      return unavailable(
+          ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
     final byte[] request = SbeCodec.encodeHeartbeat(groupId, consumerId);
     return sendToCoordinator(MessageTypes.HEARTBEAT_REQUEST, request)
@@ -239,7 +263,8 @@ public class BrokerRequestRouter {
       final long position,
       final long generation) {
     if (messagingService == null) {
-      return unavailable("MessagingService not available (no AtomixCluster)");
+      return unavailable(
+          ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
     final byte[] request =
         SbeCodec.encodeCommitOffset(partitionId, groupId, consumerId, position, generation);
@@ -263,7 +288,8 @@ public class BrokerRequestRouter {
   public CompletableFuture<FetchAssignmentResult> fetchAssignment(
       final String groupId, final String consumerId) {
     if (messagingService == null) {
-      return unavailable("MessagingService not available (no AtomixCluster)");
+      return unavailable(
+          ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
     final byte[] request = SbeCodec.encodeFetchAssignment(groupId, consumerId);
     return sendToCoordinator(MessageTypes.FETCH_ASSIGNMENT_REQUEST, request)
@@ -352,10 +378,10 @@ public class BrokerRequestRouter {
     if (addressOpt.isEmpty()) {
       if (attemptsLeft > 1) {
         LOG.debug(
-            "No known address for message type '{}'; {} attempt(s) remaining",
+            "No known address for message type '{}' (no I/O attempted); {} attempt(s) remaining",
             messageType,
             attemptsLeft - 1);
-        return sendWithRetry(
+        return delayedRetry(
             addressSupplier,
             messageType,
             payload,
@@ -412,7 +438,7 @@ public class BrokerRequestRouter {
           "Retryable application error in response for '{}'; {} attempt(s) remaining",
           messageType,
           attemptsLeft - 1);
-      return sendWithRetry(
+      return delayedRetry(
           addressSupplier,
           messageType,
           payload,
@@ -441,7 +467,7 @@ public class BrokerRequestRouter {
           messageType,
           cause.getClass().getSimpleName(),
           attemptsLeft - 1);
-      return sendWithRetry(
+      return delayedRetry(
           addressSupplier,
           messageType,
           payload,
@@ -500,9 +526,48 @@ public class BrokerRequestRouter {
     }
   }
 
-  /** Returns a {@link CompletableFuture} that has already failed with the given message. */
+  /**
+   * Returns a {@link CompletableFuture} that has already failed with {@link
+   * ErrorCode#LEADER_UNAVAILABLE} and the given message.
+   */
   private static <T> CompletableFuture<T> unavailable(final String message) {
-    return CompletableFuture.failedFuture(
-        new BrokerException(ErrorCode.LEADER_UNAVAILABLE, message));
+    return unavailable(ErrorCode.LEADER_UNAVAILABLE, message);
+  }
+
+  /**
+   * Returns a {@link CompletableFuture} that has already failed with the given {@link ErrorCode}
+   * and message.
+   */
+  private static <T> CompletableFuture<T> unavailable(
+      final ErrorCode errorCode, final String message) {
+    return CompletableFuture.failedFuture(new BrokerException(errorCode, message));
+  }
+
+  /**
+   * Returns a future that, after {@link #RETRY_DELAY_MS} ms, calls {@code sendWithRetry} with the
+   * given decremented attempt count. The delay runs on the common fork-join pool via {@link
+   * CompletableFuture#delayedExecutor} so no actor or HTTP thread is parked.
+   */
+  private CompletableFuture<byte[]> delayedRetry(
+      final Supplier<Optional<Address>> addressSupplier,
+      final String messageType,
+      final byte[] payload,
+      final Duration timeout,
+      final Predicate<byte[]> isRetryableResponse,
+      final int attemptsLeft,
+      final ErrorCode exhaustedErrorCode) {
+    final Executor delayed =
+        CompletableFuture.delayedExecutor(RETRY_DELAY_MS, TimeUnit.MILLISECONDS);
+    return CompletableFuture.supplyAsync(() -> null, delayed)
+        .thenCompose(
+            ignored ->
+                sendWithRetry(
+                    addressSupplier,
+                    messageType,
+                    payload,
+                    timeout,
+                    isRetryableResponse,
+                    attemptsLeft,
+                    exhaustedErrorCode));
   }
 }
