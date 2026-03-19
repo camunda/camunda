@@ -16,10 +16,14 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 
 public interface ProcessDefinitionSearchRequest
     extends TypedSearchRequest<
-            ProcessDefinitionFilter, ProcessDefinitionSort, ProcessDefinitionSearchRequest>,
+            ProcessDefinitionFilter,
+            ProcessDefinitionSort,
+            AnyPage,
+            ProcessDefinitionSearchRequest>,
         FinalSearchRequestStep<ProcessDefinition> {}

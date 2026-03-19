@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.mappingRuleFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.mappingRuleSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.MappingRulesByTenantSearchRequest;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.MappingRuleSort;
@@ -103,14 +103,14 @@ public class MappingRulesByTenantSearchRequestImpl
   }
 
   @Override
-  public MappingRulesByTenantSearchRequest page(final SearchRequestPage value) {
+  public MappingRulesByTenantSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingRulesByTenantSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public MappingRulesByTenantSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

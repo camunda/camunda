@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.batchOperationFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.batchOperationSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.BatchOperationSort;
@@ -79,14 +79,14 @@ public class BatchOperationSearchRequestImpl
   }
 
   @Override
-  public BatchOperationSearchRequest page(final SearchRequestPage value) {
+  public BatchOperationSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public BatchOperationSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public BatchOperationSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

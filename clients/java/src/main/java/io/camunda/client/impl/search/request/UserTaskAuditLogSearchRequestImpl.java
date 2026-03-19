@@ -15,14 +15,14 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.auditLogSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskAuditLogFilter;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -100,14 +100,14 @@ public class UserTaskAuditLogSearchRequestImpl
   }
 
   @Override
-  public UserTaskAuditLogSearchRequest page(final SearchRequestPage value) {
+  public UserTaskAuditLogSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public UserTaskAuditLogSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public UserTaskAuditLogSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

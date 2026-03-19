@@ -20,8 +20,8 @@ import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.page.OffsetPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestOffsetPage;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
@@ -76,14 +76,13 @@ public class ProcessDefinitionInstanceStatisticsRequestImpl
   }
 
   @Override
-  public ProcessDefinitionInstanceStatisticsRequest page(final SearchRequestOffsetPage value) {
+  public ProcessDefinitionInstanceStatisticsRequest page(final OffsetPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public ProcessDefinitionInstanceStatisticsRequest page(
-      final Consumer<SearchRequestOffsetPage> fn) {
+  public ProcessDefinitionInstanceStatisticsRequest page(final Consumer<OffsetPage> fn) {
     return page(offsetPage(fn));
   }
 

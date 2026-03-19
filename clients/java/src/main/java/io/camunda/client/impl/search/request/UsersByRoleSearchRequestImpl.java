@@ -15,14 +15,14 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.roleUserSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.RoleUserFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -103,14 +103,14 @@ public class UsersByRoleSearchRequestImpl
   }
 
   @Override
-  public UsersByRoleSearchRequest page(final SearchRequestPage value) {
+  public UsersByRoleSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public UsersByRoleSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public UsersByRoleSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

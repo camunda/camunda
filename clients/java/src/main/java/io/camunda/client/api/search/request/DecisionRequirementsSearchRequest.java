@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 
@@ -23,5 +24,6 @@ public interface DecisionRequirementsSearchRequest
     extends TypedSearchRequest<
             DecisionRequirementsFilter,
             DecisionRequirementsSort,
+            AnyPage,
             DecisionRequirementsSearchRequest>,
         FinalSearchRequestStep<DecisionRequirements> {}
