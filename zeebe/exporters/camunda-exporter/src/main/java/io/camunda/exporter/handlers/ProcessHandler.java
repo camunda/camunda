@@ -92,7 +92,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getVersion(),
             entity.getVersionTag(),
             entity.getCallActivityIds(),
-            getFlowNodesMap(entity.getFlowNodes()));
+            getFlowNodesMap(entity.getFlowNodes()),
+            extractHasUserTasks(process));
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
@@ -137,5 +138,11 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     }
 
     return flowNodesMap;
+  }
+
+  private boolean extractHasUserTasks(final Process process) {
+    return ProcessModelReader.of(process.getResource(), process.getBpmnProcessId())
+        .map(ProcessModelReader::extractHasUserTasks)
+        .orElse(false);
   }
 }
