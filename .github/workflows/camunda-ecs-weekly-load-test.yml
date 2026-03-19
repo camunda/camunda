@@ -1,0 +1,350 @@
+---
+# description: Deploys weekly ECS benchmark on AWS ECS. Expected to be triggered by the camunda
+# weekly load test or manually as needed. Automatically destroys the previous week's benchmark.
+# type: CI
+# owner: @camunda/zeebe-distributed-platform
+
+name: Camunda Weekly Benchmark on ECS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: >
+          Docker image tag to use (e.g., medic-2026-12-abcdef).
+          Images are expected at registry.camunda.cloud/team-zeebe/{camunda,starter,worker}:<tag>.
+        type: string
+        required: true
+      environment:
+        description: 'Target environment in AWS benchmark account. Use prod for weekly benchmarks, dev for testing and experiments.'
+        required: false
+        type: choice
+        options:
+          - prod
+          - dev
+        default: 'prod'
+      skip_destroy_previous:
+        description: 'Skip destroying the previous week''s benchmark'
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      image_tag:
+        description: >
+          Docker image tag to use. Images are expected at
+          registry.camunda.cloud/team-zeebe/{camunda,starter,worker}:<tag>.
+        type: string
+        required: true
+      environment:
+        description: 'Target environment in AWS benchmark account. Use prod for weekly benchmarks, dev for testing and experiments.'
+        required: false
+        type: string
+        default: 'prod'
+      skip_destroy_previous:
+        description: 'Skip destroying the previous week''s benchmark'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ecs-weekly-${{ inputs.environment || 'prod' }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  AWS_REGION: eu-west-1
+  ENVIRONMENT: ${{ inputs.environment || 'prod' }}
+  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+
+jobs:
+  prepare:
+    name: Resolve images and compute benchmark names
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }
+    outputs:
+      current_benchmark_name: ${{ steps.names.outputs.current }}
+      previous_benchmark_name: ${{ steps.names.outputs.previous }}
+      camunda_image: ${{ steps.resolve_images.outputs.camunda_image }}
+      starter_image: ${{ steps.resolve_images.outputs.starter_image }}
+      worker_image: ${{ steps.resolve_images.outputs.worker_image }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate environment input
+        run: |
+          ENV="${{ env.ENVIRONMENT }}"
+          if [ "$ENV" != "prod" ] && [ "$ENV" != "dev" ]; then
+            echo "::error::Invalid environment '${ENV}'. Must be 'prod' or 'dev'."
+            exit 1
+          fi
+
+      - name: Compute current and find previous benchmark name
+        id: names
+        run: |
+          # Current benchmark: ISO year + week number (e.g. weekly-2026-12)
+          # Format: weekly-YYYY-WW — fits within the 20-char prefix limit for both prod and dev.
+          CURRENT_WEEK=$(date -u +%Y-%V)
+          CURRENT="weekly-${CURRENT_WEEK}"
+          echo "current=${CURRENT}" >> "$GITHUB_OUTPUT"
+          echo "📅 Current benchmark: ${CURRENT}"
+
+          # Previous benchmark: find from currently running ECS services.
+          # Note: This calculation does not allow two weekly benchmarks to run, but this is an acceptable for now.
+          ENV="${{ env.ENVIRONMENT }}"
+          if [ "$ENV" = "dev" ]; then
+            ECS_CLUSTER="camunda-dev-cluster"
+            SERVICE_PREFIX="dev-weekly-"
+          else
+            ECS_CLUSTER="camunda-cluster"
+            SERVICE_PREFIX="weekly-"
+          fi
+
+          # List all ECS services, filter for weekly benchmark orchestration-cluster services
+          # Service names follow: <prefix>-oc-orchestration-cluster
+          # e.g., weekly-2026-12-oc-orchestration-cluster (prod)
+          #       dev-weekly-2026-12-oc-orchestration-cluster (dev)
+          CURRENT_SERVICE="${SERVICE_PREFIX}${CURRENT_WEEK}-oc-orchestration-cluster"
+
+          PREVIOUS=$(aws ecs list-services \
+              --cluster "$ECS_CLUSTER" \
+              --query "serviceArns" --output text \
+            | tr '\t' '\n' \
+            | sed 's|.*/||' \
+            | grep "^${SERVICE_PREFIX}.*-oc-orchestration-cluster$" \
+            | grep -v "^${CURRENT_SERVICE}$" \
+            | sed "s/-oc-orchestration-cluster$//" \
+            | sed "s/^dev-//" \
+            | sort \
+            | tail -n 1 || true)
+
+          if [ -n "$PREVIOUS" ]; then
+            echo "previous=${PREVIOUS}" >> "$GITHUB_OUTPUT"
+            echo "📅 Previous benchmark (from ECS): ${PREVIOUS}"
+          else
+            echo "previous=" >> "$GITHUB_OUTPUT"
+            echo "⚠️ No previous weekly benchmark found running in ECS cluster ${ECS_CLUSTER}"
+          fi
+
+      - name: Resolve docker images
+        id: resolve_images
+        run: |
+          IMAGE_TAG="${{ inputs.image_tag }}"
+          {
+            echo "camunda_image=${{ env.IMAGE_REPOSITORY }}/camunda:${IMAGE_TAG}"
+            echo "starter_image=${{ env.IMAGE_REPOSITORY }}/starter:${IMAGE_TAG}"
+            echo "worker_image=${{ env.IMAGE_REPOSITORY }}/worker:${IMAGE_TAG}"
+          } >> "$GITHUB_OUTPUT"
+          echo "✅ Using images with tag: ${IMAGE_TAG}"
+
+      - name: Summary
+        run: |
+          PREV="${{ steps.names.outputs.previous }}"
+          {
+            echo "## 📋 ECS Weekly Benchmark Plan"
+            echo "| Item | Value |"
+            echo "|------|-------|"
+            echo "| Current benchmark | \`${{ steps.names.outputs.current }}\` |"
+            if [ -n "$PREV" ]; then
+              echo "| Previous benchmark | \`${PREV}\` |"
+            else
+              echo "| Previous benchmark | _(none found)_ |"
+            fi
+            echo "| Image tag | \`${{ inputs.image_tag }}\` |"
+            echo "| Camunda image | \`${{ steps.resolve_images.outputs.camunda_image }}\` |"
+            echo "| Starter image | \`${{ steps.resolve_images.outputs.starter_image }}\` |"
+            echo "| Worker image | \`${{ steps.resolve_images.outputs.worker_image }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  destroy-previous:
+    name: Destroy previous week's benchmark
+    needs: prepare
+    if: ${{ inputs.skip_destroy_previous != true && needs.prepare.outputs.previous_benchmark_name != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { }
+    env:
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Checkout camunda-load-tests-ecs
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: camunda/camunda-load-tests-ecs
+          ref: main
+          path: camunda-load-tests-ecs
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Destroy previous load test
+        working-directory: camunda-load-tests-ecs/aws/load_test/${{ env.ENVIRONMENT }}
+        run: make destroy BENCHMARK_NAME="${{ needs.prepare.outputs.previous_benchmark_name }}"
+
+      - name: Destroy previous benchmark
+        working-directory: camunda-load-tests-ecs/aws/benchmark/${{ env.ENVIRONMENT }}
+        run: make destroy-with-bucket BENCHMARK_NAME="${{ needs.prepare.outputs.previous_benchmark_name }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  deploy-current:
+    name: Deploy current week's benchmark
+    needs: [prepare, destroy-previous]
+    if: ${{ always() && needs.prepare.result == 'success' && (needs.destroy-previous.result == 'success' || needs.destroy-previous.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: { }
+    env:
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Checkout camunda-load-tests-ecs
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: camunda/camunda-load-tests-ecs
+          ref: main
+          path: camunda-load-tests-ecs
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate benchmark name length
+        run: |
+          NAME="${{ needs.prepare.outputs.current_benchmark_name }}"
+          MAX_PREFIX_LEN=20
+          if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
+            PREFIX="dev-${NAME}"
+          else
+            PREFIX="${NAME}"
+          fi
+          if [ ${#PREFIX} -gt $MAX_PREFIX_LEN ]; then
+            echo "::error::PREFIX '${PREFIX}' is ${#PREFIX} chars, exceeds the ${MAX_PREFIX_LEN} char limit."
+            exit 1
+          fi
+          echo "✅ PREFIX '${PREFIX}' (${#PREFIX} chars) is within the ${MAX_PREFIX_LEN} char limit"
+
+      - name: Deploy benchmark infrastructure
+        working-directory: camunda-load-tests-ecs/aws/benchmark/${{ env.ENVIRONMENT }}
+        run: >
+          make deploy
+          BENCHMARK_NAME="${{ needs.prepare.outputs.current_benchmark_name }}"
+          CAMUNDA_IMAGE="${{ needs.prepare.outputs.camunda_image }}"
+
+      - name: Deploy load test
+        working-directory: camunda-load-tests-ecs/aws/load_test/${{ env.ENVIRONMENT }}
+        run: >
+          make deploy
+          BENCHMARK_NAME="${{ needs.prepare.outputs.current_benchmark_name }}"
+          FORCE_NEW_DEPLOYMENT=false
+          STARTER_IMAGE="${{ needs.prepare.outputs.starter_image }}"
+          WORKER_IMAGE="${{ needs.prepare.outputs.worker_image }}"
+
+      - name: Output deployment info
+        run: |
+          {
+            echo "## 🚀 ECS Benchmark Deployed"
+            echo "| Item | Value |"
+            echo "|------|-------|"
+            echo "| Benchmark | \`${{ needs.prepare.outputs.current_benchmark_name }}\` |"
+            echo "| Camunda image | \`${{ needs.prepare.outputs.camunda_image }}\` |"
+            echo "| Starter image | \`${{ needs.prepare.outputs.starter_image }}\` |"
+            echo "| Worker image | \`${{ needs.prepare.outputs.worker_image }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
