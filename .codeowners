@@ -12,6 +12,7 @@
 CODEOWNERS                  @camunda/orchestration-cluster
 
 AGENTS.md                   @camunda/orchestration-cluster
+CLAUDE.md                   @camunda/orchestration-cluster
 CHANGELOG.md                @camunda/orchestration-cluster
 CODE_OF_CONDUCT.md          @camunda/orchestration-cluster
 CONTRIBUTING.md             @camunda/orchestration-cluster

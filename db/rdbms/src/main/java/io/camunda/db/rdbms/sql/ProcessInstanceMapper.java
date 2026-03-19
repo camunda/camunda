@@ -16,6 +16,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -103,4 +104,6 @@ public interface ProcessInstanceMapper {
 
   record SelectExpiredRootProcessInstancesDto(
       int partitionId, OffsetDateTime cleanupDate, DbQueryPage page) {}
+
+  record ProcessInstanceTagsDto(long processInstanceKey, Collection<String> tags) {}
 }

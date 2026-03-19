@@ -6,7 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Container, Table, Th, Td, SkeletonText, SkeletonIcon} from './styled';
+import {
+  Container,
+  Table,
+  Th,
+  Td,
+  SkeletonText,
+  SkeletonIcon,
+  NameContainer,
+} from './styled';
 
 type Props = {
   headerColumns: {name: string; skeletonWidth: string}[];
@@ -16,6 +24,9 @@ const Skeleton: React.FC<Props> = ({headerColumns}) => {
   return (
     <Container data-testid="instance-header-skeleton">
       <SkeletonIcon />
+      <NameContainer>
+        <SkeletonText width="128px" />
+      </NameContainer>
       <Table>
         <thead>
           <tr>
@@ -34,7 +45,6 @@ const Skeleton: React.FC<Props> = ({headerColumns}) => {
           </tr>
         </tbody>
       </Table>
-      <SkeletonText width={'78px'} />
     </Container>
   );
 };

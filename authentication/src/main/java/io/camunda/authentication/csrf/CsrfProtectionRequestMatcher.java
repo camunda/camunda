@@ -31,27 +31,27 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
   private final Pattern allowedPathsPattern;
 
   public CsrfProtectionRequestMatcher() {
-    final Set<String> allowedPaths = new HashSet<>();
-    allowedPaths.addAll(WebSecurityConfig.UNPROTECTED_PATHS);
-    allowedPaths.addAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
-    allowedPaths.add(WebSecurityConfig.LOGIN_URL);
-    allowedPaths.add(WebSecurityConfig.LOGOUT_URL);
-    allowedPathsPattern = allowedPathsToPattern(allowedPaths);
-    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", allowedPathsPattern);
+    allowedPathsPattern = getAllowedPathsPattern();
   }
 
   @Override
   public boolean matches(final HttpServletRequest request) {
-    // These methods are CSRF-safe
-    if (ALLOWED_METHODS.matcher(request.getMethod()).matches()) {
+    // short-circuit check for the following conditions
+    if (matchesPattern(ALLOWED_METHODS, request.getMethod())
+        || matchesPattern(allowedPathsPattern, request.getServletPath())
+        || isSwaggerReferer(request)) {
       return false;
     }
 
-    if (allowedPathsPattern.matcher(request.getServletPath()).matches()) {
-      return false;
-    }
+    // check if API call is coming from the browser
+    return request.getSession(false) != null;
+  }
 
-    // If request coming from Swagger UI
+  private boolean matchesPattern(final Pattern pattern, final String str) {
+    return pattern.matcher(str).matches();
+  }
+
+  private boolean isSwaggerReferer(final HttpServletRequest request) {
     final String referer = request.getHeader(HttpHeaders.REFERER);
     final String baseRequestUrl;
     try {
@@ -64,23 +64,21 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
     } catch (final MalformedURLException e) {
       throw new RuntimeException(e);
     }
-
-    if (referer != null && referer.matches(baseRequestUrl + "/swagger-ui.*")) {
-      return false;
-    }
-
-    return apiCallComingFromBrowser(request);
+    return referer != null && referer.matches(Pattern.quote(baseRequestUrl) + ".*/swagger-ui.*");
   }
 
-  private boolean apiCallComingFromBrowser(final HttpServletRequest request) {
-    return request.getSession(false) != null;
-  }
-
-  private Pattern allowedPathsToPattern(final Set<String> paths) {
+  private Pattern getAllowedPathsPattern() {
+    final Set<String> paths = new HashSet<>();
+    paths.addAll(WebSecurityConfig.UNPROTECTED_PATHS);
+    paths.addAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
+    paths.add(WebSecurityConfig.LOGIN_URL);
+    paths.add(WebSecurityConfig.LOGOUT_URL);
     final String patternAsString =
         paths.stream()
             .map(path -> path.replace("**", ".*")) // Replace wildcard with regex equivalent
             .collect(Collectors.joining("|", "^(", ")$")); // Combine paths into regex
-    return Pattern.compile(patternAsString);
+    final Pattern compiledPattern = Pattern.compile(patternAsString);
+    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", compiledPattern);
+    return compiledPattern;
   }
 }

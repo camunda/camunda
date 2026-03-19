@@ -27,7 +27,6 @@ public class AuditLogEntityMapper {
         .tenantId(auditLogDbModel.tenantId())
         .tenantScope(auditLogDbModel.tenantScope())
         .result(auditLogDbModel.result())
-        .annotation(auditLogDbModel.annotation())
         .category(auditLogDbModel.category())
         .processDefinitionId(auditLogDbModel.processDefinitionId())
         .decisionRequirementsId(auditLogDbModel.decisionRequirementsId())

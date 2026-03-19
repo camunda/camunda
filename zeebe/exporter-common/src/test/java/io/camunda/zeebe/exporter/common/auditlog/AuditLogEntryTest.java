@@ -83,7 +83,6 @@ class AuditLogEntryTest {
     // Verify fields that are NOT set by AuditLogEntry.of() are null/empty
     assertThat(entry.getBatchOperationType()).isNull();
     assertThat(entry.getResult()).isNull();
-    assertThat(entry.getAnnotation()).isNull();
     assertThat(entry.getJobKey()).isNull();
     assertThat(entry.getUserTaskKey()).isNull();
     assertThat(entry.getDecisionEvaluationKey()).isNull();

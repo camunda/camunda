@@ -6,14 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Navigate, useLocation} from 'react-router-dom';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
+import {Paths} from 'modules/Routes';
 import {InputOutputMappings} from './InputOutputMappings';
 
 const OutputMappingsTab: React.FC = () => {
   const {selectedElementId} = useProcessInstanceElementSelection();
+  const {processInstanceId} = useProcessInstancePageParams();
+  const location = useLocation();
 
   if (selectedElementId === null) {
-    return null;
+    return (
+      <Navigate
+        to={{
+          ...location,
+          pathname: Paths.processInstanceVariables({processInstanceId}),
+        }}
+        replace
+      />
+    );
   }
 
   return <InputOutputMappings type="Output" elementId={selectedElementId} />;

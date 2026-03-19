@@ -21,7 +21,7 @@ import io.camunda.client.CamundaClient;
  * Dynamic proxy to delegate to a {@link CamundaClient} which allows to swap the CamundaClient
  * object under the hood.
  */
-public class CamundaClientProxy extends AbstractClientProxy<CamundaClient> {
+public class CamundaClientProxy extends AbstractInvocationHandler<CamundaClient> {
 
   @Override
   protected Class<CamundaClient> getDelegateClass() {

@@ -38,6 +38,7 @@ const Paths = {
     getRelativeProcessInstancePathHandler('input-mappings'),
   processInstanceOutputMappings:
     getRelativeProcessInstancePathHandler('output-mappings'),
+  processInstanceVariables: getRelativeProcessInstancePathHandler('variables'),
   processInstanceListeners: getRelativeProcessInstancePathHandler('listeners'),
   processInstanceOperationsLog:
     getRelativeProcessInstancePathHandler('operations-log'),

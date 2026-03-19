@@ -7,6 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.util;
 
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
+
 import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -25,51 +28,91 @@ public class AdvancedSearchFilterUtil {
 
   private static final Logger LOG = LoggerFactory.getLogger(AdvancedSearchFilterUtil.class);
 
-  public static <T> Function<Object, List<Operation<T>>> mapToOperations(final Class<T> tClass) {
-    return (final Object filter) -> mapToOperations(filter, tClass);
+  public static Function<Object, List<Operation<Long>>> mapToKeyOperations(
+      final String fieldName, final List<String> validationErrors) {
+    return (final Object filter) ->
+        mapToTypedOperations(
+            filter,
+            value -> {
+              if (value instanceof final Long l) {
+                return l;
+              } else if (value instanceof final String s) {
+                try {
+                  return Long.valueOf(s);
+                } catch (final NumberFormatException e) {
+                  validationErrors.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, s));
+                  return null;
+                }
+              }
+              validationErrors.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, value));
+              return null;
+            });
   }
 
-  public static <T> Function<Object, List<Operation<T>>> mapToOperations(
-      final Class<T> tClass, final CustomConverter<T> customConverter) {
-    return (final Object filter) -> mapToOperations(filter, tClass, customConverter);
+  public static Function<Object, List<Operation<Integer>>> mapToIntegerOperations(
+      final String fieldName, final List<String> validationErrors) {
+    return (final Object filter) ->
+        mapToTypedOperations(
+            filter,
+            value -> {
+              if (value instanceof final Integer i) {
+                return i;
+              }
+              validationErrors.add(
+                  "The provided %s '%s' is not a valid integer value.".formatted(fieldName, value));
+              return null;
+            });
   }
 
-  protected static <T> T convertValue(final Class<T> tClass, final Object value) {
-    return convertValue(tClass, value, null);
+  public static Function<Object, List<Operation<String>>> mapToStringOperations() {
+    return (final Object filter) -> mapToTypedOperations(filter, Object::toString);
   }
 
-  protected static <T> T convertValue(
-      final Class<T> tClass, final Object value, final CustomConverter<T> customConverter) {
-    if (customConverter != null && customConverter.canConvert(value)) {
-      return customConverter.convertValue(value);
-    }
-    if (value == null) {
-      return null;
-    } else if (tClass.isInstance(value)) {
-      return tClass.cast(value);
-    } else if (tClass == String.class) {
-      return (T) value.toString();
-    } else if (tClass == OffsetDateTime.class && value instanceof String) {
-      try {
-        return (T) OffsetDateTime.parse((String) value);
-      } catch (final DateTimeParseException e) {
-        throw new IllegalArgumentException("Failed to parse date-time: [%s]".formatted(value), e);
-      }
-    } else if (tClass == Long.class && value instanceof String) {
-      return (T) Long.valueOf((String) value);
-    }
-
-    throw new IllegalArgumentException(
-        "Could not convert request value [%s] to [%s]".formatted(value, tClass.getName()));
+  public static Function<Object, List<Operation<String>>> mapToStringOperations(
+      final String fieldName,
+      final List<String> validationErrors,
+      final CustomConverter<String> converter) {
+    return (final Object filter) ->
+        mapToTypedOperations(
+            filter,
+            value -> {
+              if (converter.canConvert(value)) {
+                try {
+                  return converter.convertValue(value);
+                } catch (final Exception e) {
+                  validationErrors.add(
+                      "The provided %s '%s' is not valid: %s"
+                          .formatted(fieldName, value, e.getMessage()));
+                  return null;
+                }
+              }
+              return value.toString();
+            });
   }
 
-  protected static <T> List<Operation<T>> mapToOperations(
-      final Object filter, final Class<T> tClass) {
-    return mapToOperations(filter, tClass, null);
+  public static Function<Object, List<Operation<OffsetDateTime>>> mapToOffsetDateTimeOperations(
+      final String fieldName, final List<String> validationErrors) {
+    return (final Object filter) ->
+        mapToTypedOperations(
+            filter,
+            value -> {
+              if (value instanceof final OffsetDateTime odt) {
+                return odt;
+              } else if (value instanceof final String s) {
+                try {
+                  return OffsetDateTime.parse(s);
+                } catch (final DateTimeParseException e) {
+                  validationErrors.add(ERROR_MESSAGE_DATE_PARSING.formatted(fieldName, s));
+                  return null;
+                }
+              }
+              validationErrors.add(ERROR_MESSAGE_DATE_PARSING.formatted(fieldName, value));
+              return null;
+            });
   }
 
-  protected static <T> List<Operation<T>> mapToOperations(
-      final Object filter, final Class<T> tClass, final CustomConverter<T> customConverter) {
+  private static <T> List<Operation<T>> mapToTypedOperations(
+      final Object filter, final Function<Object, T> converter) {
     final var fClass = filter.getClass();
     final var operations = new ArrayList<Operation<T>>();
     for (final Operator operator : Operator.values()) {
@@ -84,23 +127,58 @@ public class AdvancedSearchFilterUtil {
       method.setAccessible(true);
       try {
         final var value = method.invoke(filter);
-        if (value != null) {
-          if (value instanceof final Boolean booleanValue) {
-            operations.add(Operation.exists(booleanValue));
-          } else if (value instanceof final List<?> values) {
-            if (!values.isEmpty()) {
-              final var tValues =
-                  values.stream().map(v -> convertValue(tClass, v, customConverter)).toList();
-              operations.add(new Operation<>(operator, tValues));
-            }
-          } else {
-            operations.add(new Operation<>(operator, convertValue(tClass, value, customConverter)));
-          }
+        if (value == null) {
+          continue;
         }
+        addTypedOperation(operations, operator, value, converter);
       } catch (final InvocationTargetException | IllegalAccessException e) {
         LOG.error(e.getMessage(), e);
       }
     }
     return operations;
+  }
+
+  private static <T> void addTypedOperation(
+      final List<Operation<T>> operations,
+      final Operator operator,
+      final Object value,
+      final Function<Object, T> converter) {
+    if (value instanceof final Boolean booleanValue) {
+      operations.add(Operation.exists(booleanValue));
+    } else if (value instanceof final List<?> values) {
+      convertListOperation(operations, operator, values, converter);
+    } else {
+      final T converted = converter.apply(value);
+      if (converted != null) {
+        operations.add(new Operation<>(operator, converted));
+      }
+    }
+  }
+
+  private static <T> void convertListOperation(
+      final List<Operation<T>> operations,
+      final Operator operator,
+      final List<?> values,
+      final Function<Object, T> converter) {
+    if (values.isEmpty()) {
+      return;
+    }
+    final var tValues = new ArrayList<T>();
+    boolean hasNull = false;
+    for (final Object v : values) {
+      if (v == null) {
+        hasNull = true;
+        continue;
+      }
+      final T converted = converter.apply(v);
+      if (converted == null) {
+        hasNull = true;
+      } else {
+        tValues.add(converted);
+      }
+    }
+    if (!hasNull && !tValues.isEmpty()) {
+      operations.add(new Operation<>(operator, tValues));
+    }
   }
 }

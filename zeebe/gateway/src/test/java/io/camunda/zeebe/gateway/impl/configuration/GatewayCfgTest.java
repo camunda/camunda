@@ -48,7 +48,7 @@ public final class GatewayCfgTest {
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    Duration.ofSeconds(5), Duration.ofSeconds(30), 6, Duration.ofSeconds(1))));
+                    Duration.ofSeconds(5), Duration.ofSeconds(30), 6, Duration.ofSeconds(5))));
     CUSTOM_CFG
         .getSecurity()
         .setEnabled(true)
@@ -174,8 +174,8 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
     setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
     setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
-    setEnv("zeebe.gateway.network.socketSendBuffer", "3MB");
-    setEnv("zeebe.gateway.network.socketReceiveBuffer", "3MB");
+    setEnv("zeebe.gateway.cluster.socketSendBuffer", "3MB");
+    setEnv("zeebe.gateway.cluster.socketReceiveBuffer", "3MB");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -198,7 +198,7 @@ public final class GatewayCfgTest {
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    Duration.ofSeconds(5), Duration.ofSeconds(5), 4, Duration.ofSeconds(1))));
+                    Duration.ofSeconds(5), Duration.ofSeconds(5), 4, Duration.ofSeconds(5))));
     expected.getThreads().setManagementThreads(32);
     expected
         .getSecurity()

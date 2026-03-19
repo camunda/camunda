@@ -383,7 +383,11 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       },
     );
-    await assertBadRequest(res, `For input string: \"${invalidFieldValue}\"`);
+    await assertBadRequest(
+      res,
+      `The provided processInstanceKey '${invalidFieldValue}' is not a valid key`,
+      'INVALID_ARGUMENT',
+    );
   });
 
   test('Search Message Subscriptions - 401 Unauthorized', async ({request}) => {
@@ -415,6 +419,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       email: string;
       password: string;
     };
+
     await test.step('Setup - Create user for authorization tests', async () => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
       await grantUserResourceAuthorization(
@@ -488,7 +493,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       expect(res.status()).toBe(200);
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
-      expect(json.items.length).toBe(0);
+      expect(json.items).toHaveLength(0);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
     }).toPass(defaultAssertionOptions);
   });

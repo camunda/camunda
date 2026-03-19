@@ -174,6 +174,7 @@ class AuditLogTransformerConfigsTest {
   private static Stream<Arguments> entityTypeToRelatedEntityTypeProvider() {
     return Stream.of(
         Arguments.of(EntityType.USER, AuditLogEntityType.USER),
+        Arguments.of(EntityType.CLIENT, AuditLogEntityType.CLIENT),
         Arguments.of(EntityType.GROUP, AuditLogEntityType.GROUP),
         Arguments.of(EntityType.ROLE, AuditLogEntityType.ROLE),
         Arguments.of(EntityType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),

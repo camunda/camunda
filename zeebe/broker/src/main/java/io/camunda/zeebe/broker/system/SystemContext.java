@@ -415,6 +415,13 @@ public final class SystemContext {
   }
 
   private void validateBackupCfg(final BackupCfg backup) {
+    if (backup.isRequired() && backup.getStore() == BackupCfg.BackupStoreType.NONE) {
+      throw new InvalidConfigurationException(
+          "Backup is required but no backup store is configured. "
+              + "Set zeebe.broker.data.backup.store to one of: S3, GCS, AZURE, FILESYSTEM",
+          null);
+    }
+
     try {
       switch (backup.getStore()) {
         case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");

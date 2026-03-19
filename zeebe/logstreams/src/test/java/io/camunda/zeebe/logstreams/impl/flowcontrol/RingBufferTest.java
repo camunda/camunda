@@ -488,6 +488,7 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(smallCapacity);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
+      final var publishedIndex = new AtomicLong(0);
 
       final var writer =
           new Thread(
@@ -497,6 +498,7 @@ final class RingBufferTest {
                   final var entry = new InFlightEntry(METRICS, null, null);
                   entry.highestPosition = pos;
                   buffer.put(entry);
+                  publishedIndex.set(pos);
                 }
               });
 
@@ -508,6 +510,9 @@ final class RingBufferTest {
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
+                  if (pos > publishedIndex.get()) {
+                    LockSupport.parkNanos(1);
+                  }
                   final var entry = buffer.findAndRemove(pos);
                   if (entry != null) {
                     try {

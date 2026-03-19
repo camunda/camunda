@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -39,28 +40,27 @@ public class AuthorizationEntityValidator {
       "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
   public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher '%s' is not supported.";
-  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
-  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
   private final UserState userState;
   private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
   private final RoleState roleState;
+  private final SecurityConfiguration securityConfig;
 
-  public AuthorizationEntityValidator(final ProcessingState processingState) {
+  public AuthorizationEntityValidator(
+      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     userState = processingState.getUserState();
     mappingRuleState = processingState.getMappingRuleState();
     groupState = processingState.getGroupState();
     roleState = processingState.getRoleState();
+    this.securityConfig = securityConfig;
   }
 
   public Either<Rejection, AuthorizationRecord> ownerAndResourceExists(
       final TypedRecord<AuthorizationRecord> command) {
     final var record = command.getValue();
-    final boolean localUserEnabled =
-        (boolean) command.getAuthorizations().getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
-    final boolean localGroupEnabled =
-        (boolean) command.getAuthorizations().getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
+    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
+    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
     switch (record.getOwnerType()) {
       case GROUP:
         if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {

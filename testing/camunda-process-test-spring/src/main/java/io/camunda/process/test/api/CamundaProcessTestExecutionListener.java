@@ -22,6 +22,7 @@ import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
@@ -30,6 +31,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.judge.JudgeConfigResolver;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -85,6 +87,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static final Logger LOG =
       LoggerFactory.getLogger(CamundaProcessTestExecutionListener.class);
+  private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
 
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -97,8 +100,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
+
   private CamundaClient client;
   private ZeebeClient zeebeClient;
+  private final ConditionalBehaviorEngine conditionalBehaviorEngine =
+      new ConditionalBehaviorEngine();
 
   public CamundaProcessTestExecutionListener() {
     this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
@@ -136,7 +142,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
-            zeebeJsonMapper);
+            zeebeJsonMapper,
+            conditionalBehaviorEngine);
 
     // create process coverage
     final CoverageReportConfiguration coverageReportConfiguration =
@@ -162,16 +169,16 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     zeebeClient = createZeebeClient(camundaProcessTestContext);
 
     // fill proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setClient(client);
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setClient(zeebeClient);
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setDelegate(client);
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setDelegate(zeebeClient);
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
-        .setContext(camundaProcessTestContext);
+        .setDelegate(camundaProcessTestContext);
     testContext
         .getApplicationContext()
         .getBean(TestCaseRunnerProxy.class)
-        .setRunner(new CamundaTestCaseRunner(camundaProcessTestContext));
+        .setDelegate(new CamundaTestCaseRunner(camundaProcessTestContext));
 
     // publish Zeebe client
     testContext
@@ -191,6 +198,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // deploy resources
     testDeploymentService.deployTestResources(
         testContext.getTestMethod(), testContext.getTestClass(), client);
+
+    // set up conditional behavior engine for this test
+    conditionalBehaviorEngine.start(
+        () -> CamundaAssert.initialize(dataSource),
+        evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation),
+        CamundaAssert.getAwaitBehavior().getAssertionInterval());
   }
 
   @Override
@@ -199,6 +212,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       // Skip if the runtime is not created.
       return;
     }
+
+    // stop conditional behavior engine before cleanup
+    conditionalBehaviorEngine.stop();
+
     try {
       processCoverage.collectTestRunCoverage(testContext.getTestMethod().getName());
     } catch (final Throwable t) {
@@ -220,13 +237,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     closeCreatedClients();
 
     // clean up proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeDelegate();
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeDelegate();
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
-        .removeContext();
-    testContext.getApplicationContext().getBean(TestCaseRunnerProxy.class).removeRunner();
+        .removeDelegate();
+    testContext.getApplicationContext().getBean(TestCaseRunnerProxy.class).removeDelegate();
 
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it

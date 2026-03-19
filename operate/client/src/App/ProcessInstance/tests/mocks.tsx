@@ -30,6 +30,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {VariablesTab} from '../BottomPanelTabs/VariablesTab';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -128,7 +129,7 @@ function getWrapper(options?: {
     const router = createMemoryRouter(
       [
         {
-          path: Paths.processInstance(),
+          path: Paths.processInstance(undefined, true),
           element: (
             <>
               {children}
@@ -136,6 +137,7 @@ function getWrapper(options?: {
               <LocationLog />
             </>
           ),
+          children: [{index: true, element: <VariablesTab />}],
         },
         {
           path: Paths.processes(),

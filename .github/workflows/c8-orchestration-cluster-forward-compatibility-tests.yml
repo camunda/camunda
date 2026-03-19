@@ -138,6 +138,7 @@ jobs:
         run: |
           echo "===== Forward Compatibility Test Configuration ====="
           echo "Server branch: ${{ matrix.server_branch }}"
+          echo "Server image:  ${{ matrix.server_image }}"
           echo "Test branch:   ${{ matrix.test_branch }}"
           echo "===================================================="
 
@@ -151,10 +152,9 @@ jobs:
         run: |
           echo "Pulling image: ${{ matrix.server_image }}"
           docker pull ${{ matrix.server_image }}
-          docker tag ${{ matrix.server_image }} camunda/camunda:SNAPSHOT
 
       - name: Start Camunda
-        run: DATABASE=elasticsearch docker compose up -d camunda
+        run: CAMUNDA_DOCKER_IMAGE=${{ matrix.server_image }} DATABASE=elasticsearch docker compose up -d camunda
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers

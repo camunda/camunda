@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -30,6 +31,11 @@ public class CreateAuthorizationTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Before
+  public void setup() {
+    engine.user().newUser("ownerId").create();
+  }
 
   @Test
   public void shouldCreateAuthorization() {
@@ -280,6 +286,78 @@ public class CreateAuthorizationTest {
         .hasResourcePropertyName("assignee")
         .hasResourceType(AuthorizationResourceType.USER_TASK)
         .hasPermissionTypes(Set.of(PermissionType.UPDATE));
+  }
+
+  // regression test for "https://github.com/camunda/camunda/issues/48847" bug
+  @Test
+  public void shouldRecreatePropertyBasedAuthorizationAfterCoexistingAuthorizationIsDeleted() {
+    // Regression test: when 2 PROPERTY-based authorizations for the same owner coexist,
+    // deleting both and then re-creating authorization A must succeed without a
+    // false ALREADY_EXISTS rejection.
+
+    final var groupId = "groupId";
+    final var ownerType = AuthorizationOwnerType.GROUP;
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+
+    // given - create group for the test
+    engine.group().newGroup(groupId).create();
+
+    // create BOTH auths while they coexist
+    final var assigneeKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(groupId)
+            .withOwnerType(ownerType)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName(UserTaskAuthorizationProperties.PROP_ASSIGNEE)
+            .withResourceType(resourceType)
+            .withPermissions(PermissionType.READ, PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    final var candidateGroupsKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(groupId)
+            .withOwnerType(ownerType)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName(UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS)
+            .withResourceType(resourceType)
+            .withPermissions(PermissionType.READ, PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when - delete auth A while auth B still exists (this is the critical ordering)
+    engine.authorization().deleteAuthorization(assigneeKey).delete();
+
+    // then - delete auth B
+    engine.authorization().deleteAuthorization(candidateGroupsKey).delete();
+
+    // when - re-create auth for "assignee"
+    final var response =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(groupId)
+            .withOwnerType(ownerType)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName(UserTaskAuthorizationProperties.PROP_ASSIGNEE)
+            .withResourceType(resourceType)
+            .withPermissions(PermissionType.READ, PermissionType.UPDATE)
+            .create()
+            .getValue();
+
+    // then - must succeed without rejection
+    Assertions.assertThat(response)
+        .hasOwnerId(groupId)
+        .hasOwnerType(ownerType)
+        .hasResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .hasResourcePropertyName(UserTaskAuthorizationProperties.PROP_ASSIGNEE)
+        .hasResourceType(resourceType);
   }
 
   @Test

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -36,11 +38,13 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
 
   private final GroupState groupState;
   private final MappingRuleState mappingRuleState;
+  private final UserState userState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SecurityConfiguration securityConfig;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -49,16 +53,19 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final SecurityConfiguration securityConfig) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
     mappingRuleState = processingState.getMappingRuleState();
+    userState = processingState.getUserState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -136,9 +143,10 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   }
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     return switch (entityType) {
-      case EntityType.USER, CLIENT ->
-          true; // With simple mapping rules, any username or client id can be assigned
+      case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
+      case CLIENT -> true;
       case EntityType.MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };

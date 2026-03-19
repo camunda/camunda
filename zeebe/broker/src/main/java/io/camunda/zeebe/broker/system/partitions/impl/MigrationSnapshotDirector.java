@@ -186,15 +186,14 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
 
   private static final class RetryState {
     private int retryCount = 0;
-    private final ExponentialBackoff backoff = new ExponentialBackoff(5000, 500);
-    private long lastDelay = 500;
-
-    public void retry() {
-      retryCount++;
-    }
+    private final ExponentialBackoff backoff = new ExponentialBackoff(5000, 100);
+    private long lastDelay = 0;
 
     public Duration nextDelay() {
-      retry();
+      if (retryCount++ == 0) {
+        return Duration.ZERO;
+      }
+
       lastDelay = backoff.supplyRetryDelay(lastDelay);
       return Duration.ofMillis(lastDelay);
     }

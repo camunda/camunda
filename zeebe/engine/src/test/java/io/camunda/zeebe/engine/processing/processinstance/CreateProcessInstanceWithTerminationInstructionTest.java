@@ -327,4 +327,38 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, BpmnElementType.PROCESS),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, BpmnElementType.PROCESS));
   }
+
+  @Test
+  public void shouldNotThrowNPEWhenCancellingInstanceWithRuntimeInstruction() {
+    // given
+    final String processId = "process";
+    final String serviceTaskId = "serviceTask";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(serviceTaskId, t -> t.zeebeJobType("jobType"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeTerminateInstruction(serviceTaskId)
+            .create();
+
+    // when - cancel the process instance while the service task is active
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then - process should be terminated without NPE
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(processId)
+                .exists())
+        .isTrue();
+  }
 }

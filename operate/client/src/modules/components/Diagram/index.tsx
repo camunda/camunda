@@ -19,11 +19,9 @@ import {
   type OnElementDoubleClick,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
-import DiagramControls from './DiagramControls';
-import {DiagramControls as DiagramControlsNext} from './DiagramControlsNext';
+import {DiagramControls} from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {observer} from 'mobx-react';
-import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 type OnRootChange = (
   rootElementId: string,
@@ -230,25 +228,16 @@ const Diagram: React.FC<Props> = observer(
         <DiagramCanvas ref={diagramCanvasRef} data-testid="diagram-canvas" />
         {isDiagramRendered && (
           <>
-            {IS_NEW_PROCESS_INSTANCE_PAGE ? (
-              <DiagramControlsNext
-                handleZoomIn={viewer.zoomIn}
-                handleZoomOut={viewer.zoomOut}
-                handleZoomReset={viewer.zoomReset}
-                handleFullscreen={handleFullscreen}
-                isFullscreen={isFullscreen}
-                handleMinimapToggle={handleMinimapToggle}
-                isMinimapOpen={isMinimapOpen}
-                processDefinitionKey={processDefinitionKey}
-              />
-            ) : (
-              <DiagramControls
-                handleZoomIn={viewer.zoomIn}
-                handleZoomOut={viewer.zoomOut}
-                handleZoomReset={viewer.zoomReset}
-                processDefinitionKey={processDefinitionKey}
-              />
-            )}
+            <DiagramControls
+              handleZoomIn={viewer.zoomIn}
+              handleZoomOut={viewer.zoomOut}
+              handleZoomReset={viewer.zoomReset}
+              handleFullscreen={handleFullscreen}
+              isFullscreen={isFullscreen}
+              handleMinimapToggle={handleMinimapToggle}
+              isMinimapOpen={isMinimapOpen}
+              processDefinitionKey={processDefinitionKey}
+            />
             {children}
           </>
         )}

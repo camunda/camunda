@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.zeebe.auth.Authorization;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -76,7 +76,6 @@ import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,17 +88,18 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
+  private final BrokerRequestAuthorizationConverter authorizationConverter;
 
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final MultiTenancyConfiguration multiTenancy) {
+      final SecurityConfiguration securityConfiguration) {
     this(
         brokerClient,
         activateJobsHandler,
         streamJobsHandler,
-        multiTenancy,
+        securityConfiguration,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
@@ -107,15 +107,16 @@ public final class EndpointManager {
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final MultiTenancyConfiguration multiTenancy,
+      final SecurityConfiguration securityConfiguration,
       final int maxVariableNameLength) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
-    RequestMapper.setMultiTenancyEnabled(multiTenancy.isChecksEnabled());
+    RequestMapper.setMultiTenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
+    authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
   }
 
   private void addBrokerInfo(
@@ -518,46 +519,22 @@ public final class EndpointManager {
       throws Exception {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
-
     brokerRequest.setAuthorization(getClaims());
-
     return brokerRequest;
   }
 
   private Map<String, Object> getClaims() throws Exception {
-    final Map<String, Object> claims = new HashMap<>();
-
-    claims.put(
-        Authorization.IS_CAMUNDA_GROUPS_ENABLED,
-        Context.current().call(AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED::get));
-    claims.put(
-        Authorization.IS_CAMUNDA_USERS_ENABLED,
-        Context.current().call(AuthenticationHandler.IS_CAMUNDA_USERS_ENABLED::get));
-
-    // retrieve the user claims from the context and add them to the authorization if present
-    final Map<String, Object> userClaims =
-        Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
-    claims.put(Authorization.USER_TOKEN_CLAIMS, userClaims);
-
-    // retrieve the username from the context and add it to the authorization if present
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
-    if (username != null) {
-      claims.put(Authorization.AUTHORIZED_USERNAME, username);
-    }
-
-    // retrieve the client id from the context and add it to the authorization if present
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
-    if (clientId != null) {
-      claims.put(Authorization.AUTHORIZED_CLIENT_ID, clientId);
+
+    List<String> groups = null;
+    Map<String, Object> tokenClaims = null;
+    if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
+      groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+      tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
 
-    final List<String> groupsClaims =
-        Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
-    if (groupsClaims != null) {
-      claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
-    }
-
-    return claims;
+    return authorizationConverter.convert(false, username, clientId, groups, tokenClaims);
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(

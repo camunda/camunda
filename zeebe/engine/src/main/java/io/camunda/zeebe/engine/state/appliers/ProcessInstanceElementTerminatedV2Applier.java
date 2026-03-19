@@ -48,6 +48,10 @@ final class ProcessInstanceElementTerminatedV2Applier
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
 
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      elementInstanceState.removeRuntimeInstructions(key);
+    }
+
     if (value.getBpmnElementType() == BpmnElementType.PROCESS
         && !value.hasParentProcessInstance()) {
       deleteBusinessIdIndex(value);

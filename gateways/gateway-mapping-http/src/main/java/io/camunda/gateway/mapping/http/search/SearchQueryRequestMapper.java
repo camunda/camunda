@@ -21,10 +21,8 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
-import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
@@ -586,7 +584,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromVariableSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyVariableSortField);
-    final VariableFilter filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
+    final var filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -891,7 +889,7 @@ public final class SearchQueryRequestMapper {
                 actualRequest.getSort()),
             SortOptionBuilders::globalListener,
             SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
-    final GlobalListenerFilter filter =
+    final var filter =
         SearchQueryFilterMapper.toGlobalTaskListenerFilter(actualRequest.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }

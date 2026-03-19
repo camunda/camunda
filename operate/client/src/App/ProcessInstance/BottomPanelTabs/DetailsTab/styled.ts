@@ -16,7 +16,6 @@ const EmptyMessageContainer = styled.div`
 `;
 
 const Container = styled.div`
-  padding-top: var(--cds-spacing-05);
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-05);

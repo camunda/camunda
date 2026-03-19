@@ -198,7 +198,6 @@ class AuditLogHandlerTest {
     assertThat(entity.getTimestamp())
         .isEqualTo(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
-    assertThat(entity.getAnnotation()).isEqualTo("test annotation");
     assertThat(entity.getResult())
         .isEqualTo(io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult.SUCCESS);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("process-def-id");
@@ -247,7 +246,6 @@ class AuditLogHandlerTest {
         .setEntityOperationIntent(ProcessInstanceModificationIntent.MODIFIED.value())
         .setTimestamp(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
-        .setAnnotation("test annotation")
         .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
         .setProcessDefinitionId("process-def-id")
         .setProcessDefinitionKey(456L)
