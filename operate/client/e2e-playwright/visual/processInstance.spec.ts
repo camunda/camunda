@@ -164,6 +164,41 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('instance with incident expanded row', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    await page.getByRole('button', {name: /expand current row/i}).click();
+    await expect(page.getByText('Job ID')).toBeVisible();
+    await expect(page.getByText('Error message')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('completed instance', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
