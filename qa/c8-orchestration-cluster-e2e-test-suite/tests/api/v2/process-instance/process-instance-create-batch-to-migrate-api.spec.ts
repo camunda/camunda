@@ -23,7 +23,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {expectBatchState, findUserTask} from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {

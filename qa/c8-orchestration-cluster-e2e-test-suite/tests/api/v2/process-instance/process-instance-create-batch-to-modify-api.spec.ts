@@ -21,7 +21,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {findUserTask} from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {

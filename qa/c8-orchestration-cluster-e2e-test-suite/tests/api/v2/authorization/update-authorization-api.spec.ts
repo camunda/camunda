@@ -36,7 +36,7 @@ import {cleanupRoles} from 'utils/rolesCleanup';
 import {cleanupGroups} from 'utils/groupsCleanup';
 import {cleanupMappingRules} from 'utils/mappingRuleCleanup';
 import {sleep} from 'utils/sleep';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 test.describe.parallel('Update Authorization API', () => {
   const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];

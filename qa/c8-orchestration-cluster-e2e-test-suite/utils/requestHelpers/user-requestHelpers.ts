@@ -17,7 +17,7 @@ import {
 import {expect} from '@playwright/test';
 import {Serializable} from 'playwright-core/types/structs';
 import {CREATE_NEW_USER, userRequiredFields} from '../beans/requestBeans';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export async function createUsersAndStoreResponseFields(
   request: APIRequestContext,

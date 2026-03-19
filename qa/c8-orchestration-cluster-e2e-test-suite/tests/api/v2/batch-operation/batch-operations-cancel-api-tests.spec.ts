@@ -22,7 +22,7 @@ import {
   cancelBatchOperation,
   createCompletedBatchOperation,
 } from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 

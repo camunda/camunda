@@ -21,7 +21,7 @@ import {CREATE_NEW_TENANT, tenantRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {createGroupAndStoreResponseFields} from './group-requestHelpers';
 import {createUser} from './user-requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export async function assignUsersToTenant(
   request: APIRequestContext,

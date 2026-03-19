@@ -22,7 +22,7 @@ import {
 } from '../../../../utils/beans/requestBeans';
 import {deployDecisionAndStoreResponse} from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
   const state: Record<string, unknown> = {};

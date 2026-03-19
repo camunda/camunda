@@ -59,7 +59,7 @@ test.describe.parallel('Resource Get API', () => {
     );
 
     await assertStatusCode(res, 200);
-    validateResponse(
+    await validateResponse(
       {
         path: '/resources/{resourceKey}',
         method: 'GET',

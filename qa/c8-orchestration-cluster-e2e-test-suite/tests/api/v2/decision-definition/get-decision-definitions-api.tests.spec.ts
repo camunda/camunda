@@ -25,7 +25,7 @@ import {
 } from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import fs from 'fs';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get Decision Definitions API Tests', () => {
