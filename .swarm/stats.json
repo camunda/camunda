@@ -137,15 +137,24 @@
       }
     },
     "engineer": {
-      "invocations": 46,
-      "totalElapsedMs": 45119134,
+      "invocations": 56,
+      "totalElapsedMs": 50148639,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 46
+        "claude-opus-4-6": 56
+      }
+    },
+    "cross-model": {
+      "invocations": 13,
+      "totalElapsedMs": 5466825,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "gpt-5.3-codex": 13
       }
     }
   },
   "totalRuns": 3,
-  "lastUpdated": "2026-03-19T14:24:51.207Z"
+  "lastUpdated": "2026-03-19T20:40:12.121Z"
 }
