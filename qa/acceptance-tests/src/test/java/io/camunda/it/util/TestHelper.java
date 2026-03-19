@@ -31,6 +31,7 @@ import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
@@ -40,6 +41,7 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -602,6 +604,26 @@ public final class TestHelper {
                   camundaClient.newElementInstanceSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
+  }
+
+  public static List<Job> waitForJobs(
+      final CamundaClient camundaClient, final List<Long> processInstanceKeys) {
+    final var jobs = new ArrayList<Job>();
+    Awaitility.await("should wait until jobs are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newJobSearchRequest()
+                      .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
+                      .execute()
+                      .items();
+              jobs.addAll(result);
+              assertThat(result).hasSize(processInstanceKeys.size());
+            });
+    return jobs;
   }
 
   public static void waitForProcessInstances(
