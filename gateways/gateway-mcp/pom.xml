@@ -57,10 +57,6 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-jackson2</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
@@ -85,7 +81,11 @@
       <artifactId>spring-aop</artifactId>
     </dependency>
 
-    <!-- MCP dependencies -->
+    <!-- Spring AI + MCP dependencies -->
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-model</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
@@ -93,10 +93,6 @@
     <dependency>
       <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-mcp-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springaicommunity</groupId>
-      <artifactId>mcp-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>io.modelcontextprotocol.sdk</groupId>
@@ -108,18 +104,22 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
     </dependency>
 
     <dependency>
@@ -208,7 +208,6 @@
           <usedDependencies>
             <dependency>org.springframework.ai:spring-ai-starter-mcp-server-webmvc</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
-            <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
