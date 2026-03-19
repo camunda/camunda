@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.BatchOperationServiceAdapter;
@@ -35,7 +35,7 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
       final String batchOperationKey, final CamundaAuthentication authentication) {
     try {
       final var result = batchOperationServices.getById(batchOperationKey, authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toBatchOperation(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperation(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -45,15 +45,14 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
   public ResponseEntity<Object> searchBatchOperations(
       final GeneratedBatchOperationSearchQueryRequestStrictContract batchOperationSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toBatchOperationQueryStrict(
-            batchOperationSearchQueryStrict)
+    return SearchQueryRequestMapper.toBatchOperationQueryStrict(batchOperationSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = batchOperationServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
+                    SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -86,7 +85,7 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
       final GeneratedBatchOperationItemSearchQueryRequestStrictContract
           batchOperationItemSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toBatchOperationItemQueryStrict(
+    return SearchQueryRequestMapper.toBatchOperationItemQueryStrict(
             batchOperationItemSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -94,8 +93,7 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
               try {
                 final var result = batchOperationServices.searchItems(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(
-                        result));
+                    SearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

@@ -9,14 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentResolutionRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.IncidentServiceAdapter;
@@ -38,14 +36,14 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
   public ResponseEntity<Object> searchIncidents(
       final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
+    return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = incidentServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -57,7 +55,7 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
       final String incidentKey, final CamundaAuthentication authentication) {
     try {
       final var result = incidentServices.getByKey(Long.parseLong(incidentKey), authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toIncident(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toIncident(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

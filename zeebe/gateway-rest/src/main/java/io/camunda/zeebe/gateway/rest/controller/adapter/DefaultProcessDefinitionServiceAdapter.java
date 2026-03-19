@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.adapter;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
@@ -15,7 +14,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProces
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.ProcessDefinitionServiceAdapter;
@@ -41,7 +39,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
       final GeneratedProcessDefinitionSearchQueryRequestStrictContract
           processDefinitionSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toProcessDefinitionQueryStrict(
+    return SearchQueryRequestMapper.toProcessDefinitionQueryStrict(
             processDefinitionSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -49,8 +47,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
               try {
                 final var result = processDefinitionServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -63,7 +60,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
     try {
       return ResponseEntity.ok()
           .body(
-              GeneratedSearchQueryResponseMapper.toProcessDefinition(
+              SearchQueryResponseMapper.toProcessDefinition(
                   processDefinitionServices.getByKey(
                       Long.parseLong(processDefinitionKey), authentication)));
     } catch (final Exception e) {

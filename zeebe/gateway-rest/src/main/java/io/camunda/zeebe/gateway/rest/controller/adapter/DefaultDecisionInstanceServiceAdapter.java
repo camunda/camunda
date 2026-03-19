@@ -11,12 +11,11 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteDecisionInstanceRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.DecisionInstanceServiceAdapter;
@@ -41,15 +40,14 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
   public ResponseEntity<Object> searchDecisionInstances(
       final GeneratedDecisionInstanceSearchQueryRequestStrictContract queryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toDecisionInstanceQueryStrict(queryStrict)
+    return SearchQueryRequestMapper.toDecisionInstanceQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
               try {
                 final var result = decisionInstanceServices.search(q, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
@@ -59,14 +59,14 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
   public ResponseEntity<Object> searchUsers(
       final GeneratedUserSearchQueryRequestStrictContract userSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toUserQueryStrict(userSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toUserQueryStrict(userSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = userServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toUserSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toUserSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -78,7 +78,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
       final String username, final CamundaAuthentication authentication) {
     try {
       final var result = userServices.getUser(username, authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toUser(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUser(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

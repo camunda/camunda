@@ -10,10 +10,10 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.mapper.GlobalListenerMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateGlobalTaskListenerRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateGlobalTaskListenerRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -65,7 +65,7 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
             mapped -> {
               try {
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toGlobalTaskListenerResult(
+                    SearchQueryResponseMapper.toGlobalTaskListenerResult(
                         globalListenerServices.getGlobalTaskListener(mapped, authentication)));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
@@ -105,15 +105,14 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
   public ResponseEntity<Object> searchGlobalTaskListeners(
       final GeneratedGlobalTaskListenerSearchQueryRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toGlobalTaskListenerQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toGlobalTaskListenerQueryStrict(requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = globalListenerServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toGlobalTaskListenerSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toGlobalTaskListenerSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

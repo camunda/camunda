@@ -11,10 +11,10 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.AuthorizationMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.AuthorizationValidator;
@@ -77,7 +77,7 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
     try {
       final var result =
           authorizationServices.getAuthorization(Long.parseLong(authorizationKey), authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toAuthorization(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toAuthorization(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -96,15 +96,14 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
   public ResponseEntity<Object> searchAuthorizations(
       final GeneratedAuthorizationSearchQueryRequestStrictContract authorizationSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toAuthorizationQueryStrict(
-            authorizationSearchQueryStrict)
+    return SearchQueryRequestMapper.toAuthorizationQueryStrict(authorizationSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = authorizationServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

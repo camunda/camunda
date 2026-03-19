@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.VariableServices;
@@ -34,15 +34,14 @@ public class DefaultVariableServiceAdapter implements VariableServiceAdapter {
       final GeneratedVariableSearchQueryRequestStrictContract queryStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return GeneratedSearchQueryRequestMapper.toVariableQueryStrict(queryStrict)
+    return SearchQueryRequestMapper.toVariableQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
               try {
                 final var result = variableServices.search(q, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toVariableSearchQueryResponse(
-                        result, truncate));
+                    SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncate));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -54,7 +53,7 @@ public class DefaultVariableServiceAdapter implements VariableServiceAdapter {
       final String variableKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
-          GeneratedSearchQueryResponseMapper.toVariableItem(
+          SearchQueryResponseMapper.toVariableItem(
               variableServices.getByKey(Long.parseLong(variableKey), authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

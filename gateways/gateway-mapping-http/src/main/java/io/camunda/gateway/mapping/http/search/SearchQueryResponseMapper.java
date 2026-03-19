@@ -12,10 +12,34 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.gateway.mapping.http.search.contract.AuditLogContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.AuthorizationContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.BatchOperationItemResponseContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.BatchOperationResponseContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.ClusterVariableContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.CorrelatedMessageSubscriptionContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.DecisionDefinitionContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.DecisionRequirementsContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ElementInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.FormContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.GlobalTaskListenerContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.GroupContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.IncidentContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.JobContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.MappingRuleContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.MemberContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.MessageSubscriptionContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceCallHierarchyEntryContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.RoleContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryPage;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.TenantContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.UserContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.UserTaskContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCamundaUserStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceGetQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
@@ -44,7 +68,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProces
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSequenceFlowStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSequenceFlowsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStatusMetricStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUsageMetricsResponseItemStrictContract;
@@ -154,7 +177,11 @@ public final class SearchQueryResponseMapper {
   public static <T> T toProcessDefinitionSearchQueryResponse(
       final SearchQueryResult<ProcessDefinitionEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(ProcessDefinitionContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static GeneratedProcessDefinitionElementStatisticsQueryResultStrictContract
@@ -286,130 +313,259 @@ public final class SearchQueryResponseMapper {
   public static <T> T toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(ProcessInstanceContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toJobSearchQueryResponse(final SearchQueryResult<JobEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toJobSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(JobContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toRoleSearchQueryResponse(final SearchQueryResult<RoleEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toRoleSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(RoleContractAdapter::adapt)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toRoleGroupSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toRoleGroupSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toRoleGroups)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toRoleUserSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toRoleUsers)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toRoleClientSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toRoleClients)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toGroupSearchQueryResponse(final SearchQueryResult<GroupEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toGroupSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(GroupContractAdapter::adapt)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toGroupUserSearchQueryResponse(
       final SearchQueryResult<GroupMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toGroupUsers)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toGroupClientSearchQueryResponse(
       final SearchQueryResult<GroupMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toGroupClients)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toTenantSearchQueryResponse(final SearchQueryResult<TenantEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toTenantSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(TenantContractAdapter::adapt)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toTenantGroupSearchQueryResponse(
       final SearchQueryResult<TenantMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toTenantGroups)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toTenantUserSearchQueryResponse(
       final SearchQueryResult<TenantMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toTenantUsers)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toTenantClientSearchQueryResponse(
       final SearchQueryResult<TenantMemberEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MemberContractAdapter::toTenantClients)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toMappingRuleSearchQueryResponse(
       final SearchQueryResult<MappingRuleEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(MappingRuleContractAdapter::adapt)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toDecisionDefinitionSearchQueryResponse(
       final SearchQueryResult<DecisionDefinitionEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(DecisionDefinitionContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toDecisionRequirementsSearchQueryResponse(
       final SearchQueryResult<DecisionRequirementsEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream().map(DecisionRequirementsContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toElementInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(ElementInstanceContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toDecisionInstanceSearchQueryResponse(
       final SearchQueryResult<DecisionInstanceEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(DecisionInstanceContractAdapter::toSearchProjections)
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(UserTaskContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toUserSearchQueryResponse(final SearchQueryResult<UserEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(UserContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toBatchOperationSearchQueryResult(
       final SearchQueryResult<BatchOperationEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream().map(BatchOperationResponseContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toBatchOperationItemSearchQueryResult(
       final SearchQueryResult<BatchOperationItemEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream()
+                            .map(BatchOperationItemResponseContractAdapter::adapt)
+                            .toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(IncidentContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toMessageSubscriptionSearchQueryResponse(
       final SearchQueryResult<MessageSubscriptionEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(
+                    items -> items.stream().map(MessageSubscriptionContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toCorrelatedMessageSubscriptionSearchQueryResponse(
       final SearchQueryResult<CorrelatedMessageSubscriptionEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
-            result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream()
+                            .map(CorrelatedMessageSubscriptionContractAdapter::adapt)
+                            .toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   private static GeneratedSearchQueryPageResponseStrictContract toPage(
@@ -419,15 +575,16 @@ public final class SearchQueryResponseMapper {
   }
 
   private static StrictSearchQueryPage toStrictSearchQueryPage(final SearchQueryResult<?> result) {
-    return GeneratedSearchQueryResponseMapper.toStrictSearchQueryPage(result);
+    return new StrictSearchQueryPage(
+        result.total(), result.hasMoreTotalItems(), result.startCursor(), result.endCursor());
   }
 
   public static <T> T toProcessDefinition(final ProcessDefinitionEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toProcessDefinition(entity));
+    return adaptType(ProcessDefinitionContractAdapter.adapt(entity));
   }
 
   public static <T> T toProcessInstance(final ProcessInstanceEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toProcessInstance(entity));
+    return adaptType(ProcessInstanceContractAdapter.adapt(entity));
   }
 
   public static <T> T toBatchOperations(final List<BatchOperationEntity> batchOperations) {
@@ -436,7 +593,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static <T> T toBatchOperation(final BatchOperationEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toBatchOperation(entity));
+    return adaptType(BatchOperationResponseContractAdapter.adapt(entity));
   }
 
   public static <T> T toBatchOperationItemSearchQueryResult(
@@ -454,51 +611,51 @@ public final class SearchQueryResponseMapper {
   }
 
   public static <T> T toBatchOperationItem(final BatchOperationItemEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toBatchOperationItem(entity));
+    return adaptType(BatchOperationItemResponseContractAdapter.adapt(entity));
   }
 
   public static <T> T toRole(final RoleEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toRole(entity));
+    return adaptType(RoleContractAdapter.adapt(entity));
   }
 
   public static <T> T toGroup(final GroupEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toGroup(entity));
+    return adaptType(GroupContractAdapter.adapt(entity));
   }
 
   public static <T> T toTenant(final TenantEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toTenant(entity));
+    return adaptType(TenantContractAdapter.adapt(entity));
   }
 
   public static <T> T toMappingRule(final MappingRuleEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toMappingRule(entity));
+    return adaptType(MappingRuleContractAdapter.adapt(entity));
   }
 
   public static <T> T toElementInstance(final FlowNodeInstanceEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toElementInstance(entity));
+    return adaptType(ElementInstanceContractAdapter.adapt(entity));
   }
 
   public static <T> T toDecisionDefinition(final DecisionDefinitionEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toDecisionDefinition(entity));
+    return adaptType(DecisionDefinitionContractAdapter.adapt(entity));
   }
 
   public static <T> T toDecisionRequirements(final DecisionRequirementsEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toDecisionRequirements(entity));
+    return adaptType(DecisionRequirementsContractAdapter.adapt(entity));
   }
 
   public static <T> T toIncident(final IncidentEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toIncident(entity));
+    return adaptType(IncidentContractAdapter.adapt(entity));
   }
 
   public static <T> T toUserTask(final UserTaskEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toUserTask(entity));
+    return adaptType(UserTaskContractAdapter.adapt(entity));
   }
 
   public static <T> T toFormItem(final FormEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toFormItem(entity));
+    return adaptType(FormContractAdapter.adapt(entity));
   }
 
   public static <T> T toUser(final UserEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toUser(entity));
+    return adaptType(UserContractAdapter.adapt(entity));
   }
 
   public static GeneratedCamundaUserStrictContract toCamundaUser(final CamundaUserDTO camundaUser) {
@@ -529,7 +686,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static <T> T toDecisionInstance(final DecisionInstanceEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toDecisionInstance(entity));
+    return adaptType(DecisionInstanceContractAdapter.toSearchProjection(entity));
   }
 
   public static GeneratedDecisionInstanceGetQueryStrictContract toDecisionInstanceGetQueryResponse(
@@ -540,18 +697,27 @@ public final class SearchQueryResponseMapper {
   public static <T> T toVariableSearchQueryResponse(
       final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> VariableContractAdapter.toSearchProjections(items, truncateValues))
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toVariableItem(final VariableEntity variableEntity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toVariableItem(variableEntity));
+    return adaptType(VariableContractAdapter.toItemProjection(variableEntity));
   }
 
   public static <T> T toClusterVariableSearchQueryResponse(
       final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toClusterVariableSearchQueryResponse(
-            result, truncateValues));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        ClusterVariableContractAdapter.toSearchProjections(items, truncateValues))
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toClusterVariableSearchResult(
@@ -561,26 +727,35 @@ public final class SearchQueryResponseMapper {
   }
 
   public static <T> T toClusterVariableResult(final ClusterVariableEntity clusterVariableEntity) {
-    return adaptType(
-        GeneratedSearchQueryResponseMapper.toClusterVariableResult(clusterVariableEntity));
+    return adaptType(ClusterVariableContractAdapter.toItemProjection(clusterVariableEntity));
   }
 
   public static <T> T toAuthorizationSearchQueryResponse(
       final SearchQueryResult<AuthorizationEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(AuthorizationContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toAuthorization(final AuthorizationEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toAuthorization(entity));
+    return adaptType(AuthorizationContractAdapter.adapt(entity));
   }
 
   public static <T> T toAuditLogSearchQueryResponse(
       final SearchQueryResult<AuditLogEntity> result) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
+    return adaptType(
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(AuditLogContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toAuditLog(final AuditLogEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toAuditLog(entity));
+    return adaptType(AuditLogContractAdapter.adapt(entity));
   }
 
   public static <T> T toProcessInstanceCallHierarchyEntries(
@@ -593,9 +768,7 @@ public final class SearchQueryResponseMapper {
 
   public static <T> T toProcessInstanceCallHierarchyEntry(
       final ProcessInstanceEntity processInstanceEntity) {
-    return adaptType(
-        GeneratedSearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(
-            processInstanceEntity));
+    return adaptType(ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity));
   }
 
   private static List<GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract>
@@ -746,11 +919,15 @@ public final class SearchQueryResponseMapper {
   public static <T> T toGlobalTaskListenerSearchQueryResponse(
       final SearchQueryResult<GlobalListenerEntity> result) {
     return adaptType(
-        GeneratedSearchQueryResponseMapper.toGlobalTaskListenerSearchQueryResponse(result));
+        new StrictSearchQueryResult<>(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(GlobalTaskListenerContractAdapter::adapt).toList())
+                .orElseGet(Collections::emptyList),
+            toStrictSearchQueryPage(result)));
   }
 
   public static <T> T toGlobalTaskListenerResult(final GlobalListenerEntity entity) {
-    return adaptType(GeneratedSearchQueryResponseMapper.toGlobalTaskListenerResult(entity));
+    return adaptType(GlobalTaskListenerContractAdapter.adapt(entity));
   }
 
   /**

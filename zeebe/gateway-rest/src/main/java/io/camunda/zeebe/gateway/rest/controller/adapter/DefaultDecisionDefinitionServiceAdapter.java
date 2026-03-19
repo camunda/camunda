@@ -11,10 +11,10 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
@@ -44,15 +44,14 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
   public ResponseEntity<Object> searchDecisionDefinitions(
       final GeneratedDecisionDefinitionSearchQueryRequestStrictContract queryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toDecisionDefinitionQueryStrict(queryStrict)
+    return SearchQueryRequestMapper.toDecisionDefinitionQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
               try {
                 final var result = decisionDefinitionServices.search(q, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -64,7 +63,7 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
       final String decisionDefinitionKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
-          GeneratedSearchQueryResponseMapper.toDecisionDefinition(
+          SearchQueryResponseMapper.toDecisionDefinition(
               decisionDefinitionServices.getByKey(
                   Long.parseLong(decisionDefinitionKey), authentication)));
     } catch (final Exception e) {

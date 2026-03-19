@@ -11,7 +11,8 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupClientSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupSearchQueryRequestStrictContract;
@@ -19,7 +20,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupU
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.MappingRuleQuery;
@@ -77,14 +77,14 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   public ResponseEntity<Object> searchGroups(
       final GeneratedGroupSearchQueryRequestStrictContract groupSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toGroupQueryStrict(groupSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toGroupQueryStrict(groupSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = groupServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toGroupSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -96,9 +96,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
       final String groupId, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok()
-          .body(
-              GeneratedSearchQueryResponseMapper.toGroup(
-                  groupServices.getGroup(groupId, authentication)));
+          .body(SearchQueryResponseMapper.toGroup(groupServices.getGroup(groupId, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -157,8 +155,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
       final String groupId,
       final GeneratedGroupUserSearchQueryRequestStrictContract groupUserSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toGroupUserQueryStrict(
-            groupUserSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toGroupUserQueryStrict(groupUserSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -167,7 +164,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
                     groupServices.searchMembers(
                         buildGroupMemberQuery(groupId, EntityType.USER, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -204,8 +201,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
       final GeneratedGroupClientSearchQueryRequestStrictContract
           groupClientSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toGroupClientQueryStrict(
-            groupClientSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toGroupClientQueryStrict(groupClientSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -214,7 +210,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
                     groupServices.searchMembers(
                         buildGroupMemberQuery(groupId, EntityType.CLIENT, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -255,8 +251,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
       final GeneratedMappingRuleSearchQueryRequestStrictContract
           mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toMappingRuleQueryStrict(
-            mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -264,7 +259,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
                 final var composedQuery = buildMappingQuery(groupId, query);
                 final var result = mappingRuleServices.search(composedQuery, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -276,7 +271,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
       final String groupId,
       final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -284,7 +279,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
                 final var composedQuery = buildRoleQuery(groupId, query);
                 final var result = roleServices.search(composedQuery, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toRoleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }

@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSetVariableRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ElementInstanceServices;
@@ -37,16 +37,14 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
       final GeneratedElementInstanceSearchQueryRequestStrictContract
           elementInstanceSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toElementInstanceQueryStrict(
-            elementInstanceSearchQueryStrict)
+    return SearchQueryRequestMapper.toElementInstanceQueryStrict(elementInstanceSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = elementInstanceServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toElementInstanceSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -59,7 +57,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
     try {
       final var result =
           elementInstanceServices.getByKey(Long.parseLong(elementInstanceKey), authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toElementInstance(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toElementInstance(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -86,7 +84,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
       final String elementInstanceKey,
       final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
+    return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -95,7 +93,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
                     elementInstanceServices.searchIncidents(
                         Long.parseLong(elementInstanceKey), query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

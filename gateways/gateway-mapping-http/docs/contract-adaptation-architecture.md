@@ -117,11 +117,10 @@ Specific problems:
                                           └──────────────────────────────────┘
 ```
 
-The controller layer is **unconditionally generated** for every operation in the spec (with the
-single exception of streaming endpoints — see below). The generator does not classify operations
-into patterns to decide whether a controller method can be produced. Every operation gets the same
-structural treatment: routing, request deserialization, constraint validation, service adapter
-delegation, response construction.
+The controller layer is **unconditionally generated** for every operation in the spec. The
+generator does not classify operations into patterns to decide whether a controller method can
+be produced. Every operation gets the same structural treatment: routing, request
+deserialization, constraint validation, service adapter delegation, response construction.
 
 The controller delegates to a single hand-written interface:
 
@@ -136,18 +135,18 @@ stubs showing the developer exactly where to implement behavior.
 
 ### What the spec provides vs. what humans write
 
-|                      Concern                       |                 Source                  |                        Generated or hand-written                        |
-|----------------------------------------------------|-----------------------------------------|-------------------------------------------------------------------------|
-| Route, HTTP method                                 | Spec paths + operationId                | Generated                                                               |
-| Request DTO shape                                  | Spec request schema                     | Generated                                                               |
-| Constraint validation (min/max, pattern, required) | Spec schema constraints                 | Generated (→ 400)                                                       |
-| Response DTO shape                                 | Spec response schema                    | Generated                                                               |
-| Response nullability                               | Spec required/nullable                  | Generated (compile-time)                                                |
-| Response key coercion (Long → String)              | Spec format: int64 + string type        | Generated                                                               |
-| Controller method (routing + delegation)           | Spec operation structure                | Generated                                                               |
-| Semantic validation (business rules)               | Human judgment                          | Hand-written (in `RequestMapper` validators, called by service adapter) |
-| Service adapter (domain mapping + service call)    | Human wiring                            | Hand-written (interface)                                                |
-| Adapter scaffold for new endpoints                 | Spec operation + pattern classification | Generated (TODO stubs)                                                  |
+|                      Concern                       |              Source              |                        Generated or hand-written                        |
+|----------------------------------------------------|----------------------------------|-------------------------------------------------------------------------|
+| Route, HTTP method                                 | Spec paths + operationId         | Generated                                                               |
+| Request DTO shape                                  | Spec request schema              | Generated                                                               |
+| Constraint validation (min/max, pattern, required) | Spec schema constraints          | Generated (→ 400)                                                       |
+| Response DTO shape                                 | Spec response schema             | Generated                                                               |
+| Response nullability                               | Spec required/nullable           | Generated (compile-time)                                                |
+| Response key coercion (Long → String)              | Spec format: int64 + string type | Generated                                                               |
+| Controller method (routing + delegation)           | Spec operation structure         | Generated                                                               |
+| Semantic validation (business rules)               | Human judgment                   | Hand-written (in `RequestMapper` validators, called by service adapter) |
+| Service adapter (domain mapping + service call)    | Human wiring                     | Hand-written (interface)                                                |
+| Adapter scaffold for new endpoints                 | Spec operation structure         | Generated (TODO stubs)                                                  |
 
 ### Data flow: request side
 
@@ -200,10 +199,10 @@ From the OpenAPI spec (`zeebe/gateway-protocol/src/main/proto/v2/*.yaml`), the g
   - Request shape validation via Jakarta `@Valid` (from API interface annotations).
   - Service delegation via injected `ServiceAdapter` interface.
   - Response construction via the service adapter's return value.
-- **Service adapter interfaces** — one interface per tag, with an `execute` method per operation.
-  Returns `ResponseEntity<T>`. For classified patterns (SEARCH, GET_BY_KEY, etc.), the generator
-  produces a mechanical implementation. For unclassified operations, the generator produces a
-  scaffold with TODO stubs.
+- **Service adapter interfaces** — one interface per tag, with a method per operation.
+  Returns `ResponseEntity<T>`. The generator produces a scaffold `Default*ServiceAdapter`
+  implementation for each tag. For existing endpoints, the scaffolds are filled in with
+  extracted logic from legacy controllers. For new endpoints, the scaffolds contain TODO stubs.
 
 ### Controller generation model
 
@@ -221,23 +220,22 @@ The generated controller delegates to a single injected interface — the servic
 encoding any knowledge of what the implementation does. The controller is a pure routing,
 authentication, and delegation shell.
 
-#### Endpoint pattern classification (adapter optimization)
+#### Uniform treatment — no pattern classification
 
-The generator still classifies operations into patterns, but this classification now drives
-**adapter scaffold generation**, not controller generation:
+The generator treats all 182 operations uniformly. There is no classification step — every
+operation gets the same structural treatment in the controller (routing, request deserialization,
+constraint validation, service adapter delegation, response construction).
 
-|        Pattern        |          HTTP shape          |      Example       |                          Scaffold behavior                           |
-|-----------------------|------------------------------|--------------------|----------------------------------------------------------------------|
-| **SEARCH**            | POST `/xxx/search` → 200     | `searchUsers`      | Request → query decomposition → service.search → response mapper     |
-| **GET_BY_KEY**        | GET `/xxx/{key}` → 200       | `getUser`          | Path param → service.getByKey → response mapper                      |
-| **MUTATION_VOID**     | POST/PUT/PATCH/DELETE → 204  | `deleteUser`       | Request + path param → `RequestExecutor.executeSync` → 204           |
-| **MUTATION_RESPONSE** | POST/PUT → 200/201 with body | `createUser`       | Request → validate + convert → service → response mapper + status    |
-| **STATISTICS**        | POST with "statistics" → 200 | `getJobStatistics` | Request → query decomposition → service → statistics response mapper |
-| **Unclassified**      | Any other shape              | `broadcastSignal`  | TODO stub — developer implements                                     |
+The adapter implementations are hand-written for all operations. Common patterns exist in
+practice (search endpoints decompose into filter/sort/page, GET_BY_KEY endpoints do a
+service lookup by key, etc.), but these patterns are implemented in the adapter layer, not
+encoded in the generator. The generator's only concern is the spec-derived controller surface.
 
-For classified operations, the generator produces a mechanical adapter implementation. For
-unclassified operations, the generator produces a scaffold with TODO stubs. In both cases, the
-controller method is identical — it delegates to the adapter interface.
+> **History:** An earlier version of the generator classified operations into patterns
+> (SEARCH, GET_BY_KEY, MUTATION_VOID, MUTATION_RESPONSE, STATISTICS, Unclassified) and used
+> hand-maintained lookup maps to produce pattern-specific adapter scaffolds. This classification
+> pipeline was removed in slice 4 — the lookup maps and classification logic were dead code
+> that the universal controller pipeline had already superseded.
 
 #### Special operation support
 
@@ -649,21 +647,13 @@ The generated controller layer has been validated end-to-end:
 - Legacy hand-written controllers remain in the codebase but are superseded at runtime
   by the generated controllers (Spring route registration precedence)
 
-### Endpoint classification summary (182 operations in spec)
+### Generation summary (182 operations in spec)
 
-|  Classification   | Count |                              Notes                               |
-|-------------------|-------|------------------------------------------------------------------|
-| SEARCH            | 30    | Includes sub-resource searches                                   |
-| GET_BY_KEY        | 19    |                                                                  |
-| STATISTICS        | 10    |                                                                  |
-| MUTATION_VOID     | 24    |                                                                  |
-| MUTATION_RESPONSE | 6     |                                                                  |
-| Unclassified      | 92    | Includes multipart (3), binary streaming (1), async observer (1) |
-
-All 182 operations get generated controllers — there are no exclusions. `activateJobs` (async
-observer) and `getDocument` (binary streaming) are handled by their adapter implementations
-rather than requiring hand-written controller methods. Classification determines whether the
-service adapter implementation is generated mechanically or scaffolded with TODO stubs.
+All 182 operations get generated controllers — there are no exclusions and no classification
+step. Every operation is treated uniformly: the generator produces a controller method that
+delegates to the service adapter interface. `activateJobs` (async observer) and `getDocument`
+(binary streaming) are handled by their adapter implementations rather than requiring
+hand-written controller methods.
 
 ## What this solves
 
@@ -681,9 +671,9 @@ service adapter implementation is generated mechanically or scaffolded with TODO
   adapter stubs. No hand-written controller code.
 - **Uniform controller patterns**: all controllers follow the same structural pattern — validate
   then delegate — regardless of endpoint shape or which developer wrote the original.
-- **100% controller coverage**: every non-streaming operation gets a generated controller.
-  The CUSTOM category is eliminated. Unclassified operations get scaffold adapters instead of
-  being excluded from generation.
+- **100% controller coverage**: every operation gets a generated controller, including
+  streaming (SSE) and binary download endpoints. All 182 spec operations are covered with
+  zero exclusions.
 - **Clear new-endpoint workflow**: a new endpoint produces compile errors in the adapter scaffold
   (TODO stubs), guiding the developer to exactly the methods that need implementation.
 
@@ -723,13 +713,22 @@ Remaining step to complete the unified pipeline:
 generated controllers (Spring route registration precedence). Deleting them is a cleanup task
 that can be done incrementally per tag, once each generated replacement is validated.
 
-### Convention-driven wiring (Stage 4)
+### Eliminate service-layer coupling from the generator (Stage 4 — in progress)
 
-The generator currently uses hand-maintained lookup maps (`MUTATION_VOID_HINTS`,
-`MUTATION_RESPONSE_HINTS`, `GET_BY_KEY_HINTS`, `SEARCH_SERVICE_OVERRIDES`, `STATISTICS_HINTS`) to
-wire service adapter implementations for classified operations. In the target architecture,
-operation wiring is derived from spec conventions — the hint maps shrink to an override map for
-the small number of operations that don't follow naming conventions.
+**Completed — dead Phase 4 classification pipeline (removed):** The 10 hand-maintained lookup
+maps (`MUTATION_VOID_HINTS`, `MUTATION_RESPONSE_HINTS`, `GET_BY_KEY_HINTS`, etc.) and the
+classification pipeline that consumed them were dead code. Removed (~1000 lines).
+
+**In progress — Phase 3 search query mapper tables:** The generator still contains three
+hand-maintained tables (`REQUEST_ENTRIES`, `RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`)
+that encode service-layer implementation knowledge as string literals — query builder factory
+method names, sort option builder references, filter mapper expressions, entity class names,
+contract adapter class names. None of this information is in the OpenAPI spec. It is internal
+wiring of the `io.camunda.search.*` module that the generator has no business knowing.
+
+These tables drive `GeneratedSearchQueryRequestMapper` and
+`GeneratedSearchQueryResponseMapper`, which adapters currently call. The wiring must move into
+the hand-written adapter layer where it belongs.
 
 ## Implementation roadmap
 
@@ -756,7 +755,7 @@ Extended Stage 1 to full schema coverage and added JSpecify null-safety tooling.
 - JSpecify annotations (`@NullMarked`, `@Nullable`) in generated output.
 - Search query request and response mapper generation (Phase 3).
 
-### Stage 3 — Universal controller generation + unified type pipeline (in progress)
+### Stage 3 — Universal controller generation + unified type pipeline (complete)
 
 Extends Stage 2 to generate thin controllers for **all** spec operations, with direct
 service adapter delegation, and unifies the two code generation pipelines so that strict
@@ -768,8 +767,8 @@ contracts are the serialization type.
 - 34 generated controllers, 182 endpoints — 100% spec coverage, 0 skips.
 - `ServiceAdapter` interfaces per tag (34).
 - 34 `Default*ServiceAdapter` implementations extracted from legacy controllers.
-- 5 classified patterns: SEARCH, GET_BY_KEY, MUTATION_VOID, MUTATION_RESPONSE, STATISTICS.
-- Sub-resource SEARCH for parent-keyed search endpoints.
+- All 182 operations treated uniformly — no classification step in the generator.
+- Sub-resource searches for parent-keyed search endpoints.
 - Multipart/form-data support (3 operations: deployments, documents, user task forms).
 - Binary streaming (`getDocument` via `StreamingResponseBody`).
 - Async observer (`activateJobs` via SSE SseEmitter).
@@ -911,16 +910,32 @@ The role of each layer:
 | Strict contract constructor                  | Spec-derived constraints (required, min/max, pattern, length, size)                | Deserialization (before controller) |
 | Hand-written validators (in `RequestMapper`) | Semantic rules: cross-field, config-dependent, format parsing, nested instructions | Inside service adapter, pre-mapping |
 
+**Delivered — dead Phase 4 pipeline removal (complete):**
+
+The generator previously contained a "Phase 4" classification pipeline that classified operations
+into patterns (SEARCH, GET_BY_KEY, MUTATION_VOID, MUTATION_RESPONSE, STATISTICS) using
+`classifyEndpoint()` and 10 hand-maintained lookup maps, and built `ControllerEntry` objects —
+but this pipeline wrote no files. The universal controller pipeline (Phase 5) had already
+superseded it. ~1000 lines of dead code removed:
+- `buildControllerEntriesFromSpec()`, `classifyEndpoint()`, all old endpoint builders and
+renderers.
+- `ControllerEndpoint`, `ControllerEntry`, `EndpointKind` and 5 hint record types.
+- 10 lookup maps including `SKIPPED_OPERATIONS` (92 entries that gated only the dead pipeline).
+- All 1606 unit tests pass after removal.
+
 **Remaining:**
 - Delete superseded hand-written controllers (36 files — cleanup after full validation).
 
-### Stage 4 — Eliminate service-layer coupling from the generator
+### Stage 4 — Eliminate service-layer coupling from the generator (in progress)
 
-The generator currently contains three large hand-maintained tables (`REQUEST_ENTRIES`,
-`RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) that map spec schemas to internal
-service-layer types: query builders, entity classes, filter mappers, sort method names, etc.
-These ~200 lines of wiring couple the generator to the search-domain module — knowledge it
-should not have.
+The Phase 4 classification pipeline (10 lookup maps, ~1000 lines of dead code) has been removed.
+
+The remaining coupling is the Phase 3 search query mapper tables (`REQUEST_ENTRIES`,
+`RESPONSE_WRAPPER_ENTRIES`, `SINGLE_ENTITY_ENTRIES`) — three hand-maintained registries that
+encode service-layer implementation details (query builder method names, sort option references,
+filter mapper expressions, entity types, contract adapter types) as string literals inside the
+generator. These ~200 lines of wiring couple the generator to `io.camunda.search.*` internals
+that it should have zero knowledge of.
 
 **Design principle:** The generator's scope is strictly the OpenAPI specification. Everything
 the generator produces must be derivable from the spec alone (schema shapes, routes, operationIds,
@@ -928,7 +943,7 @@ constraints, `x-` extensions). Anything that couples to service-layer internals 
 filter mappers, sort options, entity types, adapter method names) belongs in the hand-written
 service adapter implementations.
 
-The current tables exist because Stage 3 has two concurrent concerns:
+The tables exist because Stage 3 had two concurrent concerns:
 
 1. **Generating the spec-derived layer** — thin controllers, strict contract DTOs, validator
    interfaces, adapter interfaces. This is the generator's permanent responsibility.
@@ -936,11 +951,11 @@ The current tables exist because Stage 3 has two concurrent concerns:
    decomposition, response mapping, statistics aggregation) out of the old hand-written
    controllers into the new hand-written adapter/validator layer.
 
-The tables serve concern (2): they let the generator produce mechanical adapter implementations
-(`Default*ServiceAdapter`, `GeneratedSearchQueryRequestMapper`,
-`GeneratedSearchQueryResponseMapper`) as transitional scaffolding during migration. Once the
-adapter implementations stabilize and the legacy controllers are deleted, the tables and the
-generated mapper classes they drive should be eliminated.
+The tables serve concern (2): they let the generator produce mechanical mapper classes
+(`GeneratedSearchQueryRequestMapper`, `GeneratedSearchQueryResponseMapper`) as transitional
+scaffolding during migration. Once the adapter implementations stabilize and the legacy
+controllers are deleted, the tables and the generated mapper classes they drive should be
+eliminated.
 
 **Target state:**
 - The generator produces only spec-derived artifacts: DTOs, controllers,

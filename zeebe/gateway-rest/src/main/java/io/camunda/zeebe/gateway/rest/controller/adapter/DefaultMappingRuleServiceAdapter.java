@@ -11,11 +11,11 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.MappingRuleMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.IdentifierValidator;
@@ -86,7 +86,7 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
       final String mappingRuleId, final CamundaAuthentication authentication) {
     try {
       final var result = mappingRuleServices.getMappingRule(mappingRuleId, authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toMappingRule(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRule(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -97,15 +97,14 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
       final GeneratedMappingRuleSearchQueryRequestStrictContract
           mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toMappingRuleQueryStrict(
-            mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = mappingRuleServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

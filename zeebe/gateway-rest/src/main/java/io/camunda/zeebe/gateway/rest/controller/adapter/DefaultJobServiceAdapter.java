@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationRequestStrictContract;
@@ -23,7 +22,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTim
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTypeStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -193,14 +191,14 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   public ResponseEntity<Object> searchJobs(
       final GeneratedJobSearchQueryRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toJobQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toJobQueryStrict(requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = jobServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toJobSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toJobSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

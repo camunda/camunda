@@ -9,7 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.RoleMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleClientSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
@@ -17,7 +18,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleGr
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleMemberQuery;
@@ -69,14 +69,14 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   public ResponseEntity<Object> searchRoles(
       final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = roleServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toRoleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -88,9 +88,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
       final String roleId, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok()
-          .body(
-              GeneratedSearchQueryResponseMapper.toRole(
-                  roleServices.getRole(roleId, authentication)));
+          .body(SearchQueryResponseMapper.toRole(roleServices.getRole(roleId, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -146,7 +144,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
       final String roleId,
       final GeneratedRoleUserSearchQueryRequestStrictContract roleUserSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toRoleUserQueryStrict(roleUserSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleUserQueryStrict(roleUserSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -155,7 +153,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
                     roleServices.searchMembers(
                         buildRoleMemberQuery(roleId, EntityType.USER, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -190,8 +188,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
       final String roleId,
       final GeneratedRoleClientSearchQueryRequestStrictContract roleClientSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toRoleClientQueryStrict(
-            roleClientSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleClientQueryStrict(roleClientSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -200,7 +197,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
                     roleServices.searchMembers(
                         buildRoleMemberQuery(roleId, EntityType.CLIENT, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -235,8 +232,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
       final String roleId,
       final GeneratedRoleGroupSearchQueryRequestStrictContract roleGroupSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toRoleGroupQueryStrict(
-            roleGroupSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleGroupQueryStrict(roleGroupSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -245,7 +241,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
                     roleServices.searchMembers(
                         buildRoleMemberQuery(roleId, EntityType.GROUP, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toRoleGroupSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toRoleGroupSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -281,8 +277,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
       final GeneratedMappingRuleSearchQueryRequestStrictContract
           mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toMappingRuleQueryStrict(
-            mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -290,7 +285,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
                 final var composedQuery = buildMappingQuery(roleId, query);
                 final var result = mappingRuleServices.search(composedQuery, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }

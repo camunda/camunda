@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionRequirementsSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.DecisionRequirementsServiceAdapter;
@@ -36,15 +36,14 @@ public class DefaultDecisionRequirementsServiceAdapter
   public ResponseEntity<Object> searchDecisionRequirements(
       final GeneratedDecisionRequirementsSearchQueryRequestStrictContract queryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toDecisionRequirementsQueryStrict(queryStrict)
+    return SearchQueryRequestMapper.toDecisionRequirementsQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
               try {
                 final var result = decisionRequirementsServices.search(q, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -56,7 +55,7 @@ public class DefaultDecisionRequirementsServiceAdapter
       final String decisionRequirementsKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
-          GeneratedSearchQueryResponseMapper.toDecisionRequirements(
+          SearchQueryResponseMapper.toDecisionRequirements(
               decisionRequirementsServices.getByKey(
                   Long.parseLong(decisionRequirementsKey), authentication)));
     } catch (final Exception e) {

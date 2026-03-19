@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateClusterVariableRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateClusterVariableRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -83,7 +83,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
           clusterVariableSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return GeneratedSearchQueryRequestMapper.toClusterVariableQueryStrict(
+    return SearchQueryRequestMapper.toClusterVariableQueryStrict(
             clusterVariableSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -91,7 +91,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
               try {
                 final var result = clusterVariableServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toClusterVariableSearchQueryResponse(
+                    SearchQueryResponseMapper.toClusterVariableSearchQueryResponse(
                         result, truncate));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
@@ -110,7 +110,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
               try {
                 return ResponseEntity.ok()
                     .body(
-                        GeneratedSearchQueryResponseMapper.toClusterVariableResult(
+                        SearchQueryResponseMapper.toClusterVariableResult(
                             clusterVariableServices.getGloballyScopedClusterVariable(
                                 request, authentication)));
               } catch (final Exception e) {
@@ -162,7 +162,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
               try {
                 return ResponseEntity.ok()
                     .body(
-                        GeneratedSearchQueryResponseMapper.toClusterVariableResult(
+                        SearchQueryResponseMapper.toClusterVariableResult(
                             clusterVariableServices.getTenantScopedClusterVariable(
                                 request, authentication)));
               } catch (final Exception e) {

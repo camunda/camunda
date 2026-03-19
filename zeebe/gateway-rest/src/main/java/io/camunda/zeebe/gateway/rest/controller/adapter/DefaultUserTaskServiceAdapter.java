@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAuditLogSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskCompletionRequestStrictContract;
@@ -72,7 +72,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
       final String userTaskKey, final CamundaAuthentication authentication) {
     try {
       final var userTask = userTaskServices.getByKey(Long.parseLong(userTaskKey), authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toUserTask(userTask));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserTask(userTask));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -102,7 +102,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
     try {
       return userTaskServices
           .getUserTaskForm(Long.parseLong(userTaskKey), authentication)
-          .<Object>map(GeneratedSearchQueryResponseMapper::toFormItem)
+          .<Object>map(SearchQueryResponseMapper::toFormItem)
           .<ResponseEntity<Object>>map(ResponseEntity::ok)
           .orElseGet(() -> ResponseEntity.noContent().build());
     } catch (final Exception e) {
@@ -124,14 +124,14 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   public ResponseEntity<Object> searchUserTasks(
       final GeneratedUserTaskSearchQueryRequestStrictContract queryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toUserTaskQueryStrict(queryStrict)
+    return SearchQueryRequestMapper.toUserTaskQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
               try {
                 final var result = userTaskServices.search(q, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -145,7 +145,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
       final GeneratedUserTaskVariableSearchQueryRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return GeneratedSearchQueryRequestMapper.toUserTaskVariableQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toUserTaskVariableQueryStrict(requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -154,8 +154,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
                     userTaskServices.searchUserTaskVariables(
                         Long.parseLong(userTaskKey), query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toVariableSearchQueryResponse(
-                        result, truncate));
+                    SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncate));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -167,7 +166,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
       final String userTaskKey,
       final GeneratedUserTaskAuditLogSearchQueryRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toUserTaskAuditLogQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toUserTaskAuditLogQueryStrict(requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -176,7 +175,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
                     userTaskServices.searchUserTaskAuditLogs(
                         Long.parseLong(userTaskKey), query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

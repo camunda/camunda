@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.MessageSubscriptionServiceAdapter;
@@ -35,7 +35,7 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
       final GeneratedMessageSubscriptionSearchQueryRequestStrictContract
           messageSubscriptionSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toMessageSubscriptionQueryStrict(
+    return SearchQueryRequestMapper.toMessageSubscriptionQueryStrict(
             messageSubscriptionSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -43,8 +43,7 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
               try {
                 final var result = messageSubscriptionServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -56,7 +55,7 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
       final GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract
           correlatedMessageSubscriptionSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toCorrelatedMessageSubscriptionQueryStrict(
+    return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQueryStrict(
             correlatedMessageSubscriptionSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -65,8 +64,8 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
                 final var result =
                     messageSubscriptionServices.searchCorrelated(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper
-                        .toCorrelatedMessageSubscriptionSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
+                        result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }

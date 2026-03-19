@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.AuditLogServiceAdapter;
@@ -32,14 +32,14 @@ public class DefaultAuditLogServiceAdapter implements AuditLogServiceAdapter {
   public ResponseEntity<Object> searchAuditLogs(
       final GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toAuditLogQueryStrict(auditLogSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toAuditLogQueryStrict(auditLogSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = auditLogServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
               } catch (final Exception e) {
                 return mapErrorToResponse(e);
               }
@@ -51,7 +51,7 @@ public class DefaultAuditLogServiceAdapter implements AuditLogServiceAdapter {
       final String auditLogKey, final CamundaAuthentication authentication) {
     try {
       final var result = auditLogServices.getAuditLog(auditLogKey, authentication);
-      return ResponseEntity.ok(GeneratedSearchQueryResponseMapper.toAuditLog(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLog(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

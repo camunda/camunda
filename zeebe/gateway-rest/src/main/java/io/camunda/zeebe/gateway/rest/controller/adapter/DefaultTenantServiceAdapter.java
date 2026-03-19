@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.TenantMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantClientSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantGroupSearchQueryRequestStrictContract;
@@ -76,14 +76,14 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   public ResponseEntity<Object> searchTenants(
       final GeneratedTenantSearchQueryRequestStrictContract tenantSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toTenantQueryStrict(tenantSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantQueryStrict(tenantSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = tenantServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toTenantSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -96,8 +96,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
     try {
       return ResponseEntity.ok()
           .body(
-              GeneratedSearchQueryResponseMapper.toTenant(
-                  tenantServices.getById(tenantId, authentication)));
+              SearchQueryResponseMapper.toTenant(tenantServices.getById(tenantId, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -154,8 +153,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
       final String tenantId,
       final GeneratedTenantUserSearchQueryRequestStrictContract tenantUserSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toTenantUserQueryStrict(
-            tenantUserSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantUserQueryStrict(tenantUserSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -164,7 +162,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
                     tenantServices.searchMembers(
                         buildTenantMemberQuery(tenantId, EntityType.USER, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -201,8 +199,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
       final GeneratedTenantClientSearchQueryRequestStrictContract
           tenantClientSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toTenantClientQueryStrict(
-            tenantClientSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantClientQueryStrict(tenantClientSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -211,7 +208,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
                     tenantServices.searchMembers(
                         buildTenantMemberQuery(tenantId, EntityType.CLIENT, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -248,8 +245,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
       final GeneratedTenantGroupSearchQueryRequestStrictContract
           tenantGroupSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toTenantGroupQueryStrict(
-            tenantGroupSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantGroupQueryStrict(tenantGroupSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -258,7 +254,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
                     tenantServices.searchMembers(
                         buildTenantMemberQuery(tenantId, EntityType.GROUP, query), authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -270,7 +266,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
       final String tenantId,
       final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -278,7 +274,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
                 final var composedQuery = buildRoleQuery(tenantId, query);
                 final var result = roleServices.search(composedQuery, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toRoleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -343,8 +339,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
       final GeneratedMappingRuleSearchQueryRequestStrictContract
           mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toMappingRuleQueryStrict(
-            mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -352,7 +347,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
                 final var composedQuery = buildMappingRuleQuery(tenantId, query);
                 final var result = mappingRuleServices.search(composedQuery, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }

@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.GeneratedSearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCancelProcessInstanceRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteProcessInstanceRequestStrictContract;
@@ -23,7 +23,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProces
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationBatchOperationRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationInstructionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryResponseMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -67,7 +66,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
     try {
       return ResponseEntity.ok()
           .body(
-              GeneratedSearchQueryResponseMapper.toProcessInstance(
+              SearchQueryResponseMapper.toProcessInstance(
                   processInstanceServices.getByKey(
                       Long.parseLong(processInstanceKey), authentication)));
     } catch (final Exception e) {
@@ -108,16 +107,14 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
       final GeneratedProcessInstanceSearchQueryRequestStrictContract
           processInstanceSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toProcessInstanceQueryStrict(
-            processInstanceSearchQueryStrict)
+    return SearchQueryRequestMapper.toProcessInstanceQueryStrict(processInstanceSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
               try {
                 final var result = processInstanceServices.search(query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
-                        result));
+                    SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
@@ -129,7 +126,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
       final String processInstanceKey,
       final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
-    return GeneratedSearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
+    return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -138,7 +135,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
                     processInstanceServices.searchIncidents(
                         Long.parseLong(processInstanceKey), query, authentication);
                 return ResponseEntity.ok(
-                    GeneratedSearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+                    SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
               } catch (final Exception e) {
                 return RestErrorMapper.mapErrorToResponse(e);
               }
