@@ -10,4 +10,5 @@ package io.camunda.zeebe.exporter.common.cache.process;
 import java.util.List;
 import java.util.Map;
 
-public record ProcessDiagramData(List<String> callActivityIds, Map<String, String> flowNodesMap) {}
+public record ProcessDiagramData(
+    List<String> callActivityIds, Map<String, String> flowNodesMap, boolean hasUserTasks) {}

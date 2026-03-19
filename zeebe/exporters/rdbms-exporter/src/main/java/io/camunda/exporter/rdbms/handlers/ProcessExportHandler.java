@@ -60,8 +60,10 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
           final var activities =
               ProcessCacheUtil.sortedCallActivityIds(reader.extractCallActivities());
           final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(reader.extractFlowNodes());
+          final var hasUserTasks = reader.extractHasUserTasks();
           final var cachedProcessEntity =
-              new CachedProcessEntity(resourceName, version, versionTag, activities, flowNodesMap);
+              new CachedProcessEntity(
+                  resourceName, version, versionTag, activities, flowNodesMap, hasUserTasks);
           processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
         });
   }
