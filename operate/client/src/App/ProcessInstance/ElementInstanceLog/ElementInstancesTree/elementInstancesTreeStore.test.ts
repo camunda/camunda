@@ -1036,4 +1036,62 @@ describe('elementInstancesTreeStore', () => {
 
     vi.useRealTimers();
   });
+
+  it('should stop polling when poll encounters a 403 forbidden error', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    expect(elementInstancesTreeStore.intervalId).not.toBe(null);
+
+    mockSearchElementInstances().withServerError(403);
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    expect(elementInstancesTreeStore.intervalId).toBe(null);
+
+    const nodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(nodeData?.status).toBe('error-permissions');
+
+    vi.useRealTimers();
+  });
+
+  it('should continue polling when poll encounters a non-403 error', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    expect(elementInstancesTreeStore.intervalId).not.toBe(null);
+
+    mockSearchElementInstances().withServerError(500);
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    expect(elementInstancesTreeStore.intervalId).not.toBe(null);
+
+    const nodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(nodeData?.status).toBe('error');
+
+    vi.useRealTimers();
+  });
 });

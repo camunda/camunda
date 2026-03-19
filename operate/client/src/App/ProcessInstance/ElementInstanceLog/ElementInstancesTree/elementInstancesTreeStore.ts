@@ -156,7 +156,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
         status: 'loaded',
       });
     } else {
-      this.setNodeStatus(scopeKey, 'error', error);
+      this.setNodeStatus(scopeKey, this.resolveErrorStatus(error));
       logger.error('Failed to fetch element instances', error);
     }
   };
@@ -259,7 +259,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
       return Math.max(0, response.items.length - PAGE_SIZE);
     } else {
-      this.setNodeStatus(scopeKey, 'error', error);
+      this.setNodeStatus(scopeKey, this.resolveErrorStatus(error));
       logger.error('Failed to fetch next page', error);
       return -1;
     }
@@ -314,28 +314,30 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
       return Math.min(PAGE_SIZE, response.items.length);
     } else {
-      this.setNodeStatus(scopeKey, 'error', error);
+      this.setNodeStatus(scopeKey, this.resolveErrorStatus(error));
       logger.error('Failed to fetch previous page', error);
       return -1;
     }
   };
 
-  private setNodeStatus = (
-    scopeKey: string,
-    status: NodeData['status'],
+  private resolveErrorStatus = (
     error?: RequestError | null,
-  ) => {
-    const resolvedStatus =
-      status === 'error' &&
+  ): 'error' | 'error-permissions' => {
+    if (
       error?.variant === 'failed-response' &&
       error.response.status === HTTP_STATUS_FORBIDDEN
-        ? 'error-permissions'
-        : status;
+    ) {
+      return 'error-permissions';
+    }
+    return 'error';
+  };
+
+  private setNodeStatus = (scopeKey: string, status: NodeData['status']) => {
     const nodeData = this.state.nodes.get(scopeKey);
     if (nodeData) {
       this.setNodeData(scopeKey, {
         ...nodeData,
-        status: resolvedStatus,
+        status,
       });
     } else {
       this.setNodeData(scopeKey, {
@@ -345,7 +347,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
           windowStart: 0,
           windowEnd: 0,
         },
-        status: resolvedStatus,
+        status,
       });
     }
   };
@@ -475,8 +477,12 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
             });
           } else {
             if (!signal.aborted) {
-              this.setNodeStatus(scopeKey, 'error', error);
+              const errorStatus = this.resolveErrorStatus(error);
+              this.setNodeStatus(scopeKey, errorStatus);
               logger.error('Failed to poll element instances', error);
+              if (errorStatus === 'error-permissions') {
+                this.stopPolling();
+              }
             }
           }
         }),
