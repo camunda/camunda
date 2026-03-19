@@ -21,7 +21,7 @@ import java.util.function.UnaryOperator;
 import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
-public interface ProcessInstanceAssert {
+public interface ProcessInstanceAssert extends WithAssertionConfiguration<ProcessInstanceAssert> {
 
   /**
    * Verifies that the process instance is active. The verification fails if the process instance is

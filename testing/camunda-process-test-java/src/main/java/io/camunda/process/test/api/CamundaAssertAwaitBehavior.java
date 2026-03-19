@@ -105,4 +105,12 @@ public interface CamundaAssertAwaitBehavior {
    * @param assertionTimeout the assertion's timeout
    */
   void setAssertionTimeout(final Duration assertionTimeout);
+
+  /**
+   * Creates a new assertion behavior with the given timeout.
+   *
+   * @param assertionTimeout the assertion's timeout
+   * @return a new assertion behavior
+   */
+  CamundaAssertAwaitBehavior withAssertionTimeout(Duration assertionTimeout);
 }

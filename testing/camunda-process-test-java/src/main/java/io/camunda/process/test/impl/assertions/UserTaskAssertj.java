@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -31,7 +32,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
     implements UserTaskAssert {
 
   private final CamundaDataSource dataSource;
-  private final CamundaAssertAwaitBehavior awaitBehavior;
+  private CamundaAssertAwaitBehavior awaitBehavior;
 
   public UserTaskAssertj(
       final CamundaDataSource dataSource,
@@ -40,6 +41,12 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
     super(selector, UserTaskAssert.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
+  }
+
+  @Override
+  public UserTaskAssertj withAssertionTimeout(final Duration assertionTimeout) {
+    awaitBehavior = awaitBehavior.withAssertionTimeout(assertionTimeout);
+    return this;
   }
 
   @Override
