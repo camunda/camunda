@@ -96,7 +96,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
               if (error != null) {
                 LOG.error("Error while checking for available process instances", error);
-
+                cleanUpStaleInstances();
                 return;
               }
 
