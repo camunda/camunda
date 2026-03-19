@@ -118,7 +118,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
         onVerticalScrollEndReach={onVerticalScrollEndReach}
         headerColumns={[
           {
-            header: 'Incident Type',
+            header: 'Type',
             key: 'errorType',
           },
           {
