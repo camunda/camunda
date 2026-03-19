@@ -139,6 +139,7 @@ public class Starter extends App {
                       .newProcessInstanceQuery()
                       .filter(f -> f.active(true).running(true))
                       .sort(ProcessInstanceSort::startDate)
+<<<<<<< HEAD:zeebe/benchmarks/project/src/main/java/io/camunda/zeebe/Starter.java
                       .page(
                           p ->
                               p.limit(1000)
@@ -146,6 +147,9 @@ public class Starter extends App {
                                       responsePage == null
                                           ? List.of()
                                           : responsePage.lastSortValues()))
+=======
+                      .page(p -> p.limit(100))
+>>>>>>> 51e0e6a0 (fix: make limit explicit):load-tests/load-tester/src/main/java/io/camunda/zeebe/Starter.java
                       .send();
 
               return sendFuture.thenApply(
