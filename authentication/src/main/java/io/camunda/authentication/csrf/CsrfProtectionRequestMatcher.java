@@ -56,7 +56,6 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
     final String baseRequestUrl;
     try {
       final URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
-      final URI uri = URI.create(request.getRequestURI());
       baseRequestUrl =
           requestUrl.getProtocol()
               + "://"
