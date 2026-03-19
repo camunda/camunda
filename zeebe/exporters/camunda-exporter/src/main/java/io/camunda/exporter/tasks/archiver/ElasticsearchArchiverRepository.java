@@ -55,7 +55,6 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -531,9 +530,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             a ->
                 a.dateHistogram(
                         dh -> {
-                          dh.field("endDate")
-                              .format(config.getElsRolloverDateFormat())
-                              .timeZone(ZoneId.systemDefault().getId());
+                          dh.field("endDate").format(config.getElsRolloverDateFormat());
 
                           // we support rolloverIntervals in both calendar (e.g., "month") and
                           // fixed (e.g., "3d") formats. First, we try to parse it as a calendar
@@ -561,6 +558,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return future.thenApply(
         response -> {
           final Map<String, Aggregate> aggregations = response.aggregations();
+          if (aggregations == null) {
+            return endDate;
+          }
+
           final DateHistogramAggregate histogram =
               aggregations.get(DATE_AGGREGATION_NAME).dateHistogram();
           try {

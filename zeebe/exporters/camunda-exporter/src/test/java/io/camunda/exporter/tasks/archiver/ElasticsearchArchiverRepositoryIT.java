@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -819,7 +820,7 @@ final class ElasticsearchArchiverRepositoryIT {
               assertThat(firstBatch.isDone()).isTrue();
               assertThat(firstBatch.get().ids()).containsExactly("1", "2");
               assertThat(firstBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+                  .isEqualTo(bucketStart(now.minus(Duration.ofDays(4)), 3, dateFormatter));
             });
     repository
         .moveDocuments(
@@ -841,7 +842,7 @@ final class ElasticsearchArchiverRepositoryIT {
               assertThat(secondBatch.isDone()).isTrue();
               assertThat(secondBatch.get().ids()).containsExactly("3", "4");
               assertThat(secondBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+                  .isEqualTo(bucketStart(now.minus(Duration.ofDays(2)), 3, dateFormatter));
             });
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
@@ -868,7 +869,7 @@ final class ElasticsearchArchiverRepositoryIT {
               assertThat(thirdBatch.isDone()).isTrue();
               assertThat(thirdBatch.get().ids()).containsExactly("5", "6");
               assertThat(thirdBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
+                  .isEqualTo(bucketStart(now.minus(Duration.ofHours(2)), 3, dateFormatter));
             });
   }
 
@@ -1374,6 +1375,18 @@ final class ElasticsearchArchiverRepositoryIT {
 
     assertThat(piBatch.finishDate()).isEqualTo("2025-05-02");
     assertThat(batchOperationBatch.finishDate()).isEqualTo("2025-01-02");
+  }
+
+  /**
+   * computes the start of the epoch-aligned bucket that a given date falls into, for a given
+   * interval size. It's date-independent — no matter what day you run the test, it will always
+   * compute the correct expected bucket boundary to match what Elasticsearch returns. *
+   */
+  private static String bucketStart(
+      final Instant date, final int intervalDays, final DateTimeFormatter formatter) {
+    final long daysSinceEpoch = date.atZone(ZoneId.systemDefault()).toLocalDate().toEpochDay();
+    final long bucketDay = (daysSinceEpoch / intervalDays) * intervalDays;
+    return LocalDate.ofEpochDay(bucketDay).format(formatter);
   }
 
   private record TestAuditLogDocument(String id, String entityType) implements TDocument {}
