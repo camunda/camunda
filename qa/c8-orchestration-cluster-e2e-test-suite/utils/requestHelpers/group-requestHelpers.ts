@@ -43,7 +43,7 @@ export async function assignUsersToGroup(
     );
     await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
-    state[`username${groupId}${i}`] = user;
+    state[`username${groupId}${i}`] = user.username;
   }
 }
 export async function assignMappingToGroup(
