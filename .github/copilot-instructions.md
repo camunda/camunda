@@ -135,5 +135,5 @@ Additional instruction files are auto-loaded when you edit matching paths:
 
 - Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
 - MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
-- Load tests (`load-tests/`, `zeebe/load-tests/`, load test workflows) → `.github/instructions/load-tests.instructions.md`
+- Load tests (`load-tests/`, load test workflows) → `.github/instructions/load-tests.instructions.md`
 
