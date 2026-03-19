@@ -19,36 +19,42 @@ package io.camunda.client.api.search.page;
  * All pagination models combined, supporting offset, limit, and cursor-based (forward/backward)
  * pagination.
  *
- * <p>Use this for search endpoints that support any pagination model. Note that only one pagination
- * style should be used at a time:
+ * <p>Use this for search endpoints that support any pagination model. Calling a direction method
+ * ({@code from}, {@code after}, {@code before}) locks the pagination style by returning a
+ * style-specific interface, so incompatible methods cannot be chained:
  *
  * <ul>
- *   <li><b>Limit only:</b> {@code limit(10)}
- *   <li><b>Offset-based:</b> {@code from(20).limit(10)}
- *   <li><b>Cursor forward:</b> {@code after("cursor").limit(10)}
- *   <li><b>Cursor backward:</b> {@code before("cursor").limit(10)}
+ *   <li><b>Limit only:</b> {@code limit(10)} — stays on {@code AnyPage}
+ *   <li><b>Offset-based:</b> {@code from(20).limit(10)} — returns {@link OffsetPage}
+ *   <li><b>Cursor forward:</b> {@code after("cursor").limit(10)} — returns {@link
+ *       CursorForwardPage}
+ *   <li><b>Cursor backward:</b> {@code before("cursor").limit(10)} — returns {@link
+ *       CursorBackwardPage}
  * </ul>
  *
- * <p>Mixing pagination styles (e.g., {@code from(10).after("cursor")}) will result in a runtime
- * error.
+ * <p>Mixing pagination styles (e.g., {@code from(10).after("cursor")}) is prevented at compile-time
+ * because the returned interface does not expose the incompatible method.
  */
 public interface AnyPage extends SearchPagination<AnyPage> {
 
-  /** Start the page from the given offset (0-based index). */
-  AnyPage from(final Integer value);
+  /**
+   * Start the page from the given offset (0-based index). Locks pagination to offset-based,
+   * returning an {@link OffsetPage} that only exposes {@code from} and {@code limit}.
+   */
+  OffsetPage from(final Integer value);
 
   /** Limit the number of returned entities. */
   AnyPage limit(final Integer value);
 
   /**
-   * Get previous page before the cursor. Use the {@code startCursor} value from the previous
-   * response to fetch the previous page of results.
+   * Get previous page before the cursor. Locks pagination to cursor-backward, returning a {@link
+   * CursorBackwardPage} that only exposes {@code before} and {@code limit}.
    */
-  AnyPage before(final String cursor);
+  CursorBackwardPage before(final String cursor);
 
   /**
-   * Get next page after the cursor. Use the {@code endCursor} value from the previous response to
-   * fetch the next page of results.
+   * Get next page after the cursor. Locks pagination to cursor-forward, returning a {@link
+   * CursorForwardPage} that only exposes {@code after} and {@code limit}.
    */
-  AnyPage after(final String cursor);
+  CursorForwardPage after(final String cursor);
 }
