@@ -15,12 +15,14 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertStatusCode,
+  assertBadRequest,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/beans/requestBeans';
 import {
   assignUsersToGroup,
   createGroupAndStoreResponseFields,
+  createUser,
   userFromState,
 } from '@requestHelpers';
 import {
@@ -28,9 +30,11 @@ import {
   generateUniqueId,
 } from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import { sleep } from 'utils/sleep';
+import { create } from 'domain';
 
 /* eslint-disable playwright/expect-expect */
-test.describe.parallel('Group Users API Tests', () => {
+test.describe.serial('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];
 
@@ -70,10 +74,10 @@ test.describe.parallel('Group Users API Tests', () => {
   });
 
   test('Assign User To Group', async ({request}) => {
-    const user = 'test-user' + generateUniqueId();
+    const user = await createUser(request, state);
     const stateParams: Record<string, string> = {
       groupId: state['groupId1'] as string,
-      username: user,
+      username: user.username,
     };
 
     await expect(async () => {
@@ -229,7 +233,7 @@ test.describe.parallel('Group Users API Tests', () => {
       username: userFromState('groupId2', state) as string,
     };
     const res = await request.delete(
-      buildUrl('/groups/{groupId}/users/{username}', p),
+      buildUrl(`/groups/${p.groupId}/users/${p.username}`,),
       {
         headers: jsonHeaders(),
       },

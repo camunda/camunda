@@ -20,6 +20,7 @@ import {createMappingRule, createRole} from './role-requestHelpers';
 import {CREATE_NEW_GROUP, groupRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {validateResponse} from 'json-body-assertions';
+import { createUser } from './user-requestHelpers';
 
 export async function assignUsersToGroup(
   request: APIRequestContext,
@@ -28,11 +29,12 @@ export async function assignUsersToGroup(
   state: Record<string, unknown>,
 ) {
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = 'test-user' + generateUniqueId();
+    const user = await createUser(request, state);
     const stateParams: Record<string, string> = {
       groupId: groupId,
-      username: user,
+      username: user.username,
     };
+    await expect(async () => {
     const res = await request.put(
       buildUrl('/groups/{groupId}/users/{username}', stateParams),
       {
@@ -40,6 +42,7 @@ export async function assignUsersToGroup(
       },
     );
     await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
     state[`username${groupId}${i}`] = user;
   }
 }
