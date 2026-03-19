@@ -25,19 +25,19 @@ import {HelperModal} from 'modules/components/HelperModal';
 const localStorageKey = 'hideModificationHelperModal';
 
 type Props = {
-  isVisible: boolean;
+  open: boolean;
   onClose: () => void;
   onSubmit: () => void;
 };
 
 const ModificationHelperModal: React.FC<Props> = observer(
-  ({isVisible, onClose, onSubmit}) => {
+  ({open, onClose, onSubmit}) => {
     return (
       <HelperModal
         title="Process Instance Modification Mode"
         localStorageKey={localStorageKey}
         onClose={onClose}
-        open={isVisible}
+        open={open}
         onSubmit={onSubmit}
       >
         <Container>
@@ -46,7 +46,7 @@ const ModificationHelperModal: React.FC<Props> = observer(
             modifications on a process instance.
           </p>
           <p>
-            By clicking on an element, you can select one of following
+            By clicking on a flow node, you can select one of following
             modifications if applicable:
           </p>
           <Modifications>
@@ -54,13 +54,13 @@ const ModificationHelperModal: React.FC<Props> = observer(
               <ModificationType>
                 Add <AddIcon />
               </ModificationType>
-              a single element instance
+              a single flow node instance
             </Modification>
             <Modification>
               <ModificationType>
                 Cancel <CancelIcon />
               </ModificationType>
-              all running element instances
+              all running flow node instances
             </Modification>
             <Modification>
               <ModificationType>
@@ -71,8 +71,8 @@ const ModificationHelperModal: React.FC<Props> = observer(
             </Modification>
           </Modifications>
           <p>
-            Additionally, you add/edit variables by selecting the element scope
-            in the Instance History panel.
+            Additionally, you add/edit variables by selecting the flow node
+            scope in the Instance History panel.
           </p>
           <p>
             A summary of all planned modifications will be shown after clicking

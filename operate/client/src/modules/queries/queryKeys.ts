@@ -20,7 +20,6 @@ import type {
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
   QueryJobsRequestBody,
-  QueryMessageSubscriptionsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   Variable,
@@ -55,10 +54,6 @@ const queryKeys = {
         : ['decisionInstancesSearchPaginated'],
   },
   decisionDefinitions: {
-    get: (decisionDefinitionKey: string) => [
-      'decisionDefinition',
-      decisionDefinitionKey,
-    ],
     search: (payload?: object) =>
       payload
         ? ['decisionDefinitionsSearch', payload]
@@ -87,10 +82,6 @@ const queryKeys = {
         : ['processDefinitionsSearch'],
   },
   processDefinitionStatistics: {
-    get: (payload?: GetProcessDefinitionInstanceStatisticsRequestBody) => [
-      'processDefinitionStatistics',
-      payload,
-    ],
     getPaginated: (
       payload?: GetProcessDefinitionInstanceStatisticsRequestBody,
     ) => ['processDefinitionStatistics', 'paginated', payload],
@@ -110,15 +101,6 @@ const queryKeys = {
       queryKeys.incidents.search()[0],
       'processInstanceIncidentsCount',
       processInstanceKey,
-    ],
-    searchByElementInstanceKey: (
-      elementInstanceKey: string,
-      payload?: QueryElementInstanceIncidentsRequestBody,
-    ) => [
-      queryKeys.incidents.search()[0],
-      'searchByElementInstanceKey',
-      elementInstanceKey,
-      payload,
     ],
     searchByProcessInstanceKeyPaginated: (
       processInstanceKey: string,
@@ -188,10 +170,6 @@ const queryKeys = {
     get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
   },
   batchOperationItems: {
-    searchByProcessInstanceKey: (processInstanceKey?: string) => [
-      'batchOperationItemsSearchByProcessInstanceKey',
-      processInstanceKey,
-    ],
     query: (payload: QueryBatchOperationItemsRequestBody) => [
       'batchOperationItems',
       payload,
@@ -204,10 +182,6 @@ const queryKeys = {
     ],
   },
   incidentProcessInstanceStatisticsByError: {
-    get: (payload?: GetIncidentProcessInstanceStatisticsByErrorRequestBody) => [
-      'incidentProcessInstanceStatisticsByError',
-      payload,
-    ],
     getPaginated: (
       payload?: GetIncidentProcessInstanceStatisticsByErrorRequestBody,
     ) => ['incidentProcessInstanceStatisticsByError', 'paginated', payload],
@@ -217,20 +191,8 @@ const queryKeys = {
       payload?: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
     ) => ['incidentProcessInstanceStatisticsByDefinition', payload],
   },
-  messageSubscriptions: {
-    search: (payload: QueryMessageSubscriptionsRequestBody) => [
-      'messageSubscriptionsSearch',
-      payload,
-    ],
-  },
   currentUser: {
     get: () => ['currentUser'],
-  },
-  userTasks: {
-    getByElementInstance: (elementInstanceKey: string) => [
-      'userTasksByElementInstance',
-      elementInstanceKey,
-    ],
   },
   variable: {
     get: (variableKey: string) => ['variable', variableKey],

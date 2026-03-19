@@ -126,17 +126,7 @@ test.describe('variables and incidents', () => {
       key: '2251799813725328',
     });
 
-    await expect(
-      page.getByRole('button', {
-        name: /view 1 incident in instance/i,
-      }),
-    ).toBeVisible();
-
-    await page
-      .getByRole('button', {
-        name: /view 1 incident in instance/i,
-      })
-      .click();
+    await page.getByRole('link', {name: 'Incidents'}).click();
 
     await expect(
       page.getByRole('combobox', {
@@ -148,7 +138,9 @@ test.describe('variables and incidents', () => {
       path: 'e2e-playwright/docs-screenshots/variables-and-incidents/operate-view-instance-incident.png',
     });
 
-    const editVariableButton = await page.getByRole('button', {
+    await page.getByRole('link', {name: 'Variables'}).click();
+
+    const editVariableButton = page.getByRole('button', {
       name: 'Edit variable orderValue',
     });
 
@@ -200,17 +192,7 @@ test.describe('variables and incidents', () => {
       key: '2251799813725328',
     });
 
-    await expect(
-      page.getByRole('button', {
-        name: /view 1 incident in instance/i,
-      }),
-    ).toBeVisible();
-
-    await page
-      .getByRole('button', {
-        name: /view 1 incident in instance/i,
-      })
-      .click();
+    await page.getByRole('link', {name: 'Incidents'}).click();
 
     await expect(
       page.getByRole('combobox', {

@@ -159,11 +159,7 @@ test.describe('process instance page', () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
-    await page
-      .getByRole('button', {
-        name: /view 1 incident in instance/i,
-      })
-      .click();
+    await page.getByRole('link', {name: 'Incidents'}).click();
 
     await expect(page).toHaveScreenshot();
   });
