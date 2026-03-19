@@ -445,8 +445,7 @@ class ConsumerTest {
                   aResponse()
                       .withStatus(409)
                       .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"error\":\"STALE_GENERATION\",\"currentGeneration\":5}")));
+                      .withBody("{\"error\":\"STALE_GENERATION\",\"currentGeneration\":5}")));
 
       // when / then
       assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
@@ -603,33 +602,35 @@ class ConsumerTest {
     }
 
     @Test
-    void shouldSendGroupIdConsumerIdAndPositionAsQueryParams() {
+    void shouldSendGroupIdConsumerIdAndPositionInJsonBody() {
       // given
-      stubFor(post(urlMatching("/v1/events/0/commit.*")).willReturn(aResponse().withStatus(204)));
+      stubFor(post(urlEqualTo("/v1/events/0/commit")).willReturn(aResponse().withStatus(204)));
 
       // when
       consumer.commitOffset(0, 42L).join();
 
-      // then
+      // then — all fields sent as JSON body (not query params)
       verify(
-          postRequestedFor(urlMatching("/v1/events/0/commit.*"))
-              .withQueryParam("groupId", WireMock.equalTo(GROUP_ID))
-              .withQueryParam("consumerId", WireMock.equalTo(CONSUMER_ID))
-              .withQueryParam("position", WireMock.equalTo("42")));
+          postRequestedFor(urlEqualTo("/v1/events/0/commit"))
+              .withHeader("Content-Type", WireMock.containing("application/json"))
+              .withRequestBody(WireMock.matchingJsonPath("$.groupId", WireMock.equalTo(GROUP_ID)))
+              .withRequestBody(
+                  WireMock.matchingJsonPath("$.consumerId", WireMock.equalTo(CONSUMER_ID)))
+              .withRequestBody(WireMock.matchingJsonPath("$.position", WireMock.equalTo("42"))));
     }
 
     @Test
     void shouldSendCurrentGenerationInCommitRequest() {
       // given — consumer has generation 1 from construction
-      stubFor(post(urlMatching("/v1/events/0/commit.*")).willReturn(aResponse().withStatus(204)));
+      stubFor(post(urlEqualTo("/v1/events/0/commit")).willReturn(aResponse().withStatus(204)));
 
       // when
       consumer.commitOffset(0, 42L).join();
 
-      // then — generation query param must be present so the broker can reject stale commits
+      // then — generation sent in JSON body so the broker can reject stale commits
       verify(
-          postRequestedFor(urlMatching("/v1/events/0/commit.*"))
-              .withQueryParam("generation", WireMock.equalTo("1")));
+          postRequestedFor(urlEqualTo("/v1/events/0/commit"))
+              .withRequestBody(WireMock.matchingJsonPath("$.generation", WireMock.equalTo("1"))));
     }
 
     @Test

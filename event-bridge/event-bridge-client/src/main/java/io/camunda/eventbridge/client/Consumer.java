@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -144,23 +146,27 @@ public final class Consumer {
           checkNotClosed();
           final var httpClient = client.getHttpClient();
           final String url =
-              client.getGatewayUrl()
-                  + "/v1/events/"
-                  + partitionId
-                  + "/commit"
-                  + "?groupId="
-                  + groupId
-                  + "&consumerId="
-                  + consumerId
-                  + "&position="
-                  + position
-                  + "&generation="
-                  + generation;
+              client.getGatewayUrl() + "/v1/events/" + partitionId + "/commit";
+          final String jsonBody;
+          try {
+            jsonBody =
+                client
+                    .getObjectMapper()
+                    .writeValueAsString(
+                        new LinkedHashMap<>(
+                            Map.of(
+                                "groupId", groupId,
+                                "consumerId", consumerId,
+                                "position", position,
+                                "generation", generation)));
+          } catch (final JsonProcessingException e) {
+            throw new EventBridgeException("Failed to serialize commitOffset request", e);
+          }
           final var request =
               HttpRequest.newBuilder()
                   .uri(URI.create(url))
                   .header("Content-Type", "application/json")
-                  .POST(HttpRequest.BodyPublishers.noBody())
+                  .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                   .build();
 
           final HttpResponse<String> response;
