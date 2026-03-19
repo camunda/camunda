@@ -568,6 +568,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          API_TESTS_ONLY: true
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
           DATABASE: "RDBMS"
           DB_NAME: ${{ matrix.database.database-name }}
