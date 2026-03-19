@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceStartMeter implements AutoCloseable {
-
+  public static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
   private final Map<Long, PiCreationResult> startedInstances;
@@ -87,22 +87,48 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                 return;
               }
 
-              LOG.debug("Available process instances items: {}, instances: {}", availableInstances.size(), availableInstances);
-              availableInstances.stream()
-                  .map(startedInstances::get)
-                  .filter(Objects::nonNull)
-                  .forEach(this::recordInstanceAvailable);
+              LOG.debug("Available process instances items: {}", availableInstances.size());
+              processAvailableInstances(availableInstances);
+              cleanUpStaleInstances();
             },
             piCheckExecutorService);
   }
 
-  private void recordInstanceAvailable(final PiCreationResult awaitingPI) {
-    final long durationNanos = System.nanoTime() - awaitingPI.startTimeNanos;
-    LOG.debug(
-        "Process instance {} retrieved in {} ms",
-        awaitingPI.processInstanceKey,
-        TimeUnit.NANOSECONDS.toMillis(durationNanos));
+  private void cleanUpStaleInstances() {
+    // clean up stale instances which exceeded the max duration - to safe memory
+    final long nanoTime = System.nanoTime();
+    final var instancesWhereTimeExceededDeadline =
+        startedInstances.values().stream()
+            .filter(piCreationResult -> nanoTime - piCreationResult.startTimeNanos > MAX_DURATION)
+            .toList();
+    instancesWhereTimeExceededDeadline.forEach(
+        piResults -> {
+          final long durationNanos = System.nanoTime() - piResults.startTimeNanos;
+          LOG.debug(
+              "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
+              piResults.processInstanceKey,
+              TimeUnit.NANOSECONDS.toMillis(durationNanos));
+          recordInstanceAvailable(piResults, durationNanos);
+        });
+  }
 
+  private void processAvailableInstances(final List<Long> availableInstances) {
+    availableInstances.stream()
+        .map(startedInstances::get)
+        .filter(Objects::nonNull)
+        .forEach(
+            piResults -> {
+              final long durationNanos = System.nanoTime() - piResults.startTimeNanos;
+              LOG.debug(
+                  "Process instance {} retrieved in {} ms",
+                  piResults.processInstanceKey,
+                  TimeUnit.NANOSECONDS.toMillis(durationNanos));
+              recordInstanceAvailable(piResults, durationNanos);
+            });
+  }
+
+  private void recordInstanceAvailable(
+      final PiCreationResult awaitingPI, final long durationNanos) {
     final int partitionId = Protocol.decodePartitionId(awaitingPI.processInstanceKey);
     partitionToTimerMap
         .computeIfAbsent(
