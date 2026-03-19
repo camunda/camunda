@@ -15,19 +15,16 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.net.SocketTimeoutException;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 public class CamundaArchiverMetrics implements AutoCloseable {
+  public static final String ARCHIVE_OPERATION_STAGE_TAG_READ = "read";
+  public static final String ARCHIVE_OPERATION_STAGE_TAG_COPY = "copy";
+  public static final String ARCHIVE_OPERATION_STAGE_TAG_DELETE = "delete";
   private static final String COMPLETION_STATUS_FAILED = "failed";
   private static final String COMPLETION_STATUS_SUCCESS = "success";
-  private static final String ARCHIVE_OPERATION_STAGE_TAG_READ = "read";
-  private static final String ARCHIVE_OPERATION_STAGE_TAG_COPY = "copy";
-  private static final String ARCHIVE_OPERATION_STAGE_TAG_DELETE = "delete";
   private static final Map<Class<? extends Throwable>, String> HANDLED_ERROR_TAGS =
       Map.of(
           SocketTimeoutException.class, "timeout",
@@ -128,6 +125,10 @@ public class CamundaArchiverMetrics implements AutoCloseable {
     archiveOperationErrorCounterByKey.values().forEach(meterRegistry::remove);
   }
 
+  public ArchiverJobMetrics getArchiverJobMetrics(final String jobName) {
+    return new ArchiverJobMetrics(jobName, this);
+  }
+
   public void measureArchiverSearch(final Timer.Sample sample) {
     sample.stop(archiverSearchTimer);
   }
@@ -156,9 +157,37 @@ public class CamundaArchiverMetrics implements AutoCloseable {
     getArchivedInstancesCounter(jobName).increment(batchSize);
   }
 
-  public void measureArchivingFailedCount(
-      final String jobName, final String sourceIndex, final Throwable throwable) {
-    getArchiveOperationErrorCounter(jobName, sourceIndex, throwable).increment();
+  public void measureSuccessfulArchiverStageMetrics(
+      final String jobName,
+      final String sourceIdx,
+      final String stage,
+      final Sample timer,
+      final Long noOfDocs) {
+    timer.stop(
+        getArchiveOperationDurationTimer(jobName, sourceIdx, stage, COMPLETION_STATUS_SUCCESS));
+
+    if (noOfDocs != null) {
+      getArchiveOperationSummary(jobName, sourceIdx, stage, COMPLETION_STATUS_SUCCESS)
+          .record(noOfDocs);
+    }
+  }
+
+  public void measureFailedArchiverStageMetrics(
+      final String jobName,
+      final String sourceIdx,
+      final String stage,
+      final Sample timer,
+      final Long noOfDocs,
+      final Throwable throwable) {
+    timer.stop(
+        getArchiveOperationDurationTimer(jobName, sourceIdx, stage, COMPLETION_STATUS_FAILED));
+
+    if (noOfDocs != null) {
+      getArchiveOperationSummary(jobName, sourceIdx, stage, COMPLETION_STATUS_SUCCESS)
+          .record(noOfDocs);
+    }
+
+    getArchiveOperationErrorCounter(jobName, sourceIdx, stage, throwable).increment();
   }
 
   private Timer getArchiveDurationTimer(final String jobName, final String status) {
@@ -259,15 +288,10 @@ public class CamundaArchiverMetrics implements AutoCloseable {
   }
 
   private Counter getArchiveOperationErrorCounter(
-      final String jobName, final String sourceIdx, final Throwable throwable) {
+      final String jobName, final String sourceIdx, final String stage, final Throwable throwable) {
     final String errorType = extractErrorTag(throwable);
-    return getArchiveOperationErrorCounter(jobName, sourceIdx, errorType);
-  }
-
-  private Counter getArchiveOperationErrorCounter(
-      final String jobName, final String sourceIdx, final String errorType) {
     return archiveOperationErrorCounterByKey.compute(
-        getMeterKey(sourceIdx, sourceIdx, errorType),
+        getMeterKey(jobName, sourceIdx, stage, errorType),
         (key, existing) -> {
           if (existing == null) {
             return Counter.builder(meterNameWrapper.apply("archiver.operation.error"))
@@ -276,32 +300,12 @@ public class CamundaArchiverMetrics implements AutoCloseable {
                         + "to understand the types of errors affecting the archiving process.")
                 .tag("job", jobName)
                 .tag("source_index", sourceIdx)
+                .tag("stage", stage)
                 .tag("error_type", errorType)
                 .register(meterRegistry);
           }
           return existing;
         });
-  }
-
-  public Map<String, Counter> getArchiveOperationFailedCountersByKey(
-      final String jobName, final String sourceIndex) {
-    return Stream.of(
-            ARCHIVE_OPERATION_STAGE_TAG_READ,
-            ARCHIVE_OPERATION_STAGE_TAG_COPY,
-            ARCHIVE_OPERATION_STAGE_TAG_DELETE)
-        .flatMap(
-            stage ->
-                HANDLED_ERROR_TAGS.values().stream()
-                    .map(
-                        errorType ->
-                            Map.entry(
-                                getStageErrorMeterKey(stage, errorType),
-                                getArchiveOperationErrorCounter(jobName, sourceIndex, errorType))))
-        .collect(Collectors.toConcurrentMap(Entry::getKey, Entry::getValue));
-  }
-
-  private static String getStageErrorMeterKey(final String stage, final String errorType) {
-    return getMeterKey(stage, errorType);
   }
 
   private static String getMeterKey(final String... vals) {
@@ -321,163 +325,5 @@ public class CamundaArchiverMetrics implements AutoCloseable {
       }
     }
     return HANDLED_ERROR_TAGS.get(Throwable.class);
-  }
-
-  public ArchiverJobContextMetrics getContextMetrics(final String jobName, final String sourceIdx) {
-    return new ArchiverJobContextMetrics(
-        archiverSearchTimer,
-        archiverReindexTimer,
-        archiverDeleteTimer,
-        getArchiveOperationDurationTimer(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_READ, COMPLETION_STATUS_SUCCESS),
-        getArchiveOperationSummary(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_READ, COMPLETION_STATUS_SUCCESS),
-        getArchiveOperationDurationTimer(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_READ, COMPLETION_STATUS_FAILED),
-        getArchiveOperationSummary(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_READ, COMPLETION_STATUS_FAILED),
-        getArchiveOperationDurationTimer(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_COPY, COMPLETION_STATUS_SUCCESS),
-        getArchiveOperationSummary(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_COPY, COMPLETION_STATUS_SUCCESS),
-        getArchiveOperationDurationTimer(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_COPY, COMPLETION_STATUS_FAILED),
-        getArchiveOperationSummary(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_COPY, COMPLETION_STATUS_FAILED),
-        getArchiveOperationDurationTimer(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_DELETE, COMPLETION_STATUS_SUCCESS),
-        getArchiveOperationSummary(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_DELETE, COMPLETION_STATUS_SUCCESS),
-        getArchiveOperationDurationTimer(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_DELETE, COMPLETION_STATUS_FAILED),
-        getArchiveOperationSummary(
-            jobName, sourceIdx, ARCHIVE_OPERATION_STAGE_TAG_DELETE, COMPLETION_STATUS_FAILED),
-        getArchiveOperationFailedCountersByKey(jobName, sourceIdx));
-  }
-
-  public static class ArchiverJobContextMetrics {
-    private final Timer archiverSearchTimer;
-    private final Timer archiverReindexTimer;
-    private final Timer archiverDeleteTimer;
-
-    private final Timer archiverReadSuccessTimer;
-    private final Timer archiverReadFailTimer;
-    private final Timer archiverCopySuccessTimer;
-    private final Timer archiverCopyFailTimer;
-    private final Timer archiverDeleteSuccessTimer;
-    private final Timer archiverDeleteFailTimer;
-
-    private final DistributionSummary archiverReadSuccessSummary;
-    private final DistributionSummary archiverReadFailSummary;
-    private final DistributionSummary archiverCopySuccessSummary;
-    private final DistributionSummary archiverCopyFailSummary;
-    private final DistributionSummary archiverDeleteSuccessSummary;
-    private final DistributionSummary archiverDeleteFailSummary;
-
-    private final Map<String, Counter> archiveOperationErrorCounterByKey;
-
-    public ArchiverJobContextMetrics(
-        final Timer archiverSearchTimer,
-        final Timer archiverReindexTimer,
-        final Timer archiverDeleteTimer,
-        final Timer archiverReadSuccessTimer,
-        final DistributionSummary archiverReadSuccessSummary,
-        final Timer archiverReadFailTimer,
-        final DistributionSummary archiverReadFailSummary,
-        final Timer archiverCopySuccessTimer,
-        final DistributionSummary archiverCopySuccessSummary,
-        final Timer archiverCopyFailTimer,
-        final DistributionSummary archiverCopyFailSummary,
-        final Timer archiverDeleteSuccessTimer,
-        final DistributionSummary archiverDeleteFailSummary,
-        final Timer archiverDeleteFailTimer,
-        final DistributionSummary archiverDeleteSuccessSummary,
-        final Map<String, Counter> archiveOperationErrorCounterByKey) {
-      this.archiverSearchTimer = archiverSearchTimer;
-      this.archiverReindexTimer = archiverReindexTimer;
-      this.archiverDeleteTimer = archiverDeleteTimer;
-      this.archiverReadSuccessTimer = archiverReadSuccessTimer;
-      this.archiverReadSuccessSummary = archiverReadSuccessSummary;
-      this.archiverReadFailTimer = archiverReadFailTimer;
-      this.archiverReadFailSummary = archiverReadFailSummary;
-      this.archiverCopySuccessTimer = archiverCopySuccessTimer;
-      this.archiverCopySuccessSummary = archiverCopySuccessSummary;
-      this.archiverCopyFailTimer = archiverCopyFailTimer;
-      this.archiverCopyFailSummary = archiverCopyFailSummary;
-      this.archiverDeleteSuccessTimer = archiverDeleteSuccessTimer;
-      this.archiverDeleteSuccessSummary = archiverDeleteSuccessSummary;
-      this.archiverDeleteFailTimer = archiverDeleteFailTimer;
-      this.archiverDeleteFailSummary = archiverDeleteFailSummary;
-      this.archiveOperationErrorCounterByKey = archiveOperationErrorCounterByKey;
-    }
-
-    public void measureArchiverSearch(final Timer.Sample sample) {
-      sample.stop(archiverSearchTimer);
-    }
-
-    public void measureArchiverReindex(final Sample timer) {
-      timer.stop(archiverReindexTimer);
-    }
-
-    public void measureArchiverDelete(final Sample timer) {
-      timer.stop(archiverDeleteTimer);
-    }
-
-    public void measureArchiverReadSuccess(final Sample timer, final Long noOfDocs) {
-      timer.stop(archiverReadSuccessTimer);
-      if (noOfDocs != null) {
-        archiverReadSuccessSummary.record(noOfDocs);
-      }
-    }
-
-    public void measureArchiverReadFail(
-        final Sample timer, final Long noOfDocs, final Throwable throwable) {
-      timer.stop(archiverReadFailTimer);
-      if (noOfDocs != null) {
-        archiverReadFailSummary.record(noOfDocs);
-      }
-      archiveOperationErrorCounterByKey
-          .get(getStageErrorMeterKey(ARCHIVE_OPERATION_STAGE_TAG_READ, extractErrorTag(throwable)))
-          .increment();
-    }
-
-    public void measureArchiverCopySuccess(final Sample timer, final Long noOfDocs) {
-      timer.stop(archiverCopySuccessTimer);
-      if (noOfDocs != null) {
-        archiverCopySuccessSummary.record(noOfDocs);
-      }
-    }
-
-    public void measureArchiverCopyFail(
-        final Sample timer, final Long noOfDocs, final Throwable throwable) {
-      timer.stop(archiverCopyFailTimer);
-      if (noOfDocs != null) {
-        archiverCopyFailSummary.record(noOfDocs);
-      }
-      archiveOperationErrorCounterByKey
-          .get(getStageErrorMeterKey(ARCHIVE_OPERATION_STAGE_TAG_COPY, extractErrorTag(throwable)))
-          .increment();
-    }
-
-    public void measureArchiverDeleteSuccess(final Sample timer, final Long noOfDocs) {
-      timer.stop(archiverDeleteSuccessTimer);
-      if (noOfDocs != null) {
-        archiverDeleteSuccessSummary.record(noOfDocs);
-      }
-    }
-
-    public void measureArchiverDeleteFail(
-        final Sample timer, final Long noOfDocs, final Throwable throwable) {
-      timer.stop(archiverDeleteFailTimer);
-
-      if (noOfDocs != null) {
-        archiverDeleteFailSummary.record(noOfDocs);
-      }
-
-      archiveOperationErrorCounterByKey
-          .get(
-              getStageErrorMeterKey(ARCHIVE_OPERATION_STAGE_TAG_DELETE, extractErrorTag(throwable)))
-          .increment();
-    }
   }
 }

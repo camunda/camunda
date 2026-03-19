@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import java.util.ArrayList;
@@ -20,37 +20,44 @@ final class TestRepository extends NoopArchiverRepository {
   final List<DocumentMove> moves = new ArrayList<>();
   ArchiveBatch batch;
 
-  public <T extends ArchiveBatch> CompletableFuture<T> getNextBatch() {
+  public <T extends ArchiveBatch> CompletableFuture<T> getNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((T) batch);
   }
 
   @Override
-  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((ProcessInstanceArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
@@ -60,7 +67,7 @@ final class TestRepository extends NoopArchiverRepository {
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
-      final ArchiverJobContextMetrics archiveMetrics,
+      final ArchiverJobMetrics archiveMetrics,
       final Executor executor) {
     moves.add(
         new DocumentMove(sourceIndexName, destinationIndexName, keysByField, filters, executor));

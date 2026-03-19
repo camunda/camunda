@@ -20,8 +20,7 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaArchiverMetrics;
-import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -41,7 +40,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -93,8 +91,7 @@ final class OpenSearchArchiverRepositoryIT {
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = create();
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final OpenSearchTransport transport = createTransport();
-  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final ArchiverJobContextMetrics archiveMetrics = mock(ArchiverJobContextMetrics.class);
+  private final ArchiverJobMetrics archiverJobMetrics = mock(ArchiverJobMetrics.class);
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
@@ -146,7 +143,7 @@ final class OpenSearchArchiverRepositoryIT {
             indexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
             Map.of(),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -180,7 +177,7 @@ final class OpenSearchArchiverRepositoryIT {
             auditLogIndex,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -220,7 +217,7 @@ final class OpenSearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -259,7 +256,7 @@ final class OpenSearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run);
 
     // then
@@ -441,7 +438,7 @@ final class OpenSearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
             Map.of(),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -480,7 +477,7 @@ final class OpenSearchArchiverRepositoryIT {
             sourceIndexName,
             destIndexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run);
 
     // then
@@ -533,7 +530,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getProcessInstancesNextBatch();
+    final var result = repository.getProcessInstancesNextBatch(archiverJobMetrics);
 
     // then - we expect only the first document created two hours ago to be returned
     final var dateFormatter =
@@ -564,7 +561,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
 
     // then
     // PI mode: Should select all 3 (since end date matches).
@@ -593,7 +590,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
 
     // then
     // Legacy -> "10"
@@ -623,7 +620,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
 
     // then
     assertThat(batch.processInstanceKeys()).isEmpty();
@@ -660,7 +657,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getBatchOperationsNextBatch();
+    final var result = repository.getBatchOperationsNextBatch(archiverJobMetrics);
 
     // then - we expect only the first two documents created two hours ago to be returned
     final var dateFormatter =
@@ -699,7 +696,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getStandaloneDecisionNextBatch();
+    final var result = repository.getStandaloneDecisionNextBatch(archiverJobMetrics);
 
     // then - we expect only the first two documents created two hours ago to be returned
     final var dateFormatter =
@@ -730,7 +727,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // when
-    final var firstBatch = repository.getBatchOperationsNextBatch();
+    final var firstBatch = repository.getBatchOperationsNextBatch(archiverJobMetrics);
     Awaitility.await("waiting for first batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -745,7 +742,7 @@ final class OpenSearchArchiverRepositoryIT {
             batchOperationIndex,
             destIndexName,
             Map.of("id", List.of("1", "2")),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run)
         .join();
 
@@ -756,7 +753,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // then
-    final var secondBatch = repository.getBatchOperationsNextBatch();
+    final var secondBatch = repository.getBatchOperationsNextBatch(archiverJobMetrics);
     Awaitility.await("waiting for second batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -773,7 +770,7 @@ final class OpenSearchArchiverRepositoryIT {
             batchOperationIndex,
             destIndexName,
             Map.of("id", List.of("3", "4")),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run)
         .join();
 
@@ -786,7 +783,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // then
-    final var thirdBatch = repository.getBatchOperationsNextBatch();
+    final var thirdBatch = repository.getBatchOperationsNextBatch(archiverJobMetrics);
 
     Awaitility.await("waiting for third batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
@@ -826,7 +823,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverInterval("3d");
 
     // then the batch finish date should not update:
-    final var batch = repository.getBatchOperationsNextBatch().join();
+    final var batch = repository.getBatchOperationsNextBatch(archiverJobMetrics).join();
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
   }
@@ -855,7 +852,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverInterval("3d");
 
     // then the batch finish date should update since zeebe index should be excluded:
-    final var batch = repository.getBatchOperationsNextBatch().join();
+    final var batch = repository.getBatchOperationsNextBatch(archiverJobMetrics).join();
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
@@ -885,7 +882,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverBatchSize(5);
 
     // when
-    final var result = repository.getUsageMetricNextBatch();
+    final var result = repository.getUsageMetricNextBatch(archiverJobMetrics);
 
     // then
     final var dateFormatter =
@@ -925,7 +922,7 @@ final class OpenSearchArchiverRepositoryIT {
     config.setRolloverBatchSize(5);
 
     // when
-    final var result = repository.getUsageMetricTUNextBatch();
+    final var result = repository.getUsageMetricTUNextBatch(archiverJobMetrics);
 
     // then
     final var dateFormatter =
@@ -1230,8 +1227,9 @@ final class OpenSearchArchiverRepositoryIT {
 
     // when
     // ensure PI batch is processed first to assert that both dates are maintained separately
-    final var piBatch = repository.getProcessInstancesNextBatch().join();
-    final var batchOperationBatch = repository.getBatchOperationsNextBatch().join();
+    final var piBatch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
+    final var batchOperationBatch =
+        repository.getBatchOperationsNextBatch(archiverJobMetrics).join();
 
     // then
     assertThat(piBatch.isEmpty()).isFalse();
@@ -1445,17 +1443,9 @@ final class OpenSearchArchiverRepositoryIT {
   private OpenSearchArchiverRepository createRepository(
       final OpenSearchGenericClient genericClient, final int partitionId) {
     final var client = createOpenSearchAsyncClient();
-    final var metrics = new CamundaArchiverMetrics(meterRegistry);
 
     return new OpenSearchArchiverRepository(
-        partitionId,
-        config,
-        resourceProvider,
-        client,
-        genericClient,
-        Runnable::run,
-        metrics,
-        LOGGER);
+        partitionId, config, resourceProvider, client, genericClient, Runnable::run, LOGGER);
   }
 
   private void createAuditLogIndex() throws IOException {

@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -206,13 +207,14 @@ class AuditLogArchiverJobTest {
     AuditLogCleanupBatch deletedBatch;
 
     @Override
-    public CompletableFuture<AuditLogCleanupBatch> getNextBatch() {
+    public CompletableFuture<AuditLogCleanupBatch> getNextBatch(
+        final ArchiverJobMetrics archiverJobMetrics) {
       return CompletableFuture.completedFuture(batch);
     }
 
     @Override
     public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
-        final AuditLogCleanupBatch batch) {
+        final AuditLogCleanupBatch batch, final ArchiverJobMetrics archiverJobMetrics) {
       deletedBatch = batch;
       return CompletableFuture.completedFuture(batch.auditLogCleanupIds().size());
     }

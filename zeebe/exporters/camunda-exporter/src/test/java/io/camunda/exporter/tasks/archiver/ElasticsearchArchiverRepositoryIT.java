@@ -23,8 +23,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaArchiverMetrics;
-import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -44,7 +43,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -85,8 +83,7 @@ final class ElasticsearchArchiverRepositoryIT {
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   @AutoClose private final RestClientTransport transport = createRestClient();
-  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final ArchiverJobContextMetrics archiveMetrics = mock(ArchiverJobContextMetrics.class);
+  private final ArchiverJobMetrics archiverJobMetrics = mock(ArchiverJobMetrics.class);
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private String indexPrefix;
@@ -137,7 +134,7 @@ final class ElasticsearchArchiverRepositoryIT {
             indexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
             Map.of(),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -171,7 +168,7 @@ final class ElasticsearchArchiverRepositoryIT {
             auditLogIndex,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -211,7 +208,7 @@ final class ElasticsearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -250,7 +247,7 @@ final class ElasticsearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run);
 
     // then
@@ -454,7 +451,7 @@ final class ElasticsearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
             Map.of(),
-            archiveMetrics);
+            archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -493,7 +490,7 @@ final class ElasticsearchArchiverRepositoryIT {
             sourceIndexName,
             destIndexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run);
 
     // then
@@ -546,7 +543,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getProcessInstancesNextBatch();
+    final var result = repository.getProcessInstancesNextBatch(archiverJobMetrics);
 
     // then - we expect only the first document created two hours ago to be returned
     final var dateFormatter =
@@ -577,7 +574,7 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
 
     // then
     // PI mode: Should select all 3 (since end date matches).
@@ -606,7 +603,7 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
 
     // then
     // Legacy -> "10"
@@ -636,7 +633,7 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
 
     // then
     assertThat(batch.processInstanceKeys()).isEmpty();
@@ -679,7 +676,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverBatchSize(5);
 
     // when
-    final var result = repository.getUsageMetricNextBatch();
+    final var result = repository.getUsageMetricNextBatch(archiverJobMetrics);
 
     // then
     final var dateFormatter =
@@ -719,7 +716,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverBatchSize(5);
 
     // when
-    final var result = repository.getUsageMetricTUNextBatch();
+    final var result = repository.getUsageMetricTUNextBatch(archiverJobMetrics);
 
     // then
     final var dateFormatter =
@@ -754,7 +751,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getBatchOperationsNextBatch();
+    final var result = repository.getBatchOperationsNextBatch(archiverJobMetrics);
 
     // then - we expect only the first two documents created two hours ago to be returned
     final var dateFormatter =
@@ -793,7 +790,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getStandaloneDecisionNextBatch();
+    final var result = repository.getStandaloneDecisionNextBatch(archiverJobMetrics);
 
     // then - we expect only the first two documents created two hours ago to be returned
     final var dateFormatter =
@@ -824,7 +821,7 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // when
-    final var firstBatch = repository.getBatchOperationsNextBatch();
+    final var firstBatch = repository.getBatchOperationsNextBatch(archiverJobMetrics);
     Awaitility.await("waiting for first batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -839,7 +836,7 @@ final class ElasticsearchArchiverRepositoryIT {
             batchOperationIndex,
             destIndexName,
             Map.of("id", List.of("1", "2")),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run)
         .join();
 
@@ -850,7 +847,7 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // then
-    final var secondBatch = repository.getBatchOperationsNextBatch();
+    final var secondBatch = repository.getBatchOperationsNextBatch(archiverJobMetrics);
     Awaitility.await("waiting for second batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -867,7 +864,7 @@ final class ElasticsearchArchiverRepositoryIT {
             batchOperationIndex,
             destIndexName,
             Map.of("id", List.of("3", "4")),
-            archiveMetrics,
+            archiverJobMetrics,
             Runnable::run)
         .join();
 
@@ -880,7 +877,7 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // then
-    final var thirdBatch = repository.getBatchOperationsNextBatch();
+    final var thirdBatch = repository.getBatchOperationsNextBatch(archiverJobMetrics);
 
     Awaitility.await("waiting for third batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
@@ -920,7 +917,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverInterval("3d");
 
     // then the batch finish date should not update:
-    final var batch = repository.getBatchOperationsNextBatch().join();
+    final var batch = repository.getBatchOperationsNextBatch(archiverJobMetrics).join();
     assertThat(batch.ids()).containsExactly("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
   }
@@ -948,7 +945,7 @@ final class ElasticsearchArchiverRepositoryIT {
     config.setRolloverInterval("3d");
 
     // then the batch finish date should update since zeebe index should be excluded:
-    final var batch = repository.getBatchOperationsNextBatch().join();
+    final var batch = repository.getBatchOperationsNextBatch(archiverJobMetrics).join();
     assertThat(batch.ids()).containsExactly("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
@@ -1196,10 +1193,8 @@ final class ElasticsearchArchiverRepositoryIT {
 
   private ElasticsearchArchiverRepository createRepository(
       final ElasticsearchAsyncClient client, final int partitionId) {
-    final var metrics = new CamundaArchiverMetrics(meterRegistry);
-
     return new ElasticsearchArchiverRepository(
-        partitionId, config, resourceProvider, client, Runnable::run, metrics, LOGGER);
+        partitionId, config, resourceProvider, client, Runnable::run, LOGGER);
   }
 
   private RestClientTransport createRestClient() {
@@ -1386,8 +1381,9 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // when
     // ensure PI batch is processed first to assert that both dates are maintained separately
-    final var piBatch = repository.getProcessInstancesNextBatch().join();
-    final var batchOperationBatch = repository.getBatchOperationsNextBatch().join();
+    final var piBatch = repository.getProcessInstancesNextBatch(archiverJobMetrics).join();
+    final var batchOperationBatch =
+        repository.getBatchOperationsNextBatch(archiverJobMetrics).join();
 
     // then
     assertThat(piBatch.isEmpty()).isFalse();

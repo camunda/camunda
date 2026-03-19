@@ -26,11 +26,9 @@ import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +60,6 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   @Override
   ElasticsearchArchiverRepository createRepository() {
     final var client = new ElasticsearchAsyncClient(transport);
-    final var metrics = new CamundaArchiverMetrics(new SimpleMeterRegistry());
     final var config = new HistoryConfiguration();
     config.setRetention(retention);
     return new ElasticsearchArchiverRepository(
@@ -71,7 +68,6 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         new TestExporterResourceProvider("testPrefix", true),
         client,
         Runnable::run,
-        metrics,
         LOGGER);
   }
 
@@ -91,7 +87,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         .thenReturn(CompletableFuture.completedFuture(mock(SearchResponse.class)));
 
     // when
-    repository.getProcessInstancesNextBatch();
+    repository.getProcessInstancesNextBatch(getArchiverJobMetrics());
 
     // then
     final var captor = ArgumentCaptor.forClass(SearchRequest.class);
@@ -121,7 +117,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(getArchiverJobMetrics()).join();
 
     // then
     assertThat(batch.processInstanceKeys()).containsExactly(1L, 2L);
@@ -143,7 +139,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(getArchiverJobMetrics()).join();
 
     // then
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
@@ -167,7 +163,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(getArchiverJobMetrics()).join();
 
     // then - purely based on mapping logic which splits by root key presence
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
@@ -192,7 +188,6 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         new TestExporterResourceProvider("testPrefix", true),
         client,
         Runnable::run,
-        new CamundaArchiverMetrics(new SimpleMeterRegistry()),
         LOGGER);
   }
 

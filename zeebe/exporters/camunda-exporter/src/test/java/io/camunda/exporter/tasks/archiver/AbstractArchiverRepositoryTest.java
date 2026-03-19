@@ -9,12 +9,15 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +29,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 abstract class AbstractArchiverRepositoryTest {
 
   final RetentionConfiguration retention = new RetentionConfiguration();
+  final ArchiverJobMetrics archiverJobMetrics =
+      new ArchiverJobMetrics("jobName", new CamundaArchiverMetrics(new SimpleMeterRegistry()));
   ArchiverRepository repository;
 
   @BeforeEach
@@ -43,9 +48,10 @@ abstract class AbstractArchiverRepositoryTest {
   @ParameterizedTest
   @MethodSource("archiveBatchSuppliers")
   void shouldReturnFailedFutureWhenGetNextBatchFails(
-      final Function<ArchiverRepository, CompletableFuture<?>> archiveBatchSupplier) {
+      final BiFunction<ArchiverRepository, ArchiverJobMetrics, CompletableFuture<?>>
+          archiveBatchSupplier) {
     // when
-    final var result = archiveBatchSupplier.apply(repository);
+    final var result = archiveBatchSupplier.apply(repository, archiverJobMetrics);
 
     // then fails when it tries to access ES/OS, since there is no backing database
     assertThat(result)
@@ -55,7 +61,8 @@ abstract class AbstractArchiverRepositoryTest {
         .withRootCauseInstanceOf(ConnectException.class);
   }
 
-  static Stream<Named<Function<ArchiverRepository, CompletableFuture<?>>>> archiveBatchSuppliers() {
+  static Stream<Named<BiFunction<ArchiverRepository, ArchiverJobMetrics, CompletableFuture<?>>>>
+      archiveBatchSuppliers() {
     return Stream.of(
         Named.of("getProcessInstancesNextBatch", ArchiverRepository::getProcessInstancesNextBatch),
         Named.of("getBatchOperationsNextBatch", ArchiverRepository::getBatchOperationsNextBatch),
@@ -78,6 +85,10 @@ abstract class AbstractArchiverRepositoryTest {
     assertThat(result)
         .as("did not try connecting to non existent ES/OS")
         .succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  ArchiverJobMetrics getArchiverJobMetrics() {
+    return archiverJobMetrics;
   }
 
   abstract ArchiverRepository createRepository();

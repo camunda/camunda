@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import java.util.concurrent.CompletableFuture;
 
@@ -17,12 +18,13 @@ public interface AuditLogArchiverRepository extends AutoCloseable {
    *
    * @return a {@link CompletableFuture} containing the next batch of audit logs to be archived
    */
-  CompletableFuture<AuditLogCleanupBatch> getNextBatch();
+  CompletableFuture<AuditLogCleanupBatch> getNextBatch(final ArchiverJobMetrics archiverJobMetrics);
 
   /**
    * Deletes the documents for the given batch from the audit log cleanup index.
    *
    * @return a {@link CompletableFuture} containing the number of documents deleted
    */
-  CompletableFuture<Integer> deleteAuditLogCleanupMetadata(final AuditLogCleanupBatch batch);
+  CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
+      final AuditLogCleanupBatch batch, final ArchiverJobMetrics archiverJobMetrics);
 }

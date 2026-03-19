@@ -10,9 +10,11 @@ package io.camunda.exporter.tasks.archiver;
 import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -66,6 +68,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
 
   @AutoClose private final OpenSearchTransport transport = createTransport();
   private final HistoryConfiguration config = new HistoryConfiguration();
+  private final ArchiverJobMetrics archiverJobMetrics = mock(ArchiverJobMetrics.class);
   private String auditLogIndex;
   private String auditLogCleanupIndex;
   private TestExporterResourceProvider resourceProvider;
@@ -99,7 +102,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     final var repository = createRepository();
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -128,7 +131,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -164,7 +167,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -205,7 +208,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -239,7 +242,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -281,7 +284,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -318,7 +321,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -354,7 +357,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
             "2026-02-19", List.of("cleanup-1", "cleanup-2"), List.of());
 
     // when
-    final var result = repository.deleteAuditLogCleanupMetadata(batch);
+    final var result = repository.deleteAuditLogCleanupMetadata(batch, archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -400,7 +403,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));

@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -30,17 +30,23 @@ public interface ArchiverRepository extends AutoCloseable {
           UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
           UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
 
-  CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch();
+  CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      ArchiverJobMetrics archiverJobMetrics);
 
-  CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch();
+  CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch(
+      ArchiverJobMetrics archiverJobMetrics);
 
-  CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch();
+  CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch(
+      ArchiverJobMetrics archiverJobMetrics);
 
-  CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch();
+  CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch(
+      ArchiverJobMetrics archiverJobMetrics);
 
-  CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch();
+  CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch(
+      ArchiverJobMetrics archiverJobMetrics);
 
-  CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch();
+  CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch(
+      ArchiverJobMetrics archiverJobMetrics);
 
   CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
 
@@ -50,20 +56,20 @@ public interface ArchiverRepository extends AutoCloseable {
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
-      final ArchiverJobContextMetrics archiveMetrics);
+      final ArchiverJobMetrics archiveMetrics);
 
   CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
-      final ArchiverJobContextMetrics archiveMetrics);
+      final ArchiverJobMetrics archiveMetrics);
 
   default CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final ArchiverJobContextMetrics archiveMetrics,
+      final ArchiverJobMetrics archiveMetrics,
       final Executor executor) {
     return moveDocuments(
         sourceIndexName, destinationIndexName, keysByField, Map.of(), archiveMetrics, executor);
@@ -74,7 +80,7 @@ public interface ArchiverRepository extends AutoCloseable {
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
-      final ArchiverJobContextMetrics archiveMetrics,
+      final ArchiverJobMetrics archiveMetrics,
       final Executor executor) {
     return reindexDocuments(
             sourceIndexName, destinationIndexName, keysByField, filters, archiveMetrics)

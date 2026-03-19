@@ -203,7 +203,6 @@ public final class BackgroundTaskManagerFactory {
         asyncClient,
         genericClient,
         executor,
-        metrics.getArchiverMetrics(),
         logger);
   }
 
@@ -249,13 +248,7 @@ public final class BackgroundTaskManagerFactory {
   private ElasticsearchArchiverRepository createArchiverRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchArchiverRepository(
-        partitionId,
-        config.getHistory(),
-        resourceProvider,
-        asyncClient,
-        executor,
-        metrics.getArchiverMetrics(),
-        logger);
+        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, logger);
   }
 
   private List<RunnableTask> buildTasks() {

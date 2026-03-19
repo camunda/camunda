@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -36,8 +37,9 @@ public class UsageMetricTUArchiverJob extends ArchiverJob<ArchiveBatch.BasicArch
   }
 
   @Override
-  CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getUsageMetricTUNextBatch();
+  CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
+    return getArchiverRepository().getUsageMetricTUNextBatch(archiverJobMetrics);
   }
 
   @Override

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
@@ -47,8 +48,8 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch
   }
 
   @Override
-  CompletableFuture<BasicArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getStandaloneDecisionNextBatch();
+  CompletableFuture<BasicArchiveBatch> getNextBatch(final ArchiverJobMetrics archiverJobMetrics) {
+    return getArchiverRepository().getStandaloneDecisionNextBatch(archiverJobMetrics);
   }
 
   @Override

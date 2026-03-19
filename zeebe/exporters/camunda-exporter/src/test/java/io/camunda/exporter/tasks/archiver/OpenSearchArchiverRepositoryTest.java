@@ -16,11 +16,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -65,7 +63,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   @Override
   OpenSearchArchiverRepository createRepository() {
     final var client = new OpenSearchAsyncClient(transport);
-    final var metrics = new CamundaArchiverMetrics(new SimpleMeterRegistry());
     final var config = new HistoryConfiguration();
     config.setRetention(retention);
 
@@ -76,7 +73,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         client,
         new OpenSearchGenericClient(client._transport(), client._transportOptions()),
         Runnable::run,
-        metrics,
         LOGGER);
   }
 
@@ -91,7 +87,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(mock(SearchResponse.class)));
 
     // when
-    repository.getProcessInstancesNextBatch();
+    repository.getProcessInstancesNextBatch(getArchiverJobMetrics());
 
     // then
     final var captor = ArgumentCaptor.forClass(SearchRequest.class);
@@ -115,7 +111,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(getArchiverJobMetrics()).join();
 
     // then
     assertThat(batch.processInstanceKeys()).containsExactly(1L, 2L);
@@ -137,7 +133,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(getArchiverJobMetrics()).join();
 
     // then
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
@@ -160,7 +156,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(getArchiverJobMetrics()).join();
 
     // then - purely based on mapping logic which splits by root key presence
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
@@ -196,7 +192,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         client,
         mock(OpenSearchGenericClient.class),
         Runnable::run,
-        new CamundaArchiverMetrics(new SimpleMeterRegistry()),
         LOGGER);
   }
 

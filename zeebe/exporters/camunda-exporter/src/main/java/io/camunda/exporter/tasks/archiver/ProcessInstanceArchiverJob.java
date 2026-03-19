@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -52,8 +53,9 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   }
 
   @Override
-  CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch();
+  CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
+    return getArchiverRepository().getProcessInstancesNextBatch(archiverJobMetrics);
   }
 
   @Override

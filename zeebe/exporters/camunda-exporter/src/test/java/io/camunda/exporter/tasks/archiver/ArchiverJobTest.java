@@ -9,12 +9,13 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +40,15 @@ final class ArchiverJobTest {
 
   private final TestRepository repository = new TestRepository();
   private final CamundaArchiverMetrics metrics = mock(CamundaArchiverMetrics.class);
+  private final ArchiverJobMetrics archiverJobMetrics = mock(ArchiverJobMetrics.class);
 
-  private final IdxTemplateArchiver job =
-      new IdxTemplateArchiver(repository, metrics, LOGGER, executor);
+  private IdxTemplateArchiver job;
+
+  @BeforeEach
+  public void setup() {
+    when(metrics.getArchiverJobMetrics(anyString())).thenReturn(archiverJobMetrics);
+    job = new IdxTemplateArchiver(repository, metrics, LOGGER, executor);
+  }
 
   @Test
   void shouldReturnZeroIfNoBatchGiven() {
@@ -55,9 +63,9 @@ final class ArchiverJobTest {
     assertThat(repository.moves).isEmpty();
 
     // then verify recording metrics
-    verify(metrics).measureArchivingBatchSize(job.getJobName(), 0);
-    verify(metrics).measureArchivingSuccessDuration(eq(job.getJobName()), any());
-    verifyNoMoreInteractions(metrics);
+    verify(archiverJobMetrics).measureArchivingBatchSize(0);
+    verify(archiverJobMetrics).measureArchivingSuccessDuration(any());
+    verifyNoMoreInteractions(archiverJobMetrics);
   }
 
   @Test
@@ -72,10 +80,10 @@ final class ArchiverJobTest {
     assertThat(count).isEqualTo(0);
     assertThat(repository.moves).isEmpty();
 
-    // then verify recording metrics
-    verify(metrics).measureArchivingBatchSize(job.getJobName(), 0);
-    verify(metrics).measureArchivingSuccessDuration(eq(job.getJobName()), any());
-    verifyNoMoreInteractions(metrics);
+    // then verify recording archiverJobMetrics
+    verify(archiverJobMetrics).measureArchivingBatchSize(0);
+    verify(archiverJobMetrics).measureArchivingSuccessDuration(any());
+    verifyNoMoreInteractions(archiverJobMetrics);
   }
 
   @Test
@@ -96,10 +104,10 @@ final class ArchiverJobTest {
                 Map.of(ID_FIELD_NAME, List.of("1", "2", "3")),
                 executor));
 
-    // then verify recording metrics
-    verify(metrics).measureArchivingBatchSize(job.getJobName(), 3);
-    verify(metrics).measureArchivedInstanceCount(job.getJobName(), 3);
-    verify(metrics).measureArchivingSuccessDuration(eq(job.getJobName()), any());
+    // then verify recording archiverJobMetrics
+    verify(archiverJobMetrics).measureArchivingBatchSize(3);
+    verify(archiverJobMetrics).measureArchivedInstanceCount(3);
+    verify(archiverJobMetrics).measureArchivingSuccessDuration(any());
   }
 
   static class IdxTemplateArchiver extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
@@ -123,8 +131,9 @@ final class ArchiverJobTest {
     }
 
     @Override
-    CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
-      return ((TestRepository) getArchiverRepository()).getNextBatch();
+    CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch(
+        final ArchiverJobMetrics archiverJobMetrics) {
+      return ((TestRepository) getArchiverRepository()).getNextBatch(archiverJobMetrics);
     }
 
     @Override
