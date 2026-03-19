@@ -1,0 +1,142 @@
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  # needed to allow the pass-through-cache for mysql images
+  security:
+    allowInsecureImages: true
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  data:
+    secondaryStorage:
+      rdbms:
+        url: jdbc:mysql://mysql:3306/camunda
+
+  ####
+  #### MySQL manually mounted driver
+  ####
+  extraVolumeMounts:
+    - name: jdbcdrivers
+      mountPath: /driver-lib
+  extraVolumes:
+    - name: jdbcdrivers
+      emptyDir: {}
+  initContainers:
+    - name: fetch-jdbc-drivers
+      image: alpine:3.19
+      imagePullPolicy: Always
+      command:
+        - sh
+        - -c
+        - >
+          wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.6.0/mysql-connector-j-9.6.0.jar
+          -O /driver-lib/mysql-driver.jar
+      volumeMounts:
+        - name: jdbcdrivers
+          mountPath: /driver-lib
+      securityContext:
+        runAsUser: 1001
+
+###########################################################################
+#
+#    #     # #     #  #####   #####  #
+#    ##   ## #     # #     # #     # #
+#    # # # # #     # #       #     # #
+#    #  #  # #     #  #####  #     # #
+#    #     #  #   #       # #  ## ## #
+#    #     #   # #  #     #  #    ## #
+#    #     #    #    #####    #### ## ######
+#
+###########################################################################
+# Use the internal registry mirror to avoid Docker Hub rate limiting in the benchmark cluster
+image:
+  registry: europe-west1-docker.pkg.dev
+  repository: camunda-benchmark/dockerhub/bitnamilegacy/mysql
+  tag: "latest"
+
+auth:
+  rootPassword: camunda
+  database: camunda
+  username: camunda
+  password: camunda
+  rootHost: "%"
+
+primary:
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 6Gi
+
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  persistence:
+    size: 128Gi
+    storageClass: "ssd"
+
+  configuration: |-
+    [mysqld]
+    # ---- Bitnami required paths -----------------------------------------------
+    # primary.configuration replaces the ENTIRE my.cnf. Bitnami's init script
+    # normally injects these at runtime, so they must be included explicitly here.
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mysql
+    plugin_dir=/opt/bitnami/mysql/lib/plugin
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    datadir=/bitnami/mysql/data
+    tmpdir=/opt/bitnami/mysql/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
+    log-error=/opt/bitnami/mysql/logs/mysqld.log
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_general_ci
+
+    # ---- Performance tuning ---------------------------------------------------
+    # InnoDB Redo Log (default: 100MB — far too small for write-heavy)
+    innodb_log_buffer_size         = 128M      # default 64MB; doubled to reduce redo flush frequency
+    innodb_redo_log_capacity       = 4G        # default 100MB; like max_wal_size in PostgreSQL
+    innodb_flush_log_at_trx_commit = 2         # default 1 (full fsync per commit); flush once/sec instead
+    innodb_flush_method            = O_DIRECT  # default on Linux; explicit for clarity
+
+    # Buffer pool (default: 128MB)
+    innodb_buffer_pool_size        = 3G        # ~50% of 6Gi limit
+
+    # Write I/O (not a dynamic variable — must live in my.cnf, cannot SET GLOBAL)
+    innodb_write_io_threads        = 8         # default 4; doubled for write-heavy workload
+
+    # MVCC Purge safety valves (defaults: 0 = unlimited)
+    innodb_max_purge_lag           = 10000000  # throttle DML if unpurged rows exceed this
+    innodb_max_purge_lag_delay     = 300000    # cap the imposed delay at 300ms
+
+    # Monitoring
+    slow_query_log                 = ON        # default OFF
+    long_query_time                = 1         # default 10s
+    log_queries_not_using_indexes  = ON        # default OFF
+    min_examined_row_limit         = 100       # suppress noise from single-row writes
+
+    [client]
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    default-character-set=utf8mb4
+    plugin_dir=/opt/bitnami/mysql/lib/plugin
+
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
