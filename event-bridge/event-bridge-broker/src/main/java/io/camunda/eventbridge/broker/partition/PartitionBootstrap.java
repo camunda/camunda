@@ -154,21 +154,29 @@ public final class PartitionBootstrap {
       final MemberId localMemberId,
       final DefaultPartitionManagementService managementService) {
 
-    // Create and start the snapshot store on the I/O thread pool.
-    final var snapshotDir =
-        partitionFactory.getPartitionDirectory(partitionId).resolve("snapshots");
+    // FileBasedSnapshotStore manages its own snapshots/ and pending-snapshots/ subdirectories
+    // internally; pass the partition root directory (same convention as SnapshotStoreStep).
+    final var partitionDir = partitionFactory.getPartitionDirectory(partitionId);
     try {
-      FileUtil.ensureDirectoryExists(snapshotDir);
+      FileUtil.ensureDirectoryExists(partitionDir);
     } catch (final IOException e) {
       throw new UncheckedIOException(
-          "Failed to create snapshot directory for partition " + partitionId, e);
+          "Failed to create data directory for partition " + partitionId, e);
+    }
+
+    final var publishActor = publishActors.get(partitionId);
+    if (publishActor == null) {
+      LOG.error(
+          "No PublishActor registered for partition {}; skipping RAFT bootstrap for that partition",
+          partitionId);
+      return;
     }
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
             0 /* brokerId – single logical broker in standalone mode */,
             partitionId,
-            snapshotDir,
+            partitionDir,
             new EventBridgeChecksumProvider(),
             meterRegistry);
 
@@ -185,7 +193,6 @@ public final class PartitionBootstrap {
                   partitionFactory.createPartition(
                       partitionId, members, localMemberId, meterRegistry);
 
-              final var publishActor = publishActors.get(partitionId);
               final var partition =
                   new EventBridgePartition(partitionId, raftPartition, publishActor);
               partitions.add(partition);
@@ -201,7 +208,8 @@ public final class PartitionBootstrap {
                           LOG.info("RAFT partition {} bootstrap complete", partitionId);
                         }
                       });
-            });
+            },
+            Runnable::run);
   }
 
   /**
@@ -221,7 +229,10 @@ public final class PartitionBootstrap {
       if (result.size() >= replicationFactor) {
         break;
       }
-      result.add(member.id());
+      // Skip the local member — already added above; getMembers() includes the local node.
+      if (!member.id().equals(localMemberId)) {
+        result.add(member.id());
+      }
     }
     return Collections.unmodifiableSet(result);
   }
