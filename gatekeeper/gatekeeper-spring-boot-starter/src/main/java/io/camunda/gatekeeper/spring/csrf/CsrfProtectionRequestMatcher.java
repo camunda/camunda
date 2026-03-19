@@ -63,14 +63,11 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
       throw new RuntimeException(e);
     }
 
-    if (referer != null && referer.matches(baseRequestUrl + "/swagger-ui.*")) {
+    if (referer != null && referer.matches(Pattern.quote(baseRequestUrl) + ".*/swagger-ui.*")) {
       return false;
     }
 
-    return apiCallComingFromBrowser(request);
-  }
-
-  private boolean apiCallComingFromBrowser(final HttpServletRequest request) {
+    // check if API call is coming from the browser
     return request.getSession(false) != null;
   }
 
