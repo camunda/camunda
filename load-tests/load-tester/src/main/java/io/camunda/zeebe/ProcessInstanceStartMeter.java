@@ -32,12 +32,15 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
   private final Duration availabilityCheckInterval;
+  private final Clock clock;
 
   public ProcessInstanceStartMeter(
+      final Clock clock,
       final MeterRegistry meterRegistry,
       final ScheduledExecutorService scheduledExecutorService,
       final Duration availabilityCheckInterval,
       final AvailabilityChecker availabilityChecker) {
+    this.clock = clock;
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
     startedInstances = new ConcurrentHashMap<>();
@@ -96,14 +99,14 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
   private void cleanUpStaleInstances() {
     // clean up stale instances which exceeded the max duration - to safe memory
-    final long nanoTime = System.nanoTime();
+    final long nanoTime = clock.getNanos();
     final var instancesWhereTimeExceededDeadline =
         startedInstances.values().stream()
             .filter(piCreationResult -> nanoTime - piCreationResult.startTimeNanos > MAX_DURATION)
             .toList();
     instancesWhereTimeExceededDeadline.forEach(
         piResults -> {
-          final long durationNanos = System.nanoTime() - piResults.startTimeNanos;
+          final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
           LOG.debug(
               "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
               piResults.processInstanceKey,
@@ -118,7 +121,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
         .filter(Objects::nonNull)
         .forEach(
             piResults -> {
-              final long durationNanos = System.nanoTime() - piResults.startTimeNanos;
+              final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
               LOG.debug(
                   "Process instance {} retrieved in {} ms",
                   piResults.processInstanceKey,

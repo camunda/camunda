@@ -147,6 +147,7 @@ public class Starter extends App {
     LOG.info("Monitor data availability of started process instances");
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
+            System::nanoTime,
             registry,
             Executors.newScheduledThreadPool(1),
             config.getMonitorDataAvailabilityInterval(),
