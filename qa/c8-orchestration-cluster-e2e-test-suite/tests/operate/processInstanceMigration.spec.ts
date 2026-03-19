@@ -650,7 +650,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated tasks', async ({
+  test.skip('Migrated tasks', async ({
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,

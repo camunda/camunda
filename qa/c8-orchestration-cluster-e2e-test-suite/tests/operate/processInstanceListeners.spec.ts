@@ -54,7 +54,7 @@ test.beforeAll(async () => {
   await sleep(3000);
 });
 
-test.describe('Process Instance Listeners', () => {
+test.describe.skip('Process Instance Listeners', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');

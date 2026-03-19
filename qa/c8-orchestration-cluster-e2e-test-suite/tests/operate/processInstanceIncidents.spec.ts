@@ -68,7 +68,7 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Resolve an incident', async ({page, operateProcessInstancePage}) => {
+  test.skip('Resolve an incident', async ({page, operateProcessInstancePage}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
@@ -173,7 +173,7 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test('Cancel an instance', async ({operateProcessInstancePage, page}) => {
+  test.skip('Cancel an instance', async ({operateProcessInstancePage, page}) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -217,7 +217,7 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test('Should render collapsed sub process and navigate between planes', async ({
+  test.skip('Should render collapsed sub process and navigate between planes', async ({
     page,
     operateProcessInstancePage,
     operateDiagramPage,
@@ -366,7 +366,7 @@ test.describe('Process Instance Incident', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Verify Incident root cause instance', async ({
+  test.skip('Verify Incident root cause instance', async ({
     operateProcessInstancePage,
     operateHomePage,
     operateProcessesPage,

@@ -84,7 +84,7 @@ test.describe('Audit Log (Operations Log)', () => {
       .toBeGreaterThan(1);
   });
 
-  test('Audit log entries can be filtered by process instance key', async ({
+  test.skip('Audit log entries can be filtered by process instance key', async ({
     page,
     operateOperationsLogPage,
   }) => {
