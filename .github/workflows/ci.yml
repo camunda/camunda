@@ -177,7 +177,7 @@ jobs:
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
       - name: Generate flattened POMs
-        run: ./mvnw -B -T1C -DskipChecks=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+        run: ./mvnw -B -T1C -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
       - name: Validate flattened POM metadata
         run: bash .github/scripts/validate-flattened-poms.sh
       - name: Observe build status
