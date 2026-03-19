@@ -20,7 +20,9 @@ platform_values := -f camunda-platform-values.yaml
 
 # Add secondary storage values
 ifeq ($(secondary_storage),postgresql)
-platform_values += -f camunda-platform-values-rdbms.yaml
+platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-postgresql.yaml
+else ifeq ($(secondary_storage),mysql)
+platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mysql.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
@@ -31,6 +33,9 @@ endif
 ifneq ($(enable_optimize),true)
 platform_values += --set optimize.enabled=false
 ifeq ($(secondary_storage),postgresql)
+platform_values += --set elasticsearch.enabled=false
+endif
+ifeq ($(secondary_storage),mysql)
 platform_values += --set elasticsearch.enabled=false
 endif
 endif
@@ -47,13 +52,19 @@ install: install-storage create-credentials install-platform install-load-test i
 .PHONY: install-stable
 install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
+# Install PostgreSQL database if secondary_storage is postgresql, MySQL if secondary_storage is mysql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
 	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+		--namespace $(namespace) \
+		$(platform_values)
+else ifeq ($(secondary_storage),mysql)
+	@echo "Installing MySQL database for namespace $(namespace)..."
+	# Install MySQL database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mysql.yaml
+	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),opensearch)
@@ -161,6 +172,10 @@ ifeq ($(secondary_storage),postgresql)
 	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall postgres
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=postgresql
+else ifeq ($(secondary_storage),mysql)
+	@echo "Cleaning up MySQL database for namespace $(namespace)..."
+	-helm --namespace $(namespace) uninstall mysql
+	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=mysql
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
