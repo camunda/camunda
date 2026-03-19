@@ -151,9 +151,10 @@ const ProcessInstanceOperations: React.FC<Props> = ({
       Locations.processes({
         active: true,
         incidents: true,
-        process: processInstance.processDefinitionId,
-        version: processInstance.processDefinitionVersion.toString(),
-        tenant: processInstance.tenantId,
+        processDefinitionId: processInstance.processDefinitionId,
+        processDefinitionVersion:
+          processInstance.processDefinitionVersion.toString(),
+        tenantId: processInstance.tenantId,
       }),
     );
   };
