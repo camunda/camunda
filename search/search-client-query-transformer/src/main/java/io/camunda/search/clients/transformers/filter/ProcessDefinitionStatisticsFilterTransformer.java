@@ -140,7 +140,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+    return hasParentQuery(
+        PROCESS_INSTANCE_JOIN_RELATION, stringTerms(BPMN_PROCESS_ID, authorization.resourceIds()));
   }
 
   private static SearchQuery hasRetriesLeftQuery(final Boolean value) {
