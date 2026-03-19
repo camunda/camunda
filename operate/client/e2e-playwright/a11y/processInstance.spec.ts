@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   instanceWithIncident,
@@ -50,6 +51,8 @@ test.describe('process detail', () => {
       key: '1',
     });
 
+    await expect(page.getByRole('switch', {name: /end date/i})).toBeEnabled();
+
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
     const results = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
@@ -89,12 +92,16 @@ test.describe('process detail', () => {
       key: '1',
     });
 
+    await expect(page.getByRole('switch', {name: /end date/i})).toBeEnabled();
+
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
     const results = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
       .analyze();
 
     validateResults(results);
+
+    await page.getByRole('link', {name: /variables/i}).click();
 
     // edit variable state
     const resultsWithEditVariableState = await makeAxeBuilder()
@@ -147,6 +154,8 @@ test.describe('process detail', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: '1',
     });
+
+    await expect(page.getByRole('switch', {name: /end date/i})).toBeEnabled();
 
     await page.getByRole('button', {name: /modify instance/i}).click();
     const results = await makeAxeBuilder()
