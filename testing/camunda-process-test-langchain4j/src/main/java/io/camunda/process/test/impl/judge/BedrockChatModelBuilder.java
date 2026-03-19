@@ -90,8 +90,15 @@ final class BedrockChatModelBuilder {
       LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
     }
 
-    final ChatModel chatModel =
-        BedrockChatModel.builder().client(clientBuilder.build()).modelId(model).build();
+    final BedrockChatModel.Builder bedrockBuilder =
+        BedrockChatModel.builder().client(clientBuilder.build()).modelId(model);
+
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      bedrockBuilder.timeout(config.getTimeout());
+    }
+
+    final ChatModel chatModel = bedrockBuilder.build();
     LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", model);
     return chatModel;
   }

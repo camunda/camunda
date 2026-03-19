@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -32,6 +33,21 @@ class OpenAiCompatibleChatModelBuilderTest {
     final BaseProviderConfig.OpenAiCompatibleConfig config =
         new BaseProviderConfig.OpenAiCompatibleConfig(
             "llama3", "http://localhost:11434/v1", "test-api-key");
+
+    // when
+    final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
+  @Test
+  void shouldBuildChatModelWithTimeout() {
+    // given
+    final BaseProviderConfig.OpenAiCompatibleConfig config =
+        new BaseProviderConfig.OpenAiCompatibleConfig(
+            "llama3", "http://localhost:11434/v1", "test-api-key");
+    config.setTimeout(Duration.ofSeconds(30));
 
     // when
     final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);

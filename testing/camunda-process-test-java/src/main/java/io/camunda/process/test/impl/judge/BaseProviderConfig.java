@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.judge;
 
 import io.camunda.process.test.api.judge.ProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
@@ -26,9 +27,11 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   public static final String PROVIDER_ANTHROPIC = "anthropic";
   public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
   public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
+  public static final String PROVIDER_AZURE_OPENAI = "azure-openai";
 
   private final String provider;
   private final String model;
+  private Duration timeout;
 
   protected BaseProviderConfig(final String provider, final String model) {
     this.provider = provider;
@@ -43,6 +46,15 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   @Override
   public String getModel() {
     return model;
+  }
+
+  @Override
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(final Duration timeout) {
+    this.timeout = timeout;
   }
 
   /** Generic provider configuration for unknown or custom providers. */
@@ -148,6 +160,27 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public String getBaseUrl() {
       return baseUrl;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+  }
+
+  /** Azure OpenAI provider configuration. */
+  public static final class AzureOpenAiConfig extends BaseProviderConfig {
+
+    private final String endpoint;
+    private final String apiKey;
+
+    public AzureOpenAiConfig(final String model, final String endpoint, final String apiKey) {
+      super(PROVIDER_AZURE_OPENAI, model);
+      this.endpoint = endpoint;
+      this.apiKey = apiKey;
+    }
+
+    public String getEndpoint() {
+      return endpoint;
     }
 
     public String getApiKey() {

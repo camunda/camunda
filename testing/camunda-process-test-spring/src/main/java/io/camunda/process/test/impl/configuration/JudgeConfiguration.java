@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.configuration;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.judge.BaseProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -67,25 +68,44 @@ public class JudgeConfiguration {
   public ProviderConfig toProviderConfig() {
     final AwsCredentialsConfiguration credentials = chatModel.getCredentials();
     final String provider = chatModel.getProvider().trim().toLowerCase();
+    final BaseProviderConfig config;
     switch (provider) {
       case BaseProviderConfig.PROVIDER_OPENAI:
-        return new BaseProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
+        config = new BaseProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
+        break;
       case BaseProviderConfig.PROVIDER_ANTHROPIC:
-        return new BaseProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
+        config =
+            new BaseProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
+        break;
       case BaseProviderConfig.PROVIDER_AMAZON_BEDROCK:
-        return new BaseProviderConfig.AmazonBedrockConfig(
-            chatModel.getModel(),
-            chatModel.getRegion(),
-            chatModel.getApiKey(),
-            credentials != null ? credentials.getAccessKey() : null,
-            credentials != null ? credentials.getSecretKey() : null);
+        config =
+            new BaseProviderConfig.AmazonBedrockConfig(
+                chatModel.getModel(),
+                chatModel.getRegion(),
+                chatModel.getApiKey(),
+                credentials != null ? credentials.getAccessKey() : null,
+                credentials != null ? credentials.getSecretKey() : null);
+        break;
       case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
-        return new BaseProviderConfig.OpenAiCompatibleConfig(
-            chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
+        config =
+            new BaseProviderConfig.OpenAiCompatibleConfig(
+                chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
+        break;
+      case BaseProviderConfig.PROVIDER_AZURE_OPENAI:
+        config =
+            new BaseProviderConfig.AzureOpenAiConfig(
+                chatModel.getModel(), chatModel.getEndpoint(), chatModel.getApiKey());
+        break;
       default:
-        return new BaseProviderConfig.GenericConfig(
-            provider, chatModel.getModel(), chatModel.getCustomProperties());
+        config =
+            new BaseProviderConfig.GenericConfig(
+                provider, chatModel.getModel(), chatModel.getCustomProperties());
+        break;
     }
+    if (chatModel.getTimeout() != null) {
+      config.setTimeout(chatModel.getTimeout());
+    }
+    return config;
   }
 
   public static class ChatModelConfiguration {
@@ -108,8 +128,17 @@ public class JudgeConfiguration {
     /** The base URL for the chat model API. Required for the 'openai-compatible' provider. */
     private String baseUrl;
 
+    /**
+     * The Azure OpenAI resource endpoint URL. Required for the 'azure-openai' provider (e.g.
+     * 'https://my-resource.openai.azure.com/').
+     */
+    private String endpoint;
+
     /** The AWS region for the Amazon Bedrock provider (e.g. 'us-east-1'). */
     private String region;
+
+    /** The timeout for LLM API calls as an ISO-8601 duration (e.g. 'PT30S', 'PT2M'). */
+    private Duration timeout;
 
     @NestedConfigurationProperty
     private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
@@ -147,6 +176,22 @@ public class JudgeConfiguration {
 
     public void setBaseUrl(final String baseUrl) {
       this.baseUrl = baseUrl;
+    }
+
+    public String getEndpoint() {
+      return endpoint;
+    }
+
+    public void setEndpoint(final String endpoint) {
+      this.endpoint = endpoint;
+    }
+
+    public Duration getTimeout() {
+      return timeout;
+    }
+
+    public void setTimeout(final Duration timeout) {
+      this.timeout = timeout;
     }
 
     public String getRegion() {
