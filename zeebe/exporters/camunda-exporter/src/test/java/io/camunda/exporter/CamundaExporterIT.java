@@ -50,7 +50,6 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -259,9 +258,9 @@ final class CamundaExporterIT {
       throws IOException {
     // given
     createSchemas(config);
-    final var valueType = ValueType.VARIABLE;
+    final var valueType = ValueType.USER;
     final Record record =
-        generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
+        generateRecordWithSupportedBrokerVersion(valueType, UserIntent.CREATED);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
