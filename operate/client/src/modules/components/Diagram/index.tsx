@@ -72,7 +72,9 @@ const useFullscreen = (
       return;
     }
 
-    el.requestFullscreen();
+    el.requestFullscreen().catch(() => {
+      // Fullscreen blocked by Permissions Policy — silently ignore
+    });
   }, [diagramRef]);
 
   useEffect(() => {
