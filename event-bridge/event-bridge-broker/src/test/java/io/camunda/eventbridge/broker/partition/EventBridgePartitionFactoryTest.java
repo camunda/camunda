@@ -193,6 +193,6 @@ final class EventBridgePartitionFactoryTest {
 
   private static EventBridgeProperties propertiesWithDataDir(final String dataDir) {
     return new EventBridgeProperties(
-        new EventBridgeProperties.DataProperties(dataDir), null, null, null, null, null, null);
+        new EventBridgeProperties.DataProperties(dataDir), null, null, null, null, null, null, null);
   }
 }

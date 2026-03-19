@@ -43,7 +43,7 @@ class PollActorTest {
 
   private static final int PARTITION_ID = 0;
   private static final EventBridgeProperties PROPERTIES =
-      new EventBridgeProperties(null, null, null, null, null, null, null);
+      new EventBridgeProperties(null, null, null, null, null, null, null, null);
 
   private ActorScheduler scheduler;
   private LogStream logStream;
@@ -166,8 +166,9 @@ class PollActorTest {
 
     @Test
     void shouldReturnEmptyEventsWithTailPositionWhenNoRecordsAtFromPosition() {
-      // given — seek succeeds but no events after it
-      when(reader.seek(999L)).thenReturn(true);
+      // given — fromPosition (999) is beyond the current log end (last written = 998):
+      // seek() returns false AND hasNext() returns false → emptyResultWithTail() path.
+      when(reader.seek(999L)).thenReturn(false);
       when(reader.hasNext()).thenReturn(false);
       when(reader.seekToEnd()).thenReturn(998L); // last written is 998
 

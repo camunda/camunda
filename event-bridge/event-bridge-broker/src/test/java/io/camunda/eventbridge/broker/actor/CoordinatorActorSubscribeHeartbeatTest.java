@@ -31,7 +31,7 @@ class CoordinatorActorSubscribeHeartbeatTest {
 
   private static final int TOTAL_PARTITIONS = 4;
   private static final EventBridgeProperties PROPERTIES =
-      new EventBridgeProperties(null, null, null, null, null, null, null);
+      new EventBridgeProperties(null, null, null, null, null, null, null, null);
 
   private ActorScheduler scheduler;
   private ConsumerGroupRegistry registry;

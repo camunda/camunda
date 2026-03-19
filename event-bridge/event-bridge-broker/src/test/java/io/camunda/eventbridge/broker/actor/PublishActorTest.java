@@ -41,7 +41,7 @@ class PublishActorTest {
 
   private static final int PARTITION_ID = 0;
   private static final EventBridgeProperties PROPERTIES =
-      new EventBridgeProperties(null, null, null, null, null, null, null);
+      new EventBridgeProperties(null, null, null, null, null, null, null, null);
 
   private ActorScheduler scheduler;
   private LogStreamWriter writer;

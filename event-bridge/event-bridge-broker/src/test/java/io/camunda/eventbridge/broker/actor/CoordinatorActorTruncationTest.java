@@ -34,7 +34,7 @@ class CoordinatorActorTruncationTest {
   // 2 partitions; all default config values
   private static final int TOTAL_PARTITIONS = 2;
   private static final EventBridgeProperties PROPERTIES =
-      new EventBridgeProperties(null, null, null, null, null, null, null);
+      new EventBridgeProperties(null, null, null, null, null, null, null, null);
 
   @BeforeEach
   void setUp() {

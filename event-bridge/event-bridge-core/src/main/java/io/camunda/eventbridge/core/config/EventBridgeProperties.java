@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.core.config;
 
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
@@ -22,7 +23,8 @@ public record EventBridgeProperties(
     ConsumerProperties consumer,
     PublishProperties publish,
     RetentionProperties retention,
-    RaftProperties raft) {
+    RaftProperties raft,
+    ClusterProperties cluster) {
 
   public EventBridgeProperties {
     if (data == null) data = new DataProperties("data");
@@ -38,6 +40,8 @@ public record EventBridgeProperties(
     if (publish == null) publish = new PublishProperties(1_000, 1_048_576, 10_485_760);
     if (retention == null) retention = new RetentionProperties(1_000_000);
     if (raft == null) raft = new RaftProperties(1);
+    if (cluster == null)
+      cluster = new ClusterProperties("event-bridge", "broker-0", "0.0.0.0", 26502, null, null, List.of());
   }
 
   /**
@@ -142,4 +146,44 @@ public record EventBridgeProperties(
    * @param replicationFactor number of replicas per partition (default 1; set to 3+ for production)
    */
   public record RaftProperties(@DefaultValue("1") int replicationFactor) {}
+
+  /**
+   * SWIM/Netty cluster networking configuration.
+   *
+   * @param name Atomix cluster name; all nodes in the same cluster must use the same value (default
+   *     "event-bridge")
+   * @param nodeId SWIM member ID for this node; must be unique within the cluster (default
+   *     "broker-0"). In single-node standalone mode this also equals {@code coordinator.broker-id}.
+   * @param bindHost interface to bind the Netty internal transport to (default "0.0.0.0")
+   * @param bindPort port to bind the Netty internal transport to (default 26502)
+   * @param advertisedHost host advertised to other cluster members; defaults to {@code bindHost}
+   *     unless {@code bindHost} is "0.0.0.0", in which case it defaults to "localhost"
+   * @param advertisedPort port advertised to other cluster members; defaults to {@code bindPort}
+   * @param initialContactPoints list of {@code host:port} addresses of existing cluster members to
+   *     contact for bootstrapping; empty for single-node mode
+   */
+  public record ClusterProperties(
+      @DefaultValue("event-bridge") String name,
+      @DefaultValue("broker-0") String nodeId,
+      @DefaultValue("0.0.0.0") String bindHost,
+      @DefaultValue("26502") int bindPort,
+      String advertisedHost,
+      Integer advertisedPort,
+      List<String> initialContactPoints) {
+
+    public ClusterProperties {
+      if (initialContactPoints == null) initialContactPoints = List.of();
+    }
+
+    /** Returns the effective advertised host (resolves "0.0.0.0" to "localhost"). */
+    public String effectiveAdvertisedHost() {
+      if (advertisedHost != null) return advertisedHost;
+      return bindHost.equals("0.0.0.0") ? "localhost" : bindHost;
+    }
+
+    /** Returns the effective advertised port (defaults to {@code bindPort}). */
+    public int effectiveAdvertisedPort() {
+      return advertisedPort != null ? advertisedPort : bindPort;
+    }
+  }
 }
