@@ -28,6 +28,9 @@ import {
   useInstanceExecutionHistory,
   useIsInstanceExecutionHistoryAvailable,
 } from 'modules/hooks/flowNodeInstance';
+import {isRequestError} from 'modules/request';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const instanceExecutionHistory = useInstanceExecutionHistory();
@@ -38,9 +41,18 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   } = flowNodeInstanceStore;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {isSuccess, isError, isPending} = useProcessInstanceXml({
+  const {isSuccess, isError, isPending, error} = useProcessInstanceXml({
     processDefinitionKey,
   });
+
+  const isForbidden =
+    isError &&
+    isRequestError(error) &&
+    error?.response?.status === HTTP_STATUS_FORBIDDEN;
+  const forbidden = getForbiddenPermissionsError(
+    'Instance History',
+    'this instance history',
+  );
 
   const LOADING_STATES = ['initial', 'first-fetch'];
 
@@ -78,8 +90,16 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       ) : (
         <>
           {(flowNodeInstanceStatus === 'error' || isError) && (
-            //TODO update the message with 403 related error during v2 endpoint integration #33542
-            <ErrorMessage message="Instance History could not be fetched" />
+            <ErrorMessage
+              message={
+                isForbidden
+                  ? forbidden.message
+                  : 'Instance History could not be fetched'
+              }
+              additionalInfo={
+                isForbidden ? forbidden.additionalInfo : undefined
+              }
+            />
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
             <Skeleton />
