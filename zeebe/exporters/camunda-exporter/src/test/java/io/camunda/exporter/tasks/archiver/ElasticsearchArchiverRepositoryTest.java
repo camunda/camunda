@@ -26,7 +26,7 @@ import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -62,7 +62,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   @Override
   ElasticsearchArchiverRepository createRepository() {
     final var client = new ElasticsearchAsyncClient(transport);
-    final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
+    final var metrics = new CamundaArchiverMetrics(new SimpleMeterRegistry());
     final var config = new HistoryConfiguration();
     config.setRetention(retention);
     return new ElasticsearchArchiverRepository(
@@ -192,7 +192,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         new TestExporterResourceProvider("testPrefix", true),
         client,
         Runnable::run,
-        new CamundaExporterMetrics(new SimpleMeterRegistry()),
+        new CamundaArchiverMetrics(new SimpleMeterRegistry()),
         LOGGER);
   }
 

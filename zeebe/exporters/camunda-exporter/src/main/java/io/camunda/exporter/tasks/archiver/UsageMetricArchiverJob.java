@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
@@ -24,16 +24,10 @@ public class UsageMetricArchiverJob extends ArchiverJob<BasicArchiveBatch> {
   public UsageMetricArchiverJob(
       final ArchiverRepository repository,
       final UsageMetricTemplate usageMetricTemplate,
-      final CamundaExporterMetrics exporterMetrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger,
       final Executor executor) {
-    super(
-        repository,
-        exporterMetrics,
-        logger,
-        executor,
-        exporterMetrics::recordUsageMetricsArchiving,
-        exporterMetrics::recordUsageMetricsArchived);
+    super(repository, archiverMetrics, logger, executor);
     this.usageMetricTemplate = usageMetricTemplate;
   }
 

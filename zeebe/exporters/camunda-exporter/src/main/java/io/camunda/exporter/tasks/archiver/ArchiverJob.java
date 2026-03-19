@@ -7,7 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.FunctionUtil;
@@ -17,7 +18,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
@@ -28,26 +28,19 @@ import org.slf4j.Logger;
 public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundTask {
 
   private final ArchiverRepository archiverRepository;
-  private final CamundaExporterMetrics exporterMetrics;
+  private final CamundaArchiverMetrics archiverMetrics;
   private final Logger logger;
   private final Executor executor;
 
-  private final Consumer<Integer> recordArchivingMetric;
-  private final Consumer<Integer> recordArchivedMetric;
-
   public ArchiverJob(
       final ArchiverRepository archiverRepository,
-      final CamundaExporterMetrics exporterMetrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger,
-      final Executor executor,
-      final Consumer<Integer> recordArchivingMetric,
-      final Consumer<Integer> recordArchivedMetric) {
+      final Executor executor) {
     this.archiverRepository = archiverRepository;
-    this.exporterMetrics = exporterMetrics;
+    this.archiverMetrics = archiverMetrics;
     this.logger = logger;
     this.executor = executor;
-    this.recordArchivingMetric = recordArchivingMetric;
-    this.recordArchivedMetric = recordArchivedMetric;
   }
 
   /**
@@ -68,7 +61,7 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
   abstract IndexTemplateDescriptor getTemplateDescriptor();
 
   @Override
-  public CompletionStage<Integer> execute() {
+  public final CompletionStage<Integer> execute() {
     final var timer = Timer.start();
 
     return getNextBatch()
@@ -77,12 +70,14 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
         // measure the time it takes all in all, including searching, reindexing, deletion
         // There is some overhead with the scheduling at the executor, but this
         // should be negligible
-        .thenComposeAsync(
-            count -> {
-              exporterMetrics.measureArchivingDuration(timer);
-              return CompletableFuture.completedFuture(count);
-            },
-            executor);
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                archiverMetrics.measureArchivingFailedDuration(getJobName(), timer);
+              } else {
+                archiverMetrics.measureArchivingSuccessDuration(getJobName(), timer);
+              }
+            });
   }
 
   @Override
@@ -101,16 +96,20 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
   protected CompletionStage<Integer> archiveBatch(final B batch) {
     if (batch == null || batch.finishDate() == null || batch.isEmpty()) {
       logger.trace("No {}s to archive", getJobName());
+      archiverMetrics.measureArchivingBatchSize(getJobName(), 0);
       return CompletableFuture.completedFuture(0);
     }
 
     logger.trace("Following {}s are found for archiving: {}", getJobName(), batch);
-    recordArchivingMetric.accept(batch.size());
+    archiverMetrics.measureArchivingBatchSize(getJobName(), batch.size());
 
     return archive(getTemplateDescriptor(), batch)
         // we want to make sure the rescheduling happens after we update the metrics, so we peek
         // instead of creating an additional pipeline on the interim future
-        .thenApplyAsync(FunctionUtil.peek(recordArchivedMetric), executor);
+        .thenApplyAsync(
+            FunctionUtil.peek(
+                val -> archiverMetrics.measureArchivedInstanceCount(getJobName(), batch.size())),
+            executor);
   }
 
   /**
@@ -133,8 +132,12 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
     final var finishDate = batch.finishDate();
+
+    final ArchiverJobContextMetrics archiveMetrics =
+        archiverMetrics.getContextMetrics(getJobName(), sourceIdxName);
     return archiverRepository
-        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor)
+        .moveDocuments(
+            sourceIdxName, sourceIdxName + finishDate, idsMap, filters, archiveMetrics, executor)
         .thenApplyAsync(ok -> batch.size(), executor);
   }
 

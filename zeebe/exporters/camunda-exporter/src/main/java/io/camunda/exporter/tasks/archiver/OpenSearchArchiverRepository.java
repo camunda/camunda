@@ -16,7 +16,8 @@ import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -80,7 +81,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final IndexTemplateDescriptor jobMetricsBatchTemplateDescriptor;
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
-  private final CamundaExporterMetrics metrics;
+  private final CamundaArchiverMetrics archiverMetrics;
   private final OpenSearchGenericClient genericClient;
   private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
@@ -92,7 +93,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final OpenSearchGenericClient genericClient,
       final Executor executor,
-      final CamundaExporterMetrics metrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger) {
     super(client, executor, logger);
     this.partitionId = partitionId;
@@ -110,7 +111,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class);
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
-    this.metrics = metrics;
+    this.archiverMetrics = archiverMetrics;
     this.genericClient = genericClient;
     lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
   }
@@ -143,7 +144,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (ignored, error) -> archiverMetrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) ->
                 createProcessInstanceBatch(
@@ -157,7 +159,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (ignored, error) -> archiverMetrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) ->
                 createBasicBatch(
@@ -175,7 +178,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (ignored, error) -> archiverMetrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
                 createBasicBatch(
@@ -196,7 +200,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (ignored, error) -> archiverMetrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
                 createBasicBatch(
@@ -213,7 +218,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (ignored, error) -> archiverMetrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
                 createBasicBatch(
@@ -227,7 +233,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (ignored, error) -> archiverMetrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
                 createBasicBatch(
@@ -287,15 +294,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    return deleteDocuments(sourceIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final Map<String, String> filters,
+      final ArchiverJobContextMetrics jobContextMetrics) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -311,8 +313,17 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.deleteByQuery(request))
         .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
+            (response, error) -> {
+              jobContextMetrics.measureArchiverDelete(timer);
+
+              if (error != null) {
+                jobContextMetrics.measureArchiverDeleteFail(timer, null, error);
+              } else {
+                // if successful, no reason for response to be null
+                jobContextMetrics.measureArchiverDeleteSuccess(
+                    timer, response != null ? response.deleted() : null);
+              }
+            },
             executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
@@ -322,16 +333,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   public CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final Map<String, String> filters,
+      final ArchiverJobContextMetrics jobContextMetrics) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -348,8 +352,17 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
+            (response, error) -> {
+              jobContextMetrics.measureArchiverReindex(timer);
+
+              if (error != null) {
+                jobContextMetrics.measureArchiverCopyFail(timer, null, error);
+              } else {
+                // if successful, no reason for response to be null
+                jobContextMetrics.measureArchiverCopySuccess(
+                    timer, response != null ? response.total() : null);
+              }
+            },
             executor)
         .thenApplyAsync(ignored -> null, executor);
   }

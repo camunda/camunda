@@ -203,7 +203,7 @@ public final class BackgroundTaskManagerFactory {
         asyncClient,
         genericClient,
         executor,
-        metrics,
+        metrics.getArchiverMetrics(),
         logger);
   }
 
@@ -249,7 +249,13 @@ public final class BackgroundTaskManagerFactory {
   private ElasticsearchArchiverRepository createArchiverRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchArchiverRepository(
-        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
+        partitionId,
+        config.getHistory(),
+        resourceProvider,
+        asyncClient,
+        executor,
+        metrics.getArchiverMetrics(),
+        logger);
   }
 
   private List<RunnableTask> buildTasks() {
@@ -406,7 +412,7 @@ public final class BackgroundTaskManagerFactory {
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
             dependantTemplates,
-            metrics,
+            metrics.getArchiverMetrics(),
             logger,
             executor));
   }
@@ -423,7 +429,7 @@ public final class BackgroundTaskManagerFactory {
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class),
             dependantTemplates,
-            metrics,
+            metrics.getArchiverMetrics(),
             logger,
             executor));
   }
@@ -433,7 +439,7 @@ public final class BackgroundTaskManagerFactory {
         new UsageMetricArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
-            metrics,
+            metrics.getArchiverMetrics(),
             logger,
             executor));
   }
@@ -443,7 +449,7 @@ public final class BackgroundTaskManagerFactory {
         new UsageMetricTUArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
-            metrics,
+            metrics.getArchiverMetrics(),
             logger,
             executor));
   }
@@ -453,7 +459,7 @@ public final class BackgroundTaskManagerFactory {
         new JobBatchMetricsArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class),
-            metrics,
+            metrics.getArchiverMetrics(),
             logger,
             executor));
   }
@@ -469,7 +475,7 @@ public final class BackgroundTaskManagerFactory {
         new StandaloneDecisionArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class),
-            metrics,
+            metrics.getArchiverMetrics(),
             logger,
             executor,
             dependantTemplates));
@@ -514,7 +520,7 @@ public final class BackgroundTaskManagerFactory {
             auditLogArchiverRepository,
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
-            metrics,
+            metrics.getArchiverMetrics(),
             config.getHistory(),
             logger,
             executor));

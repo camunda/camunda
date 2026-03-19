@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
@@ -35,16 +35,10 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       final ArchiverRepository repository,
       final ListViewTemplate processInstanceTemplate,
       final List<ProcessInstanceDependant> processInstanceDependants,
-      final CamundaExporterMetrics metrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger,
       final Executor executor) {
-    super(
-        repository,
-        metrics,
-        logger,
-        executor,
-        metrics::recordProcessInstancesArchiving,
-        metrics::recordProcessInstancesArchived);
+    super(repository, archiverMetrics, logger, executor);
     this.processInstanceTemplate = processInstanceTemplate;
     this.processInstanceDependants =
         processInstanceDependants.stream()

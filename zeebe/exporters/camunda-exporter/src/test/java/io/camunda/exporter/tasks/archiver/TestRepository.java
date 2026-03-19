@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import java.util.ArrayList;
@@ -59,6 +60,7 @@ final class TestRepository extends NoopArchiverRepository {
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
+      final ArchiverJobContextMetrics archiveMetrics,
       final Executor executor) {
     moves.add(
         new DocumentMove(sourceIndexName, destinationIndexName, keysByField, filters, executor));

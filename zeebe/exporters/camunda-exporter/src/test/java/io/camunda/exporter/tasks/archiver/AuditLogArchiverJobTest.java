@@ -10,7 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -36,7 +36,7 @@ class AuditLogArchiverJobTest {
   private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
+  private final CamundaArchiverMetrics metrics = new CamundaArchiverMetrics(meterRegistry);
   private final AuditLogArchiverJob job =
       new AuditLogArchiverJob(
           auditLogArchiverRepository,

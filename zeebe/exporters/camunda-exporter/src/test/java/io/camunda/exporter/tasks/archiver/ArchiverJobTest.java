@@ -9,12 +9,13 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -22,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,17 +37,10 @@ final class ArchiverJobTest {
   private final Executor executor = Runnable::run;
 
   private final TestRepository repository = new TestRepository();
-  private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
-
-  @SuppressWarnings("unchecked")
-  private final Consumer<Integer> recordArchiving = mock(Consumer.class);
-
-  @SuppressWarnings("unchecked")
-  private final Consumer<Integer> recordArchived = mock(Consumer.class);
+  private final CamundaArchiverMetrics metrics = mock(CamundaArchiverMetrics.class);
 
   private final IdxTemplateArchiver job =
-      new IdxTemplateArchiver(
-          repository, metrics, LOGGER, executor, recordArchiving, recordArchived);
+      new IdxTemplateArchiver(repository, metrics, LOGGER, executor);
 
   @Test
   void shouldReturnZeroIfNoBatchGiven() {
@@ -62,9 +55,9 @@ final class ArchiverJobTest {
     assertThat(repository.moves).isEmpty();
 
     // then verify recording metrics
-    verifyNoInteractions(recordArchiving);
-    verifyNoInteractions(recordArchived);
-    verify(metrics).measureArchivingDuration(any());
+    verify(metrics).measureArchivingBatchSize(job.getJobName(), 0);
+    verify(metrics).measureArchivingSuccessDuration(eq(job.getJobName()), any());
+    verifyNoMoreInteractions(metrics);
   }
 
   @Test
@@ -80,9 +73,9 @@ final class ArchiverJobTest {
     assertThat(repository.moves).isEmpty();
 
     // then verify recording metrics
-    verifyNoInteractions(recordArchiving);
-    verifyNoInteractions(recordArchived);
-    verify(metrics).measureArchivingDuration(any());
+    verify(metrics).measureArchivingBatchSize(job.getJobName(), 0);
+    verify(metrics).measureArchivingSuccessDuration(eq(job.getJobName()), any());
+    verifyNoMoreInteractions(metrics);
   }
 
   @Test
@@ -104,9 +97,9 @@ final class ArchiverJobTest {
                 executor));
 
     // then verify recording metrics
-    verify(recordArchiving).accept(3);
-    verify(recordArchived).accept(3);
-    verify(metrics).measureArchivingDuration(any());
+    verify(metrics).measureArchivingBatchSize(job.getJobName(), 3);
+    verify(metrics).measureArchivedInstanceCount(job.getJobName(), 3);
+    verify(metrics).measureArchivingSuccessDuration(eq(job.getJobName()), any());
   }
 
   static class IdxTemplateArchiver extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
@@ -115,18 +108,10 @@ final class ArchiverJobTest {
 
     public IdxTemplateArchiver(
         final ArchiverRepository archiverRepository,
-        final CamundaExporterMetrics exporterMetrics,
+        final CamundaArchiverMetrics archiverMetrics,
         final Logger logger,
-        final Executor executor,
-        final Consumer<Integer> recordArchivingMetric,
-        final Consumer<Integer> recordArchivedMetric) {
-      super(
-          archiverRepository,
-          exporterMetrics,
-          logger,
-          executor,
-          recordArchivingMetric,
-          recordArchivedMetric);
+        final Executor executor) {
+      super(archiverRepository, archiverMetrics, logger, executor);
       indexTemplateDescriptor = mock(IndexTemplateDescriptor.class);
       when(indexTemplateDescriptor.getIdField()).thenReturn(ID_FIELD_NAME);
       when(indexTemplateDescriptor.getFullQualifiedName()).thenReturn(SOURCE_INDEX_NAME);

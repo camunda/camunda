@@ -20,7 +20,7 @@ public abstract class ArchiverJobRecordingMetricsAbstractTest {
 
   abstract SimpleMeterRegistry getMeterRegistry();
 
-  abstract String getJobMetricName();
+  abstract String getJobNameTag();
 
   @Test
   void shouldRecordMetrics() {
@@ -47,15 +47,22 @@ public abstract class ArchiverJobRecordingMetricsAbstractTest {
   }
 
   void assertArchivingCounts(final int expected) {
-    assertThat(getMeterRegistry().counter(getJobMetricName(), "state", "archiving").count())
+    assertThat(
+            getMeterRegistry()
+                .summary("archiver.job.batch.size", "job", getJobNameTag())
+                .totalAmount())
         .isEqualTo(expected);
-    assertThat(getMeterRegistry().counter(getJobMetricName(), "state", "archived").count())
+    assertThat(
+            getMeterRegistry()
+                .counter("archiver.job.archived.instances", "job", getJobNameTag())
+                .count())
         .isEqualTo(expected);
   }
 
   void assertArchiverTimer(final int expectedInvocations) {
     final Timer archiverTimer =
-        getMeterRegistry().timer("zeebe.camunda.exporter.archiver.duration");
+        getMeterRegistry()
+            .timer("archiver.job.duration", "job", getJobNameTag(), "status", "success");
     assertThat(archiverTimer.count()).isEqualTo(expectedInvocations);
     assertThat(archiverTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
   }

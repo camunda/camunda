@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -46,30 +47,26 @@ public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
   CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField);
-
-  CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters);
-
-  CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField);
+      final Map<String, String> filters,
+      final ArchiverJobContextMetrics archiveMetrics);
 
   CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters);
+      final Map<String, String> filters,
+      final ArchiverJobContextMetrics archiveMetrics);
 
   default CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
+      final ArchiverJobContextMetrics archiveMetrics,
       final Executor executor) {
-    return moveDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of(), executor);
+    return moveDocuments(
+        sourceIndexName, destinationIndexName, keysByField, Map.of(), archiveMetrics, executor);
   }
 
   default CompletableFuture<Void> moveDocuments(
@@ -77,10 +74,13 @@ public interface ArchiverRepository extends AutoCloseable {
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
+      final ArchiverJobContextMetrics archiveMetrics,
       final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, filters)
+    return reindexDocuments(
+            sourceIndexName, destinationIndexName, keysByField, filters, archiveMetrics)
         .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField, filters), executor);
+        .thenComposeAsync(
+            ok -> deleteDocuments(sourceIndexName, keysByField, filters, archiveMetrics), executor);
   }
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();

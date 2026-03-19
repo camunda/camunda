@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -65,7 +65,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   @Override
   OpenSearchArchiverRepository createRepository() {
     final var client = new OpenSearchAsyncClient(transport);
-    final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
+    final var metrics = new CamundaArchiverMetrics(new SimpleMeterRegistry());
     final var config = new HistoryConfiguration();
     config.setRetention(retention);
 
@@ -196,7 +196,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         client,
         mock(OpenSearchGenericClient.class),
         Runnable::run,
-        new CamundaExporterMetrics(new SimpleMeterRegistry()),
+        new CamundaArchiverMetrics(new SimpleMeterRegistry()),
         LOGGER);
   }
 

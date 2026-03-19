@@ -9,7 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -34,7 +34,7 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
       new BatchOperationTemplate("", true);
   private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
+  private final CamundaArchiverMetrics metrics = new CamundaArchiverMetrics(meterRegistry);
 
   private final BatchOperationArchiverJob job =
       new BatchOperationArchiverJob(
@@ -62,8 +62,8 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
   }
 
   @Override
-  String getJobMetricName() {
-    return "zeebe.camunda.exporter.archiver.batch.operations";
+  String getJobNameTag() {
+    return job.getJobName();
   }
 
   @Test

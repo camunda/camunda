@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -29,16 +29,10 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
       final ArchiverRepository repository,
       final BatchOperationTemplate batchOperationTemplate,
       final List<BatchOperationDependant> batchOperationDependants,
-      final CamundaExporterMetrics metrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger,
       final Executor executor) {
-    super(
-        repository,
-        metrics,
-        logger,
-        executor,
-        metrics::recordBatchOperationsArchiving,
-        metrics::recordBatchOperationsArchived);
+    super(repository, archiverMetrics, logger, executor);
     this.batchOperationTemplate = batchOperationTemplate;
     this.batchOperationDependants =
         batchOperationDependants.stream()

@@ -9,7 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -31,7 +31,7 @@ final class UsageMetricTUArchiverJobTest extends ArchiverJobRecordingMetricsAbst
   private final TestRepository repository = new TestRepository();
   private final UsageMetricTUTemplate usageMetricTUTemplate = new UsageMetricTUTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
+  private final CamundaArchiverMetrics metrics = new CamundaArchiverMetrics(meterRegistry);
 
   private final UsageMetricTUArchiverJob job =
       new UsageMetricTUArchiverJob(repository, usageMetricTUTemplate, metrics, LOGGER, executor);
@@ -58,8 +58,8 @@ final class UsageMetricTUArchiverJobTest extends ArchiverJobRecordingMetricsAbst
   }
 
   @Override
-  String getJobMetricName() {
-    return "zeebe.camunda.exporter.archiver.usage.metrics.tu";
+  String getJobNameTag() {
+    return job.getJobName();
   }
 
   @Test

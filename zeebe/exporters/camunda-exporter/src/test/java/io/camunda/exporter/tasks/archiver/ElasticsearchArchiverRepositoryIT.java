@@ -23,7 +23,8 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -85,6 +86,7 @@ final class ElasticsearchArchiverRepositoryIT {
 
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final ArchiverJobContextMetrics archiveMetrics = mock(ArchiverJobContextMetrics.class);
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private String indexPrefix;
@@ -132,7 +134,10 @@ final class ElasticsearchArchiverRepositoryIT {
     // when - delete the first two documents
     final var result =
         repository.deleteDocuments(
-            indexName, Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
+            indexName,
+            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
+            Map.of(),
+            archiveMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -163,7 +168,10 @@ final class ElasticsearchArchiverRepositoryIT {
     // when - delete documents with ids [1, 2, 3], but only if the type is "A"
     final var result =
         repository.deleteDocuments(
-            auditLogIndex, Map.of("id", List.of("1", "2", "3")), Map.of("entityType", "A"));
+            auditLogIndex,
+            Map.of("id", List.of("1", "2", "3")),
+            Map.of("entityType", "A"),
+            archiveMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -202,7 +210,8 @@ final class ElasticsearchArchiverRepositoryIT {
             sourceIndexName,
             destIndexName,
             Map.of("id", List.of("1", "2", "3")),
-            Map.of("entityType", "A"));
+            Map.of("entityType", "A"),
+            archiveMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -241,6 +250,7 @@ final class ElasticsearchArchiverRepositoryIT {
             destIndexName,
             Map.of("id", List.of("1", "2", "3")),
             Map.of("entityType", "A"),
+            archiveMetrics,
             Runnable::run);
 
     // then
@@ -442,7 +452,9 @@ final class ElasticsearchArchiverRepositoryIT {
         repository.reindexDocuments(
             sourceIndexName,
             destIndexName,
-            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
+            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
+            Map.of(),
+            archiveMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -481,6 +493,7 @@ final class ElasticsearchArchiverRepositoryIT {
             sourceIndexName,
             destIndexName,
             Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
+            archiveMetrics,
             Runnable::run);
 
     // then
@@ -823,7 +836,11 @@ final class ElasticsearchArchiverRepositoryIT {
             });
     repository
         .moveDocuments(
-            batchOperationIndex, destIndexName, Map.of("id", List.of("1", "2")), Runnable::run)
+            batchOperationIndex,
+            destIndexName,
+            Map.of("id", List.of("1", "2")),
+            archiveMetrics,
+            Runnable::run)
         .join();
 
     final var secondBatchDocuments =
@@ -847,7 +864,11 @@ final class ElasticsearchArchiverRepositoryIT {
     // difference of both batches is only 2 days.
     repository
         .moveDocuments(
-            batchOperationIndex, destIndexName, Map.of("id", List.of("3", "4")), Runnable::run)
+            batchOperationIndex,
+            destIndexName,
+            Map.of("id", List.of("3", "4")),
+            archiveMetrics,
+            Runnable::run)
         .join();
 
     // we create another batch of documents, which is two hours ago, since the default archive point
@@ -1175,7 +1196,7 @@ final class ElasticsearchArchiverRepositoryIT {
 
   private ElasticsearchArchiverRepository createRepository(
       final ElasticsearchAsyncClient client, final int partitionId) {
-    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var metrics = new CamundaArchiverMetrics(meterRegistry);
 
     return new ElasticsearchArchiverRepository(
         partitionId, config, resourceProvider, client, Runnable::run, metrics, LOGGER);

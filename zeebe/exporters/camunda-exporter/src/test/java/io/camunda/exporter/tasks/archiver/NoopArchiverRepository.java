@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.CamundaArchiverMetrics.ArchiverJobContextMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import java.util.List;
 import java.util.Map;
@@ -62,23 +63,10 @@ public class NoopArchiverRepository implements ArchiverRepository {
 
   @Override
   public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField) {
+      final Map<String, String> filters,
+      final ArchiverJobContextMetrics archiveMetrics) {
     return CompletableFuture.completedFuture(null);
   }
 
@@ -87,7 +75,8 @@ public class NoopArchiverRepository implements ArchiverRepository {
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final Map<String, String> filters,
+      final ArchiverJobContextMetrics archiveMetrics) {
     return CompletableFuture.completedFuture(null);
   }
 
