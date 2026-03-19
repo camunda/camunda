@@ -75,7 +75,7 @@ public class ProcessDefinitionServices
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, PROCESS_DEFINITION_READ_AUTHORIZATION))
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .processDefinitionFlowNodeStatistics(filter));
   }
 

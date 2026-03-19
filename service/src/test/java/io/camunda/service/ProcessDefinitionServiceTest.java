@@ -17,6 +17,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -125,5 +127,23 @@ public class ProcessDefinitionServiceTest {
                         && q.filter().processDefinitionId() != null
                         && processDefinitionId.equals(q.filter().processDefinitionId())
                         && q.filter().tenantId() == null));
+  }
+
+  @Test
+  public void shouldReturnElementStatistics() {
+    // given
+    final var processDefinitionKey = 123L;
+    final var filter = new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build();
+    final var statistics = List.of(new ProcessFlowNodeStatisticsEntity("task", 1L, 0L, 0L, 1L));
+
+    when(processDefinitionSearchClient.processDefinitionFlowNodeStatistics(filter))
+        .thenReturn(statistics);
+
+    // when
+    final var result = services.elementStatistics(filter, authentication);
+
+    // then
+    assertThat(result).isEqualTo(statistics);
+    verify(processDefinitionSearchClient).processDefinitionFlowNodeStatistics(filter);
   }
 }
