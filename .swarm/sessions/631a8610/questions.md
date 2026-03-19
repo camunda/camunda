@@ -27,13 +27,13 @@ This is an implementation detail - handle this as you want.
 **Answer:**
 All pieces should ship together in 8.10. The core value proposition requires the full loop: configure (API + config + Admin UI) → execute (engine) → observe (Operate). Without Operate visibility, operators cannot troubleshoot. Without Admin UI, SaaS customers cannot manage listeners. Phasing would deliver a half-baked experience. The one acceptable cut is omitting `cancel` event type (see Q1).
 
-### Q4 🆘
+### Q4 ✔️
 > The spec lists multiInstanceBody as supporting start and end, but the engine's ExecutionListenersValidator excludes MULTI_INSTANCE_BODY. Which is the source of truth — should global ELs fire on multi-instance bodies, or should the spec be corrected?
 
 **Answer:**
 the spec be corrected.
 
-### Q5 🆘
+### Q5 ✔️
 > Similarly, the spec lists eventSubprocess as supporting start and end, but the engine's validator excludes EVENT_SUB_PROCESS. Should the validator be changed, or should the spec be corrected?
 
 **Answer:**
@@ -51,13 +51,13 @@ Yes, include both. Update the spec to add `adHocSubProcess` (start, end) and `ma
 **Answer:**
 The spec should be corrected. Regular end events (none, message, signal, terminate, escalation, compensation) DO support both `start` and `end`. Only error end events do not support `end` because they throw rather than complete normally. Update the matrix: `endEvent` → start=yes, end=yes, with a note "Except error end events which do not support end."
 
-### Q8 🆘
+### Q8 ✔️
 > The spec says intermediateThrowEvent supports both start and end but notes "Interrupting escalation throw does not support end." How should the engine validate this — at configuration time or at runtime?
 
 **Answer:**
 Runtime. The global EL configuration targets element TYPES, not specific instances or subtypes. At configuration time, `intermediateThrowEvent` is a valid target for both start and end. At runtime, the engine should silently skip the end listener for interrupting escalation throws. Don't reject the entire configuration over a subtype edge case.
 
-### Q9 🆘
+### Q9 ✔️
 > The spec says boundaryEvent does not support start, and startEvent does not support end. Today's engine does NOT enforce these restrictions for BPMN-level execution listeners. Should global ELs introduce stricter validation than what BPMN-level ELs allow?
 
 **Answer:**
@@ -100,15 +100,15 @@ Yes, both listeners fire. Each global listener is independent. If Listener A (ca
 > The spec says "Config wins on ID collision" and "Config applies full replacement semantics for its own listeners while preserving API listeners." What is the proposed config key path for execution listeners — camunda.listener or camunda.cluster.global-listeners.execution?
 
 **Answer:**
-🆘
+Follow the same pattern as global task listeners for config-file identification.
 
-### Q16 🆘
+### Q16 
 > The spec's YAML examples don't include an id field on config-file listeners. How are config-file execution listeners identified for update/delete tracking across restarts?
 
 **Answer:**
 Follow the same pattern as global task listeners for config-file identification.
 
-### Q17 🆘
+### Q17 
 > What happens during a rolling upgrade where some brokers have the global EL feature and some don't?
 
 **Answer:**
@@ -240,13 +240,13 @@ Omit cancel entirely from the schema and UI. Don't expose it as a disabled or re
 > The current GlobalListenerRecord has no categories or elementTypes properties. Adding them is a protocol-level change affecting GlobalListenerRecordValue, golden files, exporters, search indices, RDBMS schema. Is this the intended approach, or should category/elementType expansion happen at a different layer?
 
 **Answer:**
-🆘
+no, this is the intended approach
 
 ### Q4
 > If categories and elementTypes are stored on the record, should they be stored as-is or expanded/normalized to individual element types before persisting?
 
 **Answer:**
-
+stored as-is
 
 ### Q5
 > Should the engine interpret an empty/absent elementTypes + categories as categories: [all] implicitly, or should it be required to be explicit?
@@ -258,84 +258,92 @@ Yes. Empty/absent elementTypes + empty/absent categories = implicit `categories:
 > At what point should execution listener config be pinned — at process instance creation, at element activation, or not at all?
 
 **Answer:**
-
+when the respective element instance is created
 
 ### Q7
 > If pinning is needed, should execution listener pinning share the same config version as task listeners or use a separate pinning mechanism?
 
 **Answer:**
-
+follow the same pattern
 
 ### Q8
 > Should execution listeners get completely separate OpenAPI spec, controller, and mapper (parallel to task listeners), or extend the existing global-listeners.yaml with a listenerType discriminator?
 
 **Answer:**
+separate
 
 
 ### Q9
 > What value should be added to the GlobalListenerType enum — EXECUTION_LISTENER or something else?
 
 **Answer:**
+yes, EXECUTION_LISTENER
 
 
 ### Q10
 > Should elementTypes strings match BpmnElementType enum values exactly (camelCase: SERVICE_TASK, USER_TASK) or use BPMN XML names (serviceTask, userTask)?
 
 **Answer:**
+the should match the BPMN XML names, however, to store them efficiently they BpmnElementType enum should be used.
 
 
 ### Q11
 > Current permissions are CREATE_TASK_LISTENER, READ_TASK_LISTENER, UPDATE_TASK_LISTENER, DELETE_TASK_LISTENER on GLOBAL_LISTENER resource type. Should execution listeners reuse these same permissions or get new permissions like CREATE_EXECUTION_LISTENER?
 
 **Answer:**
-
+new permissions
 
 ### Q12
 > Should global execution listeners be merged with BPMN-level listeners at the point where BpmnStreamProcessor currently retrieves BPMN-level execution listeners?
 
 **Answer:**
-
+they should be merged when transforming the BPMN
 
 ### Q13
 > If global listeners are prepended/appended to the listener list, should the index be stored as-is (position in merged list) or should global and BPMN-level listeners have separate index tracking?
 
 **Answer:**
+as is
 
 
 ### Q14
 > Where should the element type × event type validation matrix be the single source of truth — should we create a shared utility class (e.g., GlobalExecutionListenerValidation)?
 
 **Answer:**
+yes
 
 
 ### Q15
 > Adding a "Source" column to Operate requires adding a new field (e.g., listenerSource or isGlobalListener) to JobRecordValue, JobRecord, JobEntity, search index, all exporters, and Operate frontend. Is this cross-cutting protocol change in scope?
 
 **Answer:**
-
+let's remove this requirement
 
 ### Q16
 > Should the Operate Source column also apply to global task listener jobs (which also don't have this field today), or only to execution listeners?
 
 **Answer:**
-
+let's remove this requirement
 
 ### Q17
 > Should execution listeners be added to the config as a sibling field (e.g., camunda.cluster.global-listeners.execution) or should we restructure to camunda.listener?
 
 **Answer:**
+as a sibling field
 
 
 ### Q18
 > Should the GlobalListenersInitializer emit a single CONFIGURE command containing both task and execution listeners, or separate commands per listener type?
 
 **Answer:**
+Separate commands
 
 
 ### Q19
 > Should category/elementType expansion happen at config-load time so the engine only sees resolved element types?
 
 **Answer:**
+yes
 
 
 ### Q20
@@ -366,18 +374,19 @@ Dynamic form validation (prevent at selection time). When element scope changes,
 > Is the GLOBAL_LISTENER_VERSIONED_CONFIG column family PARTITION_LOCAL correct for execution listeners too, or should execution listener config be GLOBAL?
 
 **Answer:**
-
+follow the same pattern as with global task listeners
 
 ### Q25
 > Should global EL jobs include additional metadata (e.g., globalListenerId, globalListenerPriority) in the job headers to help job workers distinguish global from model-level listeners?
 
 **Answer:**
-
+should be the same as global task listener
 
 ### Q26
 > Does the variable scoping for global execution listeners apply identically to BPMN-level listeners, or are there differences?
 
 **Answer:**
+no, difference
 
 
 ### Q27
@@ -396,6 +405,7 @@ No. Sequence flows are transitions between elements, not elements with meaningfu
 > Should global execution listener tests follow the exact same test structure as global task listener tests or can we share test infrastructure?
 
 **Answer:**
+follow the same test structure
 
 
 ### Q30
@@ -407,13 +417,13 @@ es. Include basic performance tests to validate the volume impact table from the
 ### Q31
 > Do execution listeners use the same GlobalListenerEntity/index as task listeners (differentiated by listenerType) or get a separate index?
 
-**Answer:**
+**Answer:** the same index
 
 
 ### Q32
 > If we add categories and elementTypes fields, do we need new collection tables or should these be stored as comma-separated strings?
 
-**Answer:**
+**Answer:** storead as comma separated strings
 
 
 ## Design (`plan-design-clarify`)
