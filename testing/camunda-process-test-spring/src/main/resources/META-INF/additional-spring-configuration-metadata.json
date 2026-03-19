@@ -39,7 +39,7 @@
         },
         {
           "value": "amazon-bedrock",
-          "description": "Use Amazon Bedrock embedding models (requires model, region; optionally credentials or api-key)."
+          "description": "Use Amazon Bedrock embedding models (requires model; optionally credentials)."
         },
         {
           "value": "azure-openai",

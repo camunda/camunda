@@ -172,7 +172,6 @@ public class SemanticSimilarityProperties {
         return new BaseProviderConfig.AmazonBedrockConfig(
             embeddingModelModel,
             embeddingModelRegion,
-            embeddingModelApiKey,
             embeddingModelCredentialsAccessKey,
             embeddingModelCredentialsSecretKey,
             embeddingModelNormalize,

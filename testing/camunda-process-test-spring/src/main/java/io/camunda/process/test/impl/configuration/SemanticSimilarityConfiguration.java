@@ -92,7 +92,6 @@ public class SemanticSimilarityConfiguration {
         return new BaseProviderConfig.AmazonBedrockConfig(
             embeddingModel.getModel(),
             embeddingModel.getRegion(),
-            embeddingModel.getApiKey(),
             credentials != null ? credentials.getAccessKey() : null,
             credentials != null ? credentials.getSecretKey() : null,
             embeddingModel.getNormalize(),

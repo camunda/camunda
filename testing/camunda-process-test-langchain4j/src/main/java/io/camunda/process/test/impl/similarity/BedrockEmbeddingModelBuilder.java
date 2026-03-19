@@ -39,7 +39,6 @@ final class BedrockEmbeddingModelBuilder {
     LOG.debug("Building Amazon Bedrock embedding model");
 
     final String model = require(config.getModel(), "model", AMAZON_BEDROCK);
-    final String region = require(config.getRegion(), "region", AMAZON_BEDROCK);
 
     final boolean hasAccessKey = hasText(config.getCredentialsAccessKey());
     final boolean hasSecretKey = hasText(config.getCredentialsSecretKey());
@@ -53,7 +52,14 @@ final class BedrockEmbeddingModelBuilder {
     }
 
     final BedrockTitanEmbeddingModelBuilder builder =
-        BedrockTitanEmbeddingModel.builder().model(model).region(Region.of(region));
+        BedrockTitanEmbeddingModel.builder().model(model);
+
+    if (hasText(config.getRegion())) {
+      LOG.debug("Using configured region '{}'", config.getRegion().trim());
+      builder.region(Region.of(config.getRegion().trim()));
+    } else {
+      LOG.debug("No region configured, falling back to AWS default region resolution");
+    }
 
     if (hasKeyPairAuth) {
       LOG.debug("Using access key / secret key authentication");

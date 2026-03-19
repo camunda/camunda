@@ -34,7 +34,6 @@ class BedrockEmbeddingModelBuilderTest {
         new AmazonBedrockConfig(
             "amazon.titan-embed-text-v2:0",
             "us-east-1",
-            null,
             "test-access-key",
             "test-secret-key",
             null,
@@ -47,12 +46,14 @@ class BedrockEmbeddingModelBuilderTest {
     assertThat(embeddingModel).isNotNull();
   }
 
-  @Test
-  void shouldBuildEmbeddingModelWithoutCredentials() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldBuildEmbeddingModelWithoutCredentials(final String nullOrEmpty) {
     // given — no credentials; AWS SDK resolves them from the default credential chain
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", null, null, null, null, null);
+            "amazon.titan-embed-text-v2:0", "us-east-1", nullOrEmpty, nullOrEmpty, null, null);
 
     // when
     final EmbeddingModel embeddingModel = BedrockEmbeddingModelBuilder.build(config);
@@ -68,7 +69,6 @@ class BedrockEmbeddingModelBuilderTest {
         new AmazonBedrockConfig(
             "amazon.titan-embed-text-v2:0",
             "us-east-1",
-            null,
             "test-access-key",
             "test-secret-key",
             null,
@@ -88,7 +88,6 @@ class BedrockEmbeddingModelBuilderTest {
         new AmazonBedrockConfig(
             "amazon.titan-embed-text-v2:0",
             "us-east-1",
-            null,
             "test-access-key",
             "test-secret-key",
             true,
@@ -104,33 +103,11 @@ class BedrockEmbeddingModelBuilderTest {
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
-  void shouldThrowWhenRegionMissingOrBlank(final String region) {
-    // given
-    final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0",
-            region,
-            null,
-            "test-access-key",
-            "test-secret-key",
-            null,
-            null);
-
-    // when / then
-    assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("region")
-        .hasMessageContaining(BedrockEmbeddingModelBuilder.AMAZON_BEDROCK);
-  }
-
-  @ParameterizedTest
-  @NullAndEmptySource
-  @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            model, "us-east-1", null, "test-access-key", "test-secret-key", null, null);
+            model, "us-east-1", "test-access-key", "test-secret-key", null, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
@@ -144,7 +121,7 @@ class BedrockEmbeddingModelBuilderTest {
     // given — partial key pair should fail
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", null, "test-access-key", null, null, null);
+            "amazon.titan-embed-text-v2:0", "us-east-1", "test-access-key", null, null, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
@@ -158,7 +135,7 @@ class BedrockEmbeddingModelBuilderTest {
     // given — partial key pair should fail
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", null, null, "test-secret-key", null, null);
+            "amazon.titan-embed-text-v2:0", "us-east-1", null, "test-secret-key", null, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
