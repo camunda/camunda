@@ -149,11 +149,10 @@ public class SemanticSimilarityAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSimilarTo("result", "Hello there"))
           .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("result")
-          .hasMessageContaining("0.0")
-          .hasMessageContaining("0.80")
-          .hasMessageContaining("Hello there")
-          .hasMessageContaining("\"Hello, World!\"");
+          .hasMessageContaining("variable 'result' similarity score 0.0")
+          .hasMessageContaining("is below threshold 0.80")
+          .hasMessageContaining("Expected: Hello there")
+          .hasMessageContaining("Actual: \"Hello, World!\"");
     }
 
     @Test

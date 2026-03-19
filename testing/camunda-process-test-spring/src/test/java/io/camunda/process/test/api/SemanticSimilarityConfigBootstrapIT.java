@@ -55,7 +55,7 @@ public class SemanticSimilarityConfigBootstrapIT {
   static class GenericEmbeddingModelAdapterConfig {
 
     @Bean("similarity.my-generic")
-    EmbeddingModelAdapter genericAdapter() {
+    EmbeddingModelAdapter genericEmbeddingModelAdapter() {
       return ADAPTER_A;
     }
   }
@@ -64,12 +64,12 @@ public class SemanticSimilarityConfigBootstrapIT {
   static class MultipleEmbeddingModelAdapterConfig {
 
     @Bean("similarity.my-custom")
-    EmbeddingModelAdapter customAdapter() {
+    EmbeddingModelAdapter customEmbeddingModelAdapter() {
       return ADAPTER_A;
     }
 
-    @Bean("similarity.another-adapter")
-    EmbeddingModelAdapter anotherAdapter() {
+    @Bean("similarity.another-provider")
+    EmbeddingModelAdapter anotherEmbeddingModelAdapter() {
       return ADAPTER_B;
     }
   }
