@@ -313,7 +313,7 @@ Legend:
 #### 1. Around feature freeze / last alpha (branch strategy)
 
 - [ ] **[MUST]** Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
-- [ ] **[MUST]** Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy.
+- [ ] **[MUST]** Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
 - [ ] **[MUST]** Create `release-<minor>.0-alphaN` from `stable/<minor>` (not from `main`) for the last alpha.
 - [ ] **[MUST]** Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
 - [ ] **[MUST]** Create `backport stable/<minor>` label in monorepo (and in ZPT where needed).
