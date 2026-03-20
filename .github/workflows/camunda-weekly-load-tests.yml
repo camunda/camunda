@@ -239,7 +239,7 @@ jobs:
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook
           payload: |
             {
