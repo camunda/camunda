@@ -67,9 +67,6 @@
             "rootProcessInstanceKey": {
               "type": "long"
             },
-            "businessId": {
-              "type": "keyword"
-            },
             "elementInstanceKey": {
               "enabled": "false"
             }
@@ -79,3 +76,4 @@
     }
   }
 }
+
