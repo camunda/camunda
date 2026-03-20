@@ -358,6 +358,8 @@ jobs:
           --set orchestration.image.repository=zeebe-io/zeebe \
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
           --set orchestration.migration.data.enabled=true \
+          --set orchestration.data.secondaryStorage.type=elasticsearch \
+          --set elasticsearch.enabled=true \
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
