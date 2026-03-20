@@ -42,7 +42,7 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
     return new CamundaJsonSchemaGenerator(JsonParser.getJsonMapper());
   }
 
-  @Bean
+  @Bean(name = "clusterMcpToolSpecifications")
   public List<SyncToolSpecification> mcpGatewayToolSpecifications(
       final CamundaMcpToolAnnotatedBeans annotatedBeans,
       final CamundaJsonSchemaGenerator jsonSchemaGenerator) {
