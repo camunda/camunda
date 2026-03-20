@@ -47,6 +47,9 @@ public class CamundaMcpServersAutoConfiguration {
    *
    * <p>Handles MCP protocol messages for cluster-wide operations and general Camunda API access.
    *
+   * <p>The MCP JsonMapper is provided by Spring AI auto-configuration. We tie into that to reuse
+   * what Spring AI is using for tool schema definitions.
+   *
    * @param jsonMapper the JSON mapper to use for MCP message serialization and deserialization
    */
   @Bean(name = "clusterTransportProvider")
@@ -78,7 +81,7 @@ public class CamundaMcpServersAutoConfiguration {
   @Bean
   public McpStatelessSyncServer clusterMcpServer(
       @Qualifier("clusterTransportProvider") final McpStatelessServerTransport clusterTransport,
-      @Qualifier("mcpGatewayToolSpecifications")
+      @Qualifier("clusterMcpToolSpecifications")
           final List<SyncToolSpecification> toolSpecifications) {
 
     final var capabilities =
@@ -119,6 +122,11 @@ public class CamundaMcpServersAutoConfiguration {
    * Transport provider for the processes MCP server at {@code /mcp/processes}.
    *
    * <p>Handles MCP protocol messages for processes exposed as tools.
+   *
+   * <p>The MCP JsonMapper is provided by Spring AI auto-configuration. We tie into that to reuse
+   * what Spring AI is using for tool schema definitions.
+   *
+   * @param jsonMapper the JSON mapper to use for MCP message serialization and deserialization
    */
   @Bean(name = "processesTransportProvider")
   public WebMvcStatelessServerTransport processesTransportProvider(
