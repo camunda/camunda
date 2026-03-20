@@ -186,13 +186,11 @@ orchestration:
       # We moved the archiver configuration under retention at some point, but still need to support the previous
       # versions for now, so the configurations for retention are duplicated
       zeebe.broker.exporters.camundaexporter.args.history.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      zeebe.broker.exporters.camundaexporter.args.history.retention.minimumAge: "70m"
+      zeebe.broker.exporters.camundaexporter.args.history.retention.minimumAge: "1d"
       zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
+      zeebe.broker.flowControl.write.limit: 10000
       zeebe.broker.flowControl.write.throttling.enabled: "true"
       # Disable the importers
       camunda.tasklist.importerEnabled: "false"
@@ -200,9 +198,7 @@ orchestration:
       camunda.operate.elasticsearch.numberOfShards: 3
       # Schema management has been moved out of exporter - to be bootstrap at start; once
       camunda.database.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      camunda.database.retention.minimumAge: "70m"
+      camunda.database.retention.minimumAge: "1d"
       camunda.database.retention.policyName: "camunda-retention-policy"
       #Metrics:
       camunda.flags.jfr.metrics: "true"
