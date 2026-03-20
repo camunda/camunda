@@ -210,6 +210,8 @@ jobs:
           --set connectors.security.authentication.oidc.existingSecret=camunda-credentials
           --set connectors.security.authentication.oidc.existingSecretKey=connectors-security-authentication-oidc-secret
           --set optimize.enabled=true
+          --set global.identity.auth.zeebe.existingSecret=camunda-credentials
+          --set global.identity.auth.zeebe.existingSecretKey=orchestration-security-authentication-oidc-secret
           --version 13.5.4
       - name: Summarize deployment
         if: success()
@@ -262,8 +264,8 @@ jobs:
       - name: Create process instance on previous version
         run: |
           release="${{ inputs.name }}"
-          # Get secret for connectors - to communicate with the cluster
-          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
+          # Get orchestration client secret from camunda-credentials
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
           export ZEEBE_CLIENT_ID=zeebe
@@ -431,7 +433,7 @@ jobs:
         run: |
           release="${{ inputs.name }}"
           # Get client secret from camunda credentials - which has been extracted during the upgrade
-          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
           export ZEEBE_CLIENT_ID=zeebe
@@ -452,7 +454,7 @@ jobs:
         run: |
           # Get OAuth token from Keycloak
           release="${{ inputs.name }}"
-          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           TOKEN=$(curl -s -X POST "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token" \
             -d "grant_type=client_credentials&client_id=zeebe&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
             | jq -r '.access_token')
