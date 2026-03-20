@@ -38,6 +38,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
@@ -61,16 +62,11 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,10 +89,6 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Context context;
   private long lastFlushTimestamp = 0L;
-  private CompletableFuture<Void> pendingFlush;
-  private long pendingFlushPosition = -1;
-  private ExecutorService flushExecutor;
-  private Timer.Sample latencySample;
 
   private long flushDelayMs;
 
@@ -144,9 +136,6 @@ public class CamundaExporter implements Exporter {
       }
 
       writer = createBatchWriter();
-      flushExecutor =
-          Executors.newSingleThreadExecutor(
-              r -> new Thread(r, "camunda-exporter-flush-partition-" + partitionId));
 
       checkImportersCompletedAndReschedule();
       controller.readMetadata().ifPresent(metadata::deserialize);
@@ -165,17 +154,11 @@ public class CamundaExporter implements Exporter {
 
     if (writer != null) {
       try {
-        waitForCurrentFlushToComplete();
-        flushSynchronously();
+        flush();
         writer = null;
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
-    }
-
-    if (flushExecutor != null) {
-      flushExecutor.shutdown();
-      flushExecutor = null;
     }
 
     if (clientAdapter != null) {
@@ -241,7 +224,7 @@ public class CamundaExporter implements Exporter {
     }
 
     if (writer.getBatchSize() == 0) {
-      latencySample = metrics.startFlushLatencyMeasurement();
+      metrics.startFlushLatencyMeasurement();
     }
 
     // adding record is idempotent
@@ -406,18 +389,13 @@ public class CamundaExporter implements Exporter {
   }
 
   private void flushAndReschedule() {
-    long now;
+    final var now = context.clock().millis();
     try {
-      waitForCurrentFlushToComplete();
-      now = context.clock().millis();
       if (now - lastFlushTimestamp >= flushDelayMs) {
         flush();
       }
-    } catch (final ExporterException e) {
-      throw e;
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
-      now = context.clock().millis();
     }
     scheduleDelayedFlush(now);
   }
@@ -466,75 +444,21 @@ public class CamundaExporter implements Exporter {
 
   private void flush() {
     if (writer.getBatchSize() > 0) {
-      waitForCurrentFlushToComplete();
-
-      final var writerToFlush = writer;
-      final var positionToFlush = lastPosition;
-
-      writer = createBatchWriter();
-
-      // We record the flush timestamp at submission time (not after completion) because this
-      // controls the delay-based scheduling. Starting the timer here prevents excessive delays
-      // when the async flush itself takes a long time.
-      lastFlushTimestamp = context.clock().millis();
-
-      final var sampleToFlush = latencySample;
-      latencySample = null;
-
-      pendingFlushPosition = positionToFlush;
-      pendingFlush =
-          CompletableFuture.supplyAsync(
-              () -> {
-                executeBatchFlush(writerToFlush, sampleToFlush);
-                return null;
-              },
-              flushExecutor);
-    }
-  }
-
-  /**
-   * Executes the batch flush for the given writer, recording metrics and stopping the latency
-   * sample. Shared by both async and sync flush paths. On failure, records the failed flush metric
-   * and rethrows as {@link ExporterException}.
-   */
-  private void executeBatchFlush(
-      final ExporterBatchWriter writerToFlush, final Timer.Sample latencySample) {
-    try (final var ignored = metrics.measureFlushDuration()) {
-      metrics.recordBulkSize(writerToFlush.getBatchSize());
-      final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
-      writerToFlush.flush(batchRequest);
-      metrics.recordFlushOccurrence(Instant.now());
-      if (latencySample != null) {
-        latencySample.stop(metrics.getFlushLatencyTimer());
-      }
-    } catch (final Exception e) {
-      metrics.recordFailedFlush();
-      throw new ExporterException(e.getMessage(), e);
-    }
-  }
-
-  private void waitForCurrentFlushToComplete() {
-    if (pendingFlush != null) {
-      try {
-        pendingFlush.join();
-        updateLastExportedPosition(pendingFlushPosition);
-      } catch (final CompletionException e) {
-        final var cause = e.getCause();
-        throw new ExporterException(cause.getMessage(), cause);
-      } finally {
-        pendingFlush = null;
-        pendingFlushPosition = -1;
+      try (final var ignored = metrics.measureFlushDuration()) {
+        metrics.recordBulkSize(writer.getBatchSize());
+        final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
+        writer.flush(batchRequest);
+        metrics.recordFlushOccurrence(Instant.now());
+        metrics.stopFlushLatencyMeasurement();
+        lastFlushTimestamp = context.clock().millis();
+      } catch (final PersistenceException ex) {
+        metrics.recordFailedFlush();
+        throw new ExporterException(ex.getMessage(), ex);
       }
     }
-  }
 
-  private void flushSynchronously() {
-    if (writer.getBatchSize() > 0) {
-      executeBatchFlush(writer, latencySample);
-      latencySample = null;
-      lastFlushTimestamp = context.clock().millis();
-    }
-
+    // Update the record counters only after the flush was successful. If the synchronous flush
+    // fails then the exporter will be invoked with the same record again.
     updateLastExportedPosition(lastPosition);
   }
 
