@@ -16,9 +16,10 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.sort.UserSort;
 
 public interface UsersSearchRequest
-    extends TypedSearchRequest<UserFilter, UserSort, UsersSearchRequest>,
+    extends TypedSearchRequest<UserFilter, UserSort, AnyPage, UsersSearchRequest>,
         FinalSearchRequestStep<User> {}

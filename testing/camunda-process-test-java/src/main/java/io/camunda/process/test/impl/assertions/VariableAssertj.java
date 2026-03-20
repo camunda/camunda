@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -204,18 +205,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
     awaitBehavior.untilAsserted(
         () -> {
-          final List<Variable> variables = actualVariablesSupplier.get();
-
-          final Optional<Variable> matchingVariable =
-              variables.stream().filter(variableSelector::test).findFirst();
-
-          assertThat(matchingVariable)
-              .withFailMessage(
-                  "%s should have a variable '%s', but the variable doesn't exist.",
-                  actual, variableSelector.describe())
-              .isPresent();
-
-          rawRequirement.accept(matchingVariable.get().getValue());
+          final String rawValue = assertVariableExists(variableSelector, actualVariablesSupplier);
+          rawRequirement.accept(rawValue);
         });
   }
 
@@ -371,12 +362,12 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
-    hasVariableSatisfies(
-        variableSelector,
-        rawValue ->
-            evaluateJudge(
-                variableSelector.describe(), expectation, judgeConfig.getThreshold(), rawValue),
-        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
+    final String rawValue =
+        waitForVariable(
+            variableSelector,
+            () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
+
+    evaluateJudge(variableSelector.describe(), expectation, judgeConfig.getThreshold(), rawValue);
   }
 
   public void hasLocalVariableSatisfiesJudge(
@@ -388,21 +379,53 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
+    final String rawValue =
+        waitForLocalVariable(processInstanceKey, elementSelector, variableSelector);
+
+    evaluateJudge(variableSelector.describe(), expectation, judgeConfig.getThreshold(), rawValue);
+  }
+
+  private String assertVariableExists(
+      final VariableSelector variableSelector,
+      final Supplier<List<Variable>> actualVariablesSupplier) {
+    final List<Variable> variables = actualVariablesSupplier.get();
+    final Optional<Variable> matchingVariable =
+        variables.stream().filter(variableSelector::test).findFirst();
+    assertThat(matchingVariable)
+        .withFailMessage(
+            "%s should have a variable '%s', but the variable doesn't exist.",
+            actual, variableSelector.describe())
+        .isPresent();
+    return matchingVariable.get().getValue();
+  }
+
+  private String waitForVariable(
+      final VariableSelector variableSelector,
+      final Supplier<List<Variable>> actualVariablesSupplier) {
+    final AtomicReference<String> result = new AtomicReference<>();
+    awaitBehavior.untilAsserted(
+        () -> result.set(assertVariableExists(variableSelector, actualVariablesSupplier)));
+    return result.get();
+  }
+
+  private String waitForLocalVariable(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector) {
+    final AtomicReference<String> result = new AtomicReference<>();
     withLocalVariableAssertion(
         processInstanceKey,
         elementSelector,
         instance ->
-            hasVariableSatisfies(
-                variableSelector,
-                rawValue ->
-                    evaluateJudge(
-                        variableSelector.describe(),
-                        expectation,
-                        judgeConfig.getThreshold(),
-                        rawValue),
-                () ->
-                    findLocalVariablesBySelector(
-                        processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
+            result.set(
+                assertVariableExists(
+                    variableSelector,
+                    () ->
+                        findLocalVariablesBySelector(
+                            processInstanceKey,
+                            instance.getElementInstanceKey(),
+                            variableSelector))));
+    return result.get();
   }
 
   private void evaluateJudge(

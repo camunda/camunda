@@ -20,14 +20,14 @@ import {queryKeys} from '../queryKeys';
 type ParsedXmlData = {
   xml: string;
   diagramModel: DiagramModel;
-  selectableFlowNodes: BusinessObject[];
+  selectableElements: BusinessObject[];
 };
 
 async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   const diagramModel = await parseDiagramXML(data);
-  const selectableFlowNodes = getFlowNodes(diagramModel?.elementsById);
+  const selectableElements = getFlowNodes(diagramModel?.elementsById);
 
-  return {xml: data, diagramModel, selectableFlowNodes};
+  return {xml: data, diagramModel, selectableElements};
 }
 
 const getUseProcessDefinitionXmlOptions = (

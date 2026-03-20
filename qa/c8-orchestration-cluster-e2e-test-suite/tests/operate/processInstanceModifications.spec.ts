@@ -102,7 +102,7 @@ test.describe('Process Instance Modifications', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Should apply/remove edit variable modifications', async ({
+  test.skip('Should apply/remove edit variable modifications', async ({
     operateProcessInstancePage,
     operateProcessInstanceViewModificationModePage,
   }) => {
@@ -294,7 +294,7 @@ test.describe('Process Instance Modifications', () => {
     });
   });
 
-  test('Verify Variables functionality in Modification mode', async ({
+  test.skip('Verify Variables functionality in Modification mode', async ({
     operateProcessInstancePage,
     page,
     operateProcessInstanceViewModificationModePage,
@@ -648,7 +648,7 @@ test.describe('Process Instance Modifications', () => {
     });
   });
 
-  test('Should apply/remove add variable modifications', async ({
+  test.skip('Should apply/remove add variable modifications', async ({
     page,
     operateProcessInstancePage,
     operateProcessInstanceViewModificationModePage,

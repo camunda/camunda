@@ -57,7 +57,7 @@ const InstanceHeader: React.FC<Props> = ({
         <InstanceName>{instanceName}</InstanceName>
         {incidentsCount > 0 && (
           <IncidentCount>
-            {pluralSuffix(incidentsCount, 'Incident')}
+            {pluralSuffix(incidentsCount, 'incident')}
           </IncidentCount>
         )}
       </NameContainer>

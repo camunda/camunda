@@ -16,6 +16,9 @@ import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {isRequestError} from 'modules/request';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 
 const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
   return (
@@ -33,11 +36,22 @@ const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
   );
 });
 
+const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
+  'Instance History',
+  'this instance history',
+);
+
 const ElementInstanceLog: React.FC = observer(() => {
-  const {data: processInstance, status: processInstanceStatus} =
-    useProcessInstance();
-  const {data: businessObjects, status: businessObjectsStatus} =
-    useBusinessObjects();
+  const {
+    data: processInstance,
+    status: processInstanceStatus,
+    error: processInstanceError,
+  } = useProcessInstance();
+  const {
+    data: businessObjects,
+    status: businessObjectsStatus,
+    error: businessObjectsError,
+  } = useBusinessObjects();
 
   if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
     return (
@@ -48,10 +62,26 @@ const ElementInstanceLog: React.FC = observer(() => {
   }
 
   if ([processInstanceStatus, businessObjectsStatus].includes('error')) {
+    const isForbidden =
+      (isRequestError(processInstanceError) &&
+        processInstanceError?.response?.status === HTTP_STATUS_FORBIDDEN) ||
+      (isRequestError(businessObjectsError) &&
+        businessObjectsError?.response?.status === HTTP_STATUS_FORBIDDEN);
+
     return (
       <Layout>
-        {/* TODO update the message with 403 related error during v2 endpoint integration #33542 */}
-        <ErrorMessage message="Instance History could not be fetched" />
+        <ErrorMessage
+          message={
+            isForbidden
+              ? INSTANCE_HISTORY_FORBIDDEN.message
+              : 'Instance History could not be fetched'
+          }
+          additionalInfo={
+            isForbidden
+              ? INSTANCE_HISTORY_FORBIDDEN.additionalInfo
+              : 'Refresh the page to try again'
+          }
+        />
       </Layout>
     );
   }

@@ -111,7 +111,7 @@ const TargetDiagram: React.FC = observer(() => {
             xml={data.xml}
             processDefinitionKey={targetProcessDefinition?.processDefinitionKey}
             selectableElements={[
-              ...data.selectableFlowNodes,
+              ...data.selectableElements,
               ...data.selectableSequenceFlows,
             ].map((element) => element.id)}
             selectedElementIds={

@@ -331,23 +331,42 @@ Adding a new column to an existing entity requires changes in the following plac
   release go in a new version file.
 - **Never modify a released changeset**: Liquibase checksums existing changesets. Modifying a
   released changeset will break schema migration for all existing deployments.
-- **One logical change per `<changeSet>`**: Keep changesets atomic. For example, creating a table
-  and adding its indexes can be one `<changeSet>`, but unrelated table changes should be in
-  separate ones.
+- **One change per `<changeSet>`**: Keep changesets minimal. For example, creating a table
+  and adding its indexes should be multiple `<changeSet>`. That way, if an error occurs in the
+  middle of the changeset, the successfully applied changes are still recorded, and the failed
+  change can be fixed and re-run without affecting the already applied changes.
 - **`id` naming**: Use snake_case and describe the change (e.g.,
   `create_widget_table`, `add_widget_status_column`).
 - **Author**: Always use `author="camunda"`.
 - **Register new files** in `changelog-master.xml`:
 
-  ```xml
-  <include file="db/changelog/rdbms-exporter/changesets/8.10.0.xml"/>
-  ```
+**Add idempotency preconditions to all changesets**
+In some rare cases, the Liquibase migration might get interrupted by the surrounding infrastructure
+orchestration (e.g., Kubernetes Job) before it can mark the changeset as executed. This can lead to
+the same changeset being applied multiple times on the next run, which causes errors (e.g., "table
+already exists"). To prevent this, add an appropriate precondition to each changeset that checks
+whether the change has already been applied and mark it as ran if yes. For example:
+
+|  Change type  |           Precondition            |
+|---------------|-----------------------------------|
+| `createTable` | `<not><tableExists .../></not>`   |
+| `createIndex` | `<not><indexExists .../></not>`   |
+| `addColumn`   | `<not><columnExists .../></not>`  |
+| `dropIndex`   | `<indexExists .../>` (no `<not>`) |
+
+```xml
+<include file="db/changelog/rdbms-exporter/changesets/8.10.0.xml"/>
+```
 
 **Example changeset:**
 
 ```xml
-
 <changeSet id="create_widget_table" author="camunda">
+  <preConditions onFail="MARK_RAN">
+    <not>
+      <tableExists tableName="${prefix}WIDGET"/>
+    </not>
+  </preConditions>
   <createTable tableName="${prefix}WIDGET">
     <column name="WIDGET_KEY" type="BIGINT">
       <constraints primaryKey="true"/>
@@ -458,7 +477,7 @@ When a Liquibase type or syntax is not portable across databases, use:
 
 - **Always prefix table names** with `${prefix}` to support configurable schema prefixes:
 
-  ```xml
+  ```sql
   SELECT * FROM ${prefix}WIDGET
   ```
 - **Use `#{param}`** (prepared statement) for all user-supplied values; never use `${param}` for
@@ -472,10 +491,10 @@ When a Liquibase type or syntax is not portable across databases, use:
   separate queries per row.
 - **Boolean values** must use the vendor-specific property instead of literals:
 
-  ```xml
-  <!-- correct -->
+  ```sql
+  -- correct
   WHERE IS_PREVIEW = ${true}
-  <!-- wrong -->
+  -- wrong
   WHERE IS_PREVIEW = true
   ```
 

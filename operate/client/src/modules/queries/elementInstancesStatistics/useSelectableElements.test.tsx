@@ -44,7 +44,7 @@ describe('useSelectableElements', () => {
     mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
-  it('should fetch selectable flow nodes successfully', async () => {
+  it('should fetch selectable elements successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -86,7 +86,7 @@ describe('useSelectableElements', () => {
     ]);
   });
 
-  it('should handle server error while fetching selectable flow nodes', async () => {
+  it('should handle server error while fetching selectable elements', async () => {
     mockFetchElementInstancesStatistics().withServerError();
 
     const {result} = renderHook(() => useSelectableElements(), {
@@ -100,7 +100,7 @@ describe('useSelectableElements', () => {
     expect(result.current.error?.response).toBeDefined();
   });
 
-  it('should handle network error while fetching selectable flow nodes', async () => {
+  it('should handle network error while fetching selectable elements', async () => {
     mockFetchElementInstancesStatistics().withNetworkError();
 
     const {result} = renderHook(() => useSelectableElements(), {

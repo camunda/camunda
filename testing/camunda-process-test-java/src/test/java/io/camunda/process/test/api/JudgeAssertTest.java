@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -34,6 +35,7 @@ import io.camunda.process.test.utils.VariableBuilder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -103,11 +105,15 @@ public class JudgeAssertTest {
     }
 
     @Test
-    @CamundaAssertExpectFailure
     void shouldFailWhenJudgeScoreBelowThreshold() {
       // given
+      final AtomicInteger callCount = new AtomicInteger(0);
       final ChatModelAdapter mockModel =
-          prompt -> "{\"score\": 0.2, \"reasoning\": \"The value does not match.\"}";
+          prompt -> {
+            callCount.incrementAndGet();
+            return "{\"score\": 0.2, \"reasoning\": \"The value does not match.\"}";
+          };
+
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"random text\"");
@@ -124,6 +130,9 @@ public class JudgeAssertTest {
           .hasMessageContaining("did not satisfy judge expectation")
           .hasMessageContaining("Score: 0.20")
           .hasMessageContaining("The value does not match.");
+
+      // expect that the judge assertion is only being called once
+      assertThat(callCount).hasValue(1);
     }
 
     @Test
@@ -419,8 +428,12 @@ public class JudgeAssertTest {
     @CamundaAssertExpectFailure
     void shouldFailWhenLocalVariableScoreBelowThreshold() {
       // given
+      final AtomicInteger callCount = new AtomicInteger(0);
       final ChatModelAdapter mockModel =
-          prompt -> "{\"score\": 0.2, \"reasoning\": \"Poor match.\"}";
+          prompt -> {
+            callCount.incrementAndGet();
+            return "{\"score\": 0.2, \"reasoning\": \"Poor match.\"}";
+          };
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       when(camundaDataSource.findElementInstances(any()))
@@ -447,6 +460,9 @@ public class JudgeAssertTest {
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("did not satisfy judge expectation")
           .hasMessageContaining("Score: 0.20");
+
+      // expect that the judge assertion is only being called once
+      assertThat(callCount).hasValue(1);
     }
 
     @Test

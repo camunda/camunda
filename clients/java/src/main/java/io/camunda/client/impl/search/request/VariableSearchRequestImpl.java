@@ -15,15 +15,15 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.variableFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.variableSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.VariableFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
@@ -106,14 +106,14 @@ public class VariableSearchRequestImpl
   }
 
   @Override
-  public VariableSearchRequest page(final SearchRequestPage value) {
+  public VariableSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public VariableSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public VariableSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
-import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -164,7 +164,7 @@ public class AuditLogAuthorizationsIT {
 
   // At test execution time, we already have 100+ audit log entries.
   // Custom page limit ensures all entries are retrieved for test assertions.
-  private static final Consumer<SearchRequestPage> PAGE_CONFIG = p -> p.limit(200);
+  private static final Consumer<AnyPage> PAGE_CONFIG = p -> p.limit(200);
 
   private static CamundaClient adminClient;
   private static long userTaskWithCandidateUserKey;

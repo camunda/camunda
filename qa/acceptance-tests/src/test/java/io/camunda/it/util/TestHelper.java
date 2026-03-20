@@ -38,7 +38,8 @@ import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
-import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.page.AnyPage;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -358,7 +359,7 @@ public final class TestHelper {
   private static <T> List<T> waitForItemsPaginated(
       final String timeoutMessage,
       final int expectedCount,
-      final Function<Consumer<SearchRequestPage>, SearchResponse<T>> searchFunction) {
+      final Function<Consumer<AnyPage>, SearchResponse<T>> searchFunction) {
     final var collectedItems = new ArrayList<T>();
     Awaitility.await(timeoutMessage)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -970,7 +971,7 @@ public final class TestHelper {
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final Consumer<JobTypeStatisticsFilter> filterFn,
-      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<CursorForwardPage> pageFn,
       final Consumer<JobTypeStatistics> fnRequirements) {
     Awaitility.await("should export job type metrics to secondary storage")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -1021,7 +1022,7 @@ public final class TestHelper {
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final String jobType,
-      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<CursorForwardPage> pageFn,
       final Consumer<JobWorkerStatistics> fnRequirements) {
     Awaitility.await("should export job worker metrics to secondary storage")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -1072,7 +1073,7 @@ public final class TestHelper {
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final String jobType,
-      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<CursorForwardPage> pageFn,
       final Consumer<JobTimeSeriesStatistics> fnRequirements) {
     waitForJobTimeSeriesStatistics(
         camundaClient, startTime, endTime, jobType, null, pageFn, fnRequirements);
@@ -1118,7 +1119,7 @@ public final class TestHelper {
       final OffsetDateTime endTime,
       final String jobType,
       final Duration resolution,
-      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<CursorForwardPage> pageFn,
       final Consumer<JobTimeSeriesStatistics> fnRequirements) {
     Awaitility.await("should export job time-series metrics to secondary storage")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -1171,7 +1172,7 @@ public final class TestHelper {
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final String jobType,
-      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<CursorForwardPage> pageFn,
       final Consumer<JobErrorStatistics> fnRequirements) {
     Awaitility.await("should export job error statistics to secondary storage")
         .atMost(TIMEOUT_DATA_AVAILABILITY)

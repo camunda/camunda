@@ -61,7 +61,7 @@ describe('getStatisticsByElement', () => {
     );
   };
 
-  it('should return statistics for valid flow nodes', () => {
+  it('should return statistics for valid elements', () => {
     const data = [
       {
         elementId: 'StartEvent_1',

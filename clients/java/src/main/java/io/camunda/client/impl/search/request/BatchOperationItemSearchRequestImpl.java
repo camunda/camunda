@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.batchOperationItemFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.batchOperationItemSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
@@ -80,14 +80,14 @@ public class BatchOperationItemSearchRequestImpl
   }
 
   @Override
-  public BatchOperationItemSearchRequest page(final SearchRequestPage value) {
+  public BatchOperationItemSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public BatchOperationItemSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public BatchOperationItemSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

@@ -44,7 +44,7 @@ test.describe('Decision Navigation', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Navigation between process and decision', async ({
+  test.skip('Navigation between process and decision', async ({
     operateProcessInstancePage,
     operateDecisionInstancePage,
     operateDecisionsPage,

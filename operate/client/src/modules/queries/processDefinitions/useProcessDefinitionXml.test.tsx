@@ -86,7 +86,7 @@ describe('useProcessDefinitionXml', () => {
       id: 'TestTask',
       name: 'Test Task',
     });
-    expect(resolvedData?.selectableFlowNodes).toEqual([
+    expect(resolvedData?.selectableElements).toEqual([
       {
         $type: 'bpmn:StartEvent',
         id: 'StartEvent_1',

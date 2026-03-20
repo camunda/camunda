@@ -27,7 +27,7 @@ const createRandomId = function* createRandomId(type: string) {
 
 const randomIdIterator = createRandomId('id');
 const randomJobIdIterator = createRandomId('jobId');
-const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
+const randomElementInstanceIdIterator = createRandomId('elementInstance');
 
 function searchResult<T>(items: T[], totalItems = items.length) {
   return {
@@ -48,7 +48,7 @@ const createIncident = (options: Partial<Incident> = {}): Incident => {
     incidentKey: randomIdIterator.next().value,
     jobKey: randomJobIdIterator.next().value,
     elementId: 'flowNodeId_alwaysFailingTask',
-    elementInstanceKey: randomFlowNodeInstanceIdIterator.next().value,
+    elementInstanceKey: randomElementInstanceIdIterator.next().value,
     creationTime: '2019-03-01T14:26:19',
     processInstanceKey: '2251799813685294',
     processDefinitionId: 'someKey',

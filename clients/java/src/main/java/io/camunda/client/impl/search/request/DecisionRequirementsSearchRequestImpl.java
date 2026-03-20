@@ -15,15 +15,15 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionRequirementsSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
@@ -100,15 +100,14 @@ public class DecisionRequirementsSearchRequestImpl
   }
 
   @Override
-  public DecisionRequirementsSearchRequest page(final SearchRequestPage value) {
-    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
-    request.setPage(page.getSearchRequestProperty());
+  public DecisionRequirementsSearchRequest page(final AnyPage value) {
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public DecisionRequirementsSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public DecisionRequirementsSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

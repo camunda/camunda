@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionDefinitionFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionDefinitionSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
@@ -80,14 +80,14 @@ public class DecisionDefinitionSearchRequestImpl
   }
 
   @Override
-  public DecisionDefinitionSearchRequest page(final SearchRequestPage value) {
+  public DecisionDefinitionSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public DecisionDefinitionSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public DecisionDefinitionSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

@@ -34,12 +34,14 @@ import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
-const RedirectToVariables: React.FC = () => {
+const DefaultTabRedirect: React.FC = () => {
   const location = useLocation();
-  return (
-    <Navigate to={{pathname: 'variables', search: location.search}} replace />
-  );
+  const {data: processInstance} = useProcessInstance();
+  const pathname =
+    processInstance?.hasIncident === true ? 'incidents' : 'variables';
+  return <Navigate to={{pathname, search: location.search}} replace />;
 };
 
 const Wrapper: React.FC = () => {
@@ -99,7 +101,6 @@ const routes = createRoutesFromElements(
           return {Component: ProcessInstance};
         }}
       >
-        <Route index element={<RedirectToVariables />} />
         <Route
           path={Paths.processInstanceVariables({isRelative: true})}
           lazy={async () => {
@@ -156,6 +157,7 @@ const routes = createRoutesFromElements(
             return {Component: OperationsLogTab};
           }}
         />
+        <Route path="*" element={<DefaultTabRedirect />} />
       </Route>
       <Route
         path={Paths.decisions()}
