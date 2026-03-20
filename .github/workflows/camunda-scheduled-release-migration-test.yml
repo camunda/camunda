@@ -16,7 +16,7 @@ jobs:
     secrets: inherit
     with:
       name: scheduled-release-migration
-      ref: stable/8.8
+      ref: stable/8.9
       cluster: 'zeebe-cluster'
       cluster-region: 'europe-west1-b'
 
@@ -37,7 +37,7 @@ jobs:
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook
           payload: |
             {
@@ -53,7 +53,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                    "text": "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]
@@ -69,7 +69,7 @@ jobs:
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook
           payload: |
             {
@@ -78,7 +78,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":white_check_mark: *Daily Camunda migration test succeeded against branch:* `release-8.8.0`"
+                    "text": ":white_check_mark: *Daily Camunda migration test succeeded:* 8.8 → 8.9 (stable/8.9)"
                   }
                 }
               ]

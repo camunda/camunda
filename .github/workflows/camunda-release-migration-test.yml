@@ -17,7 +17,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
-        default: 'stable/8.8'
+        default: 'stable/8.9'
         type: string
         required: false
       cluster:
@@ -44,7 +44,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
-        default: 'stable/8.8'
+        default: 'stable/8.9'
         type: string
         required: false
       cluster:
@@ -174,7 +174,7 @@ jobs:
           --namespace ${{ inputs.name }}
           --create-namespace
           --render-subchart-notes
-          --version 12.6.2
+          --version 13.5.4
       - name: Summarize deployment
         if: success()
         run: |
@@ -313,12 +313,12 @@ jobs:
           --namespace ${{ inputs.name }} \
           --render-subchart-notes \
           --set global.security.authentication.method=oidc \
-          --set connectors.image.tag=8.8.0 \
+          --set connectors.image.tag=8.9.0-alpha5 \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
           --set identity.enabled=true \
           --set identity.firstUser.enabled=false \
-          --set identity.image.tag=8.8.0 \
+          --set identity.image.tag=8.9.0-alpha5 \
           --set identityKeycloak.enabled=true \
           --set global.identity.auth.enabled=true \
           --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
@@ -335,7 +335,7 @@ jobs:
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
           --set global.identity.auth.optimize.secret.existingSecret=camunda-credentials \
           --set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token \
-          --version 13.x
+          --version 14.x
       - name: Summarize deployment
         if: success()
         run: |
@@ -400,7 +400,7 @@ jobs:
           set -e
           # Activate job
           key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq -r '.jobs[0].key')
-          # Complete job from 8.7 version
+          # Complete job from 8.8 version
           ./zbctl complete job "$key" --insecure
       - name: Summarize deployment
         if: success()
