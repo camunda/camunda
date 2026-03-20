@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, hideModificationHelperModal} from '@pages/UtilitiesPage';
+import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
@@ -94,7 +94,7 @@ test.describe('Process Instance Modifications', () => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
-    await hideModificationHelperModal(page);
+    await hideHelperModals(page);
   });
 
   test.afterEach(async ({page}, testInfo) => {
