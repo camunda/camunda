@@ -139,6 +139,10 @@ public class UserTaskServiceTest {
       assertThat(searchQueryResult.total()).isEqualTo(1);
       assertThat(searchQueryResult.items()).containsExactly(variable);
     }
+  }
+
+  @Nested
+  class SearchUserTaskEffectiveVariables {
 
     @Test
     public void shouldDeduplicateVariablesByScope() {
@@ -163,7 +167,7 @@ public class UserTaskServiceTest {
 
       // when
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(
+          services.searchUserTaskEffectiveVariables(
               entity.userTaskKey(), variableSearchQuery().build(), authentication);
 
       // then — innermost scope (3) wins, only one "city" returned
@@ -197,7 +201,7 @@ public class UserTaskServiceTest {
 
       // when
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(
+          services.searchUserTaskEffectiveVariables(
               entity.userTaskKey(), variableSearchQuery().build(), authentication);
 
       // then — leaf (innermost) wins
@@ -232,7 +236,7 @@ public class UserTaskServiceTest {
 
       // when
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(
+          services.searchUserTaskEffectiveVariables(
               entity.userTaskKey(), variableSearchQuery().build(), authentication);
 
       // then — 3 unique names after dedup, total reflects deduplicated count
@@ -250,6 +254,10 @@ public class UserTaskServiceTest {
           .filteredOn(v -> v.name().equals("b"))
           .extracting(VariableEntity::value)
           .containsExactly("v4");
+      assertThat(result.items())
+          .filteredOn(v -> v.name().equals("c"))
+          .extracting(VariableEntity::value)
+          .containsExactly("v5");
     }
 
     @Test
@@ -278,7 +286,7 @@ public class UserTaskServiceTest {
       final var query =
           VariableQuery.of(q -> q.sort(SortOptionBuilders.variable(s -> s.name().asc())));
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(entity.userTaskKey(), query, authentication);
+          services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
 
       // then
       assertThat(result.items())
@@ -312,7 +320,7 @@ public class UserTaskServiceTest {
       final var query =
           VariableQuery.of(q -> q.sort(SortOptionBuilders.variable(s -> s.value().desc())));
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(entity.userTaskKey(), query, authentication);
+          services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
 
       // then
       assertThat(result.items())
@@ -350,7 +358,7 @@ public class UserTaskServiceTest {
                   q.sort(SortOptionBuilders.variable(s -> s.name().asc()))
                       .page(p -> p.from(1).size(2)));
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(entity.userTaskKey(), query, authentication);
+          services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
 
       // then — total is 4 (all unique), but page returns items at index 1 and 2
       assertThat(result.total()).isEqualTo(4);
@@ -382,7 +390,7 @@ public class UserTaskServiceTest {
 
       // when
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskVariables(
+          services.searchUserTaskEffectiveVariables(
               entity.userTaskKey(), variableSearchQuery().build(), authentication);
 
       // then — items are returned but cursors are always null
