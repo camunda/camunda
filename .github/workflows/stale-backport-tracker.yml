@@ -36,6 +36,11 @@ on:
         required: false
         default: '24'
         type: string
+      slack_webhook_url:
+        description: 'Slack incoming webhook URL. If provided, skips Vault lookup and sends to this URL.'
+        required: false
+        default: ''
+        type: string
   workflow_call:
     inputs:
       target_branch:
@@ -116,32 +121,32 @@ jobs:
 
           echo "📊 Summary: $total_stale stale backport PR(s) found"
 
-  notify-github:
-    name: Notify on GitHub PRs
-    needs: collect-stale-backports
-    if: |
-      needs.collect-stale-backports.outputs.has_stale == 'true' &&
-      (
-        (github.event_name == 'schedule') ||
-        (github.event_name == 'workflow_dispatch' && inputs.notify_github == true && inputs.dry_run == false)
-      )
-    runs-on: ubuntu-slim
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - name: Generate GitHub token
-        id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
-        with:
-          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
-          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
-          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
-          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          vault-url: ${{ secrets.VAULT_ADDR }}
+  # notify-github:
+  #   name: Notify on GitHub PRs
+  #   needs: collect-stale-backports
+  #   if: |
+  #     needs.collect-stale-backports.outputs.has_stale == 'true' &&
+  #     (
+  #       (github.event_name == 'schedule') ||
+  #       (github.event_name == 'workflow_dispatch' && inputs.notify_github == true && inputs.dry_run == false)
+  #     )
+  #   runs-on: ubuntu-slim
+    # timeout-minutes: 10
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - name: Generate GitHub token
+  #       id: github-token
+  #       uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+  #       with:
+  #         github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+  #         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+  #         github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+  #         github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+  #         vault-auth-method: approle
+  #         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+  #         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+  #         vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -190,6 +195,7 @@ jobs:
 
       - name: Get Slack webhook from Vault
         id: secrets
+        if: inputs.slack_webhook_url == ''
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -201,10 +207,11 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1 # v3.0.0
         continue-on-error: true
         with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          # webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook: ${{ inputs.slack_webhook_url}}
           webhook-type: incoming-webhook
           payload: ${{ steps.format.outputs.payload }}
 
