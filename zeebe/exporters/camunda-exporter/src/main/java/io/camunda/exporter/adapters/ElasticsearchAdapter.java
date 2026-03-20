@@ -42,6 +42,11 @@ class ElasticsearchAdapter implements ClientAdapter {
   }
 
   @Override
+  public ElasticsearchClient getElasticsearchClient() {
+    return client;
+  }
+
+  @Override
   public ObjectMapper objectMapper() {
     return objectMapper;
   }

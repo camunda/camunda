@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.adapters;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.store.BatchRequest;
@@ -33,6 +34,13 @@ public interface ClientAdapter extends AutoCloseable {
   BatchRequest createBatchRequest();
 
   ExporterEntityCacheProvider getExporterEntityCacheProvider();
+
+  /**
+   * Returns the ES client for use with BulkIngester. Returns null for non-ES adapters.
+   */
+  default ElasticsearchClient getElasticsearchClient() {
+    return null;
+  }
 
   @Override
   void close() throws IOException;

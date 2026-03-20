@@ -35,15 +35,19 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.store.AsyncFlushTracker;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
+import io.camunda.exporter.store.IngesterBatchRequest;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
@@ -67,6 +71,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +94,9 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Context context;
   private long lastFlushTimestamp = 0L;
+  private BulkIngester<Void> bulkIngester;
+  private AsyncFlushTracker flushTracker;
+  private long lastFlushedPosition = -1;
 
   private long flushDelayMs;
 
@@ -136,6 +144,7 @@ public class CamundaExporter implements Exporter {
       }
 
       writer = createBatchWriter();
+      createBulkIngester();
 
       checkImportersCompletedAndReschedule();
       controller.readMetadata().ifPresent(metadata::deserialize);
@@ -159,6 +168,18 @@ public class CamundaExporter implements Exporter {
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
+    }
+
+    if (bulkIngester != null) {
+      try {
+        bulkIngester.close(); // blocks until all in-flight bulks complete
+        if (lastPosition >= 0) {
+          updateLastExportedPosition(lastPosition);
+        }
+      } catch (final Exception e) {
+        LOG.warn("Failed to close bulk ingester", e);
+      }
+      bulkIngester = null;
     }
 
     if (clientAdapter != null) {
@@ -223,13 +244,15 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
+    // Check if the previous async bulk completed or failed
+    checkAsyncFlushResult();
+
     if (writer.getBatchSize() == 0) {
       metrics.startFlushLatencyMeasurement();
     }
 
-    // adding record is idempotent
+    // adding record is idempotent — handlers merge entities across records
     writer.addRecord(record);
-
     lastPosition = record.getPosition();
 
     if (shouldFlush()) {
@@ -379,6 +402,25 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
+  private void createBulkIngester() {
+    final var esClient = clientAdapter.getElasticsearchClient();
+    if (esClient == null) {
+      LOG.info("No Elasticsearch client available, using synchronous flush");
+      return;
+    }
+    flushTracker = new AsyncFlushTracker();
+    bulkIngester =
+        BulkIngester.<Void>of(
+            b ->
+                b.client(esClient)
+                    .maxConcurrentRequests(1)
+                    .maxOperations(configuration.getBulk().getSize())
+                    .maxSize(configuration.getBulk().getMemoryLimit() * 1024L * 1024L)
+                    .flushInterval(flushDelayMs, TimeUnit.MILLISECONDS)
+                    .listener(flushTracker));
+    LOG.info("BulkIngester created with async flushing (maxConcurrentRequests=1)");
+  }
+
   private void scheduleDelayedFlush(final long now) {
     long nextDelayMs = flushDelayMs;
     if (lastFlushTimestamp > 0) {
@@ -443,6 +485,34 @@ public class CamundaExporter implements Exporter {
   }
 
   private void flush() {
+    if (bulkIngester != null) {
+      if (writer.getBatchSize() > 0) {
+        flushToIngester();
+      }
+    } else {
+      flushSync();
+    }
+  }
+
+  /** Async path: add merged ops to the long-lived ingester. Returns immediately. */
+  private void flushToIngester() {
+    try {
+      metrics.recordBulkSize(writer.getBatchSize());
+      lastFlushedPosition = lastPosition;
+      final BatchRequest batchRequest =
+          new IngesterBatchRequest(bulkIngester, new ElasticsearchScriptBuilder())
+              .withMetrics(metrics);
+      writer.flush(batchRequest);
+      metrics.stopFlushLatencyMeasurement();
+      lastFlushTimestamp = context.clock().millis();
+    } catch (final PersistenceException ex) {
+      metrics.recordFailedFlush();
+      throw new ExporterException(ex.getMessage(), ex);
+    }
+  }
+
+  /** Sync fallback (no ES client / tests / OpenSearch). */
+  private void flushSync() {
     if (writer.getBatchSize() > 0) {
       try (final var ignored = metrics.measureFlushDuration()) {
         metrics.recordBulkSize(writer.getBatchSize());
@@ -456,10 +526,28 @@ public class CamundaExporter implements Exporter {
         throw new ExporterException(ex.getMessage(), ex);
       }
     }
-
-    // Update the record counters only after the flush was successful. If the synchronous flush
-    // fails then the exporter will be invoked with the same record again.
+    // Always update position (persists metadata even for empty batches)
     updateLastExportedPosition(lastPosition);
+  }
+
+  /**
+   * Called at the start of each export() to check if the previous async bulk completed. If it
+   * succeeded, advance the exported position. If it failed, throw to trigger retry.
+   */
+  private void checkAsyncFlushResult() {
+    if (flushTracker == null) {
+      return;
+    }
+
+    final var error = flushTracker.checkError();
+    if (error != null) {
+      metrics.recordFailedFlush();
+      throw new ExporterException("Async bulk flush failed: " + error.getMessage(), error);
+    }
+
+    if (flushTracker.hasCompletedFlush() && lastFlushedPosition >= 0) {
+      updateLastExportedPosition(lastFlushedPosition);
+    }
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
