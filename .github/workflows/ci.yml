@@ -448,8 +448,6 @@ jobs:
           ZEEBE_IT_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.it_distributed }}
           ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
           ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
-          # TODO: disabled until 8.9.0 minor release is out
-          ZEEBE_QA_UPDATE_ENABLED: "false"
           # Opt-in to stress testing the integration-tests job via the PR label "ci:stress-test".
           STRESS_ENABLED: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         run: |
@@ -588,28 +586,23 @@ jobs:
               "owner": "CamundaEx",
               "module": "Testing",
               "stressRun": 1
+            },
+            {
+              "group": "qa-update",
+              "name": "Zeebe QA - Update",
+              "maven-modules": "zeebe/qa/update-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "stressRun": 1
             }
           ]
           EOF
           )
-
-          if [[ "${ZEEBE_QA_UPDATE_ENABLED}" == "true" ]]; then
-            base_matrix=$(jq -c '. + [
-              {
-                "group": "qa-update",
-                "name": "Zeebe QA - Update",
-                "maven-modules": "zeebe/qa/update-tests",
-                "maven-build-threads": 1,
-                "maven-test-fork-count": 10,
-                "runs-on": "gcp-perf-core-8-default",
-                "docker-repository": "localhost:5000/camunda/zeebe",
-                "docker-file": "Dockerfile",
-                "owner": "Core Features",
-                "module": "Zeebe",
-                "stressRun": 1
-              }
-            ]' <<< "${base_matrix}")
-          fi
 
           if [[ "${STRESS_ENABLED}" == "true" ]]; then
             zeebe_engine_template=$(jq -c '.[] | select(.group == "zeebe-engine-integration") | del(.stressRun)' <<< "${base_matrix}")
