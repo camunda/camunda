@@ -4478,6 +4478,8 @@ final class JsonSerializableToJsonTest {
             "priority": 50,
             "source": "CONFIGURATION",
             "listenerType": "USER_TASK",
+            "elementTypes": [],
+            "categories": [],
             "configKey": -1
           },
           {
@@ -4490,6 +4492,8 @@ final class JsonSerializableToJsonTest {
             "priority": 10,
             "source": "CONFIGURATION",
             "listenerType": "USER_TASK",
+            "elementTypes": [],
+            "categories": [],
             "configKey": -1
           }
          ],
@@ -4552,6 +4556,8 @@ final class JsonSerializableToJsonTest {
             "priority": 50,
             "source": "CONFIGURATION",
             "listenerType": "USER_TASK",
+            "elementTypes": [],
+            "categories": [],
             "configKey": -1
           },
           {
@@ -4564,6 +4570,8 @@ final class JsonSerializableToJsonTest {
             "priority": 10,
             "source": "CONFIGURATION",
             "listenerType": "USER_TASK",
+            "elementTypes": [],
+            "categories": [],
             "configKey": -1
           },
           {
@@ -4576,6 +4584,8 @@ final class JsonSerializableToJsonTest {
             "priority": 50,
             "source": "CONFIGURATION",
             "listenerType": "USER_TASK",
+            "elementTypes": [],
+            "categories": [],
             "configKey": -1
           }
         ],
@@ -4631,6 +4641,8 @@ final class JsonSerializableToJsonTest {
       "priority": 10,
       "source": "API",
       "listenerType": "USER_TASK",
+      "elementTypes": [],
+      "categories": [],
       "configKey": 124
     }
     """
@@ -4649,6 +4661,8 @@ final class JsonSerializableToJsonTest {
       "priority": 50,
       "source": "CONFIGURATION",
       "listenerType": "USER_TASK",
+      "elementTypes": [],
+      "categories": [],
       "configKey": -1
     }
     """

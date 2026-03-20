@@ -135,6 +135,43 @@ public interface GlobalListenerRecordValue extends RecordValue {
   GlobalListenerType getListenerType();
 
   /**
+   * Returns the list of fine-grained BPMN element types this listener targets.
+   *
+   * <p>Element types are combined with {@link #getCategories()} as a union to determine which
+   * elements trigger this listener. If both element types and categories are empty, the listener
+   * applies to all elements (equivalent to {@code categories: [all]}).
+   *
+   * <p>Valid element types include: {@code process}, {@code subprocess}, {@code eventSubprocess},
+   * {@code serviceTask}, {@code userTask}, {@code sendTask}, {@code receiveTask}, {@code
+   * scriptTask}, {@code businessRuleTask}, {@code callActivity}, {@code multiInstanceBody}, {@code
+   * exclusiveGateway}, {@code parallelGateway}, {@code inclusiveGateway}, {@code
+   * eventBasedGateway}, {@code startEvent}, {@code endEvent}, {@code intermediateCatchEvent},
+   * {@code intermediateThrowEvent}, {@code boundaryEvent}.
+   *
+   * @return the list of element types, or an empty list if not restricted by element type
+   */
+  List<String> getElementTypes();
+
+  /**
+   * Returns the list of broad element type categories this listener targets.
+   *
+   * <p>Categories are combined with {@link #getElementTypes()} as a union to determine which
+   * elements trigger this listener. Supported categories:
+   *
+   * <ul>
+   *   <li>{@code all} — every element type
+   *   <li>{@code tasks} — serviceTask, userTask, sendTask, receiveTask, scriptTask,
+   *       businessRuleTask
+   *   <li>{@code gateways} — exclusiveGateway, parallelGateway, inclusiveGateway, eventBasedGateway
+   *   <li>{@code events} — startEvent, endEvent, intermediateCatchEvent, intermediateThrowEvent,
+   *       boundaryEvent
+   * </ul>
+   *
+   * @return the list of categories, or an empty list if not restricted by category
+   */
+  List<String> getCategories();
+
+  /**
    * When this value is set, it indicates that the record is part of the changes necessary to define
    * a global listeners configuration with this key.
    */

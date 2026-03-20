@@ -62,11 +62,15 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
       new EnumProperty<>("source", GlobalListenerSource.class, DEFAULT_SOURCE);
   private final EnumProperty<GlobalListenerType> listenerTypeProp =
       new EnumProperty<>("listenerType", GlobalListenerType.class, DEFAULT_LISTENER_TYPE);
+  private final ArrayProperty<StringValue> elementTypesProp =
+      new ArrayProperty<>("elementTypes", StringValue::new);
+  private final ArrayProperty<StringValue> categoriesProp =
+      new ArrayProperty<>("categories", StringValue::new);
 
   private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
 
   public GlobalListenerRecord() {
-    super(10);
+    super(12);
     declareProperty(globalListenerKeyProp)
         .declareProperty(idProp)
         .declareProperty(typeProp)
@@ -76,6 +80,8 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
         .declareProperty(listenerTypeProp)
+        .declareProperty(elementTypesProp)
+        .declareProperty(categoriesProp)
         .declareProperty(configKeyProp);
   }
 
@@ -180,6 +186,44 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setConfigKey(final Long configKey) {
     configKeyProp.setValue(configKey);
+    return this;
+  }
+
+  @Override
+  public List<String> getElementTypes() {
+    return StreamSupport.stream(elementTypesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public GlobalListenerRecord setElementTypes(final List<String> elementTypes) {
+    elementTypesProp.reset();
+    elementTypes.forEach(this::addElementType);
+    return this;
+  }
+
+  public GlobalListenerRecord addElementType(final String elementType) {
+    elementTypesProp.add().wrap(BufferUtil.wrapString(elementType));
+    return this;
+  }
+
+  @Override
+  public List<String> getCategories() {
+    return StreamSupport.stream(categoriesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public GlobalListenerRecord setCategories(final List<String> categories) {
+    categoriesProp.reset();
+    categories.forEach(this::addCategory);
+    return this;
+  }
+
+  public GlobalListenerRecord addCategory(final String category) {
+    categoriesProp.add().wrap(BufferUtil.wrapString(category));
     return this;
   }
 
