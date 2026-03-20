@@ -212,6 +212,7 @@ jobs:
           --set connectors.security.authentication.oidc.existingSecretKey=connectors-security-authentication-oidc-secret
           --set orchestration.security.authentication.oidc.existingSecret=camunda-credentials
           --set orchestration.security.authentication.oidc.existingSecretKey=orchestration-security-authentication-oidc-secret
+          --set orchestration.security.authorizations.enabled=false
           --set optimize.enabled=true
           --version 13.5.4
       - name: Summarize deployment
@@ -269,7 +270,7 @@ jobs:
           ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
-          export ZEEBE_CLIENT_ID=zeebe
+          export ZEEBE_CLIENT_ID=orchestration
           export ZEEBE_CLIENT_SECRET
           export ZEEBE_TOKEN_AUDIENCE=zeebe-api
           # Do not exit on error - as the port-forward might not be ready
@@ -437,7 +438,7 @@ jobs:
           ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
-          export ZEEBE_CLIENT_ID=zeebe
+          export ZEEBE_CLIENT_ID=orchestration
           export ZEEBE_CLIENT_SECRET
           export ZEEBE_TOKEN_AUDIENCE=zeebe-api
           # Do not exit on error - as the port-forward might not be ready
