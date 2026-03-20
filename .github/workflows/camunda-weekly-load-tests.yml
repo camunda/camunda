@@ -354,11 +354,14 @@ jobs:
           --set global.security.authentication.method=oidc \
           --set connectors.image.tag=8.9.0-alpha5 \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
+          --set connectors.security.authentication.oidc.secret.existingSecretKey=connectors-security-authentication-oidc-secret \
           --set identity.enabled=true \
           --set identity.firstUser.enabled=false \
+          --set identity.firstUser.secret.existingSecret=camunda-credentials \
+          --set identity.firstUser.secret.existingSecretKey=identity-firstuser-password \
           --set identity.image.tag=8.9.0-alpha5 \
           --set identityKeycloak.enabled=true \
+          --set identityKeycloak.postgresql.auth.existingSecret=camunda-credentials \
           --set global.identity.auth.enabled=true \
           --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
           --set-string "orchestration.env[0].value=false" \
@@ -372,7 +375,7 @@ jobs:
           --set elasticsearch.enabled=true \
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=orchestration-security-authentication-oidc-secret \
           --set global.identity.auth.optimize.secret.existingSecret=camunda-credentials \
           --set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token \
           --version 14.x
