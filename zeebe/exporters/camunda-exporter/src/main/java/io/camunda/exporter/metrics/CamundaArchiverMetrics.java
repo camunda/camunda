@@ -200,7 +200,7 @@ public class CamundaArchiverMetrics implements AutoCloseable {
                     "Duration of how long it takes for an archiver job to run, from reading a "
                         + "batch of top-level archivable instances to actually archiving and "
                         + "deleting from main index, all in all together.")
-                .publishPercentiles()
+                .publishPercentileHistogram()
                 .tag("job", jobName)
                 .tag("status", status)
                 .register(meterRegistry);
@@ -220,7 +220,8 @@ public class CamundaArchiverMetrics implements AutoCloseable {
                         + "These are top‑level instances and may fan out into many more archivable "
                         + "documents, depending on the parent–child and dependent index structure.")
                 .tag("job", jobName)
-                .publishPercentileHistogram()
+                .serviceLevelObjectives(
+                    1, 2, 5, 10, 20, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000)
                 .register(meterRegistry);
           }
           return existing;
