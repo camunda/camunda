@@ -29,7 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class AzureOpenAiEmbeddingModelBuilderTest {
 
   @Test
-  void shouldBuildEmbeddingModel() {
+  void shouldBuildEmbeddingModelWithApiKey() {
     // given
     final AzureOpenAiConfig config =
         new AzureOpenAiConfig(
@@ -38,6 +38,22 @@ class AzureOpenAiEmbeddingModelBuilderTest {
             "test-api-key",
             null,
             null);
+
+    // when
+    final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
+
+    // then
+    assertThat(embeddingModel).isNotNull();
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldFallbackToDefaultCredentialsWhenApiKeyNullOrBlank(final String apiKey) {
+    // given — no API key, falls back to DefaultAzureCredential
+    final AzureOpenAiConfig config =
+        new AzureOpenAiConfig(
+            "text-embedding-3-small", "https://my-resource.openai.azure.com/", apiKey, null, null);
 
     // when
     final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
@@ -94,22 +110,6 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("endpoint")
-        .hasMessageContaining(AzureOpenAiEmbeddingModelBuilder.AZURE_OPENAI);
-  }
-
-  @ParameterizedTest
-  @NullAndEmptySource
-  @ValueSource(strings = {"  "})
-  void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
-    // given
-    final AzureOpenAiConfig config =
-        new AzureOpenAiConfig(
-            "text-embedding-3-small", "https://my-resource.openai.azure.com/", apiKey, null, null);
-
-    // when / then
-    assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("apiKey")
         .hasMessageContaining(AzureOpenAiEmbeddingModelBuilder.AZURE_OPENAI);
   }
 

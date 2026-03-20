@@ -15,8 +15,10 @@
  */
 package io.camunda.process.test.impl.similarity;
 
+import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AzureOpenAiConfig;
@@ -35,14 +37,20 @@ final class AzureOpenAiEmbeddingModelBuilder {
     LOG.debug("Building Azure OpenAI embedding model");
 
     final String endpoint = require(config.getEndpoint(), "endpoint", AZURE_OPENAI);
-    final String apiKey = require(config.getApiKey(), "apiKey", AZURE_OPENAI);
     final String deploymentName = require(config.getModel(), "model", AZURE_OPENAI);
 
     final AzureOpenAiEmbeddingModel.Builder builder =
-        AzureOpenAiEmbeddingModel.builder()
-            .endpoint(endpoint)
-            .apiKey(apiKey)
-            .deploymentName(deploymentName);
+        AzureOpenAiEmbeddingModel.builder().endpoint(endpoint).deploymentName(deploymentName);
+
+    if (hasText(config.getApiKey())) {
+      LOG.debug("Using API key authentication");
+      builder.apiKey(config.getApiKey().trim());
+    } else {
+      LOG.debug(
+          "No API key configured, falling back to DefaultAzureCredential "
+              + "(environment, workload identity, managed identity, Azure CLI)");
+      builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
+    }
 
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
