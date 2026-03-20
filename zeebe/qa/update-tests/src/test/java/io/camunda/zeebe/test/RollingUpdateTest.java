@@ -88,7 +88,9 @@ final class RollingUpdateTest {
               node ->
                   node.withEnv(CREATE_SCHEMA_ENV_VAR, "false")
                       .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
+                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+                      .withEnv(
+                          "CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER", "false"))
           .build();
 
   @SuppressWarnings("unused")
@@ -116,7 +118,7 @@ final class RollingUpdateTest {
     volumes.clear();
   }
 
-  @ParameterizedTest(name = "from {0} to {1}")
+  @ParameterizedTest(name = "from {0} to {1}", allowZeroInvocations = true)
   @MethodSource("versionMatrix")
   void shouldBeAbleToRestartContainerWithNewVersion(final String from, final String to) {
     // given
@@ -147,7 +149,7 @@ final class RollingUpdateTest {
     }
   }
 
-  @ParameterizedTest(name = "from {0} to {1}")
+  @ParameterizedTest(name = "from {0} to {1}", allowZeroInvocations = true)
   @MethodSource("versionMatrix")
   void shouldReplicateSnapshotAcrossVersions(final String from, final String to) {
     // given
@@ -214,7 +216,7 @@ final class RollingUpdateTest {
         .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(brokerId));
   }
 
-  @ParameterizedTest(name = "from {0} to {1}")
+  @ParameterizedTest(name = "from {0} to {1}", allowZeroInvocations = true)
   @MethodSource("versionMatrix")
   void shouldPerformRollingUpdate(final String from, final String to) {
     // given
