@@ -1,0 +1,78 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class ProcessDefinitionServiceTest {
+
+  private ProcessDefinitionServices services;
+  private ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private SecurityContextProvider securityContextProvider;
+  private CamundaAuthentication authentication;
+  private BrokerClient brokerClient;
+  private FormServices formServices;
+  private ApiServicesExecutorProvider executorProvider;
+  private BrokerRequestAuthorizationConverter authorizationConverter;
+
+  @BeforeEach
+  public void before() {
+    processDefinitionSearchClient = mock(ProcessDefinitionSearchClient.class);
+    when(processDefinitionSearchClient.withSecurityContext(any()))
+        .thenReturn(processDefinitionSearchClient);
+    securityContextProvider = mock(SecurityContextProvider.class);
+    authentication = CamundaAuthentication.none();
+    brokerClient = mock(BrokerClient.class);
+    formServices = mock(FormServices.class);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
+    authorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
+
+    services =
+        new ProcessDefinitionServices(
+            brokerClient,
+            securityContextProvider,
+            processDefinitionSearchClient,
+            formServices,
+            authentication,
+            executorProvider,
+            authorizationConverter);
+  }
+
+  @Test
+  public void shouldReturnElementStatistics() {
+    // given
+    final var processDefinitionKey = 123L;
+    final var filter = new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build();
+    final var statistics = List.of(new ProcessFlowNodeStatisticsEntity("task", 1L, 0L, 0L, 1L));
+
+    when(processDefinitionSearchClient.processDefinitionFlowNodeStatistics(filter))
+        .thenReturn(statistics);
+
+    // when
+    final var result = services.elementStatistics(filter);
+
+    // then
+    assertThat(result).isEqualTo(statistics);
+    verify(processDefinitionSearchClient).processDefinitionFlowNodeStatistics(filter);
+  }
+}
