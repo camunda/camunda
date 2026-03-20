@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Validates generated .flattened-pom.xml files contain required Maven Central metadata
+# (name, description, url, licenses, developers, scm), and packaging when the source POM is non-jar.
+
 set -euo pipefail
 
 if ! command -v xmllint >/dev/null 2>&1; then
