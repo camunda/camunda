@@ -111,10 +111,11 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
-          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/camunda
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
       - name: Build and Push Starter Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build and Push Worker Image
