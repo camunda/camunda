@@ -12,7 +12,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   navigateToApp,
-  hideModificationHelperModal,
+  hideHelperModals,
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -34,7 +34,7 @@ test.describe('Process Instance Batch Modification', () => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
-    await hideModificationHelperModal(page);
+    await hideHelperModals(page);
   });
 
   test.afterEach(async ({page}, testInfo) => {
