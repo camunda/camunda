@@ -561,6 +561,24 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
+  public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQuery(
+      final UserTaskEffectiveVariableSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.variableSearchQuery().build());
+    }
+
+    final var filter = SearchQueryFilterMapper.toUserTaskVariableFilter(request.getFilter());
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromUserTaskVariableSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::variable,
+            SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
+
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
       final io.camunda.gateway.protocol.model.simple.VariableFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
