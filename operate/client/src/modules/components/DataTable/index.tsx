@@ -78,12 +78,15 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
             getTableContainerProps,
             getTableProps,
             getRowProps,
+            getExpandHeaderProps,
           }) => (
             <TableContainer {...getTableContainerProps()}>
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
-                    {isExpandable && <TableExpandHeader />}
+                    {isExpandable && (
+                      <TableExpandHeader {...getExpandHeaderProps()} />
+                    )}
                     {headers.map((header, index) => (
                       <TableHeader
                         id={header.key}

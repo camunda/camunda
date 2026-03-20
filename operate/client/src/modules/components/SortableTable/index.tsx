@@ -142,6 +142,7 @@ const SortableTable = <
           getRowProps,
           getSelectionProps,
           getTableProps,
+          getExpandHeaderProps,
         }) => (
           <TableContainer $hasError={!!batchOperationId}>
             {state === 'loading' && <Loading data-testid="data-table-loader" />}
@@ -149,7 +150,10 @@ const SortableTable = <
               <TableHead $stickyHeader={stickyHeader}>
                 <TableHeadRow>
                   {(batchOperationId || isExpandable) && (
-                    <TableExpandHeader aria-label="expand row" />
+                    <TableExpandHeader
+                      {...getExpandHeaderProps()}
+                      aria-label="expand row"
+                    />
                   )}
                   {selectionType === 'checkbox' && (
                     <TableSelectAll
