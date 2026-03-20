@@ -174,10 +174,10 @@ public class StandaloneEventBridgeIT {
         client.subscribe("grp-subscribe-it", "consumer-1").get(10, TimeUnit.SECONDS);
 
     // then
-    assertThat(consumer.getAssignedPartitions())
+    assertThat(consumer.getOwnedPartitions())
         .as("single partition broker must assign partition 0")
         .containsExactly(0);
-    assertThat(consumer.getGeneration())
+    assertThat(consumer.getCurrentEpoch())
         .as("generation must be positive after first rebalance")
         .isPositive();
   }
@@ -292,14 +292,14 @@ public class StandaloneEventBridgeIT {
     final var client = newClient();
     final Consumer consumer =
         client.subscribe("grp-heartbeat-it", "consumer-1").get(10, TimeUnit.SECONDS);
-    final long generationAtSubscribe = consumer.getGeneration();
+    final long epochAtRegistration = consumer.getCurrentEpoch();
 
     // when — send one heartbeat
     consumer.sendHeartbeat().get(10, TimeUnit.SECONDS);
 
     // then — generation unchanged (no rebalance occurred)
-    assertThat(consumer.getGeneration())
+    assertThat(consumer.getCurrentEpoch())
         .as("generation must not change when no rebalance occurred")
-        .isEqualTo(generationAtSubscribe);
+        .isEqualTo(epochAtRegistration);
   }
 }

@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Test;
  * sequence performed by {@code runCoordinatorLoop()}. This avoids coupling tests to wall-clock
  * timing while still exercising the full state-machine logic.
  *
- * <p>Complements {@link CoordinatorActorSubscribeHeartbeatTest} (heartbeat / ACK actor dispatch)
- * and {@link CoordinatorActorTruncationTest} (truncation boundary and commit-offset).
+ * <p>Complements {@link CoordinatorActorHeartbeatAckTest} (heartbeat / ACK actor dispatch) and
+ * {@link CoordinatorActorTruncationTest} (truncation boundary and commit-offset).
  */
 @SuppressWarnings("deprecation")
 class CoordinatorActorLoopTest {

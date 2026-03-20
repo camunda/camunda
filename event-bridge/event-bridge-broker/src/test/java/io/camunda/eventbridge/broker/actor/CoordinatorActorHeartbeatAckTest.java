@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
  * <p>Complements {@link CoordinatorActorTruncationTest} which covers the truncation boundary and
  * commit-offset actor dispatch.
  */
-class CoordinatorActorSubscribeHeartbeatTest {
+class CoordinatorActorHeartbeatAckTest {
 
   private static final int TOTAL_PARTITIONS = 4;
   private static final EventBridgeProperties PROPERTIES =
