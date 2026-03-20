@@ -71,7 +71,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
-      ref: ${{ needs.sanitize-inputs.outputs.test-tag }}
+      ref: stable/8.9
       reuse-tag: ${{ needs.sanitize-inputs.outputs.test-tag }}
       ttl: 60
       use-official-docker-images: true
