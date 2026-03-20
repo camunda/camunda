@@ -61,7 +61,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     const location = useLocation();
     const [searchParams] = useSearchParams();
 
-    const {canceled, completed, tenant} = getProcessInstanceFilters(
+    const {canceled, completed, tenantId} = getProcessInstanceFilters(
       location.search,
     );
     const listHasFinishedInstances = canceled || completed;
@@ -69,9 +69,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
 
     const isTenantColumnVisible =
       clientConfig.multiTenancyEnabled &&
-      (tenant === undefined || tenant === 'all');
+      (tenantId === undefined || tenantId === 'all');
 
-    const batchOperationId = searchParams.get('operationId') ?? undefined;
+    const batchOperationId = searchParams.get('batchOperationId') ?? undefined;
     const isOperationStateColumnVisible = !!batchOperationId;
 
     const processInstanceKeys = processInstances.map(

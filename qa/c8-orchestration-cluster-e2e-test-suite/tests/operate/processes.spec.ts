@@ -206,7 +206,7 @@ test.describe('Processes', () => {
         operateProcessesPage.noMatchingInstancesMessage,
       ).toBeVisible();
 
-      await expect(page).toHaveURL(/flowNodeId=shipArticles/);
+      await expect(page).toHaveURL(/elementId=shipArticles/);
     });
 
     await test.step('Ensure Check Payment flow node is not selected', async () => {
@@ -223,7 +223,7 @@ test.describe('Processes', () => {
 
       await expect(operateProcessesPage.processInstancesTable).toHaveCount(1);
 
-      await expect(page).toHaveURL(/flowNodeId=checkPayment/);
+      await expect(page).toHaveURL(/elementId=checkPayment/);
 
       await expect(operateDiagramPage.getFlowNode('checkPayment')).toHaveClass(
         /selected/,
@@ -246,11 +246,11 @@ test.describe('Processes', () => {
   }) => {
     await test.step('Navigate to non-existent process', async () => {
       await page.goto(
-        `${baseUrl}/operate/processes?process=testProcess&version=1`,
+        `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
       );
 
       await expect(page).toHaveURL(
-        `${baseUrl}/operate/processes?process=testProcess&version=1`,
+        `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
       );
       await expect(
         operateProcessesPage.processCouldNotBeFoundMessage,
@@ -274,7 +274,7 @@ test.describe('Processes', () => {
       await sleep(5000);
 
       await page.goto(
-        `${baseUrl}/operate/processes?process=testProcess&version=1`,
+        `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
       );
 
       await expect(operateDiagramPage.diagram).toBeInViewport();

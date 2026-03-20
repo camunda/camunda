@@ -100,7 +100,7 @@ test.describe('process instance migration', () => {
         incidents: 'false',
         canceled: 'false',
         completed: 'false',
-        operationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+        batchOperationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
       },
     });
 

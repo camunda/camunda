@@ -54,15 +54,15 @@ const Filters: React.FC = observer(() => {
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
-  if (filterValues.process && filterValues.tenant !== 'all') {
-    filterValues.process = getDefinitionIdentifier(
-      filterValues.process,
-      filterValues.tenant,
+  if (filterValues.processDefinitionId && filterValues.tenantId !== 'all') {
+    filterValues.processDefinitionId = getDefinitionIdentifier(
+      filterValues.processDefinitionId,
+      filterValues.tenantId,
     );
   }
-  if (filterValues.tenant === 'all') {
-    delete filterValues.process;
-    delete filterValues.version;
+  if (filterValues.tenantId === 'all') {
+    delete filterValues.processDefinitionId;
+    delete filterValues.processDefinitionVersion;
   }
 
   const setFilters = (filters: OperationsLogFilters) => {
@@ -82,7 +82,9 @@ const Filters: React.FC = observer(() => {
         onSubmit={(values: OperationsLogFilters) => {
           setFilters({
             ...values,
-            process: splitDefinitionIdentifier(values.process).definitionId,
+            processDefinitionId: splitDefinitionIdentifier(
+              values.processDefinitionId,
+            ).definitionId,
           });
         }}
         initialValues={filterValues}
@@ -100,8 +102,8 @@ const Filters: React.FC = observer(() => {
               <Container>
                 <AutoSubmit
                   fieldsToSkipTimeout={[
-                    'process',
-                    'version',
+                    'processDefinitionId',
+                    'processDefinitionVersion',
                     'operationType',
                     'entityType',
                     'result',
@@ -114,8 +116,8 @@ const Filters: React.FC = observer(() => {
                       <Stack gap={5}>
                         <TenantField
                           onChange={() => {
-                            form.change('process', undefined);
-                            form.change('version', undefined);
+                            form.change('processDefinitionId', undefined);
+                            form.change('processDefinitionVersion', undefined);
                           }}
                         />
                       </Stack>

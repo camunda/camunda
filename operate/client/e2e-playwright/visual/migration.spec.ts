@@ -68,8 +68,8 @@ test.describe('migration view', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        process: 'LotsOfTasks',
-        version: '1',
+        processDefinitionId: 'LotsOfTasks',
+        processDefinitionVersion: '1',
       },
     });
 

@@ -17,14 +17,14 @@ describe('parseDecisionInstancesSearchFilter', () => {
     const searchParams = new URLSearchParams();
     searchParams.append('evaluated', 'true');
     searchParams.append('failed', 'true');
-    searchParams.append('name', 'testName');
-    searchParams.append('version', '3');
-    searchParams.append('processInstanceId', '2251799813690838');
-    searchParams.append('evaluationDateAfter', '2023-08-29T00:00:00.000Z');
-    searchParams.append('evaluationDateBefore', '2023-09-28T23:59:59.000Z');
-    searchParams.append('tenant', 'tenant-A');
+    searchParams.append('decisionDefinitionId', 'testName');
+    searchParams.append('decisionDefinitionVersion', '3');
+    searchParams.append('processInstanceKey', '2251799813690838');
+    searchParams.append('evaluationDateFrom', '2023-08-29T00:00:00.000Z');
+    searchParams.append('evaluationDateTo', '2023-09-28T23:59:59.000Z');
+    searchParams.append('tenantId', 'tenant-A');
     searchParams.append(
-      'decisionInstanceIds',
+      'decisionEvaluationInstanceKey',
       '2251799813702856-1 2251799813702857-1',
     );
 
@@ -48,7 +48,7 @@ describe('parseDecisionInstancesSearchFilter', () => {
 
   it('should return undefined when no state param is set', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('name', 'testName');
+    searchParams.append('decisionDefinitionId', 'testName');
 
     const filter = parseDecisionInstancesSearchFilter(searchParams);
 
@@ -58,7 +58,7 @@ describe('parseDecisionInstancesSearchFilter', () => {
   it('should not include a version in the filter when its value is all', () => {
     const searchParams = new URLSearchParams();
     searchParams.append('evaluated', 'true');
-    searchParams.append('version', 'all');
+    searchParams.append('decisionDefinitionVersion', 'all');
 
     const filter = parseDecisionInstancesSearchFilter(searchParams);
 
@@ -68,7 +68,7 @@ describe('parseDecisionInstancesSearchFilter', () => {
   it('should not include a tenantId in the filter when its value is all', () => {
     const searchParams = new URLSearchParams();
     searchParams.append('evaluated', 'true');
-    searchParams.append('tenant', 'all');
+    searchParams.append('tenantId', 'all');
 
     const filter = parseDecisionInstancesSearchFilter(searchParams);
 
@@ -79,9 +79,9 @@ describe('parseDecisionInstancesSearchFilter', () => {
 describe('parseDecisionDefinitionsSearchFilter', () => {
   it('should parse decision definitions search filter from search params', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('name', 'testName');
-    searchParams.append('version', '3');
-    searchParams.append('tenant', 'tenant-A');
+    searchParams.append('decisionDefinitionId', 'testName');
+    searchParams.append('decisionDefinitionVersion', '3');
+    searchParams.append('tenantId', 'tenant-A');
 
     const filter = parseDecisionDefinitionsSearchFilter(searchParams);
 
@@ -103,8 +103,8 @@ describe('parseDecisionDefinitionsSearchFilter', () => {
 
   it('should not include a version in the filter when its value is all', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('name', 'testName');
-    searchParams.append('version', 'all');
+    searchParams.append('decisionDefinitionId', 'testName');
+    searchParams.append('decisionDefinitionVersion', 'all');
 
     const filter = parseDecisionDefinitionsSearchFilter(searchParams);
 
@@ -115,8 +115,8 @@ describe('parseDecisionDefinitionsSearchFilter', () => {
 
   it('should not include a tenantId in the filter when its value is all', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('name', 'testName');
-    searchParams.append('tenant', 'all');
+    searchParams.append('decisionDefinitionId', 'testName');
+    searchParams.append('tenantId', 'all');
 
     const filter = parseDecisionDefinitionsSearchFilter(searchParams);
 

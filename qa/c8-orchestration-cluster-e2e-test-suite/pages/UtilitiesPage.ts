@@ -48,10 +48,10 @@ export async function gotoProcessesPage(
   options?: {
     searchParams?: {
       active?: string;
-      ids?: string;
-      process?: string;
-      version?: string;
-      flowNodeId?: string;
+      processInstanceKey?: string;
+      processDefinitionId?: string;
+      processDefinitionVersion?: string;
+      elementId?: string;
     };
   },
 ): Promise<void> {

@@ -54,12 +54,12 @@ const expectVersion = (version: string) => {
 };
 
 const MOCK_FILTERS_PARAMS = {
-  name: 'invoice-assign-approver',
-  version: '2',
+  decisionDefinitionId: 'invoice-assign-approver',
+  decisionDefinitionVersion: '2',
   evaluated: 'true',
   failed: 'true',
-  decisionInstanceIds: '2251799813689540-1',
-  processInstanceId: '2251799813689549',
+  decisionEvaluationInstanceKey: '2251799813689540-1',
+  processInstanceKey: '2251799813689549',
 } as const;
 
 describe('<Filters />', () => {
@@ -198,8 +198,8 @@ describe('<Filters />', () => {
           ).entries(),
         ),
       ).toEqual({
-        evaluationDateAfter: evaluationDate.fromDate,
-        evaluationDateBefore: evaluationDate.toDate,
+        evaluationDateFrom: evaluationDate.fromDate,
+        evaluationDateTo: evaluationDate.toDate,
       }),
     );
 
@@ -232,8 +232,8 @@ describe('<Filters />', () => {
 
   it('initialize filter values from url - evaluation date range', async () => {
     const MOCK_PARAMS = {
-      evaluationDateAfter: '2021-02-21 09:00:00',
-      evaluationDateBefore: '2021-02-22 10:00:00',
+      evaluationDateFrom: '2021-02-21 09:00:00',
+      evaluationDateTo: '2021-02-22 10:00:00',
     } as const;
 
     render(<Filters />, {
@@ -498,7 +498,7 @@ describe('<Filters />', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?processInstanceId=2251799813729387$/,
+        /^\?processInstanceKey=2251799813729387$/,
       ),
     );
 
@@ -545,7 +545,7 @@ describe('<Filters />', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/decisions?name=${firstDecision.decisionDefinitionId}&version=${firstDecision.version}`,
+        `/decisions?decisionDefinitionId=${firstDecision.decisionDefinitionId}&decisionDefinitionVersion=${firstDecision.version}`,
       ),
     });
 

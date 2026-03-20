@@ -97,7 +97,7 @@ describe('MigrationView/BottomPanel', () => {
   beforeEach(() => {
     vi.stubGlobal('location', {
       ...window.location,
-      search: '?process=orderProcess&version=1',
+      search: '?processDefinitionId=orderProcess&processDefinitionVersion=1',
     });
 
     processInstanceMigrationStore.enable();

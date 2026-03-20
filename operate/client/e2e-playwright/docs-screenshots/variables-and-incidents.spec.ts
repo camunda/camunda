@@ -93,8 +93,8 @@ test.describe('variables and incidents', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        process: 'order-process',
-        version: '1',
+        processDefinitionId: 'order-process',
+        processDefinitionVersion: '1',
       },
     });
 

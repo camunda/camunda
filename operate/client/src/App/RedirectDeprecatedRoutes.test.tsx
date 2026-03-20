@@ -37,4 +37,24 @@ describe('<RedirectDeprecatedRoutes />', () => {
     );
     expect(screen.getByTestId('search')).toHaveTextContent(/^\?foo=bar$/);
   });
+
+  it('should migrate deprecated query params on /processes routes', () => {
+    render(
+      <MemoryRouter
+        initialEntries={['/processes?process=myProc&version=2&tenant=t1']}
+      >
+        <RedirectDeprecatedRoutes />
+        <LocationLog />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /processDefinitionId=myProc/,
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /processDefinitionVersion=2/,
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(/tenantId=t1/);
+  });
 });

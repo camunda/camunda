@@ -284,9 +284,9 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         },
       });
-      await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
-        `${callActivityProcessInstanceKey}`,
-      );
+      await expect(
+        operateProcessesPage.parentProcessInstanceKeyCell,
+      ).toHaveText(`${callActivityProcessInstanceKey}`);
       expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
     });
 
@@ -661,7 +661,7 @@ test.describe('Process Instances Filters', () => {
       });
 
       await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-      await operateFiltersPanelPage.fillOperationIdFilter(operationId);
+      await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
 
       await waitForAssertion({
         assertion: async () => {
@@ -670,7 +670,7 @@ test.describe('Process Instances Filters', () => {
         onFailure: async () => {
           await page.reload();
           await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-          await operateFiltersPanelPage.fillOperationIdFilter(operationId);
+          await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
         },
       });
 
