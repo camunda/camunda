@@ -109,7 +109,7 @@ jobs:
         with:
           maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
+        id: build-camunda-docker
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/camunda
           version: ${{ steps.image-tag.outputs.image-tag }}
