@@ -6,6 +6,9 @@
 name: Stale Backport Tracker
 
 on:
+  push:
+    branches:
+      - collect-stale-backport-prs  # TEMPORARY — remove before merging
   schedule:
     # Run daily at 6 AM UTC (after check-outdated-prs at 4 AM)
     - cron: '0 6 * * *'
@@ -165,6 +168,7 @@ jobs:
     name: Post Slack report
     needs: collect-stale-backports
     if: |
+      (github.event_name == 'push') ||
       (github.event_name == 'schedule') ||
       (github.event_name == 'workflow_dispatch' && inputs.notify_slack == true) ||
       (github.event_name == 'workflow_call' && inputs.notify_slack == true)
@@ -203,18 +207,27 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+          secrets: |          
+             secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
 
-      - name: Send Slack notification
-        uses: slackapi/slack-github-action@v3.0.1 # v3.0.0
+      # - name: Send Slack notification
+      #   uses: slackapi/slack-github-action@v3.0.1 # v3.0.0
+      #   continue-on-error: true
+      #   with:
+      #     webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+      #     webhook-type: incoming-webhook
+      #     payload: ${{ steps.format.outputs.payload }}
+
+      - name: Send Slack DM  # TEMPORARY — remove before merging
+        uses: slackapi/slack-github-action@v3.0.1
         continue-on-error: true
         with:
-          # webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
-          webhook: ${{ inputs.slack_webhook_url}}
-          webhook-type: incoming-webhook
-          payload: ${{ steps.format.outputs.payload }}
-
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          payload: |
+            channel: "U09B7CWMX4P"
+            text: "Stale backport report"
+            blocks: ${{ steps.format.outputs.payload }}
       - name: Log notification status
         if: always()
         run: |
