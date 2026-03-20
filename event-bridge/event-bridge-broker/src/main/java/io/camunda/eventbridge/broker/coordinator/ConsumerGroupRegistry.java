@@ -518,9 +518,10 @@ public final class ConsumerGroupRegistry {
       entry.pendingRevoke.addAll(revoke);
       entry.pendingAssign.addAll(assign);
 
-      if ((!revoke.isEmpty() || !assign.isEmpty())
-          && ackTimeoutMs > 0
-          && entry.ackDeadline == null) {
+      if ((!revoke.isEmpty() || !assign.isEmpty()) && ackTimeoutMs > 0) {
+        // Always extend the deadline when new work is added so the consumer gets
+        // the full ackTimeoutMs window for each batch, even when a prior batch is
+        // still pending (e.g. revocations deferred by the maxInflightRevocations cap).
         entry.ackDeadline = Instant.now().plusMillis(ackTimeoutMs);
       }
 
