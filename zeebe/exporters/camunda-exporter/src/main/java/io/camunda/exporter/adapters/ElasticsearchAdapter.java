@@ -9,6 +9,8 @@ package io.camunda.exporter.adapters;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.json.JsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -18,6 +20,7 @@ import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
+import io.camunda.exporter.store.StreamingElasticsearchBatchRequest;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -26,19 +29,27 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.IOException;
+import org.elasticsearch.client.RestClient;
 
 class ElasticsearchAdapter implements ClientAdapter {
   private final ElasticsearchClient client;
   private final ElasticsearchEngineClient searchEngineClient;
   private final ElasticsearchExporterEntityCacheProvider entityCacheLoader;
   private final ObjectMapper objectMapper;
+  private final RestClient restClient;
+  private final JsonpMapper jsonpMapper;
+  private final boolean useStreamingBulk;
 
-  ElasticsearchAdapter(final ConnectConfiguration configuration) {
+  ElasticsearchAdapter(final ConnectConfiguration configuration, final boolean useStreamingBulk) {
+    this.useStreamingBulk = useStreamingBulk;
     final var connector = new ElasticsearchConnector(configuration);
     client = connector.createClient();
     objectMapper = connector.objectMapper();
     searchEngineClient = new ElasticsearchEngineClient(client, objectMapper);
     entityCacheLoader = new ElasticsearchExporterEntityCacheProvider(client);
+    final var transport = (RestClientTransport) client._transport();
+    restClient = transport.restClient();
+    jsonpMapper = client._jsonpMapper();
   }
 
   @Override
@@ -53,6 +64,14 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
+    if (useStreamingBulk) {
+      return new StreamingElasticsearchBatchRequest(
+          restClient,
+          jsonpMapper,
+          objectMapper,
+          new BulkRequest.Builder(),
+          new ElasticsearchScriptBuilder());
+    }
     return new ElasticsearchBatchRequest(
         client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
   }

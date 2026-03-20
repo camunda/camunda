@@ -146,6 +146,7 @@ public class ExporterConfiguration {
     private int size = 5_000;
     // bulk memory utilisation before flush (in Mb)
     private int memoryLimit = 20;
+    private boolean useStreamingBulk = false;
 
     public int getDelay() {
       return delay;
@@ -163,6 +164,14 @@ public class ExporterConfiguration {
       this.size = size;
     }
 
+    public boolean isUseStreamingBulk() {
+      return useStreamingBulk;
+    }
+
+    public void setUseStreamingBulk(final boolean useStreamingBulk) {
+      this.useStreamingBulk = useStreamingBulk;
+    }
+
     @Override
     public String toString() {
       return "BulkConfiguration{"
@@ -172,6 +181,8 @@ public class ExporterConfiguration {
           + size
           + ", memoryLimit="
           + memoryLimit
+          + ", useStreamingBulk="
+          + useStreamingBulk
           + '}';
     }
 

@@ -289,7 +289,8 @@ public class CamundaExporter implements Exporter {
 
   private void setupExporterResources() {
     metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
-    clientAdapter = ClientAdapter.of(configuration.getConnect());
+    clientAdapter =
+        ClientAdapter.of(configuration.getConnect(), configuration.getBulk().isUseStreamingBulk());
     if (metadata == null) {
       metadata = new ExporterMetadata(clientAdapter.objectMapper());
     }
