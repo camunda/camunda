@@ -105,7 +105,7 @@ describe('<InstancesTable />', () => {
         {
           wrapper: getWrapper(
             `${Paths.processes()}?${new URLSearchParams(
-              tenant === undefined ? undefined : {tenant},
+              tenant === undefined ? undefined : {tenantId: tenant},
             )}`,
           ),
         },
@@ -132,7 +132,7 @@ describe('<InstancesTable />', () => {
       />,
       {
         wrapper: getWrapper(
-          `${Paths.processes()}?${new URLSearchParams({tenant: 'tenant-a'})}`,
+          `${Paths.processes()}?${new URLSearchParams({tenantId: 'tenant-a'})}`,
         ),
       },
     );
@@ -152,7 +152,7 @@ describe('<InstancesTable />', () => {
       />,
       {
         wrapper: getWrapper(
-          `${Paths.processes()}?${new URLSearchParams({tenant: 'all'})}`,
+          `${Paths.processes()}?${new URLSearchParams({tenantId: 'all'})}`,
         ),
       },
     );
