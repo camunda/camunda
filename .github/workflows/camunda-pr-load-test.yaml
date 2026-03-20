@@ -12,15 +12,8 @@ on:
       - synchronize
       - closed
 
-# labeled / synchronize / closed share a single group per PR so adding a label
-# or pushing new code cancels the in-progress run and starts fresh.
-# unlabeled events get a unique group (run_id) so they never cancel a running
-# benchmark — they only run the cleanup job.
 concurrency:
-  group: >-
-    ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{
-      github.event.action != 'unlabeled' && 'benchmark' || github.run_id
-    }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 defaults:
@@ -52,12 +45,9 @@ jobs:
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           max_length: 44  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
-      # Checkout + image tag are needed only for build/deploy (labeled or synchronize).
-      # Skipped for unlabeled (cleanup only), closed, and non-benchmark labels.
       - uses: actions/checkout@v6
         if: >
-          ((github.event.action == 'labeled' &&
-            (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'))
+          (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
            || github.event.action == 'synchronize') &&
           (contains(github.event.pull_request.labels.*.name, 'benchmark')
            || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
@@ -66,8 +56,7 @@ jobs:
       - name: Compute image tag
         id: image-tag
         if: >
-          ((github.event.action == 'labeled' &&
-            (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'))
+          (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
            || github.event.action == 'synchronize') &&
           (contains(github.event.pull_request.labels.*.name, 'benchmark')
            || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
@@ -85,12 +74,8 @@ jobs:
   build-images:
     name: Build Images
     needs: sanitize-branch-name
-    # Build when a benchmark label is added or code is pushed, AND at least one
-    # benchmark label is on the PR. Unlabeled events skip the build entirely
-    # (they only need the cleanup job).
     if: >
-      ((github.event.action == 'labeled' &&
-        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'))
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
        || github.event.action == 'synchronize') &&
       (contains(github.event.pull_request.labels.*.name, 'benchmark')
        || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
@@ -108,8 +93,7 @@ jobs:
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
       contains(github.event.pull_request.labels.*.name, 'benchmark') &&
-      ((github.event.action == 'labeled' &&
-        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'))
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
        || github.event.action == 'synchronize')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
@@ -127,8 +111,7 @@ jobs:
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
       contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms') &&
-      ((github.event.action == 'labeled' &&
-        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'))
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
        || github.event.action == 'synchronize')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
@@ -212,4 +195,3 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
