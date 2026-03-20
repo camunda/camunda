@@ -19,28 +19,18 @@ describe('ProcessInstanceHelperModal', () => {
     localStorage.clear();
   });
 
-  it('should render modal with correct title and "Got it" button', () => {
+  it('should render modal content', () => {
     render(<ProcessInstanceHelperModal open={true} onClose={vi.fn()} />);
 
     expect(
       screen.getByText("Here's what moved in Operate"),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /got it/i})).toBeInTheDocument();
-  });
-
-  it('should render description and list items', () => {
-    render(<ProcessInstanceHelperModal open={true} onClose={vi.fn()} />);
-
     expect(
       screen.getByText(/we made some changes to the process instance page/i),
     ).toBeInTheDocument();
     expect(screen.getByRole('list')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
-  });
-
-  it('should render screenshot image', () => {
-    render(<ProcessInstanceHelperModal open={true} onClose={vi.fn()} />);
-
     expect(
       screen.getByAltText(
         'Process instance details page with incidents tab and diagram',
