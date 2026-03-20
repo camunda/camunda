@@ -47,6 +47,8 @@ final class BulkIndexRequest {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, IgnoreBusinessIdMixin.class)
+          .addMixIn(ProcessInstanceCreationRecordValue.class, IgnoreBusinessIdMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
@@ -236,6 +238,9 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY, BUSINESS_ID_PROPERTY})
   private static final class IgnoreRootProcessInstanceKeyAndBusinessIdMixin {}
+
+  @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
+  private static final class IgnoreBusinessIdMixin {}
 
   public interface TerminateInstructionsMixin {
     @JsonIgnore
