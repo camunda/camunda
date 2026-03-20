@@ -1,13 +1,13 @@
 {
   "agents": {
     "pm": {
-      "invocations": 25,
-      "totalElapsedMs": 2860005,
+      "invocations": 28,
+      "totalElapsedMs": 3318382,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-haiku-4.5": 6,
-        "claude-opus-4-6": 19
+        "claude-haiku-4.5": 8,
+        "claude-opus-4-6": 20
       }
     },
     "recovery": {
@@ -20,57 +20,57 @@
       }
     },
     "reviewer": {
-      "invocations": 20,
-      "totalElapsedMs": 2350102,
+      "invocations": 29,
+      "totalElapsedMs": 2912408,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 20
+        "claude-opus-4-6": 29
       }
     },
     "reviser": {
-      "invocations": 33,
-      "totalElapsedMs": 19905647,
+      "invocations": 43,
+      "totalElapsedMs": 21969005,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 33
+        "claude-opus-4-6": 43
       }
     },
     "plan-eng-clarify-3": {
-      "invocations": 2,
-      "totalElapsedMs": 2904780,
+      "invocations": 3,
+      "totalElapsedMs": 3554856,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 2
+        "claude-opus-4-6": 3
       }
     },
     "plan-design-clarify-5": {
-      "invocations": 2,
-      "totalElapsedMs": 203208,
+      "invocations": 3,
+      "totalElapsedMs": 234708,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 2
+        "claude-opus-4-6": 3
       }
     },
     "analyst": {
-      "invocations": 2,
-      "totalElapsedMs": 1031913,
+      "invocations": 3,
+      "totalElapsedMs": 1306964,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 2
+        "claude-opus-4-6": 3
       }
     },
     "cross-reviewer": {
-      "invocations": 12,
-      "totalElapsedMs": 1270988,
+      "invocations": 14,
+      "totalElapsedMs": 1390390,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "gpt-5.3-codex": 12
+        "gpt-5.3-codex": 14
       }
     },
     "Designer": {
@@ -119,42 +119,42 @@
       }
     },
     "code-reviewer": {
-      "invocations": 52,
-      "totalElapsedMs": 4290159,
+      "invocations": 95,
+      "totalElapsedMs": 11445417,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 52
+        "claude-opus-4-6": 95
       }
     },
     "tester": {
-      "invocations": 32,
-      "totalElapsedMs": 4666431,
+      "invocations": 73,
+      "totalElapsedMs": 17613629,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 32
+        "claude-opus-4-6": 73
       }
     },
     "engineer": {
-      "invocations": 56,
-      "totalElapsedMs": 50148639,
+      "invocations": 111,
+      "totalElapsedMs": 106504469,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 56
+        "claude-opus-4-6": 111
       }
     },
     "cross-model": {
-      "invocations": 13,
-      "totalElapsedMs": 5466825,
+      "invocations": 54,
+      "totalElapsedMs": 28161288,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "gpt-5.3-codex": 13
+        "gpt-5.3-codex": 54
       }
     }
   },
-  "totalRuns": 3,
-  "lastUpdated": "2026-03-19T20:40:12.121Z"
+  "totalRuns": 5,
+  "lastUpdated": "2026-03-20T10:49:24.758Z"
 }

@@ -1,1598 +1,1160 @@
 # Plan
 
-**Timestamp:** 2026-03-19T07:14:33.309Z
+**Timestamp:** 2026-03-19T21:57:28.807Z
 
 ## Original Request
 
-I want to implement an "Event Bridge" that receives a batch of events and stores them in an append-only log, similar to how Kafka does. To implement, existing modules should be used: Log Stream, RAFT, SWIM and everything that requires to work. To break it down:
+Now, we want to refactor the consumer group concept in the event bridge. Here are the details
 
-Event Bridge:
+# :brain: 0. Simplified Model (Partition-Only)
 
-* It consists of two parts: gateway and broker
-* The gateway exposes an api to publish events but also to subscribe to events (in a pull-based approach like in Kafka)
-* Authentication methods are not required in that iteration
-* a broker manages a set of partitions, if a broker is leader for a partition it stores the respective published events
-* therefore, the gateway routes the published events to the respective broker that is leader for the respective partition
+We eliminate topics entirely:
 
-Technically, it should be built as a standalone component based Spring Boot, reusing RAFT (as a consensus protocol to elect a leader and to replicate events), Atomix, Log Stream, SWIM (to gossip who is part of the cluster, who is leader), the actor scheduler for threading, and something similar to the existing Sequencer to sequence incoming events when writing them to the log stream. To built a distribution follow the same pattern as in the /dist module.
+```text
+Partitions = fixed set of work units
+Consumers = workers in a group
 
-For the subscription part, the broker knows which consumer (group) is at which position. The Log Stream can be truncated up to the consumed positions. partition 1 knows which consumer is on which position. Broker-0 is the coordinator of a consumer group.
-
-Event Bridge Client:
-
-* This allows to publish a batch of events, each event is a binary (not a JSON).
-* As a routing parameter, it expects a partition id (keep it simple here, no hashing required yet)
-* To subscribe to events, the consumer group concept is used. Each consumer of that groups sends heartbeats to the broker
-
-## Research Context
-
-### Study Log Stream module
-
-Exploring the Log Stream module — background agent launched. I'll report back when it completes. Feel free to ask follow-up questions in the meantime.
-
----
-
-### Study RAFT consensus implementation
-
-Here's the complete picture of RAFT in Camunda, synthesized from all 4 exploration agents:
-
----
-
-## RAFT in Camunda: Complete Reference
-
-### 1. Implementation Source
-
-**Custom hard-fork of Apache Atomix** — not an external dependency. Located at `zeebe/atomix/`, it was forked after Atomix migrated to Go. ~50% of the original codebase was removed to keep only RAFT, SWIM, and transport. Two Maven modules:
-
-```
-zeebe/atomix/
-├── cluster/   → io.camunda:zeebe-atomix-cluster  (138 Java files, the RAFT impl)
-└── utils/     → io.camunda:zeebe-atomix-utils
-```
-
-All RAFT code lives under `io.atomix.raft.*`.
-
----
-
-### 2. Module & Package Structure
-
-```
-io.atomix.raft
-├── RaftServer.java                  # Main interface (647 lines)
-├── ElectionTimer.java               # Interface
-├── RaftRoleChangeListener.java      # Role change callback
-├── RaftCommitListener.java          # Commit index callback
-├── impl/
-│   ├── RaftContext.java             # Central state (1,371 lines) — term, commitIndex, role
-│   ├── DefaultRaftServer.java
-│   ├── PriorityElectionTimer.java   # Priority-weighted election timeouts
-│   ├── RandomizedElectionTimer.java
-│   ├── ReconfigurationHelper.java   # Dynamic membership changes
-│   └── LogCompactor.java
-├── roles/
-│   ├── RaftRole.java (interface)
-│   ├── AbstractRole  → InactiveRole → PassiveRole → PromotableRole → ActiveRole
-│   ├── FollowerRole.java            # Manages ElectionTimer
-│   ├── CandidateRole.java           # Runs elections
-│   └── LeaderRole.java              # Implements ZeebeLogAppender, drives replication
-├── partition/
-│   ├── RaftPartition.java           # Partition abstraction (wraps RaftServer)
-│   ├── RaftPartitionConfig.java
-│   ├── RaftElectionConfig.java
-│   ├── RaftStorageConfig.java
-│   └── impl/RaftPartitionServer.java
-├── protocol/                        # 36 message types (AppendRequest/Response, VoteRequest/Response, etc.)
-├── storage/
-│   ├── RaftStorage.java
-│   ├── log/
-│   │   ├── RaftLog.java
-│   │   ├── RaftLogReader.java
-│   │   ├── RaftLogCommittedReader.java
-│   │   ├── RaftLogUncommittedReader.java
-│   │   ├── RaftLogFlusher.java
-│   │   └── entry/RaftLogEntry.java
-│   └── system/
-│       ├── MetaStore.java           # Persists term + votedFor
-│       └── Configuration.java      # Persists cluster membership
-├── snapshot/                        # Snapshot transfer
-├── metrics/                         # 20+ metric classes
-└── zeebe/
-    ├── ZeebeLogAppender.java        # Functional interface for appending
-    └── EntryValidator.java
-```
-
-The underlying durable log is in a separate module `zeebe/journal/`, using `SegmentedJournal` / `SegmentedJournalWriter`.
-
----
-
-### 3. Leader Election
-
-**Flow:** Follower timer expires → Candidate → sends `VoteRequest` to all members → quorum → Leader → notifies listeners.
-
-#### Key files:
-| File | Role |
-|------|------|
-| `roles/FollowerRole.java` | Owns `ElectionTimer`, resets it on each heartbeat |
-| `roles/CandidateRole.java` | `startElection()` / `sendVoteRequests()` |
-| `roles/ActiveRole.java` | `handleVote()` — validates and grants/rejects votes |
-| `impl/RaftContext.java` | `transition(Role)`, `setTerm()`, `setLeader()` |
-| `impl/PriorityElectionTimer.java` | Optional priority-weighted timeouts |
-| `partition/RaftElectionConfig.java` | `ofDefaultElection()` / `ofPriorityElection(targetPriority, nodePriority)` |
-| `protocol/VoteRequest.java` | `{ term, candidate, lastLogIndex, lastLogTerm }` |
-
-#### Vote grant rules (`ActiveRole.handleVote`):
-1. Reject if `request.term < currentTerm`
-2. Reject if a leader already exists for this term
-3. Reject if candidate is unknown
-4. Grant if not yet voted and candidate log is at least as up-to-date
-
-#### Role transition (`RaftContext.transition`):
-```java
-// Stops old role, installs new role, notifies listeners
-// For LEADER: waits for initial entries to commit before notifying
-this.role.stop()  →  newRole.start()  →  notifyRoleChangeListeners()
-```
-
-#### Term management (`RaftContext.setTerm`):
-```java
-this.term = term;
-leader = null;
-lastVotedFor = null;
-meta.storeTerm(term);    // Durable
-meta.storeVote(null);    // Durable
+Group State:
+  current_assignment: Map<ConsumerId, Set<PartitionId>>
+  target_assignment:  Map<ConsumerId, Set<PartitionId>>
 ```
 
 ---
 
-### 4. Log Replication
+# :gear: 1. Default Configuration (IMPORTANT)
 
-**Leader-side:** `LeaderRole` implements `ZeebeLogAppender`. It delegates replication to `LeaderAppender`.
+These defaults make the system stable out of the box:
 
-**Follower-side:** `PassiveRole.onAppend()` / `appendEntries()` handles incoming `AppendRequest`.
-
-#### Key files:
-| File | Role |
-|------|------|
-| `roles/LeaderAppender.java` | Builds & sends `AppendRequest`, handles responses, tracks matchIndex/nextIndex |
-| `roles/PassiveRole.java` | Receives `AppendRequest`, appends to `RaftLog`, updates commitIndex |
-| `protocol/AppendRequest.java` | `{ term, leader, prevLogIndex, prevLogTerm, entries[], commitIndex }` |
-| `protocol/AppendResponse.java` | `{ status, succeeded, term, lastLogIndex, lastSnapshotIndex }` |
-| `storage/log/RaftLog.java` | Main log abstraction (read/write/commit) |
-| `zeebe/journal/SegmentedJournal.java` | Underlying durable segment storage |
-
-#### Per-follower state (`RaftMemberContext`):
-- `matchIndex` — highest index confirmed replicated
-- Reader position (tracks `nextIndex` implicitly)
-
-#### Commit index update (`RaftContext.setCommitIndex`):
-```java
-commitIndex = Math.min(requestedIndex, raftLog.getLastIndex());
-raftLog.setCommitIndex(commitIndex);
-replicationMetrics.setCommitIndex(commitIndex);
-// → notifies RaftCommitListener
-```
-
-#### Snapshot replication:
-- Leader: `LeaderAppender.buildInstallRequest()` streams `PersistedSnapshot` chunks via `InstallRequest`
-- Follower: `PassiveRole.onInstall()` receives chunks → `pendingSnapshot.persist()` → resets log
-- Key files: `zeebe/snapshot/PersistedSnapshot.java`, `ReceivedSnapshot.java`, `SnapshotChunkReader.java`
-
----
-
-### 5. Consensus API
-
-#### Appending entries (application → RAFT):
-```java
-// ZeebeLogAppender.java  (functional interface implemented by LeaderRole)
-void appendEntry(ApplicationEntry entry, AppendListener appendListener);
-
-// AppendListener callbacks:
-void onWrite(IndexedRaftLogEntry indexed);       // Written locally
-void onCommit(long index, long highestPosition); // Replicated + committed
-void onWriteError(Throwable error);
-void onCommitError(long index, Throwable error);
-```
-
-Access the appender only when this node is leader:
-```java
-Optional<ZeebeLogAppender> appender = raftPartitionServer.getAppender();
-// empty() if not leader
-```
-
-#### Listening to commits:
-```java
-// RaftCommitListener.java
-void onCommit(long index);  // May skip indices (batch notification)
-```
-
-#### Listening to role changes:
-```java
-// RaftRoleChangeListener.java
-void onNewRole(RaftServer.Role newRole, long newTerm);
-```
-
-#### Partition-level API:
-```java
-// RaftPartitionServer.java
-CompletableFuture<> bootstrap()           // Initial cluster bootstrap
-CompletableFuture<> join()                // Join existing cluster
-CompletableFuture<> leave()
-CompletableFuture<> forceReconfigure(Map<MemberId, Type>)
-void addCommitListener(RaftCommitListener)
-void addRoleChangeListener(RaftRoleChangeListener)
-RaftLogReader openReader()
+```yaml
+heartbeat_interval_ms: 3000
+session_timeout_ms: 10000
+rebalance_interval_ms: 2000
+max_partitions_per_consumer: unlimited
+assignment_strategy: "BALANCED_STICKY"
+ack_timeout_ms: 5000
+max_inflight_revocations: 100
+epoch_start: 1
 ```
 
 ---
 
-### 6. Zeebe Broker Integration
-
-```
-BrokerStartup
-  └── PartitionManagerStep
-        └── PartitionManagerImpl
-              ├── RaftPartitionFactory → RaftPartition → RaftPartitionServer → RaftServer
-              └── ZeebePartitionFactory → ZeebePartition
-                    implements RaftRoleChangeListener
-                    onNewRole(LEADER)   → leaderTransition()   → start StreamProcessor, exporters
-                    onNewRole(FOLLOWER) → followerTransition() → start log replay
-                    onNewRole(INACTIVE) → transitionToInactive()
-
-Data path:
-  Client command
-    → ZeebeLogAppender.appendEntry()       (LeaderRole)
-    → LeaderAppender replicates to followers
-    → RaftCommitListener.onCommit()
-    → AtomixLogStorage notifies LogStream   (zeebe/broker/AtomixLogStorage.java)
-    → StreamProcessor reads via LogStreamReader
-    → ProcessingStateMachine applies to ZeebeDb
-```
-
-Key broker files:
-| File | Purpose |
-|------|---------|
-| `broker/partitioning/PartitionManagerImpl.java` | Orchestrates all partitions |
-| `broker/partitioning/startup/RaftPartitionFactory.java` | Creates `RaftPartition` with config |
-| `broker/partitioning/startup/steps/RaftBootstrapStep.java` | Bootstrap on first start |
-| `broker/partitioning/startup/steps/RaftJoinStep.java` | Join on restart |
-| `broker/system/partitions/ZeebePartition.java` | RAFT→engine bridge |
-| `broker/logstreams/AtomixLogStorage.java` | Implements both `LogStorage` and `RaftCommitListener` |
-| `broker/PartitionRaftListener.java` | `onBecameRaftLeader/Follower` callbacks |
-| `broker/raft/ZeebeEntryValidator.java` | Custom entry validation |
-
-Configuration (`ClusterCfg`): `replicationFactor` (default 3), `electionTimeout`, `heartbeatInterval`, `maxAppendBatchSize`, `maxAppendsPerFollower`.
+# :globe_with_meridians: 2. REST API (Final Spec)
 
 ---
 
-### 7. Existing Tests
+## 2.1 Heartbeat (Single Control Endpoint)
 
-| Test | Location |
-|------|----------|
-| Core consensus | `zeebe/atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java` |
-| Entry append/commit | `…/raft/RaftAppendTest.java` |
-| Replication | `…/raft/RaftReplicationTest.java` |
-| Randomized fault injection | `…/raft/RandomizedRaftTest.java` |
-| Zeebe log appender | `…/raft/zeebe/ZeebeLogAppenderTest.java` |
-| Partition factory config | `broker/…/partitioning/RaftPartitionFactoryTest.java` |
-| Role transitions | `broker/…/partitioning/RaftRolesTest.java` |
-| ZeebePartition lifecycle | `broker/…/partitions/ZeebePartitionTest.java` |
+### Endpoint
 
----
-
-### Study SWIM gossip protocol usage
-
-Here's a comprehensive summary of how SWIM is integrated in Camunda:
-
----
-
-## SWIM in Camunda 8
-
-### 1. Module providing SWIM
-**`zeebe/atomix/cluster`** (`io.atomix.cluster.protocol`) — a fork of Atomix embedded in the repo.
-
-Key classes:
-- `SwimMembershipProtocol` — core protocol implementation
-- `DefaultClusterMembershipService` — wraps the protocol into a service
-- `AtomixCluster` — cluster orchestrator; started in `ClusterServicesImpl`
-
----
-
-### 2. Membership maintenance & propagation
-
-SWIM uses three mechanisms running on an actor thread:
-| Mechanism | Default interval | Purpose |
-|---|---|---|
-| **Probe** (heartbeat) | 1000ms | Detect failures via direct + indirect probes |
-| **Gossip** | 250ms, fanout=2 | Push membership updates to random peers |
-| **Sync** | 10000ms | Full state reconciliation |
-
-Member state machine: `ALIVE → SUSPECT → DEAD`. State is stored in-memory in a `ConcurrentHashMap<MemberId, SwimMember>`. Membership changes fire `GroupMembershipEvent` (MEMBER_ADDED / MEMBER_REMOVED / METADATA_CHANGED / REACHABILITY_CHANGED).
-
-Broker-specific metadata (topology, partition roles) rides on top of SWIM via **`Member.properties()`**: `BrokerInfo` is base64-serialised (SBE) into a single `"brokerInfo"` property key. When the property changes, SWIM gossips a `METADATA_CHANGED` event to the whole cluster.
-
----
-
-### 3. Querying current cluster members
-
-```java
-// Get the service (broker side)
-ClusterMembershipService membership = clusterServicesImpl.getMembershipService();
-
-// All members
-Set<Member> members = membership.getMembers();
-
-// Specific member
-Member m = membership.getMember(MemberId.from("1"));
-
-// Local node
-Member local = membership.getLocalMember();
-```
-
-For **broker topology** (higher-level):
-```java
-// zeebe/broker-client — used by gateway
-BrokerClusterState topo = brokerTopologyManager.getTopology();
-List<Integer> brokers = topo.getBrokers();
-String addr = topo.getBrokerAddress(nodeId);
+```http
+POST /groups/{groupId}/consumers/{consumerId}/heartbeat
 ```
 
 ---
 
-### 4. Leader/follower dissemination
+### Request (with defaults)
 
-1. **Raft** elects a leader per partition (inside `zeebe/atomix/cluster/…/raft/`)
-2. `TopologyManagerImpl` (broker) implements `PartitionListener`; when called with `setLeader(term, partitionId)`, it calls `BrokerInfo.setLeaderForPartition(partitionId, term)` then `publishTopologyChanges()` — writing the updated `BrokerInfo` to `Member.properties()`
-3. SWIM gossips the `METADATA_CHANGED` event cluster-wide
-4. On the **gateway side**, `BrokerTopologyManagerImpl` implements `ClusterMembershipEventListener`, extracts `BrokerInfo.fromProperties(member.properties())` and updates its in-memory `BrokerClientTopologyImpl`
-5. Consumers call `getTopology().getLeaderForPartition(partitionId)` → returns the node ID
-
-Full chain:
-```
-Raft election
-  → TopologyManagerImpl.setLeader()
-  → BrokerInfo written to Member.properties()
-  → SWIM gossips METADATA_CHANGED
-  → BrokerTopologyManagerImpl.event() parses BrokerInfo
-  → BrokerClusterState updated
-  → getLeaderForPartition(id) returns leader
-```
-
----
-
-### 5. Concrete usage examples
-
-| Location | Class | Role |
-|---|---|---|
-| `zeebe/broker` | `TopologyManagerImpl` | Registers as `ClusterMembershipEventListener`; publishes local leadership via `Member.properties()` |
-| `zeebe/broker-client` | `BrokerTopologyManagerImpl` | Gateway-side listener; maintains `BrokerClusterState` from SWIM events |
-| `zeebe/gateway` | `HashBasedDispatchStrategy` | Reads topology to route gRPC requests to partition leaders |
-| `zeebe/gateway` | `RequestRetryHandler` | Falls back via `topologyManager.getTopology()` on retry |
-| `zeebe/broker` | `ClusterServicesImpl` | Wraps `AtomixCluster`; exposes `getMembershipService()` |
-| `zeebe/broker` | `ClusterServicesStep` | Bootstrap step that calls `atomixCluster.start()` |
-
----
-
-### Study existing Sequencer pattern
-
-Running a deep exploration in the background — I'll read the results once complete.
-
----
-
-### Study /dist distribution pattern
-
-I have enough information to provide a comprehensive summary now.
-
----
-
-## Distribution Architecture: How It Works
-
-### 1. Directory Structure (`dist/`)
-
-The `dist/` module is **the single Maven module** that produces all distributions. It is `artifactId: camunda-zeebe`, `packaging: jar`.
-
-```
-dist/
-├── pom.xml                          # The main distribution POM
-├── src/main/
-│   ├── assembly.xml                 # Maven Assembly descriptor (zip + tar.gz)
-│   ├── config/
-│   │   ├── defaults.yaml            # AUTO-GENERATED Spring config defaults (env var docs)
-│   │   └── log4j2.xml               # Shared logging config (all components)
-│   └── java/io/camunda/application/
-│       ├── Profile.java             # Central enum of all Spring profile IDs
-│       ├── MainSupport.java         # Shared Spring Boot builder utilities
-│       ├── ModesAndProfilesProcessor.java  # Runtime profile selection
-│       ├── StandaloneCamunda.java   # All-in-one entry point
-│       ├── StandaloneBroker.java    # Broker-only entry point
-│       ├── StandaloneGateway.java   # Gateway-only entry point
-│       ├── StandaloneOperate.java   # Operate-only entry point
-│       ├── StandaloneTasklist.java  # Tasklist-only entry point
-│       ├── commons/                 # Shared Spring configurations (search, auth, metrics, etc.)
-│       └── initializers/            # ApplicationContextInitializer implementations
-```
-
-### 2. How Components Are Bundled
-
-**Two-phase build:**
-
-1. **appassembler-maven-plugin** (`package` phase):
-   - Assembles `target/camunda-zeebe/` with `bin/`, `config/`, `lib/`
-   - Generates shell scripts for each entry point (broker, gateway, operate, tasklist, camunda, schema, restore, cdbg, etc.)
-   - Collects all dependencies into `lib/` (flat layout, wildcard classpath)
-   - Copies `config/` to the assembly directory (log4j2.xml, defaults.yaml)
-   - Each generated script sets classpath to `config:lib/*:driver-lib/*` and calls the appropriate `mainClass`
-
-2. **maven-assembly-plugin** (`package` phase, after appassembler):
-   - Wraps `target/camunda-zeebe/` into `camunda-zeebe-<version>.tar.gz` and `.zip`
-   - Includes `licenses/` and `NOTICE.txt` from the repo root
-   - Excludes Oracle/MySQL JDBC drivers (licensing)
-
-**All components share one fat distribution** — a single `lib/` with all JARs. Spring profiles determine which components activate at runtime.
-
-### 3. Configuration Patterns
-
-| Concern | Mechanism |
-|---|---|
-| Logging | `config/log4j2.xml` on classpath, referenced via `app.home` sys-prop; env vars: `CAMUNDA_LOG_LEVEL`, `ZEEBE_LOG_LEVEL`, `*_LOG_APPENDER` |
-| App defaults | `config/defaults.yaml` — auto-generated from Spring metadata; acts as reference doc with env var names (e.g. `CAMUNDA_API_GRPC_PORT`) |
-| Profile activation | `StandaloneXxx.java` sets `.profiles(...)` in the builder, OR `ModesAndProfilesProcessor` handles `camunda.mode={all-in-one,broker,gateway}` |
-| Property defaults | Each `StandaloneXxx.main()` calls `.properties(Map)` on the Spring builder — these are lowest-priority defaults |
-| Banner | Each entry point sets `spring.banner.location` to a component-specific banner file |
-| Module wiring | Each `StandaloneXxx` lists explicit `@SpringBootConfiguration` sources — `UnifiedConfiguration`, `*ModuleConfiguration`, `*PropertiesOverride` beans |
-
-### 4. Dockerfile Patterns
-
-Four patterns exist:
-
-| Dockerfile | Pattern |
-|---|---|
-| `Dockerfile` (Zeebe) | Multi-stage: `build` (from source) OR `distball` stage → `dist` stage → `app`. Uses `startup.sh` that dispatches on `ZEEBE_STANDALONE_GATEWAY` and `ZEEBE_RESTORE` env vars. Includes jattach. |
-| `camunda.Dockerfile` | Same multi-stage structure, copies full dist → `bin/camunda` entrypoint |
-| `operate.Dockerfile` | Simpler: `prepare` stage extracts tarball, patches `bin/operate` to print a notice → `app` copies from prepare. No build-from-source stage. |
-| `tasklist.Dockerfile` | Same as operate pattern; renames `bin/tasklist-migrate` → `bin/migrate` for SaaS compatibility |
-
-**Common conventions across all Dockerfiles:**
-- Base image: `reg.mini.dev/1212/openjre-base:21-dev` (hardened) with fallback `eclipse-temurin:21-jre-noble` via `--build-arg BASE=public`
-- User: `uid=1001, gid=1001, group=camunda`
-- Home dir: `/usr/local/<component>/` owned `1001:0`, chmod `0775`
-- Volumes: `/tmp`, `<HOME>/logs`, component-specific data dirs
-- OCI + OpenShift labels on every image
-- `EXPOSE 8080`
-
-### 5. Pattern for a New "Event Bridge" Distribution
-
-To add an `event-bridge` component following this pattern:
-
-**Step 1 — Add a Profile** (`Profile.java`):
-```java
-EVENT_BRIDGE("event-bridge"),
-```
-
-**Step 2 — Create the entry point** (`StandaloneEventBridge.java`):
-```java
-@SpringBootConfiguration(proxyBeanMethods = false)
-public class StandaloneEventBridge {
-  public static void main(String[] args) {
-    MainSupport.setDefaultGlobalConfiguration();
-    MainSupport.putSystemPropertyIfAbsent("spring.banner.location", "classpath:/event-bridge-banner.txt");
-
-    MainSupport.createDefaultApplicationBuilder()
-        .sources(UnifiedConfiguration.class, UnifiedConfigurationHelper.class,
-                 /* relevant overrides... */
-                 CommonsModuleConfiguration.class,
-                 EventBridgeModuleConfiguration.class)
-        .profiles(Profile.EVENT_BRIDGE.getId(), Profile.STANDALONE.getId())
-        .properties(Map.of("management.health.defaults.enabled", false))
-        .initializers(new HealthConfigurationInitializer())
-        .build(args).run();
-  }
+```json
+{
+  "epoch": 0,
+  "owned_partitions": [],
+  "load": 0.0,
+  "capacity": 1.0,
+  "metadata": {}
 }
 ```
 
-**Step 3 — Register the binary** in `dist/pom.xml` (appassembler `<programs>`):
-```xml
-<program>
-  <id>event-bridge</id>
-  <mainClass>io.camunda.application.StandaloneEventBridge</mainClass>
-</program>
+---
+
+### Field Defaults
+
+```text
+epoch:                default = 0 (new consumer)
+owned_partitions:     default = []
+load:                 default = 0.0
+capacity:             default = 1.0
+metadata:             default = {}
 ```
-
-**Step 4 — Add the module dependency** to `dist/pom.xml`:
-```xml
-<dependency>
-  <groupId>io.camunda</groupId>
-  <artifactId>event-bridge</artifactId>
-</dependency>
-```
-
-**Step 5 — Add a Dockerfile** (following operate/tasklist pattern):
-```dockerfile
-# <name>.Dockerfile
-FROM base-${BASE} AS prepare
-ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
-WORKDIR /tmp/event-bridge
-COPY ${DISTBALL} event-bridge.tar.gz
-RUN tar xzvf event-bridge.tar.gz --strip 1 && rm event-bridge.tar.gz
-
-FROM base-${BASE} AS app
-# ... OCI labels, EXPOSE 8080, user setup, etc.
-ENV EVENT_BRIDGE_HOME=/usr/local/event-bridge
-COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/event-bridge ${EVENT_BRIDGE_HOME}
-USER 1001:1001
-ENTRYPOINT ["/usr/local/event-bridge/bin/event-bridge"]
-```
-
-**Key insight**: All distributions share one tarball (`camunda-zeebe-*.tar.gz`). Each Dockerfile just extracts the same tarball and uses a different `bin/<component>` entrypoint — no separate build or artifact per component. The Dockerfile-level isolation is only for image metadata, user setup, and which binary to run.
 
 ---
 
-### Study actor scheduler and threading model
+### Response
 
-Both agents complete. Here's a synthesized overview:
-
----
-
-## ActorScheduler in Camunda/Zeebe
-
-### 1. Core Architecture (`zeebe/scheduler/`)
-
-A **cooperative, non-blocking actor framework** — not based on JVM threads-per-actor. Key classes:
-
-| Class | Role |
-|---|---|
-| `ActorScheduler` | Entry point; builder-configured; manages lifecycle |
-| `ActorExecutor` | Coordinates two thread pools |
-| `ActorThreadGroup` → `CpuThreadGroup` / `IoThreadGroup` | Named thread pools |
-| `ActorThread` | Worker thread with run loop + job recycling pool (2048 jobs) |
-| `Actor` | Base class for all actors; lifecycle callbacks |
-| `ActorControl` | API for submitting work *from within* an actor |
-| `ActorTask` | Internal wrapper: holds job queues, lifecycle state, subscriptions |
-| `ActorJob` | A single unit of work; recycled to reduce GC |
-| `WorkStealingGroup` | Load-balancing via work-stealing across thread queues |
-| `ActorTaskQueue` | Lock-free doubly-linked queue with 128-byte cache-line padding |
-
----
-
-### 2. Thread Pool Management
-
-Two pools, configured at build time:
-
-| Pool | Thread name | Default size | For |
-|---|---|---|---|
-| CPU-bound | `zb-actors` | `max(1, availableProcessors - 2)` | Non-blocking compute |
-| I/O-bound | `zb-fs-workers` | `2` | Blocking I/O (snapshots, disk writes) |
-
-Idle strategy (Agrona `BackoffIdleStrategy`):
-```
-Spin ×10 → Yield ×5 → Park (1µs → 20ms backoff)
-```
-
-Submit with a hint: `scheduler.submitActor(actor, SchedulingHints.ioBound())`
-
----
-
-### 3. Actor/Job Scheduling
-
-**Run loop per `ActorThread`:**
-1. Drain external callbacks
-2. Update clock → process expired timers
-3. `WorkStealingGroup.getNextTask()` — own queue first, then steal from random peer
-4. Execute one job batch from the task (`ActorTask.execute(thread)`)
-5. If `resubmit=true`, task re-enqueues itself; otherwise transitions to `WAITING`
-
-**Cooperative yield:** No preemption. Actors suspend themselves via subscriptions:
-- `actor.run(r)` — fast-lane (head of queue)
-- `actor.submit(r)` — normal (tail of queue)
-- `actor.schedule(duration, r)` — one-shot timer
-- `actor.runAtFixedRate(duration, r)` — repeating timer
-- `actor.runOnCompletion(future, cb)` — future chaining
-- `actor.onCondition(name, r)` — condition signal
-
-**Actor lifecycle phases:** `STARTING → STARTED → CLOSE_REQUESTED → CLOSING → CLOSED`  
-Callbacks: `onActorStarting()`, `onActorStarted()`, `onActorClosing()`, `onActorClosed()`
-
----
-
-### 4. Spring Boot Integration
-
-**`ActorSchedulerConfiguration`** in `dist/src/main/java/io/camunda/application/commons/actor/`:
-
-```java
-@Bean(destroyMethod = "close")           // Spring calls close() on shutdown
-public ActorScheduler scheduler() {
-    var scheduler = ActorScheduler.newActorScheduler()
-        .setSchedulerName("Broker-" + nodeId)
-        .setCpuBoundActorThreadCount(cpuThreads)
-        .setIoBoundActorThreadCount(ioThreads)
-        .setActorClock(actorClockConfiguration.getClock().orElse(null))
-        .setMeterRegistry(metricsEnabled ? registry : null)
-        .setIdleStrategySupplier(idleStrategySupplier)
-        .build();
-    scheduler.start();                   // Started eagerly in bean creation
-    return scheduler;
+```json
+{
+  "epoch": 1,
+  "revoke": [],
+  "assign": [],
+  "full_assignment": [],
+  "status": "OK"
 }
 ```
 
-Thread counts come from broker properties (`properties.getThreads().getCpuThreadCount()`).  
-No `SmartLifecycle` — lifecycle is fully managed by `@Bean(destroyMethod)`.  
-`ActorClockConfiguration` supplies a *controlled clock* in tests (time travel support).
+---
+
+### Response Defaults
+
+```text
+epoch:            always >= request.epoch
+revoke:           default = []
+assign:           default = []
+full_assignment:  optional (empty if not needed)
+status:           "OK"
+```
 
 ---
 
-### 5. Key Actor Examples in Zeebe Broker
+# :white_check_mark: 2.2 Acknowledge
 
-| Actor | What it does |
-|---|---|
-| `BrokerStartupActor` | Orchestrates broker startup steps |
-| `ZeebePartition` | Core partition: Raft role transitions, health |
-| `StreamProcessor` | Processes the event stream |
-| `ExporterDirector` | Drives all exporters; implements `HealthMonitorable` |
-| `AsyncSnapshotDirector` | Coordinates async snapshots with commit position |
-| `CommandApiServiceImpl` | Handles gRPC command API; submits child actors in `onActorStarting()` |
-| `CheckpointSchedulingService` | Schedules backups; also a `ClusterMembershipEventListener` |
-| `TopologyManagerImpl` | Manages cluster topology |
-| `DiskSpaceUsageMonitorActor` | Polls disk; notifies listeners via `runAtFixedRate` |
-| `InterPartitionCommandReceiverActor` | Routes commands across partitions |
+### Endpoint
 
-**Typical submission patterns:**
+```http
+POST /groups/{groupId}/consumers/{consumerId}/ack
+```
+
+---
+
+### Request
+
+```json
+{
+  "epoch": 1,
+  "revoked": [],
+  "assigned": []
+}
+```
+
+---
+
+### Defaults
+
+```text
+revoked:  default = []
+assigned: default = []
+```
+
+---
+
+### Response
+
+```json
+{
+  "status": "OK"
+}
+```
+
+---
+
+# :heavy_plus_sign: 2.3 Join (Optional)
+
+You can skip this and rely on heartbeat auto-registration.
+
+### Default behavior:
+
+```text
+IF consumerId not known:
+  auto-register on first heartbeat
+```
+
+---
+
+# :bricks: 3. Coordinator Internal State
+
 ```java
-// At startup (from Broker.java)
-scheduler.submitActor(brokerStartupActor);
-
-// Parent submitting children (from CommandApiServiceImpl)
-protected void onActorStarting() {
-    scheduler.submitActor(queryHandler);
-    scheduler.submitActor(commandHandler);
+class ConsumerState {
+    String consumerId;
+    long lastHeartbeat;
+    Set<String> ownedPartitions = new HashSet<>();
+    double load = 0.0;
+    double capacity = 1.0;
 }
 
-// Bootstrap step waiting on future
-concurrencyControl.runOnCompletion(
-    scheduler.submitActor(service),
-    proceed(() -> startupFuture.complete(ctx), startupFuture));
+class GroupState {
+    Map<String, ConsumerState> consumers = new HashMap<>();
+    Map<String, String> partitionOwner = new HashMap<>(); // partition → consumer
+    Map<String, String> targetOwner = new HashMap<>();
+    long epoch = 1;
+}
 ```
 
 ---
 
-### Key Design Properties to Know
+# :repeat: 4. Assignment Strategy (Default: BALANCED_STICKY)
 
-- **Single-threaded within an actor** — no synchronization needed inside actor callbacks
-- **Work-stealing** — automatic load balancing across CPU threads
-- **Lock-free queues** — cache-line padded, Unsafe-based
-- **Job recycling** — 2048 pre-allocated `ActorJob`s per thread
-- **Cooperative scheduling** — actors must not block; use `SchedulingHints.ioBound()` for any blocking work
-- **Future composition** — `ActorFuture<T>` is the async primitive; chain with `runOnCompletion`
+## Goals:
 
----
-
-### Study consumer group management patterns
-
-Launched 4 parallel research agents covering all four areas. I'll read their results as they complete.
-
-## Research Context
-
-### Study LogStream API and truncation semantics
-
-Here's a comprehensive breakdown of the LogStream module:
+1. Balance partitions evenly
+2. Minimize movement
+3. Respect capacity
 
 ---
 
-## 1. LogStreamReader & LogStreamWriter APIs
+## Algorithm
 
-### LogStreamReader (`io.camunda.zeebe.logstreams.log.LogStreamReader`)
-Extends `Iterator<LoggedEvent>` + `CloseableSilently`. Pure read-only, append-safe.
+```text
+1. Start from current_assignment
+2. Remove dead consumers' partitions → UNASSIGNED
+3. Keep existing assignments where valid
+4. Assign unassigned partitions to least-loaded consumers
+5. Rebalance if skew > 1 partition difference
+```
 
-| Method | Semantics |
-|--------|-----------|
-| `seek(long position)` | Seek to exact position (or next ≥ it); returns `true` if exact match |
-| `seekToNextEvent(long position)` | Seek to the event **after** position; negative → first event |
-| `seekToFirstEvent()` | Jump to log head |
-| `seekToEnd()` | Jump past last event; returns last position |
-| `getPosition()` | Current position (negative if empty) |
-| `peekNext()` | Peek without advancing |
-| `hasNext()` / `next()` | Standard iterator |
+---
 
-`LoggedEvent` key fields: `getPosition()`, `getKey()`, `getSourceEventPosition()`, `shouldSkipProcessing()`, `readValue(BufferReader)`, `readMetadata(BufferReader)`.
+## Default Behavior
 
-### LogStreamWriter (`io.camunda.zeebe.logstreams.log.LogStreamWriter`)
-Functional interface. Implemented by `Sequencer`.
+```text
+- Each consumer gets ≈ (total_partitions / total_consumers)
+- Movement is minimized
+```
+
+---
+
+# :arrows_counterclockwise: 5. Delta Computation
+
+For each consumer:
+
+```text
+revoke = owned_partitions - target_partitions
+assign = target_partitions - owned_partitions
+```
+
+---
+
+# :warning: 6. Two-Phase Partition Transfer
+
+## Rule (STRICT)
+
+```text
+Partition MUST NOT be reassigned until revoked + ACKed
+```
+
+---
+
+## Coordinator Logic
 
 ```java
-Either<WriteFailure, Long> tryWrite(WriteContext ctx, List<LogAppendEntry> entries, long sourcePosition)
-Either<WriteFailure, Long> tryWrite(WriteContext ctx, LogAppendEntry entry)
-boolean canWriteEvents(int eventCount, int batchSize)
-```
+if (partition is moving from A → B):
 
-- Returns **Right(highestPosition)** on success — the position of the last entry in the batch
-- Returns **Left(WriteFailure)**: `CLOSED`, `WRITE_LIMIT_EXHAUSTED`, `REQUEST_LIMIT_EXHAUSTED`, `INVALID_ARGUMENT`
-- Batch writes are **atomic** — all succeed or all fail
-- Thread-safe (internally serialized via `ReentrantLock`)
-- `sourcePosition` is a back-pointer to the record triggering these writes
+  send revoke to A
 
----
+  WAIT until:
+    ACK received OR ack_timeout_ms exceeded
 
-## 2. Log Truncation
-
-**The logstreams module has no truncation API.** It is **append-only by design**. Key facts:
-
-- `LogStreamReader` is purely read-only
-- `LogStreamWriter`/`Sequencer` only appends
-- Truncation is a **storage-layer concern** — the `LogStorage` implementation (e.g., Raft-backed) handles it externally
-- The `shouldSkipProcessing()` flag on `LoggedEvent` is the closest in-band concept — entries can be marked "already processed" so consumers skip re-execution without physical removal
-- Safe truncation point from the logstreams perspective = entries that are **committed** (replicated via Raft) and whose positions have been signaled as processed via `FlowControl.onProcessed()`
-
----
-
-## 3. Committed/Flushed Position Tracking
-
-Three position levels tracked in `FlowControl` + `AppendListener`:
-
-| Level | Who Sets It | Meaning |
-|-------|-------------|---------|
-| **Written** | `AppendListener.onWrite(index, highestPosition)` | Durably written to local disk |
-| **Committed** | `AppendListener.onCommit(index, highestPosition)` | Replicated and committed via Raft |
-| **Processed** | `FlowControl.onProcessed(position)` | Stream processor finished with entry |
-| **Exported** | `FlowControl.onExported(position)` | Exporter finished with entry |
-
-**Notification chain:**
-1. `LogStorage` calls `AppendListener.onCommit()` → updates `FlowControl.lastCommittedPosition`
-2. `LogStreamImpl` (implements `LogStorage.CommitListener`) receives `onCommit()` → notifies all registered `LogRecordAwaiter` listeners via `onRecordAvailable()`
-
-**To listen for new committed records:**
-```java
-logStream.registerRecordAvailableListener(() -> {
-    // safe to call reader.hasNext() / reader.next() now
-});
+  assign to B
 ```
 
 ---
 
-## 4. Consumer Offset Tracking & Position Management
-
-**There is no built-in consumer offset registry.** Logstreams is a library, not a broker. The design pushes offset management to the consumer.
-
-The relevant hook is `FlowControl`:
+# :heartbeat: 7. Heartbeat Handling
 
 ```java
-flowControl.onProcessed(position);   // signal entry fully processed
-flowControl.onExported(position);    // signal entry exported (updates rate-limit lag)
+onHeartbeat(req):
+
+  consumer = upsertConsumer(req.consumerId)
+
+  consumer.lastHeartbeat = now
+  consumer.ownedPartitions = req.owned_partitions
+  consumer.load = req.load
+  consumer.capacity = req.capacity
+
+  if rebalanceNeeded():
+      computeTargetAssignment()
+      epoch++
+
+  delta = computeDelta(consumer)
+
+  return delta + epoch
 ```
 
-Internally, `FlowControl` uses a **fixed-capacity `RingBuffer`** of `InFlightEntry` objects (default capacity 8K, power-of-2) that tracks the lifecycle: `onAppend → onWrite → onCommit → onProcessed`.
+---
 
-**What this means for implementing consumer group offset tracking:**
+# :stopwatch: 8. Failure Detection
 
-| Concern | What Logstreams Provides | What You Must Build |
-|---------|--------------------------|---------------------|
-| Reading up to a position | `reader.seek(position)` to resume | Persist the checkpoint position externally |
-| Knowing safe cleanup boundary | `FlowControl.lastCommittedPosition` | Aggregate min(consumedPosition) across all consumers |
-| Signaling consumption | `FlowControl.onProcessed(pos)` | Call this per-entry after processing |
-| Compaction/GC | Nothing — append-only | Delegate to `LogStorage` implementation with a safe trim position |
-| Multi-consumer fan-out | None | You must maintain per-consumer positions and compute the min |
+## Rule
 
-**Practical pattern for log cleanup based on consumed positions:**
-1. Each consumer maintains its own `lastConsumedPosition` (persisted, e.g., in RocksDB or a state snapshot)
-2. A coordinator computes `minConsumedPosition = min(pos₁, pos₂, ..., posN)`
-3. Entries with `position ≤ minConsumedPosition` AND `position ≤ lastCommittedPosition` are safe to trim
-4. Trim is initiated at the `LogStorage` layer — logstreams itself has no trim/delete API
+```text
+IF now - lastHeartbeat > session_timeout_ms:
+  consumer = DEAD
+```
 
 ---
 
-### Study event serialization for binary format
+## Action
 
-Three parallel investigation agents running. I'll read their results as they complete.
+```text
+FOR each partition owned:
+  mark UNASSIGNED
+```
 
 ---
 
-### Study consumer heartbeat and group coordination patterns
+# :repeat: 9. Rebalance Trigger Conditions
 
-Two of four agents completed. Waiting on the last two — I'll compile all findings once they finish.
+```text
+- new consumer appears
+- consumer times out
+- partition count changes
+- load imbalance detected
+```
+
+---
+
+# :jigsaw: 10. Partition State Machine
+
+```text
+UNASSIGNED
+ASSIGNED(C)
+REVOKING(C)
+```
+
+---
+
+## Default Transitions
+
+```text
+UNASSIGNED → ASSIGNED(C)
+
+ASSIGNED(C1) → REVOKING(C1)
+
+REVOKING(C1) → UNASSIGNED → ASSIGNED(C2)
+```
+
+---
+
+# :repeat: 11. Epoch Rules
+
+```text
+epoch starts at 1
+increment on every rebalance
+```
+
+---
+
+## Consumer Behavior
+
+```text
+IF response.epoch < current_epoch:
+  IGNORE
+
+IF response.epoch > current_epoch:
+  reconcile fully
+```
+
+---
+
+# :zap: 12. Minimal Consumer Loop (Final)
+
+```java
+while (true) {
+
+    res = POST /heartbeat
+
+    for (p : res.revoke) {
+        stopProcessing(p);
+        commit(p);
+    }
+
+    for (p : res.assign) {
+        startProcessing(p);
+    }
+
+    POST /ack
+
+    sleep(heartbeat_interval_ms)
+}
+```
+
+---
+
+# :classical_building: 13. Minimal Coordinator Loop
+
+```java
+while (true) {
+
+    removeDeadConsumers()
+
+    if (rebalanceNeeded()) {
+        computeTargetAssignment()
+        epoch++
+    }
+
+    processAcks()
+}
+```
+
+---
+
+# :fire: 14. Hard Guarantees (Non-Negotiable)
+
+### 1. Single ownership
+
+```text
+One partition → one consumer
+```
+
+---
+
+### 2. Revoke-before-assign
+
+```text
+No double processing ever
+```
+
+---
+
+### 3. Incremental movement
+
+```text
+Only move necessary partitions
+```
+
+---
+
+### 4. No global pause
+
+```text
+Other consumers continue unaffected
+```
+
+---
+
+### 5. Eventual convergence
+
+```text
+System always stabilizes
+```
+
+---
+
+# :compass: Final Mental Model
+
+```text
+Consumers repeatedly say:
+
+  "Here’s what I currently own"
+
+Coordinator responds:
+
+  "Give up these partitions, take these partitions"
+
+No phases.
+No leaders.
+No stop-the-world.
+
+Just continuous convergence toward balance.
+
+Additionally:
+* remove the generation property
+* broker-0 is the coordinator
 
 ## Refined Requirements
 
-## Event Bridge — Requirements Specification
+## Structured Requirements: Consumer Group Refactoring (Event Bridge)
 
 ### Problem Statement
-Build a standalone, Spring Boot–based "Event Bridge" component in the Camunda monorepo at `event-bridge/`. It receives batches of binary events, persists them in an append-only log per partition, and allows consumer groups to pull events in a Kafka-like fashion. It reuses existing Camunda modules: RAFT (via Atomix), SWIM, LogStream, Actor Scheduler, Sequencer pattern, and Netty transport.
+The current consumer group model requires an explicit `subscribe` call before heartbeating, uses a simple `generation` counter, lacks two-phase partition transfer safety, and provides no delta-based assignment signaling through the heartbeat. This refactoring replaces it with a continuous convergence model: heartbeat becomes the single control channel, consumers auto-register, partitions follow a strict state machine, and `epoch` replaces `generation` throughout.
 
 ---
 
-### Architecture Overview
+### Acceptance Criteria (Testable)
 
-```
-Event Bridge Client
-    │  HTTP (publish / pull)
-    ▼
-Event Bridge Gateway  ──── Netty internal transport ────► Event Bridge Broker(s)
-                                                              └── RAFT partition(s)
-                                                              └── LogStream per partition
-```
-
----
-
-### HTTP API Schemas
-
-All client-facing endpoints use `Content-Type: application/json` unless noted. HTTP status codes are stated explicitly per response below; all unlisted success responses return **HTTP 200**. The HTTP server implementation uses **Spring MVC** (Spring Boot's embedded Tomcat).
-
-#### `POST /events/{partitionId}` — Publish batch
-
-**Request body:**
-```json
-{
-  "events": ["<base64-encoded bytes>", "<base64-encoded bytes>"]
-}
-```
-- `events`: required, non-empty array of base64-encoded binary payloads. An empty array is a validation error (see table below).
-
-**Batch-to-log-entry cardinality:** Each call to this endpoint is written as **one RAFT log entry** regardless of how many events the batch contains. Each individual event within that batch is assigned its own unique, monotonically increasing log position by the LogStream sequencer. For example, publishing a batch of three events when the current log tail is at position 1000 produces positions `[1001, 1002, 1003]` and advances the RAFT log by exactly one entry. The snapshot interval counter (`snapshot-interval-entries`) counts **RAFT log entries** (i.e., batches), not individual event positions.
-
-**Response body (success, HTTP 200):**
-```json
-{
-  "positions": [1001, 1002]
-}
-```
-- `positions`: log positions assigned to each published event, in order.
-
-**Response body (error):**
-```json
-{
-  "error": "PARTITION_NOT_FOUND" | "LEADER_UNAVAILABLE" | "INVALID_REQUEST",
-  "message": "<human-readable detail>"
-}
-```
-
-| Error code | HTTP status | Condition |
-|---|---|---|
-| `PARTITION_NOT_FOUND` | 400 | The specified `partitionId` does not exist |
-| `LEADER_UNAVAILABLE` | 503 | All 4 routing attempts exhausted without reaching a leader |
-| `INVALID_REQUEST` | 400 | `events` is null or empty |
-
----
-
-#### `POST /consumers/{groupId}/{consumerId}/subscribe` — Register consumer
-
-No request body.
-
-Registers the consumer with Broker-0 (the coordinator). Broker-0 adds the consumer to the active set and **immediately triggers a rebalance** — including when a previously dead consumer re-subscribes. This behavior is uniform for all subscribe calls regardless of whether the consumer is new or re-joining. The rebalance completes synchronously before the response is sent; the returned `assignedPartitions` reflects the outcome of that rebalance.
-
-**Response body (success, HTTP 200):**
-```json
-{
-  "status": "OK",
-  "assignedPartitions": [0, 2]
-}
-```
-- `assignedPartitions`: list of partition IDs assigned to this consumer after the rebalance triggered by this call.
-
-**Response body (coordinator unavailable, HTTP 503):**
-```json
-{
-  "status": "ERROR",
-  "error": "COORDINATOR_UNAVAILABLE",
-  "message": "<human-readable detail>"
-}
-```
-- Returned when Broker-0 is unreachable. The client should retry with back-off; no automatic retry is built into the client for this call.
-
----
-
-#### `GET /events/{partitionId}/poll` — Pull next batch
-
-**Query parameters:**
-- `groupId` (string, required)
-- `consumerId` (string, required)
-- `fromPosition` (long, required) — the log position at which to start reading (inclusive). Pass `-1` to start from the first available event in the log (resolved server-side; see position resolution rules below). On subsequent polls, pass the `nextPosition` value from the previous response.
-- `maxRecords` (integer, required; must be ≥ 1)
-- `serverWaitMs` (integer, optional, default `0`) — long-poll wait time; see `Consumer.poll` semantics and broker long-poll behavior below. Maximum accepted value: **30 000 ms**; the broker silently clamps values above this ceiling to 30 000 ms.
-
-**`fromPosition` resolution rules:**
-- `-1`: resolved to the first available log position. If the log has been partially truncated (e.g., oldest retained position is 500), `-1` resolves to 500.
-- Any other value: used as-is. If the specified position has already been truncated (i.e., it is below the current log retention boundary), the broker returns HTTP 400, error `POSITION_TRUNCATED` (see error table below).
-- After a rebalance (`REBALANCE_IN_PROGRESS` response), the client resumes polling each newly assigned partition using its last committed position for that partition (or `-1` if never committed).
-
-**Response body (normal, HTTP 200):**
-```json
-{
-  "status": "OK",
-  "events": [
-    { "position": 1001, "payload": "<base64-encoded bytes>" }
-  ],
-  "nextPosition": 1002
-}
-```
-- `events` may be empty if no new records exist at or after `fromPosition`.
-- `nextPosition`: the position to pass as `fromPosition` on the next poll call (exclusive upper bound of this batch). When `events` is empty — because no new records exist at or after `fromPosition`, or because `fromPosition` equals the log tail — `nextPosition` equals the current log tail position (the position at which the next written event would be placed).
-
-**Response body (rebalance in progress, HTTP 200):**
-```json
-{
-  "status": "REBALANCE_IN_PROGRESS",
-  "assignedPartitions": [0, 2],
-  "events": []
-}
-```
-- `assignedPartitions`: the full list of partitions now assigned to this consumer after rebalance. The client must stop fetching from previously assigned partitions not in this list.
-- `events` is always empty when `status` is `REBALANCE_IN_PROGRESS`.
-- `nextPosition` is **not present** in this response. The consumer must resume polling its newly assigned partitions using its last committed position for each partition (or `-1` if never committed).
-
-**Response body (error):**
-```json
-{
-  "status": "ERROR",
-  "error": "CONSUMER_NOT_REGISTERED" | "PARTITION_NOT_FOUND" | "INVALID_PARAMETER" | "POSITION_TRUNCATED",
-  "message": "<human-readable detail>"
-}
-```
-
-| Error code | HTTP status | Condition |
-|---|---|---|
-| `CONSUMER_NOT_REGISTERED` | 400 | Consumer has not called `subscribe`, or was marked dead and must re-subscribe |
-| `PARTITION_NOT_FOUND` | 400 | The specified `partitionId` does not exist |
-| `INVALID_PARAMETER` | 400 | `maxRecords` < 1 |
-| `POSITION_TRUNCATED` | 400 | The specified `fromPosition` (other than `-1`) is below the current log retention boundary |
-
----
-
-#### `POST /events/{partitionId}/commit` — Commit offset
-
-**Query parameters:**
-- `groupId` (string, required)
-- `consumerId` (string, required)
-- `position` (long, required)
-
-**Commit idempotency:** If `position` is ≤ the consumer's current committed offset for the partition, the request is silently accepted (returns `OK`) without updating the stored offset. Commits are idempotent.
-
-**Response body (success, HTTP 200):**
-```json
-{ "status": "OK" }
-```
-
-**Response body (error):**
-```json
-{
-  "status": "ERROR",
-  "error": "PARTITION_NOT_FOUND" | "CONSUMER_NOT_REGISTERED",
-  "message": "<human-readable detail>"
-}
-```
-
-| Error code | HTTP status | Condition |
-|---|---|---|
-| `PARTITION_NOT_FOUND` | 400 | The specified `partitionId` does not exist |
-| `CONSUMER_NOT_REGISTERED` | 400 | Consumer has not called `subscribe` or was marked dead |
-
----
-
-#### `POST /consumers/{groupId}/{consumerId}/heartbeat` — Consumer liveness signal
-
-No request body.
-
-**Response body (success, HTTP 200):**
-```json
-{ "status": "OK" }
-```
-
-**Response body (error):**
-```json
-{
-  "status": "ERROR",
-  "error": "COORDINATOR_UNAVAILABLE" | "CONSUMER_NOT_REGISTERED",
-  "message": "<human-readable detail>"
-}
-```
-
-| Error code | HTTP status | Condition |
-|---|---|---|
-| `COORDINATOR_UNAVAILABLE` | 503 | Broker-0 is not reachable; heartbeat not recorded |
-| `CONSUMER_NOT_REGISTERED` | 400 | The consumer was previously marked dead (heartbeat timeout elapsed); the consumer must call `subscribe` again before heartbeats are accepted |
-
----
-
-### Acceptance Criteria
-
-#### Gateway
-- [ ] Exposes the HTTP API described in the schemas above using **Spring MVC** (Spring Boot embedded Tomcat); no auth
-- [ ] Routes publish requests to the RAFT leader broker for the given partition using the Netty-based internal transport
-- [ ] Makes up to **4 total attempts** (1 initial + 3 retries) to reach the partition leader before returning HTTP 503 to the client; this single policy applies everywhere retry behavior is mentioned in this document
-- [ ] Discovers partition leaders via a `BrokerInfo`-style topology propagation layer: each broker periodically broadcasts its partition leadership state as metadata carried over SWIM gossip (`SwimMembershipProtocol` member properties); the gateway consumes these broadcasts and maintains an in-memory partition-leader map. SWIM itself provides only cluster membership; leader assignment is determined by RAFT and disseminated as a separate topology event on top of SWIM — SWIM does not perform or influence leader election.
-
-#### Broker
-- [ ] Manages N partitions (configurable; default 1); acts as RAFT leader or follower per partition
-- [ ] When leader: sequences incoming events using a Sequencer-like actor, writes to LogStream, replicates via RAFT
-- [ ] When follower: replicates log entries received from leader
-- [ ] Maintains per-consumer-group, per-partition offset state (in-memory, with snapshot support — see Snapshot Specification below)
-- [ ] **Broker-0 is the consumer group coordinator**: handles subscribe requests, heartbeats, auto-assigns partitions to consumers in a group, detects dead consumers (missed heartbeats), reassigns partitions. **Broker-0 coordinator failover is out of scope for this iteration** (see Out of Scope); the known limitation is documented under Edge Cases.
-- [ ] Truncates LogStream entries whose position is ≤ `min(lastCommittedPosition)` taken over the set of all consumers currently *alive and assigned* to the partition (see truncation rules below)
-- [ ] Consumer initial position `-1`: resolved to the first available log position; if the log has been truncated, this is the oldest retained position (e.g., 500 if positions 0–499 have been removed)
-- [ ] **Long-poll implementation**: when `serverWaitMs > 0` and no records are available at `fromPosition`, the broker parks the responding actor and registers a wake-up callback on the partition's LogStream write-notification path. When a new entry is written to the log, all parked poll actors for that partition are woken and respond immediately. If no entry arrives within `serverWaitMs` milliseconds, a scheduled timer wakes the actor and returns an empty response. The maximum accepted value for `serverWaitMs` is **30 000 ms**; the broker silently clamps values exceeding this ceiling. This mechanism must not block any ActorScheduler CPU thread; all park/wake operations use the actor's async scheduling primitives.
-
-#### Consumer Group Coordination (Broker-0)
-- [ ] Each consumer sends periodic heartbeats; a consumer with no heartbeat within `event-bridge.consumer.heartbeat-timeout-ms` (default: **5000 ms**) is considered dead
-- [ ] A heartbeat received from a consumer that has been marked dead returns `CONSUMER_NOT_REGISTERED` (HTTP 400); the consumer must call `subscribe` again to rejoin
-- [ ] Partitions are auto-assigned using a **stable round-robin** algorithm: existing assignments are preserved unchanged where the current assignee is still alive; only orphaned partitions (from dead or departed consumers) are redistributed. Redistribution proceeds round-robin across active consumers sorted lexicographically by `consumerId`, assigning each orphaned partition to the currently least-loaded consumer (tie-broken by sort order). The goal is minimum churn: no live consumer's assignment changes unless necessary.
-- [ ] On any subscribe call (new join or re-subscribe after death), Broker-0 **immediately triggers a rebalance** and returns the resulting assignment in the subscribe response. Affected consumers are notified of reassigned partitions via the `REBALANCE_IN_PROGRESS` response on their next poll.
-- [ ] A dead consumer that later calls `subscribe` is treated as a new join: it is added to the active set and a rebalance is triggered immediately (see above). Auto-rejoin without an explicit re-subscribe call is not supported.
-
-#### Snapshot Specification
-
-Offset state (in-memory `Map<groupId, Map<consumerId, committedPosition>>`) is persisted to disk via RAFT snapshots:
-
-- **Trigger**: A snapshot is taken automatically whenever the RAFT leader's log grows by more than `event-bridge.raft.snapshot-interval-entries` **RAFT log entries** (i.e., batches — each `POST /events/{partitionId}` call is one entry regardless of how many events it contains) since the previous snapshot (default: **1000 entries**). Snapshots may also be triggered manually for operational purposes.
-- **Storage location**: The offset state is written directly into the RAFT `RaftSnapshotWriter` payload for the partition, co-located with the RAFT partition's existing snapshot storage on the broker's local disk. No separate file is used.
-- **Data format**: The payload is an SBE-encoded `OffsetSnapshotPayload` (length-prefixed) containing a flat list of `(groupId: String, consumerId: String, committedPosition: long)` triples — one triple per active consumer per partition. The `OffsetSnapshotPayload` SBE schema is defined in `event-bridge-core/src/main/resources/sbe/` alongside the other protocol messages.
-- **Recovery**: On broker startup or failover, the broker reads the latest RAFT snapshot, deserializes `OffsetSnapshotPayload`, and reconstructs the in-memory offset map. Consumers whose positions are recorded in the snapshot resume from their last committed position. A consumer not present in the snapshot resumes from `-1` (resolved to the first available log position).
-
-#### LogStream Truncation Rules
-- The eligible truncation set is: all consumers that are (a) alive (last heartbeat within timeout) **and** (b) currently assigned to the partition.
-- The truncation boundary is `min(lastCommittedPosition)` across that set.
-- A dead consumer's last committed position is **excluded** from the minimum calculation once the consumer is marked dead; this prevents a stale/dead consumer from permanently blocking truncation.
-- If no consumer is alive and assigned to a partition, no truncation occurs (conservative: retain all log entries).
-
-#### Event Bridge Client (Java library)
-- [ ] `CompletableFuture<List<Long>> publishBatch(int partitionId, List<byte[]> events)` — publishes a batch of raw binary events; resolves to the list of log positions assigned to each event in order; completes exceptionally with `EventBridgeException` on HTTP 4xx/5xx
-- [ ] `CompletableFuture<Consumer> subscribe(String groupId, String consumerId)` — registers the consumer with Broker-0 and resolves to a `Consumer` handle whose initial `assignedPartitions` reflects the assignment returned by Broker-0; completes exceptionally with `CoordinatorUnavailableException` if Broker-0 returns HTTP 503; must be called (or re-called after a `CONSUMER_NOT_REGISTERED` error) before polling; the `Consumer` handle internally tracks the last `nextPosition` per partition (initially `-1` for all assigned partitions)
-- [ ] `Consumer.poll(int maxRecords, Duration timeout)` — pulls the next batch from all currently-assigned partitions in **ascending partition ID order**; `timeout` is the **per-partition** server-side long-poll wait time passed to each broker request as `serverWaitMs`; **callers must be aware that with N partitions and a timeout of T ms, the worst-case wall-clock latency of `poll()` is N × T plus network overhead** (e.g., 4 partitions × 1 000 ms = up to 4 000 ms); the client's HTTP socket timeout must be set to at least `serverWaitMs + network_slack`; each partition's request uses the `nextPosition` tracked internally from the previous response for that partition; returns `List<Event>` where each `Event` carries `long position`, `int partitionId`, and `byte[] payload`; **if any partition returns `status: REBALANCE_IN_PROGRESS`**, the client **immediately discards all events fetched from partitions already iterated in this call** and throws `RebalanceInProgressException(List<Integer> assignedPartitions)` — no partial results are returned; the exception carries the consumer's new full partition assignment; the caller must catch this exception, update its active partition set accordingly (dropping any partitions not in the new assignment), and retry `poll()`
-- [ ] `Consumer.commitOffset(int partitionId, long position)` — explicitly commits consumed position for the given partition; returns `CompletableFuture<Void>`; completes exceptionally with `EventBridgeException` on error
-- [ ] `Consumer.sendHeartbeat()` — sends liveness signal to Broker-0; returns `CompletableFuture<Void>`; completes exceptionally with `CoordinatorUnavailableException` if Broker-0 is unreachable or returns `COORDINATOR_UNAVAILABLE`; completes exceptionally with `ConsumerNotRegisteredException` if Broker-0 returns `CONSUMER_NOT_REGISTERED` (consumer has been marked dead and must re-subscribe); should be called at an interval shorter than `event-bridge.consumer.heartbeat-timeout-ms`
+1. A consumer that sends its first heartbeat is auto-registered; no prior `subscribe` call is required.
+2. Heartbeat response includes `epoch`, `revoke`, `assign`, and `full_assignment` lists.
+3. A partition being moved from consumer A → B is never assigned to B until A has ACKed the revocation **or `ack_timeout_ms` has elapsed**.
+4. A partition is sent for revocation to at most one consumer at a time.
+5. If a consumer fails to ACK within `ack_timeout_ms`, the coordinator proceeds with reassignment anyway.
+6. `epoch` starts at 1 and increments on every rebalance.
+7. A consumer receiving a response `epoch > current_epoch` performs full reconciliation; a response with `epoch < current_epoch` is ignored.
+8. Dead consumers (no heartbeat within `session_timeout_ms`) have their partitions released and rebalanced.
+9. Rebalance skew is ≤ 1 partition between any two consumers (BALANCED_STICKY: minimize movement, keep existing valid assignments).
+10. Commit offset remains a separate endpoint — not merged with ACK.
+11. `load` and `capacity` are **not** tracked anywhere in the system.
 
 ---
 
 ### Technical Requirements
 
-| Concern | Decision |
+#### A. Internal State (`ConsumerGroupRegistry`)
+- **Rename** `generation` → `epoch`; **starts at 1** (not 0).
+- **Per-group record field:**
+  - `configuredPartitionCount: int` — the partition count set at group creation time. Used to detect partition count changes: on each rebalance cycle the coordinator compares `configuredPartitionCount` against `currentAssignment.size() + unassigned.size()`, and if they differ it reconciles the tracked partition set and increments `epoch`.
+- **Per-consumer tracked state:**
+  - `ownedPartitions: Set<Integer>` — partition IDs the consumer most recently reported
+  - `pendingRevoke: Set<Integer>` — partitions instructed to revoke (sent in a heartbeat response) but not yet ACKed by this consumer
+  - `pendingAssign: Set<Integer>` — partitions instructed to assign (sent in a heartbeat response) but not yet ACKed by this consumer
+  - `ackDeadline: Instant` — the absolute deadline by which an ACK must arrive; reset on each heartbeat that returns a non-empty `revoke` or `assign` list; `null` when no pending items exist
+- **Partition state machine per partition:**
+  ```
+  UNASSIGNED → PENDING_ASSIGN(consumerId)    [coordinator sends assign in heartbeat]
+  PENDING_ASSIGN(consumerId) → ASSIGNED(consumerId)    [consumer ACKs the assigned partition]
+  ASSIGNED(C1) → REVOKING(C1)    [coordinator sends revoke in heartbeat]
+  REVOKING(C1) → UNASSIGNED → PENDING_ASSIGN(C2)    [C1 ACKs revoke; rebalance targets C2]
+  ```
+  A partition in `PENDING_ASSIGN(C)` has been instructed to consumer C but is not confirmed until the ACK arrives. It is treated as unconfirmed for the purposes of `currentAssignment`.
+- **Global coordinator maps:**
+  - `currentAssignment: Map<partitionId, consumerId>` — confirmed (`ASSIGNED`) assignments only
+  - `targetAssignment: Map<partitionId, consumerId>` — desired assignments after the current rebalance
+  - `partitionState: Map<partitionId, PartitionState>` — one of `{UNASSIGNED, PENDING_ASSIGN(consumerId), ASSIGNED(consumerId), REVOKING(consumerId)}`
+- **Inflight revocations cap and deferral queue:**
+  - Inflight revocations count = `∑ |pendingRevoke[C]|` across all consumers.
+  - Cap: `max_inflight_revocations = 100`. When the inflight count equals the cap, new `ASSIGNED → REVOKING` transitions are deferred.
+  - `pendingReassignment: Queue<ReassignmentTask>` — ordered queue of deferred reassignments blocked by the cap, where `ReassignmentTask = { partitionId: int, toConsumerId: String }`. The coordinator drains this queue (in FIFO order) whenever the inflight count drops below the cap (i.e., after ACKs are processed or timeouts occur).
+- BALANCED_STICKY rebalance: keep existing valid assignments, assign orphaned partitions to least-loaded consumer (by partition count), limit skew to ≤ 1.
+- Remove `addOrRefresh()` separate subscribe flow — unify into `heartbeat()` upsert.
+
+#### B. `CoordinatorActor`
+- **Remove** `subscribe()` method and `SubscribeResult` record.
+- **Replace** `heartbeat(groupId, consumerId)` with `heartbeat(groupId, consumerId, clientEpoch, ownedPartitions)` returning `HeartbeatResult { epoch, revoke, assign, fullAssignment }`.
+
+  **Processing the client-sent `clientEpoch`:** The coordinator uses `clientEpoch` (the epoch the consumer last observed) to decide whether `fullAssignment` must be populated:
+  - If `clientEpoch < coordinatorEpoch`: a rebalance has occurred since the consumer's last heartbeat; the coordinator populates `fullAssignment` with the consumer's complete current `targetAssignment`. `revoke` and `assign` are empty lists in this case — the client reconciles entirely from `fullAssignment`. The coordinator does **not** mutate `pendingRevoke[C]`, `pendingAssign[C]`, or any partition states on this path; those are updated when the subsequent ACK arrives.
+  - If `clientEpoch == coordinatorEpoch`: the coordinator sends only deltas (`revoke` / `assign`); `fullAssignment` is an empty list. See delta computation below.
+  - If `clientEpoch > coordinatorEpoch`: this is unexpected (client epoch cannot lead the coordinator); the coordinator logs a warning, treats it as `clientEpoch == coordinatorEpoch`, and returns the normal delta response. The coordinator does not reject or error the heartbeat.
+  - The coordinator **never** rejects a heartbeat based on `clientEpoch` alone — it is informational only and does not gate registration or assignment.
+
+  **Delta computation (applies when `clientEpoch == coordinatorEpoch`):**
+
+  Let `owned` = `ownedPartitions` reported by consumer C in this heartbeat, `target` = `targetAssignment[C]`, `pRevoke` = `pendingRevoke[C]`, `pAssign` = `pendingAssign[C]`.
+
+  1. **Compute new revocations:** `newRevoke = (owned − target) − pRevoke`. These are partitions C claims to own that are not in the target, excluding any already pending revocation. For each partition in `newRevoke`: transition `ASSIGNED(C) → REVOKING(C)`; add to `pendingRevoke[C]`. If the inflight count would exceed `max_inflight_revocations`, defer the excess to `pendingReassignment` (with `toConsumerId` = the consumer targeted by `targetAssignment`).
+  2. **Compute new assignments:** `newAssign = (target − owned − pAssign)` restricted to partitions currently in `UNASSIGNED` state, subject to available inflight slots (`max_inflight_revocations − current inflight count`). For each partition in `newAssign`: transition `UNASSIGNED → PENDING_ASSIGN(C)`; add to `pendingAssign[C]`.
+  3. **Defer overflow:** Any eligible partition from step 2 that could not be assigned due to the inflight cap is enqueued in `pendingReassignment` with `toConsumerId = C`.
+  4. Return `revoke = newRevoke`, `assign = newAssign`.
+
+- **Add** `ack(groupId, consumerId, epoch, revoked, assigned)` returning `AckResult { status }`.
+
+  **Epoch check:** If `epoch != coordinatorEpoch`, log a warning and silently discard the ACK (make no state changes). Return `AckResult { status: "OK" }`. No error is surfaced to the consumer; the consumer will observe `res.epoch > currentEpoch` on its next heartbeat and perform a full reconcile, which self-corrects any inconsistency.
+
+  **Processing `revoked`:**
+  - For each partition in `revoked` that is in `REVOKING(consumerId)`: transition `REVOKING(consumerId) → UNASSIGNED`; remove from `pendingRevoke[consumerId]`; then immediately check `targetAssignment` — if the target assigns this partition to another consumer, process it from `pendingReassignment` or directly initiate `UNASSIGNED → PENDING_ASSIGN(targetConsumer)` if inflight slots are available.
+  - For each partition in `revoked` that is **not** in `REVOKING(consumerId)`: log a warning and ignore; coordinator state prevails.
+  - Partitions the coordinator requested for revocation (`pendingRevoke[consumerId]`) that are **absent** from `revoked` remain in `REVOKING` state. They are not implicitly acknowledged and continue to wait for an explicit ACK until `ack_timeout_ms` elapses.
+
+  **Processing `assigned`:**
+  - For each partition in `assigned` that is in `PENDING_ASSIGN(consumerId)`: transition `PENDING_ASSIGN(consumerId) → ASSIGNED(consumerId)`; set `currentAssignment[partitionId] = consumerId`; remove from `pendingAssign[consumerId]`.
+  - For each partition in `assigned` that is already in `ASSIGNED(consumerId)` (the partition was previously held by this consumer and included in a full-reconcile ACK as part of `fullAssignment`): treat as a no-op (idempotent confirmation). No state transition is required, and `currentAssignment` is already correct.
+  - For each partition in `assigned` in any other state (e.g., `ASSIGNED` to a different consumer, `REVOKING`, or `UNASSIGNED`): log a warning and ignore; the coordinator does not add unsolicited assignments to `currentAssignment`.
+
+  **`assigned` field semantics on a full-reconcile ACK:** When the client performs a full reconcile it sends `assigned: res.fullAssignment`, which includes **all** partitions the consumer is now taking ownership of — including partitions it was already processing before the reconcile (previously-`ASSIGNED(C)` partitions that remain in the new target). The coordinator processes these exactly as described above: `PENDING_ASSIGN(C) → ASSIGNED(C)` for newly dispatched partitions, no-op for already-`ASSIGNED(C)` ones. This is expected and correct; the coordinator imposes no special full-reconcile mode.
+
+- Keep `commitOffset()` unchanged.
+- Rename `generation` → `epoch` in `AssignmentResult` and all result records.
+- **Coordinator loop** (runs at `rebalance_interval_ms`):
+  1. Evict dead consumers (no heartbeat within `session_timeout_ms`): transition their `ASSIGNED`, `PENDING_ASSIGN`, and `REVOKING` partitions to `UNASSIGNED`; trigger rebalance.
+  2. Process ACK timeouts: for each consumer where `ackDeadline` has passed:
+     - Each partition in `pendingRevoke[C]` that is in `REVOKING(C)`: force `REVOKING(C) → UNASSIGNED`; clear from `pendingRevoke[C]`; enqueue in `pendingReassignment`.
+     - Each partition in `pendingAssign[C]` that is in `PENDING_ASSIGN(C)`: force `PENDING_ASSIGN(C) → UNASSIGNED`; clear from `pendingAssign[C]`; enqueue in `pendingReassignment`.
+     - Both types of forced transitions constitute a reassignment and **increment `epoch`** (once per timeout-processing batch per coordinator loop iteration, not once per partition).
+  3. Drain `pendingReassignment`: while inflight count < `max_inflight_revocations` and queue is non-empty, dequeue the next `ReassignmentTask` and, if the partition is `UNASSIGNED`, initiate `UNASSIGNED → PENDING_ASSIGN(toConsumerId)`; add to `pendingAssign[toConsumerId]`. If the partition is no longer `UNASSIGNED` (e.g., already reassigned), discard the task.
+  4. Check for partition count change: compare `configuredPartitionCount` against `currentAssignment.size() + unassigned.size()`; if they differ, reconcile the tracked partition set and trigger a rebalance.
+  5. Trigger BALANCED_STICKY rebalance if needed (new consumer joined, eviction detected, partition count change): recompute `targetAssignment`; increment `epoch`.
+- **Rebalance triggers** — the following events constitute a rebalance and cause `epoch` to increment:
+  - A new consumer joins (first heartbeat from an unknown consumer ID).
+  - A consumer is evicted (no heartbeat received within `session_timeout_ms`).
+  - The total number of partitions in the group changes (detected as above).
+  - An ACK timeout forces a partition from `REVOKING → UNASSIGNED` or `PENDING_ASSIGN → UNASSIGNED` (reassignment event).
+  - No other event (e.g., a routine heartbeat from an already-known consumer, or a successful ACK) increments the epoch.
+- **Partition count change mechanism:** The group's configured partition count is stored as `configuredPartitionCount` in the consumer group record (Section A) and set at group creation time. To change the partition count after creation, a caller must invoke a dedicated admin operation (`PUT /v1/groups/{groupId}/config`, body `{ partitionCount: N }`; this endpoint is out of scope for the current refactoring but must be accounted for in the data model). The coordinator detects a partition count change by comparing `configuredPartitionCount` against `currentAssignment.size() + unassigned.size()` on each rebalance cycle. On a mismatch it reconciles the tracked partition set and increments the epoch.
+- **Remove** `ConsumerNotRegisteredException` for heartbeat — unknown consumer is now auto-registered.
+
+#### C. Configuration (`EventBridgeProperties`)
+Update/add the following:
+| Property | Default |
 |---|---|
-| Module location | New top-level `event-bridge/` directory; sub-modules: `event-bridge-core`, `event-bridge-broker`, `event-bridge-gateway`, `event-bridge-client` |
-| Client-facing HTTP server | **Spring MVC** (Spring Boot embedded Tomcat) |
-| Gateway→Broker transport | Existing Netty-based internal transport from `zeebe/atomix/cluster` (transport module) |
-| Serialization | SBE framing for internal gateway↔broker messages (schemas at `event-bridge-core/src/main/resources/sbe/*.xml`, code-generated during `event-bridge-core` Maven build); JSON over HTTP for client-facing API |
-| Consensus / replication | RAFT via `zeebe/atomix/cluster` (`RaftPartition` / `RaftPartitionServer`) |
-| Cluster membership | SWIM via `AtomixCluster` / `SwimMembershipProtocol`; leader topology disseminated on top of SWIM metadata (not by SWIM itself) |
-| Log storage | `LogStream` (one per partition, backed by RAFT log storage via `AtomixLogStorage`) |
-| Event sequencing | Actor-based Sequencer pattern (mirror `Sequencer` in `zeebe/broker`) |
-| Threading | `ActorScheduler` (CPU + IO thread pools); long-poll park/wake must use actor async primitives and must not block CPU threads |
-| Batch-to-RAFT-entry mapping | Each `POST /events/{partitionId}` call = one RAFT log entry; each event in the batch receives its own sequential log position |
-| Offset tracking | Explicit commit model only; no backpressure credits, no write-ahead throttling, no in-flight window accounting; offsets are persisted in RAFT snapshots (see Snapshot Specification) |
-| Fetch position tracking | Client-side only: the `Consumer` handle tracks the last `nextPosition` per partition internally; the broker is stateless with respect to fetch position (it reads from the `fromPosition` supplied on each poll request) |
-| Heartbeat timeout | `event-bridge.consumer.heartbeat-timeout-ms`; default **5000 ms** |
-| Consumer start position | `-1` = read from the first available log position (oldest retained after any truncation) |
-| Long-poll ceiling | `serverWaitMs` maximum: **30 000 ms**; broker silently clamps values above this ceiling |
-| Routing retry policy | 4 total attempts (1 initial + 3 retries); HTTP 503 returned on final failure |
-| Snapshot interval unit | **RAFT log entries (batches)**; default **1000 entries** |
-| SBE schema location | `event-bridge-core/src/main/resources/sbe/*.xml`; code generated during the `event-bridge-core` Maven build phase |
-| Distribution | Follow `/dist` pattern: `StandaloneEventBridge.java` entry point starts a **single JVM containing the gateway and all configured broker partitions**; intended for single-node development and testing. For multi-node cluster deployments, each physical node runs its own `StandaloneEventBridge` process with a distinct node ID and address configuration. Binary registered in `dist/pom.xml`. |
-| Auth | None in this iteration |
+| `consumer.heartbeatTimeoutMs` → `consumer.sessionTimeoutMs` | `10000` |
+| `consumer.rebalanceIntervalMs` (new) | `2000` |
+| `consumer.ackTimeoutMs` (new) | `5000` |
+| `consumer.maxInflightRevocations` (new) | `100` |
+| `consumer.heartbeatIntervalMs` (new, client-side) | `1000` |
+| Remove `consumer.subscribeTimeoutMs` | — |
 
-#### New SBE Message Types Required
+`heartbeatIntervalMs` is the interval the client sleeps between heartbeat calls. The server does not enforce this interval directly; enforcement is via `sessionTimeoutMs` (the consumer is evicted if no heartbeat arrives within that window).
 
-The following internal protocol messages between gateway and broker must be defined as new SBE schemas in `event-bridge-core/src/main/resources/sbe/`. No existing Zeebe SBE message types are reused for these purposes.
+#### D. SBE Schema (`event-bridge-core`)
+- **Update** `HeartbeatRequest`: add `epoch` (`int64`) and `ownedPartitions` (repeated `int32`, each value is a partition ID).
+- **Update** `HeartbeatResponse`: add `epoch` (`int64`), `revoke` (repeated `int32`), `assign` (repeated `int32`), `fullAssignment` (repeated `int32`).
+- **Add** `AckRequest`: `epoch` (`int64`), `revoked` (repeated `int32`), `assigned` (repeated `int32`).
+- **Add** `AckResponse`: `status` (enum/string).
+- **Add** message type constants for Ack request/response in `MessageTypes`.
+- Regenerate SBE codecs.
 
-| SBE Message | Direction | Purpose |
-|---|---|---|
-| `PublishBatchRequest` | Gateway → Broker | Carries `partitionId`, array of event payloads |
-| `PublishBatchResponse` | Broker → Gateway | Carries assigned log positions or error code |
-| `PollRequest` | Gateway → Broker | Carries `partitionId`, `groupId`, `consumerId`, `fromPosition`, `maxRecords`, `serverWaitMs` |
-| `PollResponse` | Broker → Gateway | Carries status, event list (position + payload), rebalance info |
-| `CommitOffsetRequest` | Gateway → Broker | Carries `partitionId`, `groupId`, `consumerId`, `position` |
-| `CommitOffsetResponse` | Broker → Gateway | Carries status or error code |
-| `HeartbeatRequest` | Gateway → Broker-0 | Carries `groupId`, `consumerId` |
-| `HeartbeatResponse` | Broker-0 → Gateway | Carries status or error code |
-| `SubscribeRequest` | Gateway → Broker-0 | Carries `groupId`, `consumerId` |
-| `SubscribeResponse` | Broker-0 → Gateway | Carries status, `assignedPartitions` list, or error code |
-| `OffsetSnapshotPayload` | Broker (internal) | Serialized offset state written into the RAFT snapshot; carries a flat list of `(groupId, consumerId, committedPosition)` triples |
+#### E. Gateway DTOs (`EventBridgeDtos`)
+- **Add** `HeartbeatRequest { epoch: long, ownedPartitions: List<Integer> }` (no load, capacity, or metadata fields). `epoch` is the consumer's last known epoch; it is forwarded to the coordinator as `clientEpoch`.
+- **Replace** `HeartbeatResponse` with `{ epoch: long, revoke: List<Integer>, assign: List<Integer>, fullAssignment: List<Integer> }`. *(Note: `status` is not included — it belongs only on `AckResponse`.)*
+- **Add** `AckRequest { epoch: long, revoked: List<Integer>, assigned: List<Integer> }`.
+- **Add** `AckResponse { status: String }`. Valid values: `"OK"`.
+- **Remove** `generation` from `CommitRequest` (was `{groupId, consumerId, position, generation}`).
+- **Remove** `StaleGenerationResponse`.
+- **Remove** `SubscribeResponse` (the subscribe endpoint is deleted; no rename is required).
+- Rename `generation` → `epoch` in `PollResponse`.
+
+#### F. Gateway Controllers
+- **Remove** `SubscribeController` entirely.
+- **Update** `HeartbeatController`:
+  - URL: `POST /v1/groups/{groupId}/consumers/{consumerId}/heartbeat`
+  - Accepts `HeartbeatRequest` body; upserts consumer on first contact.
+  - Returns `HeartbeatResponse` with delta + epoch.
+  - **HTTP status codes:**
+    - `200 OK` — heartbeat accepted and response produced.
+    - `400 Bad Request` — malformed request body (e.g., missing required fields, invalid JSON).
+    - `404 Not Found` — `groupId` does not exist.
+    - `503 Service Unavailable` — coordinator actor unreachable or broker overloaded.
+- **Add** `AckController`:
+  - URL: `POST /v1/groups/{groupId}/consumers/{consumerId}/ack`
+  - Accepts `AckRequest` body.
+  - Returns `AckResponse { status: "OK" }`.
+  - **HTTP status codes:**
+    - `200 OK` — ACK received. This is returned in all cases where the request is well-formed and the group/consumer exist, including when the ACK epoch is stale (coordinator logs a warning and discards the stale ACK; no error is surfaced to the consumer).
+    - `400 Bad Request` — malformed request body.
+    - `404 Not Found` — `groupId` or `consumerId` does not exist.
+    - `503 Service Unavailable` — coordinator actor unreachable.
+- Update `CommitController` to remove `generation` stale-check logic.
+  - **HTTP status codes (unchanged except noted):** `200 OK` on success; `400 Bad Request` for malformed body; `404 Not Found` for unknown group/consumer; `503 Service Unavailable` for broker errors.
+
+#### G. `BrokerRequestRouter` / `SbeCodec`
+- Add codec support for `AckRequest`/`AckResponse`.
+- Update heartbeat codec to encode/decode new fields (`epoch` and `ownedPartitions` on request; `epoch`, `revoke`, `assign`, `fullAssignment` on response).
+
+#### H. Client (`event-bridge-client/Consumer.java`)
+
+**`fullAssignment` population rule (coordinator-side):** The coordinator populates `fullAssignment` in the heartbeat response if and only if `clientEpoch < coordinatorEpoch` (i.e., a rebalance has occurred since the consumer's last heartbeat). In all other cases `fullAssignment` is an empty list. Clients must not rely on `fullAssignment` being present outside of an epoch advance.
+
+**Full reconciliation procedure:** When the client observes `res.epoch > currentEpoch`, it executes a full reconcile in this exact order:
+1. Stop processing all currently held partitions.
+2. Commit offsets for all currently held partitions (see commit-failure handling below).
+3. Clear `ownedPartitions` locally.
+4. Apply `fullAssignment` as the new owned set: call `startProcessing(p)` for each partition in `fullAssignment`.
+5. Update `currentEpoch = res.epoch`.
+6. Update `ownedPartitions = new Set(res.fullAssignment)`.
+7. Send an ACK with `revoked` = all previously held partitions not in `fullAssignment`, `assigned` = all partitions in `fullAssignment` (including any previously held that remain in the new assignment — the coordinator handles these as idempotent confirmations).
+
+**Commit-failure policy during full reconcile:** If one or more commits fail at step 2, the client does **not** proceed with steps 3–7. It logs the failure, retains the existing `ownedPartitions` (continuing to process them), and retries on the next heartbeat cycle. The client will receive another response with `res.epoch > currentEpoch` (since `currentEpoch` was not updated), triggering another full reconcile attempt. If the coordinator's `ack_timeout_ms` elapses before the client succeeds, the coordinator forces reassignment (AC #5); any duplicate processing thereafter is an accepted at-least-once consequence and must be handled by idempotent consumers.
+
+**Consumer loop:**
+```
+while (true) {
+    res = POST /v1/groups/{groupId}/consumers/{consumerId}/heartbeat
+           body: { epoch: currentEpoch, ownedPartitions: ownedPartitions }
+
+    if (res.epoch > currentEpoch) {
+        // full reconcile (see procedure above)
+        prevOwned = copy of ownedPartitions
+        stopProcessing(all partitions in ownedPartitions)
+        commitFailures = commitAll(ownedPartitions)
+        if (commitFailures is not empty) {
+            log("Commit failed for partitions: " + commitFailures + "; deferring full reconcile")
+            sleep(heartbeat_interval_ms)
+            continue
+        }
+        ownedPartitions.clear()
+        for (p : res.fullAssignment) { startProcessing(p) }
+        currentEpoch = res.epoch
+        ownedPartitions.addAll(res.fullAssignment)
+        POST /v1/groups/{groupId}/consumers/{consumerId}/ack
+             body: { epoch: res.epoch,
+                     revoked: prevOwned \ res.fullAssignment,
+                     assigned: res.fullAssignment }
+        // A non-2xx response from the ACK endpoint is logged and discarded;
+        // local state (currentEpoch, ownedPartitions) is already updated.
+        // The coordinator's ack_timeout_ms handles the case where no ACK is received.
+    } else if (res.epoch < currentEpoch) {
+        // stale response — ignore, do not update state
+        sleep(heartbeat_interval_ms)
+        continue
+    } else {
+        // delta apply
+        commitFailures = []
+        for (p : res.revoke) {
+            stopProcessing(p)
+            ok = commit(p)
+            if (!ok) { commitFailures.add(p) }
+        }
+        if (commitFailures is not empty) {
+            // do NOT send ACK for this cycle; retry commit on next iteration
+            log("Commit failed for partitions: " + commitFailures + "; deferring ACK")
+            sleep(heartbeat_interval_ms)
+            continue
+        }
+        ownedPartitions.removeAll(res.revoke)
+        for (p : res.assign) { startProcessing(p) }
+        ownedPartitions.addAll(res.assign)
+
+        POST /v1/groups/{groupId}/consumers/{consumerId}/ack
+             body: { epoch: res.epoch,
+                     revoked: res.revoke,
+                     assigned: res.assign }
+        // A non-2xx response from the ACK endpoint is logged and discarded;
+        // local state is already updated. The coordinator's ack_timeout_ms handles
+        // the case where no ACK is received.
+    }
+
+    sleep(heartbeat_interval_ms)
+}
+```
+
+**Commit-failure policy (delta path):** The ACK for a revocation is withheld if any commit in that batch fails. The consumer retries the commit on the next heartbeat cycle. This prevents silent offset loss. If the coordinator's `ack_timeout_ms` elapses before the consumer succeeds in committing and ACKing, the coordinator proceeds with reassignment (AC #5); the consumer's duplicate processing after that point is an accepted at-least-once consequence and must be handled by idempotent consumers.
+
+- Track `currentEpoch` and `ownedPartitions` locally.
+- Remove `RebalanceInProgressException` (rebalances are now invisible to the consumer — they just get a delta or a full reconcile signal via epoch advance).
 
 ---
 
 ### Edge Cases
-- Publish to a non-existent partition → HTTP 400, error `PARTITION_NOT_FOUND`
-- Publish with a null or empty `events` array → HTTP 400, error `INVALID_REQUEST`
-- Publish routed to a non-leader (stale topology) → retry; 4 total attempts (1 initial + 3 retries); on exhaustion → HTTP 503, error `LEADER_UNAVAILABLE`
-- Poll with `maxRecords` < 1 → HTTP 400, error `INVALID_PARAMETER`
-- Poll with `fromPosition = -1` after log truncation → resolved to the oldest retained log position (e.g., 500 if positions 0–499 have been truncated); no error is returned
-- Poll with a specific `fromPosition` that has been truncated → HTTP 400, error `POSITION_TRUNCATED`; the consumer should re-subscribe or resume from its last committed position
-- Consumer polls at position beyond the log end → HTTP 200, `status: OK`, `events: []`, `nextPosition` = current log tail (the position at which the next written event would be placed)
-- Consumer polls when no new records exist and `serverWaitMs = 0` → HTTP 200, `status: OK`, `events: []`, `nextPosition` = current log tail
-- Consumer polls with `serverWaitMs > 0` and no records arrive within the wait window → broker parks the response actor until a new log entry is written or the wait window expires, then returns HTTP 200, `status: OK`, `events: []`, `nextPosition` = current log tail; `serverWaitMs` values above 30 000 ms are clamped silently
-- Consumer heartbeat timeout → coordinator marks dead, removes from truncation minimum calculation, rebalances remaining consumers; next poll or heartbeat by the dead consumer returns HTTP 400, `status: ERROR`, error `CONSUMER_NOT_REGISTERED`; the consumer must call `subscribe` again to rejoin
-- Dead consumer sends a heartbeat → HTTP 400, error `CONSUMER_NOT_REGISTERED`; the consumer must call `subscribe` before heartbeats are accepted
-- Dead consumer re-subscribes → Broker-0 adds it to the active set and **immediately triggers a rebalance**; affected consumers are notified via `REBALANCE_IN_PROGRESS` on their next poll
-- New consumer joins group → Broker-0 immediately triggers a rebalance; affected consumers notified via `REBALANCE_IN_PROGRESS` (with `nextPosition` absent) on their next poll
-- `Consumer.poll()` iterates partitions and encounters `REBALANCE_IN_PROGRESS` on partition K → all events fetched from partitions iterated before K in this call are discarded; `RebalanceInProgressException` is thrown immediately; the caller updates its partition set and retries `poll()`
-- Commit position ≤ already-committed offset → silently accepted (returns HTTP 200, `status: OK`); the stored offset is not updated (idempotent commit)
-- **Subscribe when Broker-0 is unavailable** → HTTP 503, error `COORDINATOR_UNAVAILABLE`; the client `subscribe()` method completes exceptionally with `CoordinatorUnavailableException`; no automatic retry is built into the client; the caller should retry with back-off
-- **Broker-0 (coordinator) unavailable after initial subscribe** → publish and poll to all partitions continue normally (RAFT is unaffected); heartbeat and subscribe requests return HTTP 503, error `COORDINATOR_UNAVAILABLE`; no rebalances are possible while Broker-0 is down; existing partition assignments remain frozen until Broker-0 recovers. This is a known limitation; coordinator high-availability is out of scope for this iteration.
-- All replicas down for a partition → publish returns HTTP 503, error `LEADER_UNAVAILABLE`, after 4 total attempts
-- No alive consumer assigned to a partition → log truncation is suspended; no entries are removed until at least one consumer is alive and assigned
+- Consumer ACK times out → coordinator forces `REVOKING(C) → UNASSIGNED` and/or `PENDING_ASSIGN(C) → UNASSIGNED` after `ack_timeout_ms`; this increments `epoch`, causing affected consumers to perform full reconcile on next heartbeat.
+- Consumer dies mid-revocation → eviction releases partitions; `REVOKING` and `PENDING_ASSIGN` states transition to `UNASSIGNED`; epoch increments.
+- Empty group → all partitions `UNASSIGNED`; first heartbeat triggers rebalance + full assignment.
+- Partition count changes → coordinator detects `configuredPartitionCount != currentAssignment.size() + unassigned.size()`; reconciles tracked partition set; rebalance triggered; orphaned partitions redistributed; epoch increments.
+- Duplicate heartbeat from same consumer (idempotent) → refreshes timestamp, returns current delta (no epoch increment).
+- `max_inflight_revocations = 100` cap: if 100 revocations are already in-flight, additional reassignments are enqueued in `pendingReassignment` and processed in FIFO order as inflight slots free up (via ACKs or timeouts).
+- Consumer commit fails before ACK (delta path) → consumer defers ACK and retries commit next cycle; coordinator may time out and proceed with reassignment (at-least-once delivery).
+- Consumer commit fails during full reconcile → consumer retains existing owned set and re-attempts full reconcile on next heartbeat cycle; coordinator may time out and force reassignment.
+- `clientEpoch > coordinatorEpoch` (unexpected) → coordinator logs a warning, treats as `clientEpoch == coordinatorEpoch`, returns delta response; no error surfaced to consumer.
+- Stale-epoch ACK → coordinator logs a warning and silently discards (no state changes); returns `200 OK`; consumer self-corrects on next heartbeat via epoch advance and full reconcile.
+- Partitions absent from ACK `revoked` list (but coordinator-requested) → remain `REVOKING` until `ack_timeout_ms` elapses.
+- Previously held partitions included in full-reconcile ACK `assigned` list → coordinator treats as idempotent no-ops (`ASSIGNED(C)` already; no state change required).
 
 ---
 
-### Out of Scope (this iteration)
-- Authentication / authorization
-- Partition key hashing (client provides partition ID directly)
-- Multi-topic / named streams (single implicit topic per partition)
-- Consumer-initiated partition assignment (all assignment is coordinator-driven)
-- Schema registry or event type system
-- Compacted logs / key-based retention
-- Cross-datacenter replication
-- Broker-0 coordinator failover / high-availability coordination (Broker-0 is a SPOF; see Edge Cases for degraded-mode behavior)
+### Out of Scope
+- Offset commit endpoint (`CommitController`) — logic unchanged except `generation` field removed from request.
+- `PollController` and publish pipeline — unchanged.
+- RAFT/snapshot/truncation subsystems — unchanged.
+- Persistence of consumer group state across broker restarts.
+- Multi-broker coordinator failover.
+- Admin endpoint for dynamic partition count changes (`PUT /v1/groups/{groupId}/config`) — data model must support it (`configuredPartitionCount` field in the consumer group record), but the endpoint itself is not implemented in this refactoring.
 
 ## Engineering Decisions
 
 ## Technical Decisions & Assumptions
 
-### Module Structure
-- New top-level `event-bridge/` with four sub-modules: `event-bridge-core`, `event-bridge-broker`, `event-bridge-gateway`, `event-bridge-client`
-- Added to root `pom.xml` `<modules>` section; `StandaloneEventBridge` registered in `dist/pom.xml` via `appassembler-maven-plugin`
-  - Main class: `io.camunda.eventbridge.StandaloneEventBridge` (plain `main`, not Spring Boot)
-  - Assembled artifact name: `event-bridge-standalone` (produces `event-bridge-standalone/bin/event-bridge`)
+### Architecture decisions (from your answers)
 
-### SBE Code Generation
-- XML schemas in `event-bridge-core/src/main/resources/sbe/*.xml`
-- Code-generated via `exec-maven-plugin` at `generate-sources` phase (mirrors `zeebe/journal`)
-- Output at `${project.build.directory}/generated-sources/sbe`; added to sources via `build-helper-maven-plugin`
+1. **Group lifecycle**: Groups are lazily created on first heartbeat (no 404 for first-ever contact with a group ID). Consumer auto-registration on first heartbeat also auto-creates the group if it doesn't exist. The `404` HTTP status that was previously documented for `HeartbeatController` is **removed from the OpenAPI spec and controller documentation** — it is unreachable under the lazy-create model and must not be left as a silent dead-end for future readers.
 
-### Batch → Positions Mapping
-- `Sequencer.tryWrite(List<LogAppendEntry>)` natively maps N events → N log positions in one `logStorage.append(lo, hi, batch)` call = one RAFT entry. No custom position arithmetic needed.
-- **Snapshot interval:** controlled by `event-bridge.broker.snapshot.interval-entry-count` (defined in `BrokerConfig`), defaulting to **10,000**. The counter increments on each committed RAFT log entry index (not LogStream positions). When the counter reaches the configured value it is reset to zero and a snapshot is triggered. Engineers implementing or testing snapshotting must use this property to control trigger frequency.
+2. **Rebalance timing**: Rebalance is **deferred** to the coordinator loop, never inline in `heartbeat()`. A new consumer's first heartbeat registers it and marks "rebalance needed"; assignments arrive after the next loop cycle (`rebalance_interval_ms = 2000ms`). First heartbeat response has empty `revoke`/`assign`/`fullAssignment`.
 
-### Transport
-- All gateway↔broker communication uses `NettyMessagingService` — including standalone single-JVM mode (loopback). Uniform code path, no in-process shortcut.
-- Messages registered via `registerHandler(type, BiFunction<Address, byte[], CompletableFuture<byte[]>> handler)`; SBE-framed payloads.
+3. **SBE `CommitOffsetRequest`**: `generation` field removed from the SBE schema (templateId=5) and the broker-side `BrokerSbeCodec`/`BrokerRequestDispatcher`. Fully consistent with the DTO and coordinator.
 
-#### Message Type Registry
-The `type` string passed to `registerHandler` is the sole message discriminator. All type constants are defined in `io.camunda.eventbridge.transport.MessageTypes` (in `event-bridge-core`) and **must not be defined ad hoc elsewhere**. Naming convention: `"eb.<area>.<operation>"`. The canonical set is:
+4. **`AckController`**: Calls `coordinatorActor.ack()` directly, following the existing controller pattern. SBE codec work in Section G is transport-layer plumbing for the distributed path.
 
-| Constant name | String value | Direction |
-|---|---|---|
-| `PRODUCE_REQUEST` | `"eb.produce.request"` | Gateway → partition leader |
-| `FETCH_REQUEST` | `"eb.fetch.request"` | Gateway → partition leader |
-| `SUBSCRIBE_REQUEST` | `"eb.subscribe.request"` | Gateway → coordinator |
-| `SUBSCRIBE_RESPONSE` | `"eb.subscribe.response"` | Coordinator → gateway |
-| `HEARTBEAT_REQUEST` | `"eb.heartbeat.request"` | Gateway → coordinator |
-| `COMMIT_OFFSET_REQUEST` | `"eb.commit-offset.request"` | Gateway → coordinator |
-| `FETCH_ASSIGNMENT_REQUEST` | `"eb.fetch-assignment.request"` | Gateway → coordinator |
-| `TRUNCATE_REQUEST` | `"eb.truncate.request"` | Coordinator → partition leader |
-| `LATEST_POSITION_REQUEST` | `"eb.latest-position.request"` | Gateway → partition leader |
+---
 
-Response types for the last four use the same string with `.response` suffix and follow the same convention. Any new message type must be added to `MessageTypes` before use. Do not introduce string literals in handler registration code.
+### Key implementation assumptions
 
-### Coordinator Broker Identity ("Broker-0")
-- The coordinator broker — referred to throughout this document as "Broker-0" — is identified by a **static configuration property** `event-bridge.coordinator.broker-id` (type `String`, e.g. `"broker-0"`). This value is set at cluster-bootstrap time and must match the `memberId` used when the broker registers with `SwimMembershipProtocol`. There is no dynamic election; the coordinator role is always held by the broker whose `memberId` equals the configured value.
-- **Coordinator discovery:** the gateway resolves the coordinator's `Address` as follows. On each membership event it scans all `Member.properties()` maps for the key `"eb.coordinator"`. The broker that holds this key writes its own logical `memberId` as the value (e.g., `"broker-0"`). The presence of this key on a `Member` identifies that `Member` as the current coordinator; the gateway routes to `Member.address()` of that member. The value (logical broker ID) is retained in the gateway for logging and diagnostics — specifically so that coordinator identity is visible in logs without requiring a reverse lookup. No DNS or name-lookup step is needed.
-- **Permanent removal of the coordinator broker:** if the broker identified by `event-bridge.coordinator.broker-id` is permanently decommissioned, operators must update the configuration property on all remaining brokers and gateways and perform a rolling restart. Automatic coordinator migration is out of scope for this iteration; the coordinator remains a SPOF for consumer group management (see also the Known Limitations note under Consumer Group Coordinator State).
+**`ConsumerGroupRegistry` restructuring:**
+- `ConsumerGroup` gains: `configuredPartitionCount`, `epoch` (replaces `generation`, starts at 1), `partitionState: Map<Integer, PartitionState>`, `currentAssignment: Map<Integer, String>`, `pendingReassignment: Queue<ReassignmentTask>`, `consumersChanged: boolean`
+- **`PartitionState` definition:** `PartitionState` is a plain value class (record or final class) with the following fields:
+  - `String assignedConsumerId` — the consumer currently holding this partition; `null` if unassigned.
+  - `ReassignmentState state` — the current state of this partition in any in-flight reassignment: one of `STABLE` (no active task), `REVOKING` (a task has been issued asking the current holder to release), `ASSIGNING` (the revoke ack has been received and the partition is being handed to a new consumer), or `COMPLETE` (the assign ack has been received; the partition is confirmed stable at its new owner and the task will be drained on the next loop cycle). `STABLE` is the initial state.
+  - `PartitionState` is updated by the coordinator loop and by `ack()` as `ReassignmentTask` states advance. It mirrors `ReassignmentTask.state` for quick per-partition lookup without scanning the full queue.
+- `targetAssignment` **is removed** from the `ConsumerGroup` field list. The intended target state is fully represented by the set of pending `ReassignmentTask`s in `pendingReassignment`; a redundant `targetAssignment` map would require keeping two structures in sync and serves no additional purpose. The coordinator derives the expected final assignment from `currentAssignment` plus any in-flight tasks.
+- `ReassignmentTask` fields: `int partitionId`, `String fromConsumerId` (nullable — null means unassigned), `String toConsumerId`, `ReassignmentState state` (enum: `REVOKING`, `ASSIGNING`, `COMPLETE`)
+- `configuredPartitionCount` is passed as a constructor argument when a `ConsumerGroup` is created (lazily on first heartbeat). The value is read from `ConsumerProperties.partitionCount` at group-creation time and never changes for the lifetime of the group object. It is **not** derived from the number of registered consumers.
+- Per-consumer `ConsumerEntry` gains: `ownedPartitions`, `pendingRevoke`, `pendingAssign`, `ackDeadline`
+- Rebalance trigger condition: a rebalance is needed when `partitionState.size() != configuredPartitionCount || consumersChanged`.
+  - **`consumersChanged` semantics:**
+    - Set to `true` when: (a) a new consumer registers (first heartbeat for that consumer ID), or (b) a consumer is evicted due to session timeout expiry or `ackDeadline` expiry.
+    - Reset to `false` at **loop step (1)** (described below), immediately after draining all `COMPLETE` tasks — but only when the drain results in an empty `pendingReassignment` queue **and** `consumersChanged` was not set again during steps (2)–(3) of the same cycle. Concretely: after step (1) empties the queue, the coordinator proceeds through steps (2) and (3); if either step evicts a consumer (setting `consumersChanged = true`), the flag is left as `true` going into step (4). If the queue is empty after step (1) and no eviction occurs in steps (2)–(3), then at step (4) the coordinator recognizes the rebalance as complete and evaluates the trigger condition with `consumersChanged = false`. An empty queue after step (1) when `pendingReassignment` was already empty before the cycle (i.e., nothing was drained) does **not** reset `consumersChanged` — the reset only occurs as a consequence of successfully draining at least one `COMPLETE` task and finding the queue empty afterward.
+    - A completed rebalance always clears `consumersChanged`, regardless of how it was set.
+- **`COMPLETE` task draining and `consumersChanged` reset:** At **step (1) of each coordinator loop cycle**, before any new rebalance computation, the coordinator drains all `COMPLETE` tasks from `pendingReassignment`. For each drained task, the corresponding `PartitionState` entry is updated to `STABLE`. If after draining the queue is empty, the coordinator checks whether `consumersChanged` should be cleared (subject to the condition above — no evictions in the same cycle's steps (2)–(3)). This prevents unbounded queue growth and ensures stale tasks are never re-evaluated.
+- `addOrRefresh()` removed; `heartbeat()` becomes the upsert entry point
 
-### Consumer Group Operation Routing
-- All consumer-group operations (subscribe, heartbeat, commit-offset, fetch-assignment) are routed by the gateway to the coordinator broker.
-- **Gateway routing:** the gateway proxies these requests to `coordinatorAddress` (resolved as described in Coordinator Broker Identity). The client always contacts the gateway — it has no direct knowledge of which broker is the coordinator. The gateway's proxy path mirrors the partition-leader proxy path: a `NettyMessagingService` call to `coordinatorAddress` with the appropriate SBE-framed message type.
-- **While `coordinatorAddress` is unknown** (e.g., before the first membership event after gateway startup, or during coordinator outage): the gateway immediately returns `COORDINATOR_UNAVAILABLE` to the caller rather than queuing or blocking. The client back-off policy (see Client section) handles retries.
+**`CoordinatorActor` restructuring:**
+- `subscribe()` + `SubscribeResult` removed
+- `heartbeat(groupId, consumerId, clientEpoch, ownedPartitions)` → `HeartbeatResult { epoch, revoke, assign, fullAssignment }`
+  - `clientEpoch`: the epoch value last seen by the consumer (from its most recent `HeartbeatResponse` or `AckResponse`). The coordinator uses it for staleness detection: if `clientEpoch < group.epoch`, the coordinator includes the full current assignment in `fullAssignment` so the consumer can reconcile. `clientEpoch == 0` means the consumer has never received an epoch (first heartbeat). The coordinator **never rejects** a heartbeat based on `clientEpoch` alone; it only uses the value to decide response content.
+- New `ack(groupId, consumerId, epoch, revoked, assigned)` → `AckResult { status }`
 
-### Leader Topology Dissemination
-- Each broker writes partition leadership state into `Member.properties()` (e.g., `"eb.partition.0.leader" = "broker-1"`). The coordinator broker additionally writes `"eb.coordinator" = "<its own memberId>"`.
-- `SwimMembershipProtocol` detects property changes and gossips them automatically.
-- **Name-to-Address resolution:** on each membership event, the gateway reads both the `"eb.partition.N.leader"` property value (the broker's logical name) and the sending `Member`'s advertised `Member.address()`. The in-memory `Map<partitionId, Address>` is updated with the `Address` obtained directly from that `Member` object — no separate DNS or name-lookup step is needed. The logical name is stored only for logging and diagnostics. The same mechanism resolves `coordinatorAddress` (see Coordinator Broker Identity).
-- **`MEMBER_REMOVED` handling:** when the gateway receives a `MEMBER_REMOVED` membership event for a broker, it must:
-  1. Remove all `partitionId → Address` entries in the in-memory map whose `Address` matches the removed member's advertised address.
-  2. If `coordinatorAddress` matches the removed member's address, atomically clear `coordinatorAddress` (set it to `null`).
-  3. Mark all affected partition IDs as **leader-unknown** in the routing table.
-  4. While a partition is leader-unknown, produce and fetch requests for that partition are rejected immediately with the error code `LEADER_UNKNOWN`. The caller (gateway HTTP handler) surfaces this as an `HTTP 503` with problem type `leader-unknown`. Clients should treat `LEADER_UNKNOWN` as a transient error and apply back-off before retrying; re-querying topology on the next successful membership event will restore routing automatically.
+  **Server-side `ack()` processing logic:**
+  1. Look up the group by `groupId`. If the group does not exist or `consumerId` is not present in the group's consumer registry, return `AckStatus.CONSUMER_NOT_FOUND` immediately; no state is mutated.
+  2. If `epoch != group.epoch`, return `AckStatus.EPOCH_MISMATCH` immediately; no state is mutated.
+  3. Clear `ConsumerEntry.ackDeadline` for this consumer (set to null).
+  4. **Normal task-ack path** (i.e., this ack corresponds to an in-flight `REVOKING` or `ASSIGNING` task — not a `fullAssignment` reconciliation, see step 5):
+     - For each partition in `revoked`: find the matching `ReassignmentTask` in `pendingReassignment` where `state == REVOKING` and `fromConsumerId == consumerId`. Advance the task state to `ASSIGNING`. Update `PartitionState.state` to `ASSIGNING`. Remove the partition from `ConsumerEntry.ownedPartitions` for `fromConsumerId`. Update `ConsumerEntry.ackDeadline` for `toConsumerId` to `now + ackTimeoutMs` (the assign deadline for the receiving consumer).
+     - For each partition in `assigned`: find the matching `ReassignmentTask` where `state == ASSIGNING` and `toConsumerId == consumerId`. Advance the task state to `COMPLETE`. Update `PartitionState` to `state = COMPLETE, assignedConsumerId = consumerId`. Update `currentAssignment` to map this partition to `consumerId`. Add the partition to `ConsumerEntry.ownedPartitions` for `consumerId`.
+     - If no matching task is found for a reported partition (e.g., the task was already completed or the consumer was evicted and re-registered), the coordinator silently skips that partition — no error is returned.
+  5. **`fullAssignment` reconciliation path** (consumer sends `revoked=[]`, `assigned=<fullAssignment contents>`): The coordinator treats the `assigned` list as confirmation that the consumer now holds exactly those partitions. For each partition in `assigned`: if there is a matching in-flight `ASSIGNING` task for this consumer, advance it to `COMPLETE` as in step 4. Update `currentAssignment` and `ConsumerEntry.ownedPartitions` accordingly. No tasks are expected for partitions that were already stable in `currentAssignment`; those are recorded silently without task transitions. `REVOKING` tasks are not affected by this path (the consumer is not being asked to revoke anything in a `fullAssignment` reconciliation).
+  6. Return `AckStatus.OK`.
 
-  Stale `Address` entries must never be retained after `MEMBER_REMOVED`; routing to a removed broker's address will produce a `NettyMessagingService` connection failure and is not an acceptable fallback path.
+- Coordinator loop via `actor.runAtFixedRate(rebalanceIntervalMs)` replaces the current eviction-only timer. **Each loop cycle executes in order:**
+  1. Drain all `COMPLETE` tasks from `pendingReassignment`; update corresponding `PartitionState` entries to `STABLE`. If the queue is empty after draining and no eviction occurs in steps (2)–(3), reset `consumersChanged = false` at step (4).
+  2. Check `ackDeadline` expiry per consumer.
+  3. Evict expired sessions (session-timeout expiry).
+  4. Evaluate the rebalance trigger condition; reset `consumersChanged = false` if the rebalance is now complete (empty queue, no evictions in this cycle).
+  5. Issue new revocations subject to `maxInflightRevocations` limit.
+- `ConsumerNotRegisteredException`: **retained as a thrown exception from `commitOffset`** only. The server throws it; the client catches it (see Client section below for handling). It is **not** thrown from the heartbeat path.
+- `AssignmentResult.generation` → `AssignmentResult.epoch`
 
-### Long-Poll Implementation
-- Broker registers a `LogRecordAwaiter` on `LogStream.registerRecordAvailableListener()` when `serverWaitMs > 0` and no records available.
-- Woken by: (1) new RAFT commit → `AtomixLogStorage.onCommit()` → `LogStreamImpl.onCommit()` → all awaiters, or (2) actor timer expiry at the `serverWaitMs` ceiling.
-- **Long-poll ceiling:** controlled by the configuration property `event-bridge.broker.long-poll.max-wait-ms`, defaulting to **30,000 ms**. Any `serverWaitMs` supplied by the client is clamped to this value server-side. The property is not a source constant; operators may lower it under high-partition-count deployments.
-- **Rebalance also wakes all parked long-poll actors for the affected partition immediately**, returning `REBALANCE_IN_PROGRESS`.
-- All park/wake uses `CompletableActorFuture` + `ActorControl.runOnCompletion()` — no CPU thread blocking.
+**`maxInflightRevocations` enforcement:**
+- Enforced **per-group** by the coordinator loop at step (5) above.
+- Before issuing a new `REVOKING` task, the coordinator counts the number of `ReassignmentTask`s in `pendingReassignment` whose state is `REVOKING` or `ASSIGNING` (i.e., tasks waiting for consumer acks). If that count equals or exceeds `maxInflightRevocations`, the loop skips issuing additional revocations for that group in the current cycle and retries in the next.
+- No error is returned to any consumer. The rebalance is stalled (delayed by one loop interval) until in-flight tasks drain below the limit. Tasks are never rejected or discarded.
 
-#### `LogRecordAwaiter` — new type
-`LogRecordAwaiter` is a **new interface** to be created in `event-bridge-broker` at `io.camunda.eventbridge.broker.logstream.LogRecordAwaiter`. It is not an existing Zeebe type. Its contract:
+**`ackTimeoutMs` enforcement:**
+- Enforced **per-consumer** within the coordinator loop at step (2) above.
+- When a `REVOKING` or `ASSIGNING` task is issued for a consumer, `ConsumerEntry.ackDeadline` is set to `now + ackTimeoutMs`.
+- At step (2) of each loop cycle, the coordinator iterates over all `ConsumerEntry`s with a non-null `ackDeadline`. If `ackDeadline < now`, the consumer is **evicted** from the group (same behavior as session-timeout expiry): its `ConsumerEntry` is removed, `consumersChanged` is set to `true`, and any `REVOKING`/`ASSIGNING` tasks referencing it are removed from `pendingReassignment`. The eviction triggers a fresh rebalance in the same or next cycle.
+- `ackDeadline` is cleared (set to null) when the consumer successfully calls `ack()` (see server-side `ack()` step 3 above).
 
-```java
-/**
- * Notified when at least one new record becomes available on a LogStream partition,
- * or when the broker-side long-poll ceiling elapses.
- * Implementations must be safe to complete from any thread (the RAFT commit thread
- * calls onRecordAvailable() outside the actor context).
- */
-public interface LogRecordAwaiter {
-  /** Returns a future that completes when records are available or the ceiling elapses. */
-  CompletableFuture<Void> awaitRecord(long timeoutMs);
+**`pendingReassignment` queue ordering:**
+- `pendingReassignment` is a **FIFO queue**. Tasks are appended in the order the coordinator generates them (i.e., the order the rebalance algorithm iterates over partitions to assign). The coordinator issues revocations in FIFO order subject to `maxInflightRevocations`. Ordering does not affect correctness — no semantic priority is attached to task order.
 
-  /** Immediately completes the pending future (if any), waking the parked actor. */
-  void onRecordAvailable();
-}
-```
+**Configuration (`ConsumerProperties` record):**
+- `heartbeatTimeoutMs` → `sessionTimeoutMs` (default `10000`)
+- `subscribeTimeoutMs` removed
+- `partitionCount` — **existing field; confirm its presence before implementation.** If it does not currently exist in `ConsumerProperties`, it must be added as a required field (no default is appropriate — the group cannot be created without knowing its partition count). Document it as: "Number of partitions for this consumer group. Set at group creation time and immutable for the lifetime of the group." If a default is required for backward compatibility, use `1` and note the deviation in the implementation PR.
+- Added: `rebalanceIntervalMs` (2000), `ackTimeoutMs` (5000), `maxInflightRevocations` (100), `heartbeatIntervalMs` (1000)
+- Existing `CoordinatorProperties.sessionTimeoutMs` is a separate field and left unchanged
 
-The `LogStreamImpl` maintains a `List<LogRecordAwaiter>` and calls `onRecordAvailable()` on each entry from its `onCommit()` callback. Awaiters remove themselves from the list when their future completes. Thread-safety of list access is guaranteed by the actor's single-threaded execution model; `onRecordAvailable()` schedules completion on the actor thread via `ActorControl.runOnCompletion()` rather than completing the future directly.
+**SBE schema (`event-bridge-protocol.xml`):**
+- Before assigning template IDs 18 and 19 to `AckRequest` and `AckResponse`, **verify that IDs 18 and 19 are unoccupied** in `event-bridge-protocol.xml`. If either ID is taken, use the next available IDs above the current maximum and update this plan accordingly.
+- `HeartbeatRequest` (id=7): add `epoch int64`, `ownedPartitions` repeating group of `int32`
+- `HeartbeatResponse` (id=8): replace `generation` with `epoch int64`; add `revoke` group `int32`, `assign` group `int32`, `fullAssignment` group `int32`; **retain `errorCode ErrorCode` and `errorMessage varData`** fields unchanged.
+- `CommitOffsetRequest` (id=5): drop `generation` field
+- New `AckRequest` (id=18, pending ID verification above): `epoch int64`, `revoked` group `int32`, `assigned` group `int32`
+- New `AckResponse` (id=19, pending ID verification above): `errorCode ErrorCode`, `errorMessage varData`
+- `SubscribeRequest` (id=9) / `SubscribeResponse` (id=10): retained in schema **indefinitely for backward compatibility** with any existing deployed clients that may still send subscribe messages. The `BrokerRequestDispatcher` handler for `SUBSCRIBE_REQUEST` is **removed**; when the dispatcher receives a message of this type it falls through to the **default unknown-message-type error path**, which returns an error response with error code `NOT_SUPPORTED` (or the existing generic unknown-type error, whichever is already defined in the dispatcher). No new special-case handler is added. A follow-up task is tracked to evaluate full schema removal once no active clients depend on these message types (see tracking item below).
+- `MessageTypes`: add `ACK_REQUEST = "eb.ack.request"`, `ACK_RESPONSE = "eb.ack.response"`; remove `SUBSCRIBE_REQUEST` and `SUBSCRIBE_RESPONSE` constants (the schema entries are retained, but the Java constants are deleted since the dispatcher no longer references them). The `HEARTBEAT_REQUEST` and `HEARTBEAT_RESPONSE` constant **names and their string values are unchanged** — no modification to these constants is required.
+- SBE codecs regenerated after schema changes
 
-### Consumer Group Coordinator State
-- Active consumers, assignments, and heartbeat timers are **in-memory only on the coordinator broker** (the broker whose `memberId` equals `event-bridge.coordinator.broker-id`; see Coordinator Broker Identity).
-- Snapshot persists only offset state (committed positions) via `OffsetSnapshotPayload` SBE.
-- **After coordinator restart:** the broker returns a `COORDINATOR_UNAVAILABLE` error code on all consumer-group endpoints while it is recovering. The `event-bridge-client` SDK treats this error as a transient failure and transparently re-issues the subscribe request using **exponential back-off** with the following parameters (all are constants in `EventBridgeClientConfig` and are not user-configurable in this iteration):
-  - Initial delay: **500 ms**
-  - Multiplier: **2.0**
-  - Maximum delay: **30,000 ms**
+> **Follow-up tracking item — Subscribe removal:** Once it is confirmed that no active clients send `SubscribeRequest`, remove `SubscribeRequest`/`SubscribeResponse` from the SBE schema, delete the corresponding codec encode/decode paths, and remove any remaining references.
 
-  The retry loop continues until the subscribe request succeeds or the application explicitly closes the `Consumer` handle. The back-off is applied between attempts; no jitter is added in this iteration.
-- **`COORDINATOR_UNAVAILABLE` for non-subscribe operations:** heartbeat, commit-offset, and fetch-assignment can also receive `COORDINATOR_UNAVAILABLE` during a coordinator outage. The client applies the **same exponential back-off parameters** (500 ms initial, 2.0 multiplier, 30,000 ms max) for all three operations. Specifically:
-  - **heartbeat:** retried silently in the background using back-off. A single missed heartbeat attempt does not propagate to the caller; the session-timeout window on the broker side provides sufficient slack for the coordinator to restart before the session is considered dead. The retry continues until the coordinator responds or the `Consumer` handle is closed.
-  - **commit-offset:** retried with back-off. The call does not return to the caller until a successful acknowledgement is received or `Consumer.close()` is called, to avoid silent offset-commit loss.
-  - **fetch-assignment:** retried with back-off. The call blocks until a valid assignment response is received or `Consumer.close()` is called.
+**Gateway DTOs (`EventBridgeDtos`):**
+- Add `HeartbeatRequest { long epoch, List<Integer> ownedPartitions }`
+- Replace `HeartbeatResponse` with `{ long epoch, List<Integer> revoke, List<Integer> assign, List<Integer> fullAssignment }`
+- Add `AckRequest { long epoch, List<Integer> revoked, List<Integer> assigned }`
+- Add `AckResponse { AckStatus status }` where `AckStatus` is an enum with values:
+  - `OK` — ack accepted; task state advanced and consumer ownership recorded (see server-side `ack()` logic above)
+  - `EPOCH_MISMATCH` — returned by the server when `epoch != group.epoch`; consumer should re-sync by sending a heartbeat
+  - `CONSUMER_NOT_FOUND` — returned by the server when the consumer ID is not present in the group's registry; consumer should re-register via heartbeat
+  - The client treats any non-`OK` status as a trigger to immediately send a heartbeat to re-synchronize state.
+- Remove `CommitRequest.generation` field; remove `StaleGenerationResponse`
+- `SubscribeResponse` DTO is **retained but deprecated** (annotated `@Deprecated`, no callers). It must not be deleted while the SBE codec retains the `SubscribeResponse` schema entry, since the codec references the DTO for serialization. Removal of the DTO is deferred to the same follow-up task as the schema removal.
+- `PollResponse.generation` → `PollResponse.epoch`
 
-  In all cases, the retry loop checks the `closed` flag between attempts (see `Consumer.close()` contract below) and exits immediately if the handle has been closed.
-- **`Consumer.close()` during retry loop:** `Consumer.close()` sets a volatile `closed` flag. Any retry loop in the client (re-subscription, heartbeat retry, commit-offset retry, fetch-assignment retry) checks this flag **between retry attempts** — that is, after the current in-flight attempt returns (or times out) but before sleeping or issuing the next attempt. When the flag is detected as set, the loop exits immediately without issuing another attempt, and the blocked caller receives `ConsumerClosedException` (unchecked, extends `RuntimeException`). The in-flight network call is not interrupted mid-flight; the `closed` check is at attempt boundaries only. After `close()` returns, all subsequent method calls on the `Consumer` handle throw `ConsumerClosedException`.
-- **Per-partition `nextPosition` during re-subscription:** the client's per-partition `nextPosition` values are **fully preserved** across re-subscription. The re-subscribe request carries the current `nextPosition` for each assigned partition, so consumption resumes exactly where it left off. Positions are never reset by the re-subscription path.
-- The application-level `Consumer` handle remains valid throughout a coordinator outage (subject to the `close()` contract above); `poll()` calls block inside the re-subscription retry loop until re-subscription succeeds or the handle is closed.
-- Assignments are reconstructed from scratch on the broker side after recovery.
-- **Producer behavior during coordinator outage:** producers write directly to partition leaders, which are independent of the coordinator broker. Producer writes are **unaffected** by a coordinator outage. Only consumer group management (subscribe, heartbeat, commit-offset, assignment) is degraded.
-- Known limitation: the coordinator is a SPOF for consumer group management; automatic coordinator failover is out of scope for this iteration.
+**Controllers:**
+- `SubscribeController` deleted
+- `HeartbeatController` updated: accepts `HeartbeatRequest` body, URL stays at `/v1/consumers/{groupId}/{consumerId}/heartbeat` **permanently** — the `/v1/consumers/` prefix is the established convention for all existing consumer-facing endpoints and will not be migrated. The new `AckController` deviates from this convention because its spec was authored with `/v1/groups/`; to avoid introducing a third URL scheme, `AckController` will **also use `/v1/consumers/`**: `POST /v1/consumers/{groupId}/{consumerId}/ack`. The `/v1/groups/` prefix from the original spec is hereby overridden in favor of consistency with existing endpoints. **The API spec (`rest-api.yaml` or equivalent) must be updated to reflect the `/v1/consumers/{groupId}/{consumerId}/ack` URL; this is an explicit implementation task.** If the spec was drafted with `/v1/groups/`, that path entry must be renamed before the spec is published or used to generate client stubs.
+- The `404` response previously documented in `HeartbeatController` is **removed from the OpenAPI spec** (see Architecture Decision 1).
+- New `AckController`: `POST /v1/consumers/{groupId}/{consumerId}/ack`
+- `CommitController`: removes `generation` field read, removes stale-generation check, removes `StaleGenerationResponse` usage
 
-### Truncation
-- **Ownership:** truncation logic runs **exclusively on the coordinator broker**. The coordinator holds all data required to compute the truncation boundary — heartbeat liveness state and committed offsets — making cross-broker data access unnecessary. When the boundary advances for a given partition, the coordinator issues a `TRUNCATE_REQUEST` (`MessageTypes.TRUNCATE_REQUEST`) to the partition's current leader via `NettyMessagingService`. The partition leader applies the truncation on receipt. Non-coordinator partition brokers do not run truncation timers and do not issue truncation calls.
-- **Trigger:** a periodic actor timer fires every `event-bridge.broker.truncation.interval-ms` (default **60,000 ms**) on the coordinator broker's actor. Each firing re-evaluates the truncation boundary for every partition and, for each partition where the boundary has advanced since the last truncation, issues a `TRUNCATE_REQUEST` to the relevant partition leader. The timer is implemented via `ActorControl.runAtFixedRate()` — no external scheduler is involved.
-- Eligible set (per partition) = consumers whose last heartbeat was received within `event-bridge.coordinator.session-timeout-ms` (default 30,000 ms; the same timeout that governs consumer liveness for rebalance triggering) **and** who hold an assignment for that partition.
-- Boundary = `min(committedPosition)` over the eligible set for that partition.
-- Dead consumers (i.e., those outside the session-timeout window) are excluded from the min calculation.
-- **No-consumer-alive behavior:** when the eligible set is empty for a partition, no truncation occurs for that partition and the log grows without bound until at least one consumer reconnects and begins committing offsets. This is **accepted behavior** for this iteration. There is no max-retention backstop. Operators must monitor partition log size via the existing `AtomixLogStorage` metrics and ensure at least one consumer remains active in steady state. A retention cap is a known future improvement.
+**`RebalanceInProgressException` removal scope:**
+- This exception is removed from **all locations where it currently exists**: the client (`Consumer.java`), any server-side coordinator or service class that declares or throws it, any shared DTO or exception module that defines it, and any test code that references it. Before removing the class definition, search the full module graph (event-bridge client, event-bridge server, any shared libraries) to identify all declaration and usage sites. Remove them all in the same commit. If the exception is defined in a shared module consumed by other components outside this feature's scope, confirm with the team that those components do not rely on it before deleting the class.
 
-### RAFT Replica Factor
-- Configurable via `event-bridge.raft.replication-factor`; default **1** (suitable for single-node dev/test).
-- Multi-node deployments set this to 3+ for fault tolerance.
+**Client (`Consumer.java`):**
+- Field: `generation` → `currentEpoch`; initial value is **`0`** (the coordinator treats `clientEpoch == 0` as "consumer has never received an epoch — first heartbeat"). Add `ownedPartitions: Set<Integer>` (initially empty).
+- `sendHeartbeat()` is replaced by a **continuous consumer loop** (see Section D — Consumer Loop Specification for the full behavioral definition). The loop's response-handling logic is:
+  1. Send a heartbeat carrying `currentEpoch` and `ownedPartitions`.
+  2. On response: if `fullAssignment` is non-empty, it **supersedes** any `revoke`/`assign` lists in the same response — replace `ownedPartitions` wholesale with `fullAssignment` and send a single `AckRequest` containing the new `ownedPartitions` as `assigned` and an empty `revoked` list. Steps 3–4 are skipped.
+  3. Otherwise (i.e., `fullAssignment` is empty): apply `revoke` by removing those partitions from `ownedPartitions`; apply `assign` by adding those partitions.
+  4. If either `revoke` or `assign` is non-empty, send a single `AckRequest` carrying `revoked` and `assigned`. At most one `AckRequest` is sent per heartbeat response.
+  5. Sleep `heartbeatIntervalMs` before the next iteration.
+- `RebalanceInProgressException` removed from the client (see full removal scope above).
+- `ConsumerNotRegisteredException`: **retained in the client** as a caught exception from `commitOffset()`. When `commitOffset()` receives this exception from the server, the client logs a warning, sends an immediate heartbeat to re-register, and **retries the commit exactly once**. If the single retry also fails (with any exception, including `ConsumerNotRegisteredException`), the exception is propagated to the caller. No further automatic retries are performed; the caller is responsible for any higher-level retry policy.
+- `commitOffset()` removes `generation` from request body
 
-### Client (`event-bridge-client`)
-- `Consumer` handle tracks `nextPosition` per partition, initialized to **`-1`**
-  - **`nextPosition = -1` semantics:** signals "start from the earliest available offset retained in the log" (i.e., the oldest record not yet truncated). It does **not** mean latest/tail. On the first poll the broker substitutes `nextPosition = -1` with the partition's current `retentionStart` position. Consumers that need tail-start semantics must explicitly pass the position returned by a `getLatestPosition()` call before their first `poll()` (see `getLatestPosition()` below).
-- `poll()` iterates partitions in ascending ID order; on `REBALANCE_IN_PROGRESS` from any partition discards all collected events and throws `RebalanceInProgressException`.
-
-- **`RebalanceInProgressException` contract:**
-  - Type: **unchecked** (`extends RuntimeException`). Callers are not required to declare or catch it, but are expected to handle it at the `poll()` call site.
-  - The `Consumer` handle **remains fully valid** after the exception is thrown. No re-subscribe or handle recreation is needed.
-  - **Caller contract:** the caller must retry `poll()` after a short pause. A fixed retry delay of **1,000 ms** is recommended in the SDK Javadoc. The caller must not re-submit events that were discarded (i.e., those collected from earlier partitions in the same `poll()` sweep before the exception was raised); those positions will be re-delivered on the next successful `poll()` call because `nextPosition` is only advanced for a partition after events from that partition are successfully returned to the caller.
-
-- **`Consumer.close()` contract:**
-  - `close()` sets a volatile `closed` flag. All internal retry loops (re-subscription, heartbeat, commit-offset, fetch-assignment) check this flag between retry attempts. When detected, the loop exits and the blocked caller receives `ConsumerClosedException` (unchecked). The in-flight network call for the current attempt is not interrupted; the check occurs at attempt boundaries.
-  - After `close()` returns, all subsequent method calls on the handle (`poll()`, `commitOffset()`, etc.) throw `ConsumerClosedException` immediately.
-  - `close()` is idempotent: calling it multiple times has no additional effect.
-
-- **`getLatestPosition(partitionId)`:**
-  - HTTP mapping: `GET /v1/partitions/{partitionId}/latest-position`
-  - Returns: a `LatestPositionResponse` JSON object containing a single `long` field `position`, representing the highest committed log position on that partition at the time of the call.
-  - **Empty partition behavior:** if no records have ever been written to the partition, the endpoint returns `{ "position": 0 }`. Passing `0` as `nextPosition` on the first `poll()` is equivalent to starting at the tail of an empty log; no records will be returned until new ones are written.
-  - The Java client exposes this as `EventBridgeClient.getLatestPosition(int partitionId): long`. There is no bulk variant; callers who need tail-start semantics across multiple partitions must call it once per assigned partition before their first `poll()`.
-
-- **HTTP socket timeout** = `serverWaitMs + 5,000 ms`. The 5,000 ms slack is a fixed constant in the client (`EventBridgeClientConfig.POLL_TIMEOUT_SLACK_MS`) and is not user-configurable. It accounts for network round-trip and broker-side scheduling jitter. The calling application sets `serverWaitMs` via `ConsumerConfig`; the client computes and applies the socket timeout automatically.
-- **Worst-case poll latency per `poll()` call:** `N × T`, where N = number of partitions assigned to this consumer and T = `serverWaitMs`. This arises because partitions are polled sequentially and each idle partition parks for up to `serverWaitMs` before returning an empty response. Applications with strict latency budgets should reduce `serverWaitMs` or accept that assigned partition count directly multiplies tail latency.
+**`BrokerRequestDispatcher` / `BrokerSbeCodec`:**
+- Add handler for `ACK_REQUEST` → `coordinatorActor.ack()`
+- Update heartbeat handler for new request/response fields
+- Remove `SUBSCRIBE_REQUEST` handler; inbound messages of this type fall through to the existing default unknown-type error path
+- Remove `generation` decode from commit handler
 
 ## Design Decisions
 
-### Summary of design decisions and assumptions
+**Summary of Design Decisions (Systems Perspective)**
+
+This is a pure backend refactoring. No UI/UX design work is required. The changes touch four distinct areas of the backend, each described below with the rationale for the approach taken.
 
 ---
 
-**Module structure:** Four sub-modules under a new top-level `event-bridge/` directory:
+### 1. Component Change Surface
 
-| Sub-module | Scope |
+The following backend components are modified. All fully-qualified names and file paths listed below are **[PENDING VERIFICATION]** and must be confirmed against the current source tree before implementation begins.
+
+**Path Verification Owner:** `[assign to a named engineer]`
+**Exit Criterion:** Verified paths are recorded in the implementation PR description or a linked tracking ticket before implementation begins. "Confirmed" means: the file exists at the stated path in the current `main` branch, the class name matches, and the Maven module matches.
+
+| Component | Location | Nature of Change |
+|---|---|---|
+| `CoordinatorActor` | `[verify path, e.g. zeebe/broker/src/main/java/.../CoordinatorActor.java]` | State machine logic updated to drive heartbeat and acknowledgement lifecycle; handles session timeout events (see §5) |
+| `ConsumerGroupRegistry` | `[verify path]` | Registration trigger changes from subscription event to session establishment. Deregistration trigger changes from unsubscribe event to heartbeat timeout (after the missed-heartbeat threshold defined in §5). Deregistration action: remove consumer from the active registry, trigger partition reassignment, re-enqueue in-flight unacknowledged records (see §5 for in-flight handling semantics) |
+| `HeartbeatController` | `[verify path, e.g. zeebe/gateway-rest/src/main/java/.../HeartbeatController.java]` | New Spring REST controller; introduced to make liveness a distinct, explicit operation separate from subscription |
+| `AckController` | `[verify path]` | New Spring REST controller; introduced to make acknowledgement a distinct, auditable operation with its own HTTP semantics (see rationale in §3) |
+| `SubscribeController` | `[verify path]` | Deleted — contingent on completing the external caller audit documented in §3; do not delete before audit is complete |
+| SBE schema(s) | `[verify path, e.g. zeebe/protocol/src/main/resources/sbe/...]` | Scope not yet determined — see §2 |
+| Consumer client loop | `[verify path and class name]` | Polling and reconnection logic updated; see §4 |
+
+---
+
+### 2. SBE Schema Changes
+
+**⚠ This section is a blocking prerequisite for implementation.** Binary protocol changes carry forward- and backward-compatibility risk and must be treated with care. Before implementation begins, an engineer must audit the affected components and produce either:
+
+- **(a)** A completed version of the field-change table below listing every affected schema and field, **or**
+- **(b)** The explicit statement: *"No SBE schema changes are required by this refactoring."*
+
+Leaving this section in placeholder form is not acceptable at handoff — it is misleading rather than merely incomplete.
+
+**In-scope schema modifications** *(complete or resolve before handoff — see above)*:
+
+| Schema Name | Field Name | Change Type | Old Type / Value | New Type / Value | Compatibility Impact |
+|---|---|---|---|---|---|
+| `[SchemaName]` | `[fieldName]` | added / removed / type-changed | `[old]` | `[new]` | See posture below |
+
+**Compatibility posture:**
+
+- **Supported upgrade window:** **[BLOCKING — state the actual supported upgrade window for this project before any field-removal work begins. Example: "This project supports N−1→N rolling upgrades; therefore a two-release dual-encode cycle is the minimum." The window determines whether two releases are sufficient or a longer cycle is required. Until confirmed, assume the minimum two-release cycle applies. The stated window must be reviewed and signed off alongside any field-removal proposal — see blocking item 3 in the Status section.]**
+
+- **Field additions:** A field added to an existing message must use a tag/ID that does not collide with any existing field in the schema. Older readers that do not recognise the new tag must treat it as optional and skip it (forward compatibility). The schema evolution rules of the SBE version in use apply.
+
+- **Field removals:** Removing a field breaks backward compatibility for any reader that still references it. If any existing consumer (exporter, client library, downstream processor) reads a field being removed, a **dual-encode cycle** is required before removal.
+
+  > **Definition — Dual-encode cycle:** A compatibility bridge spanning at minimum the number of releases dictated by the supported upgrade window confirmed above. In release N, both the old and new field encodings are written simultaneously: the old encoding for backward compatibility with existing readers, the new encoding for forward compatibility with updated readers. In release N+1 (or later, per the confirmed upgrade window), the old encoding is dropped. The cycle is considered complete when no consumer within the supported upgrade window still reads the old field. Completion of the cycle must be tracked in a dedicated ticket with an explicit release milestone, and the ticket must be linked from this document before any field-removal work is merged.
+
+- This section must be completed and reviewed before any SBE changes are merged. If no schema changes are ultimately required, that must be stated explicitly here.
+
+---
+
+### 3. Rationale for Key Design Decisions
+
+**Why delete `SubscribeController` rather than deprecate it?**
+
+The subscription model it encodes is being replaced by a heartbeat-based session model — the two models are semantically incompatible, not just interface-incompatible. Keeping a deprecated endpoint would require maintaining dual state-machine paths in `CoordinatorActor` and `ConsumerGroupRegistry` indefinitely.
+
+Deletion is the preferred approach, **contingent on the following audit being completed and documented here before the deletion PR is opened:**
+
+> **External Caller Audit — Status: PENDING**
+>
+> The claim that there are no external callers outside the controlled client loop must be verified before `SubscribeController` is deleted. The required verification steps are:
+> 1. Run a `grep`/`rg` search across all modules in this repository for any reference to `SubscribeController` endpoints, by URL path and by class name.
+> 2. Search all published client library versions (Java client, Spring Boot starter, and any other released artifact) for calls to the subscribe endpoint. Because published artifacts are compiled JARs, `grep`/`rg` cannot search them directly. The required concrete method is: decompile each published artifact using `javap` or a bytecode analysis tool such as `jdeps`; additionally, inspect the corresponding source-release tags in this repository; and review any published JavaDoc for the subscribe endpoint. All three approaches must be executed and their results recorded individually — a search is not considered complete if any of the three is omitted.
+> 3. Check `CHANGELOG.md` and any public API documentation for prior advertisement of the subscribe endpoint as a public or stable contract.
+>
+> **Intermediate state during the audit period:** Until the audit is complete and the deletion PR is opened, `SubscribeController` must remain in a stable, unmodified state. It must not be deleted, and any implementation work on other components that would remove its existing in-repository callers must not be merged before the audit completes (doing so would contaminate the audit by eliminating evidence of callers). Annotating `SubscribeController` with `@Deprecated` during this period is permitted to signal intent, but must not be accompanied by any behavioral change or caller removal.
+>
+> **Verification owner:** `[assign to a named engineer]`
+> **Exit criterion:** Audit results (method, scope searched, outcome) are recorded here — either inline or via a linked ticket — before the deletion PR is opened. If external callers are found, a deprecation period must be defined in a separate design decision record and this section updated before any deletion proceeds.
+
+**Why introduce `AckController` as a separate controller rather than adding to an existing one?**
+
+Acknowledgement has distinct HTTP semantics (idempotent, resource-scoped), a distinct authorization surface (future: per-partition ACL), and a distinct audit trail requirement. Collapsing it into an existing controller (e.g., an extended `HeartbeatController`) would conflate liveness signalling with progress signalling. Separation also makes each controller independently testable and independently evolvable.
+
+**Why introduce `HeartbeatController` as a separate controller?**
+
+Heartbeat is a liveness probe: it carries no business payload and must remain cheap and stable even as the acknowledgement protocol evolves. Keeping it separate protects its latency profile and allows rate-limiting and health-check routing to be applied without affecting the ack path.
+
+---
+
+### 4. Consumer Loop Changes
+
+The consumer client loop is the programmatic component that polls for work and drives the heartbeat/ack cycle. It is **not** a human-facing interface.
+
+The loop is implemented in `[verify path and class name]`. It is **[BLOCKING — specify: single-threaded, multi-threaded, or reactive. The threading model must be stated here before handoff. The reconnection/retry policy specified below and the in-flight record handling semantics in §5 must be consistent with this choice — see blocking item 7 in the Status section.]**
+
+The following aspects of the loop are modified:
+
+- **Session establishment:** **[BLOCKING — specify the mechanism that replaces `SubscribeController`. Options include: (a) an explicit `POST /sessions` call to a new `SessionController`; (b) implicit session creation on first heartbeat received by `CoordinatorActor`; (c) a session token issued via an existing authentication flow. The chosen mechanism must be documented here, its HTTP contract must appear in the API Specification (§7) — or, if no new endpoint is introduced, §7 must explicitly state that — and it must be consistent with the server-side session lifecycle in §5.]**
+
+- **Heartbeat cadence:** The loop sends a periodic `POST /heartbeat` to `HeartbeatController` on a configurable interval. The path `/heartbeat` is fixed by the HTTP contract in §7; refer to §7 as the authoritative definition. **[BLOCKING — specify: the interval value and units (e.g., 10 seconds); the number of consecutive missed heartbeats after which the client treats the session as lost and initiates reconnection. These values must be consistent with the server-side timeout threshold in §5.]**
+
+- **Acknowledgement:** After processing each record, the loop calls `AckController`. **[BLOCKING — specify the ack request payload fields. At minimum, specify: session ID, partition ID, and record offset or sequence number. The full request body schema must appear in the API Specification (§7).]**
+
+- **Reconnection / retry:** **[BLOCKING — specify all of the following: (a) trigger condition (e.g., N consecutive missed heartbeats, explicit session-expired response from server, network error); (b) backoff algorithm (linear, exponential with jitter, or fixed interval); (c) backoff parameters (initial delay, multiplier if exponential, maximum delay); (d) maximum retry attempts or indefinite retry; (e) behaviour on exhausting retries (fatal exit, operator alarm, fallback to degraded mode). The reconnection trigger must be consistent with the server-side session eviction behaviour defined in §5. The backoff and concurrency behaviour of the retry loop must also be reviewed for consistency with the threading model stated above.]**
+
+---
+
+### 5. Server-Side Session Lifecycle
+
+This section defines what the server does when a consumer session expires. It is the server-side counterpart of the client reconnection logic in §4 and is equally required before an engineer can implement `CoordinatorActor` or `ConsumerGroupRegistry`.
+
+**Heartbeat timeout detection (`CoordinatorActor`):**
+
+**[BLOCKING — specify: (a) the timeout threshold — how many seconds (or how many missed heartbeat intervals) before `CoordinatorActor` declares a session expired; this value must be consistent with the client-side missed-heartbeat count × interval specified in §4; (b) whether the timeout is enforced per-session or per-partition; (c) the internal event or signal that `CoordinatorActor` emits to `ConsumerGroupRegistry` on expiry.]**
+
+**Session expiry action sequence (`CoordinatorActor` and `ConsumerGroupRegistry`):**
+
+Upon session expiry, the following sequence is executed. **[BLOCKING — confirm or revise this sequence before implementation:]**
+
+1. `CoordinatorActor` marks the session as expired and ceases accepting heartbeats for that session ID.
+2. `ConsumerGroupRegistry` removes the consumer from the active registry.
+3. Partitions previously assigned to the expired consumer are **[BLOCKING — specify: immediately unassigned and available for reassignment to another consumer? Held for a grace period before reassignment? Assigned to a specific failover consumer?]**
+
+**In-flight record handling on session expiry:**
+
+If a consumer has polled one or more records and its session expires before it calls `AckController`, those records must not be silently dropped or permanently lost. **[BLOCKING — specify the exact behavior: (a) are unacknowledged records re-enqueued for delivery to another consumer? (b) is there a per-record delivery-attempt counter to prevent unbounded redelivery? (c) what is the maximum redelivery count, and what happens when it is exceeded (e.g., route to dead-letter queue, emit error log entry, halt partition processing)? This behavior directly determines `ConsumerGroupRegistry` semantics and the delivery guarantee (at-least-once or exactly-once) of the system, and must be defined here before any implementation of session expiry begins.]**
+
+---
+
+### 6. Out-of-Scope Items
+
+The following are explicitly excluded from this change. Any work touching these areas requires a separate design decision record.
+
+| Item | Reason for Exclusion |
 |---|---|
-| `event-bridge-core` | Shared domain model, SBE-encoded protocol types, RAFT command/event records, and shared value objects (positions, group IDs, etc.). |
-| `event-bridge-broker` | Broker-side actor state machines, partition assignment logic, offset tracking, snapshot encoding/decoding, and RAFT state transitions. |
-| `event-bridge-gateway` | HTTP layer that translates REST requests into broker commands and streams responses back to callers; communicates with the broker in-process via `Actor.call()` / `ActorFuture`-based dispatch (see "In-process gateway–broker communication" below). |
-| `event-bridge-client` | Java client library exposing `Producer`, `Consumer`, and `AdminClient` APIs over the HTTP gateway. |
+| Poll logic / fetch mechanics | Existing poll behaviour is unchanged; only session and ack signalling changes |
+| Commit / offset persistence | Persistence strategy is a separate concern deferred to a later milestone |
+| Admin endpoints | Operator-facing APIs are out of scope for this consumer-facing change |
+
+For the complete out-of-scope list as defined by product requirements, see the project specification. **[BLOCKING — insert the correct document name and section number before handoff. If the specification does not yet contain a scope and exclusions section, one must be created and referenced here before this document is considered ready for handoff.]**
 
 ---
 
-**API surface (machine-to-machine, no UI):**
+### 7. API Specification Reference
 
-**`POST /events/{partitionId}`** — Publish a batch of events.
+Endpoint definitions, HTTP verbs, status codes, and request/response body shapes for **all new HTTP endpoints introduced by this refactoring** must be fully specified in a dedicated API Specification section of this document before implementation begins. This includes `HeartbeatController`, `AckController`, and any session establishment endpoint introduced as a result of the decision in §4. If the session establishment mechanism chosen in §4 does not introduce a new endpoint (e.g., session creation is implicit on first heartbeat), that must be stated explicitly both here and in §4; it is not sufficient to simply omit session establishment from the API Specification without explanation.
 
-- Request body:
-  ```json
-  {
-    "events": [
-      { "key": "<string|null>", "payload": "<base64-encoded bytes>" }
-    ]
-  }
-  ```
-- Response `200 OK`:
-  ```json
-  {
-    "results": [
-      { "index": 0, "position": 1042 }
-    ]
-  }
-  ```
-  One entry per input event, in order. A single RAFT entry is written per call. The write is **all-or-nothing**: either every event in the batch is appended and every position is returned, or no event is appended and an error response is returned. There is no partial-success result shape.
-- Error responses:
-  - `404 Not Found` — `partitionId` does not exist.
-  - `400 Bad Request` — batch exceeds the maximum allowed size (default: 1 000 events per request; configurable via `event-bridge.publish.maxBatchSize`; valid range `[1, 10000]`). Body: `{ "error": "BATCH_TOO_LARGE", "maxAllowed": <int> }`.
-  - `400 Bad Request` — a single event payload exceeds the maximum allowed byte size, or the total encoded batch body exceeds the maximum allowed byte size (see "Byte-size limits on event payloads" below). Body: `{ "error": "PAYLOAD_TOO_LARGE", "maxEventBytes": <int>, "maxBatchBytes": <int> }`.
-  - `503 Service Unavailable` — RAFT leader unavailable or write timed out (leader election in progress, quorum lost, etc.). Clients should retry with backoff.
+**Current status — one of the following must be true at handoff; delete the inapplicable option:**
+
+- ☐ **Exists:** The API Specification is at **§[N]** of this document. That section is the authoritative reference; the Design Decisions section does not duplicate it.
+- ☐ **Does not yet exist:** The API Specification section has not been written. This is a blocking item — engineering handoff cannot proceed until it is complete. See §Status, item 13.
+
+This section must not remain in its current undecided state at handoff.
 
 ---
 
-**`POST /consumers/{groupId}/{consumerId}/subscribe`** — Register consumer and trigger immediate rebalance.
+### Status and Next Steps
 
-- Request body: empty (consumer identity is in the path).
-- Response `200 OK`:
-  ```json
-  {
-    "assignedPartitions": [0, 2],
-    "generation": 7
-  }
-  ```
-  `generation` increments on every rebalance epoch; clients must include it in subsequent poll and commit calls to detect stale state. The rebalance completes synchronously before the response is returned.
-- **Duplicate `consumerId` within a group:** If `subscribe` is called with a `groupId`/`consumerId` pair that is already registered as a live consumer in the broker, the call is treated as a **reconnect**: the prior registration is superseded, the consumer's heartbeat deadline is reset, and a new rebalance is triggered (since the consumer's assigned partitions may need to be redistributed). This allows a crashed-and-restarted consumer to rejoin without the broker waiting for the old heartbeat timeout to expire. The superseded registration's committed offset is preserved (see "Dead consumer re-subscribing" below).
-- **Concurrent subscribe behavior:** A per-group rebalance lock is held for the duration of the synchronous rebalance. If a second consumer calls `subscribe` for the same group while a rebalance is in progress, that call is queued and will execute as a new rebalance immediately after the first completes. If the queued call has not been able to start within `event-bridge.consumer.subscribeTimeoutMs` (default: `10000`; valid range `[1000, 60000]`) of the original request arriving, it is rejected with `503 Service Unavailable` and body `{ "error": "REBALANCE_TIMEOUT" }`.
+This section is **not yet complete and is not ready for engineering handoff.** Every row in the table below is a blocking item. Each has a named owner and an explicit exit criterion. **Implementation must not begin until all items are resolved.** Item 1 is not an exception to this rule: component paths must be confirmed before implementation begins, not merely before merging.
 
----
+| # | Blocking Item | Owner | Exit Criterion |
+|---|---|---|---|
+| 1 | Confirm fully-qualified class names and file paths for all components in §1 | `[assign]` | Verified paths recorded in the implementation PR description or a linked ticket **before implementation begins**; "confirmed" means file exists at the stated path on `main`, class name matches, Maven module matches |
+| 2 | Complete §2: either list all SBE schema field changes with compatibility impact, or state explicitly that no SBE changes are required | `[assign]` | §2 contains no placeholder rows and no ambiguous statements; reviewed and signed off by a protocol/schema owner before any schema changes are merged |
+| 3 | State the supported upgrade window in §2 compatibility posture | `[assign]` | A concrete upgrade window (e.g., "N−1→N rolling upgrades; two-release dual-encode cycle is the minimum") is stated in §2; the BLOCKING placeholder in the compatibility posture section is removed; statement reviewed and signed off alongside any field-removal proposal |
+| 4 | Specify §4 session establishment mechanism (replacement for `SubscribeController`) | `[assign]` | A specific mechanism is named in §4; either its HTTP contract appears in §7, or §7 and §4 both explicitly state that no new endpoint is introduced; mechanism is consistent with §5 server-side session lifecycle |
+| 5 | Specify §4 heartbeat interval, missed-heartbeat count, timeout value, and units | `[assign]` | Specific numeric values with units appear in §4 (client-side interval and the number of consecutive missed heartbeats before reconnection) and in §5 (server-side timeout threshold); all values are consistent between the two sections |
+| 6 | Specify §4 ack request payload fields | `[assign]` | Ack fields are listed in §4 and fully specified in the API Specification referenced by §7 |
+| 7 | Specify §4 consumer loop threading model | `[assign]` | The threading model (single-threaded, multi-threaded, or reactive) is named in §4; the reconnection/retry policy in blocking item 8 is consistent with that model |
+| 8 | Specify §4 reconnection/retry policy (trigger condition, backoff algorithm, backoff parameters, max attempts, exhaustion behaviour) | `[assign]` | All sub-items in the §4 reconnection bullet are answered with specific values; behaviour is consistent with §5 server-side session eviction and with the threading model confirmed in blocking item 7 |
+| 9 | Complete §5 server-side heartbeat timeout threshold, timeout detection scope, and session expiry action sequence | `[assign]` | §5 contains no BLOCKING placeholder blocks; values reviewed alongside §4 for consistency |
+| 10 | Complete §5 in-flight record handling on session expiry (re-enqueue behaviour, redelivery counter, max redelivery, exhaustion action) | `[assign]` | Delivery guarantee (at-least-once or exactly-once) is explicitly stated in §5; redelivery behaviour and maximum redelivery count are specified with concrete values |
+| 11 | Complete external caller audit for `SubscribeController` deletion and document results in §3 | `[assign]` | Audit method, scope, and outcome are recorded in §3 before the deletion PR is opened; compiled artifacts searched via `javap`/`jdeps` in addition to source-release tag review and JavaDoc inspection (all three approaches executed and results recorded individually); if callers are found, a separate deprecation decision record exists |
+| 12 | Confirm the complete out-of-scope list and insert the specification document name and section number in §6 | `[assign]` | §6 references an existing, named section of the project specification with a real section number; no placeholder references remain |
+| 13 | Confirm that the API Specification section exists (or create it) and update §7 with the section number | `[assign]` | §7 contains a real section number with no undecided checkboxes; the referenced section covers all endpoints introduced by this refactoring, including any session establishment endpoint, or explicitly states that no session establishment endpoint exists |
 
-**`GET /events/{partitionId}/poll`** — Long-poll pull.
-
-All parameters are **query parameters** (not a request body). A GET with a request body is non-standard and is not used here.
-
-- Query parameters:
-  - `fromPosition` (long, required) — the log position from which to start returning records. Use `-1` as a sentinel for "oldest retained position at time of request"; the broker resolves `-1` to the current `oldestAvailablePosition` for the partition at the moment the poll is processed. Any other negative value is rejected with `400 Bad Request`.
-  - `generation` (long, required) — the generation value returned by the most recent `subscribe` call. **Stale-generation is checked once, at request-arrival time.** If the generation does not match the broker's current generation for this consumer's group at that moment, the request is rejected immediately with `409 Conflict` and body `{ "error": "STALE_GENERATION", "currentGeneration": <long> }`. This is the gateway's enforcement point for stale-generation rejection. A rebalance that fires *after* the request has been accepted and is parked does not retroactively convert the response to `409`; see "Generation change during an active long-poll wait" below.
-  - `maxRecords` (int, default `100`)
-  - `serverWaitMs` (int, default `1000`, clamped to `[0, 30000]`)
-- Response `200 OK` (records available, or wait elapsed with zero records):
-  ```json
-  {
-    "records": [
-      { "position": 1042, "key": "<string|null>", "payload": "<base64-encoded bytes>" }
-    ],
-    "nextPosition": 1043,
-    "generation": 7
-  }
-  ```
-  An empty `records` array with `200` is the normal response when `serverWaitMs` elapses with no new records. `204 No Content` is not used — clients always parse the same envelope. A changed `generation` in the response (relative to the `generation` query parameter) signals that a rebalance occurred during the wait window; the client must re-subscribe before the next poll.
-- Response `400 Bad Request` — `fromPosition` is below the current oldest retained position, or `fromPosition` is a negative value other than `-1`. Body for truncated position: `{ "error": "POSITION_TRUNCATED", "oldestAvailablePosition": <long> }`.
-- Response `409 Conflict` — `generation` did not match the broker's current generation at request-arrival time (see above).
-
----
-
-**`POST /events/{partitionId}/commit`** — Idempotent offset commit.
-
-- Request body:
-  ```json
-  {
-    "position": 1042,
-    "consumerId": "<string>",
-    "groupId": "<string>",
-    "generation": 7
-  }
-  ```
-  A commit with a stale `generation` is rejected with `409 Conflict` (not silently accepted) to prevent a rebooted consumer from poisoning the low-watermark with an old offset.
-- **Commit to an unassigned partition:** If `partitionId` exists but the consumer's current generation does not assign that partition to the committing consumer, the request is rejected with `403 Forbidden` and body `{ "error": "PARTITION_NOT_ASSIGNED" }`. This is checked after generation validation; a stale generation returns `409` before `403` is considered.
-- **Commit with a truncated position:** If `position` falls at or below the current truncation low-watermark, the commit succeeds silently with `204 No Content`. The position has already been superseded; accepting it is safe and preserves idempotent behavior without surfacing a spurious error to the client.
-- Response `204 No Content` on success (including the truncated-position case above).
-- Response `403 Forbidden` — `partitionId` is not assigned to this consumer under its current generation.
-- Response `409 Conflict` — stale `generation`.
-- Response `404 Not Found` — `partitionId` does not exist.
-
----
-
-**`POST /consumers/{groupId}/{consumerId}/heartbeat`** — Liveness signal.
-
-- Request body: empty.
-- Response `200 OK` while consumer is live:
-  ```json
-  { "generation": 7 }
-  ```
-  A changed `generation` in the response is the signal that a rebalance has occurred since the last heartbeat; the client must re-subscribe.
-- Response `404 Not Found` if the timeout has already elapsed and the consumer has been evicted. The client must re-subscribe before polling.
-
----
-
-**Key behavioral decisions:**
-
-**Partition assignment algorithm:** Sticky round-robin. On each rebalance, existing consumer→partition assignments are preserved where possible; only the minimum number of partition slots are moved to achieve an even distribution across the new consumer set. Formally: sort consumers by consumer ID using **lexicographic Unicode code-point order** (equivalent to `java.lang.String.compareTo`, which compares `char` values as unsigned 16-bit code units); assign unowned partitions to consumers with below-average slot counts; never move a partition that is already owned by an active consumer unless required for balance. This sort contract must be applied identically on every broker restart to guarantee deterministic assignment; implementations must not use locale-sensitive collation. This is equivalent to Kafka's sticky assignor behavior.
-
-**Rebalance trigger on heartbeat timeout:** When a consumer's heartbeat timeout elapses, the broker actor **immediately and proactively** triggers a rebalance for every consumer group that had partitions assigned to the dead consumer. It does not wait for another consumer to call `subscribe` or `heartbeat`. This ensures that unowned partitions are redistributed promptly after a consumer crash, without requiring any surviving consumer to take action first.
-
-**Parked long-poll futures during a rebalance:** When a heartbeat-triggered rebalance fires and the broker actor processes it, any `ActorFuture` completions parked for a partition that is being reassigned are **completed immediately** with the current (new) generation value and an empty `records` array. This causes the waiting poll response to return `200 OK` with `"records": []` and the updated `generation`, signaling to the client that a rebalance has occurred and that it must re-subscribe before the next poll. Parked futures for partitions that are *not* affected by the rebalance (i.e., the partition remains assigned to the same consumer group member) are left parked and continue waiting normally.
-
-**Generation change during an active long-poll wait:** Stale-generation is validated **once, at request-arrival time**. If the generation matches at arrival, the poll is accepted and parked. If a rebalance fires during the wait window, the broker completes the parked future with `200 OK` and the new generation in the response body (as described above). The gateway does **not** retroactively convert this to `409 Conflict`. The client detects the rebalance by comparing the response `generation` to the `generation` it sent, and re-subscribes accordingly.
-
-**Initial `generation` value:** The first successful `subscribe` call for a group that has never existed returns `generation: 1`. The generation counter starts at `0` internally and is incremented by one on every rebalance, including the initial subscribe. A `generation` value of `0` is never returned to clients; it is the broker's internal pre-existence sentinel. All examples using `generation: 7` reflect a group that has rebalanced seven times.
-
-**Retention policy:** Retention is record-count-based. Each partition retains the last *N* records, where *N* defaults to `1 000 000` and is configurable per partition via `event-bridge.retention.maxRecordsPerPartition`. The oldest retained position advances when the partition log exceeds *N* records. A `GET /events/{partitionId}/poll` request with `fromPosition` below the current oldest retained position returns `400 Bad Request` with body `{ "error": "POSITION_TRUNCATED", "oldestAvailablePosition": <long> }`. `fromPosition = -1` is a sentinel for "oldest retained position at time of request" (see poll parameter table above).
-
-**Truncation low-watermark and dead consumers:** The broker tracks a per-partition *truncation minimum* — the lowest committed offset across all live consumers in all groups reading that partition. The log may only truncate records at or below this low-watermark. A consumer is considered dead when its heartbeat timeout elapses. Dead consumers are excluded from the truncation minimum calculation (i.e., their last committed offset no longer blocks log advancement), preventing a stalled or crashed consumer from pinning the log indefinitely.
-
-**Initial state of the truncation low-watermark:** Before any consumer in any group has ever committed an offset on a partition, there are no live-consumer offset entries and therefore no truncation minimum imposed by consumer tracking. In this state the truncation low-watermark is **unbounded** — the log is free to truncate based solely on `maxRecordsPerPartition`. Once at least one consumer commits an offset, the per-partition minimum is recomputed from that commit onward.
-
-**Dead consumer re-subscribing:** When a consumer that was previously evicted (heartbeat timeout elapsed) calls `subscribe` again — or when a live consumer calls `subscribe` and supersedes a prior registration — the broker **restores the consumer's last committed offset** as its floor for the truncation low-watermark calculation. The offset is not reset to zero or treated as absent. This means a rejoining consumer resumes consumption from where it left off (subject to truncation), and its last committed offset immediately re-enters the per-partition minimum calculation. If the consumer has no prior committed offset on record (e.g., it is genuinely new, or was evicted before ever committing), it is treated as a fresh consumer with no committed offset, as in the initial unbounded-watermark case described above.
-
-**Long-poll actor parking:** Long-poll requests are implemented using Zeebe's `Actor`/`ActorFuture` framework. When no records are available for a given partition, the poll actor suspends itself by scheduling a timeout `ActorFuture` for `serverWaitMs`; no OS thread is blocked. **Early wakeup:** the broker maintains a per-partition list of parked `ActorFuture` completions. When the publishing actor appends new records to a partition, it iterates that partition's parked-future list and completes each future immediately, which re-schedules each waiting poll actor before its timeout fires. The parked-future list is owned and mutated exclusively by the broker actor to avoid cross-thread contention.
-
-**In-process gateway–broker communication:** The gateway communicates with the broker using **`Actor.call()` / `ActorFuture`-based dispatch** — the standard Zeebe actor-to-actor mechanism. The gateway submits a command by calling `brokerActor.call(command)`, which enqueues a task onto the broker actor's internal work queue and returns an `ActorFuture<Result>`. The broker actor processes the task on its own thread and completes the future; the gateway actor receives the result asynchronously when the future fires. This means: (a) the gateway never blocks a thread waiting for a broker response; (b) backpressure is natural — the broker actor's queue depth limits in-flight commands; (c) errors are propagated as exceptional future completions and mapped to HTTP error responses by the gateway. No shared mutable state is accessed outside of actor boundaries.
-
-**`RebalanceInProgressException` recovery contract:** If a rebalance begins while a `Consumer.poll()` iteration is in progress, the client throws `RebalanceInProgressException` and discards all partial results from that call. The client **must call `subscribe()` again** before issuing another `poll()`. A bare `poll()` retry without re-subscribing will return `409 Conflict` from the gateway (stale `generation` query parameter). The client library wraps this cycle automatically when using the high-level `Consumer` API with a registered `RebalanceListener`.
-
-**Offset durability trade-off (accepted):** Committed offsets are persisted only via RAFT snapshots. Snapshots are triggered every `event-bridge.raft.snapshotIntervalEntries` RAFT entries (default: `1000`; valid range: `[100, 100000]`; values outside this range are rejected at startup). A broker crash before the next snapshot may cause up to `snapshotIntervalEntries - 1` batches of commit progress to be lost, requiring consumers to re-consume and re-commit those records after recovery. This is an explicit accepted trade-off: adding a WAL/journal entry per commit would halve publish throughput at the target load. Consumers are expected to implement idempotent processing to tolerate redelivery.
-
-**Heartbeat timeout configuration:** The timeout is a **global** broker configuration, not per-group. Configuration key: `event-bridge.consumer.heartbeatTimeoutMs`. Default: `5000`. Valid range: `[1000, 60000]`. Values outside this range are rejected at startup with a descriptive error.
-
-**Byte-size limits on event payloads:** The publish endpoint enforces both a record-count bound and byte-size bounds. The maximum encoded size of a single event payload (the base64-decoded bytes of the `payload` field) is `1 MB` (1 048 576 bytes), configurable via `event-bridge.publish.maxEventBytes` (valid range `[1, 16777216]`). The maximum total encoded body size of an entire publish request is `10 MB` (10 485 760 bytes), configurable via `event-bridge.publish.maxBatchBytes` (valid range `[1, 67108864]`). Both limits are enforced before the RAFT write is attempted. A violation returns `400 Bad Request` with body `{ "error": "PAYLOAD_TOO_LARGE", "maxEventBytes": <int>, "maxBatchBytes": <int> }`. Byte-size enforcement at the HTTP transport layer (e.g., a reverse proxy limit) is out of scope for this module but is expected to be configured at the infrastructure level.
-
-**String field constraints for `groupId`, `consumerId`, and event `key`:**
-- `groupId`: 1–256 characters; allowed characters are Unicode letters, digits, hyphens (`-`), underscores (`_`), and dots (`.`). Empty string and strings exceeding 256 characters are rejected at subscribe and commit time with `400 Bad Request` and body `{ "error": "INVALID_GROUP_ID" }`.
-- `consumerId`: 1–256 characters; same allowed character set as `groupId`. Violations return `400 Bad Request` with body `{ "error": "INVALID_CONSUMER_ID" }`.
-- Event `key`: nullable. When present, maximum 1 024 characters; no character set restriction (any valid UTF-8 string). A `key` exceeding 1 024 characters is rejected with `400 Bad Request` and body `{ "error": "KEY_TOO_LONG", "maxLength": 1024 }`. A `null` key is stored and returned as `null`; the field may be omitted from the JSON object, which is equivalent to `null`.
-- These constraints are enforced by the gateway before any broker interaction. The broker does not re-validate them.
-
-**HTTP success codes summary:**
-
-| Endpoint | Success code |
-|---|---|
-| `POST /events/{partitionId}` | `200 OK` with body |
-| `POST /consumers/.../subscribe` | `200 OK` with body |
-| `GET /events/{partitionId}/poll` | `200 OK` with body (including empty-records case) |
-| `POST /events/{partitionId}/commit` | `204 No Content` |
-| `POST /consumers/.../heartbeat` | `200 OK` with body |
-
-**Out of scope (confirmed):** auth, topic routing, consumer-driven partition assignment, coordinator HA/failover, schema registry.
+Once all blocking items are resolved, the specification is ready for engineering handoff.
 
 ## Technical Analysis
 
-Now I have everything needed to produce a complete, grounded assessment.
+---
+
+## Technical Feasibility Assessment: Consumer Group Refactoring (Event Bridge)
 
 ---
 
-# Technical Feasibility Assessment: Event Bridge
+### Complexity: **HIGH**
 
-## Complexity: **HIGH**
-
-This requires building four interconnected Maven modules that deeply integrate with Zeebe's internal infrastructure (RAFT, LogStream, ActorScheduler, SBE, SWIM). Several infrastructure components are more tightly coupled to the Zeebe protocol than the spec assumes, introducing concrete blockers that must be resolved before implementation.
+This is a deep, vertical slice through every layer of the stack — schema, codec, registry, actor, controllers, and client. The central change replaces a flat `partitionAssignment` map with a 4-state partition state machine plus delta-based heartbeat signaling, a dedicated ACK flow, an inflight-cap queue, and a multi-step coordinator loop. Each layer change is individually tractable, but the interdependencies are tight and the behavioral changes are non-trivial to test correctly.
 
 ---
 
-## Findings from Codebase Exploration
+### Affected Files / Modules
 
-### Infrastructure confirmed reusable
-| Component | Artifact | Location |
-|---|---|---|
-| RAFT partition | `zeebe-atomix-cluster` | `zeebe/atomix/cluster/…/raft/partition/RaftPartition.java` |
-| Cluster + SWIM | `zeebe-atomix-cluster` | `io.atomix.cluster.AtomixCluster` |
-| Netty transport | `zeebe-atomix-cluster` | `io.atomix.cluster.messaging.impl.NettyMessagingService` |
-| LogStream | `zeebe-logstreams` | `io.camunda.zeebe.logstreams.log.LogStream` |
-| Sequencer | `zeebe-logstreams` | `io.camunda.zeebe.logstreams.impl.log.Sequencer` |
-| ActorScheduler | `zeebe-scheduler` | `io.camunda.zeebe.scheduler.ActorScheduler` |
-| BrokerInfo encoding | `zeebe-protocol-impl` | `io.camunda.zeebe.protocol.impl.encoding.BrokerInfo` |
-| SBE tooling | `exec-maven-plugin` + `sbe-tool:1.37.1` | `parent/pom.xml` |
-| Dist/entry-point pattern | `appassembler-maven-plugin` | `dist/pom.xml` |
+#### `event-bridge-core` (shared types + SBE)
 
-### Topology dissemination (confirmed pattern)
-`TopologyManagerImpl` writes a Base64-encoded `BrokerInfo` into `ClusterMember.properties()` under a well-known key. SWIM propagates property changes via `GroupMembershipEvent.Type.METADATA_CHANGED`. The gateway would consume these events and maintain an in-memory `partitionId → leader address` map. This pattern is directly cloneable.
-
-### Long-poll wake mechanism (confirmed)
-`LogStream.registerRecordAvailableListener(LogRecordAwaiter)` fires `onRecordAvailable()` when a new entry is written. Combined with `actor.schedule(Duration, Runnable)` for the timeout timer and `actor.submit(Runnable)` to funnel the callback back into the actor, this satisfies the spec's requirement without blocking CPU threads.
-
-### RAFT snapshot mechanism (spec mismatch)
-The spec says "written directly into the RAFT `RaftSnapshotWriter` payload." **No such class exists.** The actual API is `TransientSnapshot.take(Consumer<Path>)` — you receive a directory path and write files into it. The offset state would be serialized as an SBE file within that directory. Functionally equivalent but requires adapting the spec's stated API.
-
-### SBE schema reuse
-Existing schemas: `protocol.xml`, `broker-protocol.xml`, `stream-protocol.xml`. The generation pipeline (parent POM `exec-maven-plugin` execution `generate-sbe`, bound to `generate-sources`) is fully established and can be replicated as-is in `event-bridge-core/pom.xml`.
-
----
-
-## Blockers & Risks
-
-### 🔴 BLOCKER 1: `LogAppendEntry` is tightly coupled to the Zeebe protocol
-`LogStreamWriter.tryWrite()` accepts `List<LogAppendEntry>`, and `LogAppendEntry` **requires** both `RecordMetadata` (with `ValueType`, `Intent`, `RecordType`) and `UnifiedRecordValue` (msgpack-serialized Zeebe record). These are Zeebe-protocol types with no raw-bytes variant.
-
-**Impact:** Cannot call the `Sequencer` (which is `LogStreamWriter`) with raw event bytes without bridging this gap.
-
-**Resolution path:** Implement `EventRecordValue implements UnifiedRecordValue` that wraps a raw `DirectBuffer`/`byte[]` and returns serialized length, and a stub `RecordMetadata` with neutral type markers (e.g., `ValueType.NULL`). This adds ~2 classes but is non-trivial — `UnifiedRecordValue` has a msgpack serialization contract that must be satisfied. Alternatively, define a completely new low-level write path that bypasses `LogAppendEntry` entirely and writes to `LogStorage` directly, but this bypasses the `Sequencer`'s position-assignment logic. The former approach (stub `UnifiedRecordValue`) is recommended and feasible.
-
-### 🔴 BLOCKER 2: `AtomixLogStorage` lives in `zeebe-broker`, not a reusable library
-`AtomixLogStorage` (the bridge between RAFT's `ZeebeLogAppender` and the `LogStorage` interface) is in `io.camunda.zeebe.broker.logstreams`. Depending on `zeebe-broker` from `event-bridge-broker` would pull in the entire Zeebe engine, exporter framework, and stream processor.
-
-**Resolution path:** Implement `EventBridgeLogStorage implements LogStorage, RaftCommitListener` in `event-bridge-broker`, mirroring `AtomixLogStorage`'s ~200-line implementation. This is copy-adapt work rather than novel code, but it must be maintained separately.
-
-### 🟡 RISK 1: LogStream truncation has no high-level API
-`LogStream` exposes no `truncate(position)` method. The underlying journal exposes `compact(index)` but the path from a log *position* to a RAFT *index* requires `AtomixLogStorageReader`. The spec's truncation requirement needs to go through the journal directly, bypassing the `LogStream` abstraction.
-
-### 🟡 RISK 2: SBE variable-length repeated groups
-`PublishBatchRequest` (array of payloads), `PollResponse` (array of `{position, payload}`), and `OffsetSnapshotPayload` (flat triples) all require SBE `<group>` elements, which generate stateful multi-step encoder/decoder code. The existing schemas (`protocol.xml` uses `<group>` for `ExporterState`) confirm this is done in the codebase, but it's more complex than scalar fields.
-
-### 🟡 RISK 3: Long-poll callback thread safety
-`LogRecordAwaiter.onRecordAvailable()` fires on the LogStream's internal thread, not the actor thread. The poll actor must re-enter via `actor.submit(Runnable)` to avoid data races on actor state. The timer cancellation (if data arrives before timeout expires) and callback deregistration from `LogStream` must be carefully sequenced.
-
-### 🟡 RISK 4: `ConsumerGroupCoordinator` on Broker-0 is novel code
-Nothing in the existing broker resembles a consumer group coordinator. Heartbeat timeout detection (via `actor.runAtFixedRate`), stable round-robin rebalance with churn-minimization, and `REBALANCE_IN_PROGRESS` notification via poll responses are all bespoke logic with no existing analog to mirror.
-
-### 🟢 LOW RISK: Spring Boot 4.0.3
-Spring MVC controllers, `@SpringBootConfiguration`, `@RestController`, `@RequestMapping` all work unchanged. The `MainSupport.createDefaultApplicationBuilder()` pattern in `dist/` is directly reusable.
-
----
-
-## Affected Files / Modules
-
-### Existing files to modify (3)
 | File | Change |
 |---|---|
-| `pom.xml` (root) | Add `<module>event-bridge</module>` to reactor |
-| `dist/pom.xml` | Add `StandaloneEventBridge` program entry in `appassembler`; add `event-bridge-gateway` + `event-bridge-broker` deps |
-| `bom/pom.xml` | Add managed version entries for new artifacts (optional but conventional) |
+| `src/main/resources/sbe/event-bridge-protocol.xml` | Update `HeartbeatRequest` (add `epoch int64`, `ownedPartitions group<int32>`); update `HeartbeatResponse` (add `epoch`, `revoke`, `assign`, `fullAssignment` groups); add `AckRequest` (id=18) and `AckResponse` (id=19); remove `STALE_GENERATION` / `CONSUMER_NOT_REGISTERED` error codes as active paths (keep for backwards compat or remove); schema version bump to 3 |
+| `src/main/java/.../transport/MessageTypes.java` | Remove `SUBSCRIBE_REQUEST/RESPONSE`; rename heartbeat response constant; add `ACK_REQUEST`/`ACK_RESPONSE` constants |
+| `target/generated-sources/sbe/**` | Regenerated — `HeartbeatRequestEncoder/Decoder`, `HeartbeatResponseEncoder/Decoder`, new `AckRequestEncoder/Decoder`, `AckResponseEncoder/Decoder`; `SubscribeRequest/ResponseEncoder/Decoder` deleted or kept as dead code |
 
-### New modules and key files (~115 new files)
+#### `event-bridge-broker` (coordinator logic)
 
-**`event-bridge/pom.xml`** — aggregator with 4 submodules
-
-**`event-bridge/event-bridge-core/`** (~22 files)
-- SBE schemas: `PublishBatchRequest.xml`, `PublishBatchResponse.xml`, `PollRequest.xml`, `PollResponse.xml`, `CommitOffsetRequest.xml`, `CommitOffsetResponse.xml`, `HeartbeatRequest.xml`, `HeartbeatResponse.xml`, `SubscribeRequest.xml`, `SubscribeResponse.xml`, `OffsetSnapshotPayload.xml` (11 schema files)
-- `EventRecordValue.java` — raw-bytes `UnifiedRecordValue` shim
-- `EventLogAppendEntry.java` — `LogAppendEntry` wrapping raw bytes
-- `EventBridgeProperties.java` — `@ConfigurationProperties`
-- `EventBridgeException.java` + subclasses
-
-**`event-bridge/event-bridge-broker/`** (~35 files)
-- `EventBridgeLogStorage.java` — `LogStorage + RaftCommitListener` (mirrors `AtomixLogStorage`)
-- `EventBridgePartition.java` — actor bootstrapping RAFT + LogStream per partition
-- `PublishActor.java` — sequencing actor; calls `LogStreamWriter.tryWrite(List<EventLogAppendEntry>)`
-- `PollActor.java` — reads from `LogStreamReader`, implements long-poll via `LogRecordAwaiter` + `schedule()`
-- `OffsetStore.java` — in-memory `Map<groupId, Map<consumerId, Map<partitionId, position>>>`
-- `ConsumerGroupCoordinator.java` — subscribe/heartbeat/rebalance; runs on Broker-0 only
-- `HeartbeatMonitor.java` — `actor.runAtFixedRate()` scan for dead consumers
-- `RebalanceManager.java` — stable round-robin assignment algorithm
-- `SnapshotManager.java` — entry counter, `TransientSnapshot.take(path)`, SBE serialize/deserialize
-- `TopologyBroadcaster.java` — writes leader state to SWIM member `Properties`
-- `BrokerRequestDispatcher.java` — receives SBE messages from gateway via `MessagingService`; routes to actors
-- `EventBridgeBroker.java` — Spring `@Component` lifecycle + `ActorScheduler` setup
-- Config/factory classes, startup steps
-
-**`event-bridge/event-bridge-gateway/`** (~30 files)
-- `PublishController.java`, `PollController.java`, `CommitController.java`, `SubscribeController.java`, `HeartbeatController.java`
-- Request/response DTOs (10 classes for all HTTP bodies)
-- `GlobalExceptionHandler.java` (`@ControllerAdvice`)
-- `TopologyService.java` — SWIM gossip consumer; `partitionId → MemberId` map
-- `BrokerRequestRouter.java` — 4-attempt retry loop; `MessagingService.sendAndReceive()`
-- `SbeCodec.java` — SBE encode/decode for all message types
-- `EventBridgeGatewayApplication.java` — `@SpringBootConfiguration`
-- `GatewayModuleConfiguration.java`
-
-**`event-bridge/event-bridge-client/`** (~18 files)
-- `EventBridgeClient.java` — `publishBatch()`, `subscribe()`
-- `Consumer.java` — `poll()`, `commitOffset()`, `sendHeartbeat()`; internal `Map<partitionId, nextPosition>`
-- `Event.java` — `{long position, int partitionId, byte[] payload}`
-- Exception hierarchy: `EventBridgeException`, `CoordinatorUnavailableException`, `RebalanceInProgressException`, `ConsumerNotRegisteredException`
-- `EventBridgeClientConfig.java`
-- HTTP model classes (request/response POJOs)
-
-**`dist/src/main/java/io/camunda/application/`** (~2 new files)
-- `StandaloneEventBridge.java`
-- `EventBridgeModuleConfiguration.java`
-
-**Tests** (~20–25 test classes)
-- Unit tests: `PublishActorTest`, `PollActorTest`, `ConsumerGroupCoordinatorTest`, `RebalanceManagerTest`, `OffsetStoreTest`, `TopologyServiceTest`, `BrokerRequestRouterTest`
-- Controller tests (MockMvc): one per controller
-- Integration test: `StandaloneEventBridgeIT`
-
----
-
-## Implementation Strategy
-
-**Phase 1 — `event-bridge-core`**: Define all SBE schemas + generate code. Implement `EventRecordValue` shim (Blocker 1 resolution). Define shared config properties.
-
-**Phase 2 — `event-bridge-broker`**: Build `EventBridgeLogStorage` (Blocker 2 resolution). Establish `RaftPartition` bootstrap via `RaftPartitionFactory` pattern. Implement `PublishActor` + `PollActor` (long-poll). Implement `OffsetStore` + `SnapshotManager` (using `TransientSnapshot` path). Implement `ConsumerGroupCoordinator` with heartbeat + round-robin rebalance. Wire `TopologyBroadcaster` into SWIM `Properties`.
-
-**Phase 3 — `event-bridge-gateway`**: Stand up Spring MVC. Implement `TopologyService` consuming SWIM gossip. Implement `BrokerRequestRouter` with 4-attempt retry over `MessagingService`. Wire all controllers.
-
-**Phase 4 — `event-bridge-client`**: Implement HTTP client, `Consumer` handle with position tracking, `poll()` rebalance-discard semantics, all exception types.
-
-**Phase 5 — `dist`**: `StandaloneEventBridge` entry point combining gateway + all broker partitions in one JVM. Register in `appassembler`.
-
----
-
-## Estimated Scope Summary
-
-| Category | Count |
+| File | Change |
 |---|---|
-| Existing files to modify | 3 |
-| New SBE schema files | 11 |
-| New Java source files | ~100 |
-| New test classes | ~25 |
-| **Total files** | **~140** |
+| `src/main/java/.../coordinator/ConsumerGroupRegistry.java` | **Full rewrite.** Current: flat `partitionAssignment` map + `generation` counter + `subscribe()/heartbeat()` API. Required: `epoch` (starts at 1), `configuredPartitionCount`, per-consumer `{ownedPartitions, pendingRevoke, pendingAssign, ackDeadline}`, global `{currentAssignment, targetAssignment, partitionState<PartitionState enum>}`, `pendingReassignment` queue, BALANCED_STICKY rebalance, inflight-cap logic. The `ConsumerGroup` inner class grows from ~120 lines to ~400+ lines. |
+| `src/main/java/.../actor/CoordinatorActor.java` | **Major refactor.** Remove `subscribe()` + `SubscribeResult`; change `heartbeat()` signature (add `clientEpoch, ownedPartitions`) returning `HeartbeatResult{epoch, revoke, assign, fullAssignment}`; add `ack(groupId, consumerId, epoch, revoked, assigned)` returning `AckResult{status}`; rewrite `onActorStarted()` to add `rebalanceIntervalMs` loop; rewrite `evictDeadConsumers()` to handle `PENDING_ASSIGN`/`REVOKING` transitions; add ACK-timeout processing; drain `pendingReassignment`; remove `ConsumerNotRegisteredException` for heartbeat path; rename `generation` → `epoch` throughout result records |
+| `src/test/java/.../actor/CoordinatorActorSubscribeHeartbeatTest.java` | **Full rewrite.** All 15+ tests use the old subscribe/heartbeat/generation API. New tests must cover auto-registration, delta computation, full-reconcile path, ack processing, inflight cap, timeout behavior, epoch semantics. |
+| `src/test/java/.../coordinator/ConsumerGroupRegistryTest.java` | **Full rewrite.** All 20+ tests use `subscribe()` directly. New tests must exercise the state machine transitions, `pendingRevoke/pendingAssign`, `ackDeadline`, the rebalance trigger conditions, and `configuredPartitionCount` change detection. |
 
-The implementation is well-grounded in the codebase — the RAFT bootstrap, SWIM topology gossip, Netty messaging, LogStream write/read, and ActorScheduler patterns are all clearly established and directly reusable. The three items requiring custom bridging code (LogAppendEntry shim, custom LogStorage, TransientSnapshot-based snapshots instead of a non-existent RaftSnapshotWriter) are each ~100–200 lines of focused implementation work, not architectural unknowns. The genuinely novel component is `ConsumerGroupCoordinator` on Broker-0, which has no analog in the codebase and carries the most implementation risk.
+#### `event-bridge-gateway` (HTTP layer + codec + routing)
+
+| File | Change |
+|---|---|
+| `src/main/java/.../dto/EventBridgeDtos.java` | Add `HeartbeatRequest{epoch, ownedPartitions}`; replace `HeartbeatResponse` with `{epoch, revoke, assign, fullAssignment}`; add `AckRequest{epoch, revoked, assigned}` and `AckResponse{status}`; remove `SubscribeResponse`, `StaleGenerationResponse`; remove `generation` from `CommitRequest`; rename `generation` → `epoch` in `PollResponse` |
+| `src/main/java/.../controller/HeartbeatController.java` | Add `@RequestBody HeartbeatRequest`; change URL to `/v1/groups/{groupId}/consumers/{consumerId}/heartbeat`; update response mapping to new `HeartbeatResult` shape; handle 404 (group not found) in addition to 503 |
+| `src/main/java/.../controller/SubscribeController.java` | **Delete** |
+| `src/main/java/.../controller/AckController.java` | **New file.** `POST /v1/groups/{groupId}/consumers/{consumerId}/ack`; accepts `AckRequest`; returns `AckResponse{status:"OK"}`; handles 404/400/503 |
+| `src/main/java/.../controller/CommitController.java` | Remove generation stale-check block (lines 100–103); remove `StaleGenerationResponse` import; update `CommitRequest` usage (no `generation` field) |
+| `src/main/java/.../transport/SbeCodec.java` | Update `encodeHeartbeat()` to accept `epoch + ownedPartitions`; update `decodeHeartbeat()` to return `{epoch, revoke, assign, fullAssignment}`; remove `encodeSubscribe/decodeSubscribe`; add `encodeAck(groupId, consumerId, epoch, revoked, assigned)` and `decodeAck(bytes)` |
+| `src/main/java/.../transport/BrokerRequestRouter.java` | Remove `subscribe()` method; update `heartbeat()` signature; add `ack()` method with `sendToCoordinator` routing; remove `SubscribeResult` import |
+| `src/test/java/.../transport/BrokerRequestRouterTest.java` | Update heartbeat test; add ack routing test; remove subscribe test |
+| `src/test/java/.../controller/GlobalExceptionHandlerTest.java` | Likely minor updates if SubscribeController was tested here |
+| `src/test/java/.../StandaloneEventBridgeIT.java` | **Major rewrite.** Currently tests subscribe → poll → heartbeat lifecycle. Must be rewritten for heartbeat-auto-register → ack → poll lifecycle. |
+
+#### `event-bridge-client`
+
+| File | Change |
+|---|---|
+| `src/main/java/.../client/Consumer.java` | **Full rewrite.** Replace entire heartbeat/poll loop with the new `currentEpoch`/`ownedPartitions`-based consumer loop. Remove `generation`-in-poll-URL usage. Add `sendAck()` method. Rename `generation` → `currentEpoch`. |
+| `src/main/java/.../client/RebalanceInProgressException.java` | **Delete** |
+| `src/main/java/.../client/ConsumerNotRegisteredException.java` | **Delete** (auto-registration removes this error path) |
+| `src/main/java/.../client/EventBridgeClient.java` | Remove `subscribe()` API (or keep as thin wrapper that calls heartbeat); update internal subscribe call site |
+| `src/test/java/.../client/ConsumerTest.java` | **Full rewrite.** All tests stub the old subscribe/poll/heartbeat/generation flow. |
+| `src/test/java/.../client/EventBridgeClientTest.java` | Update to remove subscribe test stubs |
+
+#### `event-bridge-core` (configuration)
+
+| File | Change |
+|---|---|
+| `src/main/java/.../config/EventBridgeProperties.java` | Replace `ConsumerProperties(heartbeatTimeoutMs, subscribeTimeoutMs)` with `ConsumerProperties(sessionTimeoutMs, rebalanceIntervalMs, ackTimeoutMs, maxInflightRevocations, heartbeatIntervalMs)`; add defaults per spec; update compact constructor defaults |
+
+---
+
+### Approach
+
+**Phase 1 – Schema & Config (foundation)**
+Update the SBE XML schema; regenerate codecs. Update `EventBridgeProperties.ConsumerProperties`. Update `MessageTypes`.
+
+**Phase 2 – Registry (state machine core)**
+Rewrite `ConsumerGroupRegistry` to introduce `PartitionState` enum, the five coordinator maps, per-consumer pending sets, `ackDeadline`, `configuredPartitionCount`, BALANCED_STICKY rebalance, and inflight-cap / `pendingReassignment` queue. This is the highest-complexity piece — write its unit tests (`ConsumerGroupRegistryTest`) in parallel.
+
+**Phase 3 – CoordinatorActor (orchestration)**
+Wire the new registry API into actor methods: new `heartbeat()` (delta vs. full-reconcile path), new `ack()` (state transitions), coordinator loop (eviction → ACK-timeout → drain queue → partition-count check → BALANCED_STICKY rebalance). Remove `subscribe()` / `SubscribeResult`. Update `CoordinatorActorSubscribeHeartbeatTest`.
+
+**Phase 4 – Transport layer**
+Update `SbeCodec` (encode/decode for new heartbeat fields + ack messages). Update `BrokerRequestRouter` (new heartbeat signature, add ack, remove subscribe). Update `BrokerSbeCodec` in broker transport (handler registration for `ACK_REQUEST`).
+
+**Phase 5 – Gateway DTOs + Controllers**
+Update `EventBridgeDtos`, `HeartbeatController`, `CommitController`; delete `SubscribeController`; add `AckController`.
+
+**Phase 6 – Client**
+Full rewrite of `Consumer.java` loop per spec. Delete `RebalanceInProgressException`, `ConsumerNotRegisteredException`. Update `ConsumerTest`, `StandaloneEventBridgeIT`.
+
+---
+
+### Risks & Blockers
+
+1. **SBE schema backward compatibility.** Adding `epoch` as a fixed field and `ownedPartitions`/`revoke`/`assign`/`fullAssignment` as repeating groups to existing messages (7, 8) changes their wire format. All decoders expecting the old layout will break. There is no schema migration path for in-flight messages; this requires a coordinated cut-over (version bump to schema `version="3"`).
+
+2. **`BrokerSbeCodec` / broker-side message dispatch.** `BrokerRequestDispatcher.java` (not yet read in detail) will need handler registrations for `ACK_REQUEST` / `ACK_RESPONSE` message types. This is not complex but is easy to miss, and missing it will cause silent routing failures. Confirm whether `BrokerRequestDispatcher` auto-registers from `MessageTypes` constants or requires explicit handler wiring.
+
+3. **`PollResponse` still carries `generation`.** Per the requirements, `PollResponse.generation` is renamed to `epoch`. The SBE `PollRequest` also has a `generation` field (line 84 in schema). The requirements list the poll pipeline as out of scope but `PollResponse.generation → epoch` is listed as a DTO change (Req E). This creates a partial-scope conflict — the SBE poll messages and `PollController`/`PollActor` also reference `generation` and would need matching updates, or the field can be renamed in the HTTP DTO only while the SBE field retains its name.
+
+4. **Coordinator loop timing with actor thread model.** The coordinator loop at `rebalanceIntervalMs` must run entirely on the actor thread (like the existing truncation timer). The five-step loop body — especially ACK-timeout processing and BALANCED_STICKY rebalance with inflight-cap — is substantially more work per tick than the current simple eviction call. Under high consumer churn this could cause actor-thread stalls. Needs a microbenchmark or at least a note to cap loop work per iteration.
+
+5. **`StandaloneEventBridgeIT` relies on `subscribe()`** as its entry point into the consumer lifecycle. Removing `subscribe()` from `EventBridgeClient` will break it completely until the full client rewrite lands. Consider keeping a stub `subscribe()` that immediately delegates to a heartbeat during the transition, to avoid breaking the integration test midway.
+
+6. **`ConsumerNotRegisteredException` is also thrown from `commitOffset()`** in `CoordinatorActor` (line 146). The requirements do not change `commitOffset()` logic, but they do remove the exception from the heartbeat path. This distinction must be preserved; deleting the exception class entirely would also break the commit path.
+
+7. **Inflight-cap and `pendingReassignment` correctness.** The interaction between the cap drain (Phase 3 coordinator loop step 3) and concurrent ACK processing is subtle: a task may be dequeued when the partition is no longer `UNASSIGNED` (was snatched by another path). The discard condition (`if partition not UNASSIGNED, skip`) must be airtight; otherwise double-assignment is possible.
+
+8. **Client-side commit-failure loop.** The new `Consumer.java` loop has two separate commit-failure retry paths (delta and full-reconcile). Both require that the `ackDeadline` on the coordinator eventually forces reassignment if commits never succeed. This is safe by spec (at-least-once), but the client must not silently swallow commit errors — the test for this path is non-trivial (requires mock commit that fails then succeeds).
+
+---
+
+### Estimated Scope
+
+| Category | Estimate |
+|---|---|
+| **Files to modify** | 16 |
+| **Files to create** | 2 (`AckController.java`, new `PartitionState.java` enum if split out) |
+| **Files to delete** | 3 (`SubscribeController.java`, `RebalanceInProgressException.java`, `ConsumerNotRegisteredException.java`) |
+| **Generated files regenerated** | ~10 SBE codec files |
+| **Test classes to fully rewrite** | 4 (`ConsumerGroupRegistryTest`, `CoordinatorActorSubscribeHeartbeatTest`, `ConsumerTest`, `StandaloneEventBridgeIT`) |
+| **Test classes to update** | 3 (`BrokerRequestRouterTest`, `GlobalExceptionHandlerTest`, `EventBridgeClientTest`) |
+| **New test classes** | 1–2 (dedicated `AckController` test, potentially `CoordinatorActorAckTest`) |
+| **Net new lines of production code** | ~800–1200 (state machine + coordinator loop + ack path + client loop) |
+| **Lines removed** | ~300 (subscribe flow, generation stale-check, old heartbeat paths) |
