@@ -38,16 +38,9 @@ import tools.jackson.databind.json.JsonMapper;
  * <p>Each server has its own transport provider and tool specifications, allowing independent
  * configuration and management.
  */
-@AutoConfiguration(
-    afterName = {
-      "org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration",
-      "org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration",
-      "org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration",
-      "org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebFluxAutoConfiguration",
-      "org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebMvcAutoConfiguration"
-    })
+@AutoConfiguration
 @ConditionalOnMcpGatewayEnabled
-public class McpServersConfiguration {
+public class CamundaMcpServersAutoConfiguration {
 
   /**
    * Transport provider for the cluster MCP server at {@code /mcp/cluster}.
