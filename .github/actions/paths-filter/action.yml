@@ -29,7 +29,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
@@ -49,7 +49,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
@@ -58,7 +63,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
   operate-backend-changes:
@@ -66,18 +76,40 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-operate.outputs.operate-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true'
       }}
+<<<<<<< HEAD
+=======
+  operate-frontend-changes:
+    description: Output whether Operate frontend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+        steps.filter-operate.outputs.operate-frontend-change == 'true'
+      }}
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
   tasklist-frontend-changes:
     description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
       }}
   tasklist-backend-changes:
@@ -85,7 +117,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -96,7 +133,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-optimize.outputs.optimize-frontend-change == 'true'
       }}
   optimize-backend-changes:
@@ -104,7 +146,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
@@ -114,7 +161,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true' ||
@@ -125,7 +177,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
       }}
@@ -134,7 +191,12 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+<<<<<<< HEAD
         steps.filter-common.outputs.github-actions-change == 'true' ||
+=======
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-zeebe.outputs.zeebe-change == 'true'
@@ -146,6 +208,18 @@ outputs:
         github.event_name == 'push' ||
         (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
       }}
+<<<<<<< HEAD
+=======
+  openapi-changes:
+    description: Output whether any C8 OpenAPI code has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+        steps.filter-common.outputs.openapi-change == 'true'
+      }}
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
   stable-branch-changes:
     description: Output whether the change is occurring on a stable/X.Y branch or not
     value: >-
@@ -153,6 +227,44 @@ outputs:
         github.event_name == 'push' &&
         steps.filter-special-branch.outputs.stable-branch == 'true'
       }}
+<<<<<<< HEAD
+=======
+  rdbms-integration-tests:
+    description: Output whether RDBMS integrations tests should be run based on code changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.rdbms-change == 'true'
+      }}
+  renovate-config-changes:
+    description: Output whether renovate config validator needs to be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+        steps.filter-common.outputs.renovate-config-change == 'true'
+      }}
+  client-components-changes:
+    description: Output whether Client Components tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.ci-workflow-change == 'true' ||
+        steps.filter-client-components.outputs.client-components-change == 'true'
+      }}
+  docs-changes:
+    description: Output whether Documentation tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        steps.filter-docs.outputs.docs-change == 'true'
+      }}
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
 
 runs:
   using: composite
@@ -170,6 +282,20 @@ runs:
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
 
+<<<<<<< HEAD
+=======
+        ci-workflow-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '!.github/workflows/*load-test*'
+          - '!.github/workflows/*load_test*'
+          - '.github/actionlint*'
+          - '.github/conftest-*.rego'
+
+        renovate-config-change:
+          - '**/renovate.json'
+
+>>>>>>> 37824f74aba (ci: skip full CI for load-test workflow changes)
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
         #  * react on resource changes like bpmn, XML, etc.
