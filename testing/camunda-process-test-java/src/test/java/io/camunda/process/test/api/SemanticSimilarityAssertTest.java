@@ -153,7 +153,7 @@ public class SemanticSimilarityAssertTest {
           .hasMessageContaining("variable 'result' did not satisfy similarity check")
           .hasMessageContaining("Expectation: Hello there")
           .hasMessageContaining("Actual value: \"Hello, World!\"")
-          .hasMessageContaining("Score: 0.0 (threshold: 0.80)");
+          .hasMessageContaining("Score: 0.00 (threshold: 0.80)");
     }
 
     @Test
@@ -284,7 +284,7 @@ public class SemanticSimilarityAssertTest {
                           ElementSelectors.byId("task1"), "localVar", "some expectation"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("localVar")
-          .hasMessageContaining("0.0")
+          .hasMessageContaining("0.00")
           .hasMessageContaining("0.80")
           .hasMessageContaining("some expectation");
     }

@@ -564,7 +564,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           "%s variable '%s' did not satisfy similarity check.\n"
               + "  Expectation: %s\n"
               + "  Actual value: %s\n"
-              + "  Score: %s (threshold: %.2f)\n",
+              + "  Score: %.2f (threshold: %.2f)\n",
           actual, variableName, expectedValue, variableValue, result.getScore(), threshold);
     }
   }
