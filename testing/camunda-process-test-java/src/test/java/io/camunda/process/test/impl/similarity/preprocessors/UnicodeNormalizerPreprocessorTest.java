@@ -14,31 +14,35 @@
  * limitations under the License.
  */
 
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.impl.similarity.preprocessors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.api.similarity.TextPreprocessor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 
-public class LowercaseNormalizerPreprocessorTest {
+public class UnicodeNormalizerPreprocessorTest {
 
-  private final TextPreprocessor preprocessor = new LowercaseNormalizerPreprocessor();
+  private final TextPreprocessor preprocessor = UnicodeNormalizerPreprocessor.INSTANCE;
 
   @Test
-  void shouldConvertUppercaseToLowercase() {
-    assertThat(preprocessor.process("HELLO WORLD")).isEqualTo("hello world");
+  void shouldNormalizeDecomposedCharacterToNfc() {
+    // "e" + combining acute accent (U+0301) → precomposed "é" (U+00E9)
+    final String decomposed = "e\u0301";
+    final String composed = "\u00E9";
+    assertThat(preprocessor.process(decomposed)).isEqualTo(composed);
   }
 
   @Test
-  void shouldLeaveAlreadyLowercaseTextUnchanged() {
+  void shouldLeaveAlreadyNfcTextUnchanged() {
+    assertThat(preprocessor.process("café")).isEqualTo("café");
+  }
+
+  @Test
+  void shouldLeaveAsciiTextUnchanged() {
     assertThat(preprocessor.process("hello world")).isEqualTo("hello world");
-  }
-
-  @Test
-  void shouldHandleMixedCase() {
-    assertThat(preprocessor.process("Hello World")).isEqualTo("hello world");
   }
 
   @ParameterizedTest

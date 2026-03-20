@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.api.similarity;
 
 /**
  * A functional interface for pre-processing text before computing embedding vectors.
@@ -47,6 +47,6 @@ public interface TextPreprocessor {
    * @return a composed preprocessor
    */
   default TextPreprocessor andThen(final TextPreprocessor next) {
-    return text -> next.process(this.process(text));
+    return text -> next.process(process(text));
   }
 }

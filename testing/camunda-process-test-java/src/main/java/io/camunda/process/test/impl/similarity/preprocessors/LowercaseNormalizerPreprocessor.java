@@ -13,16 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.impl.similarity.preprocessors;
+
+import io.camunda.process.test.api.similarity.TextPreprocessor;
+import java.util.Locale;
 
 /**
- * A {@link TextPreprocessor} that trims leading/trailing whitespace and collapses all internal
- * whitespace sequences (spaces, tabs, newlines) to a single space.
+ * A {@link TextPreprocessor} that converts text to lower case using {@link Locale#ROOT} to ensure
+ * locale-independent behavior.
  */
-public final class WhitespaceNormalizerPreprocessor implements TextPreprocessor {
+public final class LowercaseNormalizerPreprocessor implements TextPreprocessor {
+
+  public static final LowercaseNormalizerPreprocessor INSTANCE =
+      new LowercaseNormalizerPreprocessor();
+
+  private LowercaseNormalizerPreprocessor() {}
 
   @Override
   public String process(final String text) {
-    return text == null ? null : text.trim().replaceAll("\\s+", " ");
+    return text == null ? null : text.toLowerCase(Locale.ROOT);
   }
 }

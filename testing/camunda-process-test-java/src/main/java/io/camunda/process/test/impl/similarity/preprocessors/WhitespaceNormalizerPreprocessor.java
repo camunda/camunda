@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.impl.similarity.preprocessors;
 
-import java.text.Normalizer;
+import io.camunda.process.test.api.similarity.TextPreprocessor;
 
 /**
- * A {@link TextPreprocessor} that applies Unicode NFC (Canonical Decomposition, followed by
- * Canonical Composition) normalization to text. This resolves composed and decomposed character
- * representations to a consistent form (e.g. {@code "é"} vs {@code "e\u0301"}).
+ * A {@link TextPreprocessor} that trims leading/trailing whitespace and collapses all internal
+ * whitespace sequences (spaces, tabs, newlines) to a single space.
  */
-public final class UnicodeNormalizerPreprocessor implements TextPreprocessor {
+public final class WhitespaceNormalizerPreprocessor implements TextPreprocessor {
+
+  public static final WhitespaceNormalizerPreprocessor INSTANCE =
+      new WhitespaceNormalizerPreprocessor();
+
+  private WhitespaceNormalizerPreprocessor() {}
 
   @Override
   public String process(final String text) {
-    return text == null ? null : Normalizer.normalize(text, Normalizer.Form.NFC);
+    return text == null ? null : text.trim().replaceAll("\\s+", " ");
   }
 }

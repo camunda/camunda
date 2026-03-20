@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.similarity;
 
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
-import io.camunda.process.test.api.similarity.preprocessors.TextPreprocessor;
+import io.camunda.process.test.api.similarity.TextPreprocessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

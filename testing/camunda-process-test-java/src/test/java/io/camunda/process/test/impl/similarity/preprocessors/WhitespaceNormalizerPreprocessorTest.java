@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.impl.similarity.preprocessors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.api.similarity.TextPreprocessor;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,7 +27,7 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 @Nested
 class WhitespaceNormalizerPreprocessorTest {
 
-  private final TextPreprocessor preprocessor = new WhitespaceNormalizerPreprocessor();
+  private final TextPreprocessor preprocessor = WhitespaceNormalizerPreprocessor.INSTANCE;
 
   @Test
   void shouldTrimLeadingAndTrailingWhitespace() {

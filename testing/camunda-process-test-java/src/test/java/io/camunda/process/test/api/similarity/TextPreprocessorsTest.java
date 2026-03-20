@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.api.similarity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.impl.similarity.preprocessors.LowercaseNormalizerPreprocessor;
+import io.camunda.process.test.impl.similarity.preprocessors.UnicodeNormalizerPreprocessor;
+import io.camunda.process.test.impl.similarity.preprocessors.WhitespaceNormalizerPreprocessor;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class TextPreprocessorsTest {
@@ -26,10 +29,10 @@ class TextPreprocessorsTest {
   @Test
   void shouldApplyPreprocessorsInOrder() {
     final TextPreprocessor pipeline =
-        new WhitespaceNormalizerPreprocessor()
+        WhitespaceNormalizerPreprocessor.INSTANCE
             .andThen(text -> text.replaceAll("HELLO", "HI "))
             .andThen(text -> text.replaceAll("HI", "YO"))
-            .andThen(new LowercaseNormalizerPreprocessor());
+            .andThen(LowercaseNormalizerPreprocessor.INSTANCE);
 
     assertThat(pipeline.process("HELLO WORLD")).isEqualTo("yo  world");
   }
@@ -37,14 +40,15 @@ class TextPreprocessorsTest {
   @Test
   void shouldPassNullThrough() {
     final TextPreprocessor pipeline =
-        new WhitespaceNormalizerPreprocessor().andThen(new LowercaseNormalizerPreprocessor());
+        WhitespaceNormalizerPreprocessor.INSTANCE.andThen(LowercaseNormalizerPreprocessor.INSTANCE);
 
     assertThat(pipeline.process(null)).isNull();
   }
 
   @Test
   void shouldReturnWhitespaceNormalizer() {
-    assertThat(TextPreprocessors.whitespaceNormalizer().process("  a  b  ")).isEqualTo("a b");
+    Assertions.assertThat(TextPreprocessors.whitespaceNormalizer().process("  a  b  "))
+        .isEqualTo("a b");
   }
 
   @Test

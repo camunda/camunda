@@ -29,8 +29,8 @@ import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
-import io.camunda.process.test.api.similarity.preprocessors.WhitespaceNormalizerPreprocessor;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.similarity.preprocessors.WhitespaceNormalizerPreprocessor;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
@@ -552,7 +552,7 @@ public class SemanticSimilarityAssertTest {
 
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(model)
-              .withPreprocessors(new WhitespaceNormalizerPreprocessor()));
+              .withPreprocessors(WhitespaceNormalizerPreprocessor.INSTANCE));
 
       final Variable variable = newVariable("result", "hello");
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
@@ -575,8 +575,8 @@ public class SemanticSimilarityAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(model)
               .withPreprocessors(
-                  new WhitespaceNormalizerPreprocessor()
-                      .andThen(text -> text.replaceAll("Hello", " Hi"))));
+                  WhitespaceNormalizerPreprocessor.INSTANCE.andThen(
+                      text -> text.replaceAll("Hello", " Hi"))));
 
       final Variable variable = newVariable("result", "hello");
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));

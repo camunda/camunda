@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.similarity.preprocessors;
+package io.camunda.process.test.api.similarity;
 
-import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
+import io.camunda.process.test.impl.similarity.preprocessors.LowercaseNormalizerPreprocessor;
+import io.camunda.process.test.impl.similarity.preprocessors.UnicodeNormalizerPreprocessor;
+import io.camunda.process.test.impl.similarity.preprocessors.WhitespaceNormalizerPreprocessor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -23,22 +25,13 @@ import java.util.List;
 /**
  * Factory for built-in {@link TextPreprocessor} implementations.
  *
- * <p>The default pipeline returned by {@link #defaults()} applies preprocessors in this order:
- *
- * <ol>
- *   <li>{@link UnicodeNormalizerPreprocessor} — NFC normalization resolves composed/decomposed
- *       characters
- *   <li>{@link WhitespaceNormalizerPreprocessor} — trims and collapses whitespace
- *   <li>{@link LowercaseNormalizerPreprocessor} — converts to lower case
- * </ol>
- *
  * <p>Preprocessors can be instantiated directly and chained via {@link
  * TextPreprocessor#andThen(TextPreprocessor)}:
  *
  * <pre>
- *   TextPreprocessor pipeline = new UnicodeNormalizerPreprocessor()
- *       .andThen(new WhitespaceNormalizerPreprocessor())
- *       .andThen(new LowercaseNormalizerPreprocessor());
+ *   TextPreprocessor pipeline = TextPreprocessors.unicodeNormalizer()
+ *       .andThen(TextPreprocessors.whitespaceNormalizer())
+ *       .andThen(TextPreprocessors.lowercaseNormalizer());
  *   CamundaAssert.setSemanticSimilarityConfig(
  *       SemanticSimilarityConfig.of(model).withPreprocessors(pipeline));
  * </pre>
@@ -48,34 +41,38 @@ public final class TextPreprocessors {
   private TextPreprocessors() {}
 
   /**
-   * Returns a new {@link WhitespaceNormalizerPreprocessor} instance.
+   * Returns a {@link TextPreprocessor} instance that normalizes whitespaces by trimming
+   * leading/trailing whitespace and collapsing all internal whitespace sequences (spaces, tabs,
+   * newlines) to a single space.
    *
    * @return a whitespace-normalizing {@link TextPreprocessor}
    */
   public static TextPreprocessor whitespaceNormalizer() {
-    return new WhitespaceNormalizerPreprocessor();
+    return WhitespaceNormalizerPreprocessor.INSTANCE;
   }
 
   /**
-   * Returns a new {@link LowercaseNormalizerPreprocessor} instance.
+   * Returns a {@link TextPreprocessor} instance that converts text to lower case using {@code
+   * Locale.ROOT} to ensure locale-independent behavior.
    *
    * @return a lowercase-converting {@link TextPreprocessor}
    */
   public static TextPreprocessor lowercaseNormalizer() {
-    return new LowercaseNormalizerPreprocessor();
+    return LowercaseNormalizerPreprocessor.INSTANCE;
   }
 
   /**
-   * Returns a new {@link UnicodeNormalizerPreprocessor} instance.
+   * Returns a {@link TextPreprocessor} instance that applies Unicode NFC normalization to the text.
    *
    * @return a Unicode-normalizing {@link TextPreprocessor}
    */
   public static TextPreprocessor unicodeNormalizer() {
-    return new UnicodeNormalizerPreprocessor();
+    return UnicodeNormalizerPreprocessor.INSTANCE;
   }
 
   /**
-   * Returns the default preprocessing pipeline: unicode → whitespace → lowercase.
+   * Returns the default preprocessing pipeline: Unicode normalization → whitespace normalization →
+   * lowercasing.
    *
    * <p>This is the pipeline applied automatically by {@link SemanticSimilarityConfig} unless
    * overridden via {@link SemanticSimilarityConfig#withPreprocessors} or {@link
@@ -85,9 +82,6 @@ public final class TextPreprocessors {
    */
   public static List<TextPreprocessor> defaults() {
     return Collections.unmodifiableList(
-        Arrays.asList(
-            new UnicodeNormalizerPreprocessor(),
-            new WhitespaceNormalizerPreprocessor(),
-            new LowercaseNormalizerPreprocessor()));
+        Arrays.asList(unicodeNormalizer(), whitespaceNormalizer(), lowercaseNormalizer()));
   }
 }

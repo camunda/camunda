@@ -16,7 +16,7 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
-import io.camunda.process.test.api.similarity.preprocessors.TextPreprocessor;
+import io.camunda.process.test.api.similarity.TextPreprocessor;
 import java.util.List;
 
 /** An evaluation that uses text embeddings to assess semantic similarity between two texts. */

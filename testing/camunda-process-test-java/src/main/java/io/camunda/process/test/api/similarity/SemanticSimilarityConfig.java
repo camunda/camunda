@@ -15,11 +15,6 @@
  */
 package io.camunda.process.test.api.similarity;
 
-import io.camunda.process.test.api.similarity.preprocessors.LowercaseNormalizerPreprocessor;
-import io.camunda.process.test.api.similarity.preprocessors.TextPreprocessor;
-import io.camunda.process.test.api.similarity.preprocessors.TextPreprocessors;
-import io.camunda.process.test.api.similarity.preprocessors.UnicodeNormalizerPreprocessor;
-import io.camunda.process.test.api.similarity.preprocessors.WhitespaceNormalizerPreprocessor;
 import io.camunda.process.test.impl.similarity.SemanticSimilarityConfigImpl;
 import java.util.List;
 
@@ -35,11 +30,10 @@ import java.util.List;
  * </pre>
  *
  * <p>By default, three preprocessors are applied to both the expected and actual text before
- * computing embeddings, in this order: {@link UnicodeNormalizerPreprocessor} → {@link
- * WhitespaceNormalizerPreprocessor} → {@link LowercaseNormalizerPreprocessor}. Use {@link
- * #withoutPreprocessors()} to disable all preprocessing, or {@link
- * #withPreprocessors(TextPreprocessor...)} to supply a custom pipeline built by chaining the
- * provided preprocessor classes.
+ * computing embeddings, in this order: Unicode normalization → whitespace normalization →
+ * lowercasing, see {@link TextPreprocessors#defaults()}. Use {@link #withoutPreprocessors()} to
+ * disable all preprocessing, or {@link #withPreprocessors(TextPreprocessor...)} to supply a custom
+ * pipeline built by chaining preprocessors from {@link TextPreprocessors}.
  */
 public interface SemanticSimilarityConfig {
 
@@ -59,8 +53,8 @@ public interface SemanticSimilarityConfig {
 
   /**
    * Creates a new SemanticSimilarityConfig with the given embedding model, default threshold, and
-   * all default preprocessors enabled ({@link UnicodeNormalizerPreprocessor} → {@link
-   * WhitespaceNormalizerPreprocessor} → {@link LowercaseNormalizerPreprocessor}).
+   * all default preprocessors enabled (Unicode normalization → whitespace normalization →
+   * lowercasing, see {@link TextPreprocessors#defaults()}).
    *
    * @param embeddingModel the embedding model adapter to use for similarity evaluations
    * @return a new SemanticSimilarityConfig instance
@@ -75,8 +69,8 @@ public interface SemanticSimilarityConfig {
 
   /**
    * Creates a new SemanticSimilarityConfig with the given embedding model, threshold, and all
-   * default preprocessors enabled ({@link UnicodeNormalizerPreprocessor} → {@link
-   * WhitespaceNormalizerPreprocessor} → {@link LowercaseNormalizerPreprocessor}).
+   * default preprocessors enabled (Unicode → whitespace → lowercase, see {@link
+   * TextPreprocessors#defaults()}).
    *
    * @param embeddingModel the embedding model adapter to use for similarity evaluations
    * @param threshold the threshold score (0-1) above which a similarity assertion passes
@@ -107,20 +101,6 @@ public interface SemanticSimilarityConfig {
   /**
    * Returns a new SemanticSimilarityConfig with the given preprocessors replacing the current
    * pipeline, keeping all other settings. Preprocessors are applied in the order provided.
-   *
-   * <p>Example — whitespace normalization only:
-   *
-   * <pre>
-   *   config.withPreprocessors(new WhitespaceNormalizerPreprocessor())
-   * </pre>
-   *
-   * <p>Example — chaining via {@link TextPreprocessor#andThen(TextPreprocessor)}:
-   *
-   * <pre>
-   *   config.withPreprocessors(
-   *       new UnicodeNormalizerPreprocessor()
-   *           .andThen(new WhitespaceNormalizerPreprocessor()))
-   * </pre>
    *
    * @param preprocessors the preprocessors to apply in order before computing embeddings
    * @return a new SemanticSimilarityConfig instance with the updated preprocessors

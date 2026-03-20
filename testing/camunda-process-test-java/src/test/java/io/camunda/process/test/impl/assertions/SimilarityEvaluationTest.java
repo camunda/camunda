@@ -18,8 +18,8 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import io.camunda.process.test.api.similarity.preprocessors.LowercaseNormalizerPreprocessor;
-import io.camunda.process.test.api.similarity.preprocessors.TextPreprocessor;
+import io.camunda.process.test.api.similarity.TextPreprocessor;
+import io.camunda.process.test.impl.similarity.preprocessors.LowercaseNormalizerPreprocessor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +55,7 @@ class SimilarityEvaluationTest {
   void shouldApplyPreprocessorsBeforeEmbedding() {
     // given — expected is mixed-case, actual is lower-case; after lowercasing they are equal
     final List<TextPreprocessor> preprocessors =
-        Collections.singletonList(new LowercaseNormalizerPreprocessor());
+        Collections.singletonList(LowercaseNormalizerPreprocessor.INSTANCE);
 
     // We track what texts were passed to the embedding model
     final String[] embeddedTexts = new String[2];
