@@ -10,9 +10,13 @@ package io.camunda.zeebe.test;
 import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +31,14 @@ final class NoSnapshotTest {
 
   @BeforeAll
   static void setUp() {
+    final String previous = VersionUtil.getPreviousVersion();
+    final String current = VersionUtil.getVersion().replace("-SNAPSHOT", "");
+    final var result = VersionCompatibilityCheck.check(previous, current);
+
+    // Skip the test entirely for unsupported upgrades (e.g. skipped minor)
+    Assumptions.assumeTrue(
+        result instanceof Compatible,
+        () -> "Skipping NoSnapshotTest for unsupported upgrade path: " + result);
     network = Network.newNetwork();
   }
 
