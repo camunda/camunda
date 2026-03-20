@@ -31,7 +31,7 @@ Before starting any data-layer-affecting work, answer the following questions in
 design document. Treat these as a checklist - missing answers could be a signal that the design is
 not yet ready.
 
-| # | Question                                                                                                                                  | Why it matters                                                                                                    |
+| # |                                                                 Question                                                                  |                                                  Why it matters                                                   |
 |---|-------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
 | 1 | What is the expected data volume? How many documents / rows per index / table, and at what write rate?                                    | Volume drives index sizing, shard strategy, and pagination design.                                                |
 | 2 | What is the cardinality of the new/changed fields? (e.g. "one per process instance" vs "one per variable per process instance")           | High-cardinality fields in aggregations or sort clauses are expensive.                                            |
@@ -71,7 +71,7 @@ Reach out to `#team-data-layer` for review if your answers indicate:
 
 ### 2.1 Choosing Field Types (ES/OS)
 
-| Use case                                          | Recommended type                           | Notes                                                                                                                                                                                             |
+|                     Use case                      |              Recommended type              |                                                                                               Notes                                                                                               |
 |---------------------------------------------------|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Identifiers, enums, state values, IDs             | `keyword`                                  | Enables exact-match filters, aggregations, and sorting.                                                                                                                                           |
 | Long integer keys (e.g. process instance key)     | `long` or `keyword`                        | Use `long` when numeric range queries are needed (e.g. `key > X`). Use `keyword` if the field is only used for exact-match filters, aggregations, or sorting - `keyword` is cheaper in that case. |
@@ -186,7 +186,7 @@ re-index. Rules:
 Before introducing a new schema pattern, check whether an existing template already solves the
 problem. Templates to reference:
 
-| Template                   | Location                                                    | Notable patterns                                          |
+|          Template          |                          Location                           |                     Notable patterns                      |
 |----------------------------|-------------------------------------------------------------|-----------------------------------------------------------|
 | `VariableTemplate`         | `webapps-schema/.../template/VariableTemplate.java`         | `keyword` with `ignore_above` for potentially long values |
 | `FlowNodeInstanceTemplate` | `webapps-schema/.../template/FlowNodeInstanceTemplate.java` | Date fields, `long` keys, `keyword` state                 |
@@ -248,7 +248,7 @@ public interface TerminateInstructionsMixin {
 
 **Examples in this codebase (`BulkIndexRequest.java` in each exporter):**
 
-| Mixin class                         | Applied to                                                                 | Fields suppressed                            |
+|             Mixin class             |                                 Applied to                                 |              Fields suppressed               |
 |-------------------------------------|----------------------------------------------------------------------------|----------------------------------------------|
 | `RecordSequenceMixin`               | `Record`                                                                   | `authorizations`, `agent`                    |
 | `IgnoreRootProcessInstanceKeyMixin` | `JobRecordValue`, `IncidentRecordValue`, `VariableRecordValue`, and others | `rootProcessInstanceKey`                     |
@@ -414,7 +414,7 @@ Aggregations are powerful but expensive. Follow these guidelines:
 
 #### 3.4.1 ES/OS vs RDBMS differences
 
-| Pattern                  | ES/OS                           | RDBMS                                               |
+|         Pattern          |              ES/OS              |                        RDBMS                        |
 |--------------------------|---------------------------------|-----------------------------------------------------|
 | Count of distinct values | `cardinality` agg (approximate) | `COUNT(DISTINCT col)` (exact)                       |
 | Top N groups by count    | `terms` agg                     | `GROUP BY col ORDER BY count DESC LIMIT n`          |
@@ -704,7 +704,7 @@ ORDER BY history_cleanup_date LIMIT 1000;
 
 ## 5. References
 
-| Resource                          | Location                                                                            |
+|             Resource              |                                      Location                                       |
 |-----------------------------------|-------------------------------------------------------------------------------------|
 | RDBMS module documentation        | `docs/rdbms.md`                                                                     |
 | Testing strategy                  | `docs/testing.md`                                                                   |
