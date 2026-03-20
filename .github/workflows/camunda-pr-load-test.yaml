@@ -12,18 +12,8 @@ on:
       - synchronize
       - closed
 
-# All benchmark-related events (label/unlabel/push/close) share one concurrency group per PR
-# so that removing a label cancels the in-progress build, and a new push replaces a stale one.
-# Non-benchmark label events get their own isolated group.
 concurrency:
-  group: >-
-    ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{
-      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
-       || github.event.action == 'synchronize'
-       || github.event.action == 'closed')
-      && 'benchmark'
-      || format('other-{0}', github.event.label.name)
-    }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 defaults:
@@ -55,14 +45,23 @@ jobs:
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           max_length: 44  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
-      # Checkout is only needed on labeled/synchronize to compute the image tag.
+      # Checkout + image tag are needed whenever we may build/deploy (labeled, unlabeled with
+      # remaining benchmarks, or synchronize).  Skipped for closed and non-benchmark labels.
       - uses: actions/checkout@v6
-        if: github.event.action == 'labeled' || github.event.action == 'synchronize'
+        if: >
+          (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+           || github.event.action == 'synchronize') &&
+          (contains(github.event.pull_request.labels.*.name, 'benchmark')
+           || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Compute image tag
         id: image-tag
-        if: github.event.action == 'labeled' || github.event.action == 'synchronize'
+        if: >
+          (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+           || github.event.action == 'synchronize') &&
+          (contains(github.event.pull_request.labels.*.name, 'benchmark')
+           || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
         run: echo "image-tag=c8-${{ steps.sanitize.outputs.branch_name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
@@ -77,12 +76,14 @@ jobs:
   build-images:
     name: Build Images
     needs: sanitize-branch-name
+    # Build when a benchmark label is added/removed or code is pushed, AND at least one
+    # benchmark label is still on the PR.  On unlabeled events labels.* already excludes
+    # the just-removed label, so the build only runs when remaining benchmarks need images.
     if: >
-      (github.event.action == 'labeled' &&
-       (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) ||
-      (github.event.action == 'synchronize' &&
-       (contains(github.event.pull_request.labels.*.name, 'benchmark') ||
-        contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize') &&
+      (contains(github.event.pull_request.labels.*.name, 'benchmark')
+       || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
     uses: ./.github/workflows/camunda-load-test-build.yml
     secrets: inherit
     with:
@@ -92,16 +93,13 @@ jobs:
   create-benchmark:
     name: Benchmark
     needs: [sanitize-branch-name, build-images]
-    # Use always() so this job evaluates even when build-images is skipped (unlabeled/closed events).
-    # Trigger on either benchmark label being added, but only deploy if 'benchmark' is on the PR.
     if: >
       always() &&
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
-      ((github.event.action == 'labeled' &&
-        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms') &&
-        contains(github.event.pull_request.labels.*.name, 'benchmark')) ||
-       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')))
+      contains(github.event.pull_request.labels.*.name, 'benchmark') &&
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -117,10 +115,9 @@ jobs:
       always() &&
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
-      ((github.event.action == 'labeled' &&
-        (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms') &&
-        contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')) ||
-       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
+      contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms') &&
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -146,7 +143,7 @@ jobs:
       teleport-join-token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
 
   profile-and-comment-rdbms:
-    name: Profile and Comment RDBMS
+    name: Profile and Comment (RDBMS)
     needs: [sanitize-branch-name, create-benchmark-rdbms]
     if: >
       always() &&
