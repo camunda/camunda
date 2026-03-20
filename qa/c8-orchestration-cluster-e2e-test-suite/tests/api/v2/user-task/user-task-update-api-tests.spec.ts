@@ -283,7 +283,6 @@ test.describe.parallel('Update User Task Tests', () => {
         },
       },
     });
-    // await assertBadRequest(res, /priority/i);
     await assertInvalidArgument(res, 400, 'priority');
   });
 
@@ -355,7 +354,7 @@ test.describe.parallel('Update User Task Tests', () => {
     );
 
     await test.step('Complete the user task first', async () => {
-      const completeRes = await completeUserTask(request, userTaskKey);
+      await completeUserTask(request, userTaskKey);
     });
 
     await test.step(
