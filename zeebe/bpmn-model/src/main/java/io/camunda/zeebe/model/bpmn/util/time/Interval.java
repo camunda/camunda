@@ -75,21 +75,24 @@ public class Interval implements TemporalAmount {
   }
 
   public long toEpochMilli(final long fromEpochMilli) {
-    final long epochMilli =
-        start.map(ZonedDateTime::toInstant).map(Instant::toEpochMilli).orElse(fromEpochMilli);
-
-    if (epochMilli <= fromEpochMilli) {
-      if (!isCalendarBased()) {
-        return fromEpochMilli + getDuration().toMillis();
+    if (start.isPresent()) {
+      final long epochMilli = start.get().toInstant().toEpochMilli();
+      if (epochMilli < fromEpochMilli) {
+        // Start date is strictly in the past: the timer is already overdue, fire immediately.
+        return fromEpochMilli;
       }
-
-      return ZonedDateTime.ofInstant(Instant.ofEpochMilli(fromEpochMilli), ZoneId.systemDefault())
-          .plus(this)
-          .toInstant()
-          .toEpochMilli();
+      return epochMilli;
     }
 
-    return epochMilli;
+    // No explicit start date: schedule relative to fromEpochMilli.
+    if (!isCalendarBased()) {
+      return fromEpochMilli + getDuration().toMillis();
+    }
+
+    return ZonedDateTime.ofInstant(Instant.ofEpochMilli(fromEpochMilli), ZoneId.systemDefault())
+        .plus(this)
+        .toInstant()
+        .toEpochMilli();
   }
 
   /**
