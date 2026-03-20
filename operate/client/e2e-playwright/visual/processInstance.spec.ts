@@ -55,6 +55,29 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('helper modal', async ({page}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await page.goto(
+      `/operate/processes/${runningInstance.detail.processInstanceKey}`,
+    );
+
+    await expect(page.getByText("Here's what moved in Operate")).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('running instance', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
