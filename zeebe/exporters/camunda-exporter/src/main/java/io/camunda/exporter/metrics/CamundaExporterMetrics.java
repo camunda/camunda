@@ -89,6 +89,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Counter archiverDeletedDocs;
   private final Counter archiverReindexedDocs;
   private final Timer archiverReindexTimer;
+  private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
   private final DistributionSummary bulkSize;
   private final Counter bulkOperations;
@@ -306,12 +307,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     failedFlush.increment();
   }
 
-  public Timer.Sample startFlushLatencyMeasurement() {
-    return Timer.start(meterRegistry);
+  public void startFlushLatencyMeasurement() {
+    flushLatencyMeasurement = Timer.start(meterRegistry);
   }
 
-  public Timer getFlushLatencyTimer() {
-    return flushLatency;
+  public void stopFlushLatencyMeasurement() {
+    if (flushLatencyMeasurement != null) {
+      flushLatencyMeasurement.stop(flushLatency);
+    }
   }
 
   public void recordProcessInstancesArchived(final int count) {
