@@ -283,6 +283,8 @@ We want the release process for all supported versions 8.6+ to be as similar as 
 
 For CI-related changes, refer to our [CI & Automation documentation](./ci.md) and the [backporting guidelines](./ci.md#backporting-guidelines).
 
+import PersistentTaskListEnabler from '@site/src/components/PersistentTaskListEnabler';
+
 ## Minor Release Considerations
 
 Use the following checklist as the operational source of truth for every minor release.
@@ -294,6 +296,13 @@ Legend:
 - **[NICE]** = improvements and automation, can slip if time-boxed
 
 ### Minor Release Readiness Checklist
+
+<PersistentTaskListEnabler
+  storageKey="minor-release-readiness-checklist"
+  version="1"
+  startHeadingId="minor-release-readiness-checklist"
+  endHeadingId="minor-release-references"
+/>
 
 #### 0. Dates, ownership, and high-level alignment
 
