@@ -76,7 +76,7 @@ Renovate dependency update PRs that require manual intervention:
 - GitHub Action workflows and automation
 - Benchmark tests and testing clusters
 - Change management and DRI responsibilities
-- Minor release considerations and learnings
+- Minor release readiness checklist (`MUST`/`SHOULD`/`NICE`) and watch-outs
 - Incident process and troubleshooting procedures
 - FAQ covering common release scenarios
 
