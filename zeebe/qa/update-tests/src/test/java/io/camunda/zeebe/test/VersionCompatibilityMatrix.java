@@ -194,12 +194,17 @@ final class VersionCompatibilityMatrix {
             .map(VersionInfo::version)
             .filter(version -> version.compareTo(current) < 0)
             .filter(version -> current.minor() - version.minor() == 1)
-            .filter(next -> isCompatible(current, next))
+            .filter(version -> isCompatible(version, current))
             .collect(StreamUtil.minMax(Comparator.comparing(SemanticVersion::patch)));
 
-    return Stream.of(
-        Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
-        Arguments.of(minAndMaxPatch.max().toString(), "CURRENT"));
+    // If there are no compatible versions, returns an empty stream skipping the test
+    return Optional.ofNullable(minAndMaxPatch.min())
+        .map(
+            ignored ->
+                Stream.of(
+                    Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
+                    Arguments.of(minAndMaxPatch.max().toString(), "CURRENT")))
+        .orElse(Stream.empty());
   }
 
   public Stream<Arguments> full() {
