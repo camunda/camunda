@@ -351,6 +351,79 @@ class BrokerRequestRouterTest {
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
           .isEqualTo(ErrorCode.CONSUMER_NOT_REGISTERED);
     }
+
+    @Test
+    void shouldDecodeNonEmptyRevokeAndAssignFromHeartbeatResponse() throws Exception {
+      // given
+      final byte[] response =
+          buildHeartbeatResponseWithDelta(ErrorCode.NONE, 6L, List.of(3), List.of(5), List.of());
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.HEARTBEAT_REQUEST), any(), any(Duration.class)))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final HeartbeatResult result = router.heartbeat("grp", "c0", 5L, List.of(3)).get();
+
+      // then
+      assertThat(result.epoch()).isEqualTo(6L);
+      assertThat(result.revoke()).containsExactly(3);
+      assertThat(result.assign()).containsExactly(5);
+      assertThat(result.fullAssignment()).isEmpty();
+    }
+
+    @Test
+    void shouldDecodeFullAssignmentFromHeartbeatResponse() throws Exception {
+      // given — epoch advance triggers full reconcile; coordinator populates fullAssignment
+      final byte[] response =
+          buildHeartbeatResponseWithDelta(
+              ErrorCode.NONE, 7L, List.of(), List.of(), List.of(0, 1, 2));
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.HEARTBEAT_REQUEST), any(), any(Duration.class)))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final HeartbeatResult result = router.heartbeat("grp", "c0", 3L, List.of()).get();
+
+      // then
+      assertThat(result.epoch()).isEqualTo(7L);
+      assertThat(result.revoke()).isEmpty();
+      assertThat(result.assign()).isEmpty();
+      assertThat(result.fullAssignment()).containsExactly(0, 1, 2);
+    }
+
+    @Test
+    void shouldRetryHeartbeatOnTransportFailureThenSucceed() throws Exception {
+      // given – first attempt throws ConnectException, second succeeds
+      final byte[] response = buildHeartbeatResponse(ErrorCode.NONE, 8L);
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.HEARTBEAT_REQUEST), any(), any(Duration.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ConnectException("refused")))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final HeartbeatResult result = router.heartbeat("grp", "c0", 0L, List.of()).get();
+
+      // then
+      assertThat(result.epoch()).isEqualTo(8L);
+      verify(messagingService, times(2))
+          .sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.HEARTBEAT_REQUEST), any(), any(Duration.class));
+    }
+
+    @Test
+    void shouldFailHeartbeatWhenCoordinatorAddressUnknown() {
+      // given
+      when(topologyService.getCoordinatorAddress()).thenReturn(Optional.empty());
+
+      // when / then
+      assertThatThrownBy(() -> router.heartbeat("grp", "c0", 0L, List.of()).get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+
+      verify(messagingService, times(0)).sendAndReceive(any(), any(), any(), any(Duration.class));
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -372,6 +445,56 @@ class BrokerRequestRouterTest {
 
       // then
       assertThat(result.errorCode()).isEqualTo(ErrorCode.NONE);
+    }
+
+    @Test
+    void shouldSurfaceConsumerNotRegisteredFromAckResponse() {
+      // given
+      final byte[] response = buildAckResponse(ErrorCode.CONSUMER_NOT_REGISTERED);
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.ACK_REQUEST), any(), any(Duration.class)))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when / then
+      assertThatThrownBy(() -> router.ack("grp", "c0", 5L, List.of(1), List.of(2)).get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.CONSUMER_NOT_REGISTERED);
+    }
+
+    @Test
+    void shouldRetryAckOnTransportFailureThenSucceed() throws Exception {
+      // given – first attempt throws ConnectException, second succeeds
+      final byte[] response = buildAckResponse(ErrorCode.NONE);
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.ACK_REQUEST), any(), any(Duration.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ConnectException("refused")))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final SbeCodec.AckResult result = router.ack("grp", "c0", 5L, List.of(1), List.of(2)).get();
+
+      // then
+      assertThat(result.errorCode()).isEqualTo(ErrorCode.NONE);
+      verify(messagingService, times(2))
+          .sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.ACK_REQUEST), any(), any(Duration.class));
+    }
+
+    @Test
+    void shouldFailAckWhenCoordinatorAddressUnknown() {
+      // given
+      when(topologyService.getCoordinatorAddress()).thenReturn(Optional.empty());
+
+      // when / then
+      assertThatThrownBy(() -> router.ack("grp", "c0", 1L, List.of(), List.of()).get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(BrokerException.class)
+          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
+          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+
+      verify(messagingService, times(0)).sendAndReceive(any(), any(), any(), any(Duration.class));
     }
   }
 
@@ -628,7 +751,42 @@ class BrokerRequestRouterTest {
   // -------------------------------------------------------------------------
   // SBE test helpers
 
-  /** Builds a {@code PublishBatchResponse} byte array with the given positions. */
+  /** Builds a {@code HeartbeatResponse} byte array with all delta lists. */
+  private static byte[] buildHeartbeatResponseWithDelta(
+      final ErrorCode errorCode,
+      final long epoch,
+      final List<Integer> revoke,
+      final List<Integer> assign,
+      final List<Integer> fullAssignment) {
+    final io.camunda.eventbridge.core.protocol.MessageHeaderEncoder headerEncoder =
+        new io.camunda.eventbridge.core.protocol.MessageHeaderEncoder();
+    final io.camunda.eventbridge.core.protocol.HeartbeatResponseEncoder encoder =
+        new io.camunda.eventbridge.core.protocol.HeartbeatResponseEncoder();
+    final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer(256);
+
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).epoch(epoch);
+
+    final var revokeGroup = encoder.revokeCount(revoke.size());
+    for (final int p : revoke) {
+      revokeGroup.next().partitionId(p);
+    }
+    final var assignGroup = encoder.assignCount(assign.size());
+    for (final int p : assign) {
+      assignGroup.next().partitionId(p);
+    }
+    final var faGroup = encoder.fullAssignmentCount(fullAssignment.size());
+    for (final int p : fullAssignment) {
+      faGroup.next().partitionId(p);
+    }
+    encoder.errorMessage("");
+
+    return copyBytes(
+        buf,
+        io.camunda.eventbridge.core.protocol.MessageHeaderEncoder.ENCODED_LENGTH
+            + encoder.encodedLength());
+  }
+
+  /** Builds a {@code HeartbeatResponse} byte array with the given positions. */
   private static byte[] buildPublishResponse(
       final ErrorCode errorCode, final List<Long> positions) {
     final io.camunda.eventbridge.core.protocol.MessageHeaderEncoder headerEncoder =

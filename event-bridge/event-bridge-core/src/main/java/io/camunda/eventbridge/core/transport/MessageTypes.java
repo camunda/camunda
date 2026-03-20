@@ -21,6 +21,15 @@ public final class MessageTypes {
   /** Gateway → partition leader: pull events (long-poll fetch). */
   public static final String FETCH_REQUEST = "eb.fetch.request";
 
+  /**
+   * Gateway → coordinator: register a consumer and trigger rebalance.
+   *
+   * @deprecated Superseded by heartbeat auto-registration ({@link #HEARTBEAT_REQUEST}). Retained
+   *     for backward compatibility with older gateway/broker peers. A compatibility handler in
+   *     {@code BrokerRequestDispatcher} maps inbound subscribe messages to a heartbeat call.
+   */
+  @Deprecated public static final String SUBSCRIBE_REQUEST = "eb.subscribe.request";
+
   /** Gateway → coordinator: consumer liveness signal. */
   public static final String HEARTBEAT_REQUEST = "eb.heartbeat.request";
 

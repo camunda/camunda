@@ -9,7 +9,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   package="io.camunda.eventbridge.core.protocol"
   id="200"
-  version="2"
+  version="3"
   semanticVersion="${project.version}"
   description="Event Bridge Protocol Schema"
   byteOrder="littleEndian">
@@ -47,7 +47,7 @@
       <validValue name="POSITION_TRUNCATED">6</validValue>
       <validValue name="INVALID_PARAMETER">7</validValue>
       <validValue name="PARTITION_NOT_ASSIGNED">8</validValue>
-      <validValue name="STALE_GENERATION">9</validValue>
+      <validValue name="STALE_EPOCH">9</validValue>
       <validValue name="REBALANCE_IN_PROGRESS">10</validValue>
     </enum>
 
@@ -105,11 +105,11 @@
 
   <!-- =====================================================================
        CommitOffsetRequest (templateId=5): gateway → coordinator
+       generation field removed; epoch is now tracked via heartbeat/ack cycle.
        ===================================================================== -->
   <sbe:message name="CommitOffsetRequest" id="5" description="Commit consumed offset for a partition">
     <field name="partitionId" id="1" type="int32"/>
     <field name="position" id="2" type="int64"/>
-    <field name="generation" id="3" type="int64"/>
     <data name="groupId" id="4" type="varDataEncoding"/>
     <data name="consumerId" id="5" type="varDataEncoding"/>
   </sbe:message>
@@ -124,33 +124,56 @@
 
   <!-- =====================================================================
        HeartbeatRequest (templateId=7): gateway → coordinator (Broker-0)
+       Added epoch (consumer's last known coordinator epoch) and ownedPartitions
+       (partition IDs the consumer currently holds) for delta-based assignment.
        ===================================================================== -->
-  <sbe:message name="HeartbeatRequest" id="7" description="Consumer liveness signal">
+  <sbe:message name="HeartbeatRequest" id="7" description="Consumer liveness signal with epoch and owned partitions">
+    <field name="epoch" id="3" type="int64"/>
+    <group name="ownedPartitions" id="4" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="5" type="int32"/>
+    </group>
     <data name="groupId" id="1" type="varDataEncoding"/>
     <data name="consumerId" id="2" type="varDataEncoding"/>
   </sbe:message>
 
   <!-- =====================================================================
        HeartbeatResponse (templateId=8): coordinator → gateway
+       generation renamed to epoch; delta lists (revoke/assign) and full
+       reconciliation list (fullAssignment) added for continuous convergence.
        ===================================================================== -->
-  <sbe:message name="HeartbeatResponse" id="8" description="Result of a heartbeat">
+  <sbe:message name="HeartbeatResponse" id="8" description="Result of a heartbeat with delta assignment instructions">
     <field name="errorCode" id="1" type="ErrorCode"/>
-    <field name="generation" id="2" type="int64"/>
+    <field name="epoch" id="2" type="int64"/>
+    <group name="revoke" id="4" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="5" type="int32"/>
+    </group>
+    <group name="assign" id="6" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="7" type="int32"/>
+    </group>
+    <group name="fullAssignment" id="8" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="9" type="int32"/>
+    </group>
     <data name="errorMessage" id="3" type="varDataEncoding"/>
   </sbe:message>
 
   <!-- =====================================================================
        SubscribeRequest (templateId=9): gateway → coordinator
+       DEPRECATED: retained for backward compatibility with existing deployed
+       clients. A compatibility shim in BrokerRequestDispatcher maps inbound
+       subscribe messages to a heartbeat(epoch=0, ownedPartitions=[]) call and
+       encodes the result as a SubscribeResponse. Removal is deferred to a
+       follow-up task once no active clients depend on these message types.
        ===================================================================== -->
-  <sbe:message name="SubscribeRequest" id="9" description="Register consumer and trigger rebalance">
+  <sbe:message name="SubscribeRequest" id="9" description="[DEPRECATED] Register consumer and trigger rebalance">
     <data name="groupId" id="1" type="varDataEncoding"/>
     <data name="consumerId" id="2" type="varDataEncoding"/>
   </sbe:message>
 
   <!-- =====================================================================
        SubscribeResponse (templateId=10): coordinator → gateway
+       DEPRECATED: retained for backward compatibility. See SubscribeRequest.
        ===================================================================== -->
-  <sbe:message name="SubscribeResponse" id="10" description="Subscribe result with assigned partitions">
+  <sbe:message name="SubscribeResponse" id="10" description="[DEPRECATED] Subscribe result with assigned partitions">
     <field name="errorCode" id="1" type="ErrorCode"/>
     <field name="generation" id="2" type="int64"/>
     <group name="assignedPartitions" id="3" dimensionType="groupSizeEncoding">
@@ -227,6 +250,32 @@
       <field name="partitionId" id="4" type="int32"/>
     </group>
     <data name="errorMessage" id="5" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       AckRequest (templateId=18): gateway → coordinator
+       Sent by the consumer after processing heartbeat delta instructions.
+       revoked: partition IDs the consumer has stopped processing.
+       assigned: partition IDs the consumer has started processing.
+       ===================================================================== -->
+  <sbe:message name="AckRequest" id="18" description="Consumer acknowledgement of revoked and assigned partitions">
+    <field name="epoch" id="1" type="int64"/>
+    <group name="revoked" id="2" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="3" type="int32"/>
+    </group>
+    <group name="assigned" id="4" dimensionType="groupSizeEncoding">
+      <field name="partitionId" id="5" type="int32"/>
+    </group>
+    <data name="groupId" id="6" type="varDataEncoding"/>
+    <data name="consumerId" id="7" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       AckResponse (templateId=19): coordinator → gateway
+       ===================================================================== -->
+  <sbe:message name="AckResponse" id="19" description="Result of an acknowledgement">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <data name="errorMessage" id="2" type="varDataEncoding"/>
   </sbe:message>
 
 </sbe:messageSchema>

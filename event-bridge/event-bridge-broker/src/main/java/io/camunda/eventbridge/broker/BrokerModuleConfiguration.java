@@ -51,8 +51,9 @@ public class BrokerModuleConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(BrokerModuleConfiguration.class);
 
   @Bean
-  public ConsumerGroupRegistry consumerGroupRegistry() {
-    return new ConsumerGroupRegistry();
+  public ConsumerGroupRegistry consumerGroupRegistry(final EventBridgeProperties properties) {
+    return new ConsumerGroupRegistry(
+        properties.consumer().maxInflightRevocations(), properties.consumer().ackTimeoutMs());
   }
 
   @Bean

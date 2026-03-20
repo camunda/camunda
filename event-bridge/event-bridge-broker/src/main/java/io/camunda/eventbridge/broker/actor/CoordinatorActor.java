@@ -192,6 +192,10 @@ public final class CoordinatorActor extends Actor {
             result.completeExceptionally(new ConsumerNotRegisteredException(groupId, consumerId));
             return;
           }
+          if (!registry.isConsumerActive(groupId, consumerId)) {
+            result.completeExceptionally(new ConsumerNotRegisteredException(groupId, consumerId));
+            return;
+          }
           result.complete(
               new AssignmentResult(group.getAssignedPartitions(consumerId), group.getEpoch()));
         });

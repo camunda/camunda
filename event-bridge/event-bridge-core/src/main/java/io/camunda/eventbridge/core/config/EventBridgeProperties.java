@@ -36,7 +36,7 @@ public record EventBridgeProperties(
               new LongPollProperties(30_000),
               new TruncationProperties(60_000));
     if (coordinator == null) coordinator = new CoordinatorProperties("broker-0", 30_000);
-    if (consumer == null) consumer = new ConsumerProperties(5_000, 10_000);
+    if (consumer == null) consumer = new ConsumerProperties(10_000, 2_000, 5_000, 100, 1_000, 1);
     if (publish == null) publish = new PublishProperties(1_000, 1_048_576, 10_485_760);
     if (retention == null) retention = new RetentionProperties(1_000_000);
     if (raft == null) raft = new RaftProperties(1);
@@ -111,14 +111,29 @@ public record EventBridgeProperties(
   /**
    * Consumer-side configuration.
    *
-   * @param heartbeatTimeoutMs how long without a heartbeat before the coordinator marks a consumer
-   *     dead (default 5000; valid range [1000, 60000])
-   * @param subscribeTimeoutMs maximum wait for a rebalance to start when multiple subscribes are
-   *     queued (default 10000)
+   * @param sessionTimeoutMs how long without a heartbeat before the coordinator marks a consumer
+   *     dead and releases its partitions (default 10000)
+   * @param rebalanceIntervalMs how often (in milliseconds) the coordinator loop runs to evict dead
+   *     consumers, process ACK timeouts, drain the reassignment queue, and trigger rebalances
+   *     (default 2000)
+   * @param ackTimeoutMs maximum time (in milliseconds) a consumer has to ACK a revocation or
+   *     assignment before the coordinator forces reassignment (default 5000)
+   * @param maxInflightRevocations maximum number of concurrent in-flight revocations across all
+   *     consumers in a group; new reassignments are deferred when this cap is reached (default 100)
+   * @param heartbeatIntervalMs client-side sleep interval (in milliseconds) between consecutive
+   *     heartbeat calls; the server enforces liveness via {@code sessionTimeoutMs} only (default
+   *     1000)
+   * @param partitionCount number of partitions for this consumer group; set at group creation time
+   *     and immutable for the lifetime of the group (default 1 for backward compatibility — set
+   *     explicitly in production deployments)
    */
   public record ConsumerProperties(
-      @DefaultValue("5000") long heartbeatTimeoutMs,
-      @DefaultValue("10000") long subscribeTimeoutMs) {}
+      @DefaultValue("10000") long sessionTimeoutMs,
+      @DefaultValue("2000") long rebalanceIntervalMs,
+      @DefaultValue("5000") long ackTimeoutMs,
+      @DefaultValue("100") int maxInflightRevocations,
+      @DefaultValue("1000") long heartbeatIntervalMs,
+      @DefaultValue("1") int partitionCount) {}
 
   /**
    * Publish endpoint configuration.

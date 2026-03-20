@@ -10,8 +10,10 @@ package io.camunda.eventbridge.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -138,9 +140,11 @@ public final class Consumer {
                       URI.create(
                           client.getGatewayUrl()
                               + "/v1/consumers/"
-                              + groupId
+                              + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
+                                  .replace("+", "%20")
                               + "/"
-                              + consumerId
+                              + URLEncoder.encode(consumerId, StandardCharsets.UTF_8)
+                                  .replace("+", "%20")
                               + "/heartbeat"))
                   .header("Content-Type", "application/json")
                   .POST(HttpRequest.BodyPublishers.ofString(requestBody))
@@ -244,12 +248,6 @@ public final class Consumer {
       final long fromPosition = nextPositions.getOrDefault(partitionId, -1L);
       final var response =
           doPoll(partitionId, fromPosition, maxRecords, serverWaitMs, epochSnapshot);
-
-      if ("REBALANCE_IN_PROGRESS".equals(response.get("status"))) {
-        // Rebalances are now signalled exclusively via heartbeat epoch advances.
-        // Return the events collected so far; the next sendHeartbeat() will reconcile.
-        break;
-      }
 
       //noinspection unchecked
       final List<Map<String, Object>> events =
@@ -375,6 +373,13 @@ public final class Consumer {
     if (response.statusCode() == 404) {
       throw new ConsumerNotRegisteredException(groupId, consumerId);
     }
+    if (response.statusCode() == 400) {
+      final String body = response.body();
+      if (body != null && body.contains("\"CONSUMER_NOT_REGISTERED\"")) {
+        throw new ConsumerNotRegisteredException(groupId, consumerId);
+      }
+      throw new EventBridgeException("commitOffset failed: HTTP 400 — " + body);
+    }
     if (response.statusCode() != 204 && response.statusCode() != 200) {
       throw new EventBridgeException(
           "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
@@ -405,9 +410,9 @@ public final class Consumer {
                 URI.create(
                     client.getGatewayUrl()
                         + "/v1/consumers/"
-                        + groupId
+                        + URLEncoder.encode(groupId, StandardCharsets.UTF_8).replace("+", "%20")
                         + "/"
-                        + consumerId
+                        + URLEncoder.encode(consumerId, StandardCharsets.UTF_8).replace("+", "%20")
                         + "/ack"))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(requestBody))
@@ -435,15 +440,11 @@ public final class Consumer {
       final int serverWaitMs,
       final long epoch) {
     final int socketTimeoutMs = serverWaitMs + EventBridgeClient.POLL_TIMEOUT_SLACK_MS;
-    final String url =
-        client.getGatewayUrl()
-            + "/v1/events/"
-            + partitionId
-            + "/poll"
-            + "?groupId="
-            + groupId
+    final String query =
+        "groupId="
+            + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
             + "&consumerId="
-            + consumerId
+            + URLEncoder.encode(consumerId, StandardCharsets.UTF_8)
             + "&fromPosition="
             + fromPosition
             + "&maxRecords="
@@ -452,10 +453,23 @@ public final class Consumer {
             + serverWaitMs
             + "&epoch="
             + epoch;
+    final URI uri;
+    try {
+      final var base = URI.create(client.getGatewayUrl() + "/v1/events/" + partitionId + "/poll");
+      uri =
+          new URI(
+              base.getScheme(),
+              base.getAuthority(),
+              base.getPath(),
+              query,
+              null);
+    } catch (final java.net.URISyntaxException e) {
+      throw new EventBridgeException("Failed to build poll URI", e);
+    }
 
     final var request =
         HttpRequest.newBuilder()
-            .uri(URI.create(url))
+            .uri(uri)
             .timeout(Duration.ofMillis(socketTimeoutMs))
             .GET()
             .build();
@@ -500,13 +514,21 @@ public final class Consumer {
     ownedPartitions = Collections.unmodifiableList(sorted);
   }
 
-  @SuppressWarnings("unchecked")
   private static List<Integer> extractList(final Map<String, Object> body, final String key) {
     final Object val = body.get(key);
-    if (val instanceof List<?>) {
-      return (List<Integer>) val;
+    if (!(val instanceof List<?>)) {
+      return List.of();
     }
-    return List.of();
+    final List<?> raw = (List<?>) val;
+    final List<Integer> result = new ArrayList<>(raw.size());
+    for (final Object element : raw) {
+      if (!(element instanceof Number)) {
+        throw new EventBridgeException(
+            "Invalid payload: expected integer elements in '" + key + "', got " + element);
+      }
+      result.add(((Number) element).intValue());
+    }
+    return Collections.unmodifiableList(result);
   }
 
   private void checkNotClosed() {

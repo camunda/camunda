@@ -12,6 +12,8 @@ import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.broker.actor.CoordinatorActor;
 import io.camunda.eventbridge.broker.actor.PollActor;
 import io.camunda.eventbridge.broker.actor.PublishActor;
+import io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry.AckStatus;
+import io.camunda.eventbridge.broker.transport.BrokerSbeCodec.AckRequest;
 import io.camunda.eventbridge.broker.transport.BrokerSbeCodec.CommitOffsetRequest;
 import io.camunda.eventbridge.broker.transport.BrokerSbeCodec.FetchAssignmentRequest;
 import io.camunda.eventbridge.broker.transport.BrokerSbeCodec.HeartbeatRequest;
@@ -48,9 +50,11 @@ import org.slf4j.LoggerFactory;
  *       LATEST_POSITION_REQUEST}): routed to the {@link PublishActor} or {@link PollActor} for the
  *       requested {@code partitionId}. If the partition ID is unknown (no actor registered),
  *       responds with {@link ErrorCode#PARTITION_NOT_FOUND}.
- *   <li><strong>Coordinator-targeted</strong> ({@code SUBSCRIBE_REQUEST}, {@code
- *       HEARTBEAT_REQUEST}, {@code COMMIT_OFFSET_REQUEST}, {@code FETCH_ASSIGNMENT_REQUEST}):
- *       always routed to the single {@link CoordinatorActor}.
+ *   <li><strong>Coordinator-targeted</strong> ({@code HEARTBEAT_REQUEST}, {@code ACK_REQUEST},
+ *       {@code COMMIT_OFFSET_REQUEST}, {@code FETCH_ASSIGNMENT_REQUEST}): always routed to the
+ *       single {@link CoordinatorActor}. {@code SUBSCRIBE_REQUEST} is handled by a deprecated
+ *       compatibility shim that delegates to the heartbeat path; it will be removed once no active
+ *       clients depend on the old subscribe protocol.
  * </ul>
  *
  * <h2>Error handling</h2>
@@ -96,11 +100,13 @@ public final class BrokerRequestDispatcher {
     messagingService.registerHandler(MessageTypes.FETCH_REQUEST, this::handlePoll);
     messagingService.registerHandler(
         MessageTypes.LATEST_POSITION_REQUEST, this::handleLatestPosition);
-    messagingService.registerHandler(MessageTypes.SUBSCRIBE_REQUEST, this::handleSubscribe);
     messagingService.registerHandler(MessageTypes.HEARTBEAT_REQUEST, this::handleHeartbeat);
+    messagingService.registerHandler(MessageTypes.ACK_REQUEST, this::handleAck);
     messagingService.registerHandler(MessageTypes.COMMIT_OFFSET_REQUEST, this::handleCommitOffset);
     messagingService.registerHandler(
         MessageTypes.FETCH_ASSIGNMENT_REQUEST, this::handleFetchAssignment);
+    //noinspection deprecation — compatibility shim for older peers still sending subscribe
+    messagingService.registerHandler(MessageTypes.SUBSCRIBE_REQUEST, this::handleSubscribeCompat);
   }
 
   /**
@@ -112,10 +118,12 @@ public final class BrokerRequestDispatcher {
     messagingService.unregisterHandler(MessageTypes.PRODUCE_REQUEST);
     messagingService.unregisterHandler(MessageTypes.FETCH_REQUEST);
     messagingService.unregisterHandler(MessageTypes.LATEST_POSITION_REQUEST);
-    messagingService.unregisterHandler(MessageTypes.SUBSCRIBE_REQUEST);
     messagingService.unregisterHandler(MessageTypes.HEARTBEAT_REQUEST);
+    messagingService.unregisterHandler(MessageTypes.ACK_REQUEST);
     messagingService.unregisterHandler(MessageTypes.COMMIT_OFFSET_REQUEST);
     messagingService.unregisterHandler(MessageTypes.FETCH_ASSIGNMENT_REQUEST);
+    //noinspection deprecation
+    messagingService.unregisterHandler(MessageTypes.SUBSCRIBE_REQUEST);
   }
 
   // ---------------------------------------------------------------------------
@@ -185,7 +193,8 @@ public final class BrokerRequestDispatcher {
                   pollResult.events().stream()
                       .map(e -> new BrokerSbeCodec.PollResponseEvent(e.position(), e.payload()))
                       .collect(Collectors.toList());
-              return BrokerSbeCodec.encodePollSuccess(events, pollResult.nextPosition(), 0L);
+              return BrokerSbeCodec.encodePollSuccess(
+                  events, pollResult.nextPosition(), req.generation());
             })
         .exceptionally(
             t -> {
@@ -242,29 +251,47 @@ public final class BrokerRequestDispatcher {
   // ---------------------------------------------------------------------------
   // Coordinator-targeted handlers
 
-  private CompletableFuture<byte[]> handleSubscribe(
+  /**
+   * Compatibility handler for the deprecated {@code SUBSCRIBE_REQUEST} message type.
+   *
+   * <p>Decodes the legacy subscribe payload and delegates to {@link
+   * CoordinatorActor#heartbeat(String, String, long, List)} with {@code epoch=0} and an empty
+   * owned-partition list, which auto-registers the consumer and triggers a rebalance. The response
+   * is encoded as a {@code SubscribeResponse} so that older peers can parse it.
+   *
+   * @deprecated Remove once no active clients depend on the subscribe protocol.
+   */
+  @Deprecated
+  private CompletableFuture<byte[]> handleSubscribeCompat(
       final Address sender, final byte[] requestBytes) {
     final SubscribeRequest req;
     try {
       req = BrokerSbeCodec.decodeSubscribe(requestBytes);
     } catch (final Exception e) {
-      LOG.warn("Failed to decode SubscribeRequest from {}", sender, e);
+      LOG.warn("Failed to decode legacy SubscribeRequest from {}", sender, e);
       return CompletableFuture.completedFuture(
           BrokerSbeCodec.encodeSubscribeError(
               ErrorCode.INVALID_REQUEST, "Failed to decode request: " + e.getMessage()));
     }
 
+    LOG.debug(
+        "Received legacy SUBSCRIBE_REQUEST from {}; mapping to heartbeat for group={} consumer={}",
+        sender,
+        req.groupId(),
+        req.consumerId());
     return coordinatorActor
-        .subscribe(req.groupId(), req.consumerId())
+        .heartbeat(req.groupId(), req.consumerId(), 0L, List.of())
         .toCompletableFuture()
         .thenApply(
-            result ->
-                BrokerSbeCodec.encodeSubscribeSuccess(
-                    result.generation(), result.assignedPartitions()))
+            result -> {
+              final List<Integer> assigned =
+                  !result.fullAssignment().isEmpty() ? result.fullAssignment() : result.assign();
+              return BrokerSbeCodec.encodeSubscribeSuccess(result.epoch(), assigned);
+            })
         .exceptionally(
             t -> {
               LOG.error(
-                  "Subscribe failed for group={} consumer={} (sender={})",
+                  "Subscribe-compat heartbeat failed for group={} consumer={} (sender={})",
                   req.groupId(),
                   req.consumerId(),
                   sender,
@@ -283,20 +310,28 @@ public final class BrokerRequestDispatcher {
       LOG.warn("Failed to decode HeartbeatRequest from {}", sender, e);
       return CompletableFuture.completedFuture(
           BrokerSbeCodec.encodeHeartbeat(
-              ErrorCode.INVALID_REQUEST, 0L, "Failed to decode request: " + e.getMessage()));
+              ErrorCode.INVALID_REQUEST,
+              0L,
+              List.of(),
+              List.of(),
+              List.of(),
+              "Failed to decode request: " + e.getMessage()));
     }
 
     return coordinatorActor
-        .heartbeat(req.groupId(), req.consumerId())
+        .heartbeat(req.groupId(), req.consumerId(), req.epoch(), req.ownedPartitions())
         .toCompletableFuture()
-        .thenApply(generation -> BrokerSbeCodec.encodeHeartbeat(ErrorCode.NONE, generation, ""))
+        .thenApply(
+            result ->
+                BrokerSbeCodec.encodeHeartbeat(
+                    ErrorCode.NONE,
+                    result.epoch(),
+                    result.revoke(),
+                    result.assign(),
+                    result.fullAssignment(),
+                    ""))
         .exceptionally(
             t -> {
-              final Throwable cause = unwrap(t);
-              if (cause instanceof CoordinatorActor.ConsumerNotRegisteredException) {
-                return BrokerSbeCodec.encodeHeartbeat(
-                    ErrorCode.CONSUMER_NOT_REGISTERED, 0L, rootMessage(t));
-              }
               LOG.error(
                   "Heartbeat failed for group={} consumer={} (sender={})",
                   req.groupId(),
@@ -304,7 +339,47 @@ public final class BrokerRequestDispatcher {
                   sender,
                   t);
               return BrokerSbeCodec.encodeHeartbeat(
-                  ErrorCode.COORDINATOR_UNAVAILABLE, 0L, rootMessage(t));
+                  ErrorCode.COORDINATOR_UNAVAILABLE,
+                  0L,
+                  List.of(),
+                  List.of(),
+                  List.of(),
+                  rootMessage(t));
+            });
+  }
+
+  private CompletableFuture<byte[]> handleAck(final Address sender, final byte[] requestBytes) {
+    final AckRequest req;
+    try {
+      req = BrokerSbeCodec.decodeAck(requestBytes);
+    } catch (final Exception e) {
+      LOG.warn("Failed to decode AckRequest from {}", sender, e);
+      return CompletableFuture.completedFuture(
+          BrokerSbeCodec.encodeAckResponse(
+              ErrorCode.INVALID_REQUEST, "Failed to decode request: " + e.getMessage()));
+    }
+
+    return coordinatorActor
+        .ack(req.groupId(), req.consumerId(), req.epoch(), req.revoked(), req.assigned())
+        .toCompletableFuture()
+        .thenApply(
+            result -> {
+              if (result.status() == AckStatus.CONSUMER_NOT_FOUND) {
+                return BrokerSbeCodec.encodeAckResponse(
+                    ErrorCode.CONSUMER_NOT_REGISTERED, "Consumer not found: " + req.consumerId());
+              }
+              return BrokerSbeCodec.encodeAckResponse(ErrorCode.NONE, "");
+            })
+        .exceptionally(
+            t -> {
+              LOG.error(
+                  "Ack failed for group={} consumer={} (sender={})",
+                  req.groupId(),
+                  req.consumerId(),
+                  sender,
+                  t);
+              return BrokerSbeCodec.encodeAckResponse(
+                  ErrorCode.COORDINATOR_UNAVAILABLE, rootMessage(t));
             });
   }
 
@@ -361,7 +436,7 @@ public final class BrokerRequestDispatcher {
         .thenApply(
             result ->
                 BrokerSbeCodec.encodeFetchAssignmentSuccess(
-                    result.generation(), result.assignedPartitions()))
+                    result.epoch(), result.assignedPartitions()))
         .exceptionally(
             t -> {
               final Throwable cause = unwrap(t);

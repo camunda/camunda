@@ -13,7 +13,6 @@ import io.camunda.eventbridge.broker.actor.PublishActor;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.CommitRequest;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.CommitResponse;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.ErrorResponse;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.StaleGenerationResponse;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
@@ -37,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
  * <ol>
  *   <li>Partition exists — {@code 404 Not Found} / {@code PARTITION_NOT_FOUND}
  *   <li>Consumer is registered — {@code 400 Bad Request} / {@code CONSUMER_NOT_REGISTERED}
- *   <li>Generation matches — {@code 409 Conflict} / {@code STALE_GENERATION}
  *   <li>Partition is assigned to this consumer — {@code 403 Forbidden} / {@code
  *       PARTITION_NOT_ASSIGNED}
  * </ol>
@@ -61,8 +59,7 @@ public class CommitController {
    * Records the consumer's committed offset for the given partition.
    *
    * @param partitionId the target partition
-   * @param request body containing {@code groupId}, {@code consumerId}, {@code position}, and
-   *     {@code generation}
+   * @param request body containing {@code groupId}, {@code consumerId}, and {@code position}
    */
   @PostMapping("/{partitionId}/commit")
   public ResponseEntity<?> commitOffset(
@@ -75,7 +72,7 @@ public class CommitController {
                   "PARTITION_NOT_FOUND", "Partition " + partitionId + " does not exist"));
     }
 
-    // Validate consumer registration, generation, and partition assignment.
+    // Validate consumer registration and partition assignment.
     final CoordinatorActor.AssignmentResult assignment;
     try {
       assignment = coordinatorActor.getAssignment(request.groupId(), request.consumerId()).get();
@@ -95,11 +92,6 @@ public class CommitController {
       Thread.currentThread().interrupt();
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
           .body(CommitResponse.error("COORDINATOR_UNAVAILABLE", "Coordinator unavailable"));
-    }
-
-    if (assignment.generation() != request.generation()) {
-      return ResponseEntity.status(HttpStatus.CONFLICT)
-          .body(StaleGenerationResponse.of(assignment.generation()));
     }
 
     if (!assignment.assignedPartitions().contains(partitionId)) {

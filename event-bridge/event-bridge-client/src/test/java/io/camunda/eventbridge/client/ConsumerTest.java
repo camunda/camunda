@@ -10,6 +10,7 @@ package io.camunda.eventbridge.client;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -289,6 +290,150 @@ class ConsumerTest {
       // then
       assertThat(consumer.getOwnedPartitions()).containsExactly(0);
     }
+
+    @Test
+    void shouldSendHeartbeatRequestWithEpochAndOwnedPartitions() throws Exception {
+      // given — consumer at epoch 3 owning partitions [0, 1]
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 3L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":3,\"revoke\":[],\"assign\":[],\"fullAssignment\":[]}")));
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — request body carries current epoch and owned partition list
+      verify(
+          postRequestedFor(urlEqualTo(HEARTBEAT_URL))
+              .withRequestBody(equalTo("{\"epoch\":3,\"ownedPartitions\":[0,1]}")));
+    }
+
+    @Test
+    void shouldSendCorrectAckBodyForFullReconcileWithPartialOverlap() throws Exception {
+      // given — consumer owns [0, 1]; coordinator advances to epoch 5 assigning [1, 2]
+      // partition 0 is lost, partition 1 is retained, partition 2 is new
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 3L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":5,\"revoke\":[],\"assign\":[],\"fullAssignment\":[1,2]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getOwnedPartitions()).containsExactly(1, 2);
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(5L);
+      verify(
+          postRequestedFor(urlEqualTo(ACK_URL))
+              .withRequestBody(equalTo("{\"epoch\":5,\"revoked\":[0],\"assigned\":[1,2]}")));
+    }
+
+    @Test
+    void shouldSendCorrectAckBodyForInitialFullAssignment() throws Exception {
+      // given — new consumer (epoch 0, no partitions); server sends epoch 1 with [0, 1]
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":1,\"revoke\":[],\"assign\":[],\"fullAssignment\":[0,1]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — revoked is empty (nothing previously owned); assigned carries full new set
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0, 1);
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(1L);
+      verify(
+          postRequestedFor(urlEqualTo(ACK_URL))
+              .withRequestBody(equalTo("{\"epoch\":1,\"revoked\":[],\"assigned\":[0,1]}")));
+    }
+
+    @Test
+    void shouldSendCorrectAckBodyWhenAllPartitionsRevokedOnEpochAdvance() throws Exception {
+      // given — consumer owns [0, 1, 2]; coordinator advances epoch and assigns nothing
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1, 2), 2L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":3,\"revoke\":[],\"assign\":[],\"fullAssignment\":[]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — all partitions revoked; ACK carries the complete prior set as revoked
+      assertThat(consumer.getOwnedPartitions()).isEmpty();
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(3L);
+      verify(
+          postRequestedFor(urlEqualTo(ACK_URL))
+              .withRequestBody(equalTo("{\"epoch\":3,\"revoked\":[0,1,2],\"assigned\":[]}")));
+    }
+
+    @Test
+    void shouldHandleLargeEpochJump() throws Exception {
+      // given — consumer at epoch 1; server jumps to epoch 100 with a new assignment
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":100,\"revoke\":[],\"assign\":[],\"fullAssignment\":[1,2]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — epoch updated to 100; full reconcile applied regardless of gap size
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(100L);
+      assertThat(consumer.getOwnedPartitions()).containsExactly(1, 2);
+      verify(
+          postRequestedFor(urlEqualTo(ACK_URL))
+              .withRequestBody(equalTo("{\"epoch\":100,\"revoked\":[0],\"assigned\":[1,2]}")));
+    }
+
+    @Test
+    void shouldSkipStateUpdateOnMalformedResponseBody() throws Exception {
+      // given — server returns a non-JSON body; client must log and skip without throwing
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 5L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody("not-valid-json")));
+
+      // when — should complete without throwing
+      consumer.sendHeartbeat().get();
+
+      // then — epoch and owned partitions unchanged; no ACK sent
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(5L);
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0);
+      verify(0, postRequestedFor(urlEqualTo(ACK_URL)));
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -469,38 +614,6 @@ class ConsumerTest {
     }
 
     @Test
-    void shouldReturnPartialResultsWhenRebalanceInProgressIsReceived() {
-      // given — partition 0 returns events; partition 1 returns REBALANCE_IN_PROGRESS
-      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 1L, client);
-
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[{\"position\":10,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":11,\"epoch\":1}")));
-      stubFor(
-          get(urlMatching("/v1/events/1/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"status\":\"REBALANCE_IN_PROGRESS\",\"epoch\":2}")));
-
-      // when — no exception thrown; rebalances are now invisible at poll level
-      final List<Event> events = consumer.poll(10, Duration.ZERO);
-
-      // then — events from partition 0 are returned; partition 1 loop was aborted
-      assertThat(events).hasSize(1);
-      assertThat(events.get(0).partitionId()).isEqualTo(0);
-      // epoch is NOT updated by poll; sendHeartbeat() will reconcile on next call
-      assertThat(consumer.getCurrentEpoch()).isEqualTo(1L);
-    }
-
-    @Test
     void shouldThrowConsumerClosedExceptionAfterClose() {
       // given
       final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
@@ -509,6 +622,180 @@ class ConsumerTest {
       // when / then
       assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
           .isInstanceOf(ConsumerClosedException.class);
+    }
+
+    @Test
+    void shouldIncludeCurrentEpochInPollRequest() {
+      // given — consumer at epoch 7
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 7L, client);
+      stubFor(
+          get(urlMatching("/v1/events/0/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"epoch\":7}")));
+
+      // when
+      consumer.poll(10, Duration.ZERO);
+
+      // then — epoch=7 must appear in the poll URL query string
+      verify(getRequestedFor(urlMatching("/v1/events/0/poll\\?.*epoch=7.*")));
+    }
+
+    @Test
+    void shouldStartNewlyAssignedPartitionPollFromMinusOne() throws Exception {
+      // given — consumer gains partition 2 via a delta assign heartbeat
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":1,\"revoke\":[],\"assign\":[2],\"fullAssignment\":[]}")));
+      stubAckOk();
+      consumer.sendHeartbeat().get();
+
+      stubFor(
+          get(urlMatching("/v1/events/0/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"epoch\":1}")));
+      stubFor(
+          get(urlMatching("/v1/events/2/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"epoch\":1}")));
+
+      // when
+      consumer.poll(10, Duration.ZERO);
+
+      // then — newly assigned partition 2 must be polled from position -1
+      verify(getRequestedFor(urlMatching("/v1/events/2/poll\\?.*fromPosition=-1.*")));
+    }
+
+    @Test
+    void shouldPreservePositionForRetainedPartitionAfterFullReconcile() throws Exception {
+      // given — consumer owns partition 0; a poll advances its position to 42
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
+      stubFor(
+          get(urlMatching("/v1/events/0/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[{\"position\":41,\"payload\":\"AA==\"}],"
+                              + "\"nextPosition\":42,\"epoch\":1}")));
+      consumer.poll(10, Duration.ZERO);
+
+      // full reconcile: partition 0 retained, partition 2 newly added
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":2,\"revoke\":[],\"assign\":[],\"fullAssignment\":[0,2]}")));
+      stubAckOk();
+      consumer.sendHeartbeat().get();
+
+      // Reset poll stubs so we can verify the fromPosition values used
+      stubFor(
+          get(urlMatching("/v1/events/0/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":43,\"epoch\":2}")));
+      stubFor(
+          get(urlMatching("/v1/events/2/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"epoch\":2}")));
+
+      // when
+      consumer.poll(10, Duration.ZERO);
+
+      // then — retained partition 0 resumes from position 42; new partition 2 starts from -1
+      verify(getRequestedFor(urlMatching("/v1/events/0/poll\\?.*fromPosition=42.*")));
+      verify(getRequestedFor(urlMatching("/v1/events/2/poll\\?.*fromPosition=-1.*")));
+    }
+
+    @Test
+    void shouldDropPositionForRevokedPartitionAndRestartAtMinusOneWhenReassigned()
+        throws Exception {
+      // given — consumer owns [0, 1]; poll advances partition 0's position to 99
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 1L, client);
+      stubFor(
+          get(urlMatching("/v1/events/0/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":99,\"epoch\":1}")));
+      stubFor(
+          get(urlMatching("/v1/events/1/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"epoch\":1}")));
+      consumer.poll(10, Duration.ZERO);
+
+      // heartbeat revokes partition 0
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":2,\"revoke\":[0],\"assign\":[],\"fullAssignment\":[]}")));
+      stubAckOk();
+      consumer.sendHeartbeat().get();
+
+      // heartbeat re-assigns partition 0 at same epoch
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":2,\"revoke\":[],\"assign\":[0],\"fullAssignment\":[]}")));
+      consumer.sendHeartbeat().get();
+
+      stubFor(
+          get(urlMatching("/v1/events/0/poll.*"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"epoch\":2}")));
+
+      // when
+      consumer.poll(10, Duration.ZERO);
+
+      // then — re-assigned partition 0 restarts from -1 (position was cleared on revoke)
+      verify(getRequestedFor(urlMatching("/v1/events/0/poll\\?.*fromPosition=-1.*")));
     }
   }
 

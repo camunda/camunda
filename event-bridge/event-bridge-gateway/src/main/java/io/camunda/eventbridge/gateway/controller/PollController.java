@@ -8,12 +8,12 @@
 package io.camunda.eventbridge.gateway.controller;
 
 import io.camunda.eventbridge.broker.actor.CoordinatorActor;
+import io.camunda.eventbridge.broker.actor.CoordinatorActor.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.broker.actor.PublishActor;
 import io.camunda.eventbridge.broker.actor.PublishActor.PollRecordsResult;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PollEvent;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PollResponse;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.StaleGenerationResponse;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -35,11 +35,10 @@ import org.springframework.web.bind.annotation.RestController;
  * requested position, the broker parks the response thread until a new entry is written or the wait
  * window elapses. Parking uses actor async primitives; no ActorScheduler CPU thread is blocked.
  *
- * <p>Generation staleness is validated once at request-arrival time. If the generation supplied by
- * the client does not match the broker's current generation for the consumer group, the request is
- * rejected with {@code 409 Conflict}. If a rebalance occurs <em>during</em> a long-poll wait, the
- * response returns {@code 200 OK} with the updated generation; the client detects the change and
- * re-subscribes.
+ * <p>Epoch staleness is validated once at request-arrival time. If the epoch supplied by the client
+ * does not match the broker's current epoch for the consumer group, the request is rejected with
+ * {@code 409 Conflict}. If a rebalance occurs <em>during</em> a long-poll wait, the response
+ * returns {@code 200 OK} with the updated epoch; the client detects the change and re-subscribes.
  */
 @RestController
 @RequestMapping("/v1/events")
@@ -70,7 +69,7 @@ public class PollController {
    * @param maxRecords maximum number of records to return (default 100; must be &ge; 1)
    * @param serverWaitMs server-side long-poll wait in milliseconds (default 0; clamped to
    *     configured ceiling)
-   * @param generation rebalance generation from the most recent {@code subscribe} call
+   * @param epoch rebalance epoch from the most recent {@code subscribe} or heartbeat response
    */
   @GetMapping("/{partitionId}/poll")
   public ResponseEntity<?> poll(
@@ -80,7 +79,7 @@ public class PollController {
       @RequestParam final long fromPosition,
       @RequestParam(defaultValue = "100") final int maxRecords,
       @RequestParam(defaultValue = "0") final int serverWaitMs,
-      @RequestParam final long generation) {
+      @RequestParam final long epoch) {
 
     if (maxRecords < 1) {
       return ResponseEntity.badRequest()
@@ -89,28 +88,45 @@ public class PollController {
 
     final PublishActor actor = publishActors.get(partitionId);
     if (actor == null) {
-      return ResponseEntity.badRequest()
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
           .body(
               PollResponse.error(
                   "PARTITION_NOT_FOUND", "Partition " + partitionId + " does not exist"));
     }
 
-    // Validate generation at request-arrival time (spec §5.2).
+    // Validate epoch at request-arrival time (spec §5.2).
     final CoordinatorActor.AssignmentResult assignment;
     try {
       assignment = coordinatorActor.getAssignment(groupId, consumerId).get();
     } catch (final ExecutionException e) {
-      return ResponseEntity.badRequest()
-          .body(PollResponse.error("CONSUMER_NOT_REGISTERED", e.getCause().getMessage()));
+      if (e.getCause() instanceof ConsumerNotRegisteredException) {
+        return ResponseEntity.badRequest()
+            .body(PollResponse.error("CONSUMER_NOT_REGISTERED", e.getCause().getMessage()));
+      }
+      LOG.error(
+          "Coordinator error during poll for group={}, consumer={}",
+          groupId,
+          consumerId,
+          e.getCause());
+      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+          .body(PollResponse.error("COORDINATOR_UNAVAILABLE", "Coordinator unavailable"));
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
           .body(PollResponse.error("COORDINATOR_UNAVAILABLE", "Coordinator unavailable"));
     }
 
-    if (assignment.generation() != generation) {
+    if (assignment.epoch() != epoch) {
       return ResponseEntity.status(HttpStatus.CONFLICT)
-          .body(StaleGenerationResponse.of(assignment.generation()));
+          .body(Map.of("error", "STALE_EPOCH", "currentEpoch", assignment.epoch()));
+    }
+
+    if (!assignment.assignedPartitions().contains(partitionId)) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN)
+          .body(
+              PollResponse.error(
+                  "PARTITION_NOT_ASSIGNED",
+                  "Partition " + partitionId + " is not assigned to this consumer"));
     }
 
     // Try to read records immediately before parking.
@@ -141,7 +157,7 @@ public class PollController {
 
     // Records are available — return immediately without waiting.
     if (!success.records().isEmpty()) {
-      return buildOkResponse(success, generation);
+      return buildOkResponse(success, epoch);
     }
 
     // No records yet; optionally park via long-poll.
@@ -170,9 +186,18 @@ public class PollController {
         }
         final var afterSuccess = (PollRecordsResult.Success) afterWait;
 
-        // Re-check generation after the wait: a changed generation signals a rebalance.
-        final long currentGeneration = getCurrentGeneration(groupId, consumerId, generation);
-        return buildOkResponse(afterSuccess, currentGeneration);
+        // Re-check epoch after the wait: a changed epoch signals a rebalance.
+        final long currentEpoch;
+        try {
+          currentEpoch = coordinatorActor.getAssignment(groupId, consumerId).get().epoch();
+        } catch (final ExecutionException | InterruptedException epochEx) {
+          if (epochEx instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
+          return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+              .body(PollResponse.error("COORDINATOR_UNAVAILABLE", "Coordinator unavailable"));
+        }
+        return buildOkResponse(afterSuccess, currentEpoch);
       } catch (final ExecutionException e) {
         LOG.error("Error reading partition {} after long-poll wait", partitionId, e.getCause());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
@@ -185,34 +210,18 @@ public class PollController {
     }
 
     // serverWaitMs == 0 and no records — return empty response with current tail.
-    return buildOkResponse(success, generation);
+    return buildOkResponse(success, epoch);
   }
 
   // -------------------------------------------------------------------------
   // Helpers
 
   private ResponseEntity<PollResponse> buildOkResponse(
-      final PollRecordsResult.Success result, final long generation) {
+      final PollRecordsResult.Success result, final long epoch) {
     final List<PollEvent> events =
         result.records().stream()
             .map(r -> new PollEvent(r.position(), Base64.getEncoder().encodeToString(r.payload())))
             .toList();
-    return ResponseEntity.ok(PollResponse.ok(events, result.nextPosition(), generation));
-  }
-
-  /**
-   * Fetches the current generation for the consumer group after a long-poll wait. Falls back to the
-   * supplied {@code fallback} if the coordinator is unreachable.
-   */
-  private long getCurrentGeneration(
-      final String groupId, final String consumerId, final long fallback) {
-    try {
-      return coordinatorActor.getAssignment(groupId, consumerId).get().generation();
-    } catch (final ExecutionException | InterruptedException e) {
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-      return fallback;
-    }
+    return ResponseEntity.ok(PollResponse.ok(events, result.nextPosition(), epoch));
   }
 }

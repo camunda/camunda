@@ -8,6 +8,8 @@
 package io.camunda.eventbridge.broker.transport;
 
 import io.camunda.eventbridge.core.EventDataBatch;
+import io.camunda.eventbridge.core.protocol.AckRequestDecoder;
+import io.camunda.eventbridge.core.protocol.AckResponseEncoder;
 import io.camunda.eventbridge.core.protocol.CommitOffsetRequestDecoder;
 import io.camunda.eventbridge.core.protocol.CommitOffsetResponseEncoder;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
@@ -25,6 +27,7 @@ import io.camunda.eventbridge.core.protocol.PublishBatchRequestDecoder;
 import io.camunda.eventbridge.core.protocol.PublishBatchResponseEncoder;
 import io.camunda.eventbridge.core.protocol.SubscribeRequestDecoder;
 import io.camunda.eventbridge.core.protocol.SubscribeResponseEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -202,7 +205,7 @@ public final class BrokerSbeCodec {
 
   /** Decoded content of a {@code CommitOffsetRequest}. */
   public record CommitOffsetRequest(
-      int partitionId, long position, long generation, String groupId, String consumerId) {}
+      int partitionId, long position, String groupId, String consumerId) {}
 
   /**
    * Decodes a {@code CommitOffsetRequest} SBE message.
@@ -217,11 +220,7 @@ public final class BrokerSbeCodec {
     decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
 
     return new CommitOffsetRequest(
-        decoder.partitionId(),
-        decoder.position(),
-        decoder.generation(),
-        decoder.groupId(),
-        decoder.consumerId());
+        decoder.partitionId(), decoder.position(), decoder.groupId(), decoder.consumerId());
   }
 
   /**
@@ -243,7 +242,8 @@ public final class BrokerSbeCodec {
   // Heartbeat
 
   /** Decoded content of a {@code HeartbeatRequest}. */
-  public record HeartbeatRequest(String groupId, String consumerId) {}
+  public record HeartbeatRequest(
+      String groupId, String consumerId, long epoch, List<Integer> ownedPartitions) {}
 
   /**
    * Decodes a {@code HeartbeatRequest} SBE message.
@@ -257,34 +257,62 @@ public final class BrokerSbeCodec {
     final HeartbeatRequestDecoder decoder = new HeartbeatRequestDecoder();
     decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
 
-    return new HeartbeatRequest(decoder.groupId(), decoder.consumerId());
+    final long epoch = decoder.epoch();
+
+    final List<Integer> ownedPartitions = new ArrayList<>();
+    for (final var partition : decoder.ownedPartitions()) {
+      ownedPartitions.add(partition.partitionId());
+    }
+
+    return new HeartbeatRequest(decoder.groupId(), decoder.consumerId(), epoch, ownedPartitions);
   }
 
   /**
    * Encodes a {@code HeartbeatResponse} SBE message.
    *
    * @param errorCode error code ({@link ErrorCode#NONE} for success)
-   * @param generation current rebalance generation (0 on error)
+   * @param epoch current rebalance epoch (0 on error)
+   * @param revoke partitions the client should stop consuming (empty on error)
+   * @param assign partitions the client should start consuming (empty on error)
+   * @param fullAssignment complete authoritative assignment list (empty unless full reconcile)
    * @param message error message (empty string for success)
    * @return fully-framed byte array
    */
   public static byte[] encodeHeartbeat(
-      final ErrorCode errorCode, final long generation, final String message) {
+      final ErrorCode errorCode,
+      final long epoch,
+      final List<Integer> revoke,
+      final List<Integer> assign,
+      final List<Integer> fullAssignment,
+      final String message) {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(INITIAL_BUFFER_SIZE);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final HeartbeatResponseEncoder encoder = new HeartbeatResponseEncoder();
-    encoder
-        .wrapAndApplyHeader(buf, 0, headerEncoder)
-        .errorCode(errorCode)
-        .generation(generation)
-        .errorMessage(message);
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).epoch(epoch);
+    final HeartbeatResponseEncoder.RevokeEncoder revokeEnc = encoder.revokeCount(revoke.size());
+    for (final int p : revoke) {
+      revokeEnc.next().partitionId(p);
+    }
+    final HeartbeatResponseEncoder.AssignEncoder assignEnc = encoder.assignCount(assign.size());
+    for (final int p : assign) {
+      assignEnc.next().partitionId(p);
+    }
+    final HeartbeatResponseEncoder.FullAssignmentEncoder fullEnc =
+        encoder.fullAssignmentCount(fullAssignment.size());
+    for (final int p : fullAssignment) {
+      fullEnc.next().partitionId(p);
+    }
+    encoder.errorMessage(message);
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }
 
   // ---------------------------------------------------------------------------
-  // Subscribe
+  // Subscribe (DEPRECATED — handler removed from BrokerRequestDispatcher; Phase 5 deletes these)
 
-  /** Decoded content of a {@code SubscribeRequest}. */
+  /**
+   * @deprecated Subscribe protocol replaced by heartbeat auto-registration.
+   */
+  @Deprecated
   public record SubscribeRequest(String groupId, String consumerId) {}
 
   /**
@@ -292,7 +320,9 @@ public final class BrokerSbeCodec {
    *
    * @param bytes the raw message bytes
    * @return decoded request
+   * @deprecated Subscribe protocol replaced by heartbeat auto-registration.
    */
+  @Deprecated
   public static SubscribeRequest decodeSubscribe(final byte[] bytes) {
     final UnsafeBuffer buf = new UnsafeBuffer(bytes);
     final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -308,7 +338,9 @@ public final class BrokerSbeCodec {
    * @param generation the new rebalance generation
    * @param assignedPartitions the partitions assigned to this consumer
    * @return fully-framed byte array
+   * @deprecated Subscribe protocol replaced by heartbeat auto-registration.
    */
+  @Deprecated
   public static byte[] encodeSubscribeSuccess(
       final long generation, final List<Integer> assignedPartitions) {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(INITIAL_BUFFER_SIZE);
@@ -334,7 +366,9 @@ public final class BrokerSbeCodec {
    * @param errorCode the error code
    * @param message human-readable error detail
    * @return fully-framed byte array
+   * @deprecated Subscribe protocol replaced by heartbeat auto-registration.
    */
+  @Deprecated
   public static byte[] encodeSubscribeError(final ErrorCode errorCode, final String message) {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(INITIAL_BUFFER_SIZE);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -406,6 +440,59 @@ public final class BrokerSbeCodec {
     encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).generation(0L);
     encoder.assignedPartitionsCount(0);
     encoder.errorMessage(message);
+    return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ack
+
+  /** Decoded content of an {@code AckRequest}. */
+  public record AckRequest(
+      String groupId,
+      String consumerId,
+      long epoch,
+      List<Integer> revoked,
+      List<Integer> assigned) {}
+
+  /**
+   * Decodes an {@code AckRequest} SBE message.
+   *
+   * @param bytes the raw message bytes
+   * @return decoded request
+   */
+  public static AckRequest decodeAck(final byte[] bytes) {
+    final UnsafeBuffer buf = new UnsafeBuffer(bytes);
+    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    final AckRequestDecoder decoder = new AckRequestDecoder();
+    decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
+
+    final long epoch = decoder.epoch();
+
+    final List<Integer> revoked = new ArrayList<>();
+    for (final var r : decoder.revoked()) {
+      revoked.add(r.partitionId());
+    }
+
+    final List<Integer> assigned = new ArrayList<>();
+    for (final var a : decoder.assigned()) {
+      assigned.add(a.partitionId());
+    }
+
+    return new AckRequest(decoder.groupId(), decoder.consumerId(), epoch, revoked, assigned);
+  }
+
+  /**
+   * Encodes an {@code AckResponse} SBE message.
+   *
+   * @param errorCode error code ({@link ErrorCode#NONE} for success)
+   * @param message error message (empty string for success)
+   * @return fully-framed byte array
+   */
+  public static byte[] encodeAckResponse(final ErrorCode errorCode, final String message) {
+    final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(INITIAL_BUFFER_SIZE);
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    final AckResponseEncoder encoder = new AckResponseEncoder();
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).errorMessage(message);
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }
 

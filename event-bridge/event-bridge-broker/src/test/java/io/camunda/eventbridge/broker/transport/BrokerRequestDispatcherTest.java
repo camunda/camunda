@@ -22,6 +22,8 @@ import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.broker.actor.CoordinatorActor;
 import io.camunda.eventbridge.broker.actor.PollActor;
 import io.camunda.eventbridge.broker.actor.PublishActor;
+import io.camunda.eventbridge.core.protocol.AckRequestEncoder;
+import io.camunda.eventbridge.core.protocol.AckResponseDecoder;
 import io.camunda.eventbridge.core.protocol.CommitOffsetRequestEncoder;
 import io.camunda.eventbridge.core.protocol.CommitOffsetResponseDecoder;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
@@ -103,10 +105,11 @@ final class BrokerRequestDispatcherTest {
       verify(messagingService).registerHandler(eq(MessageTypes.PRODUCE_REQUEST), any());
       verify(messagingService).registerHandler(eq(MessageTypes.FETCH_REQUEST), any());
       verify(messagingService).registerHandler(eq(MessageTypes.LATEST_POSITION_REQUEST), any());
-      verify(messagingService).registerHandler(eq(MessageTypes.SUBSCRIBE_REQUEST), any());
       verify(messagingService).registerHandler(eq(MessageTypes.HEARTBEAT_REQUEST), any());
+      verify(messagingService).registerHandler(eq(MessageTypes.ACK_REQUEST), any());
       verify(messagingService).registerHandler(eq(MessageTypes.COMMIT_OFFSET_REQUEST), any());
       verify(messagingService).registerHandler(eq(MessageTypes.FETCH_ASSIGNMENT_REQUEST), any());
+      verify(messagingService).registerHandler(eq(MessageTypes.SUBSCRIBE_REQUEST), any());
     }
 
     @Test
@@ -117,10 +120,11 @@ final class BrokerRequestDispatcherTest {
       verify(messagingService).unregisterHandler(MessageTypes.PRODUCE_REQUEST);
       verify(messagingService).unregisterHandler(MessageTypes.FETCH_REQUEST);
       verify(messagingService).unregisterHandler(MessageTypes.LATEST_POSITION_REQUEST);
-      verify(messagingService).unregisterHandler(MessageTypes.SUBSCRIBE_REQUEST);
       verify(messagingService).unregisterHandler(MessageTypes.HEARTBEAT_REQUEST);
+      verify(messagingService).unregisterHandler(MessageTypes.ACK_REQUEST);
       verify(messagingService).unregisterHandler(MessageTypes.COMMIT_OFFSET_REQUEST);
       verify(messagingService).unregisterHandler(MessageTypes.FETCH_ASSIGNMENT_REQUEST);
+      verify(messagingService).unregisterHandler(MessageTypes.SUBSCRIBE_REQUEST);
     }
   }
 
@@ -302,61 +306,45 @@ final class BrokerRequestDispatcherTest {
   }
 
   // ---------------------------------------------------------------------------
-  // Subscribe (SUBSCRIBE_REQUEST)
-
-  @Nested
-  class Subscribe {
-
-    @Test
-    void shouldReturnAssignedPartitionsOnSuccess() throws Exception {
-      // given
-      final byte[] req = encodeSubscribeRequest("grp1", "cons1");
-      final var future = new CompletableActorFuture<CoordinatorActor.SubscribeResult>();
-      future.complete(new CoordinatorActor.SubscribeResult(List.of(0, 1), 3L));
-      when(coordinatorActor.subscribe(anyString(), anyString())).thenReturn(future);
-
-      // when
-      final byte[] responseBytes =
-          captureHandler(MessageTypes.SUBSCRIBE_REQUEST).apply(SENDER, req).get();
-
-      // then
-      final var decoded = decodeSubscribeResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
-      assertThat(decoded.generation()).isEqualTo(3L);
-      assertThat(decoded.assignedPartitions()).containsExactly(0, 1);
-    }
-
-    @Test
-    void shouldReturnCoordinatorUnavailableOnActorFailure() throws Exception {
-      // given
-      final byte[] req = encodeSubscribeRequest("grp1", "cons1");
-      final var future = new CompletableActorFuture<CoordinatorActor.SubscribeResult>();
-      future.completeExceptionally(new RuntimeException("coordinator down"));
-      when(coordinatorActor.subscribe(anyString(), anyString())).thenReturn(future);
-
-      // when
-      final byte[] responseBytes =
-          captureHandler(MessageTypes.SUBSCRIBE_REQUEST).apply(SENDER, req).get();
-
-      // then
-      final var decoded = decodeSubscribeResponse(responseBytes);
-      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Heartbeat (HEARTBEAT_REQUEST)
 
   @Nested
   class Heartbeat {
 
     @Test
-    void shouldReturnGenerationOnSuccess() throws Exception {
+    void shouldForwardEpochAndOwnedPartitionsAndReturnDelta() throws Exception {
       // given
-      final byte[] req = encodeHeartbeatRequest("grp1", "cons1");
-      final var future = new CompletableActorFuture<Long>();
-      future.complete(7L);
-      when(coordinatorActor.heartbeat(anyString(), anyString())).thenReturn(future);
+      final byte[] req = encodeHeartbeatRequest("grp1", "cons1", 42L, List.of(1, 2));
+      final var future = new CompletableActorFuture<CoordinatorActor.HeartbeatResult>();
+      future.complete(new CoordinatorActor.HeartbeatResult(43L, List.of(1), List.of(3), List.of()));
+      when(coordinatorActor.heartbeat(anyString(), anyString(), anyLong(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.HEARTBEAT_REQUEST).apply(SENDER, req).get();
+
+      // then — verify epoch and ownedPartitions were forwarded to the coordinator
+      verify(coordinatorActor).heartbeat("grp1", "cons1", 42L, List.of(1, 2));
+
+      // then — verify delta lists are encoded into the response
+      final var decoded = decodeHeartbeatResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
+      assertThat(decoded.epoch()).isEqualTo(43L);
+      assertThat(decoded.revoke()).containsExactly(1);
+      assertThat(decoded.assign()).containsExactly(3);
+      assertThat(decoded.fullAssignment()).isEmpty();
+    }
+
+    @Test
+    void shouldReturnFullAssignmentWhenProvided() throws Exception {
+      // given
+      final byte[] req = encodeHeartbeatRequest("grp1", "cons1", 0L, List.of());
+      final var future = new CompletableActorFuture<CoordinatorActor.HeartbeatResult>();
+      future.complete(
+          new CoordinatorActor.HeartbeatResult(7L, List.of(), List.of(), List.of(0, 1, 2)));
+      when(coordinatorActor.heartbeat(anyString(), anyString(), anyLong(), any()))
+          .thenReturn(future);
 
       // when
       final byte[] responseBytes =
@@ -365,17 +353,20 @@ final class BrokerRequestDispatcherTest {
       // then
       final var decoded = decodeHeartbeatResponse(responseBytes);
       assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
-      assertThat(decoded.generation()).isEqualTo(7L);
+      assertThat(decoded.epoch()).isEqualTo(7L);
+      assertThat(decoded.revoke()).isEmpty();
+      assertThat(decoded.assign()).isEmpty();
+      assertThat(decoded.fullAssignment()).containsExactly(0, 1, 2);
     }
 
     @Test
-    void shouldReturnConsumerNotRegisteredOnDeadConsumer() throws Exception {
+    void shouldReturnCoordinatorUnavailableOnHeartbeatFailure() throws Exception {
       // given
-      final byte[] req = encodeHeartbeatRequest("grp1", "dead");
-      final var future = new CompletableActorFuture<Long>();
-      future.completeExceptionally(
-          new CoordinatorActor.ConsumerNotRegisteredException("grp1", "dead"));
-      when(coordinatorActor.heartbeat(anyString(), anyString())).thenReturn(future);
+      final byte[] req = encodeHeartbeatRequest("grp1", "dead", 0L, List.of());
+      final var future = new CompletableActorFuture<CoordinatorActor.HeartbeatResult>();
+      future.completeExceptionally(new RuntimeException("coordinator error"));
+      when(coordinatorActor.heartbeat(anyString(), anyString(), anyLong(), any()))
+          .thenReturn(future);
 
       // when
       final byte[] responseBytes =
@@ -383,7 +374,77 @@ final class BrokerRequestDispatcherTest {
 
       // then
       final var decoded = decodeHeartbeatResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+      assertThat(decoded.revoke()).isEmpty();
+      assertThat(decoded.assign()).isEmpty();
+      assertThat(decoded.fullAssignment()).isEmpty();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ack (ACK_REQUEST)
+
+  @Nested
+  class Ack {
+
+    @Test
+    void shouldReturnNoneOnSuccess() throws Exception {
+      // given
+      final byte[] req = encodeAckRequest("grp1", "cons1", 3L, List.of(0), List.of(1));
+      final var future = new CompletableActorFuture<CoordinatorActor.AckResult>();
+      future.complete(
+          new CoordinatorActor.AckResult(
+              io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry.AckStatus.OK));
+      when(coordinatorActor.ack(anyString(), anyString(), anyLong(), any(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.ACK_REQUEST).apply(SENDER, req).get();
+
+      // then
+      final var decoded = decodeAckResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
+    }
+
+    @Test
+    void shouldReturnConsumerNotRegisteredWhenConsumerExpired() throws Exception {
+      // given – coordinator returns CONSUMER_NOT_FOUND status (not an exception)
+      final byte[] req = encodeAckRequest("grp1", "dead", 3L, List.of(), List.of());
+      final var future = new CompletableActorFuture<CoordinatorActor.AckResult>();
+      future.complete(
+          new CoordinatorActor.AckResult(
+              io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry.AckStatus
+                  .CONSUMER_NOT_FOUND));
+      when(coordinatorActor.ack(anyString(), anyString(), anyLong(), any(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.ACK_REQUEST).apply(SENDER, req).get();
+
+      // then
+      final var decoded = decodeAckResponse(responseBytes);
       assertThat(decoded.errorCode()).isEqualTo(ErrorCode.CONSUMER_NOT_REGISTERED);
+    }
+
+    @Test
+    void shouldReturnCoordinatorUnavailableOnUnexpectedFailure() throws Exception {
+      // given
+      final byte[] req = encodeAckRequest("grp1", "cons1", 3L, List.of(), List.of());
+      final var future = new CompletableActorFuture<CoordinatorActor.AckResult>();
+      future.completeExceptionally(new RuntimeException("coordinator crash"));
+      when(coordinatorActor.ack(anyString(), anyString(), anyLong(), any(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.ACK_REQUEST).apply(SENDER, req).get();
+
+      // then
+      final var decoded = decodeAckResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
+      assertThat(decoded.errorMessage()).contains("coordinator crash");
     }
   }
 
@@ -396,7 +457,7 @@ final class BrokerRequestDispatcherTest {
     @Test
     void shouldReturnOkOnSuccess() throws Exception {
       // given
-      final byte[] req = encodeCommitOffsetRequest(PARTITION_0, "grp1", "cons1", 99L, 2L);
+      final byte[] req = encodeCommitOffsetRequest(PARTITION_0, "grp1", "cons1", 99L);
       final var future = new CompletableActorFuture<Void>();
       future.complete(null);
       when(coordinatorActor.commitOffset(anyString(), anyString(), anyInt(), anyLong()))
@@ -414,7 +475,7 @@ final class BrokerRequestDispatcherTest {
     @Test
     void shouldReturnConsumerNotRegisteredOnDeadConsumer() throws Exception {
       // given
-      final byte[] req = encodeCommitOffsetRequest(PARTITION_0, "grp1", "dead", 99L, 2L);
+      final byte[] req = encodeCommitOffsetRequest(PARTITION_0, "grp1", "dead", 99L);
       final var future = new CompletableActorFuture<Void>();
       future.completeExceptionally(
           new CoordinatorActor.ConsumerNotRegisteredException("grp1", "dead"));
@@ -472,6 +533,79 @@ final class BrokerRequestDispatcherTest {
       // then
       final var decoded = decodeFetchAssignmentResponse(responseBytes);
       assertThat(decoded.errorCode()).isEqualTo(ErrorCode.CONSUMER_NOT_REGISTERED);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // SubscribeCompat (SUBSCRIBE_REQUEST — deprecated compat shim)
+
+  @Nested
+  class SubscribeCompat {
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void shouldMapSubscribeRequestToHeartbeatAndReturnSubscribeResponse() throws Exception {
+      // given
+      final byte[] req = encodeSubscribeRequest("grp1", "cons1");
+      final var future = new CompletableActorFuture<CoordinatorActor.HeartbeatResult>();
+      future.complete(
+          new CoordinatorActor.HeartbeatResult(5L, List.of(), List.of(0, 1), List.of()));
+      when(coordinatorActor.heartbeat(anyString(), anyString(), anyLong(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.SUBSCRIBE_REQUEST).apply(SENDER, req).get();
+
+      // then — heartbeat is called with epoch=0 and empty owned partitions (compat mapping)
+      verify(coordinatorActor).heartbeat("grp1", "cons1", 0L, List.of());
+
+      // then — response is encoded as SubscribeResponse with assigned partitions from assign list
+      final var decoded = decodeSubscribeResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
+      assertThat(decoded.generation()).isEqualTo(5L);
+      assertThat(decoded.assignedPartitions()).containsExactly(0, 1);
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void shouldPreferFullAssignmentOverAssignListInSubscribeResponse() throws Exception {
+      // given — coordinator returns a full assignment (initial rebalance)
+      final byte[] req = encodeSubscribeRequest("grp2", "cons2");
+      final var future = new CompletableActorFuture<CoordinatorActor.HeartbeatResult>();
+      future.complete(
+          new CoordinatorActor.HeartbeatResult(3L, List.of(), List.of(), List.of(2, 3)));
+      when(coordinatorActor.heartbeat(anyString(), anyString(), anyLong(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.SUBSCRIBE_REQUEST).apply(SENDER, req).get();
+
+      // then
+      final var decoded = decodeSubscribeResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.NONE);
+      assertThat(decoded.generation()).isEqualTo(3L);
+      assertThat(decoded.assignedPartitions()).containsExactly(2, 3);
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void shouldReturnCoordinatorUnavailableOnHeartbeatFailure() throws Exception {
+      // given
+      final byte[] req = encodeSubscribeRequest("grp1", "dead");
+      final var future = new CompletableActorFuture<CoordinatorActor.HeartbeatResult>();
+      future.completeExceptionally(new RuntimeException("coordinator down"));
+      when(coordinatorActor.heartbeat(anyString(), anyString(), anyLong(), any()))
+          .thenReturn(future);
+
+      // when
+      final byte[] responseBytes =
+          captureHandler(MessageTypes.SUBSCRIBE_REQUEST).apply(SENDER, req).get();
+
+      // then
+      final var decoded = decodeSubscribeResponse(responseBytes);
+      assertThat(decoded.errorCode()).isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
     }
   }
 
@@ -542,28 +676,26 @@ final class BrokerRequestDispatcherTest {
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }
 
-  private static byte[] encodeSubscribeRequest(final String groupId, final String consumerId) {
-    final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(256);
-    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    final SubscribeRequestEncoder encoder = new SubscribeRequestEncoder();
-    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).groupId(groupId).consumerId(consumerId);
-    return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
-  }
-
-  private static byte[] encodeHeartbeatRequest(final String groupId, final String consumerId) {
+  private static byte[] encodeHeartbeatRequest(
+      final String groupId,
+      final String consumerId,
+      final long epoch,
+      final List<Integer> ownedPartitions) {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(256);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final HeartbeatRequestEncoder encoder = new HeartbeatRequestEncoder();
-    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).groupId(groupId).consumerId(consumerId);
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).epoch(epoch);
+    final HeartbeatRequestEncoder.OwnedPartitionsEncoder ownedEnc =
+        encoder.ownedPartitionsCount(ownedPartitions.size());
+    for (final int p : ownedPartitions) {
+      ownedEnc.next().partitionId(p);
+    }
+    encoder.groupId(groupId).consumerId(consumerId);
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }
 
   private static byte[] encodeCommitOffsetRequest(
-      final int partitionId,
-      final String groupId,
-      final String consumerId,
-      final long position,
-      final long generation) {
+      final int partitionId, final String groupId, final String consumerId, final long position) {
     final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(256);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final CommitOffsetRequestEncoder encoder = new CommitOffsetRequestEncoder();
@@ -571,7 +703,6 @@ final class BrokerRequestDispatcherTest {
         .wrapAndApplyHeader(buf, 0, headerEncoder)
         .partitionId(partitionId)
         .position(position)
-        .generation(generation)
         .groupId(groupId)
         .consumerId(consumerId);
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
@@ -583,6 +714,37 @@ final class BrokerRequestDispatcherTest {
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final FetchAssignmentRequestEncoder encoder = new FetchAssignmentRequestEncoder();
     encoder.wrapAndApplyHeader(buf, 0, headerEncoder).groupId(groupId).consumerId(consumerId);
+    return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
+  }
+
+  @SuppressWarnings("deprecation")
+  private static byte[] encodeSubscribeRequest(final String groupId, final String consumerId) {
+    final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(256);
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    final SubscribeRequestEncoder encoder = new SubscribeRequestEncoder();
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).groupId(groupId).consumerId(consumerId);
+    return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
+  }
+
+  private static byte[] encodeAckRequest(
+      final String groupId,
+      final String consumerId,
+      final long epoch,
+      final List<Integer> revoked,
+      final List<Integer> assigned) {
+    final ExpandableArrayBuffer buf = new ExpandableArrayBuffer(256);
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    final AckRequestEncoder encoder = new AckRequestEncoder();
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).epoch(epoch);
+    final AckRequestEncoder.RevokedEncoder revokedEnc = encoder.revokedCount(revoked.size());
+    for (final int p : revoked) {
+      revokedEnc.next().partitionId(p);
+    }
+    final AckRequestEncoder.AssignedEncoder assignedEnc = encoder.assignedCount(assigned.size());
+    for (final int p : assigned) {
+      assignedEnc.next().partitionId(p);
+    }
+    encoder.groupId(groupId).consumerId(consumerId);
     return copyBytes(buf, MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength());
   }
 
@@ -599,14 +761,21 @@ final class BrokerRequestDispatcherTest {
 
   private record LatestPositionResponse(ErrorCode errorCode, long position) {}
 
-  private record SubscribeResponse(
-      ErrorCode errorCode, long generation, List<Integer> assignedPartitions) {}
-
-  private record HeartbeatResponse(ErrorCode errorCode, long generation) {}
+  private record HeartbeatResponse(
+      ErrorCode errorCode,
+      long epoch,
+      List<Integer> revoke,
+      List<Integer> assign,
+      List<Integer> fullAssignment) {}
 
   private record CommitOffsetResponse(ErrorCode errorCode) {}
 
   private record FetchAssignmentResponse(
+      ErrorCode errorCode, long generation, List<Integer> assignedPartitions) {}
+
+  private record AckResponse(ErrorCode errorCode, String errorMessage) {}
+
+  private record SubscribeResponse(
       ErrorCode errorCode, long generation, List<Integer> assignedPartitions) {}
 
   private static PublishBatchResponse decodePublishBatchResponse(final byte[] bytes) {
@@ -649,26 +818,25 @@ final class BrokerRequestDispatcherTest {
     return new LatestPositionResponse(decoder.errorCode(), decoder.position());
   }
 
-  private static SubscribeResponse decodeSubscribeResponse(final byte[] bytes) {
-    final UnsafeBuffer buf = new UnsafeBuffer(bytes);
-    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    final SubscribeResponseDecoder decoder = new SubscribeResponseDecoder();
-    decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
-
-    final List<Integer> partitions = new ArrayList<>();
-    for (final SubscribeResponseDecoder.AssignedPartitionsDecoder ap :
-        decoder.assignedPartitions()) {
-      partitions.add(ap.partitionId());
-    }
-    return new SubscribeResponse(decoder.errorCode(), decoder.generation(), partitions);
-  }
-
   private static HeartbeatResponse decodeHeartbeatResponse(final byte[] bytes) {
     final UnsafeBuffer buf = new UnsafeBuffer(bytes);
     final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     final HeartbeatResponseDecoder decoder = new HeartbeatResponseDecoder();
     decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
-    return new HeartbeatResponse(decoder.errorCode(), decoder.generation());
+    final List<Integer> revoke = new ArrayList<>();
+    for (final HeartbeatResponseDecoder.RevokeDecoder r : decoder.revoke()) {
+      revoke.add(r.partitionId());
+    }
+    final List<Integer> assign = new ArrayList<>();
+    for (final HeartbeatResponseDecoder.AssignDecoder a : decoder.assign()) {
+      assign.add(a.partitionId());
+    }
+    final List<Integer> fullAssignment = new ArrayList<>();
+    for (final HeartbeatResponseDecoder.FullAssignmentDecoder fa : decoder.fullAssignment()) {
+      fullAssignment.add(fa.partitionId());
+    }
+    return new HeartbeatResponse(
+        decoder.errorCode(), decoder.epoch(), revoke, assign, fullAssignment);
   }
 
   private static CommitOffsetResponse decodeCommitOffsetResponse(final byte[] bytes) {
@@ -691,6 +859,27 @@ final class BrokerRequestDispatcherTest {
       partitions.add(ap.partitionId());
     }
     return new FetchAssignmentResponse(decoder.errorCode(), decoder.generation(), partitions);
+  }
+
+  private static AckResponse decodeAckResponse(final byte[] bytes) {
+    final UnsafeBuffer buf = new UnsafeBuffer(bytes);
+    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    final AckResponseDecoder decoder = new AckResponseDecoder();
+    decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
+    return new AckResponse(decoder.errorCode(), decoder.errorMessage());
+  }
+
+  private static SubscribeResponse decodeSubscribeResponse(final byte[] bytes) {
+    final UnsafeBuffer buf = new UnsafeBuffer(bytes);
+    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    final SubscribeResponseDecoder decoder = new SubscribeResponseDecoder();
+    decoder.wrapAndApplyHeader(buf, 0, headerDecoder);
+    final List<Integer> partitions = new ArrayList<>();
+    for (final SubscribeResponseDecoder.AssignedPartitionsDecoder ap :
+        decoder.assignedPartitions()) {
+      partitions.add(ap.partitionId());
+    }
+    return new SubscribeResponse(decoder.errorCode(), decoder.generation(), partitions);
   }
 
   private static byte[] copyBytes(final ExpandableArrayBuffer buf, final int length) {
