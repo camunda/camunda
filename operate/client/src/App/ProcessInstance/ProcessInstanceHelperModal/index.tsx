@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HelperModal} from 'modules/components/HelperModal';
+import {Modal} from '@carbon/react';
+import {storeStateLocally} from 'modules/utils/localStorage';
+import {currentTheme} from 'modules/stores/currentTheme';
+import {observer} from 'mobx-react';
+import processInstanceDetailsLight from './assets/process-instance-details-light.png';
+import {ChangesList, PreviewImage} from './styled';
 
 const localStorageKey = 'hideProcessInstanceHelperModal';
 
@@ -15,30 +20,54 @@ type Props = {
   onClose: () => void;
 };
 
-const ProcessInstanceHelperModal: React.FC<Props> = ({open, onClose}) => {
-  return (
-    <HelperModal
-      title="New Process Instance Details"
-      localStorageKey={localStorageKey}
-      onClose={onClose}
-      open={open}
-      onSubmit={() => {
-        window.open(
-          'https://camunda.com/blog/tag/camunda-platform-8/',
-          '_blank',
-          'noopener,noreferrer',
-        );
-        onClose();
-      }}
-      primaryButtonText="Learn more"
-      secondaryButtonText="Dismiss"
-    >
-      <p>
-        This page shows the details of a process instance, including its current
-        state, variables, and incident information.
-      </p>
-    </HelperModal>
-  );
-};
+const ProcessInstanceHelperModal: React.FC<Props> = observer(
+  ({open, onClose}) => {
+    const handleClose = () => {
+      storeStateLocally({
+        [localStorageKey]: true,
+      });
+      onClose();
+    };
+
+    return (
+      <Modal
+        open={open}
+        preventCloseOnClickOutside
+        modalHeading="Here's what moved in Operate"
+        primaryButtonText="Got it"
+        onRequestSubmit={handleClose}
+        onRequestClose={handleClose}
+        size="md"
+      >
+        <p>We made some changes to the process instance page.</p>
+        <ChangesList>
+          <li>
+            <strong>Incidents</strong> now have their own tab, that opens
+            automatically when present
+          </li>
+          <li>
+            Click any element in the diagram to see its details in the{' '}
+            <strong>Details</strong> tab
+          </li>
+          <li>
+            Double-click a <strong>call activity</strong> to jump directly into
+            the called instance.
+          </li>
+        </ChangesList>
+        {currentTheme.theme === 'light' ? (
+          <PreviewImage
+            src={processInstanceDetailsLight}
+            alt="Process instance details page with incidents tab and diagram"
+          />
+        ) : (
+          <PreviewImage
+            src={processInstanceDetailsLight}
+            alt="Process instance details page with incidents tab and diagram"
+          />
+        )}
+      </Modal>
+    );
+  },
+);
 
 export {ProcessInstanceHelperModal};
