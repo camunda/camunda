@@ -136,8 +136,8 @@ Set `similarity.embeddingModel.provider` to one of the supported provider names.
 similarity.embeddingModel.provider=openai
 similarity.embeddingModel.apiKey=<your api key>
 similarity.embeddingModel.model=text-embedding-3-small
-similarity.threshold=0.8                                                     # optional
 similarity.embeddingModel.dimensions=512                                     # optional
+similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Azure OpenAI
@@ -148,17 +148,18 @@ similarity.embeddingModel.endpoint=https://my-resource.openai.azure.com/
 similarity.embeddingModel.apiKey=<your api key>
 similarity.embeddingModel.model=text-embedding-3-large
 similarity.embeddingModel.dimensions=1024                                    # optional
+similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Amazon Bedrock
 
 ```properties
 similarity.embeddingModel.provider=amazon-bedrock
-similarity.embeddingModel.region=eu-central-1
+similarity.embeddingModel.region=eu-central-1                               # optional, defaults to us-east-1
 similarity.embeddingModel.model=amazon.titan-embed-text-v2:0
 similarity.embeddingModel.credentials.accessKey=<your access key>           # optional; uses default credentials chain if absent
 similarity.embeddingModel.credentials.secretKey=<your secret key>           # optional
-similarity.embeddingModel.apiKey=<your api key>                             # optional, instead of accessKey and secretKey
+similarity.embeddingModel.credentials.normalize=true                        # optional, defaults to no normalization
 ```
 
 ### OpenAI-compatible
@@ -168,6 +169,7 @@ similarity.embeddingModel.provider=openai-compatible
 similarity.embeddingModel.baseUrl=http://localhost:11434/v1
 similarity.embeddingModel.model=nomic-embed-text
 similarity.embeddingModel.apiKey=<your api key, if needed>                   # optional
+similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Spring application properties
