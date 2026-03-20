@@ -11,6 +11,9 @@ import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,14 +33,20 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.testcontainers.containers.Network;
 
 @ExtendWith(ContainerStateExtension.class)
-@Disabled(
-    "Requires 8.8 artifacts to be published to avoid NPE, see https://github.com/camunda/camunda/issues/37517")
 final class SnapshotTest {
 
   private static Network network;
 
   @BeforeAll
   static void setUp() {
+    final String previous = VersionUtil.getPreviousVersion();
+    final String current = VersionUtil.getVersion().replace("-SNAPSHOT", "");
+    final var result = VersionCompatibilityCheck.check(previous, current);
+
+    // Skip the test entirely for unsupported upgrades (e.g. skipped minor)
+    Assumptions.assumeTrue(
+        result instanceof Compatible,
+        () -> "Skipping SnapshotTest for unsupported upgrade path: " + result);
     network = Network.newNetwork();
   }
 
