@@ -89,7 +89,7 @@ jobs:
     name: Benchmark (Elasticsearch)
     needs: [sanitize-branch-name, build-images]
     if: >
-      always() &&
+      !cancelled() &&
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
       contains(github.event.pull_request.labels.*.name, 'benchmark') &&
@@ -107,7 +107,7 @@ jobs:
     name: Benchmark (RDBMS)
     needs: [sanitize-branch-name, build-images]
     if: >
-      always() &&
+      !cancelled() &&
       needs.sanitize-branch-name.result == 'success' &&
       (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
       contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms') &&
@@ -126,7 +126,7 @@ jobs:
     name: Profile and Comment (Elasticsearch)
     needs: [sanitize-branch-name, create-benchmark]
     if: >
-      always() &&
+      !cancelled() &&
       needs.create-benchmark.result == 'success'
     uses: ./.github/workflows/profile-benchmark.yml
     secrets: inherit
@@ -140,7 +140,7 @@ jobs:
     name: Profile and Comment (RDBMS)
     needs: [sanitize-branch-name, create-benchmark-rdbms]
     if: >
-      always() &&
+      !cancelled() &&
       needs.create-benchmark-rdbms.result == 'success'
     uses: ./.github/workflows/profile-benchmark.yml
     secrets: inherit
