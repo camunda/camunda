@@ -37,7 +37,6 @@ class TomcatEncodedSlashConfigTest {
 
     final var connector = mock(Connector.class);
     captor.getValue().customize(connector);
-    verify(connector)
-        .setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue());
+    verify(connector).setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue());
   }
 }
