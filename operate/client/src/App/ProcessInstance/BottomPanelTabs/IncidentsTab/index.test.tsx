@@ -86,9 +86,7 @@ describe('IncidentsTab', () => {
     const table = within(screen.getByRole('table'));
     expect(table.getByText(/^Type/)).toBeInTheDocument();
     expect(table.getByText(/^Failing Element/)).toBeInTheDocument();
-    expect(table.getByText(/^Job Id/)).toBeInTheDocument();
-    expect(table.getByText(/^Creation Date/)).toBeInTheDocument();
-    expect(table.getByText(/^Error Message/)).toBeInTheDocument();
+    expect(table.getByText(/^Created/)).toBeInTheDocument();
     expect(table.getByText(/^Operations/)).toBeInTheDocument();
   });
 

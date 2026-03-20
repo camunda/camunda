@@ -57,6 +57,8 @@ interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
   batchOperationId?: string;
+  isExpandable?: boolean;
+  expandedContent?: Record<string, React.ReactNode>;
   size?: React.ComponentProps<typeof Table>['size'];
   stickyHeader?: boolean;
   onVerticalScrollStartReach?: React.ComponentProps<
@@ -87,6 +89,8 @@ const SortableTable = <
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
   batchOperationId,
+  isExpandable = false,
+  expandedContent,
   stickyHeader = false,
   onSort,
 }: Props<RowType, ColTypes>) => {
@@ -138,14 +142,18 @@ const SortableTable = <
           getRowProps,
           getSelectionProps,
           getTableProps,
+          getExpandHeaderProps,
         }) => (
           <TableContainer $hasError={!!batchOperationId}>
             {state === 'loading' && <Loading data-testid="data-table-loader" />}
             <Table {...getTableProps()} isSortable>
               <TableHead $stickyHeader={stickyHeader}>
                 <TableHeadRow>
-                  {batchOperationId && (
-                    <TableExpandHeader aria-label="expand row" />
+                  {(batchOperationId || isExpandable) && (
+                    <TableExpandHeader
+                      {...getExpandHeaderProps()}
+                      aria-label="expand row"
+                    />
                   )}
                   {selectionType === 'checkbox' && (
                     <TableSelectAll
@@ -188,8 +196,12 @@ const SortableTable = <
                     {rows.map((row) => {
                       const isSelected = checkIsRowSelected?.(row.id) ?? false;
                       const errorMessage = rowOperationError?.(row.id);
+                      const rowExpandedContent = expandedContent?.[row.id];
 
                       const expandRowStyleClasses = () => {
+                        if (isExpandable) {
+                          return 'expandableRow';
+                        }
                         if (batchOperationId) {
                           return errorMessage ? 'errorRow' : 'successRow';
                         }
@@ -197,7 +209,8 @@ const SortableTable = <
                         return '';
                       };
 
-                      const {key, ...props} = getRowProps({row});
+                      const {key, onExpand, ...props} = getRowProps({row});
+                      const expandedRowColSpan = headers.length + 2;
 
                       return (
                         <React.Fragment key={row.id}>
@@ -205,6 +218,12 @@ const SortableTable = <
                             className={expandRowStyleClasses()}
                             {...props}
                             key={key}
+                            onExpand={(
+                              event: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              event.stopPropagation();
+                              onExpand(event);
+                            }}
                             isSelected={isSelected}
                             $isClickable={selectionType === 'row'}
                             aria-selected={isSelected}
@@ -237,9 +256,22 @@ const SortableTable = <
                             ))}
                           </TableExpandRow>
                           {errorMessage && (
-                            <TableExpandedRow colSpan={headers.length + 2}>
+                            <TableExpandedRow
+                              colSpan={expandedRowColSpan}
+                              $variant="error"
+                            >
                               {errorMessage}
                             </TableExpandedRow>
+                          )}
+                          {rowExpandedContent ? (
+                            <TableExpandedRow
+                              colSpan={expandedRowColSpan}
+                              $variant="default"
+                            >
+                              {rowExpandedContent}
+                            </TableExpandedRow>
+                          ) : (
+                            rowExpandedContent
                           )}
                         </React.Fragment>
                       );
