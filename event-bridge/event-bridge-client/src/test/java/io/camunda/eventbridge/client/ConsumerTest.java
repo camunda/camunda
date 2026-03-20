@@ -8,8 +8,8 @@
 package io.camunda.eventbridge.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -19,12 +19,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,16 +34,265 @@ class ConsumerTest {
 
   private static final String GROUP_ID = "test-group";
   private static final String CONSUMER_ID = "consumer-1";
-  private static final long GENERATION = 1L;
+
+  private static final String HEARTBEAT_URL =
+      "/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat";
+  private static final String ACK_URL = "/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/ack";
 
   private EventBridgeClient client;
-  private Consumer consumer;
 
   @BeforeEach
   void setUp(final WireMockRuntimeInfo wmRuntimeInfo) {
     client = EventBridgeClient.create("http://localhost:" + wmRuntimeInfo.getHttpPort());
-    consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), GENERATION, client);
   }
+
+  // -------------------------------------------------------------------------
+  // SendHeartbeat
+
+  @Nested
+  class SendHeartbeat {
+
+    @Test
+    void shouldAutoRegisterOnFirstHeartbeatWithEpochZero() throws Exception {
+      // given — first heartbeat: clientEpoch=0, coordinator epoch=1 → full reconcile, no partitions
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":1,\"revoke\":[],\"assign\":[],\"fullAssignment\":[]}")));
+      stubAckOk();
+
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(1L);
+      assertThat(consumer.getOwnedPartitions()).isEmpty();
+    }
+
+    @Test
+    void shouldApplyAssignDeltaAndSendAck() throws Exception {
+      // given — delta: assign partitions 0 and 1 at epoch 2
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(), 2L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":2,\"revoke\":[],\"assign\":[0,1],\"fullAssignment\":[]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0, 1);
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(2L);
+      verify(
+          postRequestedFor(urlEqualTo(ACK_URL))
+              .withRequestBody(equalTo("{\"epoch\":2,\"revoked\":[],\"assigned\":[0,1]}")));
+    }
+
+    @Test
+    void shouldApplyRevokeDeltaAndSendAck() throws Exception {
+      // given — consumer owns [0, 1]; coordinator revokes partition 1
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 3L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":3,\"revoke\":[1],\"assign\":[],\"fullAssignment\":[]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0);
+      verify(
+          postRequestedFor(urlEqualTo(ACK_URL))
+              .withRequestBody(equalTo("{\"epoch\":3,\"revoked\":[1],\"assigned\":[]}")));
+    }
+
+    @Test
+    void shouldApplyRevokeAndAssignDeltaAndSendSingleAck() throws Exception {
+      // given — revoke 1, assign 2 in the same delta
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 4L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":4,\"revoke\":[1],\"assign\":[2],\"fullAssignment\":[]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0, 2);
+      verify(1, postRequestedFor(urlEqualTo(ACK_URL)));
+    }
+
+    @Test
+    void shouldNotSendAckWhenDeltaIsEmpty() throws Exception {
+      // given — delta with no revoke and no assign
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 5L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":5,\"revoke\":[],\"assign\":[],\"fullAssignment\":[]}")));
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — no ACK sent
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0);
+      verify(0, postRequestedFor(urlEqualTo(ACK_URL)));
+    }
+
+    @Test
+    void shouldApplyFullAssignmentOnEpochAdvanceAndSendAck() throws Exception {
+      // given — consumer owns [0, 1] at epoch 3; coordinator advanced to epoch 4 with new
+      // assignment
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 3L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":4,\"revoke\":[],\"assign\":[],\"fullAssignment\":[1,2]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — ownedPartitions replaced wholesale; epoch updated
+      assertThat(consumer.getOwnedPartitions()).containsExactly(1, 2);
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(4L);
+      // ACK: revoked = [0] (was owned, not in fullAssignment); assigned = [1, 2]
+      verify(1, postRequestedFor(urlEqualTo(ACK_URL)));
+    }
+
+    @Test
+    void shouldApplyEmptyFullAssignmentOnEpochAdvance() throws Exception {
+      // given — consumer owns [0] at epoch 2; new epoch with no partitions assigned
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 2L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":3,\"revoke\":[],\"assign\":[],\"fullAssignment\":[]}")));
+      stubAckOk();
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getOwnedPartitions()).isEmpty();
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(3L);
+      // ACK sent: revoked=[0], assigned=[]
+      verify(1, postRequestedFor(urlEqualTo(ACK_URL)));
+    }
+
+    @Test
+    void shouldIgnoreStaleHeartbeatResponse() throws Exception {
+      // given — consumer is at epoch 5; server returns epoch 3 (stale)
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 5L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":3,\"revoke\":[],\"assign\":[1],\"fullAssignment\":[]}")));
+
+      // when
+      consumer.sendHeartbeat().get();
+
+      // then — no state change
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(5L);
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0);
+      verify(0, postRequestedFor(urlEqualTo(ACK_URL)));
+    }
+
+    @Test
+    void shouldThrowCoordinatorUnavailableOn503() {
+      // given
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(aResponse().withStatus(503).withBody("{\"error\":\"UNAVAILABLE\"}")));
+
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
+
+      // when / then
+      assertThatThrownBy(() -> consumer.sendHeartbeat().get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(CoordinatorUnavailableException.class);
+    }
+
+    @Test
+    void shouldThrowEventBridgeExceptionOnOtherErrors() {
+      // given
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(aResponse().withStatus(500).withBody("{\"error\":\"INTERNAL\"}")));
+
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
+
+      // when / then
+      assertThatThrownBy(() -> consumer.sendHeartbeat().get())
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(EventBridgeException.class)
+          .hasMessageContaining("500");
+    }
+
+    @Test
+    void shouldContinueWhenAckReturnsNon200() throws Exception {
+      // given — heartbeat assigns partition 0; ACK returns 503 (non-fatal per spec)
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(), 1L, client);
+      stubFor(
+          post(urlEqualTo(HEARTBEAT_URL))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":1,\"revoke\":[],\"assign\":[0],\"fullAssignment\":[]}")));
+      stubFor(post(urlEqualTo(ACK_URL)).willReturn(aResponse().withStatus(503)));
+
+      // when — should complete without throwing; local state is already updated
+      consumer.sendHeartbeat().get();
+
+      // then
+      assertThat(consumer.getOwnedPartitions()).containsExactly(0);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Poll
 
   @Nested
   class Poll {
@@ -51,6 +300,7 @@ class ConsumerTest {
     @Test
     void shouldReturnEmptyListWhenNoEventsAvailable() {
       // given
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
       stubFor(
           get(urlMatching("/v1/events/0/poll.*"))
               .willReturn(
@@ -58,7 +308,7 @@ class ConsumerTest {
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
                       .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":100,\"generation\":1}")));
+                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":100,\"epoch\":1}")));
 
       // when
       final List<Event> events = consumer.poll(10, Duration.ZERO);
@@ -72,7 +322,7 @@ class ConsumerTest {
       // given
       final byte[] payload = {0x41, 0x42, 0x43};
       final String base64Payload = Base64.getEncoder().encodeToString(payload);
-
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
       stubFor(
           get(urlMatching("/v1/events/0/poll.*"))
               .willReturn(
@@ -84,7 +334,7 @@ class ConsumerTest {
                               + "{\"position\":1001,\"payload\":\""
                               + base64Payload
                               + "\"}"
-                              + "],\"nextPosition\":1002,\"generation\":1}")));
+                              + "],\"nextPosition\":1002,\"epoch\":1}")));
 
       // when
       final List<Event> events = consumer.poll(10, Duration.ZERO);
@@ -99,9 +349,8 @@ class ConsumerTest {
 
     @Test
     void shouldReturnEventsFromMultiplePartitions() {
-      // given
-      final Consumer multiPartitionConsumer =
-          new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), GENERATION, client);
+      // given — consumer with partitions 0 and 1
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 1L, client);
 
       final byte[] payload0 = {0x01};
       final byte[] payload1 = {0x02};
@@ -117,7 +366,7 @@ class ConsumerTest {
                               + "{\"position\":100,\"payload\":\""
                               + Base64.getEncoder().encodeToString(payload0)
                               + "\"}"
-                              + "],\"nextPosition\":101,\"generation\":1}")));
+                              + "],\"nextPosition\":101,\"epoch\":1}")));
 
       stubFor(
           get(urlMatching("/v1/events/1/poll.*"))
@@ -130,10 +379,10 @@ class ConsumerTest {
                               + "{\"position\":200,\"payload\":\""
                               + Base64.getEncoder().encodeToString(payload1)
                               + "\"}"
-                              + "],\"nextPosition\":201,\"generation\":1}")));
+                              + "],\"nextPosition\":201,\"epoch\":1}")));
 
       // when
-      final List<Event> events = multiPartitionConsumer.poll(10, Duration.ZERO);
+      final List<Event> events = consumer.poll(10, Duration.ZERO);
 
       // then
       assertThat(events).hasSize(2);
@@ -146,8 +395,7 @@ class ConsumerTest {
     @Test
     void shouldIteratePartitionsInAscendingOrder() {
       // given — consumer assigned to partitions 2, 0, 1 (deliberately out of order)
-      final Consumer unsortedConsumer =
-          new Consumer(GROUP_ID, CONSUMER_ID, List.of(2, 0, 1), GENERATION, client);
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(2, 0, 1), 1L, client);
 
       stubFor(
           get(urlMatching("/v1/events/0/poll.*"))
@@ -157,7 +405,7 @@ class ConsumerTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody(
                           "{\"status\":\"OK\",\"events\":[{\"position\":10,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":11,\"generation\":1}")));
+                              + "\"nextPosition\":11,\"epoch\":1}")));
       stubFor(
           get(urlMatching("/v1/events/1/poll.*"))
               .willReturn(
@@ -166,7 +414,7 @@ class ConsumerTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody(
                           "{\"status\":\"OK\",\"events\":[{\"position\":20,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":21,\"generation\":1}")));
+                              + "\"nextPosition\":21,\"epoch\":1}")));
       stubFor(
           get(urlMatching("/v1/events/2/poll.*"))
               .willReturn(
@@ -175,10 +423,10 @@ class ConsumerTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody(
                           "{\"status\":\"OK\",\"events\":[{\"position\":30,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":31,\"generation\":1}")));
+                              + "\"nextPosition\":31,\"epoch\":1}")));
 
       // when
-      final List<Event> events = unsortedConsumer.poll(10, Duration.ZERO);
+      final List<Event> events = consumer.poll(10, Duration.ZERO);
 
       // then — events arrive in partition ID order (0, 1, 2)
       assertThat(events).hasSize(3);
@@ -190,159 +438,40 @@ class ConsumerTest {
     @Test
     void shouldTrackNextPositionBetweenPolls() {
       // given
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
+
       stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
+          get(urlMatching("/v1/events/0/poll\\?.*fromPosition=-1.*"))
               .willReturn(
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
                       .withBody(
                           "{\"status\":\"OK\",\"events\":[{\"position\":100,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":101,\"generation\":1}")));
-
-      // when — first poll
-      consumer.poll(10, Duration.ZERO);
-
-      // then — second poll uses nextPosition=101 from previous response
-      verify(
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("fromPosition", WireMock.equalTo("-1")));
-
-      // second poll
+                              + "\"nextPosition\":101,\"epoch\":1}")));
       stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
+          get(urlMatching("/v1/events/0/poll\\?.*fromPosition=101.*"))
               .willReturn(
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
                       .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":101,\"generation\":1}")));
-
-      consumer.poll(10, Duration.ZERO);
-
-      verify(
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("fromPosition", WireMock.equalTo("101")));
-    }
-
-    @Test
-    void shouldStartPollWithNegativeOneInitially() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"generation\":1}")));
+                          "{\"status\":\"OK\",\"events\":[{\"position\":101,\"payload\":\"AA==\"}],"
+                              + "\"nextPosition\":102,\"epoch\":1}")));
 
       // when
       consumer.poll(10, Duration.ZERO);
+      final List<Event> secondPoll = consumer.poll(10, Duration.ZERO);
 
-      // then — initial fromPosition is -1
-      verify(
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("fromPosition", WireMock.equalTo("-1")));
+      // then — second poll starts from nextPosition returned by first
+      assertThat(secondPoll).hasSize(1);
+      assertThat(secondPoll.get(0).position()).isEqualTo(101L);
     }
 
     @Test
-    void shouldPassGenerationInPollRequest() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"generation\":1}")));
-
-      // when
-      consumer.poll(10, Duration.ZERO);
-
-      // then
-      verify(
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("generation", WireMock.equalTo("1")));
-    }
-
-    @Test
-    void shouldPassServerWaitMsFromTimeout() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"generation\":1}")));
-
-      // when
-      consumer.poll(5, Duration.ofMillis(500));
-
-      // then
-      verify(
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("serverWaitMs", WireMock.equalTo("500"))
-              .withQueryParam("maxRecords", WireMock.equalTo("5")));
-    }
-
-    @Test
-    void shouldThrowRebalanceInProgressExceptionAndUpdateAssignment() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"REBALANCE_IN_PROGRESS\","
-                              + "\"assignedPartitions\":[0,1],"
-                              + "\"events\":[],"
-                              + "\"generation\":2}")));
-
-      // when / then
-      assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
-          .isInstanceOf(RebalanceInProgressException.class)
-          .satisfies(
-              e -> {
-                final var rebalance = (RebalanceInProgressException) e;
-                assertThat(rebalance.getNewAssignment()).containsExactly(0, 1);
-              });
-    }
-
-    @Test
-    void shouldUpdateGenerationOnRebalanceInProgress() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"REBALANCE_IN_PROGRESS\","
-                              + "\"assignedPartitions\":[0,1],"
-                              + "\"events\":[],"
-                              + "\"generation\":5}")));
-
-      // when
-      assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
-          .isInstanceOf(RebalanceInProgressException.class);
-
-      // then — generation updated to 5
-      assertThat(consumer.getGeneration()).isEqualTo(5L);
-      assertThat(consumer.getAssignedPartitions()).containsExactly(0, 1);
-    }
-
-    @Test
-    void shouldDiscardAllEventsOnRebalanceInProgress() {
-      // given — two partitions; partition 0 has an event, partition 1 triggers rebalance
-      final Consumer multiPartitionConsumer =
-          new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), GENERATION, client);
+    void shouldReturnPartialResultsWhenRebalanceInProgressIsReceived() {
+      // given — partition 0 returns events; partition 1 returns REBALANCE_IN_PROGRESS
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), 1L, client);
 
       stubFor(
           get(urlMatching("/v1/events/0/poll.*"))
@@ -352,532 +481,167 @@ class ConsumerTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody(
                           "{\"status\":\"OK\",\"events\":[{\"position\":10,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":11,\"generation\":1}")));
-
+                              + "\"nextPosition\":11,\"epoch\":1}")));
       stubFor(
           get(urlMatching("/v1/events/1/poll.*"))
               .willReturn(
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"REBALANCE_IN_PROGRESS\","
-                              + "\"assignedPartitions\":[0],"
-                              + "\"events\":[],"
-                              + "\"generation\":2}")));
+                      .withBody("{\"status\":\"REBALANCE_IN_PROGRESS\",\"epoch\":2}")));
 
-      // when / then — exception thrown; partial results discarded
-      assertThatThrownBy(() -> multiPartitionConsumer.poll(10, Duration.ZERO))
-          .isInstanceOf(RebalanceInProgressException.class)
-          .satisfies(
-              e ->
-                  assertThat(((RebalanceInProgressException) e).getNewAssignment())
-                      .containsExactly(0));
-    }
-
-    @Test
-    void shouldSendGroupIdAndConsumerIdInPollRequest() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"generation\":1}")));
-
-      // when
-      consumer.poll(10, Duration.ZERO);
-
-      // then
-      verify(
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("groupId", WireMock.equalTo(GROUP_ID))
-              .withQueryParam("consumerId", WireMock.equalTo(CONSUMER_ID)));
-    }
-
-    @Test
-    void shouldHandleMultipleEventsPerPartition() {
-      // given
-      final byte[] p1 = {0x01};
-      final byte[] p2 = {0x02};
-      final byte[] p3 = {0x03};
-
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":["
-                              + "{\"position\":10,\"payload\":\""
-                              + Base64.getEncoder().encodeToString(p1)
-                              + "\"},"
-                              + "{\"position\":11,\"payload\":\""
-                              + Base64.getEncoder().encodeToString(p2)
-                              + "\"},"
-                              + "{\"position\":12,\"payload\":\""
-                              + Base64.getEncoder().encodeToString(p3)
-                              + "\"}"
-                              + "],\"nextPosition\":13,\"generation\":1}")));
-
-      // when
+      // when — no exception thrown; rebalances are now invisible at poll level
       final List<Event> events = consumer.poll(10, Duration.ZERO);
 
-      // then
-      assertThat(events).hasSize(3);
-      assertThat(events.get(0).position()).isEqualTo(10L);
-      assertThat(events.get(0).payload()).isEqualTo(p1);
-      assertThat(events.get(1).position()).isEqualTo(11L);
-      assertThat(events.get(1).payload()).isEqualTo(p2);
-      assertThat(events.get(2).position()).isEqualTo(12L);
-      assertThat(events.get(2).payload()).isEqualTo(p3);
-    }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOn409StaleGeneration() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(409)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"error\":\"STALE_GENERATION\",\"currentGeneration\":5}")));
-
-      // when / then
-      assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
-          .isInstanceOf(EventBridgeException.class)
-          .hasMessageContaining("Stale generation");
-    }
-
-    @Test
-    void shouldReturnEmptyListImmediatelyWhenNoPartitionsAssigned() {
-      // given — consumer with no assigned partitions; no HTTP stubs needed
-      final Consumer emptyConsumer =
-          new Consumer(GROUP_ID, CONSUMER_ID, List.of(), GENERATION, client);
-
-      // when
-      final List<Event> events = emptyConsumer.poll(10, Duration.ZERO);
-
-      // then — empty list returned; no HTTP calls made
-      assertThat(events).isEmpty();
-    }
-
-    @Test
-    void shouldNotAdvanceNextPositionWhenResponseOmitsNextPosition() {
-      // given — response has no "nextPosition" field
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"status\":\"OK\",\"events\":[],\"generation\":1}")));
-
-      // when — first poll (fromPosition=-1)
-      consumer.poll(10, Duration.ZERO);
-
-      // then — second poll still uses -1 (position was not advanced)
-      consumer.poll(10, Duration.ZERO);
-
-      verify(
-          2,
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("fromPosition", WireMock.equalTo("-1")));
-    }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOnPollError() {
-      // given
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(400)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"ERROR\",\"error\":\"CONSUMER_NOT_REGISTERED\","
-                              + "\"message\":\"Not registered\"}")));
-
-      // when / then
-      assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
-          .isInstanceOf(EventBridgeException.class)
-          .hasMessageContaining("400");
+      // then — events from partition 0 are returned; partition 1 loop was aborted
+      assertThat(events).hasSize(1);
+      assertThat(events.get(0).partitionId()).isEqualTo(0);
+      // epoch is NOT updated by poll; sendHeartbeat() will reconcile on next call
+      assertThat(consumer.getCurrentEpoch()).isEqualTo(1L);
     }
 
     @Test
     void shouldThrowConsumerClosedExceptionAfterClose() {
       // given
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
       consumer.close();
 
       // when / then
       assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
           .isInstanceOf(ConsumerClosedException.class);
     }
-
-    @Test
-    void shouldNotAdvanceNextPositionForPartitionsPolleddBeforeRebalance() {
-      // given — partition 0 is polled first (successfully), partition 1 triggers rebalance.
-      // Per spec: "nextPosition is only advanced after events are successfully returned to
-      // the caller." Events from partition 0 are discarded, so its position must not advance.
-      final Consumer multiPartitionConsumer =
-          new Consumer(GROUP_ID, CONSUMER_ID, List.of(0, 1), GENERATION, client);
-
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[{\"position\":10,\"payload\":\"AA==\"}],"
-                              + "\"nextPosition\":11,\"generation\":1}")));
-      stubFor(
-          get(urlMatching("/v1/events/1/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"REBALANCE_IN_PROGRESS\","
-                              + "\"assignedPartitions\":[0,1],"
-                              + "\"events\":[],"
-                              + "\"generation\":2}")));
-
-      // when — first poll throws due to rebalance
-      assertThatThrownBy(() -> multiPartitionConsumer.poll(10, Duration.ZERO))
-          .isInstanceOf(RebalanceInProgressException.class);
-
-      // then — next poll for partition 0 must still start from -1 (position not advanced)
-      stubFor(
-          get(urlMatching("/v1/events/0/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":11,\"generation\":2}")));
-      stubFor(
-          get(urlMatching("/v1/events/1/poll.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"events\":[],\"nextPosition\":0,\"generation\":2}")));
-
-      multiPartitionConsumer.poll(10, Duration.ZERO);
-
-      verify(
-          2,
-          getRequestedFor(urlMatching("/v1/events/0/poll.*"))
-              .withQueryParam("fromPosition", WireMock.equalTo("-1")));
-    }
   }
+
+  // -------------------------------------------------------------------------
+  // CommitOffset
 
   @Nested
   class CommitOffset {
 
     @Test
-    void shouldCommitOffsetSuccessfully() {
+    void shouldCommitOffsetWithoutGenerationField() throws Exception {
       // given
-      stubFor(post(urlMatching("/v1/events/0/commit.*")).willReturn(aResponse().withStatus(204)));
-
-      // when / then — completes without exception
-      consumer.commitOffset(0, 100L).join();
-    }
-
-    @Test
-    void shouldAlsoAccept200OnCommit() {
-      // given
-      stubFor(
-          post(urlMatching("/v1/events/0/commit.*"))
-              .willReturn(aResponse().withStatus(200).withBody("{\"status\":\"OK\"}")));
-
-      // when / then — completes without exception
-      consumer.commitOffset(0, 100L).join();
-    }
-
-    @Test
-    void shouldSendGroupIdConsumerIdAndPositionInJsonBody() {
-      // given
-      stubFor(post(urlEqualTo("/v1/events/0/commit")).willReturn(aResponse().withStatus(204)));
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
+      stubFor(post(urlEqualTo("/v1/events/0/commit")).willReturn(aResponse().withStatus(200)));
 
       // when
-      consumer.commitOffset(0, 42L).join();
+      consumer.commitOffset(0, 42L).get();
 
-      // then — all fields sent as JSON body (not query params)
+      // then — request body must NOT contain a "generation" field
       verify(
           postRequestedFor(urlEqualTo("/v1/events/0/commit"))
-              .withHeader("Content-Type", WireMock.containing("application/json"))
-              .withRequestBody(WireMock.matchingJsonPath("$.groupId", WireMock.equalTo(GROUP_ID)))
               .withRequestBody(
-                  WireMock.matchingJsonPath("$.consumerId", WireMock.equalTo(CONSUMER_ID)))
-              .withRequestBody(WireMock.matchingJsonPath("$.position", WireMock.equalTo("42"))));
+                  equalTo(
+                      "{\"groupId\":\"test-group\",\"consumerId\":\"consumer-1\",\"position\":42}")));
     }
 
     @Test
-    void shouldSendCurrentGenerationInCommitRequest() {
-      // given — consumer has generation 1 from construction
-      stubFor(post(urlEqualTo("/v1/events/0/commit")).willReturn(aResponse().withStatus(204)));
+    void shouldReRegisterAndRetryOnConsumerNotRegistered() throws Exception {
+      // given — first commit returns 404; heartbeat succeeds; retry commit succeeds
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
 
-      // when
-      consumer.commitOffset(0, 42L).join();
-
-      // then — generation sent in JSON body so the broker can reject stale commits
-      verify(
-          postRequestedFor(urlEqualTo("/v1/events/0/commit"))
-              .withRequestBody(WireMock.matchingJsonPath("$.generation", WireMock.equalTo("1"))));
-    }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOnCommitError() {
-      // given
       stubFor(
-          post(urlMatching("/v1/events/0/commit.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(400)
-                      .withBody("{\"status\":\"ERROR\",\"error\":\"CONSUMER_NOT_REGISTERED\"}")));
+          post(urlEqualTo("/v1/events/0/commit"))
+              .inScenario("retry")
+              .whenScenarioStateIs("Started")
+              .willReturn(aResponse().withStatus(404))
+              .willSetStateTo("after-first-commit"));
 
-      // when / then — join() wraps in CompletionException
-      assertThatThrownBy(() -> consumer.commitOffset(0, 100L).join())
-          .hasCauseInstanceOf(EventBridgeException.class)
-          .cause()
-          .hasMessageContaining("400");
-    }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOn409StaleGeneration() {
-      // given
       stubFor(
-          post(urlMatching("/v1/events/0/commit.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(409)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"error\":\"STALE_GENERATION\",\"currentGeneration\":3}")));
+          post(urlEqualTo("/v1/events/0/commit"))
+              .inScenario("retry")
+              .whenScenarioStateIs("after-first-commit")
+              .willReturn(aResponse().withStatus(200)));
 
-      // when / then
-      assertThatThrownBy(() -> consumer.commitOffset(0, 50L).join())
-          .hasCauseInstanceOf(EventBridgeException.class)
-          .cause()
-          .hasMessageContaining("409");
-    }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOn403PartitionNotAssigned() {
-      // given
       stubFor(
-          post(urlMatching("/v1/events/0/commit.*"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(403)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"error\":\"PARTITION_NOT_ASSIGNED\"}")));
-
-      // when / then
-      assertThatThrownBy(() -> consumer.commitOffset(0, 50L).join())
-          .hasCauseInstanceOf(EventBridgeException.class)
-          .cause()
-          .hasMessageContaining("403");
-    }
-
-    @Test
-    void shouldThrowConsumerClosedExceptionAfterClose() {
-      // given
-      consumer.close();
-
-      // when / then
-      assertThatThrownBy(() -> consumer.commitOffset(0, 100L))
-          .isInstanceOf(ConsumerClosedException.class);
-    }
-  }
-
-  @Nested
-  class SendHeartbeat {
-
-    @Test
-    void shouldSendHeartbeatSuccessfully() {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat"))
+          post(urlEqualTo(HEARTBEAT_URL))
               .willReturn(
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody("{\"status\":\"OK\",\"generation\":1}")));
+                      .withBody(
+                          "{\"epoch\":2,\"revoke\":[],\"assign\":[],\"fullAssignment\":[0]}")));
+      stubAckOk();
 
-      // when / then — completes without exception
-      consumer.sendHeartbeat().join();
+      // when
+      consumer.commitOffset(0, 42L).get();
+
+      // then — heartbeat was called once (to re-register); commit was retried
+      verify(postRequestedFor(urlEqualTo(HEARTBEAT_URL)));
     }
 
     @Test
-    void shouldThrowCoordinatorUnavailableExceptionOn503() {
-      // given
+    void shouldPropagateExceptionIfRetryAlsoFails() {
+      // given — both attempts return 404
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, List.of(0), 1L, client);
+
+      stubFor(post(urlEqualTo("/v1/events/0/commit")).willReturn(aResponse().withStatus(404)));
       stubFor(
-          post(urlEqualTo("/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat"))
+          post(urlEqualTo(HEARTBEAT_URL))
               .willReturn(
                   aResponse()
-                      .withStatus(503)
-                      .withBody("{\"status\":\"ERROR\",\"error\":\"COORDINATOR_UNAVAILABLE\"}")));
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withBody(
+                          "{\"epoch\":2,\"revoke\":[],\"assign\":[],\"fullAssignment\":[]}")));
+      stubAckOk();
 
-      // when / then — join() wraps in CompletionException
-      assertThatThrownBy(() -> consumer.sendHeartbeat().join())
-          .hasCauseInstanceOf(CoordinatorUnavailableException.class);
-    }
-
-    @Test
-    void shouldThrowConsumerNotRegisteredExceptionOn400() {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(400)
-                      .withBody("{\"status\":\"ERROR\",\"error\":\"CONSUMER_NOT_REGISTERED\"}")));
-
-      // when / then — join() wraps in CompletionException
-      assertThatThrownBy(() -> consumer.sendHeartbeat().join())
+      // when / then
+      assertThatThrownBy(() -> consumer.commitOffset(0, 42L).get())
+          .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(ConsumerNotRegisteredException.class);
     }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOnOtherErrors() {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat"))
-              .willReturn(aResponse().withStatus(500)));
-
-      // when / then — join() wraps in CompletionException
-      assertThatThrownBy(() -> consumer.sendHeartbeat().join())
-          .hasCauseInstanceOf(EventBridgeException.class)
-          .cause()
-          .hasMessageContaining("500");
-    }
-
-    @Test
-    void shouldThrowConsumerClosedExceptionAfterClose() {
-      // given
-      consumer.close();
-
-      // when / then
-      assertThatThrownBy(() -> consumer.sendHeartbeat())
-          .isInstanceOf(ConsumerClosedException.class);
-    }
-
-    @Test
-    void shouldUpdateGenerationFromHeartbeatResponse() {
-      // given — broker returns a higher generation, signalling a rebalance occurred
-      stubFor(
-          post(urlEqualTo("/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"generation\":5}")));
-
-      // when
-      consumer.sendHeartbeat().join();
-
-      // then — consumer's generation is updated so subsequent poll/commit use the new value
-      assertThat(consumer.getGeneration()).isEqualTo(5L);
-    }
-
-    @Test
-    void shouldKeepGenerationUnchangedWhenHeartbeatResponseOmitsIt() {
-      // given — minimal 200 response with no generation field
-      stubFor(
-          post(urlEqualTo("/v1/consumers/" + GROUP_ID + "/" + CONSUMER_ID + "/heartbeat"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{}")));
-
-      // when
-      consumer.sendHeartbeat().join();
-
-      // then — generation stays at its initial value
-      assertThat(consumer.getGeneration()).isEqualTo(GENERATION);
-    }
   }
+
+  // -------------------------------------------------------------------------
+  // Close
 
   @Nested
   class Close {
 
     @Test
-    void shouldBeIdempotent() {
-      // when — close twice; no exception
-      consumer.close();
-      consumer.close();
-    }
-
-    @Test
-    void shouldPreventPollAfterClose() {
+    void shouldThrowConsumerClosedExceptionOnHeartbeatAfterClose() {
       // given
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
       consumer.close();
 
-      // when / then
-      assertThatThrownBy(() -> consumer.poll(10, Duration.ZERO))
+      // when / then — checkNotClosed() fires synchronously before runAsync; exception is direct
+      assertThatThrownBy(() -> consumer.sendHeartbeat())
           .isInstanceOf(ConsumerClosedException.class);
     }
 
     @Test
-    void shouldPreventCommitOffsetAfterClose() {
+    void shouldThrowConsumerClosedExceptionOnCommitAfterClose() {
       // given
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
       consumer.close();
 
-      // when / then
+      // when / then — checkNotClosed() fires synchronously before runAsync; exception is direct
       assertThatThrownBy(() -> consumer.commitOffset(0, 1L))
           .isInstanceOf(ConsumerClosedException.class);
     }
 
     @Test
-    void shouldPreventSendHeartbeatAfterClose() {
+    void shouldBeIdempotent() {
       // given
-      consumer.close();
+      final Consumer consumer = new Consumer(GROUP_ID, CONSUMER_ID, client);
 
-      // when / then
-      assertThatThrownBy(() -> consumer.sendHeartbeat())
-          .isInstanceOf(ConsumerClosedException.class);
+      // when / then — second close must not throw
+      consumer.close();
+      consumer.close();
     }
   }
 
-  @Nested
-  class InitialState {
+  // -------------------------------------------------------------------------
+  // Helpers
 
-    @Test
-    void shouldExposeAssignedPartitions() {
-      // given
-      final Consumer c = new Consumer(GROUP_ID, CONSUMER_ID, List.of(2, 0, 1), GENERATION, client);
-
-      // then — sorted ascending
-      assertThat(c.getAssignedPartitions()).containsExactly(0, 1, 2);
-    }
-
-    @Test
-    void shouldExposeGroupIdAndConsumerId() {
-      assertThat(consumer.getGroupId()).isEqualTo(GROUP_ID);
-      assertThat(consumer.getConsumerId()).isEqualTo(CONSUMER_ID);
-    }
-
-    @Test
-    void shouldExposeGeneration() {
-      assertThat(consumer.getGeneration()).isEqualTo(GENERATION);
-    }
-
-    @Test
-    void shouldReturnUnmodifiablePartitionList() {
-      // given
-      final List<Integer> partitions = consumer.getAssignedPartitions();
-
-      // when / then
-      assertThatThrownBy(() -> partitions.add(99))
-          .isInstanceOf(UnsupportedOperationException.class);
-    }
+  private static void stubAckOk() {
+    stubFor(
+        post(urlEqualTo(ACK_URL))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"status\":\"OK\"}")));
   }
 }

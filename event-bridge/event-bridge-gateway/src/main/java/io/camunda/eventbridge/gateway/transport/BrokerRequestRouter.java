@@ -15,6 +15,7 @@ import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
 import io.camunda.eventbridge.core.protocol.MessageHeaderDecoder;
 import io.camunda.eventbridge.core.transport.MessageTypes;
+import io.camunda.eventbridge.gateway.transport.SbeCodec.AckResult;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.CommitResult;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.FetchAssignmentResult;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.HeartbeatResult;
@@ -22,7 +23,6 @@ import io.camunda.eventbridge.gateway.transport.SbeCodec.LatestPositionResult;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.PollParams;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.PollResult;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.PublishBatchResult;
-import io.camunda.eventbridge.gateway.transport.SbeCodec.SubscribeResult;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.List;
@@ -60,9 +60,9 @@ import org.springframework.stereotype.Component;
  *
  * <h2>Coordinator routing</h2>
  *
- * <p>Coordinator operations (subscribe, heartbeat, commit-offset, fetch-assignment) are routed to
- * the coordinator address resolved from {@link TopologyService}. If the coordinator address is
- * unknown, the operation fails immediately with {@link ErrorCode#COORDINATOR_UNAVAILABLE}.
+ * <p>Coordinator operations (heartbeat, commit-offset, fetch-assignment) are routed to the
+ * coordinator address resolved from {@link TopologyService}. If the coordinator address is unknown,
+ * the operation fails immediately with {@link ErrorCode#COORDINATOR_UNAVAILABLE}.
  *
  * <h2>Empty-address retries</h2>
  *
@@ -200,49 +200,64 @@ public class BrokerRequestRouter {
   // Coordinator operations
 
   /**
-   * Registers a consumer with the coordinator (Broker-0) and triggers an immediate rebalance.
+   * Sends a consumer liveness heartbeat to the coordinator, carrying the consumer's current epoch
+   * and owned partitions.
    *
    * @param groupId consumer group ID
    * @param consumerId consumer ID
-   * @return future that resolves to the subscribe result; completes exceptionally with {@link
-   *     BrokerException} on error
+   * @param clientEpoch the epoch last observed by the consumer (0 on first heartbeat)
+   * @param ownedPartitions partition IDs the consumer currently holds
+   * @return future that resolves to the full heartbeat result (epoch, revoke, assign,
+   *     fullAssignment); completes exceptionally with {@link BrokerException} on error
    */
-  public CompletableFuture<SubscribeResult> subscribe(
-      final String groupId, final String consumerId) {
+  public CompletableFuture<HeartbeatResult> heartbeat(
+      final String groupId,
+      final String consumerId,
+      final long clientEpoch,
+      final List<Integer> ownedPartitions) {
     if (messagingService == null) {
       return unavailable(
           ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
-    final byte[] request = SbeCodec.encodeSubscribe(groupId, consumerId);
-    return sendToCoordinator(MessageTypes.SUBSCRIBE_REQUEST, request)
+    final byte[] request =
+        SbeCodec.encodeHeartbeat(groupId, consumerId, clientEpoch, ownedPartitions);
+    return sendToCoordinator(MessageTypes.HEARTBEAT_REQUEST, request)
         .thenApply(
             bytes -> {
-              final SubscribeResult result = SbeCodec.decodeSubscribe(bytes);
+              final HeartbeatResult result = SbeCodec.decodeHeartbeat(bytes);
               requireSuccess(result.errorCode(), result.errorMessage());
               return result;
             });
   }
 
   /**
-   * Sends a consumer liveness heartbeat to the coordinator.
+   * Acknowledges revoked and assigned partitions with the coordinator.
    *
    * @param groupId consumer group ID
    * @param consumerId consumer ID
-   * @return future that resolves to the current generation; completes exceptionally with {@link
+   * @param epoch the coordinator epoch at the time the assignment was issued
+   * @param revoked partition IDs the consumer has stopped processing
+   * @param assigned partition IDs the consumer has started processing
+   * @return future that resolves to the ack result; completes exceptionally with {@link
    *     BrokerException} on error
    */
-  public CompletableFuture<Long> heartbeat(final String groupId, final String consumerId) {
+  public CompletableFuture<AckResult> ack(
+      final String groupId,
+      final String consumerId,
+      final long epoch,
+      final List<Integer> revoked,
+      final List<Integer> assigned) {
     if (messagingService == null) {
       return unavailable(
           ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
-    final byte[] request = SbeCodec.encodeHeartbeat(groupId, consumerId);
-    return sendToCoordinator(MessageTypes.HEARTBEAT_REQUEST, request)
+    final byte[] request = SbeCodec.encodeAck(groupId, consumerId, epoch, revoked, assigned);
+    return sendToCoordinator(MessageTypes.ACK_REQUEST, request)
         .thenApply(
             bytes -> {
-              final HeartbeatResult result = SbeCodec.decodeHeartbeat(bytes);
+              final AckResult result = SbeCodec.decodeAckResponse(bytes);
               requireSuccess(result.errorCode(), result.errorMessage());
-              return result.generation();
+              return result;
             });
   }
 
@@ -253,22 +268,16 @@ public class BrokerRequestRouter {
    * @param groupId consumer group ID
    * @param consumerId consumer ID
    * @param position offset to commit
-   * @param generation current rebalance generation
    * @return future that completes when the commit is acknowledged; completes exceptionally with
    *     {@link BrokerException} on error
    */
   public CompletableFuture<Void> commitOffset(
-      final int partitionId,
-      final String groupId,
-      final String consumerId,
-      final long position,
-      final long generation) {
+      final int partitionId, final String groupId, final String consumerId, final long position) {
     if (messagingService == null) {
       return unavailable(
           ErrorCode.COORDINATOR_UNAVAILABLE, "MessagingService not available (no AtomixCluster)");
     }
-    final byte[] request =
-        SbeCodec.encodeCommitOffset(partitionId, groupId, consumerId, position, generation);
+    final byte[] request = SbeCodec.encodeCommitOffset(partitionId, groupId, consumerId, position);
     return sendToCoordinator(MessageTypes.COMMIT_OFFSET_REQUEST, request)
         .thenApply(
             bytes -> {

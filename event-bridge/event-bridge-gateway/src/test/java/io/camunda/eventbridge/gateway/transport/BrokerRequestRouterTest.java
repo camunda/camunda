@@ -24,6 +24,7 @@ import io.camunda.eventbridge.core.EventData;
 import io.camunda.eventbridge.core.EventDataBatch;
 import io.camunda.eventbridge.core.protocol.ErrorCode;
 import io.camunda.eventbridge.core.transport.MessageTypes;
+import io.camunda.eventbridge.gateway.transport.SbeCodec.HeartbeatResult;
 import io.camunda.eventbridge.gateway.transport.SbeCodec.PollParams;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -312,89 +313,13 @@ class BrokerRequestRouterTest {
   }
 
   // -------------------------------------------------------------------------
-  // Subscribe (coordinator)
-
-  @Nested
-  class Subscribe {
-
-    @Test
-    void shouldReturnAssignedPartitionsOnSuccess() throws Exception {
-      // given
-      final byte[] response = buildSubscribeResponse(ErrorCode.NONE, 1L, List.of(0, 1));
-      when(messagingService.sendAndReceive(
-              eq(COORDINATOR_ADDR), eq(MessageTypes.SUBSCRIBE_REQUEST), any(), any(Duration.class)))
-          .thenReturn(CompletableFuture.completedFuture(response));
-
-      // when
-      final SbeCodec.SubscribeResult result = router.subscribe("grp", "c0").get();
-
-      // then
-      assertThat(result.errorCode()).isEqualTo(ErrorCode.NONE);
-      assertThat(result.generation()).isEqualTo(1L);
-      assertThat(result.assignedPartitions()).containsExactly(0, 1);
-    }
-
-    @Test
-    void shouldRetryOnTransportErrorForSubscribe() throws Exception {
-      // given
-      final byte[] response = buildSubscribeResponse(ErrorCode.NONE, 2L, List.of(0));
-      when(messagingService.sendAndReceive(
-              eq(COORDINATOR_ADDR), eq(MessageTypes.SUBSCRIBE_REQUEST), any(), any(Duration.class)))
-          .thenReturn(CompletableFuture.failedFuture(new ConnectException("refused")))
-          .thenReturn(CompletableFuture.completedFuture(response));
-
-      // when
-      final SbeCodec.SubscribeResult result = router.subscribe("grp", "c0").get();
-
-      // then
-      assertThat(result.generation()).isEqualTo(2L);
-      verify(messagingService, times(2))
-          .sendAndReceive(any(), eq(MessageTypes.SUBSCRIBE_REQUEST), any(), any(Duration.class));
-    }
-
-    @Test
-    void shouldNotRetryOnCoordinatorUnavailableResponse() throws Exception {
-      // given – COORDINATOR_UNAVAILABLE in response; should not retry (coordinator is down)
-      final byte[] response =
-          buildSubscribeResponse(ErrorCode.COORDINATOR_UNAVAILABLE, 0L, List.of());
-      when(messagingService.sendAndReceive(
-              eq(COORDINATOR_ADDR), eq(MessageTypes.SUBSCRIBE_REQUEST), any(), any(Duration.class)))
-          .thenReturn(CompletableFuture.completedFuture(response));
-
-      // when / then
-      assertThatThrownBy(() -> router.subscribe("grp", "c0").get())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(BrokerException.class)
-          .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
-          .isEqualTo(ErrorCode.COORDINATOR_UNAVAILABLE);
-
-      // should NOT retry since isRetryableResponse predicate returns false for coordinator ops
-      verify(messagingService, times(1))
-          .sendAndReceive(any(), eq(MessageTypes.SUBSCRIBE_REQUEST), any(), any(Duration.class));
-    }
-
-    @Test
-    void shouldFailWhenCoordinatorAddressUnknown() {
-      // given
-      when(topologyService.getCoordinatorAddress()).thenReturn(Optional.empty());
-
-      // when / then
-      assertThatThrownBy(() -> router.subscribe("grp", "c0").get())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(BrokerException.class);
-
-      verify(messagingService, times(0)).sendAndReceive(any(), any(), any(), any(Duration.class));
-    }
-  }
-
-  // -------------------------------------------------------------------------
   // Heartbeat (coordinator)
 
   @Nested
   class Heartbeat {
 
     @Test
-    void shouldReturnGenerationOnSuccess() throws Exception {
+    void shouldReturnHeartbeatResultOnSuccess() throws Exception {
       // given
       final byte[] response = buildHeartbeatResponse(ErrorCode.NONE, 5L);
       when(messagingService.sendAndReceive(
@@ -402,10 +327,13 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(response));
 
       // when
-      final long generation = router.heartbeat("grp", "c0").get();
+      final HeartbeatResult result = router.heartbeat("grp", "c0", 4L, List.of(1, 2)).get();
 
       // then
-      assertThat(generation).isEqualTo(5L);
+      assertThat(result.epoch()).isEqualTo(5L);
+      assertThat(result.revoke()).isEmpty();
+      assertThat(result.assign()).isEmpty();
+      assertThat(result.fullAssignment()).isEmpty();
     }
 
     @Test
@@ -417,11 +345,33 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(response));
 
       // when / then
-      assertThatThrownBy(() -> router.heartbeat("grp", "c0").get())
+      assertThatThrownBy(() -> router.heartbeat("grp", "c0", 0L, List.of()).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
           .isEqualTo(ErrorCode.CONSUMER_NOT_REGISTERED);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Ack (coordinator)
+
+  @Nested
+  class Ack {
+
+    @Test
+    void shouldReturnAckResultOnSuccess() throws Exception {
+      // given
+      final byte[] response = buildAckResponse(ErrorCode.NONE);
+      when(messagingService.sendAndReceive(
+              eq(COORDINATOR_ADDR), eq(MessageTypes.ACK_REQUEST), any(), any(Duration.class)))
+          .thenReturn(CompletableFuture.completedFuture(response));
+
+      // when
+      final SbeCodec.AckResult result = router.ack("grp", "c0", 5L, List.of(1), List.of(2)).get();
+
+      // then
+      assertThat(result.errorCode()).isEqualTo(ErrorCode.NONE);
     }
   }
 
@@ -443,7 +393,7 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(response));
 
       // when / then – no exception
-      router.commitOffset(PARTITION_0, "grp", "c0", 1000L, 3L).get();
+      router.commitOffset(PARTITION_0, "grp", "c0", 1000L).get();
     }
 
     @Test
@@ -458,7 +408,7 @@ class BrokerRequestRouterTest {
           .thenReturn(CompletableFuture.completedFuture(response));
 
       // when / then
-      assertThatThrownBy(() -> router.commitOffset(PARTITION_0, "grp", "c0", 100L, 1L).get())
+      assertThatThrownBy(() -> router.commitOffset(PARTITION_0, "grp", "c0", 100L).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -581,14 +531,11 @@ class BrokerRequestRouterTest {
     }
 
     @Test
-    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForSubscribe() {
-      // given
+    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForHeartbeat() {
       final BrokerRequestRouter routerWithoutCluster =
           new BrokerRequestRouter(/* cluster= */ null, topologyService);
 
-      // when / then – coordinator operation must return COORDINATOR_UNAVAILABLE, not
-      // LEADER_UNAVAILABLE
-      assertThatThrownBy(() -> routerWithoutCluster.subscribe("grp", "c0").get())
+      assertThatThrownBy(() -> routerWithoutCluster.heartbeat("grp", "c0", 0L, List.of()).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -596,11 +543,14 @@ class BrokerRequestRouterTest {
     }
 
     @Test
-    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForHeartbeat() {
+    void shouldFailFastWithCoordinatorUnavailableWhenNoClusterForAck() {
+      // given — no messaging service
       final BrokerRequestRouter routerWithoutCluster =
           new BrokerRequestRouter(/* cluster= */ null, topologyService);
 
-      assertThatThrownBy(() -> routerWithoutCluster.heartbeat("grp", "c0").get())
+      // when / then – ack returns COORDINATOR_UNAVAILABLE, not LEADER_UNAVAILABLE
+      assertThatThrownBy(
+              () -> routerWithoutCluster.ack("grp", "c0", 1L, List.of(), List.of()).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -613,7 +563,7 @@ class BrokerRequestRouterTest {
           new BrokerRequestRouter(/* cluster= */ null, topologyService);
 
       assertThatThrownBy(
-              () -> routerWithoutCluster.commitOffset(PARTITION_0, "grp", "c0", 100L, 1L).get())
+              () -> routerWithoutCluster.commitOffset(PARTITION_0, "grp", "c0", 100L).get())
           .isInstanceOf(ExecutionException.class)
           .hasCauseInstanceOf(BrokerException.class)
           .extracting(ex -> ((BrokerException) ((ExecutionException) ex).getCause()).getErrorCode())
@@ -760,21 +710,18 @@ class BrokerRequestRouterTest {
             + encoder.encodedLength());
   }
 
-  /** Builds a {@code SubscribeResponse} byte array. */
-  private static byte[] buildSubscribeResponse(
-      final ErrorCode errorCode, final long generation, final List<Integer> partitions) {
+  /** Builds a {@code HeartbeatResponse} byte array. */
+  private static byte[] buildHeartbeatResponse(final ErrorCode errorCode, final long epoch) {
     final io.camunda.eventbridge.core.protocol.MessageHeaderEncoder headerEncoder =
         new io.camunda.eventbridge.core.protocol.MessageHeaderEncoder();
-    final io.camunda.eventbridge.core.protocol.SubscribeResponseEncoder encoder =
-        new io.camunda.eventbridge.core.protocol.SubscribeResponseEncoder();
-    final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer(128);
+    final io.camunda.eventbridge.core.protocol.HeartbeatResponseEncoder encoder =
+        new io.camunda.eventbridge.core.protocol.HeartbeatResponseEncoder();
+    final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer(64);
 
-    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).generation(generation);
-
-    final var apGroup = encoder.assignedPartitionsCount(partitions.size());
-    for (final int partitionId : partitions) {
-      apGroup.next().partitionId(partitionId);
-    }
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).epoch(epoch);
+    encoder.revokeCount(0);
+    encoder.assignCount(0);
+    encoder.fullAssignmentCount(0);
     encoder.errorMessage("");
 
     return copyBytes(
@@ -783,19 +730,15 @@ class BrokerRequestRouterTest {
             + encoder.encodedLength());
   }
 
-  /** Builds a {@code HeartbeatResponse} byte array. */
-  private static byte[] buildHeartbeatResponse(final ErrorCode errorCode, final long generation) {
+  /** Builds an {@code AckResponse} byte array. */
+  private static byte[] buildAckResponse(final ErrorCode errorCode) {
     final io.camunda.eventbridge.core.protocol.MessageHeaderEncoder headerEncoder =
         new io.camunda.eventbridge.core.protocol.MessageHeaderEncoder();
-    final io.camunda.eventbridge.core.protocol.HeartbeatResponseEncoder encoder =
-        new io.camunda.eventbridge.core.protocol.HeartbeatResponseEncoder();
+    final io.camunda.eventbridge.core.protocol.AckResponseEncoder encoder =
+        new io.camunda.eventbridge.core.protocol.AckResponseEncoder();
     final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer(64);
 
-    encoder
-        .wrapAndApplyHeader(buf, 0, headerEncoder)
-        .errorCode(errorCode)
-        .generation(generation)
-        .errorMessage("");
+    encoder.wrapAndApplyHeader(buf, 0, headerEncoder).errorCode(errorCode).errorMessage("");
 
     return copyBytes(
         buf,

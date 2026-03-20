@@ -8,6 +8,8 @@
 package io.camunda.eventbridge.broker.actor;
 
 import io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry;
+import io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry.AckStatus;
+import io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry.HeartbeatDelta;
 import io.camunda.eventbridge.broker.offset.OffsetStore;
 import io.camunda.eventbridge.broker.offset.OffsetStore.ConsumerKey;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
@@ -26,7 +28,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Actor running on the coordinator broker (Broker-0) that manages all consumer group state:
- * subscribe, heartbeat reception, dead-consumer eviction, and partition rebalancing.
+ * heartbeat reception (with auto-registration), ACK processing, dead-consumer eviction, and
+ * partition rebalancing.
  *
  * <p>All state mutations happen on this actor's thread; no external synchronization is needed.
  */
@@ -80,9 +83,10 @@ public final class CoordinatorActor extends Actor {
 
   @Override
   protected void onActorStarted() {
-    // Periodically scan for dead consumers
-    final long heartbeatTimeout = properties.consumer().heartbeatTimeoutMs();
-    actor.runAtFixedRate(Duration.ofMillis(heartbeatTimeout / 2), this::evictDeadConsumers);
+    // Periodically run the full coordinator loop: ACK timeouts, dead-consumer eviction, partition
+    // count reconciliation, and BALANCED_STICKY rebalancing.
+    final long rebalanceInterval = properties.consumer().rebalanceIntervalMs();
+    actor.runAtFixedRate(Duration.ofMillis(rebalanceInterval), this::runCoordinatorLoop);
 
     // Periodically compute the truncation boundary per partition and dispatch compaction
     // to partition leaders.
@@ -91,38 +95,63 @@ public final class CoordinatorActor extends Actor {
   }
 
   /**
-   * Registers a consumer and triggers an immediate rebalance.
+   * Records a heartbeat for the given consumer, auto-registering it on first contact.
    *
-   * @return a future resolving to the assigned partition IDs and the new generation
+   * <p>The response contains the coordinator epoch and the partition delta (revoke/assign) or, if
+   * the consumer is behind, a full assignment list for reconciliation.
+   *
+   * @param groupId consumer group identifier
+   * @param consumerId consumer identifier
+   * @param clientEpoch the epoch last seen by the consumer; {@code 0} for a new consumer
+   * @param ownedPartitions partition IDs the consumer currently holds
+   * @return a future resolving to the heartbeat result
    */
-  public ActorFuture<SubscribeResult> subscribe(final String groupId, final String consumerId) {
-    final var result = new CompletableActorFuture<SubscribeResult>();
+  public ActorFuture<HeartbeatResult> heartbeat(
+      final String groupId,
+      final String consumerId,
+      final long clientEpoch,
+      final List<Integer> ownedPartitions) {
+    final var result = new CompletableActorFuture<HeartbeatResult>();
     actor.call(
         () -> {
-          final var group = registry.subscribe(groupId, consumerId, totalPartitions);
-          final List<Integer> assigned = group.getAssignedPartitions(consumerId);
-          result.complete(new SubscribeResult(assigned, group.getGeneration()));
+          final HeartbeatDelta delta =
+              registry.heartbeat(
+                  groupId,
+                  consumerId,
+                  clientEpoch,
+                  new HashSet<>(ownedPartitions),
+                  totalPartitions);
+          result.complete(
+              new HeartbeatResult(
+                  delta.epoch(), delta.revoke(), delta.assign(), delta.fullAssignment()));
         });
     return result;
   }
 
   /**
-   * Records a heartbeat for the given consumer.
+   * Processes a consumer ACK confirming revoked and assigned partitions.
    *
-   * @return a future resolving to the current generation, or completing exceptionally if the
-   *     consumer is not registered
+   * <p>If the ACK epoch is stale the coordinator logs a warning and returns {@code OK} without
+   * mutating state; the consumer self-corrects on the next heartbeat.
+   *
+   * @param groupId consumer group identifier
+   * @param consumerId consumer identifier
+   * @param epoch the coordinator epoch from the heartbeat response that triggered this ACK
+   * @param revoked partition IDs the consumer has stopped processing
+   * @param assigned partition IDs the consumer has started processing
+   * @return a future resolving to the ACK result
    */
-  public ActorFuture<Long> heartbeat(final String groupId, final String consumerId) {
-    final var result = new CompletableActorFuture<Long>();
+  public ActorFuture<AckResult> ack(
+      final String groupId,
+      final String consumerId,
+      final long epoch,
+      final List<Integer> revoked,
+      final List<Integer> assigned) {
+    final var result = new CompletableActorFuture<AckResult>();
     actor.call(
         () -> {
-          final boolean ok = registry.heartbeat(groupId, consumerId);
-          if (ok) {
-            final var group = registry.getGroup(groupId);
-            result.complete(group != null ? group.getGeneration() : 0L);
-          } else {
-            result.completeExceptionally(new ConsumerNotRegisteredException(groupId, consumerId));
-          }
+          final AckStatus status = registry.ack(groupId, consumerId, epoch, revoked, assigned);
+          result.complete(new AckResult(status));
         });
     return result;
   }
@@ -164,7 +193,7 @@ public final class CoordinatorActor extends Actor {
             return;
           }
           result.complete(
-              new AssignmentResult(group.getAssignedPartitions(consumerId), group.getGeneration()));
+              new AssignmentResult(group.getAssignedPartitions(consumerId), group.getEpoch()));
         });
     return result;
   }
@@ -180,25 +209,40 @@ public final class CoordinatorActor extends Actor {
    */
   public ActorFuture<Long> getTruncationBoundary(final int partitionId) {
     final var result = new CompletableActorFuture<Long>();
-    actor.call(
-        () -> {
-          final Set<ConsumerKey> aliveAssigned = new HashSet<>();
-          for (final var entry : registry.getAllGroups().entrySet()) {
-            final String groupId = entry.getKey();
-            for (final String consumerId :
-                entry.getValue().getAliveAssignedConsumersForPartition(partitionId)) {
-              aliveAssigned.add(new ConsumerKey(groupId, consumerId));
-            }
-          }
-          result.complete(offsetStore.getTruncationBoundary(partitionId, aliveAssigned));
-        });
+    actor.call(() -> result.complete(computeTruncationBoundary(partitionId)));
     return result;
   }
 
-  private void evictDeadConsumers() {
-    final long heartbeatTimeout = properties.consumer().heartbeatTimeoutMs();
-    final Instant deadline = Instant.now().minus(Duration.ofMillis(heartbeatTimeout));
-    registry.evictDeadConsumers(deadline, totalPartitions);
+  /**
+   * Coordinator loop callback: runs at {@code rebalanceIntervalMs} on the actor thread.
+   *
+   * <p>Execution order per cycle:
+   *
+   * <ol>
+   *   <li><b>ACK timeout eviction</b> — consumers that failed to ACK within {@code ackTimeoutMs}
+   *       are evicted (same treatment as session timeout). Their partitions are freed for
+   *       redistribution.
+   *   <li><b>Session-timeout eviction</b> — consumers with no heartbeat within {@code
+   *       sessionTimeoutMs} are evicted. Both eviction types set the group's {@code
+   *       consumersChanged} flag; the rebalance is triggered inside {@link
+   *       ConsumerGroupRegistry#evictDeadConsumers} when the flag is true.
+   *   <li><b>Partition-count reconciliation</b> — detected implicitly inside {@link
+   *       ConsumerGroupRegistry#evictDeadConsumers}: if a group's tracked partition set no longer
+   *       matches its {@code configuredPartitionCount}, a rebalance is triggered.
+   * </ol>
+   */
+  private void runCoordinatorLoop() {
+    final Instant now = Instant.now();
+
+    // Step 1 (spec step 2): evict consumers whose ACK deadline has passed.
+    registry.expireAckTimeouts(now);
+
+    // Step 2 (spec step 3 + 4): evict session-timed-out consumers and trigger rebalance for any
+    // group with pending membership changes (including ACK evictions from step 1) or partition
+    // count mismatches.
+    final long sessionTimeout = properties.consumer().sessionTimeoutMs();
+    final Instant sessionDeadline = now.minus(Duration.ofMillis(sessionTimeout));
+    registry.evictDeadConsumers(sessionDeadline, totalPartitions);
   }
 
   /**
@@ -262,9 +306,31 @@ public final class CoordinatorActor extends Actor {
   // -------------------------------------------------------------------------
   // Result types
 
-  public record SubscribeResult(List<Integer> assignedPartitions, long generation) {}
+  /**
+   * Result of a {@link #heartbeat} call.
+   *
+   * @param epoch coordinator's current epoch
+   * @param revoke partitions the consumer must stop processing and ACK
+   * @param assign partitions the consumer should start processing and ACK
+   * @param fullAssignment non-empty when the consumer is behind (clientEpoch &lt; epoch); the
+   *     consumer must reconcile fully from this list
+   */
+  public record HeartbeatResult(
+      long epoch, List<Integer> revoke, List<Integer> assign, List<Integer> fullAssignment) {}
 
-  public record AssignmentResult(List<Integer> assignedPartitions, long generation) {}
+  /**
+   * Result of an {@link #ack} call.
+   *
+   * @param status {@link AckStatus#OK} in the normal case; the coordinator returns {@code OK} even
+   *     for stale-epoch ACKs to avoid surfacing errors to the consumer
+   */
+  public record AckResult(AckStatus status) {}
+
+  /**
+   * @deprecated Use {@link HeartbeatResult#epoch()} instead.
+   */
+  @Deprecated
+  public record AssignmentResult(List<Integer> assignedPartitions, long epoch) {}
 
   public static final class ConsumerNotRegisteredException extends RuntimeException {
     public ConsumerNotRegisteredException(final String groupId, final String consumerId) {

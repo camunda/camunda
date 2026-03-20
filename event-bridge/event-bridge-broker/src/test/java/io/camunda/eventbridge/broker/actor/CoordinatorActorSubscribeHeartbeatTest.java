@@ -8,21 +8,21 @@
 package io.camunda.eventbridge.broker.actor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.eventbridge.broker.coordinator.ConsumerGroupRegistry;
 import io.camunda.eventbridge.broker.offset.OffsetStore;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.time.Instant;
-import java.util.concurrent.ExecutionException;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link CoordinatorActor} subscribe, heartbeat, and dead-consumer detection paths.
+ * Tests for {@link CoordinatorActor} heartbeat (with auto-registration), ACK, and
+ * dead-consumer-detection paths.
  *
  * <p>Complements {@link CoordinatorActorTruncationTest} which covers the truncation boundary and
  * commit-offset actor dispatch.
@@ -61,272 +61,260 @@ class CoordinatorActorSubscribeHeartbeatTest {
   }
 
   // -------------------------------------------------------------------------
-  // Subscribe
+  // Heartbeat — auto-registration
 
   @Nested
-  class Subscribe {
+  class HeartbeatAutoRegistration {
 
     @Test
-    void shouldReturnAssignedPartitionsAndGenerationForFirstConsumer() {
+    void shouldAutoRegisterConsumerOnFirstHeartbeat() {
       // when
-      final var result = actor.subscribe("g1", "c1").join();
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
 
-      // then
-      assertThat(result.assignedPartitions()).isNotEmpty();
-      assertThat(result.generation()).isEqualTo(1L);
-    }
-
-    @Test
-    void shouldAssignAllPartitionsToSoleConsumer() {
-      // when
-      final var result = actor.subscribe("g1", "c1").join();
-
-      // then — sole consumer gets all 4 partitions
-      assertThat(result.assignedPartitions()).containsExactlyInAnyOrder(0, 1, 2, 3);
-    }
-
-    @Test
-    void shouldIncrementGenerationOnEachSubscribeCall() {
-      // when
-      final long gen1 = actor.subscribe("g1", "c1").join().generation();
-      final long gen2 = actor.subscribe("g1", "c2").join().generation();
-
-      // then
-      assertThat(gen1).isEqualTo(1L);
-      assertThat(gen2).isEqualTo(2L);
-    }
-
-    @Test
-    void shouldGiveSecondConsumerNothingWhileFirstIsAlive() {
-      // Stable rebalance only redistributes orphaned (dead consumer) partitions.
-      // c1 is alive and holds all partitions → c2 joining sees no orphans → c2 gets nothing.
-      actor.subscribe("g1", "c1").join();
-      final var r2 = actor.subscribe("g1", "c2").join();
-
-      // c1 still owns all 4 partitions; c2 received none
-      final var group = registry.getGroup("g1");
-      assertThat(group.getAssignedPartitions("c1")).hasSize(4);
-      assertThat(r2.assignedPartitions()).isEmpty();
-    }
-
-    @Test
-    void shouldGiveNewConsumerAllOrphanedPartitionsAfterFirstConsumerDies() {
-      // given — c1 holds all partitions then dies
-      actor.subscribe("g1", "c1").join();
-      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
-
-      // when — c2 joins; all 4 partitions are orphaned
-      final var r2 = actor.subscribe("g1", "c2").join();
-
-      // then — c2 gets all 4
-      assertThat(r2.assignedPartitions()).containsExactlyInAnyOrder(0, 1, 2, 3);
-    }
-
-    @Test
-    void shouldTreatGroupsIndependently() {
-      // when — same consumer ID in two separate groups
-      final var ga = actor.subscribe("group-a", "c1").join();
-      final var gb = actor.subscribe("group-b", "c1").join();
-
-      // then — each group has generation 1 and its own partition assignment
-      assertThat(ga.generation()).isEqualTo(1L);
-      assertThat(gb.generation()).isEqualTo(1L);
-    }
-
-    @Test
-    void shouldNotIncrementGenerationWhenAlreadyActiveConsumerResubscribes() {
-      // given — c1 is already active
-      final long gen1 = actor.subscribe("g1", "c1").join().generation();
-
-      // when — c1 re-subscribes (transient reconnect) without having died
-      final long gen2 = actor.subscribe("g1", "c1").join().generation();
-
-      // then — generation unchanged; no spurious rebalance broadcast
-      assertThat(gen2).isEqualTo(gen1);
-    }
-
-    @Test
-    void shouldIncrementGenerationWhenPreviouslyDeadConsumerRejoins() {
-      // given — c1 subscribed, then evicted
-      actor.subscribe("g1", "c1").join();
-      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
-      final long genAfterEviction = registry.getGroup("g1").getGeneration();
-
-      // when — c1 re-subscribes after being dead (real re-join)
-      final long genAfterRejoin = actor.subscribe("g1", "c1").join().generation();
-
-      // then — generation incremented because membership changed
-      assertThat(genAfterRejoin).isGreaterThan(genAfterEviction);
-    }
-
-    @Test
-    void shouldAllowConsumerToResubscribeAfterBeingEvicted() {
-      // given — c1 subscribed, then evicted via registry directly
-      actor.subscribe("g1", "c1").join();
-      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
-      assertThat(registry.isConsumerActive("g1", "c1")).isFalse();
-
-      // when — c1 re-subscribes via actor
-      final var result = actor.subscribe("g1", "c1").join();
-
-      // then — c1 is active and has partitions
+      // then — consumer is now active in the registry
       assertThat(registry.isConsumerActive("g1", "c1")).isTrue();
-      assertThat(result.assignedPartitions()).isNotEmpty();
     }
 
     @Test
-    void shouldPreserveExistingAssignmentsForStillAliveConsumer() {
-      // given — c1 holds all 4 partitions (no orphans)
-      final var r1 = actor.subscribe("g1", "c1").join();
+    void shouldReturnCurrentEpochOnHeartbeat() {
+      // when — first heartbeat, consumer and group both new
+      final var result = actor.heartbeat("g1", "c1", 0L, List.of()).join();
 
-      // when — c2 and c3 join while c1 is alive; c1's assignment must not change
-      actor.subscribe("g1", "c2").join();
-      actor.subscribe("g1", "c3").join();
+      // then — epoch is returned (0 before the first rebalance loop cycle)
+      assertThat(result.epoch()).isGreaterThanOrEqualTo(0L);
+    }
 
-      // then — c1 still holds exactly the partitions it was originally assigned
+    @Test
+    void shouldReturnEmptyDeltaOnFirstHeartbeatBeforeRebalance() {
+      // Rebalance is deferred to the coordinator loop; no assignments exist yet.
+      // when
+      final var result = actor.heartbeat("g1", "c1", 0L, List.of()).join();
+
+      // then — no revocations or assignments yet
+      assertThat(result.revoke()).isEmpty();
+      assertThat(result.assign()).isEmpty();
+    }
+
+    @Test
+    void shouldNotThrowForUnknownGroupOnHeartbeat() {
+      // Heartbeat auto-creates the group — no exception expected.
+      final var result = actor.heartbeat("brand-new-group", "c1", 0L, List.of()).join();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    void shouldNotThrowForUnknownConsumerInExistingGroup() {
+      // given — group exists via a prior heartbeat
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+
+      // when — different consumer in same group (first contact)
+      final var result = actor.heartbeat("g1", "c2", 0L, List.of()).join();
+
+      // then — auto-registered, no exception
+      assertThat(registry.isConsumerActive("g1", "c2")).isTrue();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    void shouldTreatGroupsAsIndependentNamespaces() {
+      // when — same consumer ID in two separate groups
+      final var ra = actor.heartbeat("group-a", "c1", 0L, List.of()).join();
+      final var rb = actor.heartbeat("group-b", "c1", 0L, List.of()).join();
+
+      // then — both succeed independently
+      assertThat(ra).isNotNull();
+      assertThat(rb).isNotNull();
+      assertThat(registry.isConsumerActive("group-a", "c1")).isTrue();
+      assertThat(registry.isConsumerActive("group-b", "c1")).isTrue();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Heartbeat — epoch and delta semantics
+
+  @Nested
+  class HeartbeatEpochAndDelta {
+
+    @Test
+    void shouldReturnFullAssignmentWhenClientEpochIsLessThanCoordinatorEpoch() {
+      // given — register and force a rebalance to advance epoch
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      registry.evictDeadConsumers(
+          Instant.MIN, TOTAL_PARTITIONS); // trigger rebalance; epoch advances
       final var group = registry.getGroup("g1");
-      assertThat(group.getAssignedPartitions("c1"))
-          .containsExactlyInAnyOrderElementsOf(r1.assignedPartitions());
+      final long epochAfterRebalance = group.getEpoch();
+      assertThat(epochAfterRebalance).isGreaterThan(0L);
+
+      // when — consumer sends old epoch (0) while coordinator is at a higher epoch
+      final var result = actor.heartbeat("g1", "c1", 0L, List.of()).join();
+
+      // then — full assignment returned for reconciliation
+      if (result.epoch() > 0L) {
+        // epoch advanced → fullAssignment should be populated
+        assertThat(result.revoke()).isEmpty();
+        assertThat(result.assign()).isEmpty();
+        assertThat(result.fullAssignment()).isNotEmpty();
+      }
+    }
+
+    @Test
+    void shouldReturnDeltaWhenClientEpochMatchesCoordinatorEpoch() {
+      // given — consumer registered, epoch known
+      final var first = actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      final long knownEpoch = first.epoch();
+
+      // when — consumer sends matching epoch with no partitions owned
+      final var result = actor.heartbeat("g1", "c1", knownEpoch, List.of()).join();
+
+      // then — delta path (no fullAssignment); revoke/assign may be empty if no rebalance yet
+      assertThat(result.fullAssignment()).isEmpty();
+    }
+
+    @Test
+    void shouldNotIncrementEpochOnRoutineHeartbeatFromKnownConsumer() {
+      // given — consumer registered
+      final var first = actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      final long epochBefore = first.epoch();
+
+      // when — same consumer heartbeats again (no new consumer, no eviction)
+      final var second = actor.heartbeat("g1", "c1", epochBefore, List.of()).join();
+
+      // then — epoch unchanged
+      assertThat(second.epoch()).isEqualTo(epochBefore);
+    }
+
+    @Test
+    void shouldIncludeRevokeForPartitionConsumerClaimsButIsNotTargeted() {
+      // given — run rebalance so c1 owns all partitions
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      registry.evictDeadConsumers(Instant.MIN, TOTAL_PARTITIONS);
+      final var group = registry.getGroup("g1");
+      final long epoch = group.getEpoch();
+
+      // Simulate c1 owning partition 99 (outside the configured range — not in target)
+      final var result = actor.heartbeat("g1", "c1", epoch, List.of(99)).join();
+
+      // then — partition 99 should be in revoke (not in target)
+      assertThat(result.revoke()).contains(99);
     }
   }
 
   // -------------------------------------------------------------------------
-  // Heartbeat
+  // Ack
 
   @Nested
-  class Heartbeat {
+  class Ack {
 
     @Test
-    void shouldReturnCurrentGenerationForActiveConsumer() {
-      // given
-      final long gen = actor.subscribe("g1", "c1").join().generation();
+    void shouldReturnOkStatusForValidAck() {
+      // given — consumer registered with a known epoch
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      registry.evictDeadConsumers(Instant.MIN, TOTAL_PARTITIONS);
+      final var group = registry.getGroup("g1");
+      final long epoch = group.getEpoch();
 
       // when
-      final long heartbeatGen = actor.heartbeat("g1", "c1").join();
+      final var result = actor.ack("g1", "c1", epoch, List.of(), List.of()).join();
 
       // then
-      assertThat(heartbeatGen).isEqualTo(gen);
+      assertThat(result.status()).isEqualTo(ConsumerGroupRegistry.AckStatus.OK);
     }
 
     @Test
-    void shouldThrowConsumerNotRegisteredForUnknownGroup() {
-      // when / then
-      assertThatThrownBy(() -> actor.heartbeat("unknown-group", "c1").join())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(CoordinatorActor.ConsumerNotRegisteredException.class);
+    void shouldReturnEpochMismatchForStaleEpoch() {
+      // given — consumer registered with epoch 1
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      registry.evictDeadConsumers(Instant.MIN, TOTAL_PARTITIONS);
+      final var group = registry.getGroup("g1");
+      final long epoch = group.getEpoch();
+
+      // when — ACK with wrong epoch
+      final var result = actor.ack("g1", "c1", epoch + 99, List.of(), List.of()).join();
+
+      // then
+      assertThat(result.status()).isEqualTo(ConsumerGroupRegistry.AckStatus.EPOCH_MISMATCH);
     }
 
     @Test
-    void shouldThrowConsumerNotRegisteredForUnknownConsumerInExistingGroup() {
-      // given
-      actor.subscribe("g1", "c1").join();
+    void shouldReturnConsumerNotFoundForUnknownConsumer() {
+      // when — ACK for a consumer that never heartbeated
+      final var result = actor.ack("g1", "unknown-consumer", 1L, List.of(), List.of()).join();
 
-      // when / then — c2 was never subscribed
-      assertThatThrownBy(() -> actor.heartbeat("g1", "c2").join())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(CoordinatorActor.ConsumerNotRegisteredException.class);
+      // then
+      assertThat(result.status()).isEqualTo(ConsumerGroupRegistry.AckStatus.CONSUMER_NOT_FOUND);
     }
 
     @Test
-    void shouldThrowConsumerNotRegisteredAfterEviction() {
-      // given — c1 subscribed, then evicted
-      actor.subscribe("g1", "c1").join();
-      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
+    void shouldClearPendingRevokeAfterAck() {
+      // given — register and run rebalance so c1 has partitions in target
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      registry.evictDeadConsumers(Instant.MIN, TOTAL_PARTITIONS);
+      final var group = registry.getGroup("g1");
+      final long epoch = group.getEpoch();
 
-      // when / then
-      assertThatThrownBy(() -> actor.heartbeat("g1", "c1").join())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(CoordinatorActor.ConsumerNotRegisteredException.class);
-    }
+      // Heartbeat with partition 99 in owned (should trigger revoke)
+      final var hbResult = actor.heartbeat("g1", "c1", epoch, List.of(99)).join();
+      assertThat(hbResult.revoke()).contains(99);
 
-    @Test
-    void shouldReflectUpdatedGenerationAfterRebalance() {
-      // given — c1 subscribed (gen 1)
-      actor.subscribe("g1", "c1").join();
+      // when — ACK confirming revocation of partition 99
+      actor.ack("g1", "c1", epoch, List.of(99), List.of()).join();
 
-      // when — c2 joins (gen 2); c1 sends a heartbeat
-      actor.subscribe("g1", "c2").join();
-      final long heartbeatGen = actor.heartbeat("g1", "c1").join();
-
-      // then — generation reflects the latest rebalance
-      assertThat(heartbeatGen).isEqualTo(2L);
+      // then — subsequent heartbeat should not re-revoke partition 99
+      final var hbResult2 = actor.heartbeat("g1", "c1", epoch, List.of()).join();
+      assertThat(hbResult2.revoke()).doesNotContain(99);
     }
   }
 
   // -------------------------------------------------------------------------
-  // GetAssignment
-
-  @Nested
-  class GetAssignment {
-
-    @Test
-    void shouldReturnCurrentAssignmentAndGeneration() {
-      // given
-      actor.subscribe("g1", "c1").join();
-
-      // when
-      final var result = actor.getAssignment("g1", "c1").join();
-
-      // then
-      assertThat(result.assignedPartitions()).containsExactlyInAnyOrder(0, 1, 2, 3);
-      assertThat(result.generation()).isEqualTo(1L);
-    }
-
-    @Test
-    void shouldThrowConsumerNotRegisteredForUnknownGroup() {
-      assertThatThrownBy(() -> actor.getAssignment("no-group", "c1").join())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(CoordinatorActor.ConsumerNotRegisteredException.class);
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Heartbeat-timeout-driven eviction (simulated via registry)
+  // Heartbeat-timeout-driven eviction
 
   @Nested
   class HeartbeatTimeout {
 
     @Test
-    void shouldMarkConsumerDeadAfterEvictionAndRejectHeartbeat() {
-      // given — consumer is active
-      actor.subscribe("g1", "c1").join();
+    void shouldKeepConsumerActiveWhileHeartbeating() {
+      // given
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
       assertThat(registry.isConsumerActive("g1", "c1")).isTrue();
 
-      // when — simulate heartbeat timeout by advancing the eviction deadline far into the future
-      // (the registry evicts any consumer whose last heartbeat is before the deadline)
-      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
+      // when — eviction with a deadline in the past (no consumer is evicted)
+      registry.evictDeadConsumers(Instant.now().minusSeconds(60), TOTAL_PARTITIONS);
 
-      // then — heartbeat is now rejected
-      assertThatThrownBy(() -> actor.heartbeat("g1", "c1").join())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(CoordinatorActor.ConsumerNotRegisteredException.class);
+      // then — still active
+      assertThat(registry.isConsumerActive("g1", "c1")).isTrue();
     }
 
     @Test
-    void shouldRebalanceAfterConsumerDiesAndNewConsumerJoins() {
-      // given — c1 subscribed and holds all partitions
-      actor.subscribe("g1", "c1").join();
-      final long genBefore = registry.getGroup("g1").getGeneration();
+    void shouldMarkConsumerDeadAfterSessionTimeout() {
+      // given
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      assertThat(registry.isConsumerActive("g1", "c1")).isTrue();
 
-      // when — evict c1 (simulate heartbeat timeout)
+      // when — evict with far-future deadline (all consumers expire)
       registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
 
-      // then — generation incremented (rebalance triggered by eviction)
-      assertThat(registry.getGroup("g1").getGeneration()).isGreaterThan(genBefore);
+      // then — consumer is gone; heartbeat re-registers it
+      assertThat(registry.isConsumerActive("g1", "c1")).isFalse();
+    }
+
+    @Test
+    void shouldAutoReRegisterAfterEvictionOnNextHeartbeat() {
+      // given — consumer evicted
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
+      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
       assertThat(registry.isConsumerActive("g1", "c1")).isFalse();
 
-      // when — c2 subscribes into the group with orphaned partitions
-      actor.subscribe("g1", "c2").join();
+      // when — consumer sends heartbeat again (auto-registration)
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
 
-      // c2 now owns all 4 partitions (all were orphaned)
-      assertThat(registry.getGroup("g1").getAssignedPartitions("c2"))
-          .containsExactlyInAnyOrder(0, 1, 2, 3);
+      // then — registered again without throwing
+      assertThat(registry.isConsumerActive("g1", "c1")).isTrue();
     }
 
     @Test
     void shouldSuspendTruncationWhenAllConsumersAreDead() {
-      // given — consumer subscribed and committed
-      actor.subscribe("g1", "c1").join();
+      // given — consumer registered and committed
+      actor.heartbeat("g1", "c1", 0L, List.of()).join();
       actor.commitOffset("g1", "c1", 0, 42L).join();
 
       // when — consumer dies
@@ -336,20 +324,74 @@ class CoordinatorActorSubscribeHeartbeatTest {
       final long boundary = actor.getTruncationBoundary(0).join();
       assertThat(boundary).isEqualTo(Long.MAX_VALUE);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Coordinator loop ordering
+
+  @Nested
+  class CoordinatorLoop {
 
     @Test
-    void shouldResumeFromLastCommittedOffsetAfterRejoin() {
-      // given — c1 committed, then died
-      actor.subscribe("g1", "c1").join();
-      actor.commitOffset("g1", "c1", 0, 77L).join();
-      registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
+    void shouldEvictConsumerWhenAckDeadlineExpires() {
+      // given — use a registry with ACK timeout enabled (1 ms — effectively immediate)
+      final ConsumerGroupRegistry registryWithAckTimeout =
+          new ConsumerGroupRegistry(Integer.MAX_VALUE, 1L);
+      final CoordinatorActor actorWithAckTimeout =
+          new CoordinatorActor(registryWithAckTimeout, offsetStore, PROPERTIES, TOTAL_PARTITIONS);
+      scheduler.submitActor(actorWithAckTimeout).join();
 
-      // when — c1 re-subscribes
-      actor.subscribe("g1", "c1").join();
-      actor.commitOffset("g1", "c1", 0, 77L).join(); // idempotent re-commit at same position
+      try {
+        // Register c1, run a rebalance so it owns partitions, then send a heartbeat that triggers
+        // a revoke (ACK expected but never comes)
+        actorWithAckTimeout.heartbeat("g1", "c1", 0L, List.of()).join();
+        registryWithAckTimeout.evictDeadConsumers(Instant.MIN, TOTAL_PARTITIONS);
+        final var group = registryWithAckTimeout.getGroup("g1");
+        final long epoch = group.getEpoch();
+        // Heartbeat reporting partition 99 (not in target) — triggers a revoke → ackDeadline set
+        actorWithAckTimeout.heartbeat("g1", "c1", epoch, List.of(99)).join();
 
-      // then — committed offset preserved
-      assertThat(offsetStore.getCommittedOffset("g1", "c1", 0)).isEqualTo(77L);
+        // Expire the ackDeadline (1 ms ago is enough since ackTimeoutMs == 1)
+        registryWithAckTimeout.expireAckTimeouts(Instant.now().plusMillis(100));
+
+        // when — expireAckTimeouts has already evicted c1; evictDeadConsumers sees consumersChanged
+        registryWithAckTimeout.evictDeadConsumers(
+            Instant.now().minusSeconds(3600), TOTAL_PARTITIONS);
+
+        // then — c1 was evicted due to ACK timeout
+        assertThat(registryWithAckTimeout.isConsumerActive("g1", "c1")).isFalse();
+      } finally {
+        actorWithAckTimeout.closeAsync().join();
+      }
+    }
+
+    @Test
+    void shouldNotEvictConsumerFromAckTimeoutWhenAckArrivesInTime() {
+      // given — registry with ACK timeout enabled
+      final ConsumerGroupRegistry registryWithAckTimeout =
+          new ConsumerGroupRegistry(Integer.MAX_VALUE, 5_000L);
+      final CoordinatorActor actorWithAckTimeout =
+          new CoordinatorActor(registryWithAckTimeout, offsetStore, PROPERTIES, TOTAL_PARTITIONS);
+      scheduler.submitActor(actorWithAckTimeout).join();
+
+      try {
+        actorWithAckTimeout.heartbeat("g1", "c1", 0L, List.of()).join();
+        registryWithAckTimeout.evictDeadConsumers(Instant.MIN, TOTAL_PARTITIONS);
+        final var group = registryWithAckTimeout.getGroup("g1");
+        final long epoch = group.getEpoch();
+        // Heartbeat with partition 99 → triggers a revoke
+        final var hbResult = actorWithAckTimeout.heartbeat("g1", "c1", epoch, List.of(99)).join();
+        // Consumer ACKs immediately — clears ackDeadline
+        actorWithAckTimeout.ack("g1", "c1", epoch, hbResult.revoke(), hbResult.assign()).join();
+
+        // when — expire with far-future deadline (ackDeadline was cleared by the ACK)
+        registryWithAckTimeout.expireAckTimeouts(Instant.now().plusSeconds(3600));
+
+        // then — consumer is still active
+        assertThat(registryWithAckTimeout.isConsumerActive("g1", "c1")).isTrue();
+      } finally {
+        actorWithAckTimeout.closeAsync().join();
+      }
     }
   }
 }

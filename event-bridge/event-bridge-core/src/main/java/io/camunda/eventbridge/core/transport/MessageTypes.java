@@ -21,14 +21,23 @@ public final class MessageTypes {
   /** Gateway → partition leader: pull events (long-poll fetch). */
   public static final String FETCH_REQUEST = "eb.fetch.request";
 
-  /** Gateway → coordinator: register a consumer and trigger rebalance. */
-  public static final String SUBSCRIBE_REQUEST = "eb.subscribe.request";
-
-  /** Coordinator → gateway: subscribe result (assigned partitions, generation). */
-  public static final String SUBSCRIBE_RESPONSE = "eb.subscribe.response";
-
   /** Gateway → coordinator: consumer liveness signal. */
   public static final String HEARTBEAT_REQUEST = "eb.heartbeat.request";
+
+  /**
+   * Gateway → coordinator: consumer acknowledgement of revoked and assigned partitions.
+   *
+   * <p>SBE schema: {@code AckRequest} templateId=18. Handler registration and codec encode/decode
+   * support are added in Phase 4 of the consumer group refactoring.
+   */
+  public static final String ACK_REQUEST = "eb.ack.request";
+
+  /**
+   * Coordinator → gateway: acknowledgement result.
+   *
+   * <p>SBE schema: {@code AckResponse} templateId=19. See {@link #ACK_REQUEST}.
+   */
+  public static final String ACK_RESPONSE = "eb.ack.response";
 
   /** Gateway → coordinator: idempotent offset commit. */
   public static final String COMMIT_OFFSET_REQUEST = "eb.commit-offset.request";

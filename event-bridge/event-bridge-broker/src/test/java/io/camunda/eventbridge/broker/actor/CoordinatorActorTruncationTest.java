@@ -75,7 +75,7 @@ class CoordinatorActorTruncationTest {
     @Test
     void shouldReturnMaxValueWhenSubscribedConsumerHasNotCommitted() {
       // given
-      actor.subscribe("g1", "c1").join();
+      register("g1", "c1");
 
       // when — no commit yet
       final long boundary = actor.getTruncationBoundary(0).join();
@@ -87,7 +87,7 @@ class CoordinatorActorTruncationTest {
     @Test
     void shouldReturnCommittedPositionForSingleConsumer() {
       // given
-      actor.subscribe("g1", "c1").join();
+      register("g1", "c1");
       actor.commitOffset("g1", "c1", 0, 100L).join();
 
       // when
@@ -102,8 +102,8 @@ class CoordinatorActorTruncationTest {
       // given — two separate groups, each with one consumer, both assigned to partition 0
       // With 2 partitions and 1 consumer per group the rebalance assigns partition 0 to that
       // consumer. Subscribe with different groups to guarantee distinct assignment entries.
-      actor.subscribe("group-a", "consumer-a").join();
-      actor.subscribe("group-b", "consumer-b").join();
+      register("group-a", "consumer-a");
+      register("group-b", "consumer-b");
 
       actor.commitOffset("group-a", "consumer-a", 0, 300L).join();
       actor.commitOffset("group-b", "consumer-b", 0, 100L).join();
@@ -118,7 +118,7 @@ class CoordinatorActorTruncationTest {
     @Test
     void shouldExcludeDeadConsumerFromBoundaryCalculation() {
       // given — two consumers subscribed to the same partition 0; both commit; one is evicted
-      actor.subscribe("g1", "c1").join();
+      register("g1", "c1");
 
       // Force eviction: register c1, then subscribe c2 which triggers a rebalance.
       // To test dead-consumer exclusion we commit c1's offset before evicting it, then verify
@@ -132,7 +132,7 @@ class CoordinatorActorTruncationTest {
       registry.evictDeadConsumers(java.time.Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
 
       // Subscribe a new consumer — triggers rebalance, c1 is gone, c2 inherits partition 0.
-      actor.subscribe("g1", "c2").join();
+      register("g1", "c2");
       actor.commitOffset("g1", "c2", 0, 500L).join();
 
       // when
@@ -160,7 +160,7 @@ class CoordinatorActorTruncationTest {
     @Test
     void shouldAcceptIdempotentCommitAtSamePosition() {
       // given
-      actor.subscribe("g1", "c1").join();
+      register("g1", "c1");
       actor.commitOffset("g1", "c1", 0, 50L).join();
 
       // when — commit same position again
@@ -169,5 +169,13 @@ class CoordinatorActorTruncationTest {
       // then — offset unchanged, no exception
       assertThat(offsetStore.getCommittedOffset("g1", "c1", 0)).isEqualTo(50L);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Test helpers
+
+  private void register(final String groupId, final String consumerId) {
+    actor.heartbeat(groupId, consumerId, 0L, java.util.List.of()).join();
+    registry.evictDeadConsumers(java.time.Instant.MIN, TOTAL_PARTITIONS);
   }
 }

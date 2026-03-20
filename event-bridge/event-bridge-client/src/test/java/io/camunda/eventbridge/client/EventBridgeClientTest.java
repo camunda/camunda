@@ -48,7 +48,7 @@ class EventBridgeClientTest {
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody("{\"positions\":[1001,1002]}")));
+                      .withBody("{\"logPositions\":[1001,1002]}")));
 
       final byte[] payload1 = {1, 2, 3};
       final byte[] payload2 = {4, 5, 6};
@@ -118,7 +118,7 @@ class EventBridgeClientTest {
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody("{\"positions\":[42]}")));
+                      .withBody("{\"logPositions\":[42]}")));
 
       // when
       final List<Long> positions = client.publishBatch(0, batch).get();
@@ -136,7 +136,7 @@ class EventBridgeClientTest {
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody("{\"positions\":[500]}")));
+                      .withBody("{\"logPositions\":[500]}")));
 
       final EventDataBatch batch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
       batch.tryAdd(new EventData(new byte[] {9, 8, 7}));
@@ -160,7 +160,7 @@ class EventBridgeClientTest {
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody("{\"positions\":[1]}")));
+                      .withBody("{\"logPositions\":[1]}")));
 
       final EventDataBatch trailingBatch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
       trailingBatch.tryAdd(new EventData(new byte[] {1}));
@@ -183,7 +183,7 @@ class EventBridgeClientTest {
                   aResponse()
                       .withStatus(200)
                       .withHeader("Content-Type", "application/json")
-                      .withBody("{\"positions\":[10]}")));
+                      .withBody("{\"logPositions\":[10]}")));
 
       final EventDataBatch batch = EventDataBatch.create(10_485_760, 1_048_576, 1000);
       batch.tryAdd(new EventData(new byte[] {1}));
@@ -194,105 +194,6 @@ class EventBridgeClientTest {
       // then — WireMock only matches the stub if Content-Type is present; positions returned means
       // header was correct
       assertThat(positions).containsExactly(10L);
-    }
-  }
-
-  @Nested
-  class Subscribe {
-
-    @Test
-    void shouldReturnConsumerHandleWithAssignedPartitionsAndGeneration() throws Exception {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/my-group/consumer-1/subscribe"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"assignedPartitions\":[0,1],\"generation\":3}")));
-
-      // when
-      final Consumer consumer = client.subscribe("my-group", "consumer-1").get();
-
-      // then
-      assertThat(consumer.getGroupId()).isEqualTo("my-group");
-      assertThat(consumer.getConsumerId()).isEqualTo("consumer-1");
-      assertThat(consumer.getAssignedPartitions()).containsExactly(0, 1);
-      assertThat(consumer.getGeneration()).isEqualTo(3L);
-    }
-
-    @Test
-    void shouldSortAssignedPartitionsAscending() throws Exception {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/grp/c1/subscribe"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"OK\",\"assignedPartitions\":[3,1,0,2],\"generation\":1}")));
-
-      // when
-      final Consumer consumer = client.subscribe("grp", "c1").get();
-
-      // then
-      assertThat(consumer.getAssignedPartitions()).containsExactly(0, 1, 2, 3);
-    }
-
-    @Test
-    void shouldThrowCoordinatorUnavailableExceptionOn503() {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/grp/c1/subscribe"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(503)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody(
-                          "{\"status\":\"ERROR\",\"error\":\"COORDINATOR_UNAVAILABLE\",\"message\":\"Coordinator down\"}")));
-
-      // when / then
-      assertThatThrownBy(() -> client.subscribe("grp", "c1").get())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(CoordinatorUnavailableException.class);
-    }
-
-    @Test
-    void shouldThrowEventBridgeExceptionOnOtherErrors() {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/grp/c1/subscribe"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(500)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"error\":\"INTERNAL_ERROR\"}")));
-
-      // when / then
-      assertThatThrownBy(() -> client.subscribe("grp", "c1").get())
-          .isInstanceOf(ExecutionException.class)
-          .hasCauseInstanceOf(EventBridgeException.class);
-    }
-
-    @Test
-    void shouldReturnConsumerWithNoAssignedPartitions() throws Exception {
-      // given
-      stubFor(
-          post(urlEqualTo("/v1/consumers/grp/c1/subscribe"))
-              .willReturn(
-                  aResponse()
-                      .withStatus(200)
-                      .withHeader("Content-Type", "application/json")
-                      .withBody("{\"status\":\"OK\",\"assignedPartitions\":[],\"generation\":1}")));
-
-      // when
-      final Consumer consumer = client.subscribe("grp", "c1").get();
-
-      // then
-      assertThat(consumer.getAssignedPartitions()).isEmpty();
-      assertThat(consumer.getGeneration()).isEqualTo(1L);
     }
   }
 

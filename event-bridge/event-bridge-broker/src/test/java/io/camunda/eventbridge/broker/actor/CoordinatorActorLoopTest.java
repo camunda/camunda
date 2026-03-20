@@ -17,6 +17,7 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,7 +105,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldIncrementEpochWhenConsumerEvictedViaSessionTimeout() {
       // given — register c1, run rebalance so epoch > 0
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epochBeforeEviction = group.getEpoch();
       assertThat(epochBeforeEviction).isGreaterThan(0L);
 
@@ -118,7 +119,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldRedistributeOrphanedPartitionsToRemainingConsumer() {
       // given — c1 subscribes and is assigned all partitions
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       assertThat(registry.getGroup("g1").getAssignedPartitions("c1")).hasSize(TOTAL_PARTITIONS);
 
       // when — c1 dies (session timeout); all its partitions become orphaned
@@ -138,7 +139,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldClearPartitionAssignmentWhenAllConsumersEvicted() {
       // given — c1 is assigned partitions
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       assertThat(registry.getGroup("g1").getPartitionAssignment()).isNotEmpty();
 
       // when — evict everyone
@@ -179,14 +180,14 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldIncrementEpochWhenConsumerEvictedViaAckTimeout() {
       // given — consumer registered and rebalanced
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epochBeforeEviction = group.getEpoch();
 
       // Trigger a revoke delta by sending a heartbeat with a partition not in the target.
       // Use a registry with ackTimeoutMs = 1 so the deadline is effectively immediate.
       final ConsumerGroupRegistry registryWithAck =
           new ConsumerGroupRegistry(Integer.MAX_VALUE, 1L);
-      final var group2 = registryWithAck.subscribe("g2", "c1", TOTAL_PARTITIONS);
+      final var group2 = register(registryWithAck, "g2", "c1", TOTAL_PARTITIONS);
       final long epoch2 = group2.getEpoch();
 
       // Heartbeat with an out-of-range partition to trigger ackDeadline
@@ -214,7 +215,7 @@ class CoordinatorActorLoopTest {
       // given — registry with 5 second ACK timeout
       final ConsumerGroupRegistry registryWithAck =
           new ConsumerGroupRegistry(Integer.MAX_VALUE, 5_000L);
-      final var group = registryWithAck.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registryWithAck, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       // Heartbeat with out-of-range partition to arm the ack deadline
@@ -235,7 +236,7 @@ class CoordinatorActorLoopTest {
 
       // given — registry with ACK timeout of 1 ms and a long session timeout (never triggers)
       final ConsumerGroupRegistry timedRegistry = new ConsumerGroupRegistry(Integer.MAX_VALUE, 1L);
-      final var group = timedRegistry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(timedRegistry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       // Arm the ACK deadline by triggering a revoke
@@ -264,7 +265,7 @@ class CoordinatorActorLoopTest {
       // given — registry with ACK timeout of 5 s
       final ConsumerGroupRegistry registryWithAck =
           new ConsumerGroupRegistry(Integer.MAX_VALUE, 5_000L);
-      final var group = registryWithAck.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registryWithAck, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       // Arm the ACK deadline: consumer owns partition 99 (not in target) → revoke issued;
@@ -294,8 +295,8 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldProcessAllGroupsInOneCoordinatorLoopCycle() {
       // given — two consumers in two separate groups, each with a rebalanced assignment
-      registry.subscribe("group-a", "ca", TOTAL_PARTITIONS);
-      registry.subscribe("group-b", "cb", TOTAL_PARTITIONS);
+      register(registry, "group-a", "ca", TOTAL_PARTITIONS);
+      register(registry, "group-b", "cb", TOTAL_PARTITIONS);
 
       final long epochA = registry.getGroup("group-a").getEpoch();
       final long epochB = registry.getGroup("group-b").getEpoch();
@@ -316,8 +317,8 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldMaintainEpochIndependenceBetweenGroups() {
       // given — two separate groups
-      registry.subscribe("group-a", "ca", TOTAL_PARTITIONS);
-      registry.subscribe("group-b", "cb", TOTAL_PARTITIONS);
+      register(registry, "group-a", "ca", TOTAL_PARTITIONS);
+      register(registry, "group-b", "cb", TOTAL_PARTITIONS);
 
       final long epochA = registry.getGroup("group-a").getEpoch();
       final long epochB = registry.getGroup("group-b").getEpoch();
@@ -341,7 +342,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldGetAssignmentForRegisteredConsumer() {
       // given — consumer subscribed and rebalanced
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
 
       // when
       final var result = actor.getAssignment("g1", "c1").join();
@@ -354,11 +355,11 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldGetAssignmentWithCorrectEpochAfterMultipleRebalances() {
       // given — first rebalance
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epochAfterFirst = registry.getGroup("g1").getEpoch();
 
       // second rebalance — add c2
-      registry.subscribe("g1", "c2", TOTAL_PARTITIONS);
+      register(registry, "g1", "c2", TOTAL_PARTITIONS);
       final long epochAfterSecond = registry.getGroup("g1").getEpoch();
       assertThat(epochAfterSecond).isGreaterThan(epochAfterFirst);
 
@@ -394,8 +395,8 @@ class CoordinatorActorLoopTest {
       // BALANCED_STICKY: a consumer that joins after another has claimed all partitions receives
       // an empty initial assignment — its partitions will only arrive once some are orphaned
       // (e.g., an existing consumer is evicted).
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
-      registry.subscribe("g1", "c2", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c2", TOTAL_PARTITIONS);
 
       // c1 holds all partitions; c2 starts with none (no redistribution of alive assignments)
       assertThat(registry.getGroup("g1").getAssignedPartitions("c1")).hasSize(TOTAL_PARTITIONS);
@@ -471,7 +472,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldReturnFullAssignmentWhenClientEpochLagsCoordinatorEpoch() {
       // given — c1 subscribes and rebalance runs (epoch = 1)
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long currentEpoch = group.getEpoch();
       assertThat(currentEpoch).isEqualTo(1L);
 
@@ -490,7 +491,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldReturnEmptyFullAssignmentWhenClientEpochMatchesCoordinator() {
       // given — c1 subscribes and rebalance runs
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       // when — heartbeat with matching epoch
@@ -504,7 +505,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldTreatClientEpochAheadOfCoordinatorAsMatchingEpoch() {
       // given — c1 subscribes; epoch = 1
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       // when — heartbeat with future epoch (should be treated as equal, not error)
@@ -536,7 +537,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldNotRepeatRevocationAfterConsumerAcks() {
       // given — consumer has partitions; heartbeat triggers a revoke for partition 99
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       final var hb1 = actor.heartbeat("g1", "c1", epoch, List.of(99)).join();
@@ -556,7 +557,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldNotRepeatAssignmentAfterConsumerAcks() {
       // given — c1 subscribes; epoch = 1; c1 is assigned partitions 0-3
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
       final var assigned = group.getAssignedPartitions("c1");
 
@@ -575,7 +576,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldReturnEpochMismatchForStaleAck() {
       // given — consumer registered
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
 
       // when — ACK with a stale epoch (well above current)
@@ -597,7 +598,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldReturnConsumerNotFoundWhenConsumerWasEvicted() {
       // given — consumer registered then evicted
-      final var group = registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      final var group = register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = group.getEpoch();
       registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
       assertThat(registry.isConsumerActive("g1", "c1")).isFalse();
@@ -620,8 +621,8 @@ class CoordinatorActorLoopTest {
     void shouldCapRevocationsWhenMaxInflightIsOne() {
       // given — registry with cap = 1; c1 and c2 both report owning a non-target partition
       final ConsumerGroupRegistry cappedRegistry = new ConsumerGroupRegistry(1);
-      cappedRegistry.subscribe("g1", "c1", TOTAL_PARTITIONS);
-      cappedRegistry.subscribe("g1", "c2", TOTAL_PARTITIONS);
+      register(cappedRegistry, "g1", "c1", TOTAL_PARTITIONS);
+      register(cappedRegistry, "g1", "c2", TOTAL_PARTITIONS);
       final long epoch = cappedRegistry.getGroup("g1").getEpoch();
 
       // c1 reports owning partition 99 — triggers a revoke (1 inflight slot used)
@@ -641,8 +642,8 @@ class CoordinatorActorLoopTest {
     void shouldAllowRevocationAfterInflightDropsBelowCap() {
       // given — registry with cap = 1; c1 already has 1 in-flight revoke
       final ConsumerGroupRegistry cappedRegistry = new ConsumerGroupRegistry(1);
-      cappedRegistry.subscribe("g1", "c1", TOTAL_PARTITIONS);
-      cappedRegistry.subscribe("g1", "c2", TOTAL_PARTITIONS);
+      register(cappedRegistry, "g1", "c1", TOTAL_PARTITIONS);
+      register(cappedRegistry, "g1", "c2", TOTAL_PARTITIONS);
       final long epoch = cappedRegistry.getGroup("g1").getEpoch();
 
       cappedRegistry.heartbeat("g1", "c1", epoch, java.util.Set.of(99), TOTAL_PARTITIONS);
@@ -665,7 +666,7 @@ class CoordinatorActorLoopTest {
     void shouldNotCapRevocationsWhenInflightIsZero() {
       // given — registry with cap = 1; no in-flight revocations yet
       final ConsumerGroupRegistry cappedRegistry = new ConsumerGroupRegistry(1);
-      cappedRegistry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(cappedRegistry, "g1", "c1", TOTAL_PARTITIONS);
       final long epoch = cappedRegistry.getGroup("g1").getEpoch();
 
       // when — first revoke
@@ -686,7 +687,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldAllowCommitAfterConsumerReRegisters() {
       // given — c1 subscribes, commits, then is evicted
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       actor.commitOffset("g1", "c1", 0, 10L).join();
       registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
       assertThat(registry.isConsumerActive("g1", "c1")).isFalse();
@@ -703,7 +704,7 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldRejectCommitAfterEviction() {
       // given — c1 subscribes then is evicted
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
       assertThat(registry.isConsumerActive("g1", "c1")).isFalse();
 
@@ -720,7 +721,7 @@ class CoordinatorActorLoopTest {
       // is preserved for idempotency checks.
 
       // given — c1 commits offset 77, then is evicted and re-registers
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       actor.commitOffset("g1", "c1", 0, 77L).join();
       registry.evictDeadConsumers(Instant.now().plusSeconds(3600), TOTAL_PARTITIONS);
 
@@ -787,13 +788,13 @@ class CoordinatorActorLoopTest {
     @Test
     void shouldKeepExistingAssignmentsSticky() {
       // given — c1 is established with all partitions via subscribe
-      registry.subscribe("g1", "c1", TOTAL_PARTITIONS);
+      register(registry, "g1", "c1", TOTAL_PARTITIONS);
       final var c1Initial = registry.getGroup("g1").getAssignedPartitions("c1");
       assertThat(c1Initial).hasSize(TOTAL_PARTITIONS);
 
       // when — c2 joins; BALANCED_STICKY preserves c1's alive assignments; no orphans exist,
       // so c2 receives no partitions until c1 is evicted
-      registry.subscribe("g1", "c2", TOTAL_PARTITIONS);
+      register(registry, "g1", "c2", TOTAL_PARTITIONS);
 
       final var c1After = registry.getGroup("g1").getAssignedPartitions("c1");
       final var c2After = registry.getGroup("g1").getAssignedPartitions("c2");
@@ -802,5 +803,23 @@ class CoordinatorActorLoopTest {
       assertThat(c1After).containsExactlyElementsOf(c1Initial);
       assertThat(c2After).isEmpty();
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Test helpers
+
+  /**
+   * Registers a consumer via heartbeat and immediately triggers a rebalance cycle (simulating one
+   * coordinator loop tick). This replaces the removed {@code registry.subscribe()} shorthand.
+   */
+  private static ConsumerGroupRegistry.ConsumerGroup register(
+      final ConsumerGroupRegistry reg,
+      final String groupId,
+      final String consumerId,
+      final int partitionCount) {
+    reg.heartbeat(groupId, consumerId, 0L, Set.of(), partitionCount);
+    // Use Instant.MIN so no consumers are evicted, but consumersChanged triggers a rebalance.
+    reg.evictDeadConsumers(Instant.MIN, partitionCount);
+    return reg.getGroup(groupId);
   }
 }
