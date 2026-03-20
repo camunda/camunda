@@ -25,6 +25,7 @@ import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.OffsetPagination;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
@@ -193,6 +194,49 @@ public class UserTaskTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
               userTaskServices.searchUserTaskVariables(
+                  userTaskKey,
+                  variableSearchQuery.get(),
+                  authenticationProvider.getCamundaAuthentication()),
+              shouldTruncate));
+    } catch (final Exception e) {
+      return CallToolResultMapper.mapErrorToResult(e);
+    }
+  }
+
+  @CamundaMcpTool(
+      description =
+          "Search effective user task variables, deduplicated by name so the innermost scope wins. "
+              + "Use this instead of searchUserTaskVariables when you need the resolved variable "
+              + "values visible to a user task. "
+              + VARIABLE_VALUE_RETURN_FORMAT
+              + " "
+              + EVENTUAL_CONSISTENCY_NOTE,
+      annotations = @McpAnnotations(readOnlyHint = true))
+  public CallToolResult searchUserTaskEffectiveVariables(
+      @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
+          @NotNull(message = USER_TASK_KEY_NOT_NULL_MESSAGE)
+          @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
+          final Long userTaskKey,
+      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
+          final UserTaskVariableFilter filter,
+      @McpToolParam(description = SORT_DESCRIPTION, required = false)
+          final List<UserTaskVariableSearchQuerySortRequest> sort,
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
+          final OffsetPagination page,
+      @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
+          final Boolean truncateValues) {
+    try {
+      final var variableSearchQuery =
+          SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(filter, page, sort);
+
+      if (variableSearchQuery.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
+      }
+
+      final boolean shouldTruncate = truncateValues == null || truncateValues;
+      return CallToolResultMapper.from(
+          SearchQueryResponseMapper.toVariableSearchQueryResponse(
+              userTaskServices.searchUserTaskEffectiveVariables(
                   userTaskKey,
                   variableSearchQuery.get(),
                   authenticationProvider.getCamundaAuthentication()),

@@ -842,6 +842,93 @@
       }
     },
     {
+      "name": "searchUserTaskEffectiveVariables",
+      "title": "searchUserTaskEffectiveVariables",
+      "description": "Search effective user task variables, deduplicated by name so the innermost scope wins. Use this instead of searchUserTaskVariables when you need the resolved variable values visible to a user task. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "userTaskKey": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The user task key."
+          },
+          "filter": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the variable.",
+                "default": "##default"
+              }
+            },
+            "description": "Filter search by the given fields"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "value",
+                    "name",
+                    "tenantId",
+                    "variableKey",
+                    "scopeKey",
+                    "processInstanceKey"
+                  ],
+                  "description": "The field to sort by.",
+                  "default": "##default"
+                },
+                "order": {
+                  "type": "string",
+                  "enum": [
+                    "ASC",
+                    "DESC"
+                  ],
+                  "default": "##default"
+                }
+              },
+              "required": [
+                "field"
+              ]
+            },
+            "description": "Sort criteria"
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from.",
+                "default": "##default"
+              },
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
+              }
+            },
+            "description": "Pagination criteria"
+          },
+          "truncateValues": {
+            "type": "boolean",
+            "description": "When true (default), long variable values in the response are truncated. When false, full variable values are returned."
+          }
+        },
+        "required": [
+          "userTaskKey"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "searchUserTasks",
       "title": "searchUserTasks",
       "description": "Search for user tasks. Variable values in filters need to be in serialized JSON format. Example string value: `\\\"myValue\\\"`. Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`. Note: Results are eventually consistent and may not immediately reflect recent changes.",
