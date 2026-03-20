@@ -163,6 +163,29 @@ jobs:
       - name: Clean up existing namespace
         run: |
           kubectl delete namespace ${{ inputs.name }} --ignore-not-found=true
+          kubectl create namespace ${{ inputs.name }}
+      - name: Create camunda-credentials secret
+        run: |
+          gen_password() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20; }
+          gen_token() { openssl rand -hex 16; }
+          kubectl -n ${{ inputs.name }} apply -f - <<EOF
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: camunda-credentials
+          type: Opaque
+          stringData:
+            identity-firstuser-password: "$(gen_password)"
+            identity-keycloak-admin-password: "$(gen_password)"
+            identity-keycloak-postgresql-admin-password: "$(gen_password)"
+            identity-keycloak-postgresql-user-password: "$(gen_password)"
+            identity-postgresql-admin-password: "$(gen_password)"
+            identity-postgresql-user-password: "$(gen_password)"
+            orchestration-security-authentication-oidc-secret: "$(gen_token)"
+            connectors-security-authentication-oidc-secret: "$(gen_token)"
+            identity-admin-client-token: "$(gen_token)"
+            identity-optimize-client-token: "$(gen_token)"
+          EOF
       - name: Add camunda helm repo
         run: |
           helm repo add camunda https://helm.camunda.io
@@ -172,13 +195,23 @@ jobs:
           helm install ${{ inputs.name }} camunda/camunda-platform
           --wait --timeout 35m0s
           --namespace ${{ inputs.name }}
-          --create-namespace
           --render-subchart-notes
           --set identity.enabled=true
+          --set identity.firstUser.secret.existingSecret=camunda-credentials
+          --set identity.firstUser.secret.existingSecretKey=identity-firstuser-password
           --set identityKeycloak.enabled=true
+          --set identityKeycloak.auth.adminPassword.existingSecret=camunda-credentials
+          --set identityKeycloak.auth.adminPassword.existingSecretKey=identity-keycloak-admin-password
+          --set identityKeycloak.postgresql.auth.existingSecret=camunda-credentials
           --set global.identity.auth.enabled=true
+          --set global.identity.auth.optimize.secret.existingSecret=camunda-credentials
+          --set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token
           --set connectors.enabled=true
+          --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials
+          --set connectors.security.authentication.oidc.secret.existingSecretKey=connectors-security-authentication-oidc-secret
           --set optimize.enabled=true
+          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=orchestration-security-authentication-oidc-secret
           --version 13.5.4
       - name: Summarize deployment
         if: success()
@@ -312,33 +345,7 @@ jobs:
         run: |
           helm repo add camunda https://helm.camunda.io
           helm repo update
-      - name: Extract secrets
-        id: extract-secrets
-        run: |
-          release=${{ inputs.name }}
-          OPTIMIZE_SECRET=$(kubectl get secret --namespace "$release" "$release-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
-          export OPTIMIZE_SECRET
-          CONNECTORS_SECRET=$(kubectl get secret --namespace "$release" "$release-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
-          export CONNECTORS_SECRET
-          ORCHESTRATION_SECRET=$(kubectl get secret --namespace "$release" "$release-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
-          export ORCHESTRATION_SECRET
-          KEYCLOAK_ADMIN_SECRET=$(kubectl get secret --namespace "$release" "$release-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
-          export KEYCLOAK_ADMIN_SECRET
-          KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret --namespace "$release" "$release-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
-          export KEYCLOAK_MANAGEMENT_SECRET
-          POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
-          export POSTGRESQL_ADMIN_PASSWORD
-          POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
-          export POSTGRESQL_KEYCLOAK_PASSWORD
-          kubectl create secret generic camunda-credentials \
-          --namespace $release \
-          --from-literal=identity-optimize-client-token="$OPTIMIZE_SECRET" \
-          --from-literal=identity-connectors-client-token="$CONNECTORS_SECRET" \
-          --from-literal=identity-orchestration-client-token="$ORCHESTRATION_SECRET" \
-          --from-literal=identity-keycloak-admin-password="$KEYCLOAK_ADMIN_SECRET" \
-          --from-literal=identity-keycloak-postgresql-admin-password="$POSTGRESQL_ADMIN_PASSWORD" \
-          --from-literal=identity-keycloak-postgresql-user-password="$POSTGRESQL_KEYCLOAK_PASSWORD"
-
+      # camunda-credentials secret was created before the 8.8 install and is reused for the upgrade
       - name: Upgrade platform
         id: upgrade-platform
         run: |
