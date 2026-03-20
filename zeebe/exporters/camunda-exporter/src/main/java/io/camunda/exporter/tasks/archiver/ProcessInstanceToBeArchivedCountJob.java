@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.BackgroundTask;
+import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 
@@ -31,6 +32,7 @@ public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
 
   @Override
   public CompletionStage<Integer> execute() {
+    final var timer = Timer.start();
     return repository
         .getCountOfProcessInstancesAwaitingArchival()
         .whenCompleteAsync(
@@ -40,6 +42,7 @@ public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
               } else {
                 logger.warn("Failed to count number of process instances awaiting archival", err);
               }
+              metrics.measureProcessInstancesAwaitingArchivalDuration(timer);
             });
   }
 

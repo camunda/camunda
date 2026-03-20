@@ -32,6 +32,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final CamundaArchiverMetrics archiverMetrics;
 
+  /** time spent on counting process instances awaiting archiving */
+  private final Timer processInstancesAwaitingArchivalTimer;
+
   private final Timer flushLatency;
 
   /** Count of incident updates that needed retrying. */
@@ -62,6 +65,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     this.meterRegistry = meterRegistry;
     this.streamClock = streamClock;
     archiverMetrics = new CamundaArchiverMetrics(meterRegistry, this::meterName);
+
+    processInstancesAwaitingArchivalTimer =
+        Timer.builder(meterName("process.instances.awaiting.archival.request.duration"))
+            .description(
+                "Duration of how long it takes to get the count of process instances that need to be archived.")
+            .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
 
     flushLatency =
         Timer.builder(meterName("flush.latency"))
@@ -124,6 +135,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
             AtomicInteger::get)
         .description("Number of process instances awaiting archival (approximate)")
         .register(meterRegistry);
+  }
+
+  public void measureProcessInstancesAwaitingArchivalDuration(final Timer.Sample sample) {
+    sample.stop(processInstancesAwaitingArchivalTimer);
   }
 
   public CloseableSilently measureFlushDuration() {
@@ -207,6 +222,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     archiverMetrics.close();
 
     // clean up all registered meters
+    meterRegistry.remove(processInstancesAwaitingArchivalTimer);
     meterRegistry.remove(flushLatency);
 
     meterRegistry.remove(incidentUpdatesRetriesNeeded);
