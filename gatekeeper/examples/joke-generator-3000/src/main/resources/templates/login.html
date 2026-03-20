@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Joke Generator 3000</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" th:href="@{/}">Joke Generator 3000</a>
+      <div class="nav-links"></div>
+    </div>
+  </nav>
+
+  <!-- Login Form -->
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h1 class="login-title">Welcome Back</h1>
+      <p class="login-subtitle">Sign in to access the jokes</p>
+
+      <div class="login-error alert-error" th:if="${param.error}">
+        Invalid username or password. Please try again.
+      </div>
+
+      <div id="login-error-js" class="login-error alert-error" style="display:none;">
+        Invalid username or password. Please try again.
+      </div>
+
+      <form class="login-form" id="login-form">
+        <div class="login-field">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required autofocus>
+        </div>
+        <div class="login-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+
+      <script th:src="@{/js/login.js}"></script>
+
+      <p class="text-center mt-2">
+        <a th:href="@{/}">Back to home</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Powered by <a th:href="@{/}">Gatekeeper</a>
+  </footer>
+
+</body>
+</html>

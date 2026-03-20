@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jokes | Joke Generator 3000</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" th:href="@{/}">Joke Generator 3000</a>
+      <div class="nav-links">
+        <a class="nav-link active" th:href="@{/jokes}">Jokes</a>
+        <a class="nav-link" th:href="@{/jokes/admin}" th:if="${isAdmin}">Admin</a>
+        <span class="nav-username" th:if="${username != null}" th:text="${username}"></span>
+        <button th:if="${username != null}" class="btn btn-danger btn-sm" id="logout-btn">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="jokes-header">
+      <h1>Hey, <span th:text="${username}">user</span>!</h1>
+      <div>
+        <a th:href="@{/jokes/admin}" th:if="${isAdmin}" class="btn btn-secondary btn-sm" style="margin-right: 8px;">Manage Jokes</a>
+        <button class="btn btn-primary" id="random-joke-btn" type="button">Get Random Joke</button>
+      </div>
+    </div>
+
+    <!-- Random joke display -->
+    <div id="random-joke-container" class="mb-3" style="display: none;">
+      <div class="joke-card joke-card-random" id="random-joke-card">
+        <div class="joke-card-setup" id="random-joke-setup"></div>
+        <div class="joke-card-punchline" id="random-joke-punchline"></div>
+        <div class="joke-card-meta">
+          <span class="joke-card-category" id="random-joke-category"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Joke grid -->
+    <div class="jokes-grid">
+      <div class="joke-card" th:each="joke : ${jokes}">
+        <div class="joke-card-setup" th:text="${joke.setup}">Why did the chicken cross the road?</div>
+        <div class="joke-card-punchline" th:text="${joke.punchline}">To get to the other side.</div>
+        <div class="joke-card-meta">
+          <span class="joke-card-category" th:text="${joke.category}">general</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Powered by <a th:href="@{/}">Gatekeeper</a>
+  </footer>
+
+  <script th:src="@{/js/logout.js}"></script>
+  <script th:src="@{/js/jokes.js}"></script>
+
+</body>
+</html>

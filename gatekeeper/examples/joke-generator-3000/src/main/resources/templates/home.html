@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Joke Generator 3000</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" th:href="@{/}">Joke Generator 3000</a>
+      <div class="nav-links">
+        <a class="nav-link" th:href="@{/jokes}" th:if="${username != null}">Jokes</a>
+        <a class="nav-link" th:href="@{/jokes/admin}" th:if="${isAdmin}">Admin</a>
+        <span class="nav-username" th:if="${username != null}" th:text="${username}"></span>
+        <form th:if="${username != null}" th:action="@{/logout}" method="post" style="display:inline">
+          <button type="submit" class="btn btn-danger btn-sm">Logout</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1 class="hero-title">Joke Generator <span>3000</span></h1>
+    <p class="hero-subtitle">The world's most over-engineered joke platform</p>
+    <div class="hero-cta">
+      <a th:href="@{/jokes}" class="btn btn-primary btn-lg">Login</a>
+      <a href="#about" class="btn btn-secondary btn-lg">Learn More</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Powered by <a th:href="@{/}">Gatekeeper</a>
+  </footer>
+
+</body>
+</html>

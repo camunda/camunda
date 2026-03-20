@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: joke-generator-3000
+  datasource:
+    url: jdbc:postgresql://localhost:5432/jokegen
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+
+camunda:
+  security:
+    csrf:
+      enabled: false

@@ -1,0 +1,11 @@
+camunda:
+  security:
+    authentication:
+      method: OIDC
+      oidc:
+        issuer-uri: http://localhost:8180/realms/joke-generator
+        client-id: joke-generator-app
+        client-secret: joke-generator-secret
+        username-claim: preferred_username
+        scope: "openid profile email"
+        idp-logout-enabled: true

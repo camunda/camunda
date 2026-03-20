@@ -1,0 +1,2 @@
+CREATE DATABASE jokegen;
+CREATE DATABASE keycloak;

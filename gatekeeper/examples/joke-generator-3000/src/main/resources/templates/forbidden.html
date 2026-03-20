@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Denied | Joke Generator 3000</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" th:href="@{/}">Joke Generator 3000</a>
+      <div class="nav-links">
+        <a class="nav-link" th:href="@{/jokes}" th:if="${username != null}">Jokes</a>
+        <span class="nav-username" th:if="${username != null}" th:text="${username}"></span>
+        <form th:if="${username != null}" th:action="@{/logout}" method="post" style="display:inline">
+          <button type="submit" class="btn btn-danger btn-sm">Logout</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Forbidden -->
+  <section class="forbidden">
+    <div class="forbidden-card">
+      <div class="forbidden-code">403</div>
+      <h1 class="forbidden-title">Access Denied</h1>
+      <p class="forbidden-message">You don't have permission to view this page.</p>
+      <a th:href="@{/jokes}" class="btn btn-primary">Go Back</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Powered by <a th:href="@{/}">Gatekeeper</a>
+  </footer>
+
+</body>
+</html>
