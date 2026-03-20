@@ -219,7 +219,11 @@ jobs:
           # Install zbctl after port-forward - allowing wait for port-forward to be ready
           wget https://github.com/camunda/camunda/releases/download/8.5.8/zbctl
           chmod +x zbctl
-      - name: Add load
+      - name: Port-forward to REST API
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 8080 &
+      - name: Create process instance on previous version
         run: |
           release="${{ inputs.name }}"
           # Get secret for connectors - to communicate with the cluster
@@ -237,18 +241,43 @@ jobs:
             sleep 1
           done
           set -e
-          # Deploy load
+          # Deploy process and create instance
           ./zbctl deploy load-tests/load-tester/src/main/resources/bpmn/one_task.bpmn --insecure
           ./zbctl create instance benchmark --insecure
-      - name: Summarize deployment
-        if: success()
+      - name: Verify instance is ACTIVE via REST API
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Test \`${{ inputs.name }}\` values
-            \`\`\`yaml
-            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
-            \`\`\`
-          EOF
+          # Get OAuth token from Keycloak
+          release="${{ inputs.name }}"
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
+          TOKEN=$(curl -s -X POST "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token" \
+            -d "grant_type=client_credentials&client_id=zeebe&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
+            | jq -r '.access_token')
+
+          # Poll REST API until we find an ACTIVE process instance
+          attempts=0
+          max_attempts=30
+          while [[ $attempts -lt $max_attempts ]]; do
+            result=$(curl -s -X POST "http://localhost:8080/v2/process-instances/search" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"filter": {"processDefinitionId": "benchmark"}}')
+
+            state=$(echo "$result" | jq -r '.items[0].state // empty')
+            if [[ "$state" == "ACTIVE" ]]; then
+              echo "Process instance is ACTIVE"
+              echo "$result" | jq '.items[0]'
+              break
+            fi
+
+            attempts=$((attempts + 1))
+            echo "Waiting for process instance to be available (attempt $attempts/$max_attempts, state=${state:-not found})"
+            sleep 10
+          done
+
+          if [[ "$state" != "ACTIVE" ]]; then
+            echo "::error::Process instance not found or not ACTIVE after ${max_attempts} attempts"
+            exit 1
+          fi
 
   upgrade-camunda-cluster-to-new-version:
     name: Upgrade previous version of Camunda Platform to new version
@@ -382,7 +411,11 @@ jobs:
           # Install zbctl after port-forward - allowing wait for port-forward to be ready
           wget https://github.com/camunda/camunda/releases/download/8.5.8/zbctl
           chmod +x zbctl
-      - name: Add load
+      - name: Port-forward to REST API
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/camunda 8080 &
+      - name: Complete job from previous version
         run: |
           release="${{ inputs.name }}"
           # Get client secret from camunda credentials - which has been extracted during the upgrade
@@ -400,19 +433,43 @@ jobs:
             sleep 1
           done
           set -e
-          # Activate job
-          key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq -r '.jobs[0].key')
-          # Complete job from 8.8 version
+          # Activate and complete job from 8.8 version
+          key=$(./zbctl activate jobs benchmark-task --insecure --timeout 1s | jq -r '.jobs[0].key')
           ./zbctl complete job "$key" --insecure
-      - name: Summarize deployment
-        if: success()
+      - name: Verify instance is COMPLETED via REST API
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Test \`${{ inputs.name }}\` values
-            \`\`\`yaml
-            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
-            \`\`\`
-          EOF
+          # Get OAuth token from Keycloak
+          release="${{ inputs.name }}"
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
+          TOKEN=$(curl -s -X POST "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token" \
+            -d "grant_type=client_credentials&client_id=zeebe&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
+            | jq -r '.access_token')
+
+          # Poll REST API until the process instance is COMPLETED
+          attempts=0
+          max_attempts=30
+          while [[ $attempts -lt $max_attempts ]]; do
+            result=$(curl -s -X POST "http://localhost:8080/v2/process-instances/search" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"filter": {"processDefinitionId": "benchmark"}}')
+
+            state=$(echo "$result" | jq -r '.items[0].state // empty')
+            if [[ "$state" == "COMPLETED" ]]; then
+              echo "Process instance is COMPLETED after migration - migration successful!"
+              echo "$result" | jq '.items[0]'
+              break
+            fi
+
+            attempts=$((attempts + 1))
+            echo "Waiting for process instance to be COMPLETED (attempt $attempts/$max_attempts, state=${state:-not found})"
+            sleep 10
+          done
+
+          if [[ "$state" != "COMPLETED" ]]; then
+            echo "::error::Process instance not COMPLETED after migration. State: ${state:-not found}"
+            exit 1
+          fi
 
   cleanup-namespace:
     name: Cleanup namespace after successful workflow
