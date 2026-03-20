@@ -39,7 +39,46 @@ Only CI checks related to C8Run (those with "c8run" in the name) and CI runs mar
 
 ## Build C8run locally
 
-To build and run C8Run locally run `./package.sh` followed by `./start.sh`
+### 1. Install Go
+
+Go **1.25 or newer** is required (the `go.mod` minimum). Verify any existing installation with `go version`.
+
+### 2. Configure LDAP credentials in `.env`
+
+Open `c8run/.env` and add the following two lines using your Camunda LDAP credentials:
+
+```dotenv
+JAVA_ARTIFACTS_USER=<firstname.lastname>
+JAVA_ARTIFACTS_PASSWORD=<your current Okta password>
+```
+
+### 3. Build the C8run binary
+
+From the `c8run/` directory, run the appropriate command for your platform:
+
+**Windows:**
+
+```bash
+go build -o c8run.exe ./cmd/c8run
+```
+
+**Linux / macOS:**
+
+```bash
+go build -o c8run ./cmd/c8run/
+```
+
+### 4. Package the distribution
+
+```bash
+./package.sh
+```
+
+### 5. Start Camunda 8 Run
+
+```bash
+./start.sh
+```
 
 ### Connectors launcher
 
