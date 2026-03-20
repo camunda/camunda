@@ -196,6 +196,7 @@ jobs:
           --wait --timeout 35m0s
           --namespace ${{ inputs.name }}
           --render-subchart-notes
+          --set global.security.authentication.method=oidc
           --set identity.enabled=true
           --set identity.firstUser.existingSecret=camunda-credentials
           --set identity.firstUser.existingSecretKey=identity-firstuser-password
@@ -209,9 +210,9 @@ jobs:
           --set connectors.enabled=true
           --set connectors.security.authentication.oidc.existingSecret=camunda-credentials
           --set connectors.security.authentication.oidc.existingSecretKey=connectors-security-authentication-oidc-secret
+          --set orchestration.security.authentication.oidc.existingSecret=camunda-credentials
+          --set orchestration.security.authentication.oidc.existingSecretKey=orchestration-security-authentication-oidc-secret
           --set optimize.enabled=true
-          --set global.identity.auth.zeebe.existingSecret=camunda-credentials
-          --set global.identity.auth.zeebe.existingSecretKey=orchestration-security-authentication-oidc-secret
           --version 13.5.4
       - name: Summarize deployment
         if: success()
