@@ -136,7 +136,7 @@ public class ElementSelectors {
 
     @Override
     public String describe() {
-      return elementType.name();
+      return "type: " + elementType.name();
     }
 
     @Override
@@ -160,7 +160,7 @@ public class ElementSelectors {
 
     @Override
     public String describe() {
-      return String.valueOf(elementInstanceKey);
+      return "element instance key: " + String.valueOf(elementInstanceKey);
     }
 
     @Override
@@ -184,7 +184,7 @@ public class ElementSelectors {
 
     @Override
     public String describe() {
-      return state.name();
+      return "state: " + state.name();
     }
 
     @Override
