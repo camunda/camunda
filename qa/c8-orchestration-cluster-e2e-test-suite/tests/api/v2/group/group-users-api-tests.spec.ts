@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
@@ -21,17 +21,19 @@ import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/be
 import {
   assignUsersToGroup,
   createGroupAndStoreResponseFields,
+  createUser,
   userFromState,
 } from '@requestHelpers';
 import {
   defaultAssertionOptions,
-  generateUniqueId,
 } from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
+  const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
   state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
@@ -49,6 +51,9 @@ test.describe.parallel('Group Users API Tests', () => {
 
   test.afterAll(async ({request}) => {
     await cleanupGroups(request, state['createdIds'] as string[]);
+    for (const cleanup of cleanups) {
+      await cleanup(request);
+    }
   });
 
   test('Assign User To Group Not Found', async ({request}) => {
@@ -70,10 +75,13 @@ test.describe.parallel('Group Users API Tests', () => {
   });
 
   test('Assign User To Group', async ({request}) => {
-    const user = 'test-user' + generateUniqueId();
+    const user = await createUser(request, state);
+    cleanups.push(async (request) => {
+      await cleanupUsers(request, [user.username]);
+    });
     const stateParams: Record<string, string> = {
       groupId: state['groupId1'] as string,
-      username: user,
+      username: user.username,
     };
 
     await expect(async () => {
@@ -229,7 +237,7 @@ test.describe.parallel('Group Users API Tests', () => {
       username: userFromState('groupId2', state) as string,
     };
     const res = await request.delete(
-      buildUrl('/groups/{groupId}/users/{username}', p),
+      buildUrl(`/groups/${p.groupId}/users/${p.username}`,),
       {
         headers: jsonHeaders(),
       },
