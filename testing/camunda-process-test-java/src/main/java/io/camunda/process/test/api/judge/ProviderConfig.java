@@ -54,4 +54,14 @@ public interface ProviderConfig {
   default Duration getTimeout() {
     return null;
   }
+
+  /**
+   * Returns the temperature for LLM API calls, or {@code null} to use the provider's default
+   * temperature.
+   *
+   * @return the configured temperature, or {@code null} if not set
+   */
+  default Double getTemperature() {
+    return null;
+  }
 }

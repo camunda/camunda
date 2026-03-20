@@ -54,6 +54,20 @@ class AnthropicChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
+  @Test
+  void shouldBuildChatModelWithTemperature() {
+    // given
+    final BaseProviderConfig.AnthropicConfig config =
+        new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
+    config.setTemperature(0.7);
+
+    // when
+    final ChatModel chatModel = AnthropicChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  "})

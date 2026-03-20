@@ -105,6 +105,9 @@ public class JudgeConfiguration {
     if (chatModel.getTimeout() != null) {
       config.setTimeout(chatModel.getTimeout());
     }
+    if (chatModel.getTemperature() != null) {
+      config.setTemperature(chatModel.getTemperature());
+    }
     return config;
   }
 
@@ -139,6 +142,9 @@ public class JudgeConfiguration {
 
     /** The timeout for LLM API calls as an ISO-8601 duration (e.g. 'PT30S', 'PT2M'). */
     private Duration timeout;
+
+    /** The temperature for LLM API calls (e.g. 0.7). */
+    private Double temperature;
 
     @NestedConfigurationProperty
     private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
@@ -192,6 +198,14 @@ public class JudgeConfiguration {
 
     public void setTimeout(final Duration timeout) {
       this.timeout = timeout;
+    }
+
+    public Double getTemperature() {
+      return temperature;
+    }
+
+    public void setTemperature(final Double temperature) {
+      this.temperature = temperature;
     }
 
     public String getRegion() {

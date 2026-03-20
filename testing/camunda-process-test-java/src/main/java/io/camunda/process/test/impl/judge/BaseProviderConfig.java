@@ -32,6 +32,7 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   private final String provider;
   private final String model;
   private Duration timeout;
+  private Double temperature;
 
   protected BaseProviderConfig(final String provider, final String model) {
     this.provider = provider;
@@ -55,6 +56,15 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
   public void setTimeout(final Duration timeout) {
     this.timeout = timeout;
+  }
+
+  @Override
+  public Double getTemperature() {
+    return temperature;
+  }
+
+  public void setTemperature(final Double temperature) {
+    this.temperature = temperature;
   }
 
   /** Generic provider configuration for unknown or custom providers. */

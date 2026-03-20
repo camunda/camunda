@@ -53,6 +53,10 @@ final class AzureOpenAiChatModelBuilder {
       LOG.debug("Setting timeout to {}", config.getTimeout());
       builder.timeout(config.getTimeout());
     }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      builder.temperature(config.getTemperature());
+    }
 
     final ChatModel chatModel = builder.build();
     LOG.debug(

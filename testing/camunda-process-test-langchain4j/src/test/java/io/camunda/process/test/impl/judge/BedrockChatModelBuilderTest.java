@@ -94,6 +94,25 @@ class BedrockChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
+  @Test
+  void shouldBuildChatModelWithTemperature() {
+    // given
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            "test-access-key",
+            "test-secret-key");
+    config.setTemperature(0.7);
+
+    // when
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
   // -- Required field validation --
 
   @ParameterizedTest
