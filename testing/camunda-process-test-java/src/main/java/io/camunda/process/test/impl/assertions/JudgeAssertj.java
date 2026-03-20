@@ -38,7 +38,7 @@ class JudgeAssertj {
    *
    * @param modifier function that transforms the current config
    */
-  public void withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
+  void withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
     if (modifier == null) {
       throw new IllegalArgumentException("modifier must not be null");
     }
@@ -64,6 +64,18 @@ class JudgeAssertj {
       throw new IllegalStateException(
           "JudgeConfig has no ChatModelAdapter configured. "
               + "Use JudgeConfig.of(chatModel) or withJudgeConfig(config -> config.withChatModelAdapter(chatModel)).");
+    }
+  }
+
+  /**
+   * Validates that the expectation string is not null or blank.
+   *
+   * @param expectation the expectation to validate
+   * @throws IllegalArgumentException if the expectation is null or blank
+   */
+  static void assertExpectationNotEmpty(final String expectation) {
+    if (expectation == null || expectation.trim().isEmpty()) {
+      throw new IllegalArgumentException("expectation must not be null or empty");
     }
   }
 
