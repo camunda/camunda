@@ -323,6 +323,8 @@ jobs:
           --set global.identity.auth.enabled=true \
           --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
           --set-string "orchestration.env[0].value=false" \
+          --set "orchestration.env[1].name=CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED" \
+          --set-string "orchestration.env[1].value=false" \
           --set orchestration.image.registry=gcr.io \
           --set orchestration.image.repository=zeebe-io/zeebe \
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
