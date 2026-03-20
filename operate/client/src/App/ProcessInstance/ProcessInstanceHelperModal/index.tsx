@@ -11,6 +11,7 @@ import {storeStateLocally} from 'modules/utils/localStorage';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {observer} from 'mobx-react';
 import processInstanceDetailsLight from './assets/process-instance-details-light.png';
+import processInstanceDetailsDark from './assets/process-instance-details-dark.png';
 import {ChangesList, PreviewImage} from './styled';
 
 const localStorageKey = 'hideProcessInstanceHelperModal';
@@ -61,7 +62,7 @@ const ProcessInstanceHelperModal: React.FC<Props> = observer(
           />
         ) : (
           <PreviewImage
-            src={processInstanceDetailsLight}
+            src={processInstanceDetailsDark}
             alt="Process instance details page with incidents tab and diagram"
           />
         )}
