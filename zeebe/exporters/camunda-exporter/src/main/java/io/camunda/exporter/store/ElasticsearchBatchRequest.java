@@ -33,10 +33,12 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public static final int UPDATE_RETRY_COUNT = 3;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
+
+  protected final BulkRequest.Builder bulkRequestBuilder;
+  protected final ElasticsearchScriptBuilder scriptBuilder;
+  protected CamundaExporterMetrics metrics;
+
   private final ElasticsearchClient esClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
-  private final ElasticsearchScriptBuilder scriptBuilder;
-  private CamundaExporterMetrics metrics;
 
   public ElasticsearchBatchRequest(
       final ElasticsearchClient esClient,
@@ -51,6 +53,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest withMetrics(final CamundaExporterMetrics metrics) {
     this.metrics = metrics;
     return this;
+  }
+
+  @Override
+  public void executeWithRefresh() throws PersistenceException {
+    execute(null, true);
   }
 
   @Override
@@ -239,11 +246,6 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     execute(customErrorHandlers, false);
   }
 
-  @Override
-  public void executeWithRefresh() throws PersistenceException {
-    execute(null, true);
-  }
-
   private void execute(
       final BiConsumer<String, Error> customErrorHandlers, final boolean shouldRefresh)
       throws PersistenceException {
@@ -267,7 +269,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     }
   }
 
-  private void validateNoErrors(
+  protected void validateNoErrors(
       final List<BulkResponseItem> items, final BiConsumer<String, Error> customErrorHandlers) {
     final var errorItems = items.stream().filter(item -> item.error() != null).toList();
     if (errorItems.isEmpty()) {
@@ -321,7 +323,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         });
   }
 
-  private record ErrorValues(List<String> indexes, List<String> ids) {}
+  protected record ErrorValues(List<String> indexes, List<String> ids) {}
 
-  private record ErrorKey(OperationType operationType, String errorReason) {}
+  protected record ErrorKey(OperationType operationType, String errorReason) {}
 }

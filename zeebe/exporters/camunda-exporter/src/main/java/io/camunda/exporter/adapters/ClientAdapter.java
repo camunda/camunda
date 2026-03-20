@@ -18,9 +18,15 @@ import java.io.IOException;
 public interface ClientAdapter extends AutoCloseable {
 
   static ClientAdapter of(final ConnectConfiguration configuration) {
+    return of(configuration, false);
+  }
+
+  static ClientAdapter of(
+      final ConnectConfiguration configuration, final boolean useStreamingRequest) {
     final var databaseType = configuration.getTypeEnum();
     return switch (databaseType) {
-      case DatabaseType.ELASTICSEARCH -> new ElasticsearchAdapter(configuration);
+      case DatabaseType.ELASTICSEARCH ->
+          new ElasticsearchAdapter(configuration, useStreamingRequest);
       case DatabaseType.OPENSEARCH -> new OpensearchAdapter(configuration);
       default -> throw new IllegalArgumentException("Unsupported databaseType: " + databaseType);
     };
