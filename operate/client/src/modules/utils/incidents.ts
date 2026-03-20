@@ -7,10 +7,20 @@
  */
 
 import type {
+  Incident,
   IncidentErrorType,
   QueryIncidentsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
+
+const LISTENER_ERROR_TYPES: IncidentErrorType[] = [
+  'EXECUTION_LISTENER_NO_RETRIES',
+  'TASK_LISTENER_NO_RETRIES',
+];
+
+function isListenerIncident(incident: Pick<Incident, 'errorType'>): boolean {
+  return LISTENER_ERROR_TYPES.includes(incident.errorType);
+}
 
 const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   UNSPECIFIED: 'Unspecified',
@@ -64,6 +74,7 @@ const getIncidentsSearchFilter = (
 export {
   availableErrorTypes,
   getIncidentErrorName,
+  isListenerIncident,
   isSingleIncidentSelected,
   getIncidentsSearchFilter,
 };

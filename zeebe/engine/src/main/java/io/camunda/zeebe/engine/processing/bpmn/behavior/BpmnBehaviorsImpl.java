@@ -62,6 +62,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+  private final BpmnExecutionListenerBehavior executionListenerBehavior;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
@@ -277,6 +278,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
+
+    executionListenerBehavior =
+        new BpmnExecutionListenerBehavior(processingState.getGlobalListenersState());
   }
 
   @Override
@@ -392,6 +396,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public BpmnExecutionListenerBehavior executionListenerBehavior() {
+    return executionListenerBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {

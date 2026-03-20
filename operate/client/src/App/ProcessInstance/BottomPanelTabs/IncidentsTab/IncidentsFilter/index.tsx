@@ -9,12 +9,19 @@
 import {Container, Stack, Layer} from './styled';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
-import {Button, MultiSelect} from '@carbon/react';
+import {Button, Dropdown, MultiSelect} from '@carbon/react';
 import {
   availableErrorTypes,
   getIncidentErrorName,
 } from 'modules/utils/incidents';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import type {SourceFilter} from 'modules/stores/incidentsPanel';
+
+const SOURCE_FILTER_ITEMS: {id: SourceFilter; label: string}[] = [
+  {id: 'ALL', label: 'All sources'},
+  {id: 'GLOBAL', label: 'Global'},
+  {id: 'MODEL', label: 'Model'},
+];
 
 const IncidentsFilter: React.FC = observer(() => {
   return (
@@ -32,6 +39,28 @@ const IncidentsFilter: React.FC = observer(() => {
             hideLabel
             onChange={({selectedItems}) => {
               incidentsPanelStore.setErrorTypeSelection(selectedItems ?? []);
+            }}
+            size="sm"
+          />
+          <Dropdown
+            id="incidents-by-source"
+            data-testid="incidents-by-source"
+            items={SOURCE_FILTER_ITEMS}
+            selectedItem={
+              SOURCE_FILTER_ITEMS.find(
+                (item) =>
+                  item.id ===
+                  incidentsPanelStore.state.selectedSourceFilter,
+              ) ?? SOURCE_FILTER_ITEMS[0]!
+            }
+            itemToString={(item) => item?.label ?? ''}
+            label="All sources"
+            titleText="Filter by Source"
+            hideLabel
+            onChange={({selectedItem}) => {
+              if (selectedItem) {
+                incidentsPanelStore.setSourceFilter(selectedItem.id);
+              }
             }}
             size="sm"
           />

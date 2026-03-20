@@ -10,6 +10,8 @@ import type {IncidentErrorType} from '@camunda/camunda-api-zod-schemas/8.9';
 import {makeAutoObservable} from 'mobx';
 import {tracking} from 'modules/tracking';
 
+type SourceFilter = 'ALL' | 'GLOBAL' | 'MODEL';
+
 type State = {
   selectedElementInstance: {
     elementInstanceKey: string;
@@ -17,6 +19,7 @@ type State = {
   } | null;
   selectedElementId: string | null;
   selectedErrorTypes: IncidentErrorType[];
+  selectedSourceFilter: SourceFilter;
   isPanelVisible: boolean;
 };
 
@@ -24,6 +27,7 @@ const DEFAULT_STATE: State = {
   selectedElementInstance: null,
   selectedElementId: null,
   selectedErrorTypes: [],
+  selectedSourceFilter: 'ALL',
   isPanelVisible: false,
 };
 
@@ -38,7 +42,8 @@ class IncidentsPanel {
     return (
       this.state.selectedElementInstance !== null ||
       this.state.selectedElementId !== null ||
-      this.state.selectedErrorTypes.length > 0
+      this.state.selectedErrorTypes.length > 0 ||
+      this.state.selectedSourceFilter !== 'ALL'
     );
   }
 
@@ -76,11 +81,17 @@ class IncidentsPanel {
     this.state.selectedErrorTypes = errorTypes;
   }
 
+  setSourceFilter(filter: SourceFilter) {
+    this.state.selectedSourceFilter = filter;
+  }
+
   clearSelection() {
     this.state.selectedElementInstance = null;
     this.state.selectedElementId = null;
     this.state.selectedErrorTypes = [];
+    this.state.selectedSourceFilter = 'ALL';
   }
 }
 
+export type {SourceFilter};
 export const incidentsPanelStore = new IncidentsPanel();

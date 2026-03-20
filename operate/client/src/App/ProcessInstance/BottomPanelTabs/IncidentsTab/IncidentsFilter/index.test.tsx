@@ -11,7 +11,7 @@ import {
   getIncidentErrorName,
 } from 'modules/utils/incidents';
 import {IncidentsFilter} from './index';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 
 describe('IncidentsFilter', () => {
   it('should render filters', async () => {
@@ -26,6 +26,25 @@ describe('IncidentsFilter', () => {
         screen.getByRole('option', {name: getIncidentErrorName(errorType)}),
       ).toBeInTheDocument();
     }
+  });
+
+  it('should render the source filter dropdown with all options', async () => {
+    const {user} = render(<IncidentsFilter />);
+
+    // Default shows "All sources"
+    expect(screen.getByTestId('incidents-by-source')).toHaveTextContent(
+      'All sources',
+    );
+
+    // Open the dropdown by clicking the combobox trigger
+    await user.click(
+      within(screen.getByTestId('incidents-by-source')).getByRole('combobox'),
+    );
+
+    // Verify all 3 options are available
+    expect(screen.getByRole('option', {name: 'All sources'})).toBeInTheDocument();
+    expect(screen.getByRole('option', {name: 'Global'})).toBeInTheDocument();
+    expect(screen.getByRole('option', {name: 'Model'})).toBeInTheDocument();
   });
 
   it('should disable/enable clear all button depending on selected options', async () => {

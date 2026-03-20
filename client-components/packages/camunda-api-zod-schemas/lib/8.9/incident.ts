@@ -55,6 +55,7 @@ const incidentSchema = z.object({
 	rootProcessInstanceKey: z.string().nullable(),
 	elementInstanceKey: z.string(),
 	jobKey: z.string().nullable(),
+	tags: z.array(z.string()).optional(),
 });
 type Incident = z.infer<typeof incidentSchema>;
 

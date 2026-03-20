@@ -34,6 +34,12 @@
             "eventTypes": {
               "type": "keyword"
             },
+            "elementTypes": {
+              "type": "keyword"
+            },
+            "categories": {
+              "type": "keyword"
+            },
             "afterNonGlobal": {
               "type": "boolean"
             },

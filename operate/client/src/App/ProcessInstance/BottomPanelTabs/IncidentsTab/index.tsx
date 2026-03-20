@@ -12,14 +12,19 @@ import {
   type QueryIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
-import {useEnhancedIncidents, useIncidentsSort} from 'modules/hooks/incidents';
+import {
+  useEnhancedIncidents,
+  useIncidentsSort,
+  type EnhancedIncident,
+} from 'modules/hooks/incidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByProcessInstancePaginated';
 import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
-import {getIncidentsSearchFilter} from 'modules/utils/incidents';
+import {getIncidentsSearchFilter, isListenerIncident} from 'modules/utils/incidents';
 import {isInstanceRunning} from 'modules/utils/instance';
+import {isGlobalListener} from 'modules/utils/listeners';
 import {modificationsStore} from 'modules/stores/modifications';
 import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
@@ -90,6 +95,11 @@ const IncidentsTab: React.FC = observer(() => {
 
   const enhancedIncidents = useEnhancedIncidents(incidents);
 
+  const filteredIncidents = filterBySource(
+    enhancedIncidents,
+    incidentsPanelStore.state.selectedSourceFilter,
+  );
+
   return (
     <Container>
       <PanelHeader count={totalIncidentsCount} size="sm">
@@ -100,7 +110,7 @@ const IncidentsTab: React.FC = observer(() => {
         onVerticalScrollStartReach={handleScrollStartReach}
         onVerticalScrollEndReach={handleScrollEndReach}
         processInstanceKey={processInstanceId}
-        incidents={enhancedIncidents}
+        incidents={filteredIncidents}
       />
     </Container>
   );
@@ -157,6 +167,22 @@ function computeDisplayState(
       return 'content';
     }
   }
+}
+
+function filterBySource(
+  incidents: EnhancedIncident[],
+  sourceFilter: 'ALL' | 'GLOBAL' | 'MODEL',
+): EnhancedIncident[] {
+  if (sourceFilter === 'ALL') {
+    return incidents;
+  }
+  return incidents.filter((incident) => {
+    if (!isListenerIncident(incident)) {
+      return false;
+    }
+    const global = isGlobalListener(incident.tags ?? []);
+    return sourceFilter === 'GLOBAL' ? global : !global;
+  });
 }
 
 export {IncidentsTab};

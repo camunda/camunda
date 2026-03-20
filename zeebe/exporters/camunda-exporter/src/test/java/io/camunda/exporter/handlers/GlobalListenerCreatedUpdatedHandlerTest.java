@@ -120,7 +120,9 @@ public class GlobalListenerCreatedUpdatedHandlerTest {
             .setAfterNonGlobal(true)
             .setPriority(50)
             .setSource(GlobalListenerSource.API)
-            .setListenerType(GlobalListenerType.USER_TASK);
+            .setListenerType(GlobalListenerType.USER_TASK)
+            .setElementTypes(List.of("serviceTask"))
+            .setCategories(List.of("tasks"));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -144,6 +146,8 @@ public class GlobalListenerCreatedUpdatedHandlerTest {
             .withType("job-type")
             .withRetries(3)
             .withEventTypes(List.of("CREATING", "COMPLETING"))
+            .withElementTypes(List.of("serviceTask", "userTask"))
+            .withCategories(List.of("tasks"))
             .withAfterNonGlobal(true)
             .withPriority(50)
             .withSource(io.camunda.zeebe.protocol.record.value.GlobalListenerSource.API)
@@ -164,6 +168,8 @@ public class GlobalListenerCreatedUpdatedHandlerTest {
     assertThat(entity.getType()).isEqualTo("job-type");
     assertThat(entity.getRetries()).isEqualTo(3);
     assertThat(entity.getEventTypes()).containsExactly("CREATING", "COMPLETING");
+    assertThat(entity.getElementTypes()).containsExactly("serviceTask", "userTask");
+    assertThat(entity.getCategories()).containsExactly("tasks");
     assertThat(entity.isAfterNonGlobal()).isTrue();
     assertThat(entity.getPriority()).isEqualTo(50);
     assertThat(entity.getSource()).isEqualTo(GlobalListenerSource.API);

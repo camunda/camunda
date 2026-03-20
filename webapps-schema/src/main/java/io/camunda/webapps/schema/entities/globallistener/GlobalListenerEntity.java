@@ -39,6 +39,12 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private List<String> eventTypes;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private List<String> elementTypes;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private List<String> categories;
+
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private boolean afterNonGlobal;
 
@@ -98,6 +104,24 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
     return this;
   }
 
+  public List<String> getElementTypes() {
+    return elementTypes;
+  }
+
+  public GlobalListenerEntity setElementTypes(final List<String> elementTypes) {
+    this.elementTypes = elementTypes;
+    return this;
+  }
+
+  public List<String> getCategories() {
+    return categories;
+  }
+
+  public GlobalListenerEntity setCategories(final List<String> categories) {
+    this.categories = categories;
+    return this;
+  }
+
   public boolean isAfterNonGlobal() {
     return afterNonGlobal;
   }
@@ -137,7 +161,17 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
   @Override
   public int hashCode() {
     return Objects.hash(
-        id, listenerId, type, retries, eventTypes, afterNonGlobal, priority, source, listenerType);
+        id,
+        listenerId,
+        type,
+        retries,
+        eventTypes,
+        elementTypes,
+        categories,
+        afterNonGlobal,
+        priority,
+        source,
+        listenerType);
   }
 
   @Override
@@ -153,6 +187,8 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
         && Objects.equals(listenerId, that.listenerId)
         && Objects.equals(type, that.type)
         && Objects.equals(eventTypes, that.eventTypes)
+        && Objects.equals(elementTypes, that.elementTypes)
+        && Objects.equals(categories, that.categories)
         && source == that.source
         && listenerType == that.listenerType;
   }
@@ -172,6 +208,10 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
         + retries
         + ", eventTypes="
         + eventTypes
+        + ", elementTypes="
+        + elementTypes
+        + ", categories="
+        + categories
         + ", afterNonGlobal="
         + afterNonGlobal
         + ", priority="

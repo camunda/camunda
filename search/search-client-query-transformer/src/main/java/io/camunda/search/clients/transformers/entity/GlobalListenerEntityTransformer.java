@@ -29,6 +29,8 @@ public class GlobalListenerEntityTransformer
         value.isAfterNonGlobal(),
         value.getPriority(),
         GlobalListenerSource.valueOf(value.getSource().name()),
-        GlobalListenerType.valueOf(value.getListenerType().name()));
+        GlobalListenerType.valueOf(value.getListenerType().name()),
+        value.getElementTypes(),
+        value.getCategories());
   }
 }

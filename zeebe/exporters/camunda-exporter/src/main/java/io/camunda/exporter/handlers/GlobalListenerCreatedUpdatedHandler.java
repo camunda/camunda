@@ -70,6 +70,8 @@ public class GlobalListenerCreatedUpdatedHandler
         .setType(listener.getType())
         .setRetries(listener.getRetries())
         .setEventTypes(listener.getEventTypes())
+        .setElementTypes(listener.getElementTypes())
+        .setCategories(listener.getCategories())
         .setAfterNonGlobal(listener.isAfterNonGlobal())
         .setPriority(listener.getPriority())
         .setSource(GlobalListenerSource.valueOf(listener.getSource().name()))

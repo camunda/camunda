@@ -11,7 +11,7 @@ import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {createProcessInstance, createUser} from 'modules/testUtils';
+import {createProcessInstance, createUser, createEnhancedIncident} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
@@ -84,6 +84,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Element')).toBeInTheDocument();
     expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Source')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
@@ -104,6 +105,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Element')).toBeInTheDocument();
     expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Source')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
@@ -126,7 +128,8 @@ describe('IncidentsTable', () => {
       screen.getByRole('row', {name: new RegExp(firstIncidentErrorName)}),
     );
 
-    expect(withinFirstRow.getByText('--')).toBeInTheDocument();
+    const dashes = withinFirstRow.getAllByText('--');
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should provide a link for incidents in child process instances', () => {
@@ -227,5 +230,65 @@ describe('IncidentsTable', () => {
     expect(
       within(modal).getByText(`Element "${secondIncident.elementName}" Error`),
     ).toBeInTheDocument();
+  });
+
+  it('should display -- in Source column for non-listener incidents', () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[firstIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const row = within(
+      screen.getByRole('row', {name: new RegExp(firstIncidentErrorName)}),
+    );
+    // Non-listener incident → source column renders '--'
+    expect(row.getAllByText('--').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should display Model tag for BPMN-level listener incidents', () => {
+    const listenerIncident = createEnhancedIncident({
+      errorType: 'EXECUTION_LISTENER_NO_RETRIES',
+      processInstanceKey: '1',
+      errorMessage: 'Listener failed',
+      elementId: 'Task_1',
+    });
+
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[listenerIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(screen.getByText('Model')).toBeInTheDocument();
+    expect(screen.queryByText('Global')).not.toBeInTheDocument();
+  });
+
+  it('should display Global tag for global listener incidents', () => {
+    const globalListenerIncident = createEnhancedIncident({
+      errorType: 'EXECUTION_LISTENER_NO_RETRIES',
+      processInstanceKey: '1',
+      errorMessage: 'Global listener failed',
+      elementId: 'Task_1',
+      tags: ['GLOBAL_LISTENER'],
+    });
+
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[globalListenerIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(screen.getByText('Global')).toBeInTheDocument();
+    expect(screen.queryByText('Model')).not.toBeInTheDocument();
   });
 });

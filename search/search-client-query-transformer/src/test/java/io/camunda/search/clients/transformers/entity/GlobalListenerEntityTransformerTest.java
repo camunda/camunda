@@ -32,6 +32,8 @@ class GlobalListenerEntityTransformerTest {
     entity.setPriority(50);
     entity.setSource(GlobalListenerSource.API);
     entity.setListenerType(GlobalListenerType.USER_TASK);
+    entity.setElementTypes(List.of("serviceTask", "userTask"));
+    entity.setCategories(List.of("tasks"));
 
     // when
     final var searchEntity = transformer.apply(entity);
@@ -47,5 +49,7 @@ class GlobalListenerEntityTransformerTest {
         .isEqualTo(io.camunda.search.entities.GlobalListenerSource.API);
     assertThat(searchEntity.listenerType())
         .isEqualTo(io.camunda.search.entities.GlobalListenerType.USER_TASK);
+    assertThat(searchEntity.elementTypes()).containsExactly("serviceTask", "userTask");
+    assertThat(searchEntity.categories()).containsExactly("tasks");
   }
 }

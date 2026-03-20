@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {Tag} from '@carbon/react';
 
 const ErrorMessageCell = styled.div`
   max-width: 404px;
@@ -20,4 +21,8 @@ const FlexContainer = styled.div`
   align-items: center;
 `;
 
-export {ErrorMessageCell, FlexContainer};
+const SourceTag = styled(Tag)`
+  margin: 0;
+`;
+
+export {ErrorMessageCell, FlexContainer, SourceTag};

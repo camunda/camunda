@@ -9,7 +9,7 @@
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {observer} from 'mobx-react';
-import {FlexContainer, ErrorMessageCell} from './styled';
+import {FlexContainer, ErrorMessageCell, SourceTag} from './styled';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
@@ -19,8 +19,10 @@ import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {
   getIncidentErrorName,
+  isListenerIncident,
   isSingleIncidentSelected,
 } from 'modules/utils/incidents';
+import {isGlobalListener} from 'modules/utils/listeners';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
@@ -129,6 +131,11 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               isDisabled: !isJobKeyPresent,
             },
             {
+              header: 'Source',
+              key: 'source',
+              isDisabled: true,
+            },
+            {
               header: 'Creation Date',
               key: 'creationTime',
               isDefault: true,
@@ -168,6 +175,19 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                   </Link>
                 ),
               jobKey: incident.jobKey || '--',
+              source: isListenerIncident(incident) ? (
+                isGlobalListener(incident.tags ?? []) ? (
+                  <SourceTag type="teal" size="sm">
+                    Global
+                  </SourceTag>
+                ) : (
+                  <SourceTag type="gray" size="sm">
+                    Model
+                  </SourceTag>
+                )
+              ) : (
+                '--'
+              ),
               creationTime: formatDate(incident.creationTime),
               errorMessage: (
                 <FlexContainer>

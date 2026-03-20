@@ -5,9 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
 
-public enum GlobalListenerType {
-  USER_TASK,
-  EXECUTION
-}
+import { FC } from "react";
+import Lazy from "src/components/router/Lazy";
+import PageRoutes from "src/components/router/PageRoutes";
+
+const GlobalExecutionListeners: FC = () => (
+  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+);
+
+export default GlobalExecutionListeners;

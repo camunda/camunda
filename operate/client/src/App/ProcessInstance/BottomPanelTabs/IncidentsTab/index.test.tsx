@@ -11,6 +11,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   within,
+  act,
 } from 'modules/testing-library';
 import {IncidentsTab} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
@@ -233,5 +234,77 @@ describe('IncidentsTab', () => {
         'There are no incidents matching this filter set',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should filter incidents by source when source filter is applied', async () => {
+    const regularIncident = createIncident({
+      errorType: 'CONDITION_ERROR',
+      elementId: 'gateway_1',
+    });
+    const modelListenerIncident = createIncident({
+      errorType: 'EXECUTION_LISTENER_NO_RETRIES',
+      elementId: 'task_1',
+      errorMessage: 'Model listener failed',
+    });
+    const globalListenerIncident = createIncident({
+      errorType: 'EXECUTION_LISTENER_NO_RETRIES',
+      elementId: 'task_2',
+      errorMessage: 'Global listener failed',
+      tags: ['GLOBAL_LISTENER'],
+    });
+
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([
+        regularIncident,
+        modelListenerIncident,
+        globalListenerIncident,
+      ]),
+    );
+
+    render(<IncidentsTab />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    // All three incidents visible initially
+    const table = within(screen.getByRole('table'));
+    expect(table.getByText('Condition error.')).toBeInTheDocument();
+    expect(table.getByText('Model listener failed')).toBeInTheDocument();
+    expect(table.getByText('Global listener failed')).toBeInTheDocument();
+
+    // Apply Global source filter via store (direct store interaction)
+    act(() => {
+      incidentsPanelStore.setSourceFilter('GLOBAL');
+    });
+
+    // Only global listener incident should be visible
+    expect(table.queryByText('Condition error.')).not.toBeInTheDocument();
+    expect(
+      table.queryByText('Model listener failed'),
+    ).not.toBeInTheDocument();
+    expect(table.getByText('Global listener failed')).toBeInTheDocument();
+
+    // Switch to Model source filter
+    act(() => {
+      incidentsPanelStore.setSourceFilter('MODEL');
+    });
+
+    // Only model listener incident should be visible
+    expect(table.queryByText('Condition error.')).not.toBeInTheDocument();
+    expect(table.getByText('Model listener failed')).toBeInTheDocument();
+    expect(
+      table.queryByText('Global listener failed'),
+    ).not.toBeInTheDocument();
+
+    // Reset to ALL
+    act(() => {
+      incidentsPanelStore.setSourceFilter('ALL');
+    });
+
+    // All incidents visible again
+    expect(table.getByText('Condition error.')).toBeInTheDocument();
+    expect(table.getByText('Model listener failed')).toBeInTheDocument();
+    expect(table.getByText('Global listener failed')).toBeInTheDocument();
   });
 });
