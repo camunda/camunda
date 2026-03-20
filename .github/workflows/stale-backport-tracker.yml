@@ -227,7 +227,7 @@ jobs:
           payload: |
             channel: "U09B7CWMX4P"
             text: "Stale backport report"
-            blocks: ${{ steps.format.outputs.payload }}
+            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
       - name: Log notification status
         if: always()
         run: |
