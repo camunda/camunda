@@ -269,6 +269,31 @@ public final class UserTaskServices
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
             : Collections.emptyList();
 
+    final var scopedQuery =
+        variableSearchQuery(
+            q ->
+                q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
+                    .sort(variableQuery.sort())
+                    .page(variableQuery.page()));
+
+    return executeSearchRequest(
+        () -> variableServices.search(scopedQuery, CamundaAuthentication.anonymous()));
+  }
+
+  public SearchQueryResult<VariableEntity> searchUserTaskEffectiveVariables(
+      final long userTaskKey,
+      final VariableQuery variableQuery,
+      final CamundaAuthentication authentication) {
+
+    final var userTask = getByKey(userTaskKey, authentication);
+
+    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
+
+    final List<Long> treePathList =
+        treePath != null
+            ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
+            : Collections.emptyList();
+
     final var unlimitedQuery =
         variableSearchQuery(
             q ->
@@ -308,7 +333,7 @@ public final class UserTaskServices
    */
   private List<VariableEntity> deduplicateVariablesByScope(
       final List<VariableEntity> variables, final List<Long> treePathList) {
-    // Group variables by their scope key
+
     final Map<Long, List<VariableEntity>> variablesByScopeKey =
         variables.stream().collect(Collectors.groupingBy(VariableEntity::scopeKey));
 
