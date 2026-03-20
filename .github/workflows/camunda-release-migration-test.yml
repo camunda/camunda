@@ -199,10 +199,9 @@ jobs:
           --set identity.enabled=true
           --set identity.firstUser.existingSecret=camunda-credentials
           --set identity.firstUser.existingSecretKey=identity-firstuser-password
-          --set identityKeycloak.enabled=true
+          --set keycloak.enabled=true
           --set global.identity.keycloak.auth.existingSecret=camunda-credentials
           --set global.identity.keycloak.auth.existingSecretKey=identity-keycloak-admin-password
-          --set identityKeycloak.postgresql.auth.existingSecret=camunda-credentials
           --set global.identity.auth.enabled=true
           --set global.identity.auth.optimize.existingSecret=camunda-credentials
           --set global.identity.auth.optimize.existingSecretKey=identity-optimize-client-token
