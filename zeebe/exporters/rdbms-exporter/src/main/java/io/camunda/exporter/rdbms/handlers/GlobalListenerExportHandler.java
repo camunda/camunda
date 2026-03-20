@@ -59,6 +59,8 @@ public class GlobalListenerExportHandler implements RdbmsExportHandler<GlobalLis
             .type(listener.getType())
             .retries(listener.getRetries())
             .eventTypes(listener.getEventTypes())
+            .elementTypes(listener.getElementTypes())
+            .categories(listener.getCategories())
             .afterNonGlobal(listener.isAfterNonGlobal())
             .priority(listener.getPriority())
             .source(GlobalListenerSource.valueOf(listener.getSource().name()))

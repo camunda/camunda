@@ -25,6 +25,8 @@ public class GlobalListenerDbModel {
   private Integer priority;
   private GlobalListenerSource source;
   private GlobalListenerType listenerType;
+  private List<String> elementTypes;
+  private List<String> categories;
 
   public GlobalListenerDbModel(final String id) {
     this.id = id;
@@ -39,7 +41,9 @@ public class GlobalListenerDbModel {
       final boolean afterNonGlobal,
       final Integer priority,
       final GlobalListenerSource source,
-      final GlobalListenerType listenerType) {
+      final GlobalListenerType listenerType,
+      final List<String> elementTypes,
+      final List<String> categories) {
     this.id = id;
     this.listenerId = listenerId;
     this.type = type;
@@ -49,6 +53,8 @@ public class GlobalListenerDbModel {
     this.priority = priority;
     this.source = source;
     this.listenerType = listenerType;
+    this.elementTypes = elementTypes;
+    this.categories = categories;
   }
 
   public String id() {
@@ -123,6 +129,22 @@ public class GlobalListenerDbModel {
     this.listenerType = listenerType;
   }
 
+  public List<String> elementTypes() {
+    return elementTypes;
+  }
+
+  public void elementTypes(final List<String> elementTypes) {
+    this.elementTypes = elementTypes;
+  }
+
+  public List<String> categories() {
+    return categories;
+  }
+
+  public void categories(final List<String> categories) {
+    this.categories = categories;
+  }
+
   public static class GlobalListenerDbModelBuilder implements ObjectBuilder<GlobalListenerDbModel> {
     private String listenerId;
     private String type;
@@ -132,6 +154,8 @@ public class GlobalListenerDbModel {
     private Integer priority;
     private GlobalListenerSource source;
     private GlobalListenerType listenerType;
+    private List<String> elementTypes;
+    private List<String> categories;
 
     public GlobalListenerDbModelBuilder listenerId(final String listenerId) {
       this.listenerId = listenerId;
@@ -173,6 +197,16 @@ public class GlobalListenerDbModel {
       return this;
     }
 
+    public GlobalListenerDbModelBuilder elementTypes(final List<String> elementTypes) {
+      this.elementTypes = elementTypes;
+      return this;
+    }
+
+    public GlobalListenerDbModelBuilder categories(final List<String> categories) {
+      this.categories = categories;
+      return this;
+    }
+
     @Override
     public GlobalListenerDbModel build() {
       return new GlobalListenerDbModel(
@@ -184,7 +218,9 @@ public class GlobalListenerDbModel {
           afterNonGlobal,
           priority,
           source,
-          listenerType);
+          listenerType,
+          elementTypes,
+          categories);
     }
   }
 }

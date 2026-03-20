@@ -38,6 +38,24 @@ public class GlobalListenerWriter implements RdbmsWriter {
               "io.camunda.db.rdbms.sql.GlobalListenerMapper.insertEventTypes",
               globalListener));
     }
+    if (globalListener.elementTypes() != null && !globalListener.elementTypes().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.GLOBAL_LISTENER,
+              WriteStatementType.INSERT,
+              globalListener.id(),
+              "io.camunda.db.rdbms.sql.GlobalListenerMapper.insertElementTypes",
+              globalListener));
+    }
+    if (globalListener.categories() != null && !globalListener.categories().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.GLOBAL_LISTENER,
+              WriteStatementType.INSERT,
+              globalListener.id(),
+              "io.camunda.db.rdbms.sql.GlobalListenerMapper.insertCategories",
+              globalListener));
+    }
   }
 
   public void update(final GlobalListenerDbModel globalListener) {
@@ -64,6 +82,38 @@ public class GlobalListenerWriter implements RdbmsWriter {
               "io.camunda.db.rdbms.sql.GlobalListenerMapper.insertEventTypes",
               globalListener));
     }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.GLOBAL_LISTENER,
+            WriteStatementType.DELETE,
+            globalListener.id(),
+            "io.camunda.db.rdbms.sql.GlobalListenerMapper.deleteElementTypes",
+            globalListener));
+    if (globalListener.elementTypes() != null && !globalListener.elementTypes().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.GLOBAL_LISTENER,
+              WriteStatementType.INSERT,
+              globalListener.id(),
+              "io.camunda.db.rdbms.sql.GlobalListenerMapper.insertElementTypes",
+              globalListener));
+    }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.GLOBAL_LISTENER,
+            WriteStatementType.DELETE,
+            globalListener.id(),
+            "io.camunda.db.rdbms.sql.GlobalListenerMapper.deleteCategories",
+            globalListener));
+    if (globalListener.categories() != null && !globalListener.categories().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.GLOBAL_LISTENER,
+              WriteStatementType.INSERT,
+              globalListener.id(),
+              "io.camunda.db.rdbms.sql.GlobalListenerMapper.insertCategories",
+              globalListener));
+    }
   }
 
   public void delete(final GlobalListenerDbModel globalListener) {
@@ -73,6 +123,20 @@ public class GlobalListenerWriter implements RdbmsWriter {
             WriteStatementType.DELETE,
             globalListener.id(),
             "io.camunda.db.rdbms.sql.GlobalListenerMapper.deleteEventTypes",
+            globalListener));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.GLOBAL_LISTENER,
+            WriteStatementType.DELETE,
+            globalListener.id(),
+            "io.camunda.db.rdbms.sql.GlobalListenerMapper.deleteElementTypes",
+            globalListener));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.GLOBAL_LISTENER,
+            WriteStatementType.DELETE,
+            globalListener.id(),
+            "io.camunda.db.rdbms.sql.GlobalListenerMapper.deleteCategories",
             globalListener));
     executionQueue.executeInQueue(
         new QueueItem(

@@ -26,6 +26,8 @@ public class GlobalListenerEntityMapper {
         dbModel.afterNonGlobal(),
         dbModel.priority(),
         dbModel.source(),
-        dbModel.listenerType());
+        dbModel.listenerType(),
+        dbModel.elementTypes(),
+        dbModel.categories());
   }
 }

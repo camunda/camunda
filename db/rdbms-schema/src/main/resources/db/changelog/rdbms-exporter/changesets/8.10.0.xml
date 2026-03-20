@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+  xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+        http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+
+  <changeSet id="create_global_listener_element_type_table" author="camunda">
+    <createTable tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE">
+      <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_ELEMENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+      </column>
+      <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE" indexName="${prefix}IDX_GLOBAL_LISTENER_ELEMENT_TYPE_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_global_listener_category_table" author="camunda">
+    <createTable tableName="${prefix}GLOBAL_LISTENER_CATEGORY">
+      <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_CATEGORY_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+      </column>
+      <column name="CATEGORY" type="VARCHAR(50)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_CATEGORY" indexName="${prefix}IDX_GLOBAL_LISTENER_CATEGORY_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>
