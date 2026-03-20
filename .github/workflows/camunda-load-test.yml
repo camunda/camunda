@@ -186,6 +186,16 @@ jobs:
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Validate Docker image tag exists
+        if: ${{ inputs.use-official-docker-images == true && inputs.reuse-tag != '' }}
+        env:
+          TAG: ${{ inputs.reuse-tag }}
+        run: |
+          if ! docker manifest inspect "camunda/camunda:${TAG}" > /dev/null 2>&1; then
+            echo "::error::Docker image camunda/camunda:${TAG} does not exist on Docker Hub"
+            exit 1
+          fi
+          echo "Docker image camunda/camunda:${TAG} exists"
 
   calculate-scenario-config:
     name: Calculate Scenario Configuration
