@@ -7,6 +7,10 @@ spring:
         protocol: stateless
         annotation-scanner:
           enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration
+      - org.springframework.ai.mcp.server.webmvc.autoconfigure.McpServerStatelessWebMvcAutoConfiguration
 camunda:
   mcp:
     enabled: true
