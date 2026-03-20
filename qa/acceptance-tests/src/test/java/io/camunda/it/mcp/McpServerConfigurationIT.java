@@ -20,7 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class McpServerConfigurationIT {
 
@@ -33,7 +33,7 @@ public class McpServerConfigurationIT {
         new TestCamundaApplication().withProperty("camunda.mcp.enabled", true);
 
     @ParameterizedTest
-    @ValueSource(strings = {"cluster", "processes"})
+    @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
     public void mcpInitializeRequestReturnsInitializationResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
           createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
@@ -69,7 +69,7 @@ public class McpServerConfigurationIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"cluster", "processes"})
+    @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
     public void mcpInitializeRequestReturnsInitializationResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
           createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
@@ -88,7 +88,7 @@ public class McpServerConfigurationIT {
     static final TestCamundaApplication TEST_INSTANCE = new TestCamundaApplication();
 
     @ParameterizedTest
-    @ValueSource(strings = {"cluster", "processes"})
+    @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
     public void mcpInitializeRequestReturnsNotFoundResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
           createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
