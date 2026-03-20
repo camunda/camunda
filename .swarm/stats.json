@@ -1,0 +1,106 @@
+{
+  "agents": {
+    "pm": {
+      "invocations": 9,
+      "totalElapsedMs": 1949805,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2,
+        "claude-opus-4-6": 7
+      }
+    },
+    "PM": {
+      "invocations": 1,
+      "totalElapsedMs": 336204,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "Designer": {
+      "invocations": 1,
+      "totalElapsedMs": 351569,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "Engineer": {
+      "invocations": 1,
+      "totalElapsedMs": 572165,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "Consolidator": {
+      "invocations": 1,
+      "totalElapsedMs": 70208,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 1
+      }
+    },
+    "reviewer": {
+      "invocations": 6,
+      "totalElapsedMs": 159972,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 6
+      }
+    },
+    "plan-eng-clarify-3": {
+      "invocations": 1,
+      "totalElapsedMs": 468783,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "reviser": {
+      "invocations": 6,
+      "totalElapsedMs": 2783505,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 6
+      }
+    },
+    "plan-design-clarify-5": {
+      "invocations": 1,
+      "totalElapsedMs": 360367,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "analyst": {
+      "invocations": 1,
+      "totalElapsedMs": 591538,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "cross-reviewer": {
+      "invocations": 3,
+      "totalElapsedMs": 905653,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "gpt-5.3-codex": 3
+      }
+    }
+  },
+  "totalRuns": 0,
+  "lastUpdated": "2026-03-19T16:25:16.443Z"
+}
