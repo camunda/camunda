@@ -128,6 +128,34 @@ class VersionCompatibilityMatrixTest {
   }
 
   @Test
+  void testFromFirstAndLastPatchToCurrentWithTwoMinorGap() {
+    // Simulates the case where the dev version (8.10.0-SNAPSHOT) is two minors ahead of the
+    // latest released minor (8.8.x) — e.g. when 8.9 was never released.
+    final var snapshotMatrix =
+        new VersionCompatibilityMatrix(
+            () ->
+                Stream.of(
+                    VersionInfo.of("8.7.0"),
+                    VersionInfo.of("8.8.0"),
+                    VersionInfo.of("8.8.1"),
+                    VersionInfo.of("8.8.2")),
+            new VersionCompatibilityConfig() {
+              @Override
+              public SemanticVersion getCurrentVersion() {
+                return SemanticVersion.parse("8.10.0-SNAPSHOT").orElseThrow();
+              }
+
+              @Override
+              public Optional<SemanticVersion> getPreviousMinorVersion() {
+                return SemanticVersion.parse("8.8.0");
+              }
+            });
+
+    // Should be empty -- intended
+    assertThat(snapshotMatrix.fromFirstAndLastPatchToCurrent().toList()).isEmpty();
+  }
+
+  @Test
   void testFromFirstAndLastPatchToCurrent() {
     final var paths =
         matrix
