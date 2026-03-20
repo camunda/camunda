@@ -200,11 +200,10 @@ jobs:
           --set identity.firstUser.existingSecret=camunda-credentials
           --set identity.firstUser.existingSecretKey=identity-firstuser-password
           --set keycloak.enabled=true
-          --set global.identity.keycloak.auth.existingSecret=camunda-credentials
-          --set global.identity.keycloak.auth.existingSecretKey=identity-keycloak-admin-password
+          --set keycloak.auth.existingSecret=camunda-credentials
+          --set keycloak.auth.passwordSecretKey=identity-keycloak-admin-password
+          --set keycloak.postgresql.auth.existingSecret=camunda-credentials
           --set global.identity.auth.enabled=true
-          --set global.identity.auth.optimize.existingSecret=camunda-credentials
-          --set global.identity.auth.optimize.existingSecretKey=identity-optimize-client-token
           --set connectors.enabled=true
           --set optimize.enabled=true
           --version 13.5.4
