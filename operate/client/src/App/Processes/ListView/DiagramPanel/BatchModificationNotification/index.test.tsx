@@ -41,7 +41,8 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 
 describe('BatchModificationNotification', () => {
   beforeEach(() => {
-    const queryString = '?process=bigVarProcess&version=1';
+    const queryString =
+      '?processDefinitionId=bigVarProcess&processDefinitionVersion=1';
     vi.stubGlobal('location', {
       ...window.location,
       search: queryString,

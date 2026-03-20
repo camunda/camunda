@@ -57,7 +57,9 @@ describe('<Decision /> - operations', () => {
 
   it('should not show delete button when no version is selected', () => {
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification'),
+      wrapper: createWrapper(
+        '/decisions?decisionDefinitionId=invoiceClassification',
+      ),
     });
 
     expect(
