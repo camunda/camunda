@@ -76,12 +76,9 @@ public class Interval implements TemporalAmount {
 
   public long toEpochMilli(final long fromEpochMilli) {
     if (start.isPresent()) {
-      final long epochMilli = start.get().toInstant().toEpochMilli();
-      if (epochMilli < fromEpochMilli) {
-        // Start date is strictly in the past: the timer is already overdue, fire immediately.
-        return fromEpochMilli;
-      }
-      return epochMilli;
+      final long startEpochMilli = start.get().toInstant().toEpochMilli();
+      // If the start date is in the past the timer is already overdue, so fire immediately.
+      return Math.max(startEpochMilli, fromEpochMilli);
     }
 
     // No explicit start date: schedule relative to fromEpochMilli.
