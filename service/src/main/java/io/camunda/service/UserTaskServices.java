@@ -260,24 +260,31 @@ public final class UserTaskServices
       final VariableQuery variableQuery,
       final CamundaAuthentication authentication) {
 
+    // Fetch the user task by key
     final var userTask = getByKey(userTaskKey, authentication);
 
+    // Retrieve the tree path for the flow node instance associated to the user task
     final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
 
+    // Convert the tree path to a list of scope keys
     final List<Long> treePathList =
         treePath != null
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
             : Collections.emptyList();
 
-    final var scopedQuery =
+    // Create a variable query with an additional filter for the scope keys
+    final var variableQueryWithTreePathFilter =
         variableSearchQuery(
             q ->
                 q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
                     .sort(variableQuery.sort())
                     .page(variableQuery.page()));
 
+    // Execute the search
     return executeSearchRequest(
-        () -> variableServices.search(scopedQuery, CamundaAuthentication.anonymous()));
+        () ->
+            variableServices.search(
+                variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskEffectiveVariables(
