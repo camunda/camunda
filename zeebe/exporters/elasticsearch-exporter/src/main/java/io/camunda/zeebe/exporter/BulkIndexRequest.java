@@ -59,13 +59,16 @@ final class BulkIndexRequest {
           .addMixIn(IncidentRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(JobRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
-          .addMixIn(ProcessInstanceRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(
+              ProcessInstanceRecordValue.class,
+              IgnoreRootProcessInstanceKeyAndBusinessIdMixin.class)
           .addMixIn(
               ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
           .addMixIn(
               ProcessInstanceModificationRecordValue.class, ProcessInstanceModificationMixin.class)
           .addMixIn(
-              ProcessInstanceCreationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+              ProcessInstanceCreationRecordValue.class,
+              IgnoreRootProcessInstanceKeyAndBusinessIdMixin.class)
           .addMixIn(
               ProcessInstanceMigrationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(
@@ -91,6 +94,7 @@ final class BulkIndexRequest {
       "moveInstructions";
   private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
   private static final String ROOT_PROCESS_INSTANCE_KEY_PROPERTY = "rootProcessInstanceKey";
+  private static final String BUSINESS_ID_PROPERTY = "businessId";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -229,6 +233,9 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY})
   private static final class IgnoreRootProcessInstanceKeyMixin {}
+
+  @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY, BUSINESS_ID_PROPERTY})
+  private static final class IgnoreRootProcessInstanceKeyAndBusinessIdMixin {}
 
   public interface TerminateInstructionsMixin {
     @JsonIgnore
