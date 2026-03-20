@@ -177,6 +177,8 @@ runs:
           - '.github/workflows/**'
           - '!.github/workflows/*load-test*'
           - '!.github/workflows/*load_test*'
+          - '!.github/workflows/*benchmark*'
+          - '!.github/workflows/*testbench*'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
         # We use specific src/main and src/test path to:
