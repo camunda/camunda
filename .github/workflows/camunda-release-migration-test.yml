@@ -197,21 +197,17 @@ jobs:
           --namespace ${{ inputs.name }}
           --render-subchart-notes
           --set identity.enabled=true
-          --set identity.firstUser.secret.existingSecret=camunda-credentials
-          --set identity.firstUser.secret.existingSecretKey=identity-firstuser-password
+          --set identity.firstUser.existingSecret=camunda-credentials
+          --set identity.firstUser.existingSecretKey=identity-firstuser-password
           --set identityKeycloak.enabled=true
-          --set identityKeycloak.auth.adminPassword.existingSecret=camunda-credentials
-          --set identityKeycloak.auth.adminPassword.existingSecretKey=identity-keycloak-admin-password
+          --set global.identity.keycloak.auth.existingSecret=camunda-credentials
+          --set global.identity.keycloak.auth.existingSecretKey=identity-keycloak-admin-password
           --set identityKeycloak.postgresql.auth.existingSecret=camunda-credentials
           --set global.identity.auth.enabled=true
-          --set global.identity.auth.optimize.secret.existingSecret=camunda-credentials
-          --set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token
+          --set global.identity.auth.optimize.existingSecret=camunda-credentials
+          --set global.identity.auth.optimize.existingSecretKey=identity-optimize-client-token
           --set connectors.enabled=true
-          --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials
-          --set connectors.security.authentication.oidc.secret.existingSecretKey=connectors-security-authentication-oidc-secret
           --set optimize.enabled=true
-          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=orchestration-security-authentication-oidc-secret
           --version 13.5.4
       - name: Summarize deployment
         if: success()
