@@ -159,6 +159,7 @@ similarity.embeddingModel.region=eu-central-1                               # op
 similarity.embeddingModel.model=amazon.titan-embed-text-v2:0
 similarity.embeddingModel.credentials.accessKey=<your access key>           # optional; uses default credentials chain if absent
 similarity.embeddingModel.credentials.secretKey=<your secret key>           # optional
+similarity.embeddingModel.apiKey=<your api key>                             # optional, instead of accessKey and secretKey
 similarity.embeddingModel.credentials.normalize=true                        # optional, defaults to no normalization
 ```
 

@@ -177,6 +177,7 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   public static final class AmazonBedrockConfig extends BaseProviderConfig {
 
     private final String region;
+    private final String apiKey;
     private final String credentialsAccessKey;
     private final String credentialsSecretKey;
     private final Boolean normalize;
@@ -185,12 +186,14 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     public AmazonBedrockConfig(
         final String model,
         final String region,
+        final String apiKey,
         final String credentialsAccessKey,
         final String credentialsSecretKey,
         final Boolean normalize,
         final Integer dimensions) {
       super(PROVIDER_AMAZON_BEDROCK, model);
       this.region = region;
+      this.apiKey = apiKey;
       this.credentialsAccessKey = credentialsAccessKey;
       this.credentialsSecretKey = credentialsSecretKey;
       this.normalize = normalize;
@@ -199,6 +202,10 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public String getRegion() {
       return region;
+    }
+
+    public String getApiKey() {
+      return apiKey;
     }
 
     public String getCredentialsAccessKey() {

@@ -15,18 +15,16 @@
  */
 package io.camunda.process.test.impl.similarity;
 
-import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockTitanEmbeddingModel;
 import dev.langchain4j.model.bedrock.BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import io.camunda.process.test.impl.BedrockRuntimeClientFactory;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AmazonBedrockConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 final class BedrockEmbeddingModelBuilder {
 
@@ -40,37 +38,15 @@ final class BedrockEmbeddingModelBuilder {
 
     final String model = require(config.getModel(), "model", AMAZON_BEDROCK);
 
-    final boolean hasAccessKey = hasText(config.getCredentialsAccessKey());
-    final boolean hasSecretKey = hasText(config.getCredentialsSecretKey());
-    final boolean hasKeyPairAuth = hasAccessKey && hasSecretKey;
-    final boolean hasPartialKeyPair = hasAccessKey != hasSecretKey;
-
-    if (hasPartialKeyPair) {
-      throw new IllegalStateException(
-          "Incomplete key-pair authentication for the 'amazon-bedrock' provider: "
-              + "both 'credentialsAccessKey' and 'credentialsSecretKey' must be set together.");
-    }
+    final BedrockRuntimeClient client =
+        BedrockRuntimeClientFactory.build(
+            config.getRegion(),
+            config.getApiKey(),
+            config.getCredentialsAccessKey(),
+            config.getCredentialsSecretKey());
 
     final BedrockTitanEmbeddingModelBuilder builder =
-        BedrockTitanEmbeddingModel.builder().model(model);
-
-    if (hasText(config.getRegion())) {
-      LOG.debug("Using configured region '{}'", config.getRegion().trim());
-      builder.region(Region.of(config.getRegion().trim()));
-    } else {
-      LOG.debug("No region configured, falling back to AWS default region resolution");
-    }
-
-    if (hasKeyPairAuth) {
-      LOG.debug("Using access key / secret key authentication");
-      builder.credentialsProvider(
-          StaticCredentialsProvider.create(
-              AwsBasicCredentials.create(
-                  config.getCredentialsAccessKey().trim(),
-                  config.getCredentialsSecretKey().trim())));
-    } else {
-      LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
-    }
+        BedrockTitanEmbeddingModel.builder().client(client).model(model);
 
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());

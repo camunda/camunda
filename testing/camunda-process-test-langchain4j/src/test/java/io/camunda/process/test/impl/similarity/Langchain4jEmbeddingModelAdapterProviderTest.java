@@ -60,7 +60,13 @@ public class Langchain4jEmbeddingModelAdapterProviderTest {
   void shouldResolveBedrockProvider() {
     final var config =
         new BaseProviderConfig.AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", "access-key", "secret-key", null, null);
+            "amazon.titan-embed-text-v2:0",
+            "us-east-1",
+            null,
+            "access-key",
+            "secret-key",
+            null,
+            null);
     final Optional<EmbeddingModelAdapter> adapter = EmbeddingModelAdapterResolver.resolve(config);
     assertThat(adapter).isPresent();
   }

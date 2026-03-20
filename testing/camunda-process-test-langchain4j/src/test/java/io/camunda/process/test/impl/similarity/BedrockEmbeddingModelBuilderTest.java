@@ -28,16 +28,31 @@ import org.junit.jupiter.params.provider.ValueSource;
 class BedrockEmbeddingModelBuilderTest {
 
   @Test
-  void shouldBuildEmbeddingModel() {
+  void shouldBuildEmbeddingModelWithAccessKeyCredentials() {
     // given
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
             "amazon.titan-embed-text-v2:0",
             "us-east-1",
+            null,
             "test-access-key",
             "test-secret-key",
             null,
             null);
+
+    // when
+    final EmbeddingModel embeddingModel = BedrockEmbeddingModelBuilder.build(config);
+
+    // then
+    assertThat(embeddingModel).isNotNull();
+  }
+
+  @Test
+  void shouldBuildEmbeddingModelWithApiKey() {
+    // given
+    final AmazonBedrockConfig config =
+        new AmazonBedrockConfig(
+            "amazon.titan-embed-text-v2:0", "us-east-1", "text-api-key", null, null, null, null);
 
     // when
     final EmbeddingModel embeddingModel = BedrockEmbeddingModelBuilder.build(config);
@@ -53,7 +68,13 @@ class BedrockEmbeddingModelBuilderTest {
     // given — no credentials; AWS SDK resolves them from the default credential chain
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", nullOrEmpty, nullOrEmpty, null, null);
+            "amazon.titan-embed-text-v2:0",
+            "us-east-1",
+            nullOrEmpty,
+            nullOrEmpty,
+            nullOrEmpty,
+            null,
+            null);
 
     // when
     final EmbeddingModel embeddingModel = BedrockEmbeddingModelBuilder.build(config);
@@ -69,6 +90,7 @@ class BedrockEmbeddingModelBuilderTest {
         new AmazonBedrockConfig(
             "amazon.titan-embed-text-v2:0",
             "us-east-1",
+            null,
             "test-access-key",
             "test-secret-key",
             null,
@@ -88,6 +110,7 @@ class BedrockEmbeddingModelBuilderTest {
         new AmazonBedrockConfig(
             "amazon.titan-embed-text-v2:0",
             "us-east-1",
+            null,
             "test-access-key",
             "test-secret-key",
             true,
@@ -107,7 +130,7 @@ class BedrockEmbeddingModelBuilderTest {
     // given
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            model, "us-east-1", "test-access-key", "test-secret-key", null, null);
+            model, "us-east-1", null, "test-access-key", "test-secret-key", null, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
@@ -121,13 +144,13 @@ class BedrockEmbeddingModelBuilderTest {
     // given — partial key pair should fail
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", "test-access-key", null, null, null);
+            "amazon.titan-embed-text-v2:0", "us-east-1", null, "test-access-key", null, null, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("credentialsAccessKey")
-        .hasMessageContaining("credentialsSecretKey");
+        .hasMessageContaining("accessKey")
+        .hasMessageContaining("secretKey");
   }
 
   @Test
@@ -135,12 +158,12 @@ class BedrockEmbeddingModelBuilderTest {
     // given — partial key pair should fail
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(
-            "amazon.titan-embed-text-v2:0", "us-east-1", null, "test-secret-key", null, null);
+            "amazon.titan-embed-text-v2:0", "us-east-1", null, null, "test-secret-key", null, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("credentialsAccessKey")
-        .hasMessageContaining("credentialsSecretKey");
+        .hasMessageContaining("accessKey")
+        .hasMessageContaining("secretKey");
   }
 }
