@@ -7,6 +7,23 @@
  */
 
 import styled from 'styled-components';
+import {Layer} from '@carbon/react';
+
+const ExpandedContent = styled(Layer)`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-05);
+`;
+
+const ExpandedField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-02);
+`;
+
+const FieldLabel = styled.span`
+  color: var(--cds-text-secondary);
+`;
 
 const ErrorMessageCell = styled.div`
   max-width: 404px;
@@ -20,4 +37,10 @@ const FlexContainer = styled.div`
   align-items: center;
 `;
 
-export {ErrorMessageCell, FlexContainer};
+export {
+  ExpandedContent,
+  ExpandedField,
+  FieldLabel,
+  ErrorMessageCell,
+  FlexContainer,
+};

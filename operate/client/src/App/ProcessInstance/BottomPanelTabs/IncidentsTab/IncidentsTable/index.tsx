@@ -9,13 +9,19 @@
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {observer} from 'mobx-react';
-import {FlexContainer, ErrorMessageCell} from './styled';
+import {
+  ExpandedContent,
+  ExpandedField,
+  FieldLabel,
+  ErrorMessageCell,
+  FlexContainer,
+} from './styled';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
-import {useState} from 'react';
+import {useState, useMemo} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {
   getIncidentErrorName,
@@ -66,17 +72,59 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     const {selectElementInstance, clearSelection} =
       useProcessInstanceElementSelection();
 
-    const isJobKeyPresent = incidents.some(({jobKey}) => !!jobKey);
+    const expandedContent = useMemo(
+      () =>
+        Object.fromEntries(
+          incidents.map((incident) => [
+            incident.incidentKey,
+            <ExpandedContent key={incident.incidentKey}>
+              <ExpandedField>
+                <FieldLabel>Job ID</FieldLabel>
+                <span>{incident.jobKey || '—'}</span>
+              </ExpandedField>
+              <ExpandedField>
+                <FieldLabel>Error message</FieldLabel>
+                <FlexContainer>
+                  <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
+                  {incident.errorMessage.length >= 58 && (
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        tracking.track({
+                          eventName:
+                            'incidents-panel-full-error-message-opened',
+                        });
+
+                        handleMoreButtonClick(
+                          incident.errorMessage,
+                          incident.elementName,
+                        );
+                      }}
+                    >
+                      More
+                    </Button>
+                  )}
+                </FlexContainer>
+              </ExpandedField>
+            </ExpandedContent>,
+          ]),
+        ),
+      [incidents],
+    );
 
     return (
       <>
         <SortableTable
           state={state}
+          isExpandable
           emptyMessage={{
             message: 'There are no incidents matching this filter set',
           }}
           selectionType="row"
-          columnsWithNoContentPadding={['operations', 'errorMessage']}
+          columnsWithNoContentPadding={['operations']}
           onSelect={(rowId) => {
             const incident = incidents.find(
               ({incidentKey}) => incidentKey === rowId,
@@ -124,19 +172,9 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               isDisabled: true,
             },
             {
-              header: 'Job Id',
-              key: 'jobKey',
-              isDisabled: !isJobKeyPresent,
-            },
-            {
-              header: 'Creation Date',
+              header: 'Created',
               key: 'creationTime',
               isDefault: true,
-            },
-            {
-              header: 'Error Message',
-              key: 'errorMessage',
-              isDisabled: true,
             },
             {
               header: 'Operations',
@@ -167,34 +205,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                     {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   </Link>
                 ),
-              jobKey: incident.jobKey || '--',
               creationTime: formatDate(incident.creationTime),
-              errorMessage: (
-                <FlexContainer>
-                  <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
-                  {incident.errorMessage.length >= 58 && (
-                    <Button
-                      size="sm"
-                      kind="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-
-                        tracking.track({
-                          eventName:
-                            'incidents-panel-full-error-message-opened',
-                        });
-
-                        handleMoreButtonClick(
-                          incident.errorMessage,
-                          incident.elementName,
-                        );
-                      }}
-                    >
-                      More
-                    </Button>
-                  )}
-                </FlexContainer>
-              ),
               operations: areOperationsVisible ? (
                 <IncidentOperation
                   incidentKey={incident.incidentKey}
@@ -203,6 +214,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               ) : undefined,
             };
           })}
+          expandedContent={expandedContent}
         />
         <JSONEditorModal
           isVisible={isModalVisible}
