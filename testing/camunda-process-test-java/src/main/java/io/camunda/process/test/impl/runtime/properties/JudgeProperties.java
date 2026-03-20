@@ -48,6 +48,8 @@ public class JudgeProperties {
       "judge.chatModel.credentials.secretKey";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_ENDPOINT = "judge.chatModel.endpoint";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_TIMEOUT = "judge.chatModel.timeout";
+  public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_TEMPERATURE =
+      "judge.chatModel.temperature";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_CUSTOM_PROPERTIES_PREFIX =
       "judge.chatModel.customProperties";
 
@@ -62,6 +64,7 @@ public class JudgeProperties {
   private final String chatModelRegion;
   private final String chatModelEndpoint;
   private final Duration chatModelTimeout;
+  private final Double chatModelTemperature;
   private final String chatModelCredentialsAccessKey;
   private final String chatModelCredentialsSecretKey;
   private final Map<String, String> chatModelCustomProperties;
@@ -84,6 +87,9 @@ public class JudgeProperties {
     chatModelRegion = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_REGION);
     chatModelEndpoint = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_ENDPOINT);
     chatModelTimeout = parseTimeout(properties);
+    chatModelTemperature =
+        getPropertyOrNull(
+            properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_TEMPERATURE, Double::parseDouble);
     chatModelCredentialsAccessKey =
         getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_ACCESS_KEY);
     chatModelCredentialsSecretKey =
@@ -144,6 +150,9 @@ public class JudgeProperties {
     }
     if (chatModelTimeout != null) {
       config.setTimeout(chatModelTimeout);
+    }
+    if (chatModelTemperature != null) {
+      config.setTemperature(chatModelTemperature);
     }
     return config;
   }

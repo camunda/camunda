@@ -56,6 +56,21 @@ class OpenAiCompatibleChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
+  @Test
+  void shouldBuildChatModelWithTemperature() {
+    // given
+    final BaseProviderConfig.OpenAiCompatibleConfig config =
+        new BaseProviderConfig.OpenAiCompatibleConfig(
+            "llama3", "http://localhost:11434/v1", "test-api-key");
+    config.setTemperature(0.7);
+
+    // when
+    final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  "})

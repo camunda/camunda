@@ -274,6 +274,49 @@ public class JudgePropertiesTest {
   }
 
   @Test
+  void shouldParseTemperature() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+    properties.setProperty("judge.chatModel.temperature", "0.7");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config.getTemperature()).isEqualTo(0.7);
+  }
+
+  @Test
+  void shouldReturnNullTemperatureWhenNotConfigured() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config.getTemperature()).isNull();
+  }
+
+  @Test
+  void shouldRejectInvalidTemperature() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.temperature", "not-a-number");
+
+    // when / then
+    assertThatThrownBy(() -> new JudgeProperties(properties))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("judge.chatModel.temperature");
+  }
+
+  @Test
   void shouldTreatPlaceholderAsAbsent() {
     // given
     final Properties properties = new Properties();

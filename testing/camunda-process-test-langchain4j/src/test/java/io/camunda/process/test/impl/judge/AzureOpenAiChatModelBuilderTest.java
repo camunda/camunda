@@ -70,6 +70,21 @@ class AzureOpenAiChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
+  @Test
+  void shouldBuildChatModelWithTemperature() {
+    // given
+    final BaseProviderConfig.AzureOpenAiConfig config =
+        new BaseProviderConfig.AzureOpenAiConfig(
+            "gpt-4o", "https://my-resource.openai.azure.com/", "test-api-key");
+    config.setTemperature(0.7);
+
+    // when
+    final ChatModel chatModel = AzureOpenAiChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  "})

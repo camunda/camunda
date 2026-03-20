@@ -19,6 +19,7 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
+import dev.langchain4j.model.bedrock.BedrockChatRequestParameters;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +97,12 @@ final class BedrockChatModelBuilder {
     if (config.getTimeout() != null) {
       LOG.debug("Setting timeout to {}", config.getTimeout());
       bedrockBuilder.timeout(config.getTimeout());
+    }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      final BedrockChatRequestParameters requestParameters =
+          BedrockChatRequestParameters.builder().temperature(config.getTemperature()).build();
+      bedrockBuilder.defaultRequestParameters(requestParameters);
     }
 
     final ChatModel chatModel = bedrockBuilder.build();
