@@ -375,6 +375,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
+      needs.calculate-image-tag.result == 'success' &&
       (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     runs-on: ubuntu-latest
