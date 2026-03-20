@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rest;
 
+import org.apache.tomcat.util.buf.EncodedSolidusHandling;
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,8 @@ public class TomcatEncodedSlashConfig {
   public WebServerFactoryCustomizer<TomcatServletWebServerFactory> encodedSlashCustomizer() {
     return factory ->
         factory.addConnectorCustomizers(
-            connector -> connector.setEncodedSolidusHandling("passthrough"));
+            connector ->
+                connector.setEncodedSolidusHandling(
+                    EncodedSolidusHandling.PASS_THROUGH.getValue()));
   }
 }

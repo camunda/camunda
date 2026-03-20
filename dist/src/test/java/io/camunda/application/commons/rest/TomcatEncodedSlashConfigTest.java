@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import org.apache.catalina.connector.Connector;
+import org.apache.tomcat.util.buf.EncodedSolidusHandling;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.tomcat.TomcatConnectorCustomizer;
@@ -36,6 +37,7 @@ class TomcatEncodedSlashConfigTest {
 
     final var connector = mock(Connector.class);
     captor.getValue().customize(connector);
-    verify(connector).setEncodedSolidusHandling("passthrough");
+    verify(connector)
+        .setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue());
   }
 }

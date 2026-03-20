@@ -545,6 +545,17 @@
       </exclusions>
     </dependency>
 
+    <!-- Used by TomcatEncodedSlashConfig for encoded slash passthrough (#45215) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-tomcat</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-web-server</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jdbc</artifactId>
@@ -1063,11 +1074,6 @@
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
           </usedDependencies>
-          <!-- Transitive from spring-boot-starter-web, used by TomcatEncodedSlashConfig (#45215) -->
-          <ignoredUsedUndeclaredDependencies>
-            <dep>org.springframework.boot:spring-boot-tomcat</dep>
-            <dep>org.springframework.boot:spring-boot-web-server</dep>
-          </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
