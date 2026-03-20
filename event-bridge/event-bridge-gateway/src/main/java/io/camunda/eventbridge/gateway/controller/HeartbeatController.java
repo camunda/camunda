@@ -8,26 +8,28 @@
 package io.camunda.eventbridge.gateway.controller;
 
 import io.camunda.eventbridge.broker.actor.CoordinatorActor;
-import io.camunda.eventbridge.broker.actor.CoordinatorActor.ConsumerNotRegisteredException;
+import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.ErrorResponse;
+import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.HeartbeatRequest;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.HeartbeatResponse;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Handles consumer liveness signals: {@code POST /v1/consumers/{groupId}/{consumerId}/heartbeat}.
  *
- * <p>The response carries the coordinator's current generation for the group. A changed generation
- * (compared to the generation the consumer last received from {@code subscribe} or a previous
- * heartbeat) signals that a rebalance has occurred and the consumer must re-subscribe.
+ * <p>The first heartbeat from an unknown consumer auto-registers it with the coordinator — no prior
+ * subscribe call is needed. The response carries the current epoch plus delta assignments ({@code
+ * revoke}/{@code assign}) or, when an epoch advance has occurred, a full assignment list ({@code
+ * fullAssignment}) that the consumer must reconcile against.
  *
- * <p>A {@code 400 Bad Request} / {@code CONSUMER_NOT_REGISTERED} response means the consumer's
- * heartbeat timeout elapsed and it was evicted; the consumer must call {@code subscribe} again
- * before sending further heartbeats.
+ * <p>A {@code 503 Service Unavailable} response means the coordinator is temporarily unreachable.
  */
 @RestController
 @RequestMapping("/v1/consumers")
@@ -40,31 +42,39 @@ public class HeartbeatController {
   }
 
   /**
-   * Records a heartbeat for the given consumer and returns the current rebalance generation.
+   * Records a heartbeat for the given consumer. Auto-registers the consumer on first contact and
+   * returns the current epoch with any partition delta or full assignment.
    *
    * @param groupId consumer group identifier
    * @param consumerId consumer identifier
+   * @param request heartbeat body (epoch + owned partitions); defaults apply when body is absent
    */
   @PostMapping("/{groupId}/{consumerId}/heartbeat")
   public ResponseEntity<?> heartbeat(
-      @PathVariable final String groupId, @PathVariable final String consumerId) {
+      @PathVariable final String groupId,
+      @PathVariable final String consumerId,
+      @RequestBody(required = false) final HeartbeatRequest request) {
+    final long clientEpoch = request != null && request.epoch() != null ? request.epoch() : 0L;
+    final List<Integer> ownedPartitions =
+        request != null && request.ownedPartitions() != null
+            ? request.ownedPartitions()
+            : List.of();
     try {
-      final long generation = coordinatorActor.heartbeat(groupId, consumerId).get();
-      return ResponseEntity.ok(HeartbeatResponse.ok(generation));
+      final var result =
+          coordinatorActor.heartbeat(groupId, consumerId, clientEpoch, ownedPartitions).get();
+      return ResponseEntity.ok(
+          new HeartbeatResponse(
+              result.epoch(), result.revoke(), result.assign(), result.fullAssignment()));
     } catch (final ExecutionException e) {
-      if (e.getCause() instanceof ConsumerNotRegisteredException) {
-        return ResponseEntity.badRequest()
-            .body(HeartbeatResponse.error("CONSUMER_NOT_REGISTERED", e.getCause().getMessage()));
-      }
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
           .body(
-              HeartbeatResponse.error(
+              new ErrorResponse(
                   "COORDINATOR_UNAVAILABLE",
                   e.getCause() != null ? e.getCause().getMessage() : "Coordinator unavailable"));
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-          .body(HeartbeatResponse.error("COORDINATOR_UNAVAILABLE", "Coordinator unavailable"));
+          .body(new ErrorResponse("COORDINATOR_UNAVAILABLE", "Coordinator unavailable"));
     }
   }
 }
