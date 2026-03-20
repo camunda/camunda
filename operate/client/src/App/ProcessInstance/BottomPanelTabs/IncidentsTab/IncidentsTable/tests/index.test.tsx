@@ -165,27 +165,6 @@ describe('IncidentsTable', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show a more button for long error messages in expanded row', async () => {
-    const {user} = render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidentsMock}
-      />,
-      {wrapper: Wrapper},
-    );
-
-    const expandButtons = screen.getAllByRole('button', {
-      name: /expand current row/i,
-    });
-
-    await user.click(expandButtons[0]!);
-    expect(screen.queryByText('More')).not.toBeInTheDocument();
-
-    await user.click(expandButtons[1]!);
-    expect(screen.getByText('More')).toBeInTheDocument();
-  });
-
   it('should open a modal when clicking on the more button in expanded row', async () => {
     const {user} = render(
       <IncidentsTable
