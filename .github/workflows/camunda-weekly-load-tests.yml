@@ -382,7 +382,7 @@ jobs:
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=orchestration-security-authentication-oidc-secret \
           --set global.identity.auth.optimize.secret.existingSecret=camunda-credentials \
           --set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token \
-          --version 14.x
+          --devel --version 14.0.0-alpha5
       - name: Summarize deployment
         if: success()
         run: |
