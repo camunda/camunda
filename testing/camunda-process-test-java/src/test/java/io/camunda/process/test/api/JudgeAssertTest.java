@@ -127,7 +127,7 @@ public class JudgeAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSatisfiesJudge("result", "should be an email address"))
           .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("did not satisfy judge expectation")
+          .hasMessageContaining("did not satisfy expectation")
           .hasMessageContaining("Score: 0.20")
           .hasMessageContaining("The value does not match.");
 
@@ -223,7 +223,7 @@ public class JudgeAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSatisfiesJudge("result", "some expectation"))
           .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("judge evaluation failed")
+          .hasMessageContaining("Judge evaluation failed")
           .hasMessageContaining("unparseable response")
           .hasMessageContaining("this is not valid json at all");
     }
@@ -458,7 +458,7 @@ public class JudgeAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasLocalVariableSatisfiesJudge("task1", "localVar", "should be a greeting"))
           .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("did not satisfy judge expectation")
+          .hasMessageContaining("did not satisfy expectation")
           .hasMessageContaining("Score: 0.20");
 
       // expect that the judge assertion is only being called once

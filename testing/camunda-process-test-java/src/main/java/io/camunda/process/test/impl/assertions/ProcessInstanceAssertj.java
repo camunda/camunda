@@ -483,16 +483,7 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
-    if (modifier == null) {
-      throw new IllegalArgumentException("modifier must not be null");
-    }
-    final JudgeConfig currentConfig = variableAssertj.getJudgeConfig();
-    final JudgeConfig baseConfig = currentConfig != null ? currentConfig : JudgeConfig.defaults();
-    final JudgeConfig modifiedConfig = modifier.apply(baseConfig);
-    if (modifiedConfig == null) {
-      throw new IllegalArgumentException("modifier must not return null");
-    }
-    variableAssertj.setJudgeConfig(modifiedConfig);
+    variableAssertj.withJudgeConfig(modifier);
     return this;
   }
 
