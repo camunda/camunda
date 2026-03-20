@@ -187,8 +187,10 @@ const Footer: React.FC = observer(() => {
                     Locations.processes({
                       active: true,
                       incidents: true,
-                      process: targetProcessDefinition.processDefinitionId,
-                      version: targetProcessDefinition.version.toString(),
+                      processDefinitionId:
+                        targetProcessDefinition.processDefinitionId,
+                      processDefinitionVersion:
+                        targetProcessDefinition.version.toString(),
                     }),
                   );
                 }}

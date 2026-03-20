@@ -53,9 +53,9 @@ test.describe('Process Instance Batch Modification', () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
-          process: 'orderProcessBatchMod',
-          version: '1',
-          flowNodeId: 'checkPayment',
+          processDefinitionId: 'orderProcessBatchMod',
+          processDefinitionVersion: '1',
+          elementId: 'checkPayment',
         },
       });
     });
@@ -160,9 +160,9 @@ test.describe('Process Instance Batch Modification', () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
-          process: 'orderProcessBatchMod',
-          version: '1',
-          flowNodeId: 'checkPayment',
+          processDefinitionId: 'orderProcessBatchMod',
+          processDefinitionVersion: '1',
+          elementId: 'checkPayment',
         },
       });
       await operateProcessesPage.selectProcessInstances(1);

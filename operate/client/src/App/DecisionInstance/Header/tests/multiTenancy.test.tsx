@@ -72,11 +72,11 @@ describe('InstanceHeader', () => {
     ).toHaveAttribute(
       'href',
       `${Paths.decisions()}?${new URLSearchParams({
-        version: '1',
-        name: 'invoiceClassification',
+        decisionDefinitionVersion: '1',
+        decisionDefinitionId: 'invoiceClassification',
         evaluated: 'true',
         failed: 'true',
-        tenant: '<default>',
+        tenantId: '<default>',
       })}`,
     );
   });

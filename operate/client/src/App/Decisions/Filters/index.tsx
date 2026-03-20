@@ -49,15 +49,15 @@ const Filters: React.FC = observer(() => {
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
   const filterValues = parseDecisionsFilter(params);
-  if (filterValues.name && filterValues.tenant !== 'all') {
-    filterValues.name = getDefinitionIdentifier(
-      filterValues.name,
-      filterValues.tenant,
+  if (filterValues.decisionDefinitionId && filterValues.tenantId !== 'all') {
+    filterValues.decisionDefinitionId = getDefinitionIdentifier(
+      filterValues.decisionDefinitionId,
+      filterValues.tenantId,
     );
   }
-  if (filterValues.tenant === 'all') {
-    delete filterValues.name;
-    delete filterValues.version;
+  if (filterValues.tenantId === 'all') {
+    delete filterValues.decisionDefinitionId;
+    delete filterValues.decisionDefinitionVersion;
   }
 
   return (
@@ -66,7 +66,9 @@ const Filters: React.FC = observer(() => {
         navigate({
           search: updateDecisionsFilterSearchString(params, {
             ...values,
-            name: getDefinitionIdFromIdentifier(values.name),
+            decisionDefinitionId: getDefinitionIdFromIdentifier(
+              values.decisionDefinitionId,
+            ),
           }),
         });
       }}
@@ -88,9 +90,9 @@ const Filters: React.FC = observer(() => {
             <Container>
               <AutoSubmit
                 fieldsToSkipTimeout={[
-                  'tenant',
-                  'name',
-                  'version',
+                  'tenantId',
+                  'decisionDefinitionId',
+                  'decisionDefinitionVersion',
                   'evaluated',
                   'failed',
                 ]}
@@ -102,8 +104,8 @@ const Filters: React.FC = observer(() => {
                       <Title>Tenant</Title>
                       <TenantField
                         onChange={() => {
-                          form.change('name', undefined);
-                          form.change('version', undefined);
+                          form.change('decisionDefinitionId', undefined);
+                          form.change('decisionDefinitionVersion', undefined);
                         }}
                       />
                     </div>

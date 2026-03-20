@@ -167,7 +167,7 @@ const DetailsTab: React.FC = () => {
             cellContent: (
               <Link
                 to={Locations.processes({
-                  parentInstanceId: processInstance!.processInstanceKey,
+                  parentProcessInstanceKey: processInstance!.processInstanceKey,
                   active: true,
                   incidents: true,
                   completed: true,

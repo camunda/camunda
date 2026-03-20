@@ -155,7 +155,7 @@ export class OperateDiagramPage {
   }
 
   async verifyFlowNodeMetadata(
-    flowNodeId: string,
+    elementId: string,
     options: {
       expectedText?: string | string[];
       hiddenText?: string | string[];
@@ -163,9 +163,9 @@ export class OperateDiagramPage {
     } = {},
   ) {
     if (options.isSubProcess) {
-      await this.clickSubProcess(flowNodeId);
+      await this.clickSubProcess(elementId);
     } else {
-      await this.clickFlowNode(flowNodeId);
+      await this.clickFlowNode(elementId);
     }
     await this.clickShowMetaData();
 
@@ -202,9 +202,9 @@ export class OperateDiagramPage {
 
     // Deselect the flow node by clicking it again
     if (options.isSubProcess) {
-      await this.clickSubProcess(flowNodeId);
+      await this.clickSubProcess(elementId);
     } else {
-      await this.clickFlowNode(flowNodeId);
+      await this.clickFlowNode(elementId);
     }
   }
 

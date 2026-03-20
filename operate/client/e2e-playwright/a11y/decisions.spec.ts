@@ -69,8 +69,8 @@ test.describe('decisions', () => {
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-        name: 'invoiceClassification',
-        version: '2',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
       },
     });
 

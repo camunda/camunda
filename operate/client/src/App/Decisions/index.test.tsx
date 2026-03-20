@@ -110,7 +110,7 @@ describe('<Decisions />', () => {
     mockMe().withSuccess(createUser());
 
     const queryString =
-      '?evaluated=true&failed=true&name=non-existing-decision&version=all';
+      '?evaluated=true&failed=true&decisionDefinitionId=non-existing-decision&decisionDefinitionVersion=all';
     render(<Decisions />, {
       wrapper: createWrapper(`/decisions${queryString}`),
     });

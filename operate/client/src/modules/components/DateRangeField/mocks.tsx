@@ -25,8 +25,8 @@ const MockDateRangeField: React.FC = () => {
       popoverTitle="Filter instances by start date"
       label="Start Date Range"
       filterName="startDateRange"
-      fromDateTimeKey="startDateAfter"
-      toDateTimeKey="startDateBefore"
+      fromDateTimeKey="startDateFrom"
+      toDateTimeKey="startDateTo"
     />
   );
 };

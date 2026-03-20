@@ -290,11 +290,13 @@ describe('InstanceHeader', () => {
 
     expect(search.get('active')).toBe('true');
     expect(search.get('incidents')).toBe('true');
-    expect(search.get('process')).toBe(mockInstance.processDefinitionId);
-    expect(search.get('version')).toBe(
+    expect(search.get('processDefinitionId')).toBe(
+      mockInstance.processDefinitionId,
+    );
+    expect(search.get('processDefinitionVersion')).toBe(
       mockInstance.processDefinitionVersion.toString(),
     );
-    expect(search.get('tenant')).toBe(mockInstance.tenantId);
+    expect(search.get('tenantId')).toBe(mockInstance.tenantId);
   });
 
   it('should enable modification mode when "Modify Instance" is clicked', async () => {

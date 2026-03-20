@@ -11,9 +11,9 @@ import {parseProcessDefinitionsSearchFilter} from './processDefinitionsSearchFil
 describe('parseProcessDefinitionsSearchFilter', () => {
   it('should parse process definitions search filter from search params', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('process', 'testProcess');
-    searchParams.append('version', '3');
-    searchParams.append('tenant', 'tenant-A');
+    searchParams.append('processDefinitionId', 'testProcess');
+    searchParams.append('processDefinitionVersion', '3');
+    searchParams.append('tenantId', 'tenant-A');
 
     const filter = parseProcessDefinitionsSearchFilter(searchParams);
 
@@ -35,8 +35,8 @@ describe('parseProcessDefinitionsSearchFilter', () => {
 
   it('should not include a version in the filter when its value is all', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('process', 'testProcess');
-    searchParams.append('version', 'all');
+    searchParams.append('processDefinitionId', 'testProcess');
+    searchParams.append('processDefinitionVersion', 'all');
 
     const filter = parseProcessDefinitionsSearchFilter(searchParams);
 
@@ -47,8 +47,8 @@ describe('parseProcessDefinitionsSearchFilter', () => {
 
   it('should not include a tenantId in the filter when its value is all', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('process', 'testProcess');
-    searchParams.append('tenant', 'all');
+    searchParams.append('processDefinitionId', 'testProcess');
+    searchParams.append('tenantId', 'all');
 
     const filter = parseProcessDefinitionsSearchFilter(searchParams);
 

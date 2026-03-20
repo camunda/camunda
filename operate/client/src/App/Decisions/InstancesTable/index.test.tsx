@@ -286,7 +286,7 @@ describe('<InstancesTable />', () => {
           `${Paths.decisions()}?${new URLSearchParams(
             tenant === undefined
               ? {evaluated: 'true'}
-              : {tenant, evaluated: 'true'},
+              : {tenantId: tenant, evaluated: 'true'},
           )}`,
         ),
       });
@@ -305,7 +305,7 @@ describe('<InstancesTable />', () => {
 
     render(<InstancesTable />, {
       wrapper: createWrapper(
-        `${Paths.decisions()}?${new URLSearchParams({tenant: 'tenant-a', evaluated: 'true'})}`,
+        `${Paths.decisions()}?${new URLSearchParams({tenantId: 'tenant-a', evaluated: 'true'})}`,
       ),
     });
 
@@ -317,7 +317,7 @@ describe('<InstancesTable />', () => {
   it('should hide tenant column when multi tenancy is disabled', async () => {
     render(<InstancesTable />, {
       wrapper: createWrapper(
-        `${Paths.decisions()}?${new URLSearchParams({tenant: 'all', evaluated: 'true'})}`,
+        `${Paths.decisions()}?${new URLSearchParams({tenantId: 'all', evaluated: 'true'})}`,
       ),
     });
 
