@@ -138,26 +138,23 @@ describe('ProcessInstance', () => {
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
     expect(
-      screen.getByText('New Process Instance Details'),
+      screen.getByText("Here's what moved in Operate"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /learn more/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /dismiss/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /got it/i})).toBeInTheDocument();
   });
 
-  it('should close helper modal when "Dismiss" is clicked', async () => {
+  it('should close helper modal when "Got it" is clicked', async () => {
     localStorage.clear();
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     expect(
-      screen.getByText('New Process Instance Details'),
+      screen.getByText("Here's what moved in Operate"),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /dismiss/i}));
+    await user.click(screen.getByRole('button', {name: /got it/i}));
 
     expect(
-      screen.queryByText('New Process Instance Details'),
+      screen.queryByText("Here's what moved in Operate"),
     ).not.toBeInTheDocument();
   });
 
@@ -167,7 +164,7 @@ describe('ProcessInstance', () => {
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
     expect(
-      screen.queryByText('New Process Instance Details'),
+      screen.queryByText("Here's what moved in Operate"),
     ).not.toBeInTheDocument();
   });
 });

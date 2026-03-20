@@ -19,60 +19,56 @@ describe('ProcessInstanceHelperModal', () => {
     localStorage.clear();
   });
 
-  it('should render modal with "Learn more" and "Dismiss" buttons', () => {
+  it('should render modal with correct title and "Got it" button', () => {
     render(<ProcessInstanceHelperModal open={true} onClose={vi.fn()} />);
 
     expect(
-      screen.getByText('New Process Instance Details'),
+      screen.getByText("Here's what moved in Operate"),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /got it/i})).toBeInTheDocument();
+  });
+
+  it('should render description and list items', () => {
+    render(<ProcessInstanceHelperModal open={true} onClose={vi.fn()} />);
+
     expect(
-      screen.getByRole('button', {name: /learn more/i}),
+      screen.getByText(/we made some changes to the process instance page/i),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /dismiss/i})).toBeInTheDocument();
+    expect(screen.getByRole('list')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
   });
 
-  it('should call onClose when "Dismiss" is clicked', async () => {
+  it('should render screenshot image', () => {
+    render(<ProcessInstanceHelperModal open={true} onClose={vi.fn()} />);
+
+    expect(
+      screen.getByAltText(
+        'Process instance details page with incidents tab and diagram',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should call onClose and set localStorage when "Got it" is clicked', async () => {
     const onCloseMock = vi.fn();
 
     const {user} = render(
       <ProcessInstanceHelperModal open={true} onClose={onCloseMock} />,
     );
 
-    await user.click(screen.getByRole('button', {name: /dismiss/i}));
+    await user.click(screen.getByRole('button', {name: /got it/i}));
     expect(onCloseMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('should open blog link and call onClose when "Learn more" is clicked', async () => {
-    const onCloseMock = vi.fn();
-    const windowOpenMock = vi.spyOn(window, 'open').mockImplementation(vi.fn());
-
-    const {user} = render(
-      <ProcessInstanceHelperModal open={true} onClose={onCloseMock} />,
-    );
-
-    await user.click(screen.getByRole('button', {name: /learn more/i}));
-
-    expect(windowOpenMock).toHaveBeenCalledWith(
-      'https://camunda.com/blog/tag/camunda-platform-8/',
-      '_blank',
-      'noopener,noreferrer',
-    );
-    expect(onCloseMock).toHaveBeenCalledTimes(1);
-
-    windowOpenMock.mockRestore();
-  });
-
-  it('should set localStorage key when checkbox is checked', async () => {
-    const {user} = render(
-      <ProcessInstanceHelperModal open={true} onClose={vi.fn()} />,
-    );
-
-    expect(getStateLocally()['hideProcessInstanceHelperModal']).toBe(undefined);
-
-    await user.click(screen.getByRole('checkbox'));
     expect(getStateLocally()['hideProcessInstanceHelperModal']).toBe(true);
+  });
 
-    await user.click(screen.getByRole('checkbox'));
-    expect(getStateLocally()['hideProcessInstanceHelperModal']).toBe(false);
+  it('should call onClose and set localStorage when close button is clicked', async () => {
+    const onCloseMock = vi.fn();
+
+    const {user} = render(
+      <ProcessInstanceHelperModal open={true} onClose={onCloseMock} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /close/i}));
+    expect(onCloseMock).toHaveBeenCalledTimes(1);
+    expect(getStateLocally()['hideProcessInstanceHelperModal']).toBe(true);
   });
 });
