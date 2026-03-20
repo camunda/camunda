@@ -26,7 +26,7 @@ module.
 
 ### Key Modules
 
-| Module          | Description                                               |
+|     Module      |                        Description                        |
 |-----------------|-----------------------------------------------------------|
 | `zeebe/`        | Core process engine (broker, engine, protocol, exporters) |
 | `zeebe/gateway` | gRPC gateway                                              |

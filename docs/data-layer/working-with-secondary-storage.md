@@ -135,7 +135,7 @@ unnecessary `text` sub-fields increases index size and indexing time.
 "normalizer": "case_insensitive",
 "fields": {
 "search": {"type": "text"}
-}
+  }
 }
 
 // Bad: text-only for a field that is also used in filters or aggregations
@@ -149,8 +149,8 @@ unnecessary `text` sub-fields increases index size and indexing time.
   - Use `keyword` when the field is only used for exact-match filters, aggregations, or sorting.
     `keyword` doc values are more compact and do not carry the overhead of numeric field data.
   - Use `long` when the field is also used in numeric range queries (e.g. `key > X`,
-    `key BETWEEN a AND b`). If you are unsure, start with `keyword` and change to `long`only when a
-    range query is introduced (this is a breaking change requiring a re-index, so decide early).
+    `key BETWEEN a AND b`). If you are unsure, start with `keyword` and change to `long` only when
+    a range query is introduced (this is a breaking change requiring a re-index, so decide early).
 - Do **not** store keys or IDs as `text` - text fields are analyzed (tokenized), which breaks exact
   matching and prevents aggregations.
 
@@ -213,14 +213,11 @@ registered on the `ObjectMapper` used for indexing:
 private static final class RecordSequenceMixin {
 
 }
+```
 
+```java
 // Registration - once, during ObjectMapper initialization
-new
-
-ObjectMapper()
-    .
-
-addMixIn(Record .class, RecordSequenceMixin .class);
+new ObjectMapper().addMixIn(Record.class, RecordSequenceMixin.class);
 ```
 
 For per-method ignores, use an interface-based mixin with `@JsonIgnore`:
@@ -556,7 +553,7 @@ without sanitization or constraints. This allows users to trigger expensive full
 
 ```java
 // Bad: user input passed directly to wildcard query
-QueryBuilders.wildcardQuery("processName","*"+userInput +"*");
+QueryBuilders.wildcardQuery("processName*" + userInput + "*");
 ```
 
 **Better:** Sanitize inputs, enforce a minimum query length, and prefer a `prefix` query on a
@@ -565,17 +562,11 @@ level first.
 
 ```java
 // Better: guard against short or empty input, use prefix query
-if(userInput ==null||userInput.
-
-length() < 3){
+if (userInput == null || userInput.length() < 3){
   // Return empty results or surface a validation error to the caller.
-  return Collections.
-
-emptyList();
+  return Collections.emptyList();
 }
-  QueryBuilders.
-
-prefixQuery("processName",userInput);
+QueryBuilders.prefixQuery("processName",userInput);
 ```
 
 ---
@@ -617,7 +608,7 @@ values.
 "type": "text",
 "fields": {
 "keyword": {"type": "keyword", "ignore_above": 256}
-}
+  }
 }
 
 // Then sort/aggregate on the sub-field
@@ -654,7 +645,7 @@ SearchRequest request = new SearchRequest.Builder()
 
 ### 4.6 Breaking Mapping Compatibility
 
-**Problem:** A developer changes the type of an existing field (e.g. from `keyword` to `integer`)and
+**Problem:** A developer changes the type of existing field (e.g. from `keyword` to `integer`) and
 deploys without a migration plan. The old index template no longer matches the existing data,
 causing indexing failures or silent data loss.
 
