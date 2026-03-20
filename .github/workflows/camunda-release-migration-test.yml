@@ -204,7 +204,11 @@ jobs:
           --set identityKeycloak.auth.passwordSecretKey=identity-keycloak-admin-password
           --set identityKeycloak.postgresql.auth.existingSecret=camunda-credentials
           --set global.identity.auth.enabled=true
+          --set global.identity.auth.optimize.existingSecret=camunda-credentials
+          --set global.identity.auth.optimize.existingSecretKey=identity-optimize-client-token
           --set connectors.enabled=true
+          --set connectors.security.authentication.oidc.existingSecret=camunda-credentials
+          --set connectors.security.authentication.oidc.existingSecretKey=connectors-security-authentication-oidc-secret
           --set optimize.enabled=true
           --version 13.5.4
       - name: Summarize deployment
