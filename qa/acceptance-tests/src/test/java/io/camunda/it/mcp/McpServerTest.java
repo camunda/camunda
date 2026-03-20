@@ -12,26 +12,15 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.List;
 
 public abstract class McpServerTest {
 
   public static final McpSyncHttpClientRequestCustomizer DEFAULT_REQUEST_CUSTOMIZER =
       (builder, method, endpoint, body, context) -> {};
 
-  protected McpSyncClient mcpClient;
-
-  @BeforeEach
-  void createMcpClient() {
-    mcpClient = createMcpClient(testInstance(), createMcpClientRequestCustomizer());
-  }
-
-  @AfterEach
-  void closeMcpClient() {
-    if (mcpClient != null) {
-      mcpClient.close();
-    }
+  protected static List<String> mcpServersToTest() {
+    return List.of("cluster", "processes");
   }
 
   protected abstract TestCamundaApplication testInstance();
@@ -41,11 +30,12 @@ public abstract class McpServerTest {
   }
 
   public static McpSyncClient createMcpClient(
+      final String mcpServer,
       final TestCamundaApplication testInstance,
       final McpSyncHttpClientRequestCustomizer httpClientRequestCustomizer) {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =
         HttpClientStreamableHttpTransport.builder("%s".formatted(testInstance.restAddress()))
-            .endpoint("/mcp/cluster")
+            .endpoint("/mcp/" + mcpServer)
             .openConnectionOnStartup(false);
 
     if (httpClientRequestCustomizer != null) {
