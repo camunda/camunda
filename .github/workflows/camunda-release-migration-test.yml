@@ -290,11 +290,11 @@ jobs:
           ./zbctl create instance benchmark --insecure
       - name: Verify instance is ACTIVE via REST API
         run: |
-          # Get OAuth token from Keycloak
+          # Get OAuth token from Keycloak using orchestration client
           release="${{ inputs.name }}"
-          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           TOKEN=$(curl -s -X POST "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token" \
-            -d "grant_type=client_credentials&client_id=zeebe&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
+            -d "grant_type=client_credentials&client_id=orchestration&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
             | jq -r '.access_token')
 
           # Poll REST API until we find an ACTIVE process instance
@@ -500,11 +500,11 @@ jobs:
           ./zbctl complete job "$key" --insecure
       - name: Verify instance is COMPLETED via REST API
         run: |
-          # Get OAuth token from Keycloak
+          # Get OAuth token from Keycloak using orchestration client
           release="${{ inputs.name }}"
           ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
           TOKEN=$(curl -s -X POST "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token" \
-            -d "grant_type=client_credentials&client_id=zeebe&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
+            -d "grant_type=client_credentials&client_id=orchestration&client_secret=${ZEEBE_CLIENT_SECRET}&audience=zeebe-api" \
             | jq -r '.access_token')
 
           # Poll REST API until the process instance is COMPLETED
