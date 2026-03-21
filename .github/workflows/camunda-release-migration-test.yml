@@ -213,7 +213,11 @@ jobs:
           --set orchestration.security.authentication.oidc.existingSecret=camunda-credentials
           --set orchestration.security.authentication.oidc.existingSecretKey=orchestration-security-authentication-oidc-secret
           --set orchestration.security.authorizations.enabled=false
+          --set orchestration.exporters.zeebe.enabled=true
           --set optimize.enabled=true
+          --set prometheusServiceMonitor.enabled=true
+          --set prometheusServiceMonitor.labels.release=monitoring
+          --set prometheusServiceMonitor.scrapeInterval=30s
           --version 13.5.4
       - name: Summarize deployment
         if: success()
@@ -374,9 +378,15 @@ jobs:
           --set orchestration.image.registry=gcr.io \
           --set orchestration.image.repository=zeebe-io/zeebe \
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
+          --set orchestration.security.authorizations.enabled=false \
+          --set orchestration.exporters.zeebe.enabled=true \
           --set orchestration.migration.data.enabled=true \
           --set orchestration.data.secondaryStorage.type=elasticsearch \
           --set elasticsearch.enabled=true \
+          --set optimize.enabled=true \
+          --set prometheusServiceMonitor.enabled=true \
+          --set prometheusServiceMonitor.labels.release=monitoring \
+          --set prometheusServiceMonitor.scrapeInterval=30s \
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=orchestration-security-authentication-oidc-secret \
@@ -430,7 +440,7 @@ jobs:
       - name: Port-forward to REST API
         run: |
           release="${{ inputs.name }}"
-          kubectl port-forward --namespace "$release" svc/camunda 8080 &
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 8080 &
       - name: Complete job from previous version
         run: |
           release="${{ inputs.name }}"
