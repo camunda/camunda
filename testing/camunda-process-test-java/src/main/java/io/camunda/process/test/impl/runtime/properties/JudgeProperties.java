@@ -47,6 +47,7 @@ public class JudgeProperties {
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_SECRET_KEY =
       "judge.chatModel.credentials.secretKey";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_ENDPOINT = "judge.chatModel.endpoint";
+  public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_HEADERS = "judge.chatModel.headers";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_TIMEOUT = "judge.chatModel.timeout";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_TEMPERATURE =
       "judge.chatModel.temperature";
@@ -63,6 +64,7 @@ public class JudgeProperties {
   private final String chatModelBaseUrl;
   private final String chatModelRegion;
   private final String chatModelEndpoint;
+  private final Map<String, String> chatModelHeaders;
   private final Duration chatModelTimeout;
   private final Double chatModelTemperature;
   private final String chatModelCredentialsAccessKey;
@@ -86,6 +88,7 @@ public class JudgeProperties {
     chatModelBaseUrl = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_BASE_URL);
     chatModelRegion = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_REGION);
     chatModelEndpoint = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_ENDPOINT);
+    chatModelHeaders = getPropertyMapOrEmpty(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_HEADERS);
     chatModelTimeout = parseTimeout(properties);
     chatModelTemperature =
         getPropertyOrNull(
@@ -135,7 +138,7 @@ public class JudgeProperties {
       case PROVIDER_OPENAI_COMPATIBLE:
         config =
             new BaseProviderConfig.OpenAiCompatibleConfig(
-                chatModelModel, chatModelBaseUrl, chatModelApiKey);
+                chatModelModel, chatModelBaseUrl, chatModelApiKey, chatModelHeaders);
         break;
       case PROVIDER_AZURE_OPENAI:
         config =

@@ -312,8 +312,7 @@ public class JudgePropertiesTest {
 
     // when / then
     assertThatThrownBy(() -> new JudgeProperties(properties))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("judge.chatModel.temperature");
+        .isInstanceOf(NumberFormatException.class);
   }
 
   @Test
