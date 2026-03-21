@@ -384,11 +384,9 @@ jobs:
       # for global values with Helm subchart merging in chart 14.x
       - name: Write upgrade values file
         run: |
-          cat > /tmp/upgrade-values.yaml << 'VALUESEOF'
-          global:
+          echo 'global:
             elasticsearch:
-              enabled: true
-          VALUESEOF
+              enabled: true' > /tmp/upgrade-values.yaml
       - name: Upgrade platform
         id: upgrade-platform
         run: |
