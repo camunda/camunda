@@ -89,7 +89,10 @@ public class JudgeConfiguration {
       case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
         config =
             new BaseProviderConfig.OpenAiCompatibleConfig(
-                chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
+                chatModel.getModel(),
+                chatModel.getBaseUrl(),
+                chatModel.getApiKey(),
+                chatModel.getHeaders());
         break;
       case BaseProviderConfig.PROVIDER_AZURE_OPENAI:
         config =
@@ -139,6 +142,9 @@ public class JudgeConfiguration {
 
     /** The AWS region for the Amazon Bedrock provider (e.g. 'us-east-1'). */
     private String region;
+
+    /** Optional custom HTTP headers to include in chat model requests. */
+    private Map<String, String> headers;
 
     /** The timeout for LLM API calls as an ISO-8601 duration (e.g. 'PT30S', 'PT2M'). */
     private Duration timeout;
@@ -214,6 +220,14 @@ public class JudgeConfiguration {
 
     public void setRegion(final String region) {
       this.region = region;
+    }
+
+    public Map<String, String> getHeaders() {
+      return headers;
+    }
+
+    public void setHeaders(final Map<String, String> headers) {
+      this.headers = headers;
     }
 
     public AwsCredentialsConfiguration getCredentials() {

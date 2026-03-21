@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -32,7 +33,41 @@ class OpenAiCompatibleChatModelBuilderTest {
     // given
     final BaseProviderConfig.OpenAiCompatibleConfig config =
         new BaseProviderConfig.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", "test-api-key");
+            "llama3", "http://localhost:11434/v1", "test-api-key", null);
+
+    // when
+    final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
+  @Test
+  void shouldBuildChatModelWithHeaders() {
+    // given
+    final BaseProviderConfig.OpenAiCompatibleConfig config =
+        new BaseProviderConfig.OpenAiCompatibleConfig(
+            "llama3",
+            "http://localhost:11434/v1",
+            null,
+            Map.of("X-Test-Header", "test-header-value"));
+
+    // when
+    final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
+  @Test
+  void shouldBuildChatModelWhenBothAuthorizationHeaderAndApiKeyPresent() {
+    // given
+    final BaseProviderConfig.OpenAiCompatibleConfig config =
+        new BaseProviderConfig.OpenAiCompatibleConfig(
+            "llama3",
+            "http://localhost:11434/v1",
+            "test-api-key",
+            Map.of("X-Test-Header", "test-header-value"));
 
     // when
     final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
@@ -46,7 +81,7 @@ class OpenAiCompatibleChatModelBuilderTest {
     // given
     final BaseProviderConfig.OpenAiCompatibleConfig config =
         new BaseProviderConfig.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", "test-api-key");
+            "llama3", "http://localhost:11434/v1", "test-api-key", null);
     config.setTimeout(Duration.ofSeconds(30));
 
     // when
@@ -61,7 +96,7 @@ class OpenAiCompatibleChatModelBuilderTest {
     // given
     final BaseProviderConfig.OpenAiCompatibleConfig config =
         new BaseProviderConfig.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", "test-api-key");
+            "llama3", "http://localhost:11434/v1", "test-api-key", null);
     config.setTemperature(0.7);
 
     // when
@@ -78,7 +113,7 @@ class OpenAiCompatibleChatModelBuilderTest {
     // given — null or blank apiKey is treated as absent
     final BaseProviderConfig.OpenAiCompatibleConfig config =
         new BaseProviderConfig.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", apiKey);
+            "llama3", "http://localhost:11434/v1", apiKey, null);
 
     // when
     final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
@@ -93,7 +128,7 @@ class OpenAiCompatibleChatModelBuilderTest {
   void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
     final BaseProviderConfig.OpenAiCompatibleConfig config =
-        new BaseProviderConfig.OpenAiCompatibleConfig("llama3", baseUrl, null);
+        new BaseProviderConfig.OpenAiCompatibleConfig("llama3", baseUrl, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(config))
@@ -108,7 +143,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final BaseProviderConfig.OpenAiCompatibleConfig config =
-        new BaseProviderConfig.OpenAiCompatibleConfig(model, "http://localhost:11434/v1", null);
+        new BaseProviderConfig.OpenAiCompatibleConfig(
+            model, "http://localhost:11434/v1", null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(config))

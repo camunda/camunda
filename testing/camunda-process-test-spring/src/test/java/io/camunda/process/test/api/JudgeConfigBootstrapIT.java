@@ -169,6 +169,26 @@ public class JudgeConfigBootstrapIT {
   @SpringBootTest(
       classes = JudgeConfigBootstrapIT.class,
       properties = {
+        "camunda.process-test.judge.chatModel.provider=openai-compatible",
+        "camunda.process-test.judge.chatModel.model=llama3",
+        "camunda.process-test.judge.chatModel.baseUrl=http://localhost:11434/v1",
+        "camunda.process-test.judge.chat-model.headers.X-Test-Header=test-header-value"
+      })
+  @CamundaSpringProcessTest
+  class OpenAiCompatibleProviderWithHeaders {
+
+    @Test
+    void shouldBootstrapOpenAiCompatibleProvider() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isNotNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
         "camunda.process-test.judge.chatModel.apiKey=test-key",

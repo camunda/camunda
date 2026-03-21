@@ -20,6 +20,7 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +39,19 @@ final class OpenAiCompatibleChatModelBuilder {
     final OpenAiChatModel.OpenAiChatModelBuilder builder =
         OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
 
+    final Map<String, String> headers = config.getHeaders();
     if (hasText(config.getApiKey())) {
       LOG.debug("Using configured API key");
       builder.apiKey(config.getApiKey().trim());
-    } else {
-      LOG.debug("No API key configured, building without authentication");
+      if (headers != null
+          && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase)) {
+        LOG.warn("Both API key and Authorization header are set. The API key will be ignored.");
+        builder.apiKey(null);
+      }
+    }
+
+    if (headers != null && !headers.isEmpty()) {
+      builder.customHeaders(headers);
     }
 
     if (config.getTimeout() != null) {

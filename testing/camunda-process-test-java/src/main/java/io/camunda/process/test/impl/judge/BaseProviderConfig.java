@@ -161,11 +161,17 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     private final String baseUrl;
     private final String apiKey;
+    private final Map<String, String> headers;
 
-    public OpenAiCompatibleConfig(final String model, final String baseUrl, final String apiKey) {
+    public OpenAiCompatibleConfig(
+        final String model,
+        final String baseUrl,
+        final String apiKey,
+        final Map<String, String> headers) {
       super(PROVIDER_OPENAI_COMPATIBLE, model);
       this.baseUrl = baseUrl;
       this.apiKey = apiKey;
+      this.headers = headers;
     }
 
     public String getBaseUrl() {
@@ -174,6 +180,10 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public String getApiKey() {
       return apiKey;
+    }
+
+    public Map<String, String> getHeaders() {
+      return headers;
     }
   }
 
