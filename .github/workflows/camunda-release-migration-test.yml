@@ -322,6 +322,34 @@ jobs:
             echo "::error::Process instance not found or not ACTIVE after ${max_attempts} attempts"
             exit 1
           fi
+      - name: Verify Elasticsearch indices on previous version
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-elasticsearch 19200:9200 &
+          sleep 5
+
+          echo "Checking zeebe-record indices..."
+          zeebe_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "zeebe-record" || true)
+          echo "Found $zeebe_count zeebe-record indices"
+          if [[ $zeebe_count -eq 0 ]]; then
+            echo "::error::No zeebe-record indices found — Zeebe ES exporter is not working"
+            curl -s http://localhost:19200/_cat/indices?v 2>/dev/null
+            exit 1
+          fi
+
+          echo "Checking operate indices..."
+          operate_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "operate-" || true)
+          echo "Found $operate_count operate indices"
+
+          echo "Checking tasklist indices..."
+          tasklist_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "tasklist-" || true)
+          echo "Found $tasklist_count tasklist indices"
+
+          echo "Checking optimize indices..."
+          optimize_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "optimize-" || true)
+          echo "Found $optimize_count optimize indices"
+
+          kill %1 2>/dev/null || true
 
   upgrade-camunda-cluster-to-new-version:
     name: Upgrade previous version of Camunda Platform to new version
@@ -352,6 +380,15 @@ jobs:
           helm repo add camunda https://helm.camunda.io
           helm repo update
       # camunda-credentials secret was created before the 8.8 install and is reused for the upgrade
+      # global.elasticsearch.enabled must be set via values file because --set doesn't work
+      # for global values with Helm subchart merging in chart 14.x
+      - name: Write upgrade values file
+        run: |
+          cat > /tmp/upgrade-values.yaml << 'VALUESEOF'
+          global:
+            elasticsearch:
+              enabled: true
+          VALUESEOF
       - name: Upgrade platform
         id: upgrade-platform
         run: |
@@ -359,6 +396,7 @@ jobs:
           --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name }} \
           --render-subchart-notes \
+          -f /tmp/upgrade-values.yaml \
           --set global.security.authentication.method=oidc \
           --set connectors.image.tag=8.9.0-alpha5 \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
@@ -496,6 +534,33 @@ jobs:
             echo "::error::Process instance not COMPLETED after migration. State: ${state:-not found}"
             exit 1
           fi
+      - name: Verify Elasticsearch indices after upgrade
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-elasticsearch 19200:9200 &
+          sleep 5
+
+          echo "Checking zeebe-record indices post-upgrade..."
+          zeebe_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "zeebe-record" || true)
+          echo "Found $zeebe_count zeebe-record indices"
+
+          echo "Checking operate indices post-upgrade..."
+          operate_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "operate-" || true)
+          echo "Found $operate_count operate indices"
+
+          echo "Checking optimize indices post-upgrade..."
+          optimize_count=$(curl -s http://localhost:19200/_cat/indices 2>/dev/null | grep -c "optimize-" || true)
+          echo "Found $optimize_count optimize indices"
+
+          if [[ $zeebe_count -eq 0 ]]; then
+            echo "::warning::No zeebe-record indices found after upgrade"
+          fi
+
+          # Log full index list for debugging
+          echo "Full index list:"
+          curl -s http://localhost:19200/_cat/indices?v 2>/dev/null
+
+          kill %1 2>/dev/null || true
 
   cleanup-namespace:
     name: Cleanup namespace after successful workflow
