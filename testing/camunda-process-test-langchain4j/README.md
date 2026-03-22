@@ -137,7 +137,6 @@ similarity.embeddingModel.provider=openai
 similarity.embeddingModel.apiKey=<your api key>
 similarity.embeddingModel.model=text-embedding-3-small
 similarity.embeddingModel.dimensions=512                                     # optional
-similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Azure OpenAI
@@ -148,7 +147,6 @@ similarity.embeddingModel.endpoint=https://my-resource.openai.azure.com/
 similarity.embeddingModel.apiKey=<your api key>
 similarity.embeddingModel.model=text-embedding-3-large
 similarity.embeddingModel.dimensions=1024                                    # optional
-similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Amazon Bedrock

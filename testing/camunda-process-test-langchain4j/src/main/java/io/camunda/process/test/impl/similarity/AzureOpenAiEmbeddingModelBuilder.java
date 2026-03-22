@@ -22,7 +22,6 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AzureOpenAiConfig;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +53,6 @@ final class AzureOpenAiEmbeddingModelBuilder {
 
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
-    }
-
-    final Map<String, String> headers = config.getHeaders();
-    if (headers != null && !headers.isEmpty()) {
-      builder.customHeaders(headers);
     }
 
     final EmbeddingModel embeddingModel = builder.build();

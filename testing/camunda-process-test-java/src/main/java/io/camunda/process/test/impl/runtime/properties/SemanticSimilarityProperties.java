@@ -150,10 +150,7 @@ public class SemanticSimilarityProperties {
     switch (normalized) {
       case PROVIDER_OPENAI:
         return new BaseProviderConfig.OpenAiConfig(
-            embeddingModelModel,
-            embeddingModelApiKey,
-            embeddingModelDimensions,
-            embeddingModelHeaders);
+            embeddingModelModel, embeddingModelApiKey, embeddingModelDimensions);
       case PROVIDER_OPENAI_COMPATIBLE:
         return new BaseProviderConfig.OpenAiCompatibleConfig(
             embeddingModelModel,
@@ -166,8 +163,7 @@ public class SemanticSimilarityProperties {
             embeddingModelModel,
             embeddingModelEndpoint,
             embeddingModelApiKey,
-            embeddingModelDimensions,
-            embeddingModelHeaders);
+            embeddingModelDimensions);
       case PROVIDER_AMAZON_BEDROCK:
         return new BaseProviderConfig.AmazonBedrockConfig(
             embeddingModelModel,

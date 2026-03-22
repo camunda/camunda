@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiConfig;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -31,22 +30,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldBuildEmbeddingModel() {
     // given
-    final OpenAiConfig config =
-        new OpenAiConfig("text-embedding-3-small", "test-api-key", null, null);
-
-    // when
-    final EmbeddingModel embeddingModel = OpenAiEmbeddingModelBuilder.build(config);
-
-    // then
-    assertThat(embeddingModel).isNotNull();
-  }
-
-  @Test
-  void shouldBuildEmbeddingModelWithDimensionsAndHeaders() {
-    // given
-    final OpenAiConfig config =
-        new OpenAiConfig(
-            "text-embedding-3-small", "test-api-key", 512, Map.of("Custom-Header", "HeaderValue"));
+    final OpenAiConfig config = new OpenAiConfig("text-embedding-3-small", "test-api-key", null);
 
     // when
     final EmbeddingModel embeddingModel = OpenAiEmbeddingModelBuilder.build(config);
@@ -60,7 +44,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final OpenAiConfig config = new OpenAiConfig("text-embedding-3-small", apiKey, null, null);
+    final OpenAiConfig config = new OpenAiConfig("text-embedding-3-small", apiKey, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiEmbeddingModelBuilder.build(config))
@@ -74,7 +58,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final OpenAiConfig config = new OpenAiConfig(model, "test-api-key", null, null);
+    final OpenAiConfig config = new OpenAiConfig(model, "test-api-key", null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiEmbeddingModelBuilder.build(config))

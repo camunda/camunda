@@ -42,20 +42,24 @@ final class OpenAiCompatibleEmbeddingModelBuilder {
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder =
         OpenAiEmbeddingModel.builder().baseUrl(baseUrl).modelName(model);
 
+    final Map<String, String> headers = config.getHeaders();
+    final boolean hasAuthorizationHeader =
+        headers != null && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase);
     if (hasText(config.getApiKey())) {
-      LOG.debug("Using configured API key");
-      builder.apiKey(config.getApiKey().trim());
-    } else {
-      LOG.debug("No API key configured, building without authentication");
+      if (hasAuthorizationHeader) {
+        LOG.warn("Both API key and Authorization header are set. The API key will be ignored.");
+      } else {
+        LOG.debug("Using configured API key");
+        builder.apiKey(config.getApiKey().trim());
+      }
+    }
+
+    if (headers != null && !headers.isEmpty()) {
+      builder.customHeaders(headers);
     }
 
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
-    }
-
-    final Map<String, String> headers = config.getHeaders();
-    if (headers != null && !headers.isEmpty()) {
-      builder.customHeaders(headers);
     }
 
     final EmbeddingModel embeddingModel = builder.build();

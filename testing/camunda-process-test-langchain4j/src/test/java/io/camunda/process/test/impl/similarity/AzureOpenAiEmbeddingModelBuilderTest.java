@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AzureOpenAiConfig;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -36,7 +35,6 @@ class AzureOpenAiEmbeddingModelBuilderTest {
             "text-embedding-3-small",
             "https://my-resource.openai.azure.com/",
             "test-api-key",
-            null,
             null);
 
     // when
@@ -53,7 +51,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     // given — no API key, falls back to DefaultAzureCredential
     final AzureOpenAiConfig config =
         new AzureOpenAiConfig(
-            "text-embedding-3-small", "https://my-resource.openai.azure.com/", apiKey, null, null);
+            "text-embedding-3-small", "https://my-resource.openai.azure.com/", apiKey, null);
 
     // when
     final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
@@ -67,29 +65,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     // given
     final AzureOpenAiConfig config =
         new AzureOpenAiConfig(
-            "text-embedding-3-small",
-            "https://my-resource.openai.azure.com/",
-            "test-api-key",
-            512,
-            null);
-
-    // when
-    final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
-
-    // then
-    assertThat(embeddingModel).isNotNull();
-  }
-
-  @Test
-  void shouldBuildEmbeddingModelWithCustomHeaders() {
-    // given
-    final AzureOpenAiConfig config =
-        new AzureOpenAiConfig(
-            "text-embedding-3-small",
-            "https://my-resource.openai.azure.com/",
-            "test-api-key",
-            null,
-            Map.of("X-Custom-Header", "value"));
+            "text-embedding-3-small", "https://my-resource.openai.azure.com/", "test-api-key", 512);
 
     // when
     final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
@@ -104,7 +80,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   void shouldThrowWhenEndpointMissingOrBlank(final String endpoint) {
     // given
     final AzureOpenAiConfig config =
-        new AzureOpenAiConfig("text-embedding-3-small", endpoint, "test-api-key", null, null);
+        new AzureOpenAiConfig("text-embedding-3-small", endpoint, "test-api-key", null);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
@@ -119,8 +95,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final AzureOpenAiConfig config =
-        new AzureOpenAiConfig(
-            model, "https://my-resource.openai.azure.com/", "test-api-key", null, null);
+        new AzureOpenAiConfig(model, "https://my-resource.openai.azure.com/", "test-api-key", null);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))

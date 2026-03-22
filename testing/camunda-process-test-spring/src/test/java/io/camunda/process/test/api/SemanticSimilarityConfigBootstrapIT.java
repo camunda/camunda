@@ -23,8 +23,10 @@ import io.camunda.process.test.api.similarity.ProviderConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig;
+import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiCompatibleConfig;
 import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.similarity.OpenAiEmbeddingModelAdapterProvider;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -143,6 +145,35 @@ public class SemanticSimilarityConfigBootstrapIT {
       final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
       assertThat(config).isNotNull();
       assertThat(config.getEmbeddingModel()).isNotNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.embeddingModel.provider=openai-compatible",
+        "camunda.process-test.similarity.embeddingModel.model=nomic-embed-text",
+        "camunda.process-test.similarity.embeddingModel.baseUrl=http://localhost:11434/v1",
+        "camunda.process-test.similarity.embeddingModel.apiKey=test-key",
+        "camunda.process-test.judge.chatModel.headers.X-Test-Header=test-header-value"
+      })
+  @CamundaSpringProcessTest
+  class OpenAiCompatibleProviderWithHeaders {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBootstrapOpenAiCompatibleProvider() {
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getEmbeddingModel()).isNotNull();
+
+      final ProviderConfig providerConfig = runtimeConfig.getSimilarity().toProviderConfig();
+      assertThat(providerConfig).isInstanceOf(OpenAiCompatibleConfig.class);
+      final Map<String, String> headers = ((OpenAiCompatibleConfig) providerConfig).getHeaders();
+      assertThat(headers).isNotNull();
+      assertThat(headers).containsEntry("X-Test-Header", "test-header-value");
     }
   }
 
@@ -327,7 +358,7 @@ public class SemanticSimilarityConfigBootstrapIT {
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
-      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, null, null, null);
+      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, null, null);
       final OpenAiEmbeddingModelAdapterProvider provider =
           new OpenAiEmbeddingModelAdapterProvider();
       assertThatThrownBy(() -> provider.create(config)).isInstanceOf(IllegalStateException.class);

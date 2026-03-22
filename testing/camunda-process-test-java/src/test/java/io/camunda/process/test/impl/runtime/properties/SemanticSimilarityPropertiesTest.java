@@ -100,7 +100,6 @@ public class SemanticSimilarityPropertiesTest {
     properties.setProperty("similarity.embeddingModel.model", "text-embedding-3-small");
     properties.setProperty("similarity.embeddingModel.apiKey", "sk-test");
     properties.setProperty("similarity.embeddingModel.dimensions", "512");
-    properties.setProperty("similarity.embeddingModel.headers.X-Custom", "value");
 
     // when
     final ProviderConfig config = new SemanticSimilarityProperties(properties).toProviderConfig();
@@ -112,7 +111,6 @@ public class SemanticSimilarityPropertiesTest {
     assertThat(openAiConfig.getModel()).isEqualTo("text-embedding-3-small");
     assertThat(openAiConfig.getApiKey()).isEqualTo("sk-test");
     assertThat(openAiConfig.getDimensions()).isEqualTo(512);
-    assertThat(openAiConfig.getHeaders()).containsEntry("X-Custom", "value");
   }
 
   @Test

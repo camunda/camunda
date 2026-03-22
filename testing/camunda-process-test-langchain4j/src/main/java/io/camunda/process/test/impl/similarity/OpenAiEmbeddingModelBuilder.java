@@ -20,7 +20,6 @@ import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiConfig;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +41,6 @@ final class OpenAiEmbeddingModelBuilder {
 
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
-    }
-
-    final Map<String, String> headers = config.getHeaders();
-    if (headers != null && !headers.isEmpty()) {
-      builder.customHeaders(headers);
     }
 
     final EmbeddingModel embeddingModel = builder.build();

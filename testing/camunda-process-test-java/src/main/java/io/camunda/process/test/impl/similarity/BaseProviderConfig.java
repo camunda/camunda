@@ -71,17 +71,11 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     private final String apiKey;
     private final Integer dimensions;
-    private final Map<String, String> headers;
 
-    public OpenAiConfig(
-        final String model,
-        final String apiKey,
-        final Integer dimensions,
-        final Map<String, String> headers) {
+    public OpenAiConfig(final String model, final String apiKey, final Integer dimensions) {
       super(PROVIDER_OPENAI, model);
       this.apiKey = apiKey;
       this.dimensions = dimensions;
-      this.headers = headers;
     }
 
     public String getApiKey() {
@@ -90,10 +84,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public Integer getDimensions() {
       return dimensions;
-    }
-
-    public Map<String, String> getHeaders() {
-      return headers;
     }
   }
 
@@ -141,19 +131,13 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     private final String endpoint;
     private final String apiKey;
     private final Integer dimensions;
-    private final Map<String, String> headers;
 
     public AzureOpenAiConfig(
-        final String model,
-        final String endpoint,
-        final String apiKey,
-        final Integer dimensions,
-        final Map<String, String> headers) {
+        final String model, final String endpoint, final String apiKey, final Integer dimensions) {
       super(PROVIDER_AZURE_OPENAI, model);
       this.endpoint = endpoint;
       this.apiKey = apiKey;
       this.dimensions = dimensions;
-      this.headers = headers;
     }
 
     public String getEndpoint() {
@@ -166,10 +150,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public Integer getDimensions() {
       return dimensions;
-    }
-
-    public Map<String, String> getHeaders() {
-      return headers;
     }
   }
 

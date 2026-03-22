@@ -70,10 +70,7 @@ public class SemanticSimilarityConfiguration {
     switch (provider) {
       case BaseProviderConfig.PROVIDER_OPENAI:
         return new BaseProviderConfig.OpenAiConfig(
-            embeddingModel.getModel(),
-            embeddingModel.getApiKey(),
-            embeddingModel.getDimensions(),
-            embeddingModel.getHeaders());
+            embeddingModel.getModel(), embeddingModel.getApiKey(), embeddingModel.getDimensions());
       case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
         return new BaseProviderConfig.OpenAiCompatibleConfig(
             embeddingModel.getModel(),
@@ -86,8 +83,7 @@ public class SemanticSimilarityConfiguration {
             embeddingModel.getModel(),
             embeddingModel.getEndpoint(),
             embeddingModel.getApiKey(),
-            embeddingModel.getDimensions(),
-            embeddingModel.getHeaders());
+            embeddingModel.getDimensions());
       case BaseProviderConfig.PROVIDER_AMAZON_BEDROCK:
         return new BaseProviderConfig.AmazonBedrockConfig(
             embeddingModel.getModel(),
