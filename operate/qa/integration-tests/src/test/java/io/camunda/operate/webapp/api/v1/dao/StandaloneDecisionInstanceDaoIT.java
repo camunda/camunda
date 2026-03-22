@@ -23,7 +23,6 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * Integration test for standalone decision instances (evaluated without a process context). These
@@ -34,8 +33,7 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
   private static final String DECISION_RESULT = "\"standalone result\"";
   private final String evaluationDate = "2024-02-15T22:40:10.834+0000";
 
-  @Autowired
-  private DecisionInstanceDao dao;
+  @Autowired private DecisionInstanceDao dao;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
   @Autowired private OperateDateTimeFormatter dateTimeFormatter;
