@@ -48,9 +48,9 @@ public class DefaultAuditLogServiceAdapter implements AuditLogServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getAuditLog(
-      final String auditLogKey, final CamundaAuthentication authentication) {
+      final Long auditLogKey, final CamundaAuthentication authentication) {
     try {
-      final var result = auditLogServices.getAuditLog(auditLogKey, authentication);
+      final var result = auditLogServices.getAuditLog(String.valueOf(auditLogKey), authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLog(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

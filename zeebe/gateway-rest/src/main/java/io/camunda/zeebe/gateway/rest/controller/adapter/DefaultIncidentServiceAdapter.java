@@ -52,9 +52,9 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getIncident(
-      final String incidentKey, final CamundaAuthentication authentication) {
+      final Long incidentKey, final CamundaAuthentication authentication) {
     try {
-      final var result = incidentServices.getByKey(Long.parseLong(incidentKey), authentication);
+      final var result = incidentServices.getByKey(incidentKey, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncident(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -63,13 +63,13 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Void> resolveIncident(
-      final String incidentKey,
+      final Long incidentKey,
       final GeneratedIncidentResolutionRequestStrictContract incidentResolutionRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             incidentServices.resolveIncident(
-                Long.parseLong(incidentKey),
+                incidentKey,
                 incidentResolutionRequestStrict == null
                     ? null
                     : incidentResolutionRequestStrict.operationReference(),

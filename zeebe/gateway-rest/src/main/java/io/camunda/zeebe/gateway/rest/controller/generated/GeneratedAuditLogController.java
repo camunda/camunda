@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -50,7 +48,7 @@ public class GeneratedAuditLogController {
       method = RequestMethod.GET,
       value = "/audit-logs/{auditLogKey}",
       produces = {"application/json", "application/problem+json"})
-  public ResponseEntity<Object> getAuditLog(@PathVariable("auditLogKey") final String auditLogKey) {
+  public ResponseEntity<Object> getAuditLog(@PathVariable("auditLogKey") final Long auditLogKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getAuditLog(auditLogKey, authentication);
   }

@@ -59,11 +59,11 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
 
   @Override
   public ResponseEntity<Void> updateAuthorization(
-      final String authorizationKey,
+      final Long authorizationKey,
       final GeneratedAuthorizationRequestStrictContract authorizationRequest,
       final CamundaAuthentication authentication) {
     return authorizationMapper
-        .toUpdateAuthorizationRequest(Long.parseLong(authorizationKey), authorizationRequest)
+        .toUpdateAuthorizationRequest(authorizationKey, authorizationRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             converted ->
@@ -73,10 +73,9 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
 
   @Override
   public ResponseEntity<Object> getAuthorization(
-      final String authorizationKey, final CamundaAuthentication authentication) {
+      final Long authorizationKey, final CamundaAuthentication authentication) {
     try {
-      final var result =
-          authorizationServices.getAuthorization(Long.parseLong(authorizationKey), authentication);
+      final var result = authorizationServices.getAuthorization(authorizationKey, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toAuthorization(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -85,11 +84,9 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
 
   @Override
   public ResponseEntity<Void> deleteAuthorization(
-      final String authorizationKey, final CamundaAuthentication authentication) {
+      final Long authorizationKey, final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
-        () ->
-            authorizationServices.deleteAuthorization(
-                Long.parseLong(authorizationKey), authentication));
+        () -> authorizationServices.deleteAuthorization(authorizationKey, authentication));
   }
 
   @Override

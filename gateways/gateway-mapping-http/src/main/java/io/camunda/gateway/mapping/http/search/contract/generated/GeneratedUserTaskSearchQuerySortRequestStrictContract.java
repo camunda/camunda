@@ -4,9 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/user-tasks.yaml#/components/schemas/UserTaskSearchQuerySortRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -30,7 +27,7 @@ public record GeneratedUserTaskSearchQuerySortRequestStrictContract(
             order) {
 
   public GeneratedUserTaskSearchQuerySortRequestStrictContract {
-    Objects.requireNonNull(field, "No field provided.");
+    Objects.requireNonNull(field, "Sort field must not be null");
   }
 
   public static FieldStep builder() {

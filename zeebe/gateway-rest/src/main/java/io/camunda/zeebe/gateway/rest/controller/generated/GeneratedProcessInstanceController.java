@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -64,7 +62,7 @@ public class GeneratedProcessInstanceController {
       value = "/process-instances/{processInstanceKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstance(
-      @PathVariable("processInstanceKey") final String processInstanceKey) {
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getProcessInstance(processInstanceKey, authentication);
   }
@@ -74,7 +72,7 @@ public class GeneratedProcessInstanceController {
       value = "/process-instances/{processInstanceKey}/sequence-flows",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceSequenceFlows(
-      @PathVariable("processInstanceKey") final String processInstanceKey) {
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getProcessInstanceSequenceFlows(processInstanceKey, authentication);
   }
@@ -84,7 +82,7 @@ public class GeneratedProcessInstanceController {
       value = "/process-instances/{processInstanceKey}/statistics/element-instances",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceStatistics(
-      @PathVariable("processInstanceKey") final String processInstanceKey) {
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getProcessInstanceStatistics(processInstanceKey, authentication);
   }
@@ -108,7 +106,7 @@ public class GeneratedProcessInstanceController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchProcessInstanceIncidents(
-      @PathVariable("processInstanceKey") final String processInstanceKey,
+      @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false)
           final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -122,7 +120,7 @@ public class GeneratedProcessInstanceController {
       value = "/process-instances/{processInstanceKey}/incident-resolution",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> resolveProcessInstanceIncidents(
-      @PathVariable("processInstanceKey") final String processInstanceKey) {
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.resolveProcessInstanceIncidents(processInstanceKey, authentication);
   }
@@ -133,7 +131,7 @@ public class GeneratedProcessInstanceController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> cancelProcessInstance(
-      @PathVariable("processInstanceKey") final String processInstanceKey,
+      @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false)
           final GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -208,7 +206,7 @@ public class GeneratedProcessInstanceController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteProcessInstance(
-      @PathVariable("processInstanceKey") final String processInstanceKey,
+      @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false)
           final GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -237,7 +235,7 @@ public class GeneratedProcessInstanceController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> migrateProcessInstance(
-      @PathVariable("processInstanceKey") final String processInstanceKey,
+      @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody
           final GeneratedProcessInstanceMigrationInstructionStrictContract
               processInstanceMigrationInstruction) {
@@ -252,7 +250,7 @@ public class GeneratedProcessInstanceController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> modifyProcessInstance(
-      @PathVariable("processInstanceKey") final String processInstanceKey,
+      @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody
           final GeneratedProcessInstanceModificationInstructionStrictContract
               processInstanceModificationInstruction) {
@@ -266,7 +264,7 @@ public class GeneratedProcessInstanceController {
       value = "/process-instances/{processInstanceKey}/call-hierarchy",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceCallHierarchy(
-      @PathVariable("processInstanceKey") final String processInstanceKey) {
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getProcessInstanceCallHierarchy(processInstanceKey, authentication);
   }

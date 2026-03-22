@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -37,28 +35,28 @@ public interface ProcessInstanceServiceAdapter {
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> getProcessInstance(
-      String processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> getProcessInstanceSequenceFlows(
-      String processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> getProcessInstanceStatistics(
-      String processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchProcessInstances(
       GeneratedProcessInstanceSearchQueryRequestStrictContract processInstanceSearchQuery,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchProcessInstanceIncidents(
-      String processInstanceKey,
+      Long processInstanceKey,
       GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> resolveProcessInstanceIncidents(
-      String processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> cancelProcessInstance(
-      String processInstanceKey,
+      Long processInstanceKey,
       GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequest,
       CamundaAuthentication authentication);
 
@@ -83,7 +81,7 @@ public interface ProcessInstanceServiceAdapter {
       CamundaAuthentication authentication);
 
   ResponseEntity<Void> deleteProcessInstance(
-      String processInstanceKey,
+      Long processInstanceKey,
       GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequest,
       CamundaAuthentication authentication);
 
@@ -93,17 +91,17 @@ public interface ProcessInstanceServiceAdapter {
       CamundaAuthentication authentication);
 
   ResponseEntity<Void> migrateProcessInstance(
-      String processInstanceKey,
+      Long processInstanceKey,
       GeneratedProcessInstanceMigrationInstructionStrictContract
           processInstanceMigrationInstruction,
       CamundaAuthentication authentication);
 
   ResponseEntity<Void> modifyProcessInstance(
-      String processInstanceKey,
+      Long processInstanceKey,
       GeneratedProcessInstanceModificationInstructionStrictContract
           processInstanceModificationInstruction,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> getProcessInstanceCallHierarchy(
-      String processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey, CamundaAuthentication authentication);
 }

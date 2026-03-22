@@ -60,12 +60,11 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
 
   @Override
   public ResponseEntity<Object> getDecisionDefinition(
-      final String decisionDefinitionKey, final CamundaAuthentication authentication) {
+      final Long decisionDefinitionKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinition(
-              decisionDefinitionServices.getByKey(
-                  Long.parseLong(decisionDefinitionKey), authentication)));
+              decisionDefinitionServices.getByKey(decisionDefinitionKey, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -74,14 +73,14 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
   @SuppressWarnings("unchecked")
   @Override
   public ResponseEntity<Void> getDecisionDefinitionXML(
-      final String decisionDefinitionKey, final CamundaAuthentication authentication) {
+      final Long decisionDefinitionKey, final CamundaAuthentication authentication) {
     try {
       return (ResponseEntity)
           ResponseEntity.ok()
               .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
               .body(
                   decisionDefinitionServices.getDecisionDefinitionXml(
-                      Long.parseLong(decisionDefinitionKey), authentication));
+                      decisionDefinitionKey, authentication));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

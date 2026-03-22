@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -53,7 +51,7 @@ public class GeneratedDecisionRequirementsController {
       value = "/decision-requirements/{decisionRequirementsKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionRequirements(
-      @PathVariable("decisionRequirementsKey") final String decisionRequirementsKey) {
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getDecisionRequirements(decisionRequirementsKey, authentication);
   }
@@ -63,7 +61,7 @@ public class GeneratedDecisionRequirementsController {
       value = "/decision-requirements/{decisionRequirementsKey}/xml",
       produces = {"text/xml", "application/problem+json"})
   public ResponseEntity<Void> getDecisionRequirementsXML(
-      @PathVariable("decisionRequirementsKey") final String decisionRequirementsKey) {
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getDecisionRequirementsXML(decisionRequirementsKey, authentication);
   }

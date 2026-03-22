@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -53,7 +51,7 @@ public class GeneratedIncidentController {
       method = RequestMethod.GET,
       value = "/incidents/{incidentKey}",
       produces = {"application/json", "application/problem+json"})
-  public ResponseEntity<Object> getIncident(@PathVariable("incidentKey") final String incidentKey) {
+  public ResponseEntity<Object> getIncident(@PathVariable("incidentKey") final Long incidentKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getIncident(incidentKey, authentication);
   }
@@ -64,7 +62,7 @@ public class GeneratedIncidentController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> resolveIncident(
-      @PathVariable("incidentKey") final String incidentKey,
+      @PathVariable("incidentKey") final Long incidentKey,
       @RequestBody(required = false)
           final GeneratedIncidentResolutionRequestStrictContract incidentResolutionRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();

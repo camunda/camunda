@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -56,7 +54,7 @@ public class GeneratedProcessDefinitionController {
       value = "/process-definitions/{processDefinitionKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessDefinition(
-      @PathVariable("processDefinitionKey") final String processDefinitionKey) {
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getProcessDefinition(processDefinitionKey, authentication);
   }
@@ -66,7 +64,7 @@ public class GeneratedProcessDefinitionController {
       value = "/process-definitions/{processDefinitionKey}/xml",
       produces = {"text/xml", "application/problem+json"})
   public ResponseEntity<Void> getProcessDefinitionXML(
-      @PathVariable("processDefinitionKey") final String processDefinitionKey) {
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getProcessDefinitionXML(processDefinitionKey, authentication);
   }
@@ -76,7 +74,7 @@ public class GeneratedProcessDefinitionController {
       value = "/process-definitions/{processDefinitionKey}/form",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getStartProcessForm(
-      @PathVariable("processDefinitionKey") final String processDefinitionKey) {
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getStartProcessForm(processDefinitionKey, authentication);
   }
@@ -87,7 +85,7 @@ public class GeneratedProcessDefinitionController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessDefinitionStatistics(
-      @PathVariable("processDefinitionKey") final String processDefinitionKey,
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey,
       @RequestBody(required = false)
           final GeneratedProcessDefinitionElementStatisticsQueryStrictContract
               processDefinitionElementStatisticsQuery) {

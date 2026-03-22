@@ -52,12 +52,11 @@ public class DefaultResourceServiceAdapter implements ResourceServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getResource(
-      final String resourceKey, final CamundaAuthentication authentication) {
+      final Long resourceKey, final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             resourceServices.fetchResource(
-                new ResourceServices.ResourceFetchRequest(Long.parseLong(resourceKey)),
-                authentication),
+                new ResourceServices.ResourceFetchRequest(resourceKey), authentication),
         ResponseMapper::toGetResourceResponse,
         HttpStatus.OK);
   }
@@ -65,23 +64,22 @@ public class DefaultResourceServiceAdapter implements ResourceServiceAdapter {
   @SuppressWarnings("unchecked")
   @Override
   public ResponseEntity<Void> getResourceContent(
-      final String resourceKey, final CamundaAuthentication authentication) {
+      final Long resourceKey, final CamundaAuthentication authentication) {
     return (ResponseEntity)
         RequestExecutor.executeSync(
             () ->
                 resourceServices.fetchResource(
-                    new ResourceServices.ResourceFetchRequest(Long.parseLong(resourceKey)),
-                    authentication),
+                    new ResourceServices.ResourceFetchRequest(resourceKey), authentication),
             ResponseMapper::toGetResourceContentResponse,
             HttpStatus.OK);
   }
 
   @Override
   public ResponseEntity<Object> deleteResource(
-      final String resourceKey,
+      final Long resourceKey,
       final GeneratedDeleteResourceRequestStrictContract deleteRequestStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toResourceDeletion(Long.parseLong(resourceKey), deleteRequestStrict)
+    return RequestMapper.toResourceDeletion(resourceKey, deleteRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

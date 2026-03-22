@@ -56,11 +56,12 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Object> getDecisionInstance(
-      final String decisionEvaluationInstanceKey, final CamundaAuthentication authentication) {
+      final Long decisionEvaluationInstanceKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
-              decisionInstanceServices.getById(decisionEvaluationInstanceKey, authentication)));
+              decisionInstanceServices.getById(
+                  String.valueOf(decisionEvaluationInstanceKey), authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -68,13 +69,13 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Void> deleteDecisionInstance(
-      final String decisionInstanceKey,
+      final Long decisionInstanceKey,
       final GeneratedDeleteDecisionInstanceRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             decisionInstanceServices.deleteDecisionInstance(
-                Long.parseLong(decisionInstanceKey),
+                decisionInstanceKey,
                 Objects.nonNull(requestStrict) ? requestStrict.operationReference() : null,
                 authentication));
   }

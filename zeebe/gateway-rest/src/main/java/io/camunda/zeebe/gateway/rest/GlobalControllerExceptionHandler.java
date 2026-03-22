@@ -115,10 +115,12 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         super.createProblemDetail(
             ex, status, detail, detailMessageCode, detailMessageArguments, request);
 
-    // Certain HttpMessageNotReadableException sub-cases should use INVALID_ARGUMENT title for
-    // backward compatibility with the hand-written controllers, which routed validation through
-    // RequestValidator / GatewayErrorMapper with RejectionType.INVALID_ARGUMENT.
-    if (isStrictContractConstraintViolation(ex) || isUnknownEnumError(ex)) {
+    // Strict contract constraint violations (null required fields, illegal arguments from DTO
+    // constructors) use INVALID_ARGUMENT title for backward compatibility with the hand-written
+    // controllers, which routed these validations through RequestValidator / GatewayErrorMapper
+    // with RejectionType.INVALID_ARGUMENT. Other parsing errors (unknown enums, type mismatches)
+    // keep the Spring default "Bad Request" title.
+    if (isStrictContractConstraintViolation(ex)) {
       problemDetail.setTitle("INVALID_ARGUMENT");
     }
 

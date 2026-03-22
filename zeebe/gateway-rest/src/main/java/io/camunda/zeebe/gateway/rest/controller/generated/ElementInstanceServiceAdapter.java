@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -28,15 +26,15 @@ public interface ElementInstanceServiceAdapter {
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> getElementInstance(
-      String elementInstanceKey, CamundaAuthentication authentication);
+      Long elementInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> createElementInstanceVariables(
-      String elementInstanceKey,
+      Long elementInstanceKey,
       GeneratedSetVariableRequestStrictContract setVariableRequest,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchElementInstanceIncidents(
-      String elementInstanceKey,
+      Long elementInstanceKey,
       GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery,
       CamundaAuthentication authentication);
 }

@@ -53,10 +53,9 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
 
   @Override
   public ResponseEntity<Object> getElementInstance(
-      final String elementInstanceKey, final CamundaAuthentication authentication) {
+      final Long elementInstanceKey, final CamundaAuthentication authentication) {
     try {
-      final var result =
-          elementInstanceServices.getByKey(Long.parseLong(elementInstanceKey), authentication);
+      final var result = elementInstanceServices.getByKey(elementInstanceKey, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toElementInstance(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -65,14 +64,14 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
 
   @Override
   public ResponseEntity<Void> createElementInstanceVariables(
-      final String elementInstanceKey,
+      final Long elementInstanceKey,
       final GeneratedSetVariableRequestStrictContract setVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             elementInstanceServices.setVariables(
                 new ElementInstanceServices.SetVariablesRequest(
-                    Long.parseLong(elementInstanceKey),
+                    elementInstanceKey,
                     setVariableRequestStrict.variables(),
                     setVariableRequestStrict.local(),
                     setVariableRequestStrict.operationReference()),
@@ -81,7 +80,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
 
   @Override
   public ResponseEntity<Object> searchElementInstanceIncidents(
-      final String elementInstanceKey,
+      final Long elementInstanceKey,
       final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
@@ -91,7 +90,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
               try {
                 final var result =
                     elementInstanceServices.searchIncidents(
-                        Long.parseLong(elementInstanceKey), query, authentication);
+                        elementInstanceKey, query, authentication);
                 return ResponseEntity.ok(
                     SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
               } catch (final Exception e) {

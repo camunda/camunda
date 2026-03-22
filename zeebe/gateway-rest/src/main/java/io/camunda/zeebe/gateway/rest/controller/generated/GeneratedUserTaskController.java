@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -46,7 +44,7 @@ public class GeneratedUserTaskController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> completeUserTask(
-      @PathVariable("userTaskKey") final String userTaskKey,
+      @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
           final GeneratedUserTaskCompletionRequestStrictContract userTaskCompletionRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -59,7 +57,7 @@ public class GeneratedUserTaskController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> assignUserTask(
-      @PathVariable("userTaskKey") final String userTaskKey,
+      @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody
           final GeneratedUserTaskAssignmentRequestStrictContract userTaskAssignmentRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -70,7 +68,7 @@ public class GeneratedUserTaskController {
       method = RequestMethod.GET,
       value = "/user-tasks/{userTaskKey}",
       produces = {"application/json", "application/problem+json"})
-  public ResponseEntity<Object> getUserTask(@PathVariable("userTaskKey") final String userTaskKey) {
+  public ResponseEntity<Object> getUserTask(@PathVariable("userTaskKey") final Long userTaskKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getUserTask(userTaskKey, authentication);
   }
@@ -81,7 +79,7 @@ public class GeneratedUserTaskController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> updateUserTask(
-      @PathVariable("userTaskKey") final String userTaskKey,
+      @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
           final GeneratedUserTaskUpdateRequestStrictContract userTaskUpdateRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -93,7 +91,7 @@ public class GeneratedUserTaskController {
       value = "/user-tasks/{userTaskKey}/form",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getUserTaskForm(
-      @PathVariable("userTaskKey") final String userTaskKey) {
+      @PathVariable("userTaskKey") final Long userTaskKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getUserTaskForm(userTaskKey, authentication);
   }
@@ -103,7 +101,7 @@ public class GeneratedUserTaskController {
       value = "/user-tasks/{userTaskKey}/assignee",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> unassignUserTask(
-      @PathVariable("userTaskKey") final String userTaskKey) {
+      @PathVariable("userTaskKey") final Long userTaskKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.unassignUserTask(userTaskKey, authentication);
   }
@@ -126,7 +124,7 @@ public class GeneratedUserTaskController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchUserTaskVariables(
-      @PathVariable("userTaskKey") final String userTaskKey,
+      @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestParam(name = "truncateValues", required = false) final Boolean truncateValues,
       @RequestBody(required = false)
           final GeneratedUserTaskVariableSearchQueryRequestStrictContract
@@ -142,7 +140,7 @@ public class GeneratedUserTaskController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchUserTaskAuditLogs(
-      @PathVariable("userTaskKey") final String userTaskKey,
+      @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
           final GeneratedUserTaskAuditLogSearchQueryRequestStrictContract
               userTaskAuditLogSearchQueryRequest) {

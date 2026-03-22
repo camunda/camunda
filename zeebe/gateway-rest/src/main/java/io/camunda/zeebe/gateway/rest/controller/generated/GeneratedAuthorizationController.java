@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -52,7 +50,7 @@ public class GeneratedAuthorizationController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> updateAuthorization(
-      @PathVariable("authorizationKey") final String authorizationKey,
+      @PathVariable("authorizationKey") final Long authorizationKey,
       @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.updateAuthorization(
@@ -64,7 +62,7 @@ public class GeneratedAuthorizationController {
       value = "/authorizations/{authorizationKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getAuthorization(
-      @PathVariable("authorizationKey") final String authorizationKey) {
+      @PathVariable("authorizationKey") final Long authorizationKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getAuthorization(authorizationKey, authentication);
   }
@@ -74,7 +72,7 @@ public class GeneratedAuthorizationController {
       value = "/authorizations/{authorizationKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteAuthorization(
-      @PathVariable("authorizationKey") final String authorizationKey) {
+      @PathVariable("authorizationKey") final Long authorizationKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.deleteAuthorization(authorizationKey, authentication);
   }

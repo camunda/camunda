@@ -375,7 +375,7 @@ public class AuditLogControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, annotation, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
                   "instance": "%s"

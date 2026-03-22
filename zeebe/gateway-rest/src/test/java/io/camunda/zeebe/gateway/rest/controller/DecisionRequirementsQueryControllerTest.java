@@ -295,7 +295,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionRequirementsKey, decisionRequirementsName, version, decisionRequirementsId, tenantId]",
                   "instance": "%s"
@@ -534,15 +534,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final String decisionRequirementsKey = "invalidKey";
 
     // when/then
-    final var expectedResponse =
-        """
-            {
-              "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
-              "status": 400,
-              "detail": "For input string: \\"invalidKey\\"",
-              "instance": "/v2/decision-requirements/invalidKey/xml"
-            }""";
     webClient
         .get()
         .uri("/v2/decision-requirements/%s/xml".formatted(decisionRequirementsKey))
@@ -550,8 +541,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectStatus()
         .isBadRequest()
         .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
   }
 }

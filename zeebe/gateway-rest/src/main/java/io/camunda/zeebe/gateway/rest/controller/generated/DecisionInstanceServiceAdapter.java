@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -28,10 +26,10 @@ public interface DecisionInstanceServiceAdapter {
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> getDecisionInstance(
-      String decisionEvaluationInstanceKey, CamundaAuthentication authentication);
+      Long decisionEvaluationInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> deleteDecisionInstance(
-      String decisionInstanceKey,
+      Long decisionInstanceKey,
       GeneratedDeleteDecisionInstanceRequestStrictContract deleteDecisionInstanceRequest,
       CamundaAuthentication authentication);
 

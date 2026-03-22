@@ -452,7 +452,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
@@ -494,7 +494,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, state, hasIncident, tenantId, businessId]",
                   "instance": "%s"
@@ -537,7 +537,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "No field provided.",
+                  "detail": "Sort field must not be null.",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);

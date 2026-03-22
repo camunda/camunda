@@ -854,7 +854,7 @@ public class RequestMapper {
                         .toList()
                     : List.of(),
                 mapStrictRuntimeInstructions(request.runtimeInstructions()),
-                request.fetchVariables(),
+                request.fetchVariables() != null ? request.fetchVariables() : List.of(),
                 request.tags(),
                 request.businessId()));
   }
@@ -892,7 +892,7 @@ public class RequestMapper {
                         .toList()
                     : List.of(),
                 mapStrictRuntimeInstructions(request.runtimeInstructions()),
-                request.fetchVariables(),
+                request.fetchVariables() != null ? request.fetchVariables() : List.of(),
                 request.tags(),
                 request.businessId()));
   }

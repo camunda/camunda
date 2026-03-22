@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -27,15 +25,15 @@ public interface AuthorizationServiceAdapter {
       CamundaAuthentication authentication);
 
   ResponseEntity<Void> updateAuthorization(
-      String authorizationKey,
+      Long authorizationKey,
       GeneratedAuthorizationRequestStrictContract authorizationRequest,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> getAuthorization(
-      String authorizationKey, CamundaAuthentication authentication);
+      Long authorizationKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> deleteAuthorization(
-      String authorizationKey, CamundaAuthentication authentication);
+      Long authorizationKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchAuthorizations(
       GeneratedAuthorizationSearchQueryRequestStrictContract authorizationSearchQuery,

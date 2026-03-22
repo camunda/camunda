@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -130,7 +128,7 @@ public class GeneratedJobController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> failJob(
-      @PathVariable("jobKey") final String jobKey,
+      @PathVariable("jobKey") final Long jobKey,
       @RequestBody(required = false) final GeneratedJobFailRequestStrictContract jobFailRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.failJob(jobKey, jobFailRequest, authentication);
@@ -142,7 +140,7 @@ public class GeneratedJobController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> throwJobError(
-      @PathVariable("jobKey") final String jobKey,
+      @PathVariable("jobKey") final Long jobKey,
       @RequestBody final GeneratedJobErrorRequestStrictContract jobErrorRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.throwJobError(jobKey, jobErrorRequest, authentication);
@@ -154,7 +152,7 @@ public class GeneratedJobController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> completeJob(
-      @PathVariable("jobKey") final String jobKey,
+      @PathVariable("jobKey") final Long jobKey,
       @RequestBody(required = false)
           final GeneratedJobCompletionRequestStrictContract jobCompletionRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -167,7 +165,7 @@ public class GeneratedJobController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> updateJob(
-      @PathVariable("jobKey") final String jobKey,
+      @PathVariable("jobKey") final Long jobKey,
       @RequestBody final GeneratedJobUpdateRequestStrictContract jobUpdateRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.updateJob(jobKey, jobUpdateRequest, authentication);

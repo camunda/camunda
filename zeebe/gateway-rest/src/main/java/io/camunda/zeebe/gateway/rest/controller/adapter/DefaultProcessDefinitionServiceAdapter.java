@@ -56,13 +56,12 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinition(
-      final String processDefinitionKey, final CamundaAuthentication authentication) {
+      final Long processDefinitionKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
-                  processDefinitionServices.getByKey(
-                      Long.parseLong(processDefinitionKey), authentication)));
+                  processDefinitionServices.getByKey(processDefinitionKey, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -71,12 +70,12 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
   @SuppressWarnings("unchecked")
   @Override
   public ResponseEntity<Void> getProcessDefinitionXML(
-      final String processDefinitionKey, final CamundaAuthentication authentication) {
+      final Long processDefinitionKey, final CamundaAuthentication authentication) {
     try {
       return (ResponseEntity<Void>)
           (ResponseEntity<?>)
               processDefinitionServices
-                  .getProcessDefinitionXml(Long.parseLong(processDefinitionKey), authentication)
+                  .getProcessDefinitionXml(processDefinitionKey, authentication)
                   .map(
                       s ->
                           ResponseEntity.ok()
@@ -91,10 +90,10 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getStartProcessForm(
-      final String processDefinitionKey, final CamundaAuthentication authentication) {
+      final Long processDefinitionKey, final CamundaAuthentication authentication) {
     try {
       return processDefinitionServices
-          .getProcessDefinitionStartForm(Long.parseLong(processDefinitionKey), authentication)
+          .getProcessDefinitionStartForm(processDefinitionKey, authentication)
           .<Object>map(SearchQueryResponseMapper::toFormItem)
           .<ResponseEntity<Object>>map(form -> ResponseEntity.ok(form))
           .orElseGet(() -> ResponseEntity.noContent().build());
@@ -105,11 +104,11 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionStatistics(
-      final String processDefinitionKey,
+      final Long processDefinitionKey,
       final GeneratedProcessDefinitionElementStatisticsQueryStrictContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(
-            Long.parseLong(processDefinitionKey), queryStrict)
+            processDefinitionKey, queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter -> {

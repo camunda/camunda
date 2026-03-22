@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -27,38 +25,38 @@ import org.springframework.http.ResponseEntity;
 public interface UserTaskServiceAdapter {
 
   ResponseEntity<Void> completeUserTask(
-      String userTaskKey,
+      Long userTaskKey,
       GeneratedUserTaskCompletionRequestStrictContract userTaskCompletionRequest,
       CamundaAuthentication authentication);
 
   ResponseEntity<Void> assignUserTask(
-      String userTaskKey,
+      Long userTaskKey,
       GeneratedUserTaskAssignmentRequestStrictContract userTaskAssignmentRequest,
       CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getUserTask(String userTaskKey, CamundaAuthentication authentication);
+  ResponseEntity<Object> getUserTask(Long userTaskKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> updateUserTask(
-      String userTaskKey,
+      Long userTaskKey,
       GeneratedUserTaskUpdateRequestStrictContract userTaskUpdateRequest,
       CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getUserTaskForm(String userTaskKey, CamundaAuthentication authentication);
+  ResponseEntity<Object> getUserTaskForm(Long userTaskKey, CamundaAuthentication authentication);
 
-  ResponseEntity<Void> unassignUserTask(String userTaskKey, CamundaAuthentication authentication);
+  ResponseEntity<Void> unassignUserTask(Long userTaskKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchUserTasks(
       GeneratedUserTaskSearchQueryRequestStrictContract userTaskSearchQuery,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchUserTaskVariables(
-      String userTaskKey,
+      Long userTaskKey,
       Boolean truncateValues,
       GeneratedUserTaskVariableSearchQueryRequestStrictContract userTaskVariableSearchQueryRequest,
       CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchUserTaskAuditLogs(
-      String userTaskKey,
+      Long userTaskKey,
       GeneratedUserTaskAuditLogSearchQueryRequestStrictContract userTaskAuditLogSearchQueryRequest,
       CamundaAuthentication authentication);
 }

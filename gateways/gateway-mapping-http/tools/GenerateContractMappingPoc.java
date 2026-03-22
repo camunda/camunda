@@ -13,6 +13,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -1221,12 +1222,14 @@ public enum %s {
       // Null checks for required non-nullable fields.
       for (var f : fields) {
         if (f.required() && !f.nullable()) {
+          // Sort request "field" property uses a specific message for backward compatibility.
+          final var message = schemaName.contains("SortRequest") && "field".equals(f.name())
+              ? "Sort field must not be null"
+              : "No " + f.name() + " provided.";
           checks.add(
               "    Objects.requireNonNull("
                   + f.identifier()
-                  + ", \"No "
-                  + f.name()
-                  + " provided.\");");
+                  + ", \"" + message + "\");");
         }
       }
 
@@ -3343,7 +3346,7 @@ public record %s(
       String requestSchema,
       String responseSchema,
       int statusCode,
-      List<String> pathParams,
+      List<SpecQueryParam> pathParams,
       List<SpecQueryParam> queryParams,
       boolean bodyRequired,
       boolean requiresSecondaryStorage,
@@ -3357,8 +3360,36 @@ public record %s(
 
   // -- Spec parsing --
 
+  /** Reads keys.yaml and returns the set of schema names that derive from LongKey via allOf. */
+  private static Set<String> loadLongKeySchemas(Path specDir) throws IOException {
+    var keysFile = specDir.resolve("keys.yaml");
+    if (!Files.exists(keysFile)) return Set.of();
+    var lines = Files.readAllLines(keysFile, StandardCharsets.UTF_8);
+    var result = new HashSet<String>();
+    String currentSchema = null;
+    boolean inAllOf = false;
+    for (var line : lines) {
+      var t = trimmed(line);
+      int ind = indent(line);
+      if (ind == 4 && t.endsWith(":") && !t.contains(" ")) {
+        currentSchema = t.substring(0, t.length() - 1);
+        inAllOf = false;
+      } else if (ind == 6 && t.equals("allOf:") && currentSchema != null) {
+        inAllOf = true;
+      } else if (inAllOf && t.contains("LongKey") && currentSchema != null) {
+        result.add(currentSchema);
+        currentSchema = null;
+        inAllOf = false;
+      } else if (ind <= 4 && !t.isEmpty()) {
+        inAllOf = false;
+      }
+    }
+    return result;
+  }
+
   /** Reads all YAML files in the spec directory and extracts operation metadata. */
   private static List<SpecOperation> parseSpecOperations(Path specDir) throws IOException {
+    var longKeySchemas = loadLongKeySchemas(specDir);
     var ops = new ArrayList<SpecOperation>();
     try (var stream = Files.list(specDir)) {
       var yamlFiles = stream
@@ -3366,13 +3397,13 @@ public record %s(
           .sorted(Comparator.comparing(p -> p.getFileName().toString()))
           .toList();
       for (var file : yamlFiles) {
-        ops.addAll(parseOperationsFromFile(file));
+        ops.addAll(parseOperationsFromFile(file, longKeySchemas));
       }
     }
     return ops;
   }
 
-  private static List<SpecOperation> parseOperationsFromFile(Path file) throws IOException {
+  private static List<SpecOperation> parseOperationsFromFile(Path file, Set<String> longKeySchemas) throws IOException {
     var lines = Files.readAllLines(file, StandardCharsets.UTF_8);
     var ops = new ArrayList<SpecOperation>();
 
@@ -3386,7 +3417,7 @@ public record %s(
     String requestSchema = null;
     String responseSchema = null;
     int primaryStatusCode = -1;
-    var pathParams = new ArrayList<String>();
+    var pathParams = new ArrayList<SpecQueryParam>();
     var queryParams = new ArrayList<SpecQueryParam>();
     boolean bodyRequired = true; // default per OpenAPI spec
     boolean requiresSecondaryStorage = false;
@@ -3510,10 +3541,11 @@ public record %s(
         if ("parameters".equals(section)) {
           if (ind == 8 && tr.startsWith("- name:")) {
             String paramName = unquote(tr.substring("- name:".length()).trim());
-            // Look ahead at following lines to determine param kind and type
+            // Look ahead at following lines to determine param kind, type, and schema $ref
             String paramIn = null;
             boolean paramRequired = false;
             String paramType = "String"; // default
+            String paramSchemaRef = null;
             for (int j = i + 1; j < lines.size() && j < i + 10; j++) {
               String nextTr = trimmed(lines.get(j));
               if (nextTr.startsWith("- name:") || indent(lines.get(j)) <= 8) break;
@@ -3523,8 +3555,38 @@ public record %s(
               else if (nextTr.startsWith("type: boolean")) paramType = "Boolean";
               else if (nextTr.startsWith("type: integer")) paramType = "Integer";
               else if (nextTr.startsWith("type: number")) paramType = "Double";
+              else if (nextTr.startsWith("$ref:")) paramSchemaRef = unquote(nextTr.substring("$ref:".length()).trim());
             }
-            if ("path".equals(paramIn)) pathParams.add(paramName);
+            if ("path".equals(paramIn)) {
+              // Determine path param type from schema $ref: keys.yaml refs are Long keys
+              String pathType = "String";
+              if (paramSchemaRef != null && paramSchemaRef.contains("keys.yaml")) {
+                // Extract schema name from keys.yaml ref, check if it derives from LongKey
+                String schemaName = paramSchemaRef.substring(paramSchemaRef.lastIndexOf('/') + 1);
+                if (longKeySchemas.contains(schemaName)) {
+                  pathType = "Long";
+                }
+              } else if (paramSchemaRef != null && paramSchemaRef.startsWith("#/components/schemas/")) {
+                // Resolve local ref: check if the local schema derives from LongKey
+                String localSchemaName = paramSchemaRef.substring("#/components/schemas/".length());
+                if (longKeySchemas.contains(localSchemaName)) {
+                  pathType = "Long";
+                } else {
+                  // Check if local schema references keys.yaml LongKey descendants
+                  for (int k = 0; k < lines.size(); k++) {
+                    String kt = trimmed(lines.get(k));
+                    if (kt.equals(localSchemaName + ":") && indent(lines.get(k)) == 4) {
+                      for (int m = k + 1; m < lines.size() && m < k + 20; m++) {
+                        if (indent(lines.get(m)) <= 4 && m > k + 1) break;
+                        if (trimmed(lines.get(m)).contains("keys.yaml")) { pathType = "Long"; break; }
+                      }
+                      break;
+                    }
+                  }
+                }
+              }
+              pathParams.add(new SpecQueryParam(paramName, pathType, true));
+            }
             else if ("query".equals(paramIn)) queryParams.add(new SpecQueryParam(paramName, paramType, paramRequired));
           }
           continue;
@@ -3824,7 +3886,7 @@ public record %s(
         // Build params: path params first, then query params, then request body or multipart parts
         var params = new ArrayList<SpecParam>();
         for (var pp : op.pathParams()) {
-          params.add(new SpecParam(pp, "String", ParamKind.PATH, true));
+          params.add(new SpecParam(pp.name(), pp.javaType(), ParamKind.PATH, true));
         }
         for (var qp : op.queryParams()) {
           params.add(new SpecParam(qp.name(), qp.javaType(), ParamKind.QUERY, qp.required()));

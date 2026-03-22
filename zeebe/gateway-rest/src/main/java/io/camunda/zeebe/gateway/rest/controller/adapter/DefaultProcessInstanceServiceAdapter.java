@@ -62,13 +62,12 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> getProcessInstance(
-      final String processInstanceKey, final CamundaAuthentication authentication) {
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstance(
-                  processInstanceServices.getByKey(
-                      Long.parseLong(processInstanceKey), authentication)));
+                  processInstanceServices.getByKey(processInstanceKey, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -76,13 +75,12 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> getProcessInstanceSequenceFlows(
-      final String processInstanceKey, final CamundaAuthentication authentication) {
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toSequenceFlowsResult(
-                  processInstanceServices.sequenceFlows(
-                      Long.parseLong(processInstanceKey), authentication)));
+                  processInstanceServices.sequenceFlows(processInstanceKey, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -90,13 +88,12 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> getProcessInstanceStatistics(
-      final String processInstanceKey, final CamundaAuthentication authentication) {
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstanceElementStatisticsResult(
-                  processInstanceServices.elementStatistics(
-                      Long.parseLong(processInstanceKey), authentication)));
+                  processInstanceServices.elementStatistics(processInstanceKey, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -123,7 +120,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> searchProcessInstanceIncidents(
-      final String processInstanceKey,
+      final Long processInstanceKey,
       final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
@@ -133,7 +130,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
               try {
                 final var result =
                     processInstanceServices.searchIncidents(
-                        Long.parseLong(processInstanceKey), query, authentication);
+                        processInstanceKey, query, authentication);
                 return ResponseEntity.ok(
                     SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
               } catch (final Exception e) {
@@ -144,22 +141,22 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> resolveProcessInstanceIncidents(
-      final String processInstanceKey, final CamundaAuthentication authentication) {
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             processInstanceServices.resolveProcessInstanceIncidents(
-                Long.parseLong(processInstanceKey), authentication),
+                processInstanceKey, authentication),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }
 
   @Override
   public ResponseEntity<Void> cancelProcessInstance(
-      final String processInstanceKey,
+      final Long processInstanceKey,
       final GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toCancelProcessInstance(
-            Long.parseLong(processInstanceKey), cancelProcessInstanceRequestStrict)
+            processInstanceKey, cancelProcessInstanceRequestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -235,13 +232,13 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Void> deleteProcessInstance(
-      final String processInstanceKey,
+      final Long processInstanceKey,
       final GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             processInstanceServices.deleteProcessInstance(
-                Long.parseLong(processInstanceKey),
+                processInstanceKey,
                 Objects.nonNull(deleteProcessInstanceRequestStrict)
                     ? deleteProcessInstanceRequestStrict.operationReference()
                     : null,
@@ -266,12 +263,12 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Void> migrateProcessInstance(
-      final String processInstanceKey,
+      final Long processInstanceKey,
       final GeneratedProcessInstanceMigrationInstructionStrictContract
           processInstanceMigrationInstructionStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toMigrateProcessInstance(
-            Long.parseLong(processInstanceKey), processInstanceMigrationInstructionStrict)
+            processInstanceKey, processInstanceMigrationInstructionStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             requestStrict ->
@@ -283,12 +280,12 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Void> modifyProcessInstance(
-      final String processInstanceKey,
+      final Long processInstanceKey,
       final GeneratedProcessInstanceModificationInstructionStrictContract
           processInstanceModificationInstructionStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toModifyProcessInstance(
-            Long.parseLong(processInstanceKey), processInstanceModificationInstructionStrict)
+            processInstanceKey, processInstanceModificationInstructionStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             requestStrict ->
@@ -301,7 +298,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @SuppressWarnings("unchecked")
   @Override
   public ResponseEntity<Object> getProcessInstanceCallHierarchy(
-      final String processInstanceKey, final CamundaAuthentication authentication) {
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
     try {
       return (ResponseEntity<Object>)
           (ResponseEntity<?>)
@@ -309,7 +306,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
                   .body(
                       SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntries(
                           processInstanceServices.callHierarchy(
-                              Long.parseLong(processInstanceKey), authentication)));
+                              processInstanceKey, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }

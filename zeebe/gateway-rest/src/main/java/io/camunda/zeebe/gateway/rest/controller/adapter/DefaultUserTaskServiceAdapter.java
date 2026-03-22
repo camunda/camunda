@@ -37,11 +37,10 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Void> completeUserTask(
-      final String userTaskKey,
+      final Long userTaskKey,
       final GeneratedUserTaskCompletionRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
-    final var mapped =
-        RequestMapper.toUserTaskCompletionRequest(requestStrict, Long.parseLong(userTaskKey));
+    final var mapped = RequestMapper.toUserTaskCompletionRequest(requestStrict, userTaskKey);
     return RequestExecutor.executeSync(
         () ->
             userTaskServices.completeUserTask(
@@ -50,10 +49,10 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Void> assignUserTask(
-      final String userTaskKey,
+      final Long userTaskKey,
       final GeneratedUserTaskAssignmentRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toUserTaskAssignmentRequest(requestStrict, Long.parseLong(userTaskKey))
+    return RequestMapper.toUserTaskAssignmentRequest(requestStrict, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -69,9 +68,9 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getUserTask(
-      final String userTaskKey, final CamundaAuthentication authentication) {
+      final Long userTaskKey, final CamundaAuthentication authentication) {
     try {
-      final var userTask = userTaskServices.getByKey(Long.parseLong(userTaskKey), authentication);
+      final var userTask = userTaskServices.getByKey(userTaskKey, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserTask(userTask));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -80,10 +79,10 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Void> updateUserTask(
-      final String userTaskKey,
+      final Long userTaskKey,
       final GeneratedUserTaskUpdateRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toUserTaskUpdateRequest(requestStrict, Long.parseLong(userTaskKey))
+    return RequestMapper.toUserTaskUpdateRequest(requestStrict, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -98,10 +97,10 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getUserTaskForm(
-      final String userTaskKey, final CamundaAuthentication authentication) {
+      final Long userTaskKey, final CamundaAuthentication authentication) {
     try {
       return userTaskServices
-          .getUserTaskForm(Long.parseLong(userTaskKey), authentication)
+          .getUserTaskForm(userTaskKey, authentication)
           .<Object>map(SearchQueryResponseMapper::toFormItem)
           .<ResponseEntity<Object>>map(ResponseEntity::ok)
           .orElseGet(() -> ResponseEntity.noContent().build());
@@ -112,8 +111,8 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Void> unassignUserTask(
-      final String userTaskKey, final CamundaAuthentication authentication) {
-    final var mapped = RequestMapper.toUserTaskUnassignmentRequest(Long.parseLong(userTaskKey));
+      final Long userTaskKey, final CamundaAuthentication authentication) {
+    final var mapped = RequestMapper.toUserTaskUnassignmentRequest(userTaskKey);
     return RequestExecutor.executeSync(
         () ->
             userTaskServices.unassignUserTask(
@@ -140,7 +139,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUserTaskVariables(
-      final String userTaskKey,
+      final Long userTaskKey,
       final Boolean truncateValues,
       final GeneratedUserTaskVariableSearchQueryRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
@@ -151,8 +150,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
             query -> {
               try {
                 final var result =
-                    userTaskServices.searchUserTaskVariables(
-                        Long.parseLong(userTaskKey), query, authentication);
+                    userTaskServices.searchUserTaskVariables(userTaskKey, query, authentication);
                 return ResponseEntity.ok(
                     SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncate));
               } catch (final Exception e) {
@@ -163,7 +161,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUserTaskAuditLogs(
-      final String userTaskKey,
+      final Long userTaskKey,
       final GeneratedUserTaskAuditLogSearchQueryRequestStrictContract requestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toUserTaskAuditLogQueryStrict(requestStrict)
@@ -172,8 +170,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
             query -> {
               try {
                 final var result =
-                    userTaskServices.searchUserTaskAuditLogs(
-                        Long.parseLong(userTaskKey), query, authentication);
+                    userTaskServices.searchUserTaskAuditLogs(userTaskKey, query, authentication);
                 return ResponseEntity.ok(
                     SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
               } catch (final Exception e) {

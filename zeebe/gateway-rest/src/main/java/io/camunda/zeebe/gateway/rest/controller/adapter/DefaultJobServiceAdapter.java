@@ -207,10 +207,10 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Void> failJob(
-      final String jobKey,
+      final Long jobKey,
       final GeneratedJobFailRequestStrictContract failRequestStrict,
       final CamundaAuthentication authentication) {
-    final var mapped = RequestMapper.toJobFailRequest(failRequestStrict, Long.parseLong(jobKey));
+    final var mapped = RequestMapper.toJobFailRequest(failRequestStrict, jobKey);
     return RequestExecutor.executeSync(
         () ->
             jobServices.failJob(
@@ -224,10 +224,10 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Void> throwJobError(
-      final String jobKey,
+      final Long jobKey,
       final GeneratedJobErrorRequestStrictContract errorRequestStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toJobErrorRequest(errorRequestStrict, Long.parseLong(jobKey))
+    return RequestMapper.toJobErrorRequest(errorRequestStrict, jobKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -243,11 +243,10 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Void> completeJob(
-      final String jobKey,
+      final Long jobKey,
       final GeneratedJobCompletionRequestStrictContract completionRequestStrict,
       final CamundaAuthentication authentication) {
-    final var mapped =
-        RequestMapper.toJobCompletionRequest(completionRequestStrict, Long.parseLong(jobKey));
+    final var mapped = RequestMapper.toJobCompletionRequest(completionRequestStrict, jobKey);
     return RequestExecutor.executeSync(
         () ->
             jobServices.completeJob(
@@ -256,10 +255,10 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Void> updateJob(
-      final String jobKey,
+      final Long jobKey,
       final GeneratedJobUpdateRequestStrictContract updateRequestStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toJobUpdateRequest(updateRequestStrict, Long.parseLong(jobKey))
+    return RequestMapper.toJobUpdateRequest(updateRequestStrict, jobKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

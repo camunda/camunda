@@ -29,11 +29,11 @@ public class DefaultAdHocSubProcessServiceAdapter implements AdHocSubProcessServ
 
   @Override
   public ResponseEntity<Void> activateAdHocSubProcessActivities(
-      final String adHocSubProcessInstanceKey,
+      final Long adHocSubProcessInstanceKey,
       final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
-            adHocSubProcessInstanceKey, requestStrict)
+            String.valueOf(adHocSubProcessInstanceKey), requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

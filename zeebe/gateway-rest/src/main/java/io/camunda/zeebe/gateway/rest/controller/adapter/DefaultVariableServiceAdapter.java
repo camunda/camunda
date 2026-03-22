@@ -50,11 +50,11 @@ public class DefaultVariableServiceAdapter implements VariableServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getVariable(
-      final String variableKey, final CamundaAuthentication authentication) {
+      final Long variableKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableItem(
-              variableServices.getByKey(Long.parseLong(variableKey), authentication)));
+              variableServices.getByKey(variableKey, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

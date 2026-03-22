@@ -4,8 +4,6 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -55,7 +53,7 @@ public class GeneratedDecisionInstanceController {
       value = "/decision-instances/{decisionEvaluationInstanceKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionInstance(
-      @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
+      @PathVariable("decisionEvaluationInstanceKey") final Long decisionEvaluationInstanceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return serviceAdapter.getDecisionInstance(decisionEvaluationInstanceKey, authentication);
   }
@@ -67,7 +65,7 @@ public class GeneratedDecisionInstanceController {
       consumes = {"application/json"},
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteDecisionInstance(
-      @PathVariable("decisionInstanceKey") final String decisionInstanceKey,
+      @PathVariable("decisionInstanceKey") final Long decisionInstanceKey,
       @RequestBody(required = false)
           final GeneratedDeleteDecisionInstanceRequestStrictContract
               deleteDecisionInstanceRequest) {
