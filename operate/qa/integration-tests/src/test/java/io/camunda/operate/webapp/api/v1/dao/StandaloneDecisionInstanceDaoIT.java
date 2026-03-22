@@ -34,7 +34,6 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
   private static final String DECISION_RESULT = "\"standalone result\"";
   private final String evaluationDate = "2024-02-15T22:40:10.834+0000";
 
-  @Qualifier("ElasticsearchDecisionInstanceDaoV1")
   @Autowired
   private DecisionInstanceDao dao;
 
