@@ -26,6 +26,7 @@ import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,7 +114,14 @@ public final class ElasticsearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration configuration,
       final HttpRequestInterceptor... interceptors) {
+    final int socketBufferSize = configuration.getSocketBufferSize();
+    if (socketBufferSize > 0) {
+      httpAsyncClientBuilder.setDefaultIOReactorConfig(
+          IOReactorConfig.custom().setSndBufSize(socketBufferSize).build());
+    }
+
     setupAuthentication(httpAsyncClientBuilder, configuration);
+
     final var security = configuration.getSecurity();
     if (security != null && security.isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, security);

@@ -24,6 +24,7 @@ public class ConnectConfiguration {
   private String fieldDateFormat = FIELD_DATE_FORMAT_DEFAULT;
   private Integer socketTimeout;
   private Integer connectTimeout;
+  private int socketBufferSize = 4 * 1024 * 1024;
   private String url = URL_DEFAULT;
   private String username;
   private String password;
@@ -92,6 +93,14 @@ public class ConnectConfiguration {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public int getSocketBufferSize() {
+    return socketBufferSize;
+  }
+
+  public void setSocketBufferSize(final int socketBufferSize) {
+    this.socketBufferSize = socketBufferSize;
   }
 
   public String getUrl() {
