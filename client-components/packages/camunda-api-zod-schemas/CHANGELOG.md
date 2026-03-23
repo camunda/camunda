@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.0.53
+
+### 🚀 Enhancements
+
+- Switch `queryVariablesByUserTask` endpoint to `/user-tasks/{key}/effective-variables/search` API ([#46967](https://github.com/camunda/camunda/issues/46967))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.52
 
 ### 🩹 Fixes

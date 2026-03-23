@@ -25,7 +25,7 @@ import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.OffsetPagination;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
@@ -163,7 +163,7 @@ public class UserTaskTools {
 
   @CamundaMcpTool(
       description =
-          "Search user task variables based on given criteria. "
+          "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. "
               + VARIABLE_VALUE_RETURN_FORMAT
               + " "
               + EVENTUAL_CONSISTENCY_NOTE,
@@ -177,13 +177,12 @@ public class UserTaskTools {
           final UserTaskVariableFilter filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<UserTaskVariableSearchQuerySortRequest> sort,
-      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final SearchQueryPageRequest page,
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false) final OffsetPagination page,
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
       final var variableSearchQuery =
-          SearchQueryRequestMapper.toUserTaskVariableQuery(filter, page, sort);
+          SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(filter, page, sort);
 
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
@@ -192,7 +191,7 @@ public class UserTaskTools {
       final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
-              userTaskServices.searchUserTaskVariables(
+              userTaskServices.searchUserTaskEffectiveVariables(
                   userTaskKey,
                   variableSearchQuery.get(),
                   authenticationProvider.getCamundaAuthentication()),
