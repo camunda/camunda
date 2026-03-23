@@ -291,15 +291,18 @@ Use the following checklist as the operational source of truth for every minor r
 
 Legend:
 
-- **[MUST]** = needed for a functional minor / correct process
-- **[SHOULD]** = strongly recommended, reduces risk and toil
-- **[NICE]** = improvements and automation, can slip if time-boxed
+- **[MUST]** = manual action or validation the MRM is responsible for during this minor release
+- **[TEMP]** = temporary safeguard kept because this step recently failed, is still fragile, or is not automated yet
+- **[SHOULD]** = strongly recommended extra validation that reduces risk and toil
+- **[NICE]** = improvement or automation follow-up that can be time-boxed
+
+The checklist intentionally mixes recurring release-manager responsibilities with temporary safeguards for known weak spots in the current process. Temporary safeguards should be revisited and removed once the underlying process is stable or automated.
 
 ### Minor Release Readiness Checklist
 
 <PersistentTaskListEnabler
   storageKey="minor-release-readiness-checklist"
-  version="1"
+  version="2"
   startHeadingId="minor-release-readiness-checklist"
   endHeadingId="minor-release-references"
 />
@@ -314,7 +317,6 @@ Legend:
 
 - [ ] **[MUST]** Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
 - [ ] **[MUST]** Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
-- [ ] **[MUST]** Create `release-<minor>.0-alphaN` from `stable/<minor>` (not from `main`) for the last alpha.
 - [ ] **[MUST]** Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
 - [ ] **[MUST]** Create `backport stable/<minor>` label in monorepo (and in ZPT where needed).
 - [ ] **[MUST]** Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
@@ -333,15 +335,13 @@ Legend:
 #### 3. CI, protections, and release workflow wiring
 
 - [ ] **[MUST]** Add `stable/<minor>` to `unified-ci-merges-stable-branches` protection/ruleset configuration in infra-core.
-- [ ] **[MUST]** Confirm release BPMN configuration uses `stable/<minor>` as source branch for minor SHAs and merge-back behavior.
-- [ ] **[MUST]** Start a fresh BPMN instance for the last alpha and minor on the latest process version (avoid stale process instances).
-- [ ] **[MUST]** When starting a minor release BPMN instance, fill code freeze date, and monorepo release start date.
+- [ ] **[TEMP]** Confirm release BPMN configuration uses `stable/<minor>` as source branch for minor SHAs and merge-back behavior.
+- [ ] **[TEMP]** When starting a minor release BPMN instance, fill code freeze date, and monorepo release start date.
 
 #### 4. Optimize, Docker images, and artifacts
 
-- [ ] **[MUST]** Confirm Optimize is included for the current minor in monorepo release (`includeOptimize=true`, 8.9+ strategy).
-- [ ] **[MUST]** Ensure stable branches build and publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
-- [ ] **[SHOULD]** Verify CPT/integration consumers use existing `<minor>-SNAPSHOT` image names to avoid image-not-found failures.
+- [ ] **[TEMP]** Confirm Optimize is included for the current minor in monorepo release (`includeOptimize=true`, 8.9+ strategy).
+- [ ] **[TEMP]** Ensure stable branches build and publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
 
 #### 5. Backports, RCs, and merge-backs
 
@@ -353,7 +353,6 @@ Legend:
 #### 6. Documentation and communication hygiene
 
 - [ ] **[MUST]** Keep this file current for minor branch strategy, bug-fix backport rules, and feature freeze vs code freeze definitions.
-- [ ] **[MUST]** Keep [Monorepo docs index](./index.md) updated so this checklist remains discoverable as the release SSOT.
 
 #### 7. Watch-outs and sanity checks
 
