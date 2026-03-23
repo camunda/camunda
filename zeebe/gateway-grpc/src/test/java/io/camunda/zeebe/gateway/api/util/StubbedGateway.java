@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.api.util;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -98,9 +99,9 @@ public final class StubbedGateway {
     final var clientStreamAdapter = new StreamJobsHandler(jobStreamer);
     actorScheduler.submitActor(clientStreamAdapter).join();
 
+    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
     final EndpointManager endpointManager =
-        new EndpointManager(
-            brokerClient, activateJobsHandler, clientStreamAdapter, securityConfiguration);
+        new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
@@ -237,11 +238,6 @@ public final class StubbedGateway {
       // below, we reserve some time for a client to register for a job type
       Awaitility.await("wait until stream is registered")
           .until(() -> registeredStreams.containsKey(jobType));
-    }
-
-    public JobActivationProperties getStreamMetadata(final String streamType) {
-      final var consumer = registeredStreams.get(BufferUtil.wrapString(streamType));
-      return consumer != null ? consumer.metadata() : null;
     }
 
     public void setFailOnAdd(final Throwable failure) {
