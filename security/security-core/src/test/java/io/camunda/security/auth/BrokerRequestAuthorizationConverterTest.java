@@ -11,6 +11,8 @@ import static io.camunda.security.entity.AuthenticationMethod.OIDC;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +35,10 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(1);
+    assertThat(brokerRequestAuth).hasSize(3);
     assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_ANONYMOUS_USER, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, true);
   }
 
   @Test
@@ -47,8 +51,10 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(1);
+    assertThat(brokerRequestAuth).hasSize(3);
     assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_USERNAME, "foo");
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, true);
   }
 
   @Test
@@ -63,8 +69,10 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(1);
+    assertThat(brokerRequestAuth).hasSize(3);
     assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_CLIENT_ID, "foo");
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, false);
   }
 
   @Test
@@ -80,8 +88,10 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(1);
+    assertThat(brokerRequestAuth).hasSize(3);
     assertThat(brokerRequestAuth).containsEntry(USER_TOKEN_CLAIMS, claims);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, false);
   }
 
   @Test
@@ -102,8 +112,10 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(1);
+    assertThat(brokerRequestAuth).hasSize(3);
     assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, groups);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, false);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, false);
   }
 
   @Test
@@ -123,7 +135,9 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(0);
+    assertThat(brokerRequestAuth).hasSize(2);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, true);
   }
 
   @Test
@@ -140,6 +154,8 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then
-    assertThat(brokerRequestAuth).hasSize(0);
+    assertThat(brokerRequestAuth).hasSize(2);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, false);
   }
 }

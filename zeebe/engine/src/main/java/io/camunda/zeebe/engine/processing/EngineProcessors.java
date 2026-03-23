@@ -296,8 +296,7 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
-        securityConfig);
+        authCheckBehavior);
 
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
@@ -305,8 +304,7 @@ public final class EngineProcessors {
         authCheckBehavior,
         keyGenerator,
         writers,
-        commandDistributionBehavior,
-        securityConfig);
+        commandDistributionBehavior);
 
     GroupProcessors.addGroupProcessors(
         typedRecordProcessors,
@@ -314,8 +312,7 @@ public final class EngineProcessors {
         authCheckBehavior,
         keyGenerator,
         writers,
-        commandDistributionBehavior,
-        securityConfig);
+        commandDistributionBehavior);
 
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
@@ -331,8 +328,7 @@ public final class EngineProcessors {
         authCheckBehavior,
         keyGenerator,
         writers,
-        commandDistributionBehavior,
-        securityConfig);
+        commandDistributionBehavior);
 
     MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,

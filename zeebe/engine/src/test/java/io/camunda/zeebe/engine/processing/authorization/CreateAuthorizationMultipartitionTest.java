@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
@@ -36,12 +35,7 @@ public class CreateAuthorizationMultipartitionTest {
 
   private static final int PARTITION_COUNT = 3;
 
-  @Rule
-  public final EngineRule engine =
-      EngineRule.multiplePartition(PARTITION_COUNT)
-          .withSecurityConfig(
-              (cfg) -> cfg.getAuthentication().setMethod(AuthenticationMethod.OIDC));
-
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test

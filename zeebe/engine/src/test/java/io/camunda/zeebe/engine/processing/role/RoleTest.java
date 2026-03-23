@@ -200,7 +200,7 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRejectIfUserIsNotPresent() {
+  public void shouldNotRejectIfUserIsNotPresent() {
     // given
     final var roleId = UUID.randomUUID().toString();
     final var roleRecord = engine.role().newRole(roleId).create();
@@ -214,15 +214,10 @@ public class RoleTest {
             .addEntity(roleId)
             .withEntityId(entityId)
             .withEntityType(EntityType.USER)
-            .expectRejection()
-            .add();
+            .add()
+            .getValue();
 
-    // then
-    assertThat(updatedRecord)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
-                .formatted(entityId, EntityType.USER, roleId));
+    assertThat(updatedRecord).hasEntityId(entityId);
   }
 
   @Test
@@ -415,30 +410,34 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRejectIfGroupIsNotPresent() {
-    // given
+  public void shouldRemoveNonExistingGroupFromRole() {
     final var groupId = Strings.newRandomValidUsername();
     final var roleId = UUID.randomUUID().toString();
     engine.role().newRole(roleId).create();
-
-    // when:
-    final var updatedRecord =
+    engine
+        .role()
+        .addEntity(roleId)
+        .withEntityId(groupId)
+        .withEntityType(EntityType.GROUP)
+        .add(
+            AuthorizationUtil.getAuthInfoWithClaim(
+                Authorization.USER_GROUPS_CLAIMS, List.of("g1")));
+    final var removedEntity =
         engine
             .role()
-            .addEntity(roleId)
+            .removeEntity(roleId)
             .withEntityId(groupId)
             .withEntityType(EntityType.GROUP)
-            .expectRejection()
-            .add(
+            .remove(
                 AuthorizationUtil.getAuthInfoWithClaim(
-                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")));
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
+            .getValue();
 
-    // then
-    assertThat(updatedRecord)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
-                .formatted(groupId, EntityType.GROUP, roleId));
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
   }
 
   @Test

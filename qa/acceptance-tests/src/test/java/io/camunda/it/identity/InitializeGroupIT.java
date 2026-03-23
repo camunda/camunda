@@ -21,7 +21,6 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.ConfiguredGroup;
-import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -40,13 +39,10 @@ class InitializeGroupIT {
           "group1",
           "Group 1",
           "something to test",
-          List.of("test-user"),
+          List.of(ADMIN),
           List.of(),
           List.of(),
           List.of(TEST_CLIENT_ID));
-
-  private static final ConfiguredUser CONFIGURED_USER =
-      new ConfiguredUser("test-user", DEFAULT_PASSWORD, "test-user", "");
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -54,10 +50,7 @@ class InitializeGroupIT {
           .withBasicAuth()
           .withAuthorizationsEnabled()
           .withSecurityConfig(
-              conf -> {
-                conf.getInitialization().setGroups(List.of(CONFIGURED_GROUP_1));
-                conf.getInitialization().getUsers().add(CONFIGURED_USER);
-              });
+              conf -> conf.getInitialization().setGroups(List.of(CONFIGURED_GROUP_1)));
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -94,8 +87,7 @@ class InitializeGroupIT {
 
     // then:
     assertThat(membersResponse.items()).hasSize(1);
-    assertThat(membersResponse.items())
-        .anyMatch(actual -> actual.getUsername().equals("test-user"));
+    assertThat(membersResponse.items()).anyMatch(actual -> actual.getUsername().equals(ADMIN));
   }
 
   @Test
