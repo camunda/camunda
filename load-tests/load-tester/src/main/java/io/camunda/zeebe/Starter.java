@@ -147,6 +147,7 @@ public class Starter extends App {
     LOG.info("Monitor data availability of started process instances");
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
+            System::nanoTime,
             registry,
             Executors.newScheduledThreadPool(1),
             config.getMonitorDataAvailabilityInterval(),
@@ -156,6 +157,7 @@ public class Starter extends App {
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(ProcessInstanceSort::startDate)
+                      .page(p -> p.limit(100))
                       .send();
 
               return send.thenApply(
