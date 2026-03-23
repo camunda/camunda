@@ -40,9 +40,7 @@ import java.util.List;
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public class VisibleForTestingArchTest {
 
-  static final List<String> EXCLUDED_CLASS_NAMES =
-      List.of(
-          "io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector");
+  static final List<String> EXCLUDED_CLASS_NAMES = List.of();
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
