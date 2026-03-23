@@ -91,7 +91,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mssql, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: false.
 
@@ -122,6 +122,8 @@ You can specify a secondary storage type as the second argument:
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
 . ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
 . ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name mysql          # Uses MySQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name mssql          # Uses Microsoft SQL Server (RDBMS)
 . ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 

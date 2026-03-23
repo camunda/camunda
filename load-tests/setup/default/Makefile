@@ -23,6 +23,8 @@ ifeq ($(secondary_storage),postgresql)
 platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-postgresql.yaml
 else ifeq ($(secondary_storage),mysql)
 platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mysql.yaml
+else ifeq ($(secondary_storage),mssql)
+platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mssql.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
@@ -36,6 +38,9 @@ ifeq ($(secondary_storage),postgresql)
 platform_values += --set elasticsearch.enabled=false
 endif
 ifeq ($(secondary_storage),mysql)
+platform_values += --set elasticsearch.enabled=false
+endif
+ifeq ($(secondary_storage),mssql)
 platform_values += --set elasticsearch.enabled=false
 endif
 endif
@@ -52,7 +57,7 @@ install: install-storage create-credentials install-platform install-load-test i
 .PHONY: install-stable
 install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Install PostgreSQL database if secondary_storage is postgresql, MySQL if secondary_storage is mysql, or OpenSearch if secondary_storage is opensearch
+# Install PostgreSQL database if secondary_storage is postgresql, MySQL if secondary_storage is mysql, MSSQL if secondary_storage is mssql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
@@ -67,6 +72,10 @@ else ifeq ($(secondary_storage),mysql)
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
 		$(platform_values)
+else ifeq ($(secondary_storage),mssql)
+	@echo "Installing MSSQL database for namespace $(namespace)..."
+	# Deploy MSSQL via plain Kubernetes manifests (mssql.yaml) since no good public chart is available
+	kubectl apply --namespace $(namespace) -f databases/mssql.yaml
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
@@ -176,6 +185,11 @@ else ifeq ($(secondary_storage),mysql)
 	@echo "Cleaning up MySQL database for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall mysql
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=mysql
+else ifeq ($(secondary_storage),mssql)
+	@echo "Cleaning up MSSQL database for namespace $(namespace)..."
+	-kubectl delete --namespace $(namespace) -f mssql.yaml
+	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
+	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=mssql
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
