@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.BulkIndexRequest.IndexOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -756,6 +757,58 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
           .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
           .containsExactly(rootProcessInstanceKey);
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutJobToUserTaskMigrationOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobRecord().setType("test-job").setIsJobToUserTaskMigration(true)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobToUserTaskMigration"))
+          .describedAs(
+              "Expect that job records are serialized without jobToUserTaskMigration on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithJobToUserTaskMigration() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobRecord().setType("test-job").setIsJobToUserTaskMigration(true)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobToUserTaskMigration"))
+          .describedAs(
+              "Expect that job records are serialized with jobToUserTaskMigration on current version")
+          .containsExactly(true);
     }
 
     private static long getRootProcessInstanceKey(final RecordValue recordValue) throws Exception {
