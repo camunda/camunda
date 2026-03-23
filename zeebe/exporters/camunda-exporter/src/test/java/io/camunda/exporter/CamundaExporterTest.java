@@ -69,7 +69,7 @@ final class CamundaExporterTest {
   void beforeEach() {
     stubbedClientAdapterInUse = new StubClientAdapter();
     mockedClientAdapterFactory
-        .when(() -> ClientAdapter.of(configuration.getConnect(), anyBoolean()))
+        .when(() -> ClientAdapter.of(any(), anyBoolean()))
         .thenReturn(stubbedClientAdapterInUse);
     doReturn(emptyList()).when(resourceProvider).getIndexDescriptors();
     doReturn(emptyList()).when(resourceProvider).getIndexTemplateDescriptors();
