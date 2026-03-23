@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
@@ -58,6 +59,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final CoverageReportProperties coverageReportProperties;
   private final JudgeProperties judgeProperties;
   private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
+  private final AssertionProperties assertionProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -83,6 +85,7 @@ public final class ContainerRuntimePropertiesUtil {
     coverageReportProperties = new CoverageReportProperties(properties);
     judgeProperties = new JudgeProperties(properties);
     camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
+    assertionProperties = new AssertionProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -262,5 +265,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   public JudgeProperties getJudgeProperties() {
     return judgeProperties;
+  }
+
+  public AssertionProperties getAssertionProperties() {
+    return assertionProperties;
   }
 }
