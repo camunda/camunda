@@ -32,14 +32,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.EntitySizeEstimator;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -61,17 +64,20 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,6 +101,7 @@ import org.testcontainers.containers.GenericContainer;
  */
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
+  private static final AtomicLong NEXT_POSITION = new AtomicLong(1);
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -170,6 +177,9 @@ final class CamundaExporterIT {
 
     exporter.export(record);
 
+    // force the pending flush to complete
+    exporter.close();
+
     // then
     assertThat(exporterController.getPosition()).isEqualTo(record.getPosition());
   }
@@ -194,10 +204,20 @@ final class CamundaExporterIT {
 
     exporter.export(record);
     exporter.export(record2);
+
+    // force the pending flush to complete
+    exporter.close();
+
     // then
+    await()
+        .untilAsserted(
+            () -> assertThat(controllerSpy.getPosition()).isEqualTo(record2.getPosition()));
+
     verify(controllerSpy, never())
         .updateLastExportedRecordPosition(eq(record.getPosition()), any());
     verify(controllerSpy).updateLastExportedRecordPosition(eq(record2.getPosition()), any());
+
+    await().untilAsserted(() -> verifyUsersStored(config, record, record2));
   }
 
   @ParameterizedTest
@@ -224,9 +244,16 @@ final class CamundaExporterIT {
     container.stop();
     await().until(() -> !container.isRunning());
 
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
+    final var record1 =
+        generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
-    assertThatThrownBy(() -> exporter.export(record))
+    exporter.export(record1);
+
+    final var record2 =
+        generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
+
+    // need to trigger another flush so we see the actual error
+    assertThatThrownBy(() -> exporter.export(record2))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("Connection refused");
 
@@ -236,12 +263,17 @@ final class CamundaExporterIT {
         .setPortBindings(List.of(currentPort + ":9200"));
     container.start();
 
-    final var record2 =
+    final var record3 =
         generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
-    exporter.export(record2);
+    exporter.export(record3);
+
+    // force the pending flush to complete
+    exporter.close();
 
     await()
-        .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
+        .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record3.getPosition()));
+
+    await().untilAsserted(() -> verifyUsersStored(config, record1, record2, record3));
   }
 
   @TestTemplate
@@ -305,6 +337,9 @@ final class CamundaExporterIT {
     // when
     camundaExporter.export(record);
 
+    // force the pending flush to complete
+    camundaExporter.close();
+
     // then
     assertThat(expectedHandlers).isNotEmpty();
     expectedHandlers.forEach(
@@ -363,7 +398,13 @@ final class CamundaExporterIT {
     camundaExporter.open(new ExporterTestController());
 
     // act
-    assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+    assertThatCode(
+            () -> {
+              camundaExporter.export(record);
+              // export the same record so we ensure we get any error from the pending flush
+              camundaExporter.export(record);
+            })
+        .doesNotThrowAnyException();
   }
 
   @TestTemplate
@@ -398,7 +439,12 @@ final class CamundaExporterIT {
     camundaExporter.open(new ExporterTestController());
 
     // act
-    assertThatThrownBy(() -> camundaExporter.export(record))
+    assertThatThrownBy(
+            () -> {
+              camundaExporter.export(record);
+              // export the same record so we ensure we get any error from the pending flush
+              camundaExporter.export(record);
+            })
         .isInstanceOf(ExporterException.class)
         .cause()
         .isInstanceOf(PersistenceException.class);
@@ -484,6 +530,9 @@ final class CamundaExporterIT {
             UserIntent.CREATED);
     exporter.export(record);
 
+    // Force the pending flush to complete
+    exporter.close();
+
     // Position updated
     assertThat(secondController.getPosition()).isEqualTo(record.getPosition());
 
@@ -527,7 +576,10 @@ final class CamundaExporterIT {
 
   private Record<?> generateRecordWithSupportedBrokerVersion(
       final ValueType valueType, final Intent intent) {
-    return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.8.0"), intent);
+    return factory.generateRecord(
+        valueType,
+        r -> r.withBrokerVersion("8.8.0").withPosition(NEXT_POSITION.getAndIncrement()),
+        intent);
   }
 
   private static Stream<Arguments> containerProvider() {
@@ -661,6 +713,47 @@ final class CamundaExporterIT {
 
     // act
     assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+  }
+
+  private void verifyUsersStored(final ExporterConfiguration config, final Record<?>... records)
+      throws IOException {
+    final var expectedUsernames =
+        Arrays.stream(records).map(this::userName).collect(Collectors.toSet());
+
+    final var actualUserNames =
+        getStoredEntitiesForHandler(config, UserCreatedUpdatedHandler.class, expectedUsernames)
+            .stream()
+            .map(entity -> entity.get("username"))
+            .collect(Collectors.toSet());
+    assertThat(actualUserNames).isEqualTo(expectedUsernames);
+  }
+
+  private String userName(final Record<?> record) {
+    return ((UserRecordValue) record.getValue()).getUsername();
+  }
+
+  private List<Map<String, Object>> getStoredEntitiesForHandler(
+      final ExporterConfiguration config, final Class<?> handlerClass, final Set<String> ids)
+      throws IOException {
+
+    try (final ClientAdapter clientAdapter = ClientAdapter.of(config.getConnect());
+        final SearchEngineClient searchEngineClient = clientAdapter.getSearchEngineClient()) {
+      final var handler =
+          getHandlers(config).stream()
+              .filter(h -> handlerClass.isAssignableFrom(h.getClass()))
+              .findFirst()
+              .orElseThrow();
+
+      // For simplicity, we assume that the handler generates a single ID per record
+      // In a real scenario, you might need to adapt this to handle multiple IDs or different ID
+      // generation logic
+      return ids.stream()
+          .map(
+              id -> {
+                return searchEngineClient.getDocument(handler.getIndexName(), id);
+              })
+          .toList();
+    }
   }
 
   @Nested
