@@ -35,5 +35,4 @@ public final class SearchUserTaskEffectiveVariableTest extends ClientRestTest {
         gatewayService.getLastRequest(UserTaskEffectiveVariableSearchQueryRequest.class);
     assertThat(request.getFilter()).isNull();
   }
-
 }

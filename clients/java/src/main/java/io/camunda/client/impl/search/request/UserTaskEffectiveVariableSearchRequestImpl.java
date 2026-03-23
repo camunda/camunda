@@ -92,8 +92,7 @@ public class UserTaskEffectiveVariableSearchRequestImpl
   }
 
   @Override
-  public UserTaskEffectiveVariableSearchRequest filter(
-      final Consumer<UserTaskVariableFilter> fn) {
+  public UserTaskEffectiveVariableSearchRequest filter(final Consumer<UserTaskVariableFilter> fn) {
     return filter(userTaskVariableFilter(fn));
   }
 
