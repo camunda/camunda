@@ -267,6 +267,10 @@ Some tasks during the release process are also taking care of other DRIs. The re
 
 The release manager is currently selected manually for each release.
 
+The acting subject for release-process tasks and checklist items is the Monorepo Release Manager currently on shift when the step becomes due. For minor releases that span multiple monthly rotations, responsibility is handed over as part of the regular shift change together with the current checklist state and any open follow-up items.
+
+The checklist itself is maintained collectively. Every MRM is expected to update it when a gap, obsolete step, or missing safeguard is discovered during their shift so the next handover starts from the latest known process.
+
 _Caveat: Some places still refer to this as “Zeebe release manager” although with 8.6+ the release manager is responsible for multiple components including Zeebe and C8 webapps._
 
 ### Others
@@ -289,76 +293,73 @@ import PersistentTaskListEnabler from '@site/src/components/PersistentTaskListEn
 
 Use the following checklist as the operational source of truth for every minor release.
 
-Legend:
+Ownership model:
 
-- **[MUST]** = manual action or validation the MRM is responsible for during this minor release
-- **[TEMP]** = temporary safeguard kept because this step recently failed, is still fragile, or is not automated yet
-- **[SHOULD]** = strongly recommended extra validation that reduces risk and toil
-- **[NICE]** = improvement or automation follow-up that can be time-boxed
-
-The checklist intentionally mixes recurring release-manager responsibilities with temporary safeguards for known weak spots in the current process. Temporary safeguards should be revisited and removed once the underlying process is stable or automated.
+- The checklist is owned collectively by the MRMs and evolves through updates from each shift.
+- The acting subject for each checklist item is the MRM on shift when that item becomes relevant, not necessarily the MRM who started preparing the minor.
+- Open checklist items and context should be explicitly handed over at monthly MRM rotation.
 
 ### Minor Release Readiness Checklist
 
 <PersistentTaskListEnabler
   storageKey="minor-release-readiness-checklist"
-  version="2"
+  version="3"
   startHeadingId="minor-release-readiness-checklist"
   endHeadingId="minor-release-references"
 />
 
 #### 0. Dates, ownership, and high-level alignment
 
-- [ ] **[MUST]** Confirm official minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases) for definitions and timing.
-- [ ] **[MUST]** Confirm the Monorepo Release Manager (MRM) is available for feature freeze week, code freeze / branch creation, and the final RC window.
-- [ ] **[SHOULD]** Check for major holidays during RC and final release weeks, then adjust expectations with release stakeholders.
+- [ ] Confirm official minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases) for definitions and timing.
+- [ ] Confirm the Monorepo Release Manager (MRM) is available for feature freeze week, code freeze / branch creation, and the final RC window.
+- [ ] Check for major holidays during RC and final release weeks, then adjust expectations with release stakeholders.
 
 #### 1. Around feature freeze / last alpha (branch strategy)
 
-- [ ] **[MUST]** Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
-- [ ] **[MUST]** Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
-- [ ] **[MUST]** Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
-- [ ] **[MUST]** Create `backport stable/<minor>` label in monorepo (and in ZPT where needed).
-- [ ] **[MUST]** Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
+- [ ] Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
+- [ ] Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
+- [ ] Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
+- [ ] Create `backport stable/<minor>` label in monorepo (and in ZPT where needed).
+- [ ] Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
 
 #### 2. Versioning and branch plumbing (after last alpha branch exists)
 
-- [ ] **[MUST]** On monorepo `main`, bump all `pom.xml` versions to `8.(x+1).0-SNAPSHOT` using:
+- [ ] On monorepo `main`, bump all `pom.xml` versions to `8.(x+1).0-SNAPSHOT` using:
   - `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
-- [ ] **[MUST]** On ZPT `main`, bump versions to the next minor snapshot line.
-- [ ] **[MUST]** Update upgrade and migration test configuration so the previous minor upgrades to the new minor line.
-- [ ] **[SHOULD]** If Zeebe upgrade tests fail with `SkippedMinorVersion[...]` after bumps, either fix assumptions or temporarily disable with explicit TODO and re-enable after final minor release.
-- [ ] **[MUST]** Confirm artifact expectations:
+- [ ] On ZPT `main`, bump versions to the next minor snapshot line.
+- [ ] Update upgrade and migration test configuration so the previous minor upgrades to the new minor line.
+- [ ] Confirm artifact expectations:
   - `stable/<minor>` produces `<minor>.0-SNAPSHOT`
   - `main` produces `<next-minor>.0-SNAPSHOT` (or generic `SNAPSHOT` where expected)
 
 #### 3. CI, protections, and release workflow wiring
 
-- [ ] **[MUST]** Add `stable/<minor>` to `unified-ci-merges-stable-branches` protection/ruleset configuration in infra-core.
-- [ ] **[TEMP]** Confirm release BPMN configuration uses `stable/<minor>` as source branch for minor SHAs and merge-back behavior.
-- [ ] **[TEMP]** When starting a minor release BPMN instance, fill code freeze date, and monorepo release start date.
+- [ ] Add `stable/<minor>` to `unified-ci-merges-stable-branches` protection/ruleset configuration in infra-core.
+- [ ] Verify release BPMN configuration uses `stable/<minor>` as source branch for minor SHAs and merge-back behavior before running the minor.
+- [ ] Verify code freeze date and monorepo release start date are filled correctly when starting a minor release BPMN instance.
+- [ ] Verify CI / SLO dashboards include `stable/<minor>` and surface regressions for that branch.
+- [ ] Ensure a scheduled release dry-run exists for `stable/<minor>` and is green before starting the minor.
 
 #### 4. Optimize, Docker images, and artifacts
 
-- [ ] **[TEMP]** Confirm Optimize is included for the current minor in monorepo release (`includeOptimize=true`, 8.9+ strategy).
-- [ ] **[TEMP]** Ensure stable branches build and publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
+- [ ] Verify Optimize is included for the current minor in monorepo release (`includeOptimize=true`, 8.9+ strategy).
+- [ ] Verify stable branches build and publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
 
 #### 5. Backports, RCs, and merge-backs
 
-- [ ] **[MUST]** Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
-- [ ] **[MUST]** For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
-- [ ] **[SHOULD]** Track minor backports via labels/board to avoid missing required fixes.
-- [ ] **[SHOULD]** Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
+- [ ] Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
+- [ ] For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
+- [ ] Track minor backports via labels/board to avoid missing required fixes.
+- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
 
 #### 6. Documentation and communication hygiene
 
-- [ ] **[MUST]** Keep this file current for minor branch strategy, bug-fix backport rules, and feature freeze vs code freeze definitions.
+- [ ] Keep this file current for minor branch strategy, bug-fix backport rules, and feature freeze vs code freeze definitions.
 
 #### 7. Watch-outs and sanity checks
 
-- [ ] **[SHOULD]** Watch Zeebe upgrade tests for `SkippedMinorVersion[from=..., to=...]` after version bumps and decide: fix assumptions vs temporary disable with follow-up.
-- [ ] **[SHOULD]** Verify CPT/integration tests pull image tags that exist for `<minor>-SNAPSHOT`.
-- [ ] **[SHOULD]** Before starting a new minor BPMN instance, verify no outdated temporary branch overrides/conditions remain from previous minors.
+- [ ] Verify no outdated temporary branch overrides or conditions remain from previous minors before starting a new minor BPMN instance.
+- [ ] Verify preview/smoke-test workflows target `stable/<minor>` with existing `<minor>-SNAPSHOT` images.
 
 ### Minor Release References
 
@@ -369,6 +370,20 @@ The checklist intentionally mixes recurring release-manager responsibilities wit
 - [Issue #40009](https://github.com/camunda/camunda/issues/40009)
 - [Issue #37374](https://github.com/camunda/camunda/issues/37374)
 - [Issue #38074](https://github.com/camunda/camunda/issues/38074)
+
+### Possible Issues When Cutting The Stable Branch
+
+#### Zeebe update tests failing
+
+- Symptom: `IllegalStateException: Snapshot is not compatible with current version: SkippedMinorVersion[from=8.8.0, to=8.10.0]`
+- Context: recurring issue around the stable-branch cut and version-line switch. See Christian's note: "Hi folks, every 6 months the same question..."
+- Known workaround: disable the affected tests with an explicit follow-up and re-enable them after the final minor release is published.
+
+#### CPT integration tests failing
+
+- Symptom: `Can't get Docker image: RemoteDockerImage(imageName=camunda/camunda:8.9-SNAPSHOT)`
+- Context: this happened due to wrong test naming during the stable-branch transition. See Remco's note: `@monorepo-ci-medic Backports to stable/8.9...`
+- Known workaround: there is no generic workaround beyond fixing the incorrect test name or image reference.
 
 ### Feature Freeze vs Code Freeze (Minor Releases)
 
