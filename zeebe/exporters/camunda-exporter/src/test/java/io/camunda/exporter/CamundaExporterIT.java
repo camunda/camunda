@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.awaitility.Awaitility.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -56,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -268,12 +271,18 @@ final class CamundaExporterIT {
       throws IOException {
     // given
     createSchemas(config);
-    final var valueType = ValueType.USER;
-    final Record record = generateRecordWithSupportedBrokerVersion(valueType, UserIntent.CREATED);
+    final var valueType = ValueType.VARIABLE;
+    final Record record =
+        generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
+    final var cacheProvider = mock(ExporterEntityCacheProvider.class);
+    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
-        mock(ExporterEntityCacheProvider.class),
+        cacheProvider,
         new SimpleMeterRegistry(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
