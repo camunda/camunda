@@ -3,7 +3,7 @@
     "repo": "https://github.com/camunda/camunda",
     "specPath": "zeebe/gateway-protocol/src/main/proto/rest-api.yaml",
     "ref": "stable/8.8",
-    "outputDir": "json-body-assertions",
+    "outputDir": "json-body-assertions/_generated",
     "preserveCheckout": false,
     "dryRun": false,
     "logLevel": "info",
