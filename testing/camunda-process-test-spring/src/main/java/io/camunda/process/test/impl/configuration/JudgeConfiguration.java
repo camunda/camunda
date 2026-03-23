@@ -118,7 +118,7 @@ public class JudgeConfiguration {
 
     /**
      * The LLM provider to use for the AI judge. Supported providers: openai, anthropic,
-     * amazon-bedrock, openai-compatible.
+     * amazon-bedrock, openai-compatible, azure-openai.
      */
     private String provider;
 
