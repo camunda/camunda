@@ -350,6 +350,35 @@ jobs:
           echo "Found $optimize_count optimize indices"
 
           kill %1 2>/dev/null || true
+      - name: Pause exporter and create instance to build backlog
+        run: |
+          release="${{ inputs.name }}"
+          # Port-forward to broker actuator (port 9600)
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 9600 &
+          sleep 3
+
+          # Pause all exporters to create a backlog of unexported records
+          echo "Pausing exporters..."
+          curl -sf -X POST http://localhost:9600/actuator/exporting/pause
+          echo "Exporters paused"
+
+          # Get client secret for zbctl
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."orchestration-security-authentication-oidc-secret"' | base64 -d)
+          export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+          export ZEEBE_CLIENT_ID=orchestration
+          export ZEEBE_CLIENT_SECRET
+          export ZEEBE_TOKEN_AUDIENCE=zeebe-api
+
+          # Create another instance while exporter is paused — this record will
+          # be in the log stream but not yet exported. After the 8.9 upgrade,
+          # the exporter will try to export this old record with the new schema
+          # (including new fields like businessKey), which should fail on the
+          # old strict-mapped index template if the bug is present.
+          echo "Creating instance while exporter is paused..."
+          ./zbctl create instance benchmark --insecure
+          echo "Backlog instance created — exporter will process it after upgrade"
+
+          kill %1 2>/dev/null || true
 
   upgrade-camunda-cluster-to-new-version:
     name: Upgrade previous version of Camunda Platform to new version
