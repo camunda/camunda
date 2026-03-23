@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -66,6 +67,44 @@ class BedrockChatModelBuilderTest {
     final BaseProviderConfig.AmazonBedrockConfig config =
         new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, null, null);
+
+    // when
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
+  @Test
+  void shouldBuildChatModelWithTimeout() {
+    // given
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            "test-access-key",
+            "test-secret-key");
+    config.setTimeout(Duration.ofSeconds(60));
+
+    // when
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
+
+    // then
+    assertThat(chatModel).isNotNull();
+  }
+
+  @Test
+  void shouldBuildChatModelWithTemperature() {
+    // given
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            "test-access-key",
+            "test-secret-key");
+    config.setTemperature(0.7);
 
     // when
     final ChatModel chatModel = BedrockChatModelBuilder.build(config);

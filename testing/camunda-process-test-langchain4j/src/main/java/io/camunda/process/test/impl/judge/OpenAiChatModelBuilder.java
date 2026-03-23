@@ -34,7 +34,19 @@ final class OpenAiChatModelBuilder {
     final String model = require(config.getModel(), "model", "openai");
     final String apiKey = require(config.getApiKey(), "apiKey", "openai");
 
-    final ChatModel chatModel = OpenAiChatModel.builder().apiKey(apiKey).modelName(model).build();
+    final OpenAiChatModel.OpenAiChatModelBuilder builder =
+        OpenAiChatModel.builder().apiKey(apiKey).modelName(model);
+
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      builder.temperature(config.getTemperature());
+    }
+
+    final ChatModel chatModel = builder.build();
     LOG.debug("Successfully built OpenAI chat model with model '{}'", model);
     return chatModel;
   }
