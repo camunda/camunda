@@ -105,7 +105,7 @@ public final class ZeebePartitionFactory {
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
-  private SharedRocksDbResources sharedRocksDbResources;
+  private volatile SharedRocksDbResources sharedRocksDbResources;
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
 
@@ -233,7 +233,7 @@ public final class ZeebePartitionFactory {
 
   /**
    * Determines the number of partitions this broker is responsible for. First attempts to get the
-   * actual partition count from the cluster configuration. If no partitions are assigned yet (e.g.,
+   * actual partition count from the cluster topology. If no partitions are assigned yet (e.g.,
    * during initial cluster bootstrap), falls back to a static calculation based on cluster
    * configuration.
    */
