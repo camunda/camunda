@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
+import io.camunda.db.rdbms.read.domain.ProcessInstanceStatisticsDbQuery;
 import io.camunda.db.rdbms.write.domain.Copyable;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -38,7 +39,7 @@ public interface ProcessInstanceMapper {
 
   List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
 
-  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(ProcessInstanceStatisticsDbQuery query);
 
   int deleteByKeys(List<Long> processInstanceKeys);
 
