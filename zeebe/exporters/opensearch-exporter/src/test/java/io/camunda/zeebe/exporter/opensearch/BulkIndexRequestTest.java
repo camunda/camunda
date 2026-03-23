@@ -738,6 +738,36 @@ final class BulkIndexRequestTest {
           .isNull();
     }
 
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithBusinessIdOnCurrentVersion(final ValueType valueType) throws Exception {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      final String businessId = getBusinessId(record.getValue());
+      assertThat(businessId).isNotEmpty();
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("businessId"))
+          .describedAs("Expect that the records are serialized with businessId")
+          .isEqualTo(businessId);
+    }
+
     private static String getBusinessId(final RecordValue recordValue) throws Exception {
       final var field = recordValue.getClass().getDeclaredField("businessId");
       field.setAccessible(true);
