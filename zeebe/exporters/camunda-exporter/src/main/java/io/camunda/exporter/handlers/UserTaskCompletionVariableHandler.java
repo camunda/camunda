@@ -118,16 +118,16 @@ public class UserTaskCompletionVariableHandler
             .setName(e.getKey())
             .setTenantId(recordValue.getTenantId())
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-            .setTaskId(String.valueOf(record.getValue().getUserTaskKey()))
-            .setFullValue(variableValueAsString);
+            .setTaskId(String.valueOf(record.getValue().getUserTaskKey()));
 
     if (variableValueAsString.length() > variableSizeThreshold) {
       // store preview
       snapshotVariableEntity
           .setValue(variableValueAsString.substring(0, variableSizeThreshold))
+          .setFullValue(variableValueAsString)
           .setIsPreview(true);
     } else {
-      snapshotVariableEntity.setValue(variableValueAsString).setIsPreview(false);
+      snapshotVariableEntity.setValue(variableValueAsString).setFullValue(null).setIsPreview(false);
     }
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
