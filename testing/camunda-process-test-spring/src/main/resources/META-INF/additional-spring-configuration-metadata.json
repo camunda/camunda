@@ -32,6 +32,10 @@
         {
           "value": "openai-compatible",
           "description": "Use an OpenAI-compatible API (requires base-url and model)."
+        },
+        {
+          "value": "azure-openai",
+          "description": "Use Azure OpenAI models (requires model and endpoint, and optionally api-key)."
         }
       ],
       "providers": [

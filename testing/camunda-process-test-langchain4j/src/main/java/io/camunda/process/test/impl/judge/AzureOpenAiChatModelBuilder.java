@@ -18,41 +18,35 @@ package io.camunda.process.test.impl.judge;
 import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class OpenAiCompatibleChatModelBuilder {
+final class AzureOpenAiChatModelBuilder {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OpenAiCompatibleChatModelBuilder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzureOpenAiChatModelBuilder.class);
 
-  private OpenAiCompatibleChatModelBuilder() {}
+  private AzureOpenAiChatModelBuilder() {}
 
-  static ChatModel build(final BaseProviderConfig.OpenAiCompatibleConfig config) {
-    LOG.debug("Building OpenAI-compatible chat model");
+  static ChatModel build(final BaseProviderConfig.AzureOpenAiConfig config) {
+    LOG.debug("Building Azure OpenAI chat model");
 
-    final String model = require(config.getModel(), "model", "openai-compatible");
-    final String baseUrl = require(config.getBaseUrl(), "baseUrl", "openai-compatible");
+    final String model = require(config.getModel(), "model", "azure-openai");
+    final String endpoint = require(config.getEndpoint(), "endpoint", "azure-openai");
 
-    final OpenAiChatModel.OpenAiChatModelBuilder builder =
-        OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
+    final AzureOpenAiChatModel.Builder builder =
+        AzureOpenAiChatModel.builder().endpoint(endpoint).deploymentName(model);
 
-    final Map<String, String> headers = config.getHeaders();
-    final boolean hasAuthorizationHeader =
-        headers != null && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase);
     if (hasText(config.getApiKey())) {
-      if (hasAuthorizationHeader) {
-        LOG.warn("Both API key and Authorization header are set. The API key will be ignored.");
-      } else {
-        LOG.debug("Using configured API key");
-        builder.apiKey(config.getApiKey().trim());
-      }
-    }
-
-    if (headers != null && !headers.isEmpty()) {
-      builder.customHeaders(headers);
+      LOG.debug("Using API key authentication");
+      builder.apiKey(config.getApiKey().trim());
+    } else {
+      LOG.debug(
+          "No API key configured, falling back to DefaultAzureCredential "
+              + "(environment, workload identity, managed identity, Azure CLI)");
+      builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
     }
 
     if (config.getTimeout() != null) {
@@ -66,8 +60,8 @@ final class OpenAiCompatibleChatModelBuilder {
 
     final ChatModel chatModel = builder.build();
     LOG.debug(
-        "Successfully built OpenAI-compatible chat model with baseUrl '{}' and model '{}'",
-        baseUrl,
+        "Successfully built Azure OpenAI chat model with endpoint '{}' and deployment '{}'",
+        endpoint,
         model);
     return chatModel;
   }
