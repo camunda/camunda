@@ -139,7 +139,7 @@ public final class CreateProcessInstanceTest {
             .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
-    assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(variables);
+    assertThat(createdEvent.getValue().getVariables()).isEmpty();
   }
 
   @ParameterizedTest
@@ -337,7 +337,7 @@ public final class CreateProcessInstanceTest {
             .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
-    assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(Map.of(key, value));
+    assertThat(createdEvent.getValue().getVariables()).isEmpty();
   }
 
   @ParameterizedTest
