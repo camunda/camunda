@@ -85,10 +85,10 @@ class StreamingElasticsearchBatchRequestTest {
     final String[] lines = ndJson.split("\n");
     assertThat(lines).hasSize(2);
 
-    final String actionLine = lines[0];
-    assertThat(actionLine).contains("\"index\"");
-    assertThat(actionLine).contains("\"_index\"");
-    assertThat(actionLine).contains("\"_id\"");
+    final JsonNode action = parseJson(lines[0]);
+    assertThat(action.has("index")).isTrue();
+    assertThat(action.get("index").get("_index").asText()).isEqualTo(INDEX);
+    assertThat(action.get("index").get("_id").asText()).isEqualTo(ID);
   }
 
   @Test
@@ -106,14 +106,14 @@ class StreamingElasticsearchBatchRequestTest {
     final Request request = captor.getValue();
     assertThat(request.getMethod()).isEqualTo("POST");
     assertThat(request.getEndpoint()).isEqualTo("/_bulk");
-    assertThat(request.getEntity().getContentType().getValue()).containsIgnoringCase("ndjson");
+    assertThat(request.getEntity().getContentType().getValue()).isEqualTo("application/x-ndjson");
   }
 
   @Test
   void shouldStreamIndexWithRouting() throws IOException, PersistenceException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
-    final String routing = "routing";
+    final String routing = "my-routing";
 
     // when
     batchRequest.addWithRouting(INDEX, entity, routing);
@@ -124,9 +124,11 @@ class StreamingElasticsearchBatchRequestTest {
     final String[] lines = ndJson.split("\n");
     assertThat(lines).hasSize(2);
 
-    final String actionLine = lines[0];
-    assertThat(actionLine).contains("\"index\"");
-    assertThat(actionLine).contains(routing);
+    final JsonNode action = parseJson(lines[0]);
+    assertThat(action.has("index")).isTrue();
+    assertThat(action.get("index").get("_index").asText()).isEqualTo(INDEX);
+    assertThat(action.get("index").get("_id").asText()).isEqualTo(ID);
+    assertThat(action.get("index").get("routing").asText()).isEqualTo(routing);
   }
 
   @Test
@@ -136,7 +138,7 @@ class StreamingElasticsearchBatchRequestTest {
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
     // when
-    batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, "routing");
+    batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, "my-routing");
     batchRequest.execute();
 
     // then
@@ -144,11 +146,15 @@ class StreamingElasticsearchBatchRequestTest {
     final String[] lines = ndJson.split("\n");
     assertThat(lines).hasSize(2);
 
-    final String actionLine = lines[0];
-    assertThat(actionLine).contains("\"update\"");
+    final JsonNode action = parseJson(lines[0]);
+    assertThat(action.has("update")).isTrue();
+    assertThat(action.get("update").get("_index").asText()).isEqualTo(INDEX);
+    assertThat(action.get("update").get("_id").asText()).isEqualTo(ID);
+    assertThat(action.get("update").get("routing").asText()).isEqualTo("my-routing");
 
-    final String bodyLine = lines[1];
-    assertThat(bodyLine).contains("upsert");
+    final JsonNode body = parseJson(lines[1]);
+    assertThat(body.has("upsert")).isTrue();
+    assertThat(body.has("doc")).isTrue();
   }
 
   @Test
@@ -162,10 +168,10 @@ class StreamingElasticsearchBatchRequestTest {
     final String[] lines = ndJson.split("\n");
     assertThat(lines).hasSize(1);
 
-    final String actionLine = lines[0];
-    assertThat(actionLine).contains("\"delete\"");
-    assertThat(actionLine).contains("\"_index\"");
-    assertThat(actionLine).contains("\"_id\"");
+    final JsonNode action = parseJson(lines[0]);
+    assertThat(action.has("delete")).isTrue();
+    assertThat(action.get("delete").get("_index").asText()).isEqualTo(INDEX);
+    assertThat(action.get("delete").get("_id").asText()).isEqualTo(ID);
   }
 
   @Test
@@ -264,9 +270,13 @@ class StreamingElasticsearchBatchRequestTest {
     // delete: 1 action line only = 1 line
     assertThat(lines).hasSize(5);
 
-    assertThat(lines[0]).contains("\"index\"");
-    assertThat(lines[2]).contains("\"update\"");
-    assertThat(lines[4]).contains("\"delete\"");
+    assertThat(parseJson(lines[0]).has("index")).isTrue();
+    assertThat(parseJson(lines[2]).has("update")).isTrue();
+    assertThat(parseJson(lines[4]).has("delete")).isTrue();
+  }
+
+  private JsonNode parseJson(final String json) throws JsonProcessingException {
+    return objectMapper.readTree(json);
   }
 
   private String captureNdJsonBody() throws IOException {
