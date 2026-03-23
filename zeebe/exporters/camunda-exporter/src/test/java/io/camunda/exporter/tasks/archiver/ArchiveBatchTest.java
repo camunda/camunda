@@ -11,11 +11,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ArchiveBatchTest {
+
+  @Test
+  void shouldChunkEmptyProcessInstanceBatch() {
+    final var batch =
+        new ArchiveBatch.ProcessInstanceArchiveBatch("finished-date", List.of(), List.of());
+
+    assertThat(batch.chunk(10))
+        .isEqualTo(
+            List.of(
+                new ArchiveBatch.ProcessInstanceArchiveBatch(
+                    "finished-date", List.of(), List.of())));
+  }
 
   @ParameterizedTest
   @MethodSource("shouldChunkProcessInstanceBatchArguments")
