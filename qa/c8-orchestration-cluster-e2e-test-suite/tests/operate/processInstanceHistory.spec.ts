@@ -16,22 +16,16 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {defaultAssertionOptions} from 'utils/constants';
 
 type ProcessInstance = {processInstanceKey: number};
 
 let incidentProcessInstance: ProcessInstance;
 let embeddedSubprocessInstance: ProcessInstance;
 
-const startEventStartGlobal = 'StartGlobal';
 const activityNode = 'Node';
 const activityFirstSubprocess = 'FirstSubprocess';
-const eventStartFirstSubProcess = 'StartFirstSubProcess';
 const activityCollectMoney = 'CollectMoney';
-const activityFetchItems = 'FetchItems';
 const eventEndFirstSubProcess = 'EndFirstSubProcess';
-const eventOrderCancelled = 'OrderCanceled';
-const eventOrderCancelledEnd = 'OrderCancelledEnd';
 const activitySecondSubprocess = 'SecondSubprocess';
 const eventStartSecondSubProcess = 'StartSecondSubProcess';
 const activitySendItems = 'SendItems';
