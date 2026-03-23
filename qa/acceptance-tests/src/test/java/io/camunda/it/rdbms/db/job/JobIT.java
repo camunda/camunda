@@ -78,6 +78,27 @@ public class JobIT {
   }
 
   @TestTemplate
+  public void shouldSaveUpdateAndFindJobWithLargeErrorMessageByKey(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader();
+
+    final var errorMessage = "x".repeat(9000);
+
+    final var original = JobFixtures.createRandomized(b -> b);
+    createAndSaveJob(rdbmsWriters, original);
+    final var update = original.copy(b -> ((JobDbModel.Builder) b).errorMessage(errorMessage));
+    rdbmsWriters.getJobWriter().update(update);
+    rdbmsWriters.flush();
+
+    final var instance = jobReader.findOne(original.jobKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.errorMessage().length()).isLessThan(errorMessage.length());
+  }
+
+  @TestTemplate
   public void shouldFindJobByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
