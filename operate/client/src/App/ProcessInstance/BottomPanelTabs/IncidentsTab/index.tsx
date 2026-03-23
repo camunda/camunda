@@ -26,6 +26,8 @@ import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {Navigate} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
 
 const ROW_HEIGHT = 32;
 
@@ -57,7 +59,7 @@ const IncidentsTab: React.FC = observer(() => {
     {
       enabled:
         !isElementInstanceSelected &&
-        processInstance !== undefined &&
+        !!processInstance?.hasIncident &&
         !isFetchingElement,
       enablePeriodicRefetch,
       payload: {sort, filter},
@@ -67,7 +69,7 @@ const IncidentsTab: React.FC = observer(() => {
   const elementInstanceResult = useGetIncidentsByElementInstancePaginated(
     resolvedElementInstanceKey ?? '',
     {
-      enabled: isElementInstanceSelected && processInstance !== undefined,
+      enabled: isElementInstanceSelected && !!processInstance?.hasIncident,
       enablePeriodicRefetch,
       payload: {
         sort,
@@ -89,6 +91,18 @@ const IncidentsTab: React.FC = observer(() => {
   } = mapQueryResultToIncidentsHandle(result);
 
   const enhancedIncidents = useEnhancedIncidents(incidents);
+
+  if (processInstance?.hasIncident === false) {
+    return (
+      <Navigate
+        to={{
+          ...location,
+          pathname: Paths.processInstanceVariables({processInstanceId}),
+        }}
+        replace
+      />
+    );
+  }
 
   return (
     <Container>
