@@ -123,6 +123,7 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
     override.getOpensearch().setDateFormat(database.getOpensearch().getDateFormat());
+    override.getOpensearch().setAwsEnabled(database.getOpensearch().isAwsEnabled());
     final var osProxy = new ProxyProperties();
     BeanUtils.copyProperties(database.getOpensearch().getProxy(), osProxy);
     override.getOpensearch().setProxy(osProxy);

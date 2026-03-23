@@ -101,11 +101,14 @@ public class SecondaryStorageOpensearchTest {
   private static final int EXPECTED_BACKUP_SNAPSHOT_TIMEOUT = 10;
   private static final int EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT = 10;
 
+  private static final boolean EXPECTED_AWS_ENABLED = true;
+
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=opensearch",
         "camunda.data.secondary-storage.opensearch.url=http://expected-url:4321",
+        "camunda.data.secondary-storage.opensearch.aws-enabled=true",
         "camunda.data.secondary-storage.opensearch.username=" + EXPECTED_USERNAME,
         "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.opensearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
@@ -210,6 +213,7 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(operateProperties.getOpensearch().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(operateProperties.getOpensearch().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
       assertThat(operateProperties.getBackup().getSnapshotTimeout())
           .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
       assertThat(operateProperties.getBackup().getRepositoryName())
@@ -238,6 +242,7 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(tasklistProperties.getOpenSearch().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
     }
 
     @Test
@@ -265,6 +270,7 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
@@ -334,6 +340,7 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(searchEngineConnectProperties.getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(searchEngineConnectProperties.isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
     }
 
     @Test
