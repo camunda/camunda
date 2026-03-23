@@ -12,6 +12,10 @@ import java.util.List;
 
 public record ArchiveBatch(String finishDate, List<String> ids) {
   public List<ArchiveBatch> chunk(final int chunkSize) {
+    if (ids.isEmpty()) {
+      return List.of(this);
+    }
+
     final var chunks = new ArrayList<ArchiveBatch>();
 
     List<String> currentIds = new ArrayList<>();
