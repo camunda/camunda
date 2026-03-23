@@ -339,7 +339,7 @@ public class RestorePointResolver {
                         .formatted(range, metadata.partitionId(), metadata.checkpoints().size()));
               }
               if (from != null && startInfo.checkpointTimestamp().isAfter(from)) {
-                LOG.atTrace()
+                LOG.atInfo()
                     .addKeyValue("partition", metadata.partitionId())
                     .log(
                         "Skipping range [{}, {}] because it starts at {}, after requested time {}",
@@ -351,7 +351,7 @@ public class RestorePointResolver {
               }
               if (effectiveExportedPosition != null
                   && startInfo.getFirstLogPositionOrDefault() > effectiveExportedPosition) {
-                LOG.atTrace()
+                LOG.atInfo()
                     .addKeyValue("partition", metadata.partitionId())
                     .log(
                         "Skipping range [{}, {}] because the first log position {} is after required exported position {}",
@@ -363,7 +363,7 @@ public class RestorePointResolver {
               }
               if (effectiveExportedPosition != null
                   && endInfo.checkpointPosition() < effectiveExportedPosition) {
-                LOG.atTrace()
+                LOG.atInfo()
                     .addKeyValue("partition", metadata.partitionId())
                     .log(
                         "Skipping range [{}, {}] because the last log position {} is before the required exported position {}",
