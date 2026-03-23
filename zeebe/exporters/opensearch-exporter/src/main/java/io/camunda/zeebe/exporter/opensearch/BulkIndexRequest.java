@@ -40,6 +40,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(JobRecordValue.class, JobToUserTaskMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
@@ -50,7 +51,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(ProcessInstanceRecordValue.class, ProcessInstance87Mixin.class)
           .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResult87Mixin.class)
           .addMixIn(UserTaskRecordValue.class, UserTask87Mixin.class)
-          .addMixIn(JobRecordValue.class, Job87Mixin.class)
+          .addMixIn(JobRecordValue.class, ResultAndTagsAndUserTaskJobMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
@@ -217,7 +218,10 @@ final class BulkIndexRequest implements ContentProducer {
   private static final class UserTask87Mixin {}
 
   @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY, JOB_TO_USER_TASK_MIGRATION_PROPERTY})
-  private static final class Job87Mixin {}
+  private static final class ResultAndTagsAndUserTaskJobMixin {}
+
+  @JsonIgnoreProperties({JOB_TO_USER_TASK_MIGRATION_PROPERTY})
+  private static final class JobToUserTaskMixin {}
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}

@@ -683,6 +683,62 @@ final class BulkIndexRequestTest {
           .containsExactly(new Object[] {null});
     }
 
+    @Test
+    void shouldIndexJobRecordWithoutJobToUserTaskMigrationOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(getPreviousMinorVersion())
+                      .withValue(
+                          ImmutableJobRecordValue.builder()
+                              .withJobToUserTaskMigration(true)
+                              .build()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobToUserTaskMigration"))
+          .describedAs(
+              "Expect that the records are NOT serialized with jobToUserTaskMigration on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutJobToUserTaskMigration() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          ImmutableJobRecordValue.builder()
+                              .withJobToUserTaskMigration(true)
+                              .build()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobToUserTaskMigration"))
+          .describedAs(
+              "Expect that the records are NOT serialized with jobToUserTaskMigration on current version")
+          .containsExactly(new Object[] {null});
+    }
+
     private Record<?> deserializeSource(final BulkOperation operation) {
       try {
         return MAPPER.readValue(operation.source(), new TypeReference<>() {});
