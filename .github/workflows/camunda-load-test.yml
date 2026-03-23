@@ -195,6 +195,9 @@ jobs:
     outputs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
       - name: Calculate configuration based on scenario
         id: config
         run: |
