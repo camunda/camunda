@@ -6,12 +6,18 @@
   ~ Licensed under the Camunda License 1.0. You may not use this file
   ~ except in compliance with the Camunda License 1.0.
   -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
   <property name="timestampWithTimeZone.type" value="DATETIMEOFFSET" dbms="mssql"/>
 
   <changeSet id="create_exporter_position_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}EXPORTER_POSITION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}EXPORTER_POSITION">
       <column name="PARTITION_ID" type="NUMBER">
         <constraints primaryKey="true"/>
@@ -23,7 +29,12 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_process_deployment_table" author="camunda">
+  <changeSet id="create_process_definition_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}PROCESS_DEFINITION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}PROCESS_DEFINITION">
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -37,13 +48,27 @@
       <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="FORM_ID" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}PROCESS_DEFINITION" indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
+  <changeSet id="create_process_definition_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_DEFINITION_ID"
+          tableName="${prefix}PROCESS_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}PROCESS_DEFINITION"
+      indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
       <column name="PROCESS_DEFINITION_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_process_instance_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -65,20 +90,6 @@
       <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <createIndex tableName="${prefix}PROCESS_INSTANCE" indexName="${prefix}IDX_PROCESS_INSTANCE_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
-
-    <createIndex tableName="${prefix}PROCESS_INSTANCE"
-      indexName="${prefix}IDX_PROCESS_INSTANCE_PD_KEY">
-      <column name="PROCESS_DEFINITION_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}PROCESS_INSTANCE" indexName="${prefix}IDX_ROOT_PROCESS_INSTANCE_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -86,25 +97,86 @@
     <modifySql dbms="mssql">
       <replace replace="datetime2" with="DATETIMEOFFSET"/>
     </modifySql>
+  </changeSet>
 
+  <changeSet id="create_process_instance_hist_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_HIST"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_HIST">
+      <column name="PARTITION_ID"/>
+      <column name="HISTORY_CLEANUP_DATE"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_process_instance_pd_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_PD_KEY"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_root_process_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_ROOT_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_ROOT_PROCESS_INSTANCE_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_process_instance_tag_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}PROCESS_INSTANCE_TAG"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}PROCESS_INSTANCE_TAG">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
-        <constraints primaryKey="true" foreignKeyName="${prefix}FK_PROCESS_INSTANCE_TAG_PROCESS_INSTANCE" referencedTableName="${prefix}PROCESS_INSTANCE" referencedColumnNames="PROCESS_INSTANCE_KEY" deleteCascade="true"/>
-        />
+        <constraints primaryKey="true"
+          foreignKeyName="${prefix}FK_PROCESS_INSTANCE_TAG_PROCESS_INSTANCE"
+          referencedTableName="${prefix}PROCESS_INSTANCE"
+          referencedColumnNames="PROCESS_INSTANCE_KEY" deleteCascade="true"/>
       </column>
       <column name="TAG_VALUE" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
       </column>
     </createTable>
-    <createIndex tableName="${prefix}PROCESS_INSTANCE_TAG" indexName="${prefix}IDX_PROCESS_INSTANCE_TAG_KEY">
+  </changeSet>
+
+  <changeSet id="create_process_instance_tag_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_TAG_KEY"
+          tableName="${prefix}PROCESS_INSTANCE_TAG"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}PROCESS_INSTANCE_TAG"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_TAG_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_variable_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}VARIABLE">
       <column name="VAR_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -125,24 +197,55 @@
       <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
     </createTable>
 
-    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_ROOT_PROCESS_INSTANCE_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
-      <column name="TENANT_ID"/>
-    </createIndex>
-
     <modifySql dbms="oracle">
       <!-- Oracle only supports a size 4000 characters in varchar2 -->
       <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_variable_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE"
+      indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
 
-  <changeSet id="create_flow_node_table" author="camunda">
+  <changeSet id="create_variable_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_ROOT_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE"
+      indexName="${prefix}IDX_VARIABLE_ROOT_PROCESS_INSTANCE_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_variable_tenant_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_TENANT_ID" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
+      <column name="TENANT_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_flow_node_instance_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}FLOW_NODE_INSTANCE"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}FLOW_NODE_INSTANCE">
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -165,14 +268,6 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -182,7 +277,38 @@
     </modifySql>
   </changeSet>
 
-  <changeSet author="camunda" id="create_usertask_table">
+  <changeSet id="create_flow_node_instance_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_FLOW_NODE_INSTANCE_PI_KEY"
+          tableName="${prefix}FLOW_NODE_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE"
+      indexName="${prefix}IDX_FLOW_NODE_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_flow_node_instance_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_FLOW_NODE_INSTANCE_RPI_KEY"
+          tableName="${prefix}FLOW_NODE_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE"
+      indexName="${prefix}IDX_FLOW_NODE_INSTANCE_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_user_task_table">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}USER_TASK"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}USER_TASK">
       <column name="USER_TASK_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -209,56 +335,6 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_FNI_KEY">
-      <column name="ELEMENT_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createTable tableName="${prefix}CANDIDATE_USER">
-      <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints foreignKeyName="${prefix}FK_CANDIDATE_USER_USER_TASK" referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY" deleteCascade="true"/>
-        />
-      </column>
-      <column name="CANDIDATE_USER" type="NVARCHAR(${userCharColumnSize})"/>
-    </createTable>
-
-    <createTable tableName="${prefix}CANDIDATE_GROUP">
-      <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints foreignKeyName="${prefix}FK_CANDIDATE_GROUP_USER_TASK" referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY" deleteCascade="true"/>
-        />
-      </column>
-      <column name="CANDIDATE_GROUP" type="NVARCHAR(${userCharColumnSize})"/>
-    </createTable>
-
-    <createTable tableName="${prefix}USER_TASK_TAG">
-      <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints primaryKey="true" foreignKeyName="${prefix}FK_USER_TASK_TAG_USER_TASK" referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY" deleteCascade="true"/>
-        />
-      </column>
-      <column name="TAG_VALUE" type="NVARCHAR(${userCharColumnSize})">
-        <constraints primaryKey="true"/>
-      </column>
-    </createTable>
-
-    <createIndex tableName="${prefix}CANDIDATE_USER" indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
-      <column name="USER_TASK_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}CANDIDATE_GROUP" indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
-      <column name="USER_TASK_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}USER_TASK_TAG" indexName="${prefix}IDX_USER_TASK_TAG_USER_TASK_KEY">
-      <column name="USER_TASK_KEY"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -268,7 +344,134 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_incident" author="camunda">
+  <changeSet author="camunda" id="create_user_task_pi_key_index">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USER_TASK_PI_KEY" tableName="${prefix}USER_TASK"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_user_task_rpi_key_index">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USER_TASK_RPI_KEY" tableName="${prefix}USER_TASK"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_user_task_fni_key_index">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USER_TASK_FNI_KEY" tableName="${prefix}USER_TASK"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_candidate_user_table">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}CANDIDATE_USER"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}CANDIDATE_USER">
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints foreignKeyName="${prefix}FK_CANDIDATE_USER_USER_TASK"
+          referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY"
+          deleteCascade="true"/>
+      </column>
+      <column name="CANDIDATE_USER" type="NVARCHAR(${userCharColumnSize})"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_candidate_group_table">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}CANDIDATE_GROUP"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}CANDIDATE_GROUP">
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints foreignKeyName="${prefix}FK_CANDIDATE_GROUP_USER_TASK"
+          referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY"
+          deleteCascade="true"/>
+      </column>
+      <column name="CANDIDATE_GROUP" type="NVARCHAR(${userCharColumnSize})"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_user_task_tag_table">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}USER_TASK_TAG"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}USER_TASK_TAG">
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints primaryKey="true" foreignKeyName="${prefix}FK_USER_TASK_TAG_USER_TASK"
+          referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY"
+          deleteCascade="true"/>
+      </column>
+      <column name="TAG_VALUE" type="NVARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_candidate_user_task_key_index">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY"
+          tableName="${prefix}CANDIDATE_USER"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CANDIDATE_USER"
+      indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_candidate_group_user_task_key_index">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY"
+          tableName="${prefix}CANDIDATE_GROUP"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CANDIDATE_GROUP"
+      indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet author="camunda" id="create_user_task_tag_user_task_key_index">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USER_TASK_TAG_USER_TASK_KEY"
+          tableName="${prefix}USER_TASK_TAG"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}USER_TASK_TAG"
+      indexName="${prefix}IDX_USER_TASK_TAG_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_incident_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}INCIDENT"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}INCIDENT">
       <column name="INCIDENT_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -290,14 +493,6 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -307,7 +502,34 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_incident_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_INCIDENT_PI_KEY" tableName="${prefix}INCIDENT"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_incident_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_INCIDENT_RPI_KEY" tableName="${prefix}INCIDENT"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_decision_definition_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}DECISION_DEFINITION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}DECISION_DEFINITION">
       <column name="DECISION_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -321,17 +543,40 @@
       <column name="DECISION_REQUIREMENTS_NAME" type="NVARCHAR(255)"/>
       <column name="DECISION_REQUIREMENTS_VERSION" type="SMALLINT"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_DEFINITION_ID">
+  <changeSet id="create_decision_definition_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_DEFINITION_ID"
+          tableName="${prefix}DECISION_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_DEFINITION"
+      indexName="${prefix}IDX_DECISION_DEFINITION_ID">
       <column name="DECISION_DEFINITION_ID"/>
     </createIndex>
+  </changeSet>
 
-    <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_REQUIREMENTS_KEY">
+  <changeSet id="create_decision_requirements_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_REQUIREMENTS_KEY"
+          tableName="${prefix}DECISION_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_DEFINITION"
+      indexName="${prefix}IDX_DECISION_REQUIREMENTS_KEY">
       <column name="DECISION_REQUIREMENTS_KEY"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_decision_requirements_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}DECISION_REQUIREMENTS"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}DECISION_REQUIREMENTS">
       <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -343,13 +588,27 @@
       <column name="RESOURCE_NAME" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="XML" type="CLOB"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}DECISION_REQUIREMENTS" indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID">
+  <changeSet id="create_decision_requirements_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID"
+          tableName="${prefix}DECISION_REQUIREMENTS"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_REQUIREMENTS"
+      indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID">
       <column name="DECISION_REQUIREMENTS_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_decision_instance_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}DECISION_INSTANCE">
       <column name="DECISION_INSTANCE_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -377,36 +636,6 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}DECISION_INSTANCE"
-      indexName="${prefix}IDX_DECISION_INSTANCE_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}DECISION_INSTANCE"
-      indexName="${prefix}IDX_DECISION_INSTANCE_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}DECISION_INSTANCE"
-      indexName="${prefix}IDX_DECISION_INSTANCE_KEY">
-      <column name="DECISION_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}DECISION_INSTANCE"
-      indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY">
-      <column name="DECISION_DEFINITION_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}DECISION_INSTANCE"
-      indexName="${prefix}IDX_DECISION_INSTANCE_FNI_KEY">
-      <column name="FLOW_NODE_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -416,27 +645,127 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_decision_instance_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_PI_KEY"
+          tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_decision_instance_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_RPI_KEY"
+          tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_decision_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_KEY"
+          tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_KEY">
+      <column name="DECISION_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_decision_instance_dd_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY"
+          tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY">
+      <column name="DECISION_DEFINITION_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_decision_instance_fni_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_FNI_KEY"
+          tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_decision_instance_hist_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_HIST"
+          tableName="${prefix}DECISION_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_HIST">
+      <column name="PARTITION_ID"/>
+      <column name="HISTORY_CLEANUP_DATE"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_decision_instance_input_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}DECISION_INSTANCE_INPUT"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}DECISION_INSTANCE_INPUT">
       <column name="DECISION_INSTANCE_ID" type="NVARCHAR(${userCharColumnSize})">
-        <constraints foreignKeyName="${prefix}FK_DEC_INST_INPUT_DEC_INST" referencedTableName="${prefix}DECISION_INSTANCE" referencedColumnNames="DECISION_INSTANCE_ID" deleteCascade="true"/>
-        />
+        <constraints foreignKeyName="${prefix}FK_DEC_INST_INPUT_DEC_INST"
+          referencedTableName="${prefix}DECISION_INSTANCE"
+          referencedColumnNames="DECISION_INSTANCE_ID" deleteCascade="true"/>
       </column>
       <column name="INPUT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="INPUT_NAME" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="INPUT_VALUE" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}DECISION_INSTANCE_INPUT" indexName="${prefix}IDX_DECISION_INSTANCE_INPUT_INSTANCE_ID">
+  <changeSet id="create_decision_instance_input_instance_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_INPUT_INSTANCE_ID"
+          tableName="${prefix}DECISION_INSTANCE_INPUT"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE_INPUT"
+      indexName="${prefix}IDX_DECISION_INSTANCE_INPUT_INSTANCE_ID">
       <column name="DECISION_INSTANCE_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_decision_instance_output_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}DECISION_INSTANCE_OUTPUT"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}DECISION_INSTANCE_OUTPUT">
       <column name="DECISION_INSTANCE_ID" type="NVARCHAR(${userCharColumnSize})">
-        <constraints foreignKeyName="${prefix}FK_DEC_INST_OUTPUT_DEC_INST" referencedTableName="${prefix}DECISION_INSTANCE" referencedColumnNames="DECISION_INSTANCE_ID" deleteCascade="true"/>
-        />
+        <constraints foreignKeyName="${prefix}FK_DEC_INST_OUTPUT_DEC_INST"
+          referencedTableName="${prefix}DECISION_INSTANCE"
+          referencedColumnNames="DECISION_INSTANCE_ID" deleteCascade="true"/>
       </column>
       <column name="OUTPUT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="RULE_INDEX" type="SMALLINT"/>
@@ -444,13 +773,27 @@
       <column name="OUTPUT_VALUE" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="RULE_ID" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}DECISION_INSTANCE_OUTPUT" indexName="${prefix}IDX_DECISION_INSTANCE_OUTPUT_INSTANCE_ID">
+  <changeSet id="create_decision_instance_output_instance_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_DECISION_INSTANCE_OUTPUT_INSTANCE_ID"
+          tableName="${prefix}DECISION_INSTANCE_OUTPUT"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}DECISION_INSTANCE_OUTPUT"
+      indexName="${prefix}IDX_DECISION_INSTANCE_OUTPUT_INSTANCE_ID">
       <column name="DECISION_INSTANCE_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_user_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}USER_"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}USER_">
       <column name="USERNAME" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -460,7 +803,14 @@
       <column name="EMAIL" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PASSWORD" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_user_user_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USER_USER_KEY" tableName="${prefix}USER_"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}USER_"
       indexName="${prefix}IDX_USER_USER_KEY">
       <column name="USER_KEY"/>
@@ -468,6 +818,11 @@
   </changeSet>
 
   <changeSet id="create_form_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}FORM"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}FORM">
       <column name="FORM_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -478,16 +833,36 @@
       <column name="VERSION" type="BIGINT"/>
       <column name="IS_DELETED" type="BOOLEAN"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_form_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_FORM_ID" tableName="${prefix}FORM"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}FORM" indexName="${prefix}IDX_FORM_ID">
       <column name="FORM_ID"/>
     </createIndex>
+  </changeSet>
+
+  <changeSet id="create_form_tenant_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_FORM_TENANT_ID" tableName="${prefix}FORM"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}FORM" indexName="${prefix}IDX_FORM_TENANT_ID">
       <column name="TENANT_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_tenant_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}TENANT"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}TENANT">
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -496,33 +871,65 @@
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="CLOB"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_tenant_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_TENANT_TENANT_KEY" tableName="${prefix}TENANT"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}TENANT"
       indexName="${prefix}IDX_TENANT_TENANT_KEY">
       <column name="TENANT_KEY"/>
     </createIndex>
   </changeSet>
 
-  <changeSet id="tenant_members_table" author="camunda">
+  <changeSet id="create_tenant_member_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}TENANT_MEMBER"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}TENANT_MEMBER">
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ENTITY_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ENTITY_TYPE" type="VARCHAR(255)"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_tenant_member_tenant_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}idx_tenant_member_tenant_id"
+          tableName="${prefix}TENANT_MEMBER"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}TENANT_MEMBER"
       indexName="${prefix}idx_tenant_member_tenant_id">
       <column name="TENANT_ID"/>
     </createIndex>
+  </changeSet>
 
+  <changeSet id="create_tenant_member_entity_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}idx_tenant_member_entity_id"
+          tableName="${prefix}TENANT_MEMBER"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}TENANT_MEMBER"
       indexName="${prefix}idx_tenant_member_entity_id">
       <column name="ENTITY_ID"/>
     </createIndex>
   </changeSet>
 
-
   <changeSet id="create_role_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}ROLES"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}ROLES">
       <column name="ROLE_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -531,30 +938,62 @@
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="CLOB"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_role_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_ROLE_ROLE_KEY" tableName="${prefix}ROLES"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}ROLES"
       indexName="${prefix}IDX_ROLE_ROLE_KEY">
       <column name="ROLE_KEY"/>
     </createIndex>
   </changeSet>
 
-  <changeSet id="role_members_table" author="camunda">
+  <changeSet id="create_role_member_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}ROLE_MEMBER"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}ROLE_MEMBER">
       <column name="ROLE_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ENTITY_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ENTITY_TYPE" type="VARCHAR(255)"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_role_member_role_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}idx_role_member_role_id" tableName="${prefix}ROLE_MEMBER"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}ROLE_MEMBER" indexName="${prefix}idx_role_member_role_id">
       <column name="ROLE_ID"/>
     </createIndex>
+  </changeSet>
 
+  <changeSet id="create_role_member_entity_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}idx_role_member_entity_id"
+          tableName="${prefix}ROLE_MEMBER"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}ROLE_MEMBER" indexName="${prefix}idx_role_member_entity_id">
       <column name="ENTITY_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_group_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}GROUP_"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}GROUP_">
       <column name="GROUP_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -563,30 +1002,63 @@
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="CLOB"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_group_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_GROUP_GROUP_KEY" tableName="${prefix}GROUP_"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}GROUP_"
       indexName="${prefix}IDX_GROUP_GROUP_KEY">
       <column name="GROUP_KEY"/>
     </createIndex>
   </changeSet>
 
-  <changeSet id="group_members_table" author="camunda">
+  <changeSet id="create_group_member_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}GROUP_MEMBER"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}GROUP_MEMBER">
       <column name="GROUP_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ENTITY_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ENTITY_TYPE" type="VARCHAR(255)"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_group_member_group_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}idx_group_member_group_id"
+          tableName="${prefix}GROUP_MEMBER"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}GROUP_MEMBER" indexName="${prefix}idx_group_member_group_id">
       <column name="GROUP_ID"/>
     </createIndex>
+  </changeSet>
 
+  <changeSet id="create_group_member_entity_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}idx_group_member_entity_id"
+          tableName="${prefix}GROUP_MEMBER"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}GROUP_MEMBER" indexName="${prefix}idx_group_member_entity_id">
       <column name="ENTITY_ID"/>
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_authorization_permission_table" author="camunda">
+  <changeSet id="create_authorizations_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}AUTHORIZATIONS"/>
+      </not>
+    </preConditions>
     <!-- no PK possible, would have too many columns (ALL) -->
     <createTable tableName="${prefix}AUTHORIZATIONS">
       <column name="AUTHORIZATION_KEY" type="BIGINT"/>
@@ -598,25 +1070,66 @@
       <column name="RESOURCE_PROPERTY_NAME" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PERMISSION_TYPE" type="VARCHAR(255)"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY">
+  <changeSet id="create_authorizations_auth_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY"
+          tableName="${prefix}AUTHORIZATIONS"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUTHORIZATIONS"
+      indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY">
       <column name="AUTHORIZATION_KEY"/>
     </createIndex>
+  </changeSet>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_ID">
+  <changeSet id="create_authorizations_owner_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_ID"
+          tableName="${prefix}AUTHORIZATIONS"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUTHORIZATIONS"
+      indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_ID">
       <column name="OWNER_ID"/>
     </createIndex>
+  </changeSet>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_TYPE">
+  <changeSet id="create_authorizations_owner_type_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_TYPE"
+          tableName="${prefix}AUTHORIZATIONS"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUTHORIZATIONS"
+      indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_TYPE">
       <column name="OWNER_TYPE"/>
     </createIndex>
+  </changeSet>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_RESOURCE_TYPE">
+  <changeSet id="create_authorizations_resource_type_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUTHORIZATIONS_RESOURCE_TYPE"
+          tableName="${prefix}AUTHORIZATIONS"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUTHORIZATIONS"
+      indexName="${prefix}IDX_AUTHORIZATIONS_RESOURCE_TYPE">
       <column name="RESOURCE_TYPE"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_batch_operation_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}BATCH_OPERATION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}BATCH_OPERATION">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
         <constraints primaryKey="true" nullable="false"/>
@@ -629,11 +1142,31 @@
       <column name="OPERATIONS_FAILED_COUNT" type="INT"/>
       <column name="OPERATIONS_COMPLETED_COUNT" type="INT"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="ACTOR_TYPE" type="VARCHAR(50)"/>
+      <column name="ACTOR_ID" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
 
+    <modifySql dbms="mariadb,mysql">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+    <modifySql dbms="mssql">
+      <replace replace="datetime2" with="DATETIMEOFFSET"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="create_batch_operation_item_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}BATCH_OPERATION_ITEM"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
-        <constraints primaryKey="true" nullable="false" foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION" referencedTableName="${prefix}BATCH_OPERATION" referencedColumnNames="BATCH_OPERATION_KEY" deleteCascade="true"/>
+        <constraints primaryKey="true" nullable="false"
+          foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
+          referencedTableName="${prefix}BATCH_OPERATION" referencedColumnNames="BATCH_OPERATION_KEY"
+          deleteCascade="true"/>
       </column>
       <column name="ITEM_KEY" type="BIGINT">
         <constraints primaryKey="true" nullable="false"/>
@@ -645,29 +1178,6 @@
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
-    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM" indexName="${prefix}IDX_BATCH_OPERATION_ITEM_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM" indexName="${prefix}IDX_BATCH_OPERATION_ITEM_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
-      <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
-        <constraints foreignKeyName="${prefix}FK_BATCH_OPERATION_ERROR_BATCH_OPERATION" referencedTableName="${prefix}BATCH_OPERATION" referencedColumnNames="BATCH_OPERATION_KEY" deleteCascade="true"/>
-        />
-      </column>
-      <column name="PARTITION_ID" type="NUMBER"/>
-      <column name="TYPE" type="VARCHAR(255)"/>
-      <column name="MESSAGE" type="VARCHAR(${errorMessageSize})"/>
-    </createTable>
-
-    <createIndex tableName="${prefix}BATCH_OPERATION_ERROR" indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY">
-      <column name="BATCH_OPERATION_KEY"/>
-      <column name="PARTITION_ID"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -677,7 +1187,70 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_batch_operation_item_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_BATCH_OPERATION_ITEM_PI_KEY"
+          tableName="${prefix}BATCH_OPERATION_ITEM"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM"
+      indexName="${prefix}IDX_BATCH_OPERATION_ITEM_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_batch_operation_item_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_BATCH_OPERATION_ITEM_RPI_KEY"
+          tableName="${prefix}BATCH_OPERATION_ITEM"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM"
+      indexName="${prefix}IDX_BATCH_OPERATION_ITEM_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_batch_operation_error_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}BATCH_OPERATION_ERROR"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
+      <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
+        <constraints foreignKeyName="${prefix}FK_BATCH_OPERATION_ERROR_BATCH_OPERATION"
+          referencedTableName="${prefix}BATCH_OPERATION" referencedColumnNames="BATCH_OPERATION_KEY"
+          deleteCascade="true"/>
+      </column>
+      <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="TYPE" type="VARCHAR(255)"/>
+      <column name="MESSAGE" type="VARCHAR(${errorMessageSize})"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_batch_operation_error_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY"
+          tableName="${prefix}BATCH_OPERATION_ERROR"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}BATCH_OPERATION_ERROR"
+      indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY">
+      <column name="BATCH_OPERATION_KEY"/>
+      <column name="PARTITION_ID"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_job_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}JOB"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}JOB">
       <column name="JOB_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -704,19 +1277,9 @@
       <column name="IS_DENIED" type="BOOLEAN"/>
       <column name="DENIED_REASON" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="CREATION_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="LAST_UPDATE_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
-
-    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_FNI_KEY">
-      <column name="ELEMENT_INSTANCE_KEY"/>
-    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -727,7 +1290,45 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_job_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_JOB_PI_KEY" tableName="${prefix}JOB"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_job_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_JOB_RPI_KEY" tableName="${prefix}JOB"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_job_fni_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_JOB_FNI_KEY" tableName="${prefix}JOB"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_sequence_flow_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}SEQUENCE_FLOW"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}SEQUENCE_FLOW">
       <column name="FLOW_NODE_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -741,17 +1342,40 @@
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
+  <changeSet id="create_sequence_flow_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}SEQUENCE_FLOW"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}SEQUENCE_FLOW"
+      indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
+  </changeSet>
 
-    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_ROOT_PROCESS_INSTANCE_KEY">
+  <changeSet id="create_sequence_flow_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_SEQUENCE_FLOW_ROOT_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}SEQUENCE_FLOW"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}SEQUENCE_FLOW"
+      indexName="${prefix}IDX_SEQUENCE_FLOW_ROOT_PROCESS_INSTANCE_KEY">
       <column name="ROOT_PROCESS_INSTANCE_KEY"/>
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_usage_metric_tables" author="camunda">
+  <changeSet id="create_usage_metric_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}USAGE_METRIC"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}USAGE_METRIC">
       <column name="USAGE_METRIC_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -766,10 +1390,33 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
+    <modifySql dbms="mariadb,mysql">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+    <modifySql dbms="mssql">
+      <replace replace="datetime2" with="DATETIMEOFFSET"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="create_usage_metric_end_time_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USAGE_METRIC_END_TIME"
+          tableName="${prefix}USAGE_METRIC"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}USAGE_METRIC" indexName="${prefix}IDX_USAGE_METRIC_END_TIME">
       <column name="END_TIME"/>
     </createIndex>
+  </changeSet>
 
+  <changeSet id="create_usage_metric_tu_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}USAGE_METRIC_TU"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}USAGE_METRIC_TU">
       <column name="USAGE_METRIC_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -785,11 +1432,6 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}USAGE_METRIC_TU"
-      indexName="${prefix}IDX_USAGE_METRIC_TU_END_TIME">
-      <column name="END_TIME"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -799,7 +1441,25 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_usage_metric_tu_end_time_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_USAGE_METRIC_TU_END_TIME"
+          tableName="${prefix}USAGE_METRIC_TU"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}USAGE_METRIC_TU"
+      indexName="${prefix}IDX_USAGE_METRIC_TU_END_TIME">
+      <column name="END_TIME"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_mapping_rule_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}MAPPING_RULES"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}MAPPING_RULES">
       <column name="MAPPING_RULE_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -809,7 +1469,15 @@
       <column name="CLAIM_VALUE" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_mapping_rules_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_MAPPING_RULES_MAPPING_RULE_KEY"
+          tableName="${prefix}MAPPING_RULES"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}MAPPING_RULES"
       indexName="${prefix}IDX_MAPPING_RULES_MAPPING_RULE_KEY">
       <column name="MAPPING_RULE_KEY"/>
@@ -817,6 +1485,11 @@
   </changeSet>
 
   <changeSet id="create_message_subscription_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}MESSAGE_SUBSCRIPTION">
       <column name="MESSAGE_SUBSCRIPTION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -835,18 +1508,6 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_FNI_KEY">
-      <column name="FLOW_NODE_INSTANCE_KEY"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -856,7 +1517,51 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_message_subscription_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_PI_KEY"
+          tableName="${prefix}MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION"
+      indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_message_subscription_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_RPI_KEY"
+          tableName="${prefix}MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION"
+      indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_message_subscription_fni_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_FNI_KEY"
+          tableName="${prefix}MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION"
+      indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_correlated_message_subscription_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION">
       <column name="CORRELATION_KEY" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="CORRELATION_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
@@ -878,18 +1583,6 @@
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_FNI_KEY">
-      <column name="FLOW_NODE_INSTANCE_KEY"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -898,7 +1591,51 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_correlated_message_subscription_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY"
+          tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"
+      indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_correlated_message_subscription_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_RPI_KEY"
+          tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"
+      indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_correlated_message_subscription_fni_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_FNI_KEY"
+          tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION"
+      indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_cluster_variable_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}CLUSTER_VARIABLE"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}CLUSTER_VARIABLE">
       <column name="CLUSTER_VARIABLE_ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -914,37 +1651,44 @@
       <column name="SCOPE" type="VARCHAR(255)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
-      indexName="${prefix}IDX_CLUSTER_VARIABLE_TENANT_ID">
-      <column name="TENANT_ID"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
-      indexName="${prefix}IDX_CLUSTER_VARIABLE_SCOPE">
-      <column name="SCOPE"/>
-    </createIndex>
-
     <modifySql dbms="oracle">
       <!-- Oracle only supports a size 4000 characters in varchar2 -->
       <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
     </modifySql>
   </changeSet>
 
-  <changeSet id="add_job_creation_and_last_update_time_columns" author="camunda">
-    <addColumn tableName="${prefix}JOB">
-      <column name="CREATION_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="LAST_UPDATE_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
-    </addColumn>
+  <changeSet id="create_cluster_variable_tenant_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_TENANT_ID"
+          tableName="${prefix}CLUSTER_VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_TENANT_ID">
+      <column name="TENANT_ID"/>
+    </createIndex>
+  </changeSet>
 
-    <modifySql dbms="mariadb,mysql">
-      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
-    </modifySql>
-    <modifySql dbms="mssql">
-      <replace replace="datetime2" with="DATETIMEOFFSET"/>
-    </modifySql>
+  <changeSet id="create_cluster_variable_scope_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_SCOPE"
+          tableName="${prefix}CLUSTER_VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_SCOPE">
+      <column name="SCOPE"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_audit_log_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}AUDIT_LOG">
       <column name="AUDIT_LOG_KEY" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true" nullable="false"/>
@@ -986,20 +1730,8 @@
       <column name="ENTITY_DESCRIPTION" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="AGENT_ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
-
-    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_HIST">
-      <column name="PARTITION_ID" />
-      <column name="HISTORY_CLEANUP_DATE" />
-    </createIndex>
-
-    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PI_KEY">
-      <column name="PROCESS_INSTANCE_KEY"/>
-    </createIndex>
-
-    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_RPI_KEY">
-      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
-    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -1009,7 +1741,46 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_audit_log_hist_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_HIST" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_HIST">
+      <column name="PARTITION_ID"/>
+      <column name="HISTORY_CLEANUP_DATE"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_audit_log_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_PI_KEY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_audit_log_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_RPI_KEY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_history_deletion_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}HISTORY_DELETION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}HISTORY_DELETION">
       <column name="RESOURCE_KEY" type="BIGINT">
         <constraints primaryKey="true" nullable="false"/>
@@ -1024,17 +1795,14 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-
-  </changeSet>
-
-  <changeSet id="add_actor_columns_to_batch_operations" author="camunda">
-    <addColumn tableName="${prefix}BATCH_OPERATION">
-      <column name="ACTOR_TYPE" type="VARCHAR(50)"/>
-      <column name="ACTOR_ID" type="NVARCHAR(${userCharColumnSize})"/>
-    </addColumn>
   </changeSet>
 
   <changeSet id="create_web_session_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}WEB_SESSION"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}WEB_SESSION">
       <column name="SESSION_ID" type="NVARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -1052,21 +1820,41 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_audit_log_authorization_indexes" author="camunda">
+  <changeSet id="create_audit_log_category_index" author="camunda">
     <!-- Index for filtering by CATEGORY (used in authorization checks for AUDIT_LOG resource type
          and USER_TASKS filtering) -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_CATEGORY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CATEGORY">
       <column name="CATEGORY"/>
     </createIndex>
+  </changeSet>
 
+  <changeSet id="create_audit_log_proc_def_id_index" author="camunda">
     <!-- Index for filtering by PROCESS_DEFINITION_ID (used in authorization checks for
          process instance and user task access, including IS NOT NULL checks) -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_PROC_DEF_ID" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PROC_DEF_ID">
       <column name="PROCESS_DEFINITION_ID"/>
     </createIndex>
+  </changeSet>
 
+  <changeSet id="create_audit_log_cat_proc_def_id_index" author="camunda">
     <!-- Composite index for efficient filtering of USER_TASKS by specific process definition IDs
          (covers the compound condition: CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN (...)) -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_CAT_PROC_DEF_ID"
+          tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CAT_PROC_DEF_ID">
       <column name="CATEGORY"/>
       <column name="PROCESS_DEFINITION_ID"/>
@@ -1074,6 +1862,11 @@
   </changeSet>
 
   <changeSet id="create_job_metrics_batch_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}JOB_METRICS_BATCH"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}JOB_METRICS_BATCH">
       <column name="JOB_METRICS_BATCH_KEY" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -1093,23 +1886,6 @@
       <column name="WORKER" type="NVARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <!-- Index for global job statistics queries filtering by tenant and time range -->
-    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_TENANT_TIME">
-      <column name="TENANT_ID"/>
-      <column name="START_TIME"/>
-      <column name="END_TIME"/>
-    </createIndex>
-
-    <!-- Index for cleanup operations filtering by end time -->
-    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_END_TIME">
-      <column name="END_TIME"/>
-    </createIndex>
-
-    <!-- Index for filtering by job type -->
-    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_JOB_TYPE">
-      <column name="JOB_TYPE"/>
-    </createIndex>
-
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -1119,8 +1895,57 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_job_metrics_batch_tenant_time_index" author="camunda">
+    <!-- Index for global job statistics queries filtering by tenant and time range -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_JOB_METRICS_BATCH_TENANT_TIME"
+          tableName="${prefix}JOB_METRICS_BATCH"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH"
+      indexName="${prefix}IDX_JOB_METRICS_BATCH_TENANT_TIME">
+      <column name="TENANT_ID"/>
+      <column name="START_TIME"/>
+      <column name="END_TIME"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_job_metrics_batch_end_time_index" author="camunda">
+    <!-- Index for cleanup operations filtering by end time -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_JOB_METRICS_BATCH_END_TIME"
+          tableName="${prefix}JOB_METRICS_BATCH"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH"
+      indexName="${prefix}IDX_JOB_METRICS_BATCH_END_TIME">
+      <column name="END_TIME"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_job_metrics_batch_job_type_index" author="camunda">
+    <!-- Index for filtering by job type -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_JOB_METRICS_BATCH_JOB_TYPE"
+          tableName="${prefix}JOB_METRICS_BATCH"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH"
+      indexName="${prefix}IDX_JOB_METRICS_BATCH_JOB_TYPE">
+      <column name="JOB_TYPE"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_global_listener_table" author="camunda">
     <!-- Global listener table -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}GLOBAL_LISTENER"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}GLOBAL_LISTENER">
       <column name="ID" type="NVARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
@@ -1133,22 +1958,44 @@
       <column name="SOURCE" type="VARCHAR(50)"/>
       <column name="LISTENER_TYPE" type="VARCHAR(50)"/>
     </createTable>
+  </changeSet>
 
+  <changeSet id="create_global_listener_event_type_table" author="camunda">
     <!-- Global listener event type table: manages collection of event types for global listeners -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE"/>
+      </not>
+    </preConditions>
     <createTable tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE">
       <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
-        <constraints foreignKeyName="${prefix}FK_EVENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+        <constraints foreignKeyName="${prefix}FK_EVENT_TYPE_GLOBAL_LISTENER"
+          referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID"
+          deleteCascade="true"/>
       </column>
       <column name="EVENT_TYPE" type="VARCHAR(50)"/>
     </createTable>
+  </changeSet>
 
-    <createIndex tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE" indexName="${prefix}IDX_GLOBAL_LISTENER_EVENT_TYPE_ID">
+  <changeSet id="create_global_listener_event_type_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_GLOBAL_LISTENER_EVENT_TYPE_ID"
+          tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE"
+      indexName="${prefix}IDX_GLOBAL_LISTENER_EVENT_TYPE_ID">
       <column name="GLOBAL_LISTENER_ID"/>
     </createIndex>
-
   </changeSet>
 
   <changeSet id="create_variable_name_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_NAME" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_NAME">
       <column name="VAR_NAME"/>
     </createIndex>
@@ -1157,6 +2004,11 @@
   <!-- audit logs are always sorted by timestamp, so we add this index as a fallback
   when no other index is selective enough to prevent full-table-scans -->
   <changeSet id="create_audit_log_timestamp_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_TIMESTAMP" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_TIMESTAMP">
       <column name="TIMESTAMP"/>
     </createIndex>
@@ -1164,19 +2016,27 @@
 
   <!-- CATEGORY is already covered in other index -->
   <changeSet id="drop_audit_log_category_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <indexExists indexName="${prefix}IDX_AUDIT_LOG_CATEGORY" tableName="${prefix}AUDIT_LOG"/>
+    </preConditions>
     <dropIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CATEGORY"/>
   </changeSet>
 
   <!-- The most common queries are on ACTIVE process instances -->
   <changeSet id="create_process_instance_state_active_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
     <sql dbms="mysql,mariadb,h2">
       CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
         ON ${prefix}PROCESS_INSTANCE (STATE)
     </sql>
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
-        ON ${prefix}PROCESS_INSTANCE (STATE)
-        WHERE STATE = 'ACTIVE'
+        ON ${prefix}PROCESS_INSTANCE (STATE) WHERE STATE = 'ACTIVE'
     </sql>
     <sql dbms="oracle">
       CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
@@ -1210,22 +2070,33 @@
 
   <!-- Default sort column for process_instance is start_date so we index it to enable index-sort-scans -->
   <changeSet id="create_index_process_instance_start_date" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_START_DATE"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}PROCESS_INSTANCE"
       indexName="${prefix}IDX_PROCESS_INSTANCE_START_DATE">
-      <column name="START_DATE" />
+      <column name="START_DATE"/>
     </createIndex>
   </changeSet>
 
   <!-- The most common queries are on ACTIVE flow node instances -->
   <changeSet id="create_flow_node_instance_state_active_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_FNI_STATE_ACTIVE"
+          tableName="${prefix}FLOW_NODE_INSTANCE"/>
+      </not>
+    </preConditions>
     <sql dbms="mysql,mariadb,h2">
       CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
         ON ${prefix}FLOW_NODE_INSTANCE (STATE)
     </sql>
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
-        ON ${prefix}FLOW_NODE_INSTANCE (STATE)
-        WHERE STATE = 'ACTIVE'
+        ON ${prefix}FLOW_NODE_INSTANCE (STATE) WHERE STATE = 'ACTIVE'
     </sql>
     <sql dbms="oracle">
       CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
@@ -1235,14 +2106,18 @@
 
   <!-- The most common queries are on ACTIVE incidents -->
   <changeSet id="create_incident_state_active_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_INCIDENT_STATE_ACTIVE" tableName="${prefix}INCIDENT"/>
+      </not>
+    </preConditions>
     <sql dbms="mariadb,mysql,h2">
       CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
         ON ${prefix}INCIDENT (STATE)
     </sql>
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
-        ON ${prefix}INCIDENT (STATE)
-        WHERE STATE = 'ACTIVE'
+        ON ${prefix}INCIDENT (STATE) WHERE STATE = 'ACTIVE'
     </sql>
     <sql dbms="oracle">
       CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
@@ -1250,15 +2125,14 @@
     </sql>
   </changeSet>
 
-  <changeSet id="add_agent_element_id_to_audit_log" author="camunda">
-    <addColumn tableName="${prefix}AUDIT_LOG">
-      <column name="AGENT_ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
-    </addColumn>
-  </changeSet>
-
   <changeSet id="create_audit_log_element_instance_key_index" author="camunda">
     <!-- Index for ELEMENT_INSTANCE_KEY - optimizes querying for the Operate PI detailed view,
          when a single process element is selected -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_EI_KEY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_EI_KEY">
       <column name="ELEMENT_INSTANCE_KEY"/>
     </createIndex>
@@ -1266,20 +2140,29 @@
 
   <changeSet id="create_audit_log_user_task_key_index" author="camunda">
     <!-- Index for USER_TASK_KEY - optimizes querying for the Tasklist history view -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_UT_KEY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <sql dbms="mysql,mariadb,h2,oracle">
       CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
-      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+        ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
     </sql>
     <!-- Since the user task key is sparse, we allow Postgres and MSSQL to exclude null values -->
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
-      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
-      WHERE USER_TASK_KEY IS NOT NULL
+        ON ${prefix}AUDIT_LOG (USER_TASK_KEY) WHERE USER_TASK_KEY IS NOT NULL
     </sql>
   </changeSet>
 
   <changeSet id="create_audit_log_process_definition_key_index" author="camunda">
     <!-- Index for PROCESS_DEFINITION_KEY - optimizes querying for the process instances -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_PD_KEY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PD_KEY">
       <column name="PROCESS_DEFINITION_KEY"/>
     </createIndex>
@@ -1287,6 +2170,11 @@
 
   <changeSet id="create_audit_log_entity_key_index" author="camunda">
     <!-- Index for ENTITY_KEY - optimizes history cleanup as the entityKey is a central column there -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_ENTITY_KEY" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_ENTITY_KEY">
       <column name="ENTITY_KEY"/>
     </createIndex>
