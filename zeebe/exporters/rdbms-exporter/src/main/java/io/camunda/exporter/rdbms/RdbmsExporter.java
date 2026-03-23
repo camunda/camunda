@@ -437,9 +437,7 @@ public final class RdbmsExporter {
     }
   }
 
-  @VisibleForTesting(
-      "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
-  public void flushExecutionQueue() {
+  private void flushExecutionQueue() {
     if (flushAfterEachRecord()) {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;

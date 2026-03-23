@@ -79,11 +79,6 @@ public class ElasticsearchConnector {
   }
 
   @VisibleForTesting
-  public void setEsClientRepository(final PluginRepository esClientRepository) {
-    this.esClientRepository = esClientRepository;
-  }
-
-  @VisibleForTesting
   public void setObjectMapper(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
