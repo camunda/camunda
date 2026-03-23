@@ -75,6 +75,9 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
                     .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
                     .errorCode(job.errorCode())
                     .errorMessage(job.errorMessage())
+                    .truncateErrorMessage(
+                        vendorDatabaseProperties.errorMessageSize(),
+                        vendorDatabaseProperties.charColumnMaxBytes())
                     .customHeaders(job.customHeaders())
                     .deadline(job.deadline())
                     .endTime(job.endTime())
@@ -96,7 +99,9 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
               WriteStatementType.UPDATE,
               job.jobKey(),
               "io.camunda.db.rdbms.sql.JobMapper.update",
-              job));
+              job.truncateErrorMessage(
+                  vendorDatabaseProperties.errorMessageSize(),
+                  vendorDatabaseProperties.charColumnMaxBytes())));
     }
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,8 +24,10 @@ import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class JobWriterTest {
 
@@ -53,6 +56,7 @@ class JobWriterTest {
 
     writer.create(model);
 
+    verify(model).truncateErrorMessage(anyInt(), anyInt());
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -84,13 +88,21 @@ class JobWriterTest {
 
   @Test
   void shouldUpdateJobWhenNotMerged() {
+    // given
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
     when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(false);
 
     final var model = mock(JobDbModel.class);
+    final var truncatedModel = mock(JobDbModel.class);
+    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
     when(model.jobKey()).thenReturn(123L);
 
+    // when
     writer.update(model);
 
+    // then
+    verify(model).truncateErrorMessage(anyInt(), anyInt());
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -99,7 +111,41 @@ class JobWriterTest {
                     WriteStatementType.UPDATE,
                     123L,
                     "io.camunda.db.rdbms.sql.JobMapper.update",
-                    model)));
+                    truncatedModel)));
+  }
+
+  @Test
+  void shouldTruncateErrorMessageInBuilderWhenMergingUpdate() {
+    // given
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(null);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+
+    final var longErrorMessage = "this message is way too long";
+    final var job = new JobDbModel.Builder().jobKey(123L).errorMessage(longErrorMessage).build();
+
+    // when
+    writer.update(job);
+
+    // then — capture the merger and apply it to a queue item to verify builder-based truncation
+    final var mergerCaptor = ArgumentCaptor.forClass(QueueItemMerger.class);
+    verify(executionQueue).tryMergeWithExistingQueueItem(mergerCaptor.capture());
+
+    final var existingJob = new JobDbModel.Builder().jobKey(123L).build();
+    final var existingQueueItem =
+        new QueueItem(
+            ContextType.JOB,
+            WriteStatementType.INSERT,
+            -1L,
+            "io.camunda.db.rdbms.sql.JobMapper.insert",
+            new BatchInsertDto<>(existingJob));
+
+    final var mergedItem = mergerCaptor.getValue().merge(existingQueueItem);
+
+    @SuppressWarnings("unchecked")
+    final var mergedJob =
+        ((BatchInsertDto<JobDbModel>) mergedItem.parameter()).dbModels().getFirst();
+    assertThat(mergedJob.errorMessage()).isEqualTo("this ");
   }
 
   @Test
