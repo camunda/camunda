@@ -15,7 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.BulkIndexRequest.IndexOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -23,10 +25,12 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
@@ -35,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -809,6 +814,471 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that job records are serialized with jobToUserTaskMigration on current version")
           .containsExactly(true);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithoutElementInstanceKeyOnPreviousVersion(final ValueType valueType) {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("elementInstanceKey"))
+          .describedAs("Expect that the records are serialized without elementInstanceKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithElementInstanceKeyOnCurrentVersion(final ValueType valueType) {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("elementInstanceKey"))
+          .describedAs("Expect that the records are serialized with elementInstanceKey")
+          .doesNotContainNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithoutTagsOnPreviousVersion(final ValueType valueType) {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tags"))
+          .describedAs("Expect that the records are serialized without tags")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobBatchRecordWithoutTenantFilterOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobBatchRecord()
+                              .setType("test")
+                              .setTenantFilter(TenantFilter.ASSIGNED)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tenantFilter"))
+          .describedAs("Expect that the records are serialized without tenantFilter")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobBatchRecordWithTenantFilter() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobBatchRecord()
+                              .setType("test")
+                              .setTenantFilter(TenantFilter.ASSIGNED)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tenantFilter"))
+          .describedAs("Expect that the records are serialized with tenantFilter")
+          .containsExactly(TenantFilter.ASSIGNED.name());
+    }
+
+    @Test
+    void shouldIndexVariableRecordWithoutSourceOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.VARIABLE, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("source"))
+          .describedAs("Expect that the records are serialized without source")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexVariableRecordWithoutElementInstanceKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.VARIABLE, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("elementInstanceKey"))
+          .describedAs("Expect that the records are serialized without elementInstanceKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithoutListenersConfigKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new UserTaskRecord()
+                              .setUserTaskKey(1L)
+                              .setListenersConfigKey(42L)
+                              .setTags(Set.of("tag1"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("listenersConfigKey"))
+          .describedAs("Expect that the records are serialized without listenersConfigKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithoutTagsOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new UserTaskRecord().setUserTaskKey(1L).setTags(Set.of("tag1", "tag2"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tags"))
+          .describedAs("Expect that the records are serialized without tags")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithTagsOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new UserTaskRecord().setUserTaskKey(1L).setTags(Set.of("tag1"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tags"))
+          .describedAs("Expect that the records are serialized with tags")
+          .doesNotContainNull();
+    }
+
+    @Test
+    void shouldIndexProcessInstanceMigrationWithoutNewFieldsOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MIGRATION,
+              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .allSatisfy(
+              value -> {
+                final var valueMap = (Map<String, Object>) value;
+                assertThat(valueMap.get("processDefinitionKey"))
+                    .describedAs("processDefinitionKey should be absent")
+                    .isNull();
+                assertThat(valueMap.get("tenantId"))
+                    .describedAs("tenantId should be absent")
+                    .isNull();
+                assertThat(valueMap.get("bpmnProcessId"))
+                    .describedAs("bpmnProcessId should be absent")
+                    .isNull();
+                assertThat(valueMap.get("elementInstanceKey"))
+                    .describedAs("elementInstanceKey should be absent")
+                    .isNull();
+              });
+    }
+
+    @Test
+    void shouldIndexDecisionRequirementsRecordWithoutDeploymentKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new DecisionRequirementsRecord().setDeploymentKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deploymentKey"))
+          .describedAs("Expect that the records are serialized without deploymentKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexDecisionRequirementsRecordWithDeploymentKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new DecisionRequirementsRecord().setDeploymentKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deploymentKey"))
+          .describedAs("Expect that the records are serialized with deploymentKey")
+          .containsExactly(12345);
+    }
+
+    @Test
+    void shouldIndexProcessInstanceBatchRecordWithoutProcessDefinitionKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_BATCH,
+              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized without processDefinitionKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexProcessInstanceBatchRecordWithProcessDefinitionKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_BATCH, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized with processDefinitionKey")
+          .doesNotContainNull();
+    }
+
+    @Test
+    void shouldIndexResourceDeletionRecordWithoutNewFieldsOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.RESOURCE_DELETION,
+              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .allSatisfy(
+              value -> {
+                final var valueMap = (Map<String, Object>) value;
+                assertThat(valueMap.get("deleteHistory"))
+                    .describedAs("deleteHistory should be absent")
+                    .isNull();
+                assertThat(valueMap.get("batchOperationKey"))
+                    .describedAs("batchOperationKey should be absent")
+                    .isNull();
+                assertThat(valueMap.get("batchOperationType"))
+                    .describedAs("batchOperationType should be absent")
+                    .isNull();
+                assertThat(valueMap.get("resourceType"))
+                    .describedAs("resourceType should be absent")
+                    .isNull();
+                assertThat(valueMap.get("resourceId"))
+                    .describedAs("resourceId should be absent")
+                    .isNull();
+              });
+    }
+
+    @Test
+    void shouldIndexResourceDeletionRecordWithNewFieldsOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.RESOURCE_DELETION, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .allSatisfy(
+              value -> {
+                final var valueMap = (Map<String, Object>) value;
+                assertThat(valueMap.get("deleteHistory"))
+                    .describedAs("deleteHistory should be present")
+                    .isNotNull();
+                assertThat(valueMap.get("batchOperationKey"))
+                    .describedAs("batchOperationKey should be present")
+                    .isNotNull();
+                assertThat(valueMap.get("batchOperationType"))
+                    .describedAs("batchOperationType should be present")
+                    .isNotNull();
+                assertThat(valueMap.get("resourceType"))
+                    .describedAs("resourceType should be present")
+                    .isNotNull();
+                assertThat(valueMap.get("resourceId"))
+                    .describedAs("resourceId should be present")
+                    .isNotNull();
+              });
     }
 
     private static long getRootProcessInstanceKey(final RecordValue recordValue) throws Exception {
