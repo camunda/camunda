@@ -61,14 +61,14 @@ public final class StreamingElasticsearchBatchRequest extends ElasticsearchBatch
   }
 
   @Override
-  public void executeWithRefresh() throws PersistenceException {
-    executeStreaming(null, true);
-  }
-
-  @Override
   public void execute(final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
     executeStreaming(customErrorHandlers, false);
+  }
+
+  @Override
+  public void executeWithRefresh() throws PersistenceException {
+    executeStreaming(null, true);
   }
 
   private void executeStreaming(
@@ -77,10 +77,8 @@ public final class StreamingElasticsearchBatchRequest extends ElasticsearchBatch
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
     }
+
     final var bulkRequest = bulkRequestBuilder.build();
-    if (bulkRequest.operations().isEmpty()) {
-      return;
-    }
 
     try {
       final EntityTemplate entity = new EntityTemplate(out -> writeNdJson(out, bulkRequest));

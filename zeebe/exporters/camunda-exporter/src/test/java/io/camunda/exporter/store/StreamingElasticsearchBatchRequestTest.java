@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -172,15 +171,6 @@ class StreamingElasticsearchBatchRequestTest {
     assertThat(action.has("delete")).isTrue();
     assertThat(action.get("delete").get("_index").asText()).isEqualTo(INDEX);
     assertThat(action.get("delete").get("_id").asText()).isEqualTo(ID);
-  }
-
-  @Test
-  void shouldNotSendRequestForEmptyBatch() throws IOException, PersistenceException {
-    // when
-    batchRequest.execute();
-
-    // then
-    verify(restClient, never()).performRequest(any(Request.class));
   }
 
   @Test

@@ -56,11 +56,6 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void executeWithRefresh() throws PersistenceException {
-    execute(null, true);
-  }
-
-  @Override
   public BatchRequest add(final String index, final ExporterEntity entity) {
     return addWithId(index, entity.getId(), entity);
   }
@@ -246,6 +241,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     execute(customErrorHandlers, false);
   }
 
+  @Override
+  public void executeWithRefresh() throws PersistenceException {
+    execute(null, true);
+  }
+
   private void execute(
       final BiConsumer<String, Error> customErrorHandlers, final boolean shouldRefresh)
       throws PersistenceException {
@@ -323,7 +323,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         });
   }
 
-  protected record ErrorValues(List<String> indexes, List<String> ids) {}
+  private record ErrorValues(List<String> indexes, List<String> ids) {}
 
-  protected record ErrorKey(OperationType operationType, String errorReason) {}
+  private record ErrorKey(OperationType operationType, String errorReason) {}
 }
