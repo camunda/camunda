@@ -300,6 +300,16 @@ public final class UserTaskServices
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
             : Collections.emptyList();
 
+    // Early exit: if there is no tree path or it only contains the user task itself,
+    // there is no hierarchy and no deduplication is needed. Delegate to the standard
+    // searchUserTaskVariables, but strip cursors since this endpoint does not support
+    // cursor-based pagination (in the general case, we perform in-memory deduplication).
+    if (treePathList.size() <= 1) {
+      final var result = searchUserTaskVariables(userTaskKey, variableQuery, authentication);
+      return new SearchQueryResult<>(
+          result.total(), result.hasMoreTotalItems(), result.items(), null, null);
+    }
+
     final var unlimitedQuery =
         variableSearchQuery(
             q ->
