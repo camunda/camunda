@@ -226,6 +226,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>http-auth-spi</artifactId>
       <scope>test</scope>
