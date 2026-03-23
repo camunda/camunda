@@ -473,7 +473,7 @@ jobs:
     needs:
       - upgrade-camunda-cluster-to-new-version
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -489,6 +489,35 @@ jobs:
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
+      - name: Resume exporter after upgrade
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 9600 &
+          sleep 5
+          echo "Resuming exporters..."
+          curl -sf -X POST http://localhost:9600/actuator/exporting/resume
+          echo ""
+          # Wait for backlog to flush
+          sleep 15
+          kill %1 2>/dev/null || true
+      - name: Check for ES exporter strict mapping errors
+        run: |
+          release="${{ inputs.name }}"
+          total_errors=0
+          for i in 0 1 2; do
+            errors=$(kubectl logs --namespace "$release" "$release-zeebe-$i" 2>&1 | grep -c "strict_dynamic_mapping_exception" || true)
+            echo "broker-$i: $errors strict_dynamic_mapping_exception errors"
+            total_errors=$((total_errors + errors))
+          done
+          if [[ $total_errors -gt 0 ]]; then
+            echo "::error::Found $total_errors strict_dynamic_mapping_exception errors — ES exporter cannot export old records with new schema fields"
+            # Log the first error for details
+            for i in 0 1 2; do
+              kubectl logs --namespace "$release" "$release-zeebe-$i" 2>&1 | grep "strict_dynamic_mapping_exception" -A2 | head -5
+            done
+            exit 1
+          fi
+          echo "No strict mapping errors found"
       - name: Port-forward to gateway
         run: |
           release="${{ inputs.name }}"
