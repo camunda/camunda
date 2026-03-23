@@ -79,6 +79,7 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
       if (expressionFilter.test(expression)) {
         return expressionProcessor
             .evaluateIntervalExpression(expression, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+            .flatMap(this::validateTimerDuration)
             .mapLeft(wrapFailure("duration"));
       }
 
@@ -97,6 +98,7 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
                     }
                     return CronTimer.parse(text);
                   })
+              .flatMap(this::validateTimerDuration)
               .mapLeft(wrapFailure("cycle"));
         } catch (final DateTimeParseException e) {
           final var failureDetails = new Failure(e.getMessage());
@@ -111,10 +113,34 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
       if (expressionFilter.test(expression)) {
         return expressionProcessor
             .evaluateDateTimeExpression(expression, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+            .flatMap(this::validateTimerDuration)
             .mapLeft(wrapFailure("date"));
       }
     }
     return Either.right(null);
+  }
+
+  private Either<Failure, ?> validateTimerDuration(final Object timer) {
+    // Validate that the timer duration doesn't overflow when calculating due date
+    // This is done at deployment time for static expressions to provide early feedback
+    try {
+      if (timer instanceof io.camunda.zeebe.model.bpmn.util.time.Timer timerInstance) {
+        // Handle RepeatingInterval, TimeDateTimer, CronTimer
+        timerInstance.getDueDate(System.currentTimeMillis());
+      } else if (timer instanceof io.camunda.zeebe.model.bpmn.util.time.Interval intervalInstance) {
+        // Handle duration expressions that return Interval directly
+        intervalInstance.toEpochMilli(System.currentTimeMillis());
+      } else if (timer instanceof java.time.ZonedDateTime zonedDateTime) {
+        // Handle date expressions - validate the epoch millis conversion
+        zonedDateTime.toInstant().toEpochMilli();
+      }
+      return Either.right(timer);
+    } catch (final ArithmeticException | java.time.DateTimeException e) {
+      return Either.left(
+          new Failure(
+              "Timer duration is too large and results in arithmetic overflow. "
+                  + "Please use a smaller duration value."));
+    }
   }
 
   private Function<Failure, Failure> wrapFailure(final String timerType) {

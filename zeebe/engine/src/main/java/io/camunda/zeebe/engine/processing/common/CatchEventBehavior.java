@@ -50,6 +50,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.DateTimeException;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Predicate;
@@ -336,6 +337,21 @@ public final class CatchEventBehavior {
             evaluation.expressionProcessor(),
             context.getElementInstanceKey(),
             context.getTenantId())
+        .flatMap(
+            timer -> {
+              // Validate that the timer duration doesn't overflow when calculating due date
+              try {
+                timer.getDueDate(clock.millis());
+                return Either.right(timer);
+              } catch (final ArithmeticException | DateTimeException e) {
+                return Either.left(
+                    new Failure(
+                        "Timer duration is too large and resulted in arithmetic overflow. "
+                            + "Please use a smaller duration value.",
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        context.getElementInstanceKey()));
+              }
+            })
         .map(evaluation::recordTimer);
   }
 
