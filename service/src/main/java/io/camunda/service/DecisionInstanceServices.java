@@ -103,7 +103,11 @@ public final class DecisionInstanceServices
       final Long operationReference,
       final CamundaAuthentication authentication) {
 
-    // make sure decision instance exists before deletion, otherwise return not found
+    // Check if the decision instance exists using anonymous authentication.
+    // This bypasses authorization checks to distinguish between:
+    // - 404 NOT_FOUND: instance doesn't exist
+    // - 403 FORBIDDEN: instance exists but user lacks DELETE permission (checked in broker request)
+    // This matches the pattern used in ProcessInstanceServices.deleteProcessInstance().
     final var searchResult =
         search(
             decisionInstanceSearchQuery(
