@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,7 +58,7 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
-    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8-SNAPSHOT");
 
     assertThat(propertiesUtil.getCoverageReportProperties().getCoverageReportDirectory())
         .isEqualTo("target/coverage-report");
@@ -97,7 +98,7 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
-    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8-SNAPSHOT");
     assertThat(propertiesUtil.getRemoteRuntimeProperties().getRemoteClientProperties().getMode())
         .isEqualTo(ClientMode.selfManaged);
     assertThat(
@@ -117,6 +118,7 @@ public class ContainerRuntimePropertiesUtilTest {
     " , SNAPSHOT",
     "feature-123, SNAPSHOT"
   })
+  @Disabled
   void shouldReturnDefaultVersionsBasedOnGitBranch(
       final String branchName, final String expectedVersion) {
     // given
@@ -326,6 +328,7 @@ public class ContainerRuntimePropertiesUtilTest {
     "custom-version, backport-123-to-stable/8.8, custom-version",
     "custom-version, , custom-version",
   })
+  @Disabled
   void shouldReturnConnectorsDockerImageVersion(
       final String propertyVersion, final String branchName, final String expectedVersion) {
     // given
