@@ -115,4 +115,32 @@ class JudgeEvaluationTest {
         .cause()
         .hasMessageContaining("Empty response from judge");
   }
+
+  @Test
+  void shouldRoundScoreToTwoDecimalPlaces() {
+    // given
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.6951, "reasoning");
+
+    // then
+    assertThat(result.getScore()).isEqualTo(0.70);
+    assertThat(result.getRawScore()).isEqualTo(0.6951);
+  }
+
+  @Test
+  void shouldPassWhenScoreRoundsUpToThreshold() {
+    // given — raw score 0.6951 rounds to 0.70, which meets the threshold
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.6951, "reasoning");
+
+    // then
+    assertThat(result.passed(0.70)).isTrue();
+  }
+
+  @Test
+  void shouldNotPassWhenScoreRoundsDownBelowThreshold() {
+    // given — raw score 0.6940 rounds to 0.69, which is below the threshold
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.6940, "reasoning");
+
+    // then
+    assertThat(result.passed(0.70)).isFalse();
+  }
 }
