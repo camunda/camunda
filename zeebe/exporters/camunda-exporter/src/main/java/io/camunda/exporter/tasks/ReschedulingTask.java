@@ -84,7 +84,7 @@ public final class ReschedulingTask implements RunnableTask {
   }
 
   @VisibleForTesting
-  public long executionCount() {
+  long executionCount() {
     return executionCounter.get();
   }
 

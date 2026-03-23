@@ -74,7 +74,7 @@ public class DecisionInstanceItemProvider implements ItemProvider {
   }
 
   @VisibleForTesting
-  public DecisionInstanceFilter getFilter() {
+  DecisionInstanceFilter getFilter() {
     return filter;
   }
 }
