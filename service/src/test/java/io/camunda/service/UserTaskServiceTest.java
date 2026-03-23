@@ -31,7 +31,10 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
+import io.camunda.search.sort.SortOrder;
+import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
@@ -41,6 +44,8 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -398,6 +403,66 @@ public class UserTaskServiceTest {
       assertThat(result.items()).hasSize(2);
       assertThat(result.startCursor()).isNull();
       assertThat(result.endCursor()).isNull();
+    }
+
+    @Test
+    void shouldHaveComparatorForEveryVariableSortField() throws Exception {
+
+      // given — discover all sort field names from VariableSort.Builder via reflection
+      final var sortFieldMethods =
+          Arrays.stream(VariableSort.Builder.class.getDeclaredMethods())
+              .filter(m -> m.getParameterCount() == 0)
+              .filter(m -> java.lang.reflect.Modifier.isPublic(m.getModifiers()))
+              .filter(m -> m.getReturnType() == VariableSort.Builder.class)
+              .toList();
+
+      // Call each builder method to extract the field name it registers
+      final var allFieldNames = new ArrayList<String>();
+      for (final var method : sortFieldMethods) {
+        final var builder = new VariableSort.Builder();
+        method.invoke(builder);
+        final var sort = builder.asc().build();
+        final var fieldName = sort.getFieldSortings().getLast().field();
+        allFieldNames.add(fieldName);
+      }
+
+      assertThat(allFieldNames).as("Should discover at least one sort field").isNotEmpty();
+
+      // Set up mocks for the service call
+      final var entity = Instancio.create(UserTaskEntity.class);
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
+              .create();
+      final var vars =
+          List.of(
+              new VariableEntity(1L, "a", "v1", "v1", false, 1L, 1L, 1L, "p", "t"),
+              new VariableEntity(2L, "b", "v2", "v2", false, 2L, 2L, 2L, "p", "t"));
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(elementInstanceServices.getByKey(
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.search(any(), any()))
+          .thenReturn(new SearchQueryResult<>(2, false, vars, null, null));
+
+      // when/then — sorting by each field should succeed without throwing
+      for (final String fieldName : allFieldNames) {
+        final var query =
+            VariableQuery.of(
+                q ->
+                    q.sort(
+                        new VariableSort(
+                            List.of(new SortOption.FieldSorting(fieldName, SortOrder.ASC)))));
+
+        assertThatCode(
+                () ->
+                    services.searchUserTaskEffectiveVariables(
+                        entity.userTaskKey(), query, authentication))
+            .as("Sort by field '%s' should be handled by buildFieldComparator", fieldName)
+            .doesNotThrowAnyException();
+      }
     }
   }
 
