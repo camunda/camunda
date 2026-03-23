@@ -57,7 +57,9 @@ final class BulkIndexRequest {
           .addMixIn(DecisionEvaluationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(IncidentRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
-          .addMixIn(JobRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(
+              JobRecordValue.class,
+              IgnoreRootProcessInstanceKeyAndJobToUserTaskMigrationMixin.class)
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
           .addMixIn(
               ProcessInstanceRecordValue.class,
@@ -92,9 +94,9 @@ final class BulkIndexRequest {
       "processDefinitionKey";
   private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
       "moveInstructions";
-  private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
   private static final String ROOT_PROCESS_INSTANCE_KEY_PROPERTY = "rootProcessInstanceKey";
   private static final String BUSINESS_ID_PROPERTY = "businessId";
+  private static final String JOB_TO_USER_TASK_MIGRATION_PROPERTY = "jobToUserTaskMigration";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -236,6 +238,9 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY, BUSINESS_ID_PROPERTY})
   private static final class IgnoreRootProcessInstanceKeyAndBusinessIdMixin {}
+
+  @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY, JOB_TO_USER_TASK_MIGRATION_PROPERTY})
+  private static final class IgnoreRootProcessInstanceKeyAndJobToUserTaskMigrationMixin {}
 
   public interface TerminateInstructionsMixin {
     @JsonIgnore
