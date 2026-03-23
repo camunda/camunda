@@ -44,7 +44,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -368,43 +367,37 @@ public final class UserTaskServices
 
     for (final FieldSorting sorting : fieldSortings) {
       final Comparator<VariableEntity> fieldComparator = buildFieldComparator(sorting);
-      if (fieldComparator != null) {
-        comparator =
-            comparator == null ? fieldComparator : comparator.thenComparing(fieldComparator);
-      }
+      comparator = comparator == null ? fieldComparator : comparator.thenComparing(fieldComparator);
     }
 
-    if (comparator != null) {
-      variables.sort(comparator);
-    }
+    variables.sort(comparator);
   }
 
   /**
-   * Builds a comparator for a single field sorting criterion using reflection. Since {@link
-   * VariableEntity} is a record, the accessor method name matches the field name exactly (e.g.,
-   * field "name" → method {@code name()}). This avoids maintaining a manual mapping of field names
-   * to accessor methods.
+   * Builds a comparator for a single field sorting criterion using an explicit mapping of allowed
+   * field names to typed accessors.
    */
-  @SuppressWarnings("unchecked")
   private Comparator<VariableEntity> buildFieldComparator(final FieldSorting sorting) {
-    final Method accessor;
-    try {
-      accessor = VariableEntity.class.getMethod(sorting.field());
-    } catch (final NoSuchMethodException e) {
-      // Unknown field — skip this sorting criterion
-      return null;
-    }
-
     final Comparator<VariableEntity> comparator =
-        Comparator.comparing(
-            entity -> {
-              try {
-                return (Comparable<Object>) accessor.invoke(entity);
-              } catch (final ReflectiveOperationException e) {
-                throw new IllegalStateException("Failed to access field: " + sorting.field(), e);
-              }
-            },
-            Comparator.nullsLast(Comparator.naturalOrder()));
+        switch (sorting.field()) {
+          case "name" ->
+              Comparator.comparing(
+                  VariableEntity::name, Comparator.nullsLast(Comparator.naturalOrder()));
+          case "value" ->
+              Comparator.comparing(
+                  VariableEntity::value, Comparator.nullsLast(Comparator.naturalOrder()));
+          case "tenantId" ->
+              Comparator.comparing(
+                  VariableEntity::tenantId, Comparator.nullsLast(Comparator.naturalOrder()));
+          case "variableKey" -> Comparator.comparingLong(VariableEntity::variableKey);
+          case "scopeKey" -> Comparator.comparingLong(VariableEntity::scopeKey);
+          case "processInstanceKey" -> Comparator.comparingLong(VariableEntity::processInstanceKey);
+          default ->
+              throw new IllegalArgumentException(
+                  "Unknown variable sort field: "
+                      + sorting.field()
+                      + ". Add a case to buildFieldComparator.");
+        };
 
     return sorting.order() == SortOrder.DESC ? comparator.reversed() : comparator;
   }
