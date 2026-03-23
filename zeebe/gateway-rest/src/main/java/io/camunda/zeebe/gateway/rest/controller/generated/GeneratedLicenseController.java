@@ -34,7 +34,7 @@ public class GeneratedLicenseController {
       value = "/license",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getLicense() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getLicense(authentication);
   }
 }

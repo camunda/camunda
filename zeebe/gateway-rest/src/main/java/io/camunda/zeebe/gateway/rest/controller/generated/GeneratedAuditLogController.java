@@ -40,7 +40,7 @@ public class GeneratedAuditLogController {
   public ResponseEntity<Object> searchAuditLogs(
       @RequestBody(required = false)
           final GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchAuditLogs(auditLogSearchQueryRequest, authentication);
   }
 
@@ -49,7 +49,7 @@ public class GeneratedAuditLogController {
       value = "/audit-logs/{auditLogKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getAuditLog(@PathVariable("auditLogKey") final Long auditLogKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuditLog(auditLogKey, authentication);
   }
 }

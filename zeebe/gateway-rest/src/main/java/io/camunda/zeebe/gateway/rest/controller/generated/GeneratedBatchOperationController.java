@@ -40,7 +40,7 @@ public class GeneratedBatchOperationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getBatchOperation(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getBatchOperation(batchOperationKey, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedBatchOperationController {
   public ResponseEntity<Object> searchBatchOperations(
       @RequestBody(required = false)
           final GeneratedBatchOperationSearchQueryRequestStrictContract batchOperationSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchBatchOperations(batchOperationSearchQuery, authentication);
   }
 
@@ -63,7 +63,7 @@ public class GeneratedBatchOperationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> cancelBatchOperation(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.cancelBatchOperation(batchOperationKey, authentication);
   }
 
@@ -74,7 +74,7 @@ public class GeneratedBatchOperationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> suspendBatchOperation(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.suspendBatchOperation(batchOperationKey, authentication);
   }
 
@@ -85,7 +85,7 @@ public class GeneratedBatchOperationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> resumeBatchOperation(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resumeBatchOperation(batchOperationKey, authentication);
   }
 
@@ -98,7 +98,7 @@ public class GeneratedBatchOperationController {
       @RequestBody(required = false)
           final GeneratedBatchOperationItemSearchQueryRequestStrictContract
               batchOperationItemSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchBatchOperationItems(batchOperationItemSearchQuery, authentication);
   }
 }

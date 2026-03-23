@@ -45,7 +45,7 @@ public class GeneratedProcessDefinitionController {
       @RequestBody(required = false)
           final GeneratedProcessDefinitionSearchQueryRequestStrictContract
               processDefinitionSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchProcessDefinitions(processDefinitionSearchQuery, authentication);
   }
 
@@ -55,7 +55,7 @@ public class GeneratedProcessDefinitionController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessDefinition(
       @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinition(processDefinitionKey, authentication);
   }
 
@@ -65,7 +65,7 @@ public class GeneratedProcessDefinitionController {
       produces = {"text/xml", "application/problem+json"})
   public ResponseEntity<Void> getProcessDefinitionXML(
       @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinitionXML(processDefinitionKey, authentication);
   }
 
@@ -75,7 +75,7 @@ public class GeneratedProcessDefinitionController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getStartProcessForm(
       @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getStartProcessForm(processDefinitionKey, authentication);
   }
 
@@ -89,7 +89,7 @@ public class GeneratedProcessDefinitionController {
       @RequestBody(required = false)
           final GeneratedProcessDefinitionElementStatisticsQueryStrictContract
               processDefinitionElementStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinitionStatistics(
         processDefinitionKey, processDefinitionElementStatisticsQuery, authentication);
   }
@@ -103,7 +103,7 @@ public class GeneratedProcessDefinitionController {
       @RequestBody(required = false)
           final GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract
               processDefinitionMessageSubscriptionStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinitionMessageSubscriptionStatistics(
         processDefinitionMessageSubscriptionStatisticsQuery, authentication);
   }
@@ -117,7 +117,7 @@ public class GeneratedProcessDefinitionController {
       @RequestBody(required = false)
           final GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract
               processDefinitionInstanceStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinitionInstanceStatistics(
         processDefinitionInstanceStatisticsQuery, authentication);
   }
@@ -131,7 +131,7 @@ public class GeneratedProcessDefinitionController {
       @RequestBody
           final GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract
               processDefinitionInstanceVersionStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinitionInstanceVersionStatistics(
         processDefinitionInstanceVersionStatisticsQuery, authentication);
   }

@@ -42,7 +42,7 @@ public class GeneratedDecisionDefinitionController {
       @RequestBody(required = false)
           final GeneratedDecisionDefinitionSearchQueryRequestStrictContract
               decisionDefinitionSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchDecisionDefinitions(decisionDefinitionSearchQuery, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedDecisionDefinitionController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionDefinition(
       @PathVariable("decisionDefinitionKey") final Long decisionDefinitionKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionDefinition(decisionDefinitionKey, authentication);
   }
 
@@ -62,7 +62,7 @@ public class GeneratedDecisionDefinitionController {
       produces = {"text/xml", "application/problem+json"})
   public ResponseEntity<Void> getDecisionDefinitionXML(
       @PathVariable("decisionDefinitionKey") final Long decisionDefinitionKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionDefinitionXML(decisionDefinitionKey, authentication);
   }
 
@@ -75,7 +75,7 @@ public class GeneratedDecisionDefinitionController {
       @RequestBody
           final GeneratedDecisionEvaluationInstructionStrictContract
               decisionEvaluationInstruction) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.evaluateDecision(decisionEvaluationInstruction, authentication);
   }
 }

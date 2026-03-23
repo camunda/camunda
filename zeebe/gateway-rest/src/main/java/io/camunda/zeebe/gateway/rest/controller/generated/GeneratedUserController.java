@@ -41,7 +41,7 @@ public class GeneratedUserController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createUser(
       @RequestBody final GeneratedUserRequestStrictContract userRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createUser(userRequest, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedUserController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchUsers(
       @RequestBody final GeneratedUserSearchQueryRequestStrictContract userSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUsers(userSearchQueryRequest, authentication);
   }
 
@@ -61,7 +61,7 @@ public class GeneratedUserController {
       value = "/users/{username}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getUser(@PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getUser(username, authentication);
   }
 
@@ -73,7 +73,7 @@ public class GeneratedUserController {
   public ResponseEntity<Object> updateUser(
       @PathVariable("username") final String username,
       @RequestBody final GeneratedUserUpdateRequestStrictContract userUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateUser(username, userUpdateRequest, authentication);
   }
 
@@ -82,7 +82,7 @@ public class GeneratedUserController {
       value = "/users/{username}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteUser(@PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteUser(username, authentication);
   }
 }

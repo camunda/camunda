@@ -53,7 +53,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceCreationInstructionStrictContract
               processInstanceCreationInstruction) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createProcessInstance(processInstanceCreationInstruction, authentication);
   }
 
@@ -63,7 +63,7 @@ public class GeneratedProcessInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstance(processInstanceKey, authentication);
   }
 
@@ -73,7 +73,7 @@ public class GeneratedProcessInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceSequenceFlows(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceSequenceFlows(processInstanceKey, authentication);
   }
 
@@ -83,7 +83,7 @@ public class GeneratedProcessInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceStatistics(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceStatistics(processInstanceKey, authentication);
   }
 
@@ -96,7 +96,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody(required = false)
           final GeneratedProcessInstanceSearchQueryRequestStrictContract
               processInstanceSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchProcessInstances(processInstanceSearchQuery, authentication);
   }
 
@@ -109,7 +109,7 @@ public class GeneratedProcessInstanceController {
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false)
           final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchProcessInstanceIncidents(
         processInstanceKey, incidentSearchQuery, authentication);
   }
@@ -121,7 +121,7 @@ public class GeneratedProcessInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> resolveProcessInstanceIncidents(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resolveProcessInstanceIncidents(processInstanceKey, authentication);
   }
 
@@ -134,7 +134,7 @@ public class GeneratedProcessInstanceController {
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false)
           final GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.cancelProcessInstance(
         processInstanceKey, cancelProcessInstanceRequest, authentication);
   }
@@ -149,7 +149,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract
               processInstanceCancellationBatchOperationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.cancelProcessInstancesBatchOperation(
         processInstanceCancellationBatchOperationRequest, authentication);
   }
@@ -164,7 +164,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody(required = false)
           final GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract
               processInstanceIncidentResolutionBatchOperationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resolveIncidentsBatchOperation(
         processInstanceIncidentResolutionBatchOperationRequest, authentication);
   }
@@ -179,7 +179,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract
               processInstanceMigrationBatchOperationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.migrateProcessInstancesBatchOperation(
         processInstanceMigrationBatchOperationRequest, authentication);
   }
@@ -194,7 +194,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract
               processInstanceModificationBatchOperationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.modifyProcessInstancesBatchOperation(
         processInstanceModificationBatchOperationRequest, authentication);
   }
@@ -209,7 +209,7 @@ public class GeneratedProcessInstanceController {
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false)
           final GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteProcessInstance(
         processInstanceKey, deleteProcessInstanceRequest, authentication);
   }
@@ -224,7 +224,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract
               processInstanceDeletionBatchOperationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteProcessInstancesBatchOperation(
         processInstanceDeletionBatchOperationRequest, authentication);
   }
@@ -239,7 +239,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceMigrationInstructionStrictContract
               processInstanceMigrationInstruction) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.migrateProcessInstance(
         processInstanceKey, processInstanceMigrationInstruction, authentication);
   }
@@ -254,7 +254,7 @@ public class GeneratedProcessInstanceController {
       @RequestBody
           final GeneratedProcessInstanceModificationInstructionStrictContract
               processInstanceModificationInstruction) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.modifyProcessInstance(
         processInstanceKey, processInstanceModificationInstruction, authentication);
   }
@@ -265,7 +265,7 @@ public class GeneratedProcessInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceCallHierarchy(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceCallHierarchy(processInstanceKey, authentication);
   }
 }

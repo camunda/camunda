@@ -41,7 +41,7 @@ public class GeneratedDecisionRequirementsController {
       @RequestBody(required = false)
           final GeneratedDecisionRequirementsSearchQueryRequestStrictContract
               decisionRequirementsSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchDecisionRequirements(
         decisionRequirementsSearchQuery, authentication);
   }
@@ -52,7 +52,7 @@ public class GeneratedDecisionRequirementsController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionRequirements(
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionRequirements(decisionRequirementsKey, authentication);
   }
 
@@ -62,7 +62,7 @@ public class GeneratedDecisionRequirementsController {
       produces = {"text/xml", "application/problem+json"})
   public ResponseEntity<Void> getDecisionRequirementsXML(
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionRequirementsXML(decisionRequirementsKey, authentication);
   }
 }

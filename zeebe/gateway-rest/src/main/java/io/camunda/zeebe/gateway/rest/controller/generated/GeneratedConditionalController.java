@@ -40,7 +40,7 @@ public class GeneratedConditionalController {
       @RequestBody
           final GeneratedConditionalEvaluationInstructionStrictContract
               conditionalEvaluationInstruction) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.evaluateConditionals(conditionalEvaluationInstruction, authentication);
   }
 }

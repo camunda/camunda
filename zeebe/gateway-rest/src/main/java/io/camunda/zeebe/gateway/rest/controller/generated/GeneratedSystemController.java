@@ -40,7 +40,7 @@ public class GeneratedSystemController {
       @RequestParam(name = "endTime", required = false) final String endTime,
       @RequestParam(name = "tenantId", required = false) final String tenantId,
       @RequestParam(name = "withTenants", required = false) final Boolean withTenants) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getUsageMetrics(
         startTime, endTime, tenantId, withTenants, authentication);
   }
@@ -51,7 +51,7 @@ public class GeneratedSystemController {
       value = "/system/configuration",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getSystemConfiguration() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getSystemConfiguration(authentication);
   }
 }

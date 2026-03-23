@@ -43,7 +43,7 @@ public class GeneratedIncidentController {
   public ResponseEntity<Object> searchIncidents(
       @RequestBody(required = false)
           final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchIncidents(incidentSearchQuery, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedIncidentController {
       value = "/incidents/{incidentKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getIncident(@PathVariable("incidentKey") final Long incidentKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getIncident(incidentKey, authentication);
   }
 
@@ -65,7 +65,7 @@ public class GeneratedIncidentController {
       @PathVariable("incidentKey") final Long incidentKey,
       @RequestBody(required = false)
           final GeneratedIncidentResolutionRequestStrictContract incidentResolutionRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resolveIncident(incidentKey, incidentResolutionRequest, authentication);
   }
 
@@ -78,7 +78,7 @@ public class GeneratedIncidentController {
       @RequestBody(required = false)
           final GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract
               incidentProcessInstanceStatisticsByErrorQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceStatisticsByError(
         incidentProcessInstanceStatisticsByErrorQuery, authentication);
   }
@@ -92,7 +92,7 @@ public class GeneratedIncidentController {
       @RequestBody
           final GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract
               incidentProcessInstanceStatisticsByDefinitionQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceStatisticsByDefinition(
         incidentProcessInstanceStatisticsByDefinitionQuery, authentication);
   }

@@ -38,7 +38,7 @@ public class GeneratedSignalController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> broadcastSignal(
       @RequestBody final GeneratedSignalBroadcastRequestStrictContract signalBroadcastRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.broadcastSignal(signalBroadcastRequest, authentication);
   }
 }

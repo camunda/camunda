@@ -40,7 +40,7 @@ public class GeneratedSetupController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createAdminUser(
       @RequestBody final GeneratedUserRequestStrictContract userRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createAdminUser(userRequest, authentication);
   }
 }

@@ -44,7 +44,7 @@ public class GeneratedDecisionInstanceController {
       @RequestBody(required = false)
           final GeneratedDecisionInstanceSearchQueryRequestStrictContract
               decisionInstanceSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchDecisionInstances(decisionInstanceSearchQuery, authentication);
   }
 
@@ -54,7 +54,7 @@ public class GeneratedDecisionInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionInstance(
       @PathVariable("decisionEvaluationInstanceKey") final Long decisionEvaluationInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionInstance(decisionEvaluationInstanceKey, authentication);
   }
 
@@ -69,7 +69,7 @@ public class GeneratedDecisionInstanceController {
       @RequestBody(required = false)
           final GeneratedDeleteDecisionInstanceRequestStrictContract
               deleteDecisionInstanceRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteDecisionInstance(
         decisionInstanceKey, deleteDecisionInstanceRequest, authentication);
   }
@@ -84,7 +84,7 @@ public class GeneratedDecisionInstanceController {
       @RequestBody
           final GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract
               decisionInstanceDeletionBatchOperationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteDecisionInstancesBatchOperation(
         decisionInstanceDeletionBatchOperationRequest, authentication);
   }

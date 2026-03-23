@@ -45,7 +45,7 @@ public class GeneratedClusterVariableController {
   public ResponseEntity<Object> createGlobalClusterVariable(
       @RequestBody
           final GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createGlobalClusterVariable(createClusterVariableRequest, authentication);
   }
 
@@ -59,7 +59,7 @@ public class GeneratedClusterVariableController {
       @PathVariable("tenantId") final String tenantId,
       @RequestBody
           final GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createTenantClusterVariable(
         tenantId, createClusterVariableRequest, authentication);
   }
@@ -74,7 +74,7 @@ public class GeneratedClusterVariableController {
       @RequestBody(required = false)
           final GeneratedClusterVariableSearchQueryRequestStrictContract
               clusterVariableSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchClusterVariables(
         truncateValues, clusterVariableSearchQueryRequest, authentication);
   }
@@ -84,7 +84,7 @@ public class GeneratedClusterVariableController {
       value = "/cluster-variables/global/{name}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getGlobalClusterVariable(@PathVariable("name") final String name) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getGlobalClusterVariable(name, authentication);
   }
 
@@ -98,7 +98,7 @@ public class GeneratedClusterVariableController {
       @PathVariable("name") final String name,
       @RequestBody
           final GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateGlobalClusterVariable(
         name, updateClusterVariableRequest, authentication);
   }
@@ -109,7 +109,7 @@ public class GeneratedClusterVariableController {
       value = "/cluster-variables/global/{name}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteGlobalClusterVariable(@PathVariable("name") final String name) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteGlobalClusterVariable(name, authentication);
   }
 
@@ -119,7 +119,7 @@ public class GeneratedClusterVariableController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getTenantClusterVariable(tenantId, name, authentication);
   }
 
@@ -134,7 +134,7 @@ public class GeneratedClusterVariableController {
       @PathVariable("name") final String name,
       @RequestBody
           final GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateTenantClusterVariable(
         tenantId, name, updateClusterVariableRequest, authentication);
   }
@@ -146,7 +146,7 @@ public class GeneratedClusterVariableController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteTenantClusterVariable(tenantId, name, authentication);
   }
 }

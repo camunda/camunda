@@ -45,7 +45,7 @@ public class GeneratedRoleController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createRole(
       @RequestBody final GeneratedRoleCreateRequestStrictContract roleCreateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createRole(roleCreateRequest, authentication);
   }
 
@@ -57,7 +57,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Object> searchRoles(
       @RequestBody(required = false)
           final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchRoles(roleSearchQueryRequest, authentication);
   }
 
@@ -66,7 +66,7 @@ public class GeneratedRoleController {
       value = "/roles/{roleId}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getRole(@PathVariable("roleId") final String roleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getRole(roleId, authentication);
   }
 
@@ -78,7 +78,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Object> updateRole(
       @PathVariable("roleId") final String roleId,
       @RequestBody final GeneratedRoleUpdateRequestStrictContract roleUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateRole(roleId, roleUpdateRequest, authentication);
   }
 
@@ -87,7 +87,7 @@ public class GeneratedRoleController {
       value = "/roles/{roleId}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteRole(@PathVariable("roleId") final String roleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteRole(roleId, authentication);
   }
 
@@ -98,7 +98,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Void> assignRoleToUser(
       @PathVariable("roleId") final String roleId,
       @PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignRoleToUser(roleId, username, authentication);
   }
 
@@ -109,7 +109,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Void> unassignRoleFromUser(
       @PathVariable("roleId") final String roleId,
       @PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignRoleFromUser(roleId, username, authentication);
   }
 
@@ -122,7 +122,7 @@ public class GeneratedRoleController {
       @PathVariable("roleId") final String roleId,
       @RequestBody(required = false)
           final GeneratedRoleUserSearchQueryRequestStrictContract roleUserSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUsersForRole(roleId, roleUserSearchQueryRequest, authentication);
   }
 
@@ -133,7 +133,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Void> assignRoleToClient(
       @PathVariable("roleId") final String roleId,
       @PathVariable("clientId") final String clientId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignRoleToClient(roleId, clientId, authentication);
   }
 
@@ -144,7 +144,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Void> unassignRoleFromClient(
       @PathVariable("roleId") final String roleId,
       @PathVariable("clientId") final String clientId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignRoleFromClient(roleId, clientId, authentication);
   }
 
@@ -157,7 +157,7 @@ public class GeneratedRoleController {
       @PathVariable("roleId") final String roleId,
       @RequestBody(required = false)
           final GeneratedRoleClientSearchQueryRequestStrictContract roleClientSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchClientsForRole(
         roleId, roleClientSearchQueryRequest, authentication);
   }
@@ -168,7 +168,7 @@ public class GeneratedRoleController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> assignRoleToGroup(
       @PathVariable("roleId") final String roleId, @PathVariable("groupId") final String groupId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignRoleToGroup(roleId, groupId, authentication);
   }
 
@@ -178,7 +178,7 @@ public class GeneratedRoleController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> unassignRoleFromGroup(
       @PathVariable("roleId") final String roleId, @PathVariable("groupId") final String groupId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignRoleFromGroup(roleId, groupId, authentication);
   }
 
@@ -191,7 +191,7 @@ public class GeneratedRoleController {
       @PathVariable("roleId") final String roleId,
       @RequestBody(required = false)
           final GeneratedRoleGroupSearchQueryRequestStrictContract roleGroupSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchGroupsForRole(roleId, roleGroupSearchQueryRequest, authentication);
   }
 
@@ -202,7 +202,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Void> assignRoleToMappingRule(
       @PathVariable("roleId") final String roleId,
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignRoleToMappingRule(roleId, mappingRuleId, authentication);
   }
 
@@ -213,7 +213,7 @@ public class GeneratedRoleController {
   public ResponseEntity<Void> unassignRoleFromMappingRule(
       @PathVariable("roleId") final String roleId,
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignRoleFromMappingRule(roleId, mappingRuleId, authentication);
   }
 
@@ -227,7 +227,7 @@ public class GeneratedRoleController {
       @RequestBody(required = false)
           final GeneratedMappingRuleSearchQueryRequestStrictContract
               mappingRuleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchMappingRulesForRole(
         roleId, mappingRuleSearchQueryRequest, authentication);
   }

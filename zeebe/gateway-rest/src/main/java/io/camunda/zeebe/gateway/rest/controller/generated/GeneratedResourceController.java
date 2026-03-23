@@ -44,7 +44,7 @@ public class GeneratedResourceController {
   public ResponseEntity<Object> createDeployment(
       @RequestPart("resources") final List<Part> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDeployment(resources, tenantId, authentication);
   }
 
@@ -53,7 +53,7 @@ public class GeneratedResourceController {
       value = "/resources/{resourceKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getResource(@PathVariable("resourceKey") final Long resourceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getResource(resourceKey, authentication);
   }
 
@@ -63,7 +63,7 @@ public class GeneratedResourceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> getResourceContent(
       @PathVariable("resourceKey") final Long resourceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getResourceContent(resourceKey, authentication);
   }
 
@@ -76,7 +76,7 @@ public class GeneratedResourceController {
       @PathVariable("resourceKey") final Long resourceKey,
       @RequestBody(required = false)
           final GeneratedDeleteResourceRequestStrictContract deleteResourceRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteResource(resourceKey, deleteResourceRequest, authentication);
   }
 }

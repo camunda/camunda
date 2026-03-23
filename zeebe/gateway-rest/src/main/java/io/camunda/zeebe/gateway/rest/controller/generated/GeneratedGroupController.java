@@ -47,7 +47,7 @@ public class GeneratedGroupController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createGroup(
       @RequestBody final GeneratedGroupCreateRequestStrictContract groupCreateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createGroup(groupCreateRequest, authentication);
   }
 
@@ -59,7 +59,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Object> searchGroups(
       @RequestBody(required = false)
           final GeneratedGroupSearchQueryRequestStrictContract groupSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchGroups(groupSearchQueryRequest, authentication);
   }
 
@@ -68,7 +68,7 @@ public class GeneratedGroupController {
       value = "/groups/{groupId}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getGroup(@PathVariable("groupId") final String groupId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getGroup(groupId, authentication);
   }
 
@@ -80,7 +80,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Object> updateGroup(
       @PathVariable("groupId") final String groupId,
       @RequestBody final GeneratedGroupUpdateRequestStrictContract groupUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateGroup(groupId, groupUpdateRequest, authentication);
   }
 
@@ -89,7 +89,7 @@ public class GeneratedGroupController {
       value = "/groups/{groupId}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteGroup(@PathVariable("groupId") final String groupId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteGroup(groupId, authentication);
   }
 
@@ -100,7 +100,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Void> assignUserToGroup(
       @PathVariable("groupId") final String groupId,
       @PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignUserToGroup(groupId, username, authentication);
   }
 
@@ -111,7 +111,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Void> unassignUserFromGroup(
       @PathVariable("groupId") final String groupId,
       @PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignUserFromGroup(groupId, username, authentication);
   }
 
@@ -124,7 +124,7 @@ public class GeneratedGroupController {
       @PathVariable("groupId") final String groupId,
       @RequestBody(required = false)
           final GeneratedGroupUserSearchQueryRequestStrictContract groupUserSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUsersForGroup(groupId, groupUserSearchQueryRequest, authentication);
   }
 
@@ -135,7 +135,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Void> assignClientToGroup(
       @PathVariable("groupId") final String groupId,
       @PathVariable("clientId") final String clientId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignClientToGroup(groupId, clientId, authentication);
   }
 
@@ -146,7 +146,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Void> unassignClientFromGroup(
       @PathVariable("groupId") final String groupId,
       @PathVariable("clientId") final String clientId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignClientFromGroup(groupId, clientId, authentication);
   }
 
@@ -160,7 +160,7 @@ public class GeneratedGroupController {
       @RequestBody(required = false)
           final GeneratedGroupClientSearchQueryRequestStrictContract
               groupClientSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchClientsForGroup(
         groupId, groupClientSearchQueryRequest, authentication);
   }
@@ -172,7 +172,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Void> assignMappingRuleToGroup(
       @PathVariable("groupId") final String groupId,
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignMappingRuleToGroup(groupId, mappingRuleId, authentication);
   }
 
@@ -183,7 +183,7 @@ public class GeneratedGroupController {
   public ResponseEntity<Void> unassignMappingRuleFromGroup(
       @PathVariable("groupId") final String groupId,
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignMappingRuleFromGroup(groupId, mappingRuleId, authentication);
   }
 
@@ -197,7 +197,7 @@ public class GeneratedGroupController {
       @RequestBody(required = false)
           final GeneratedMappingRuleSearchQueryRequestStrictContract
               mappingRuleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchMappingRulesForGroup(
         groupId, mappingRuleSearchQueryRequest, authentication);
   }
@@ -211,7 +211,7 @@ public class GeneratedGroupController {
       @PathVariable("groupId") final String groupId,
       @RequestBody(required = false)
           final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchRolesForGroup(groupId, roleSearchQueryRequest, authentication);
   }
 }

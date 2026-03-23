@@ -42,7 +42,7 @@ public class GeneratedVariableController {
       @RequestParam(name = "truncateValues", required = false) final Boolean truncateValues,
       @RequestBody(required = false)
           final GeneratedVariableSearchQueryRequestStrictContract variableSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchVariables(truncateValues, variableSearchQuery, authentication);
   }
 
@@ -51,7 +51,7 @@ public class GeneratedVariableController {
       value = "/variables/{variableKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getVariable(@PathVariable("variableKey") final Long variableKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getVariable(variableKey, authentication);
   }
 }

@@ -39,7 +39,7 @@ public class GeneratedExpressionController {
   public ResponseEntity<Object> evaluateExpression(
       @RequestBody
           final GeneratedExpressionEvaluationRequestStrictContract expressionEvaluationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.evaluateExpression(expressionEvaluationRequest, authentication);
   }
 }

@@ -41,7 +41,7 @@ public class GeneratedMessageSubscriptionController {
       @RequestBody(required = false)
           final GeneratedMessageSubscriptionSearchQueryRequestStrictContract
               messageSubscriptionSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchMessageSubscriptions(
         messageSubscriptionSearchQuery, authentication);
   }
@@ -55,7 +55,7 @@ public class GeneratedMessageSubscriptionController {
       @RequestBody(required = false)
           final GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract
               correlatedMessageSubscriptionSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchCorrelatedMessageSubscriptions(
         correlatedMessageSubscriptionSearchQuery, authentication);
   }

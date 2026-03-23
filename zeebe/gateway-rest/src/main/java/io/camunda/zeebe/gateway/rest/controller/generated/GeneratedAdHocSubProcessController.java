@@ -42,7 +42,7 @@ public class GeneratedAdHocSubProcessController {
       @RequestBody
           final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract
               adHocSubProcessActivateActivitiesInstruction) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.activateAdHocSubProcessActivities(
         adHocSubProcessInstanceKey, adHocSubProcessActivateActivitiesInstruction, authentication);
   }

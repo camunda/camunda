@@ -40,7 +40,7 @@ public class GeneratedMessageController {
   public ResponseEntity<Object> publishMessage(
       @RequestBody
           final GeneratedMessagePublicationRequestStrictContract messagePublicationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.publishMessage(messagePublicationRequest, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedMessageController {
   public ResponseEntity<Object> correlateMessage(
       @RequestBody
           final GeneratedMessageCorrelationRequestStrictContract messageCorrelationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.correlateMessage(messageCorrelationRequest, authentication);
   }
 }

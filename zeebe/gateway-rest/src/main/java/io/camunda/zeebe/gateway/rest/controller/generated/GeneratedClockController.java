@@ -38,7 +38,7 @@ public class GeneratedClockController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> pinClock(
       @RequestBody final GeneratedClockPinRequestStrictContract clockPinRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.pinClock(clockPinRequest, authentication);
   }
 
@@ -47,7 +47,7 @@ public class GeneratedClockController {
       value = "/clock/reset",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> resetClock() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resetClock(authentication);
   }
 }

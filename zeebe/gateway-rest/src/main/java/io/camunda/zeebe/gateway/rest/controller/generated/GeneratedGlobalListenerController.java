@@ -43,7 +43,7 @@ public class GeneratedGlobalListenerController {
       @RequestBody
           final GeneratedCreateGlobalTaskListenerRequestStrictContract
               createGlobalTaskListenerRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createGlobalTaskListener(createGlobalTaskListenerRequest, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedGlobalListenerController {
       value = "/global-task-listeners/{id}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getGlobalTaskListener(@PathVariable("id") final String id) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getGlobalTaskListener(id, authentication);
   }
 
@@ -66,7 +66,7 @@ public class GeneratedGlobalListenerController {
       @RequestBody
           final GeneratedUpdateGlobalTaskListenerRequestStrictContract
               updateGlobalTaskListenerRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateGlobalTaskListener(
         id, updateGlobalTaskListenerRequest, authentication);
   }
@@ -76,7 +76,7 @@ public class GeneratedGlobalListenerController {
       value = "/global-task-listeners/{id}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteGlobalTaskListener(@PathVariable("id") final String id) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteGlobalTaskListener(id, authentication);
   }
 
@@ -89,7 +89,7 @@ public class GeneratedGlobalListenerController {
       @RequestBody
           final GeneratedGlobalTaskListenerSearchQueryRequestStrictContract
               globalTaskListenerSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchGlobalTaskListeners(
         globalTaskListenerSearchQueryRequest, authentication);
   }

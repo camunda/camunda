@@ -40,7 +40,7 @@ public class GeneratedAuthorizationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createAuthorization(
       @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createAuthorization(authorizationRequest, authentication);
   }
 
@@ -52,7 +52,7 @@ public class GeneratedAuthorizationController {
   public ResponseEntity<Void> updateAuthorization(
       @PathVariable("authorizationKey") final Long authorizationKey,
       @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateAuthorization(
         authorizationKey, authorizationRequest, authentication);
   }
@@ -63,7 +63,7 @@ public class GeneratedAuthorizationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getAuthorization(
       @PathVariable("authorizationKey") final Long authorizationKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuthorization(authorizationKey, authentication);
   }
 
@@ -73,7 +73,7 @@ public class GeneratedAuthorizationController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteAuthorization(
       @PathVariable("authorizationKey") final Long authorizationKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteAuthorization(authorizationKey, authentication);
   }
 
@@ -85,7 +85,7 @@ public class GeneratedAuthorizationController {
   public ResponseEntity<Object> searchAuthorizations(
       @RequestBody
           final GeneratedAuthorizationSearchQueryRequestStrictContract authorizationSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchAuthorizations(authorizationSearchQuery, authentication);
   }
 }

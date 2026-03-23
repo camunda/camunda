@@ -50,7 +50,7 @@ public class GeneratedJobController {
       @RequestParam(name = "from", required = false) final String from,
       @RequestParam(name = "to", required = false) final String to,
       @RequestParam(name = "jobType", required = false) final String jobType) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getGlobalJobStatistics(from, to, jobType, authentication);
   }
 
@@ -61,7 +61,7 @@ public class GeneratedJobController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getJobTypeStatistics(
       @RequestBody final GeneratedJobTypeStatisticsQueryStrictContract jobTypeStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getJobTypeStatistics(jobTypeStatisticsQuery, authentication);
   }
 
@@ -72,7 +72,7 @@ public class GeneratedJobController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getJobWorkerStatistics(
       @RequestBody final GeneratedJobWorkerStatisticsQueryStrictContract jobWorkerStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getJobWorkerStatistics(jobWorkerStatisticsQuery, authentication);
   }
 
@@ -84,7 +84,7 @@ public class GeneratedJobController {
   public ResponseEntity<Object> getJobTimeSeriesStatistics(
       @RequestBody
           final GeneratedJobTimeSeriesStatisticsQueryStrictContract jobTimeSeriesStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getJobTimeSeriesStatistics(jobTimeSeriesStatisticsQuery, authentication);
   }
 
@@ -95,7 +95,7 @@ public class GeneratedJobController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getJobErrorStatistics(
       @RequestBody final GeneratedJobErrorStatisticsQueryStrictContract jobErrorStatisticsQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getJobErrorStatistics(jobErrorStatisticsQuery, authentication);
   }
 
@@ -106,7 +106,7 @@ public class GeneratedJobController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> activateJobs(
       @RequestBody final GeneratedJobActivationRequestStrictContract jobActivationRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.activateJobs(jobActivationRequest, authentication);
   }
 
@@ -118,7 +118,7 @@ public class GeneratedJobController {
   public ResponseEntity<Object> searchJobs(
       @RequestBody(required = false)
           final GeneratedJobSearchQueryRequestStrictContract jobSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchJobs(jobSearchQuery, authentication);
   }
 
@@ -130,7 +130,7 @@ public class GeneratedJobController {
   public ResponseEntity<Void> failJob(
       @PathVariable("jobKey") final Long jobKey,
       @RequestBody(required = false) final GeneratedJobFailRequestStrictContract jobFailRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.failJob(jobKey, jobFailRequest, authentication);
   }
 
@@ -142,7 +142,7 @@ public class GeneratedJobController {
   public ResponseEntity<Void> throwJobError(
       @PathVariable("jobKey") final Long jobKey,
       @RequestBody final GeneratedJobErrorRequestStrictContract jobErrorRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.throwJobError(jobKey, jobErrorRequest, authentication);
   }
 
@@ -155,7 +155,7 @@ public class GeneratedJobController {
       @PathVariable("jobKey") final Long jobKey,
       @RequestBody(required = false)
           final GeneratedJobCompletionRequestStrictContract jobCompletionRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.completeJob(jobKey, jobCompletionRequest, authentication);
   }
 
@@ -167,7 +167,7 @@ public class GeneratedJobController {
   public ResponseEntity<Void> updateJob(
       @PathVariable("jobKey") final Long jobKey,
       @RequestBody final GeneratedJobUpdateRequestStrictContract jobUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateJob(jobKey, jobUpdateRequest, authentication);
   }
 }

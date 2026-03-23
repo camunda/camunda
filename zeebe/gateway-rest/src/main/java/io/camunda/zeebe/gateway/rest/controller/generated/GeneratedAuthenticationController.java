@@ -38,7 +38,7 @@ public class GeneratedAuthenticationController {
       value = "/authentication/me",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getAuthentication() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuthentication(authentication);
   }
 }

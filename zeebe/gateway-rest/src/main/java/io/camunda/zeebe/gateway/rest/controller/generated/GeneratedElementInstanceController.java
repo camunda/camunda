@@ -43,7 +43,7 @@ public class GeneratedElementInstanceController {
       @RequestBody(required = false)
           final GeneratedElementInstanceSearchQueryRequestStrictContract
               elementInstanceSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchElementInstances(elementInstanceSearchQuery, authentication);
   }
 
@@ -53,7 +53,7 @@ public class GeneratedElementInstanceController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getElementInstance(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getElementInstance(elementInstanceKey, authentication);
   }
 
@@ -65,7 +65,7 @@ public class GeneratedElementInstanceController {
   public ResponseEntity<Void> createElementInstanceVariables(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey,
       @RequestBody final GeneratedSetVariableRequestStrictContract setVariableRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createElementInstanceVariables(
         elementInstanceKey, setVariableRequest, authentication);
   }
@@ -78,7 +78,7 @@ public class GeneratedElementInstanceController {
   public ResponseEntity<Object> searchElementInstanceIncidents(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey,
       @RequestBody final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchElementInstanceIncidents(
         elementInstanceKey, incidentSearchQuery, authentication);
   }

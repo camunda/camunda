@@ -46,7 +46,7 @@ public class GeneratedTenantController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createTenant(
       @RequestBody final GeneratedTenantCreateRequestStrictContract tenantCreateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createTenant(tenantCreateRequest, authentication);
   }
 
@@ -58,7 +58,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Object> searchTenants(
       @RequestBody(required = false)
           final GeneratedTenantSearchQueryRequestStrictContract tenantSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchTenants(tenantSearchQueryRequest, authentication);
   }
 
@@ -67,7 +67,7 @@ public class GeneratedTenantController {
       value = "/tenants/{tenantId}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getTenant(@PathVariable("tenantId") final String tenantId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getTenant(tenantId, authentication);
   }
 
@@ -79,7 +79,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Object> updateTenant(
       @PathVariable("tenantId") final String tenantId,
       @RequestBody final GeneratedTenantUpdateRequestStrictContract tenantUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateTenant(tenantId, tenantUpdateRequest, authentication);
   }
 
@@ -88,7 +88,7 @@ public class GeneratedTenantController {
       value = "/tenants/{tenantId}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteTenant(@PathVariable("tenantId") final String tenantId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteTenant(tenantId, authentication);
   }
 
@@ -99,7 +99,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> assignUserToTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignUserToTenant(tenantId, username, authentication);
   }
 
@@ -110,7 +110,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> unassignUserFromTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("username") final String username) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignUserFromTenant(tenantId, username, authentication);
   }
 
@@ -123,7 +123,7 @@ public class GeneratedTenantController {
       @PathVariable("tenantId") final String tenantId,
       @RequestBody(required = false)
           final GeneratedTenantUserSearchQueryRequestStrictContract tenantUserSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUsersForTenant(
         tenantId, tenantUserSearchQueryRequest, authentication);
   }
@@ -135,7 +135,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> assignClientToTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("clientId") final String clientId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignClientToTenant(tenantId, clientId, authentication);
   }
 
@@ -146,7 +146,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> unassignClientFromTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("clientId") final String clientId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignClientFromTenant(tenantId, clientId, authentication);
   }
 
@@ -160,7 +160,7 @@ public class GeneratedTenantController {
       @RequestBody(required = false)
           final GeneratedTenantClientSearchQueryRequestStrictContract
               tenantClientSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchClientsForTenant(
         tenantId, tenantClientSearchQueryRequest, authentication);
   }
@@ -172,7 +172,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> assignGroupToTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("groupId") final String groupId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignGroupToTenant(tenantId, groupId, authentication);
   }
 
@@ -183,7 +183,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> unassignGroupFromTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("groupId") final String groupId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignGroupFromTenant(tenantId, groupId, authentication);
   }
 
@@ -197,7 +197,7 @@ public class GeneratedTenantController {
       @RequestBody(required = false)
           final GeneratedTenantGroupSearchQueryRequestStrictContract
               tenantGroupSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchGroupIdsForTenant(
         tenantId, tenantGroupSearchQueryRequest, authentication);
   }
@@ -211,7 +211,7 @@ public class GeneratedTenantController {
       @PathVariable("tenantId") final String tenantId,
       @RequestBody(required = false)
           final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchRolesForTenant(tenantId, roleSearchQueryRequest, authentication);
   }
 
@@ -222,7 +222,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> assignRoleToTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("roleId") final String roleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignRoleToTenant(tenantId, roleId, authentication);
   }
 
@@ -233,7 +233,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> unassignRoleFromTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("roleId") final String roleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignRoleFromTenant(tenantId, roleId, authentication);
   }
 
@@ -244,7 +244,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> assignMappingRuleToTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignMappingRuleToTenant(tenantId, mappingRuleId, authentication);
   }
 
@@ -255,7 +255,7 @@ public class GeneratedTenantController {
   public ResponseEntity<Void> unassignMappingRuleFromTenant(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignMappingRuleFromTenant(tenantId, mappingRuleId, authentication);
   }
 
@@ -269,7 +269,7 @@ public class GeneratedTenantController {
       @RequestBody(required = false)
           final GeneratedMappingRuleSearchQueryRequestStrictContract
               mappingRuleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchMappingRulesForTenant(
         tenantId, mappingRuleSearchQueryRequest, authentication);
   }

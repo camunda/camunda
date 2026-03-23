@@ -50,7 +50,7 @@ public class GeneratedDocumentController {
       @RequestPart("file") final Part file,
       @RequestPart(value = "metadata", required = false)
           final GeneratedDocumentMetadataStrictContract metadata) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDocument(storeId, documentId, file, metadata, authentication);
   }
 
@@ -64,7 +64,7 @@ public class GeneratedDocumentController {
       @RequestPart("files") final List<Part> files,
       @RequestPart(value = "metadataList", required = false)
           final List<GeneratedDocumentMetadataStrictContract> metadataList) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDocuments(storeId, files, metadataList, authentication);
   }
 
@@ -76,7 +76,7 @@ public class GeneratedDocumentController {
       @PathVariable("documentId") final String documentId,
       @RequestParam(name = "storeId", required = false) final String storeId,
       @RequestParam(name = "contentHash", required = false) final String contentHash) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDocument(documentId, storeId, contentHash, authentication);
   }
 
@@ -87,7 +87,7 @@ public class GeneratedDocumentController {
   public ResponseEntity<Void> deleteDocument(
       @PathVariable("documentId") final String documentId,
       @RequestParam(name = "storeId", required = false) final String storeId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteDocument(documentId, storeId, authentication);
   }
 
@@ -102,7 +102,7 @@ public class GeneratedDocumentController {
       @RequestParam(name = "contentHash", required = false) final String contentHash,
       @RequestBody(required = false)
           final GeneratedDocumentLinkRequestStrictContract documentLinkRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDocumentLink(
         documentId, storeId, contentHash, documentLinkRequest, authentication);
   }

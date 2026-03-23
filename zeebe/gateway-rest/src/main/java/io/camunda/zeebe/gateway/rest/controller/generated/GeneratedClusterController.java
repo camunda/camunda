@@ -34,7 +34,7 @@ public class GeneratedClusterController {
       value = "/topology",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getTopology() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getTopology(authentication);
   }
 
@@ -43,7 +43,7 @@ public class GeneratedClusterController {
       value = "/status",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> getStatus() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getStatus(authentication);
   }
 }

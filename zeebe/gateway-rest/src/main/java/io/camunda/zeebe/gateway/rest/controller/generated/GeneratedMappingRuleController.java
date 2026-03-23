@@ -41,7 +41,7 @@ public class GeneratedMappingRuleController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createMappingRule(
       @RequestBody final GeneratedMappingRuleCreateRequestStrictContract mappingRuleCreateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createMappingRule(mappingRuleCreateRequest, authentication);
   }
 
@@ -53,7 +53,7 @@ public class GeneratedMappingRuleController {
   public ResponseEntity<Object> updateMappingRule(
       @PathVariable("mappingRuleId") final String mappingRuleId,
       @RequestBody final GeneratedMappingRuleUpdateRequestStrictContract mappingRuleUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateMappingRule(
         mappingRuleId, mappingRuleUpdateRequest, authentication);
   }
@@ -64,7 +64,7 @@ public class GeneratedMappingRuleController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteMappingRule(
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteMappingRule(mappingRuleId, authentication);
   }
 
@@ -74,7 +74,7 @@ public class GeneratedMappingRuleController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getMappingRule(
       @PathVariable("mappingRuleId") final String mappingRuleId) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getMappingRule(mappingRuleId, authentication);
   }
 
@@ -87,7 +87,7 @@ public class GeneratedMappingRuleController {
       @RequestBody
           final GeneratedMappingRuleSearchQueryRequestStrictContract
               mappingRuleSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchMappingRule(mappingRuleSearchQueryRequest, authentication);
   }
 }

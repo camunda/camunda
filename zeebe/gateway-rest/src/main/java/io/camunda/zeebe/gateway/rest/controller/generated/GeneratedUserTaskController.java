@@ -47,7 +47,7 @@ public class GeneratedUserTaskController {
       @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
           final GeneratedUserTaskCompletionRequestStrictContract userTaskCompletionRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.completeUserTask(userTaskKey, userTaskCompletionRequest, authentication);
   }
 
@@ -60,7 +60,7 @@ public class GeneratedUserTaskController {
       @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody
           final GeneratedUserTaskAssignmentRequestStrictContract userTaskAssignmentRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.assignUserTask(userTaskKey, userTaskAssignmentRequest, authentication);
   }
 
@@ -69,7 +69,7 @@ public class GeneratedUserTaskController {
       value = "/user-tasks/{userTaskKey}",
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getUserTask(@PathVariable("userTaskKey") final Long userTaskKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getUserTask(userTaskKey, authentication);
   }
 
@@ -82,7 +82,7 @@ public class GeneratedUserTaskController {
       @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
           final GeneratedUserTaskUpdateRequestStrictContract userTaskUpdateRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateUserTask(userTaskKey, userTaskUpdateRequest, authentication);
   }
 
@@ -92,7 +92,7 @@ public class GeneratedUserTaskController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getUserTaskForm(
       @PathVariable("userTaskKey") final Long userTaskKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getUserTaskForm(userTaskKey, authentication);
   }
 
@@ -102,7 +102,7 @@ public class GeneratedUserTaskController {
       produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> unassignUserTask(
       @PathVariable("userTaskKey") final Long userTaskKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.unassignUserTask(userTaskKey, authentication);
   }
 
@@ -114,7 +114,7 @@ public class GeneratedUserTaskController {
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false)
           final GeneratedUserTaskSearchQueryRequestStrictContract userTaskSearchQuery) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUserTasks(userTaskSearchQuery, authentication);
   }
 
@@ -129,7 +129,7 @@ public class GeneratedUserTaskController {
       @RequestBody(required = false)
           final GeneratedUserTaskVariableSearchQueryRequestStrictContract
               userTaskVariableSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUserTaskVariables(
         userTaskKey, truncateValues, userTaskVariableSearchQueryRequest, authentication);
   }
@@ -144,7 +144,7 @@ public class GeneratedUserTaskController {
       @RequestBody(required = false)
           final GeneratedUserTaskAuditLogSearchQueryRequestStrictContract
               userTaskAuditLogSearchQueryRequest) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUserTaskAuditLogs(
         userTaskKey, userTaskAuditLogSearchQueryRequest, authentication);
   }
