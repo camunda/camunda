@@ -371,10 +371,9 @@ public final class UserTaskServices
       } else {
         final var existingDepth = scopeDepth.get(existing.scopeKey());
         if (currentDepth > existingDepth) {
-          // This variable is from a closer scope, replace the existing one.
-          // Remove and re-add to move it to the end of the LinkedHashMap.
-          dedupedMap.remove(variable.name());
-          dedupedMap.put(variable.name(), variable);
+          // This variable is from a closer scope, replace the existing one and put it to the end of
+          // the LinkedHashMap.
+          dedupedMap.putLast(variable.name(), variable);
         }
         // else: existing variable is from a closer or equal scope, keep it
       }
