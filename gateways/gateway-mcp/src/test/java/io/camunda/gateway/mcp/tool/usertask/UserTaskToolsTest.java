@@ -850,7 +850,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithTruncation() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -876,8 +877,6 @@ class UserTaskToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
       assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
       assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("start");
-      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("end");
       assertThat(searchResult.getItems())
           .hasSize(1)
           .first()
@@ -889,7 +888,7 @@ class UserTaskToolsTest extends ToolsTest {
               });
 
       verify(userTaskServices)
-          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
+          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
 
       assertTextContentFallback(result);
     }
@@ -897,7 +896,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithoutTruncation() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -925,7 +925,7 @@ class UserTaskToolsTest extends ToolsTest {
               });
 
       verify(userTaskServices)
-          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
+          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
 
       assertTextContentFallback(result);
     }
@@ -933,7 +933,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithFilterSortAndPaging() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -950,14 +951,14 @@ class UserTaskToolsTest extends ToolsTest {
                           "sort",
                           List.of(Map.of("field", "name", "order", "ASC")),
                           "page",
-                          Map.of("limit", 10, "after", "abc")))
+                          Map.of("limit", 10, "from", 5)))
                   .build());
 
       // then
       assertThat(result.isError()).isFalse();
 
       verify(userTaskServices)
-          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
+          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
       final VariableQuery capturedQuery = variableQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().nameOperations())
@@ -969,13 +970,14 @@ class UserTaskToolsTest extends ToolsTest {
           .containsExactly(tuple("name", SortOrder.ASC));
 
       assertThat(capturedQuery.page().size()).isEqualTo(10);
-      assertThat(capturedQuery.page().after()).isEqualTo("abc");
+      assertThat(capturedQuery.page().from()).isEqualTo(5);
     }
 
     @Test
     void shouldFailSearchUserTaskVariablesOnException() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -1054,235 +1056,6 @@ class UserTaskToolsTest extends ToolsTest {
           mcpClient.callTool(
               CallToolRequest.builder()
                   .name("searchUserTaskVariables")
-                  .arguments(Map.of("userTaskKey", -3L))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isTrue();
-      assertThat(result.structuredContent()).isNull();
-      assertThat(result.content())
-          .hasSize(1)
-          .first()
-          .isInstanceOfSatisfying(
-              TextContent.class,
-              textContent ->
-                  assertThat(textContent.text())
-                      .isEqualTo("userTaskKey: User task key must be a positive number."));
-    }
-  }
-
-  @Nested
-  class SearchUserTaskEffectiveVariables {
-
-    @Test
-    void shouldSearchUserTaskEffectiveVariablesWithTruncation() {
-      // given
-      when(userTaskServices.searchUserTaskEffectiveVariables(
-              anyLong(), any(VariableQuery.class), any()))
-          .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
-                  .arguments(
-                      Map.of(
-                          "userTaskKey",
-                          5L,
-                          "filter",
-                          Map.of("name", "varName"),
-                          "truncateValues",
-                          true))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isFalse();
-      assertThat(result.structuredContent()).isNotNull();
-
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getItems())
-          .hasSize(1)
-          .first()
-          .satisfies(
-              variable -> {
-                assertExampleVariable(variable);
-                assertThat(variable.getIsTruncated()).isTrue();
-                assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
-              });
-
-      verify(userTaskServices)
-          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
-
-      assertTextContentFallback(result);
-    }
-
-    @Test
-    void shouldSearchUserTaskEffectiveVariablesWithoutTruncation() {
-      // given
-      when(userTaskServices.searchUserTaskEffectiveVariables(
-              anyLong(), any(VariableQuery.class), any()))
-          .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
-                  .arguments(Map.of("userTaskKey", 5L, "truncateValues", false))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isFalse();
-      assertThat(result.structuredContent()).isNotNull();
-
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(searchResult.getItems())
-          .hasSize(1)
-          .first()
-          .satisfies(
-              variable -> {
-                assertExampleVariable(variable);
-                assertThat(variable.getIsTruncated()).isFalse();
-                assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
-              });
-
-      verify(userTaskServices)
-          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
-
-      assertTextContentFallback(result);
-    }
-
-    @Test
-    void shouldSearchUserTaskEffectiveVariablesWithFilterSortAndPaging() {
-      // given
-      when(userTaskServices.searchUserTaskEffectiveVariables(
-              anyLong(), any(VariableQuery.class), any()))
-          .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
-                  .arguments(
-                      Map.of(
-                          "userTaskKey",
-                          5L,
-                          "filter",
-                          Map.of("name", "varName"),
-                          "sort",
-                          List.of(Map.of("field", "name", "order", "ASC")),
-                          "page",
-                          Map.of("from", 0, "limit", 10)))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isFalse();
-
-      verify(userTaskServices)
-          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
-      final VariableQuery capturedQuery = variableQueryCaptor.getValue();
-
-      assertThat(capturedQuery.filter().nameOperations())
-          .extracting(Operation::operator, Operation::value)
-          .containsExactly(tuple(Operator.EQUALS, "varName"));
-
-      assertThat(capturedQuery.sort().orderings())
-          .extracting(FieldSorting::field, FieldSorting::order)
-          .containsExactly(tuple("name", SortOrder.ASC));
-
-      assertThat(capturedQuery.page().from()).isEqualTo(0);
-      assertThat(capturedQuery.page().size()).isEqualTo(10);
-    }
-
-    @Test
-    void shouldFailSearchUserTaskEffectiveVariablesOnException() {
-      // given
-      when(userTaskServices.searchUserTaskEffectiveVariables(
-              anyLong(), any(VariableQuery.class), any()))
-          .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
-                  .arguments(Map.of("userTaskKey", 5L))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isTrue();
-      assertThat(result.structuredContent()).isNotNull();
-
-      final var problemDetail =
-          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
-      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
-
-      assertTextContentFallback(result);
-    }
-
-    @Test
-    void shouldFailSearchUserTaskEffectiveVariablesOnMissingKey() {
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
-                  .arguments(Map.of())
-                  .build());
-
-      // then
-      assertThat(result.isError()).isTrue();
-      assertThat(result.structuredContent()).isNull();
-      assertThat(result.content())
-          .hasSize(1)
-          .first()
-          .isInstanceOfSatisfying(
-              TextContent.class,
-              textContent ->
-                  assertThat(textContent.text())
-                      .isEqualTo("userTaskKey: User task key must not be null."));
-    }
-
-    @Test
-    void shouldFailSearchUserTaskEffectiveVariablesOnNullKey() {
-      // when
-      final var arguments = new HashMap<String, Object>();
-      arguments.put("userTaskKey", null);
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
-                  .arguments(arguments)
-                  .build());
-
-      // then
-      assertThat(result.isError()).isTrue();
-      assertThat(result.structuredContent()).isNull();
-      assertThat(result.content())
-          .hasSize(1)
-          .first()
-          .isInstanceOfSatisfying(
-              TextContent.class,
-              textContent ->
-                  assertThat(textContent.text())
-                      .isEqualTo("userTaskKey: User task key must not be null."));
-    }
-
-    @Test
-    void shouldFailSearchUserTaskEffectiveVariablesOnInvalidKey() {
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskEffectiveVariables")
                   .arguments(Map.of("userTaskKey", -3L))
                   .build());
 
