@@ -62,7 +62,7 @@ jobs:
                     end
                   )
                 ' \
-              | jq -c --arg main "main" '. | [{"branch":$main,"generation_template":"Zeebe SNAPSHOT"}] + .'
+              | jq -c --arg main "main" '. | [{"branch":$main,"generation_template":"Camunda SNAPSHOT"}] + .'
           )
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Matrix output: $matrix"  # Debug output for inspection
