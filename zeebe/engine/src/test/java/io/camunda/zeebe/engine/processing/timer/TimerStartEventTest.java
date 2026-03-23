@@ -865,6 +865,7 @@ public final class TimerStartEventTest {
             .done();
 
     // when
+    final long now = engine.getClock().getCurrentTimeInMillis();
     final var deployedProcess =
         engine
             .deployment()
@@ -875,8 +876,6 @@ public final class TimerStartEventTest {
             .get(0);
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
-    final long now = engine.getClock().getCurrentTimeInMillis();
-
     // then — 1st timer is due immediately (due date <= now at deployment time)
     final TimerRecordValue createdTimer =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -884,21 +883,25 @@ public final class TimerStartEventTest {
             .getFirst()
             .getValue();
 
-    assertThat(createdTimer.getDueDate()).isLessThanOrEqualTo(now);
+    assertThat(createdTimer.getDueDate())
+        .describedAs(
+            "Expect timer with start date in the past to be scheduled 'now' (or shortly after)")
+        .isBetween(now, now + Duration.ofMinutes(1).toMillis());
 
     // and — 1st process instance is triggered without advancing the clock
-    final long firstDueDate =
+    final TimerRecordValue firstTriggeredTimer =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
             .withProcessDefinitionKey(processDefinitionKey)
             .getFirst()
-            .getValue()
-            .getDueDate();
+            .getValue();
 
-    Assertions.assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .getFirst()
-                .getValue())
+    final long firstDueDate = firstTriggeredTimer.getDueDate();
+
+    assertThat(firstDueDate)
+        .describedAs("Expect triggered timer to still reflect the initial due date")
+        .isEqualTo(createdTimer.getDueDate());
+
+    Assertions.assertThat(firstTriggeredTimer)
         .hasTargetElementId("start")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -941,8 +944,9 @@ public final class TimerStartEventTest {
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
                 .withProcessDefinitionKey(processDefinitionKey)
-                .limit(3)
+                .limit(4)
                 .count())
+        .describedAs("Expect only 3 timer creations (no 4th timer as R3 is exhausted)")
         .isEqualTo(3);
   }
 
