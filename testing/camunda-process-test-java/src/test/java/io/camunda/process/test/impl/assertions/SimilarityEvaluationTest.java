@@ -92,7 +92,36 @@ class SimilarityEvaluationTest {
     final SimilarityEvaluation.Result result = evaluation.evaluate("b");
 
     // then
-    assertThat(result.getScore()).isCloseTo(0.8, within(1e-9));
+    assertThat(result.getScore()).isEqualTo(0.8);
+    assertThat(result.getRawScore()).isCloseTo(0.8, within(1e-9));
+  }
+
+  @Test
+  void shouldRoundScoreToTwoDecimalPlaces() {
+    // given
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.6951);
+
+    // then
+    assertThat(result.getScore()).isEqualTo(0.70);
+    assertThat(result.getRawScore()).isEqualTo(0.6951);
+  }
+
+  @Test
+  void shouldPassWhenScoreRoundsUpToThreshold() {
+    // given — raw score 0.6951 rounds to 0.70, which meets the threshold
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.6951);
+
+    // then
+    assertThat(result.passed(0.70)).isTrue();
+  }
+
+  @Test
+  void shouldNotPassWhenScoreRoundsDownBelowThreshold() {
+    // given — raw score 0.6940 rounds to 0.69, which is below the threshold
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.6940);
+
+    // then
+    assertThat(result.passed(0.70)).isFalse();
   }
 
   @Test
