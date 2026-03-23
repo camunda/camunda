@@ -269,7 +269,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      // Mock returns variables sorted by name ASC (ES applies the sort)
+      // Mock returns variables sorted by name ASC (like data layer would)
       when(variableServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
@@ -308,7 +308,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      // Mock returns variables sorted by value DESC (ES applies the sort)
+      // Mock returns variables sorted by value DESC (like data layer would)
       when(variableServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
@@ -348,7 +348,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      // Mock returns variables sorted by name ASC (ES applies the sort)
+      // Mock returns variables sorted by name ASC (like data layer would)
       when(variableServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
