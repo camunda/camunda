@@ -90,6 +90,7 @@
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
+                <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
                 <!-- map specific filter properties to basic filter types -->
                 <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -145,6 +146,7 @@
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
+                <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
                 <!-- map specific filter properties to String for equality behavior -->
                 <typeMapping>AuditLogEntityKeyFilterProperty=String</typeMapping>
