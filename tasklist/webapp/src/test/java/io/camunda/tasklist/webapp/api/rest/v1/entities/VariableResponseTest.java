@@ -96,8 +96,7 @@ class VariableResponseTest {
     // then
     assertThat(response.getId()).isEqualTo("snapshot-1");
     assertThat(response.getName()).isEqualTo("largeSnapshotVariable");
-    assertThat(response.getValue())
-        .isEqualTo("This is the full snapshot value that was truncated");
+    assertThat(response.getValue()).isEqualTo("This is the full snapshot value that was truncated");
     assertThat(response.getTenantId()).isEqualTo("tenant-1");
   }
 
@@ -119,6 +118,48 @@ class VariableResponseTest {
     assertThat(response.getId()).isEqualTo("snapshot-2");
     assertThat(response.getName()).isEqualTo("smallSnapshotVariable");
     assertThat(response.getValue()).isEqualTo("small snapshot value");
+    assertThat(response.getTenantId()).isEqualTo("tenant-1");
+  }
+
+  @Test
+  void shouldFallbackToPreviewValueWhenFullValueIsNullForVariableEntity() {
+    // given - a variable marked as preview but with no fullValue available
+    final VariableEntity variableEntity = new VariableEntity();
+    variableEntity.setId("var-preview-only");
+    variableEntity.setName("largeVariablePreviewOnly");
+    variableEntity.setValue("truncated...");
+    variableEntity.setFullValue(null);
+    variableEntity.setIsPreview(true);
+    variableEntity.setTenantId("tenant-1");
+
+    // when
+    final VariableResponse response = VariableResponse.createFrom(variableEntity);
+
+    // then
+    assertThat(response.getId()).isEqualTo("var-preview-only");
+    assertThat(response.getName()).isEqualTo("largeVariablePreviewOnly");
+    assertThat(response.getValue()).isEqualTo("truncated...");
+    assertThat(response.getTenantId()).isEqualTo("tenant-1");
+  }
+
+  @Test
+  void shouldFallbackToPreviewValueWhenFullValueIsNullForSnapshotEntity() {
+    // given - a snapshot variable marked as preview but with no fullValue available
+    final SnapshotTaskVariableEntity snapshotVariable = new SnapshotTaskVariableEntity();
+    snapshotVariable.setId("snapshot-preview-only");
+    snapshotVariable.setName("largeSnapshotPreviewOnly");
+    snapshotVariable.setValue("truncated...");
+    snapshotVariable.setFullValue(null);
+    snapshotVariable.setIsPreview(true);
+    snapshotVariable.setTenantId("tenant-1");
+
+    // when
+    final VariableResponse response = VariableResponse.createFrom(snapshotVariable);
+
+    // then
+    assertThat(response.getId()).isEqualTo("snapshot-preview-only");
+    assertThat(response.getName()).isEqualTo("largeSnapshotPreviewOnly");
+    assertThat(response.getValue()).isEqualTo("truncated...");
     assertThat(response.getTenantId()).isEqualTo("tenant-1");
   }
 

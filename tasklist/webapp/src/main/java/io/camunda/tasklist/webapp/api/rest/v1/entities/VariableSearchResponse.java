@@ -106,7 +106,7 @@ public class VariableSearchResponse {
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
         .setValue(
-            variableEntity.getIsPreview()
+            variableEntity.getIsPreview() && variableEntity.getFullValue() != null
                 ? variableEntity.getFullValue()
                 : variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
@@ -141,7 +141,7 @@ public class VariableSearchResponse {
         .setPreviewValue(variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
         .setValue(
-            variableEntity.getIsPreview()
+            variableEntity.getIsPreview() && variableEntity.getFullValue() != null
                 ? variableEntity.getFullValue()
                 : variableEntity.getValue());
   }
