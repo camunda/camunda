@@ -16,9 +16,15 @@ record BulkIndexResponse(boolean errors, List<Item> items) {
   @JsonIgnoreProperties(ignoreUnknown = true)
   record Item(ItemDetail index, ItemDetail update, ItemDetail delete, ItemDetail create) {
     ItemDetail detail() {
-      if (index != null) return index;
-      if (update != null) return update;
-      if (delete != null) return delete;
+      if (index != null) {
+        return index;
+      }
+      if (update != null) {
+        return update;
+      }
+      if (delete != null) {
+        return delete;
+      }
       return create;
     }
   }
