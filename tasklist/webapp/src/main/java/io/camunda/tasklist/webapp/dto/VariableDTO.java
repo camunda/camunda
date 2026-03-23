@@ -73,7 +73,7 @@ public class VariableDTO {
         .setPreviewValue(variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
         .setValue(
-            variableEntity.getIsPreview()
+            variableEntity.getIsPreview() && variableEntity.getFullValue() != null
                 ? variableEntity.getFullValue()
                 : variableEntity.getValue());
     return variableDTO;
@@ -86,7 +86,7 @@ public class VariableDTO {
         .setPreviewValue(variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
         .setValue(
-            variableEntity.getIsPreview()
+            variableEntity.getIsPreview() && variableEntity.getFullValue() != null
                 ? variableEntity.getFullValue()
                 : variableEntity.getValue());
     return variableDTO;
