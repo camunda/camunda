@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -700,6 +701,56 @@ final class BulkIndexRequestTest {
       assertThat(value.get("rootProcessInstanceKey"))
           .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
           .isEqualTo(rootProcessInstanceKey);
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutJobToUserTaskMigrationOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobRecord().setType("test-job").setIsJobToUserTaskMigration(true)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("jobToUserTaskMigration"))
+          .describedAs(
+              "Expect that job records are serialized without jobToUserTaskMigration on previous version")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexJobRecordWithJobToUserTaskMigration() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobRecord().setType("test-job").setIsJobToUserTaskMigration(true)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("jobToUserTaskMigration"))
+          .describedAs(
+              "Expect that job records are serialized with jobToUserTaskMigration on current version")
+          .isEqualTo(true);
     }
 
     private static long getRootProcessInstanceKey(final RecordValue recordValue) throws Exception {
