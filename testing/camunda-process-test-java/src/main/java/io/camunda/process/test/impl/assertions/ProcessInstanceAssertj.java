@@ -28,6 +28,7 @@ import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class ProcessInstanceAssertj
     implements ProcessInstanceAssert {
 
   private final CamundaDataSource dataSource;
-  private final CamundaAssertAwaitBehavior awaitBehavior;
+  private CamundaAssertAwaitBehavior awaitBehavior;
 
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
@@ -85,13 +86,23 @@ public class ProcessInstanceAssertj
     failureMessagePrefix =
         String.format("Process instance [%s]", processInstanceSelector.describe());
     this.elementSelector = elementSelector;
-    elementAssertj = new ElementAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+    elementAssertj = new ElementAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
     variableAssertj =
         new VariableAssertj(
-            dataSource, awaitBehavior, jsonMapper, judgeConfig, failureMessagePrefix);
-    incidentAssertj = new IncidentAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+            dataSource, this::getAwaitBehavior, jsonMapper, judgeConfig, failureMessagePrefix);
+    incidentAssertj = new IncidentAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
     messageSubscriptionAssertj =
-        new MessageSubscriptionAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+        new MessageSubscriptionAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
+  }
+
+  private CamundaAssertAwaitBehavior getAwaitBehavior() {
+    return awaitBehavior;
+  }
+
+  @Override
+  public ProcessInstanceAssert withAssertionTimeout(final Duration assertionTimeout) {
+    awaitBehavior = awaitBehavior.withAssertionTimeout(assertionTimeout);
+    return this;
   }
 
   @Override

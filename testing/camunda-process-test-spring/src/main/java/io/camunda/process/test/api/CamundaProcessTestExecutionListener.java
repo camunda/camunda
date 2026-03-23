@@ -24,6 +24,7 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
@@ -156,11 +157,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .build();
 
-    // initialize json mapper
+    // initializations
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
-
-    // initialize judge config
     initializeJudgeConfig(testContext, runtimeConfiguration);
+    initializeAssertions(runtimeConfiguration.getAssertion());
   }
 
   @Override
@@ -286,6 +286,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     JudgeConfigResolver.resolve(
             testContext.getApplicationContext(), runtimeConfiguration.getJudge())
         .ifPresent(CamundaAssert::setJudgeConfig);
+  }
+
+  private void initializeAssertions(final AssertionConfiguration assertionConfiguration) {
+    assertionConfiguration.getTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
+    assertionConfiguration.getInterval().ifPresent(CamundaAssert::setAssertionInterval);
   }
 
   private CamundaManagementClient createManagementClient(

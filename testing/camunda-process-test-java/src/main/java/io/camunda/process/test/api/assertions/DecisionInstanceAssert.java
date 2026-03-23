@@ -16,7 +16,7 @@
 package io.camunda.process.test.api.assertions;
 
 /** The assertion object to verify a decision. */
-public interface DecisionInstanceAssert {
+public interface DecisionInstanceAssert extends WithAssertionConfiguration<DecisionInstanceAssert> {
   /**
    * Verifies that the decision is evaluated. The verification fails if the decision is not
    * evaluated or if the evaluation fails.
