@@ -12,6 +12,7 @@ import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,10 +32,7 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
-import io.camunda.search.sort.SortOrder;
-import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
@@ -44,8 +42,6 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -132,8 +128,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(1, false, List.of(variable), null, null));
+      when(variableServices.search(any(), any())).thenReturn(SearchQueryResult.of(variable));
 
       // when
       final SearchQueryResult<VariableEntity> searchQueryResult =
@@ -168,7 +163,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(2, false, List.of(outerVar, innerVar), null, null));
+          .thenReturn(SearchQueryResult.of(outerVar, innerVar));
 
       // when
       final SearchQueryResult<VariableEntity> result =
@@ -201,8 +196,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       when(variableServices.search(any(), any()))
-          .thenReturn(
-              new SearchQueryResult<>(3, false, List.of(rootVar, midVar, leafVar), null, null));
+          .thenReturn(SearchQueryResult.of(rootVar, midVar, leafVar));
 
       // when
       final SearchQueryResult<VariableEntity> result =
@@ -237,7 +231,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(5, false, vars, null, null));
+          .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when
       final SearchQueryResult<VariableEntity> result =
@@ -248,21 +242,8 @@ public class UserTaskServiceTest {
       assertThat(result.total()).isEqualTo(3);
       assertThat(result.items()).hasSize(3);
       assertThat(result.items())
-          .extracting(VariableEntity::name)
-          .containsExactlyInAnyOrder("a", "b", "c");
-      // "a" should be from scope 3 (innermost), "b" from scope 2, "c" from scope 1
-      assertThat(result.items())
-          .filteredOn(v -> v.name().equals("a"))
-          .extracting(VariableEntity::value)
-          .containsExactly("v2");
-      assertThat(result.items())
-          .filteredOn(v -> v.name().equals("b"))
-          .extracting(VariableEntity::value)
-          .containsExactly("v4");
-      assertThat(result.items())
-          .filteredOn(v -> v.name().equals("c"))
-          .extracting(VariableEntity::value)
-          .containsExactly("v5");
+          .extracting(VariableEntity::name, VariableEntity::value)
+          .containsExactlyInAnyOrder(tuple("a", "v2"), tuple("b", "v4"), tuple("c", "v5"));
     }
 
     @Test
@@ -272,31 +253,37 @@ public class UserTaskServiceTest {
       final var flowNodeInstanceEntity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
-              .set(field(FlowNodeInstanceEntity::treePath), "1")
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
               .create();
       final var vars =
           List.of(
-              new VariableEntity(1L, "zebra", "z", "z", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(2L, "apple", "a", "a", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(3L, "mango", "m", "m", false, 1L, 1L, 1L, "p", "t"));
+              // apple only at scope 2
+              new VariableEntity(3L, "apple", "a", "a", false, 2L, 1L, 1L, "p", "t"),
+              // mango only at scope 1
+              new VariableEntity(4L, "mango", "m", "m", false, 1L, 1L, 1L, "p", "t"),
+              // zebra at scope 1 (outer) and scope 2 (inner) — inner wins after dedup
+              new VariableEntity(1L, "zebra", "z-outer", "z-outer", false, 1L, 1L, 1L, "p", "t"),
+              new VariableEntity(2L, "zebra", "z-inner", "z-inner", false, 2L, 1L, 1L, "p", "t"));
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
+      // Mock returns variables sorted by name ASC (ES applies the sort)
       when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(3, false, vars, null, null));
+          .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
-      // when — sort by name ASC
+      // when — sort by name ASC after deduplication
       final var query =
           VariableQuery.of(q -> q.sort(SortOptionBuilders.variable(s -> s.name().asc())));
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
 
-      // then
+      // then — 3 unique variables after dedup, sorted by name ASC
+      assertThat(result.total()).isEqualTo(3);
       assertThat(result.items())
-          .extracting(VariableEntity::name)
-          .containsExactly("apple", "mango", "zebra");
+          .extracting(VariableEntity::name, VariableEntity::value)
+          .containsExactly(tuple("apple", "a"), tuple("mango", "m"), tuple("zebra", "z-inner"));
     }
 
     @Test
@@ -306,55 +293,64 @@ public class UserTaskServiceTest {
       final var flowNodeInstanceEntity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
-              .set(field(FlowNodeInstanceEntity::treePath), "1")
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
               .create();
       final var vars =
           List.of(
-              new VariableEntity(1L, "a", "alpha", "alpha", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(2L, "b", "charlie", "charlie", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(3L, "c", "bravo", "bravo", false, 1L, 1L, 1L, "p", "t"));
+              // Sorted by value DESC: zebra > charlie > bravo > alpha
+              new VariableEntity(2L, "a", "zebra", "zebra", false, 2L, 1L, 1L, "p", "t"),
+              new VariableEntity(3L, "b", "charlie", "charlie", false, 1L, 1L, 1L, "p", "t"),
+              new VariableEntity(4L, "c", "bravo", "bravo", false, 2L, 1L, 1L, "p", "t"),
+              // Variable "a" at outer scope (comes after inner scope version in DESC sort)
+              new VariableEntity(1L, "a", "alpha", "alpha", false, 1L, 1L, 1L, "p", "t"));
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
+      // Mock returns variables sorted by value DESC (ES applies the sort)
       when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(3, false, vars, null, null));
+          .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
-      // when — sort by value DESC
+      // when — sort by value DESC after deduplication
       final var query =
           VariableQuery.of(q -> q.sort(SortOptionBuilders.variable(s -> s.value().desc())));
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
 
-      // then
+      // then — 3 unique variables, sorted by value DESC (zebra > charlie > bravo)
+      assertThat(result.total()).isEqualTo(3);
       assertThat(result.items())
-          .extracting(VariableEntity::value)
-          .containsExactly("charlie", "bravo", "alpha");
+          .extracting(VariableEntity::name, VariableEntity::value)
+          .containsExactly(tuple("a", "zebra"), tuple("b", "charlie"), tuple("c", "bravo"));
     }
 
     @Test
     public void shouldApplyPaginationAfterDedup() {
-      // given — 4 unique variables, request page with from=1, size=2
+      // given — 6 variable documents across 2 scopes, 4 unique names after dedup
       final var entity = Instancio.create(UserTaskEntity.class);
       final var flowNodeInstanceEntity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
-              .set(field(FlowNodeInstanceEntity::treePath), "1")
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
               .create();
       final var vars =
           List.of(
-              new VariableEntity(1L, "a", "1", "1", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(2L, "b", "2", "2", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(3L, "c", "3", "3", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(4L, "d", "4", "4", false, 1L, 1L, 1L, "p", "t"));
+              // Sorted by name ASC: a, a, b, b, c, d
+              new VariableEntity(1L, "a", "1-outer", "1-outer", false, 1L, 1L, 1L, "p", "t"),
+              new VariableEntity(2L, "a", "1-inner", "1-inner", false, 2L, 1L, 1L, "p", "t"),
+              new VariableEntity(3L, "b", "2-outer", "2-outer", false, 1L, 1L, 1L, "p", "t"),
+              new VariableEntity(4L, "b", "2-inner", "2-inner", false, 2L, 1L, 1L, "p", "t"),
+              new VariableEntity(5L, "c", "3", "3", false, 2L, 1L, 1L, "p", "t"),
+              new VariableEntity(6L, "d", "4", "4", false, 2L, 1L, 1L, "p", "t"));
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
+      // Mock returns variables sorted by name ASC (ES applies the sort)
       when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(4, false, vars, null, null));
+          .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by name ASC, then paginate from=1, size=2
       final var query =
@@ -365,21 +361,24 @@ public class UserTaskServiceTest {
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
 
-      // then — total is 4 (all unique), but page returns items at index 1 and 2
+      // then — 4 unique after dedup, page returns items at index 1 and 2 (b-inner, c)
       assertThat(result.total()).isEqualTo(4);
       assertThat(result.items()).hasSize(2);
-      assertThat(result.items()).extracting(VariableEntity::name).containsExactly("b", "c");
+      assertThat(result.items())
+          .extracting(VariableEntity::name, VariableEntity::value)
+          .containsExactly(tuple("b", "2-inner"), tuple("c", "3"));
     }
 
     @Test
-    public void shouldReturnNullCursors() {
-      // given — cursors are not supported for this endpoint because deduplication and sorting
-      // are performed in-memory. The Tasklist UI uses offset-based pagination exclusively.
+    public void shouldStripCursorsInEarlyExitCase() {
+      // given — when treePathList.size() <= 1, the service takes an early exit and delegates
+      // to searchUserTaskVariables. However, cursors must still be stripped because the
+      // effective variables endpoint does not support cursor-based pagination.
       final var entity = Instancio.create(UserTaskEntity.class);
       final var flowNodeInstanceEntity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
-              .set(field(FlowNodeInstanceEntity::treePath), "1")
+              .set(field(FlowNodeInstanceEntity::treePath), "1") // Only 1 scope = early exit
               .create();
       final var vars =
           List.of(
@@ -390,8 +389,44 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
+      // The search backend returns cursors, but the early-exit must strip them
       when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(2, false, vars, null, null));
+          .thenReturn(new SearchQueryResult<>(2, false, vars, "start-cursor", "end-cursor"));
+
+      // when
+      final SearchQueryResult<VariableEntity> result =
+          services.searchUserTaskEffectiveVariables(
+              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+
+      // then — items are returned but cursors are stripped (null)
+      assertThat(result.total()).isEqualTo(2);
+      assertThat(result.items()).hasSize(2);
+      assertThat(result.startCursor()).isNull();
+      assertThat(result.endCursor()).isNull();
+    }
+
+    @Test
+    public void shouldReturnNullCursors() {
+      // given — cursors are not supported for this endpoint because deduplication and sorting
+      // are performed in-memory.
+      final var entity = Instancio.create(UserTaskEntity.class);
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
+              .create();
+      final var vars =
+          List.of(
+              new VariableEntity(10L, "alpha", "a", "a", false, 1L, 1L, 1L, "p", "t"),
+              new VariableEntity(20L, "bravo", "b", "b", false, 2L, 1L, 1L, "p", "t"));
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(elementInstanceServices.getByKey(
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+          .thenReturn(flowNodeInstanceEntity);
+      // The search backend returns cursors, but the service should strip them
+      when(variableServices.search(any(), any()))
+          .thenReturn(new SearchQueryResult<>(2, false, vars, "start-cursor", "end-cursor"));
 
       // when
       final SearchQueryResult<VariableEntity> result =
@@ -403,66 +438,6 @@ public class UserTaskServiceTest {
       assertThat(result.items()).hasSize(2);
       assertThat(result.startCursor()).isNull();
       assertThat(result.endCursor()).isNull();
-    }
-
-    @Test
-    void shouldHaveComparatorForEveryVariableSortField() throws Exception {
-
-      // given — discover all sort field names from VariableSort.Builder via reflection
-      final var sortFieldMethods =
-          Arrays.stream(VariableSort.Builder.class.getDeclaredMethods())
-              .filter(m -> m.getParameterCount() == 0)
-              .filter(m -> java.lang.reflect.Modifier.isPublic(m.getModifiers()))
-              .filter(m -> m.getReturnType() == VariableSort.Builder.class)
-              .toList();
-
-      // Call each builder method to extract the field name it registers
-      final var allFieldNames = new ArrayList<String>();
-      for (final var method : sortFieldMethods) {
-        final var builder = new VariableSort.Builder();
-        method.invoke(builder);
-        final var sort = builder.asc().build();
-        final var fieldName = sort.getFieldSortings().getLast().field();
-        allFieldNames.add(fieldName);
-      }
-
-      assertThat(allFieldNames).as("Should discover at least one sort field").isNotEmpty();
-
-      // Set up mocks for the service call
-      final var entity = Instancio.create(UserTaskEntity.class);
-      final var flowNodeInstanceEntity =
-          Instancio.of(FlowNodeInstanceEntity.class)
-              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
-              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
-              .create();
-      final var vars =
-          List.of(
-              new VariableEntity(1L, "a", "v1", "v1", false, 1L, 1L, 1L, "p", "t"),
-              new VariableEntity(2L, "b", "v2", "v2", false, 2L, 2L, 2L, "p", "t"));
-
-      when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
-          .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
-          .thenReturn(new SearchQueryResult<>(2, false, vars, null, null));
-
-      // when/then — sorting by each field should succeed without throwing
-      for (final String fieldName : allFieldNames) {
-        final var query =
-            VariableQuery.of(
-                q ->
-                    q.sort(
-                        new VariableSort(
-                            List.of(new SortOption.FieldSorting(fieldName, SortOrder.ASC)))));
-
-        assertThatCode(
-                () ->
-                    services.searchUserTaskEffectiveVariables(
-                        entity.userTaskKey(), query, authentication))
-            .as("Sort by field '%s' should be handled by buildFieldComparator", fieldName)
-            .doesNotThrowAnyException();
-      }
     }
   }
 
