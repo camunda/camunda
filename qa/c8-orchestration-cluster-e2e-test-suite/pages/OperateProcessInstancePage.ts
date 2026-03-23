@@ -27,7 +27,7 @@ class OperateProcessInstancePage {
   readonly incidentsTable: Locator;
   readonly incidentsTableOperationSpinner: Locator;
   readonly incidentsTableRows: Locator;
-  readonly incidentsBanner: Locator;
+  readonly incidentsTab: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
   readonly saveVariableButton: Locator;
@@ -39,6 +39,8 @@ class OperateProcessInstancePage {
   readonly executionCountToggleOn: Locator;
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
+  readonly detailsTabButton: Locator;
+  readonly variablesTabButton: Locator;
   readonly operationsLogTabButton: Locator;
   readonly operationsLogTable: Locator;
   readonly operationsLogTableRow: Locator;
@@ -68,6 +70,7 @@ class OperateProcessInstancePage {
   readonly cancelInstanceButton: (instanceId: string) => Locator;
   readonly incidentBannerButton: (count: number) => Locator;
   readonly incidentTypeFilter: Locator;
+  readonly cancellationScheduledToast: Locator;
   readonly executionCountToggle: Locator;
   readonly executionCountToggleLabel: Locator;
   readonly endDateField: Locator;
@@ -147,7 +150,9 @@ class OperateProcessInstancePage {
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
-    this.incidentsBanner = page.getByTestId('incidents-banner');
+    this.incidentsTab = page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Incidents$/i});
     this.incidentIconsInHistory = this.instanceHistory
       .getByRole('treeitem')
       .getByTestId('INCIDENT-icon');
@@ -170,6 +175,12 @@ class OperateProcessInstancePage {
     this.listenersTabButton = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Listeners$/i});
+    this.detailsTabButton = page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Details$/i});
+    this.variablesTabButton = page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Variables$/i});
     this.operationsLogTabButton = page.getByRole('tab', {
       name: /^Operations Log$/i,
     });
@@ -250,8 +261,13 @@ class OperateProcessInstancePage {
     this.incidentTypeFilter = page.getByRole('combobox', {
       name: /filter by incident type/i,
     });
+    this.cancellationScheduledToast = page
+      .getByRole('status')
+      .getByText('Instance is scheduled for cancellation');
     this.endDateField = this.instanceHeader.getByTestId('end-date');
-    this.incidentsViewHeader = page.getByText(/incidents\s+-\s+/i);
+    this.incidentsViewHeader = page.getByRole('heading', {
+      name: /^\d+\s+results?$/i,
+    });
     this.modificationModeText = page.getByText(
       'Process Instance Modification Mode',
     );
@@ -684,6 +700,14 @@ class OperateProcessInstancePage {
     await this.listenersTabButton.click();
   }
 
+  async clickVariablesTab(): Promise<void> {
+    await this.variablesTabButton.click();
+  }
+
+  async clickDetailsTab(): Promise<void> {
+    await this.detailsTabButton.click();
+  }
+
   async verifyListenersTabVisible(): Promise<void> {
     await expect(this.listenersTabButton).toBeVisible();
   }
@@ -826,23 +850,86 @@ class OperateProcessInstancePage {
     return await this.incidentIconsInHistory.count();
   }
 
-  async clickIncidentsBanner(): Promise<void> {
-    await this.incidentsBanner.click();
+  async clickIncidentsTab(): Promise<void> {
+    await this.incidentsTab.click();
   }
 
   async getIncidentRowByErrorMessage(errorMessage: string) {
-    return this.incidentsTable.getByRole('row').filter({
+    const legacyRow = this.incidentsTable.getByRole('row').filter({
       has: this.page
         .getByTestId('cell-errorMessage')
         .filter({hasText: errorMessage}),
+    });
+
+    if ((await legacyRow.count()) > 0) {
+      return legacyRow.first();
+    }
+
+    const parentRows = this.incidentsTable.locator(
+      'tr[data-parent-row="true"]',
+    );
+    const parentRowsCount = await parentRows.count();
+
+    for (let i = 0; i < parentRowsCount; i++) {
+      const parentRow = parentRows.nth(i);
+      const expandButton = parentRow.getByRole('button', {
+        name: /expand current row/i,
+      });
+
+      await expandButton.click();
+      const expandedRowId = await expandButton.getAttribute('aria-controls');
+
+      if (!expandedRowId) {
+        continue;
+      }
+
+      const expandedRow = this.incidentsTable.locator(`#${expandedRowId}`);
+      if ((await expandedRow.getByText(errorMessage).count()) > 0) {
+        return parentRow;
+      }
+    }
+
+    return this.incidentsTable.getByRole('row').filter({
+      has: this.page.getByText(errorMessage),
+    });
+  }
+
+  async getIncidentRowByErrorType(errorType: string) {
+    const parentRows = this.incidentsTable.locator(
+      'tr[data-parent-row="true"]',
+    );
+
+    const exactParentRow = parentRows.filter({
+      has: this.page
+        .getByTestId('cell-errorType')
+        .filter({hasText: new RegExp(`^${errorType}$`, 'i')}),
+    });
+
+    if ((await exactParentRow.count()) > 0) {
+      return exactParentRow.first();
+    }
+
+    const partialParentRow = parentRows.filter({
+      has: this.page.getByTestId('cell-errorType').filter({hasText: errorType}),
+    });
+
+    if ((await partialParentRow.count()) > 0) {
+      return partialParentRow.first();
+    }
+
+    return this.incidentsTable.getByRole('row').filter({
+      has: this.page.getByTestId('cell-errorType').filter({hasText: errorType}),
     });
   }
 
   async retryIncidentByErrorMessage(errorMessage: string) {
     const incidentRow = await this.getIncidentRowByErrorMessage(errorMessage);
-    console.log(
-      await incidentRow.getByTestId('cell-flowNodeName').allInnerTexts(),
-    );
+    const retryButton = incidentRow.getByTestId('retry-operation');
+    await retryButton.click();
+  }
+
+  async retryIncidentByErrorType(errorType: string) {
+    const incidentRow = await this.getIncidentRowByErrorType(errorType);
     const retryButton = incidentRow.getByTestId('retry-operation');
     await retryButton.click();
   }
@@ -973,26 +1060,23 @@ class OperateProcessInstancePage {
   }
 
   async closeIncidentsPanel(): Promise<void> {
-    await expect(this.incidentsBanner).toContainText(/hide/i, {
-      timeout: 10000,
-    });
-
     await waitForAssertion({
       assertion: async () => {
-        await expect(this.incidentsBanner).toContainText(/view/i, {
+        await expect(this.incidentsViewHeader).toBeHidden({
           timeout: 3000,
         });
       },
       onFailure: async () => {
-        await this.incidentsBanner.scrollIntoViewIfNeeded();
-        await this.incidentsBanner.click();
+        await this.detailsTabButton.scrollIntoViewIfNeeded();
+        await this.detailsTabButton.click();
       },
       maxRetries: 3,
     });
   }
 
   async getIncidentCount(): Promise<number> {
-    const headingText = await this.incidentsViewHeader.textContent();
+    await expect(this.incidentsViewHeader).toBeVisible();
+    const headingText = await this.incidentsViewHeader.innerText();
     if (!headingText) {
       return 0;
     }
