@@ -278,6 +278,67 @@ final class GlobalListenersInitializerIT {
         .hasSize(0);
   }
 
+  @Test
+  void shouldInitializeGlobalExecutionListenersWhenConfigurationChanges(final TestInfo testInfo) {
+    // Given a broker with a global execution listeners configuration
+    final String initialListener = uniqueListenerName(testInfo);
+    ZEEBE
+        .unifiedConfig()
+        .getCluster()
+        .setGlobalListeners(createExecutionListenersCfg(initialListener));
+    restartBroker();
+
+    waitForConfigurationDistributionComplete(initialListener);
+    final var lastPositionByPartition =
+        RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .filter(
+                r ->
+                    r.getValue().getListeners().stream()
+                        .map(GlobalListenerRecordValue::getId)
+                        .anyMatch(initialListener::equals))
+            .limit(PARTITIONS_COUNT)
+            .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
+
+    // When the execution listener configuration is changed and the broker restarted
+    ZEEBE
+        .unifiedConfig()
+        .getCluster()
+        .setGlobalListeners(createExecutionListenersCfg(initialListener, "newExecListener"));
+    restartBroker();
+
+    // Then listener events are distributed to all partitions
+    final var listenerRecordsByPartition =
+        RecordingExporter.records()
+            .filter(r -> lastPositionByPartition.get(r.getPartitionId()) < r.getPosition())
+            .limitByCount(
+                r -> r.getIntent().equals(GlobalListenerBatchIntent.CONFIGURED), PARTITIONS_COUNT)
+            .onlyEvents()
+            .filter(
+                record ->
+                    record.getValueType() == ValueType.GLOBAL_LISTENER
+                        || record.getValueType() == ValueType.GLOBAL_LISTENER_BATCH)
+            .collect(Collectors.groupingBy(Record::getPartitionId));
+    Assertions.assertThat(listenerRecordsByPartition.keySet())
+        .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
+    for (final var records : listenerRecordsByPartition.values()) {
+      assertThat(records)
+          .hasSize(3)
+          .anyMatch(
+              record ->
+                  record.getIntent() == GlobalListenerIntent.UPDATED
+                      && ((GlobalListenerRecordValue) record.getValue())
+                          .getId()
+                          .equals(initialListener))
+          .anyMatch(
+              record ->
+                  record.getIntent() == GlobalListenerIntent.CREATED
+                      && ((GlobalListenerRecordValue) record.getValue())
+                          .getId()
+                          .equals("newExecListener"))
+          .anyMatch(record -> record.getIntent() == GlobalListenerBatchIntent.CONFIGURED);
+    }
+  }
+
   private GlobalListenersCfg createGlobalListenersCfg(final String... listenerIds) {
     final GlobalListenersCfg globalListenersCfg = new GlobalListenersCfg();
     globalListenersCfg.setUserTask(
@@ -288,6 +349,23 @@ final class GlobalListenersInitializerIT {
                   listenerCfg.setId(id);
                   listenerCfg.setType(id);
                   listenerCfg.setEventTypes(List.of("all"));
+                  return listenerCfg;
+                })
+            .toList());
+    return globalListenersCfg;
+  }
+
+  private GlobalListenersCfg createExecutionListenersCfg(final String... listenerIds) {
+    final GlobalListenersCfg globalListenersCfg = new GlobalListenersCfg();
+    globalListenersCfg.setExecution(
+        Arrays.stream(listenerIds)
+            .map(
+                id -> {
+                  final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
+                  listenerCfg.setId(id);
+                  listenerCfg.setType(id);
+                  listenerCfg.setEventTypes(List.of("start", "end"));
+                  listenerCfg.setElementTypes(List.of("serviceTask"));
                   return listenerCfg;
                 })
             .toList());
