@@ -86,7 +86,7 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
     private final RetryState retryState = new RetryState();
     private volatile boolean closed = false;
 
-    public MigrationSnapshotDirector(
+    private MigrationSnapshotDirector(
         final AsyncSnapshotDirector asyncSnapshotDirector,
         final ConcurrencyControl control,
         final HealthMonitor healthMonitor) {
@@ -108,22 +108,21 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
       }
     }
 
-    public void scheduleSnapshot() {
+    private void scheduleSnapshot() {
       if (!snapshotTaken) {
         LOG.debug("Scheduling snapshot for migration.");
         forceSnapshotUntilSuccessful();
       }
     }
 
-    public void cancelScheduledSnapshot() {
+    private void cancelScheduledSnapshot() {
       if (runningSnapshot != null) {
         runningSnapshot.cancel();
         runningSnapshot = null;
       }
     }
 
-    @VisibleForTesting
-    public boolean isSnapshotTaken() {
+    private boolean isSnapshotTaken() {
       return snapshotTaken;
     }
 
