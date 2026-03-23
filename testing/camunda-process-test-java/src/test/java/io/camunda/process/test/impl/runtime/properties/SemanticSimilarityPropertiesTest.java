@@ -35,7 +35,7 @@ public class SemanticSimilarityPropertiesTest {
         new SemanticSimilarityProperties(properties);
 
     // then
-    assertThat(similarityProperties.getThreshold()).isEqualTo(0.8);
+    assertThat(similarityProperties.getThreshold()).isEqualTo(0.5);
     assertThat(similarityProperties.hasProviderConfigured()).isFalse();
     assertThat(similarityProperties.isDefaultPreprocessorsEnabled()).isTrue();
   }
@@ -254,7 +254,7 @@ public class SemanticSimilarityPropertiesTest {
         new SemanticSimilarityProperties(properties);
 
     // then
-    assertThat(similarityProperties.getThreshold()).isEqualTo(0.8);
+    assertThat(similarityProperties.getThreshold()).isEqualTo(0.5);
     assertThat(similarityProperties.hasProviderConfigured()).isFalse();
   }
 }

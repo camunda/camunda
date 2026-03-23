@@ -100,7 +100,8 @@ public class SemanticSimilarityAssertTest {
 
     @Test
     void shouldPassWhenEmbeddingsAreIdentical() {
-      // given - both expected and actual embed to the same vector → cosine = 1.0 > 0.8
+      // given - both expected and actual embed to the same vector → cosine = 1.0 > 0.5 (default
+      // threshold)
       when(embeddingModel.embed(any())).thenReturn(UNIT_VEC_X);
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
 
@@ -108,19 +109,20 @@ public class SemanticSimilarityAssertTest {
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      // when / then - passes because cosine(x,x) = 1.0 >= 0.8
+      // when / then - passes because cosine(x,x) = 1.0 >= 0.5 (default threshold)
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSimilarTo(VariableSelectors.byName("result"), "Hello there");
     }
 
     @Test
     void shouldPassWhenScoreEqualsThreshold() {
-      // given - exact threshold boundary: use a vector pair giving cosine ≈ 0.8
-      // [1,0] · [4,3] / (1 * 5) = 4/5 = 0.8
+      // given - exact threshold boundary: use a vector pair giving cosine = 0.8, set threshold to
+      // 0.8 explicitly. [1,0] · [4,3] / (1 * 5) = 4/5 = 0.8
       // stubs use preprocessed (lowercased) strings since preprocessors run before embed()
       when(embeddingModel.embed("hello there")).thenReturn(new float[] {1.0f, 0.0f});
       when(embeddingModel.embed("\"hello, world!\"")).thenReturn(new float[] {4.0f, 3.0f});
-      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
+      CamundaAssert.setSemanticSimilarityConfig(
+          SemanticSimilarityConfig.of(embeddingModel).withThreshold(0.8));
 
       final Variable variable = newVariable("result", "\"Hello, World!\"");
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
@@ -134,7 +136,7 @@ public class SemanticSimilarityAssertTest {
     @Test
     @CamundaAssertExpectFailure
     void shouldFailWhenEmbeddingsAreOrthogonal() {
-      // given - orthogonal vectors → cosine = 0.0 < 0.8
+      // given - orthogonal vectors → cosine = 0.0 < 0.5 (default threshold)
       // stubs use preprocessed (lowercased) strings since preprocessors run before embed()
       when(embeddingModel.embed("hello there")).thenReturn(UNIT_VEC_X);
       when(embeddingModel.embed("\"hello, world!\"")).thenReturn(UNIT_VEC_Y);
@@ -144,7 +146,7 @@ public class SemanticSimilarityAssertTest {
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      // when / then - fails because 0.0 < 0.8; message includes score, threshold, and values
+      // when / then - fails because 0.0 < 0.5; message includes score, threshold, and values
       Assertions.assertThatThrownBy(
               () ->
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -153,7 +155,7 @@ public class SemanticSimilarityAssertTest {
           .hasMessageContaining("variable 'result' did not satisfy similarity check")
           .hasMessageContaining("Expectation: Hello there")
           .hasMessageContaining("Actual value: \"Hello, World!\"")
-          .hasMessageContaining("Score: 0.00 (threshold: 0.80)");
+          .hasMessageContaining("Score: 0.00 (threshold: 0.50)");
     }
 
     @Test
@@ -248,7 +250,7 @@ public class SemanticSimilarityAssertTest {
       when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      // when / then - passes because cosine(x,x) = 1.0 >= 0.8
+      // when / then - passes because cosine(x,x) = 1.0 >= 0.5 (default threshold)
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasLocalVariableSimilarTo(
               ElementSelectors.byId("task1"), "localVar", "some expectation");
@@ -257,7 +259,7 @@ public class SemanticSimilarityAssertTest {
     @Test
     @CamundaAssertExpectFailure
     void shouldFailWhenLocalVariableEmbeddingsAreOrthogonal() {
-      // given - orthogonal vectors → cosine = 0.0 < 0.8
+      // given - orthogonal vectors → cosine = 0.0 < 0.5 (default threshold)
       when(embeddingModel.embed("some expectation")).thenReturn(UNIT_VEC_X);
       when(embeddingModel.embed("\"local value\"")).thenReturn(UNIT_VEC_Y);
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
@@ -285,7 +287,7 @@ public class SemanticSimilarityAssertTest {
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("localVar")
           .hasMessageContaining("0.00")
-          .hasMessageContaining("0.80")
+          .hasMessageContaining("0.50")
           .hasMessageContaining("some expectation");
     }
 

@@ -38,7 +38,7 @@ import java.util.List;
 public interface SemanticSimilarityConfig {
 
   /** The default threshold score (0-1) above which a semantic similarity assertion passes. */
-  double DEFAULT_THRESHOLD = 0.8;
+  double DEFAULT_THRESHOLD = 0.5;
 
   /**
    * Creates a new SemanticSimilarityConfig with default settings and no embedding model. An
