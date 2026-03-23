@@ -19,7 +19,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotAfterMigrationTransitionStep.MigrationSnapshotDirector;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
