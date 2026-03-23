@@ -171,6 +171,33 @@ public class GlobalListenerCreateTest {
     assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
   }
 
+  @Test
+  public void shouldBeAuthorizedToCreateExecutionListenerWithCorrectPermission() {
+    final var username = createUserWithPermissions(PermissionType.CREATE_EXECUTION_LISTENER);
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withType("my-type")
+        .withEventTypes("start", "end")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .create(username);
+  }
+
+  @Test
+  public void shouldNotBeAuthorizedToCreateExecutionListenerWithTaskListenerPermission() {
+    final var username = createUserWithPermissions(PermissionType.CREATE_TASK_LISTENER);
+    final var rejection =
+        engine
+            .globalListener()
+            .withId("my-id")
+            .withType("my-type")
+            .withEventTypes("start", "end")
+            .withListenerType(GlobalListenerType.EXECUTION)
+            .expectRejection()
+            .create(username);
+    assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+  }
+
   private String createUserWithoutPermissions() {
     final var user = engine.user().newUser(UUID.randomUUID().toString()).create().getValue();
     return user.getUsername();

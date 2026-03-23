@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -85,6 +86,45 @@ public class GlobalListenerDeleteTest {
             PermissionType.CREATE_TASK_LISTENER, PermissionType.UPDATE_TASK_LISTENER);
     final var rejection =
         engine.globalListener().withId("my-id").expectRejection().delete(username);
+    assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToDeleteExecutionListenerWithCorrectPermission() {
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withType("my-type")
+        .withEventTypes("start")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .create();
+
+    final var username = createUserWithPermissions(PermissionType.DELETE_EXECUTION_LISTENER);
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .delete(username);
+  }
+
+  @Test
+  public void shouldNotBeAuthorizedToDeleteExecutionListenerWithTaskListenerPermission() {
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withType("my-type")
+        .withEventTypes("start")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .create();
+
+    final var username = createUserWithPermissions(PermissionType.DELETE_TASK_LISTENER);
+    final var rejection =
+        engine
+            .globalListener()
+            .withId("my-id")
+            .withListenerType(GlobalListenerType.EXECUTION)
+            .expectRejection()
+            .delete(username);
     assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
   }
 

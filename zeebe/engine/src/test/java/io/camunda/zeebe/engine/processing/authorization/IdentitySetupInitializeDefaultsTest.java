@@ -213,7 +213,11 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.CREATE_TASK_LISTENER,
                         PermissionType.READ_TASK_LISTENER,
                         PermissionType.UPDATE_TASK_LISTENER,
-                        PermissionType.DELETE_TASK_LISTENER));
+                        PermissionType.DELETE_TASK_LISTENER,
+                        PermissionType.CREATE_EXECUTION_LISTENER,
+                        PermissionType.READ_EXECUTION_LISTENER,
+                        PermissionType.UPDATE_EXECUTION_LISTENER,
+                        PermissionType.DELETE_EXECUTION_LISTENER));
   }
 
   @Test
@@ -321,7 +325,8 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.GLOBAL_LISTENER)
-                    .hasOnlyPermissionTypes(PermissionType.READ_TASK_LISTENER));
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ_TASK_LISTENER, PermissionType.READ_EXECUTION_LISTENER));
   }
 
   @Test

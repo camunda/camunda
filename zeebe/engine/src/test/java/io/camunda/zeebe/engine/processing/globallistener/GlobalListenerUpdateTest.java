@@ -220,6 +220,49 @@ public class GlobalListenerUpdateTest {
     assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
   }
 
+  @Test
+  public void shouldBeAuthorizedToUpdateExecutionListenerWithCorrectPermission() {
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withType("my-old-type")
+        .withEventTypes("start")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .create();
+
+    final var username = createUserWithPermissions(PermissionType.UPDATE_EXECUTION_LISTENER);
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withType("my-type")
+        .withEventTypes("start", "end")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .update(username);
+  }
+
+  @Test
+  public void shouldNotBeAuthorizedToUpdateExecutionListenerWithTaskListenerPermission() {
+    engine
+        .globalListener()
+        .withId("my-id")
+        .withType("my-old-type")
+        .withEventTypes("start")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .create();
+
+    final var username = createUserWithPermissions(PermissionType.UPDATE_TASK_LISTENER);
+    final var rejection =
+        engine
+            .globalListener()
+            .withId("my-id")
+            .withType("my-type")
+            .withEventTypes("start", "end")
+            .withListenerType(GlobalListenerType.EXECUTION)
+            .expectRejection()
+            .update(username);
+    assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+  }
+
   private String createUserWithoutPermissions() {
     final var user = engine.user().newUser(UUID.randomUUID().toString()).create().getValue();
     return user.getUsername();

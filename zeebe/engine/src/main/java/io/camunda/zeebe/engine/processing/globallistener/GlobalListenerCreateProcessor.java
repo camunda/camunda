@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -98,11 +99,15 @@ public final class GlobalListenerCreateProcessor
 
   private Either<Rejection, GlobalListenerRecord> validateCommand(
       final TypedRecord<GlobalListenerRecord> command) {
+    final var permissionType =
+        command.getValue().getListenerType() == GlobalListenerType.EXECUTION
+            ? PermissionType.CREATE_EXECUTION_LISTENER
+            : PermissionType.CREATE_TASK_LISTENER;
     final AuthorizationRequest authRequest =
         AuthorizationRequest.builder()
             .command(command)
             .resourceType(AuthorizationResourceType.GLOBAL_LISTENER)
-            .permissionType(PermissionType.CREATE_TASK_LISTENER)
+            .permissionType(permissionType)
             .build();
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(authRequest)

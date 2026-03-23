@@ -102,7 +102,12 @@ public class GlobalListenerValidator {
   }
 
   public boolean isValidEventType(final GlobalListenerRecord record, final String eventType) {
-    return GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)
-        || GlobalListenerRecord.TASK_LISTENER_EVENT_TYPES.contains(eventType);
+    if (GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)) {
+      return true;
+    }
+    return switch (record.getListenerType()) {
+      case EXECUTION -> GlobalListenerRecord.EXECUTION_LISTENER_EVENT_TYPES.contains(eventType);
+      default -> GlobalListenerRecord.TASK_LISTENER_EVENT_TYPES.contains(eventType);
+    };
   }
 }
