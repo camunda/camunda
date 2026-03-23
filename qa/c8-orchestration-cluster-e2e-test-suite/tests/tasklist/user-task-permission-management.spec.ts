@@ -26,7 +26,6 @@ import {
 } from 'utils/beans/requestBeans';
 
 const PROCESS_ID = 'user_task_api_test_process';
-const TASK_NAME = 'test user task api';
 
 let aliceUser: {
   username: string;
@@ -113,11 +112,11 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText(TASK_NAME),
+        taskPanelPage.availableTasks.getByText(PROCESS_ID),
       ).toBeVisible();
     }).toPass({timeout: 30000});
 
-    await taskPanelPage.openTask(TASK_NAME);
+    await taskPanelPage.openTask(PROCESS_ID);
 
     await expect(taskDetailsPage.assignee).toContainText('Assigned to me');
   });
@@ -181,7 +180,7 @@ test.describe
 
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText(TASK_NAME),
+        taskPanelPage.availableTasks.getByText(PROCESS_ID),
       ).toBeVisible();
     }).toPass({timeout: 30000});
   });
@@ -267,7 +266,7 @@ test.describe.serial('Task not visible to user without READ permission', () => {
     await expect(async () => {
       await expect(page.getByText('No tasks found')).toBeVisible();
       await expect(
-        taskPanelPage.availableTasks.getByText(TASK_NAME),
+        taskPanelPage.availableTasks.getByText(PROCESS_ID),
       ).toBeHidden();
     }).toPass({timeout: 30000});
   });
@@ -276,6 +275,7 @@ test.describe.serial('Task not visible to user without READ permission', () => {
     page,
     loginPage,
     taskPanelPage,
+    taskDetailsPage,
   }) => {
     await navigateToApp(page, 'tasklist');
     await loginPage.login(aliceUser.username, aliceUser.password);
@@ -283,14 +283,12 @@ test.describe.serial('Task not visible to user without READ permission', () => {
 
     await taskPanelPage.goToTaskDetails(bobUserTaskKey);
 
-    await expect(page.getByTestId('details-info')).not.toBeVisible({
-      timeout: 10000,
-    });
+    await expect(taskDetailsPage.pickATaskHeader).toBeVisible({timeout: 10000});
   });
 });
 
 test.describe
-  .serial('User with CLAIM permission can claim an unassigned task', () => {
+  .serial('User with UPDATE_USER_TASK permission can claim an unassigned task', () => {
   test.beforeAll(async ({request}) => {
     authorizationKeys.length = 0;
     createdUsernames.length = 0;
@@ -349,7 +347,7 @@ test.describe
     await captureFailureVideo(page, testInfo);
   });
 
-  test('should allow Alice to claim an unassigned task with CLAIM permission', async ({
+  test('should allow Alice to claim an unassigned task with UPDATE_USER_TASK permission', async ({
     page,
     loginPage,
     taskPanelPage,
@@ -368,7 +366,7 @@ test.describe
 });
 
 test.describe
-  .serial('User cannot claim a task without CLAIM permission', () => {
+  .serial('User cannot claim a task without UPDATE_USER_TASK permission', () => {
   test.beforeAll(async ({request}) => {
     authorizationKeys.length = 0;
     createdUsernames.length = 0;
@@ -417,7 +415,7 @@ test.describe
     await captureFailureVideo(page, testInfo);
   });
 
-  test('should not allow Alice to claim an unassigned task without CLAIM permission', async ({
+  test('should not allow Alice to claim an unassigned task without UPDATE_USER_TASK permission', async ({
     page,
     loginPage,
     taskPanelPage,
@@ -724,7 +722,7 @@ test.describe
 });
 
 test.describe
-  .serial('User can unassign themselves from a task with CLAIM permission', () => {
+  .serial('User can unassign themselves from a task with UPDATE_USER_TASK permission', () => {
   test.beforeAll(async ({request}) => {
     authorizationKeys.length = 0;
     createdUsernames.length = 0;
@@ -796,7 +794,7 @@ test.describe
     await captureFailureVideo(page, testInfo);
   });
 
-  test('should allow Alice to unassign herself from a task with CLAIM permission', async ({
+  test('should allow Alice to unassign herself from a task with UPDATE_USER_TASK permission', async ({
     page,
     loginPage,
     taskPanelPage,
