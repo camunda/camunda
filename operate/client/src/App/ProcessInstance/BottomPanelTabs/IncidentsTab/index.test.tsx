@@ -9,6 +9,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
@@ -27,6 +28,7 @@ import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {createIncident, searchResult} from 'modules/testUtils';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {getIncidentErrorName} from 'modules/utils/incidents';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = mockProcessInstance.processInstanceKey;
 
@@ -47,11 +49,15 @@ function getWrapper(searchParams?: Record<string, string>) {
     <QueryClientProvider client={getMockQueryClient()}>
       <MemoryRouter
         initialEntries={[
-          `${Paths.processInstance(PROCESS_INSTANCE_ID)}?${params.toString()}`,
+          `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?${params.toString()}`,
         ]}
       >
         <Routes>
-          <Route path={Paths.processInstance()} element={children} />
+          <Route path={Paths.processInstanceIncidents()} element={children} />
+          <Route
+            path={Paths.processInstanceVariables()}
+            element={<LocationLog />}
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -70,6 +76,25 @@ describe('IncidentsTab', () => {
 
   afterEach(() => {
     incidentsPanelStore.clearSelection();
+  });
+
+  it('should redirect to variables when the process instance has no incidents', async () => {
+    const mockInstanceWithoutIncidents = {
+      ...mockProcessInstance,
+      hasIncident: false,
+    };
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutIncidents);
+    render(<IncidentsTab />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceVariables({
+          processInstanceId: PROCESS_INSTANCE_ID,
+        }),
+      ),
+    );
   });
 
   it('should render the incidents table with correct columns', async () => {
