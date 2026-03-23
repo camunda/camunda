@@ -28,7 +28,14 @@ import org.junit.Test;
  */
 public final class CreateProcessInstanceBusinessIdUniquenessToggleTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              config -> {
+                // Several tests depend on this specific default as the starting point
+                config.setBusinessIdUniquenessEnabled(false);
+              });
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
