@@ -271,6 +271,7 @@ public final class EventAppliers implements EventApplier {
     final var bufferedStartMessageEventStateApplier =
         new BufferedStartMessageEventStateApplier(processState, state.getMessageState());
     final var multiInstanceState = state.getMultiInstanceState();
+    final var globalListenersState = state.getGlobalListenersState();
 
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
@@ -288,11 +289,26 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementActivatingV3Applier(
             elementInstanceState, processState, eventScopeInstanceState));
     register(
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        4,
+        new ProcessInstanceElementActivatingV4Applier(
+            elementInstanceState, processState, eventScopeInstanceState, globalListenersState));
+    register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        1,
         new ProcessInstanceElementActivatedApplier(elementInstanceState));
     register(
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        2,
+        new ProcessInstanceElementActivatedV2Applier(elementInstanceState, globalListenersState));
+    register(
         ProcessInstanceIntent.ELEMENT_COMPLETING,
+        1,
         new ProcessInstanceElementCompletingApplier(elementInstanceState));
+    register(
+        ProcessInstanceIntent.ELEMENT_COMPLETING,
+        2,
+        new ProcessInstanceElementCompletingV2Applier(elementInstanceState, globalListenersState));
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETED,
         1,
@@ -314,6 +330,17 @@ public final class EventAppliers implements EventApplier {
             multiInstanceState,
             bufferedStartMessageEventStateApplier));
     register(
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        3,
+        new ProcessInstanceElementCompletedV3Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            variableState,
+            processState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier,
+            globalListenersState));
+    register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
@@ -332,6 +359,15 @@ public final class EventAppliers implements EventApplier {
             eventScopeInstanceState,
             multiInstanceState,
             bufferedStartMessageEventStateApplier));
+    register(
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
+        3,
+        new ProcessInstanceElementTerminatedV3Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier,
+            globalListenersState));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));

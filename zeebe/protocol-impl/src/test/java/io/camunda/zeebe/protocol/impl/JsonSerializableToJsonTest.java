@@ -105,6 +105,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -4664,6 +4665,40 @@ final class JsonSerializableToJsonTest {
       "elementTypes": [],
       "categories": [],
       "configKey": -1
+    }
+    """
+      },
+      {
+        "Execution GlobalListenerRecord",
+        (Supplier<GlobalListenerRecord>)
+            () ->
+                new GlobalListenerRecord()
+                    .setGlobalListenerKey(456L)
+                    .setId("exec-listener")
+                    .setType("audit-execution")
+                    .setListenerType(GlobalListenerType.EXECUTION)
+                    .setEventTypes(List.of("start", "end"))
+                    .setElementTypes(List.of("serviceTask", "process"))
+                    .setCategories(List.of("gateways"))
+                    .setRetries(3)
+                    .setAfterNonGlobal(false)
+                    .setPriority(100)
+                    .setSource(GlobalListenerSource.API)
+                    .setConfigKey(457L),
+        """
+    {
+      "globalListenerKey": 456,
+      "id": "exec-listener",
+      "type": "audit-execution",
+      "retries": 3,
+      "eventTypes": ["start", "end"],
+      "afterNonGlobal": false,
+      "priority": 100,
+      "source": "API",
+      "listenerType": "EXECUTION",
+      "elementTypes": ["serviceTask", "process"],
+      "categories": ["gateways"],
+      "configKey": 457
     }
     """
       }

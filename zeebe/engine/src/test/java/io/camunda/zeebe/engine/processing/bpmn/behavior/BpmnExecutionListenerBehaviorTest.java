@@ -16,6 +16,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
@@ -33,7 +35,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BpmnExecutionListenerBehaviorTest {
 
+  private static final long ELEMENT_INSTANCE_KEY = 123L;
+  private static final long CONFIG_KEY = 456L;
+
   @Mock private GlobalListenersState globalListenersState;
+  @Mock private ElementInstanceState elementInstanceState;
+  @Mock private ElementInstance elementInstance;
   @Mock private ExecutableFlowNode flowNode;
   @Mock private BpmnElementContext context;
 
@@ -41,16 +48,19 @@ class BpmnExecutionListenerBehaviorTest {
 
   @BeforeEach
   void setUp() {
-    behavior = new BpmnExecutionListenerBehavior(globalListenersState);
+    behavior = new BpmnExecutionListenerBehavior(globalListenersState, elementInstanceState);
+    when(context.getElementInstanceKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+    when(elementInstanceState.getInstance(ELEMENT_INSTANCE_KEY)).thenReturn(elementInstance);
+    when(elementInstance.getExecutionListenersConfigKey()).thenReturn(CONFIG_KEY);
   }
 
   @Nested
   class StartListeners {
 
     @Test
-    void shouldReturnBpmnListenersWhenNoGlobalConfig() {
+    void shouldReturnBpmnListenersWhenNoPinnedConfig() {
       // given
-      when(globalListenersState.getCurrentConfig()).thenReturn(null);
+      when(elementInstance.getExecutionListenersConfigKey()).thenReturn(-1L);
       final var bpmnListeners = List.of(createBpmnExecutionListener("start", "bpmn-type"));
       when(flowNode.getStartExecutionListeners()).thenReturn(bpmnListeners);
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -66,7 +76,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldReturnBpmnListenersWhenNoGlobalExecutionListeners() {
       // given
       final var config = new GlobalListenerBatchRecord();
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final var bpmnListeners = List.of(createBpmnExecutionListener("start", "bpmn-type"));
       when(flowNode.getStartExecutionListeners()).thenReturn(bpmnListeners);
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -82,7 +92,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldMergeGlobalBeforeBpmnListeners() {
       // given
       final var config = createConfigWithExecutionListener("global-type", "start", "serviceTask");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final var bpmnListener = createBpmnExecutionListener("start", "bpmn-type");
       when(flowNode.getStartExecutionListeners()).thenReturn(List.of(bpmnListener));
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -101,7 +111,7 @@ class BpmnExecutionListenerBehaviorTest {
       // given
       final var config =
           createConfigWithExecutionListener("global-type", "start", "serviceTask", true);
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final var bpmnListener = createBpmnExecutionListener("start", "bpmn-type");
       when(flowNode.getStartExecutionListeners()).thenReturn(List.of(bpmnListener));
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -119,7 +129,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldNotMatchGlobalListenerForDifferentElementType() {
       // given — listener targets userTask, element is serviceTask
       final var config = createConfigWithExecutionListener("global-type", "start", "userTask");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final var bpmnListeners = List.of(createBpmnExecutionListener("start", "bpmn-type"));
       when(flowNode.getStartExecutionListeners()).thenReturn(bpmnListeners);
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -136,7 +146,7 @@ class BpmnExecutionListenerBehaviorTest {
       // given — gateways don't support "end"
       final var config =
           createConfigWithExecutionListener("global-type", "end", "exclusiveGateway");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.EXCLUSIVE_GATEWAY);
 
@@ -151,7 +161,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldMatchCategoryAll() {
       // given — empty elementTypes + empty categories = all
       final var config = createConfigWithCategory("global-type", "start", "all");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
 
@@ -171,7 +181,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldMergeEndListeners() {
       // given
       final var config = createConfigWithExecutionListener("global-type", "end", "serviceTask");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final var bpmnListener = createBpmnExecutionListener("end", "bpmn-type");
       when(flowNode.getEndExecutionListeners()).thenReturn(List.of(bpmnListener));
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -190,7 +200,7 @@ class BpmnExecutionListenerBehaviorTest {
       // given — gateways support only "start", not "end"
       final var config =
           createConfigWithExecutionListener("global-type", "end", "exclusiveGateway");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getEndExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.EXCLUSIVE_GATEWAY);
 
@@ -211,7 +221,7 @@ class BpmnExecutionListenerBehaviorTest {
       final var config = new GlobalListenerBatchRecord();
       addExecutionListenerToConfig(config, "before-global", "start", "serviceTask", false);
       addExecutionListenerToConfig(config, "after-global", "start", "serviceTask", true);
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final var bpmnListener = createBpmnExecutionListener("start", "bpmn-type");
       when(flowNode.getStartExecutionListeners()).thenReturn(List.of(bpmnListener));
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
@@ -232,7 +242,7 @@ class BpmnExecutionListenerBehaviorTest {
       final var config = new GlobalListenerBatchRecord();
       addExecutionListenerToConfig(config, "before-global", "start", "serviceTask", false);
       addExecutionListenerToConfig(config, "after-global", "start", "serviceTask", true);
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
 
@@ -253,7 +263,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldMatchTasksCategory() {
       // given
       final var config = createConfigWithCategory("global-type", "start", "tasks");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.USER_TASK);
 
@@ -268,7 +278,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldNotMatchTasksCategoryForGateway() {
       // given
       final var config = createConfigWithCategory("global-type", "start", "tasks");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       final List<ExecutionListener> empty = Collections.emptyList();
       when(flowNode.getStartExecutionListeners()).thenReturn(empty);
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.EXCLUSIVE_GATEWAY);
@@ -284,7 +294,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldMatchWhenBothElementTypesAndCategoriesEmpty() {
       // given — empty means "all"
       final var config = createConfigWithEmptyTargets("global-type", "start");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.CALL_ACTIVITY);
 
@@ -303,7 +313,7 @@ class BpmnExecutionListenerBehaviorTest {
     void shouldNotMatchWhenEventTypeNotInListenerConfig() {
       // given — listener only handles "end", we ask for start listeners
       final var config = createConfigWithExecutionListener("global-type", "end", "serviceTask");
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());
       when(context.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
 
@@ -328,7 +338,7 @@ class BpmnExecutionListenerBehaviorTest {
       listener.setElementTypes(List.of("serviceTask"));
       listener.setCategories(Collections.emptyList());
       config.addListener(listener);
-      when(globalListenersState.getCurrentConfig()).thenReturn(config);
+      when(globalListenersState.getVersionedConfig(CONFIG_KEY)).thenReturn(config);
 
       // Start listeners
       when(flowNode.getStartExecutionListeners()).thenReturn(Collections.emptyList());

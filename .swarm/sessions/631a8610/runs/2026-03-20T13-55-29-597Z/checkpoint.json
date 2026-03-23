@@ -92,23 +92,23 @@
   "designSpec": "\n\nThe spec was already output in my previous message but got truncated near the end of Appendix E. Here's the remaining portion:\n\n---\n\n| 2 | **How are non-listener incidents distinguished in the data model?** The \"Non-listener\" filter option (§9.3) requires differentiating listener incidents from other incident types. | Partially — blocks one filter option | IncidentsTable Source filter \"Non-listener\" option only | Omit \"Non-listener\" from filter options; offer only \"All\", \"Global\", \"Model\". |\n| 3 | **Are there backend-enforced max limits for retries and priority?** UI currently enforces retries 1–99 and priority ≥ 0, aligned with task listeners. | No — non-blocking | Validation may need adjustment | Current limits are safe defaults; update if backend defines stricter constraints. |\n| 4 | **Does the `C3Navigation` `subElements` property work at runtime?** Type definitions exist in v0.22.1 but it's never been used. | No — flat nav is the primary approach | Future grouped sidebar enhancement | Flat navigation is the safe default. POC can be attempted post-launch. |\n\n---\n\n*End of specification.*\n\n</details>\n\n---\n\n**Summary:** The full v1.3 design spec (~1175 lines) is now shared above. It has been through **4 review cycles resolving 32+ issues**, with all internal references verified consistent. Key highlights:\n\n- **16 sections + 5 appendices** covering Identity Admin UI and Operate\n- **13 design decisions** documented with rationale in Appendix C\n- **4 open questions** tracked in Appendix E (1 blocking: Operate Source metadata)\n- All patterns verified against actual codebase (flat nav, Dropdown not Toggle, Loading not Skeleton, flat i18n keys, correct file paths)\n\nReady for review.",
   "streamResults": [
     "All tests pass and the commit is done. Here's the summary:\n\n## Changes\n- `zeebe/protocol/.../GlobalListenerType.java`: Added `EXECUTION` enum value\n- `zeebe/protocol/.../GlobalListenerRecordValue.java`: Added `getElementTypes()` and `getCategories()` methods with Javadoc\n- `zeebe/protocol-impl/.../GlobalListenerRecord.java`: Added `elementTypesProp`/`categoriesProp` ArrayProperty fields, updated property count 10→12, added getter/setter/add methods\n- `zeebe/protocol-impl/.../GlobalListenerRecord.golden`: Updated golden file\n- `zeebe/protocol-impl/.../JsonSerializableToJsonTest.java`: Added `\"elementTypes\":[],\"categories\":[]` to 4 expected JSON blocks\n\n## Verification\n- Build: ✅ (`zeebe/protocol` + `zeebe/protocol-impl`)\n- Tests: ✅ (all protocol-impl tests pass including JSON serialization and golden file tests)\n- Lint: ✅ (spotless applied)\n\n## Notes\nThe new `elementTypes` and `categories` fields use `ArrayProperty<StringValue>` — the same pattern as the existing `eventTypesProp`. Both default to empty arrays, ensuring backward compatibility with existing serialized records. The `EXECUTION` enum value enables the existing `DbGlobalListenersState` infrastructure to distinguish execution listeners from user task listeners.",
-    "",
-    "",
-    "",
+    "## Changes\n- `zeebe/engine/.../BpmnStreamProcessor.java`: Replaced 4 `ExecutableFlowNode::get*ExecutionListeners` method references with lambdas delegating to `executionListenerBehavior` — merging global + BPMN-level listeners at runtime\n\n## Verification\n- Build: ✅ (compiles clean)\n- Tests: ✅ (16/16 `BpmnExecutionListenerBehaviorTest` pass)\n- Lint: ✅ (spotless applied)\n\n## Notes\nSurgical 4-line change. The `BpmnExecutionListenerBehavior`, `GlobalExecutionListenerMatcher`, and state infrastructure were already fully implemented — the only missing piece was wiring them into `BpmnStreamProcessor`. Global listeners now merge before/after BPMN-level listeners based on `afterNonGlobal` flag and `priority` ordering.",
+    "Done. Here's the summary:\n\n## Changes\n- `zeebe/broker/.../GlobalListenerCfg.java`: Added overloaded `createGlobalListenerConfiguration(GlobalListenerType)` to force-set listener type\n- `zeebe/broker/.../GlobalListenersCfg.java`: Pass explicit `USER_TASK`/`EXECUTION` types when converting config lists\n- `dist/src/main/config/defaults.yaml`: Added `execution: null` under `global-listeners`\n- `configuration/.../ClusterGlobalListenersTest.java`: Added 10 tests (8 execution-only + 2 combined)\n\n## Verification\n- Build: ✅ (broker + deps built successfully)\n- Tests: ✅ (19/19 passed — 10 new + 9 existing)\n- Lint: ✅ (spotless:apply ran clean)\n\n## Notes\nThe critical fix was that `GlobalListenerCfg.listenerType` defaults to `USER_TASK`, so execution listeners bound from `camunda.cluster.global-listeners.execution[*]` would be silently mistyped. The fix adds an overloaded factory method accepting an explicit `GlobalListenerType`, and the container class passes the correct type based on which list each config belongs to.",
+    "Both defects fixed. Here's the summary:\n\n## Changes\n- `ProcessInstanceElementTerminatedV3Applier.java` (NEW): Copies V2 logic + adds `unpinGlobalExecutionListenersConfig()` before `removeInstance()` — fixes the config leak on element termination\n- `EventAppliers.java`: Registered TERMINATED V3 with `globalListenersState` dependency\n- 5 golden files created in `state/appliers/golden/`: `ACTIVATING_v4`, `ACTIVATED_v2`, `COMPLETING_v2`, `COMPLETED_v3`, `TERMINATED_v3`\n\n## Verification\n- EventAppliersTest: ✅ (257 tests, 0 failures)\n- BpmnExecutionListenerBehaviorTest: ✅ (16 tests, 0 failures)\n- Formatting: ✅ (spotless applied)\n\n## Notes\n**Defect 1** was caused by golden files being copied before `spotless:apply` reordered imports. Fixed by re-copying after formatting. **Defect 2** was a real resource leak — terminated elements never unpinned their config, so pinned versions accumulated forever. The new V3 applier calls `unpinGlobalExecutionListenersConfig()` *before* `removeInstance(key)`, matching the CompletedV3 pattern exactly.",
     "Build succeeded ✅. The stale generated sources in `zeebe/dynamic-config/target` were the culprit — cleaning that directory resolved it.\n\nAll changes compile and the RDBMS exporter (which references the updated `GlobalListenerEntity`) builds successfully. The full set of exporter/search-domain changes for `elementTypes`, `categories`, and `EXECUTION` enum are verified.",
     "All four fixes applied, tests pass. Removed:\n- Duplicate `elementTypes`/`categories` JSON keys from both OS and ES non-batch templates\n- Duplicate `.setElementTypes()`/`.setCategories()` calls in the handler (lines 79–80)\n- Duplicate `.withElementTypes()`/`.withCategories()` builder calls in the test\n- Duplicate assertions in the test",
     "Committed. All tests pass (21/21), build succeeds, and formatting is clean.\n\n## Changes\n- `db/rdbms-schema/.../changesets/8.10.0.xml`: New Liquibase migration — two join tables with FK cascade\n- `db/rdbms-schema/.../changelog-master.xml`: Include new changeset\n- `db/rdbms/.../GlobalListenerDbModel.java`: Added `elementTypes`/`categories` fields, builder, getters/setters\n- `db/rdbms/.../GlobalListenerMapper.java`: 4 new MyBatis mapper methods\n- `db/rdbms/.../GlobalListenerMapper.xml`: SQL inserts/deletes (+ Oracle), collections in resultMap, LEFT JOINs\n- `db/rdbms/.../GlobalListenerEntityMapper.java`: Pass new fields to Entity constructor\n- `db/rdbms/.../GlobalListenerWriter.java`: Queue operations for new join tables in CRUD\n- `zeebe/exporters/rdbms-exporter/.../GlobalListenerExportHandler.java`: Map new fields from records\n\n## Verification\n- Build: ✅ (modules build successfully)\n- Tests: ✅ (21 tests — 12 exporter + 9 RDBMS, 0 failures)\n- Lint: ✅ (spotless:apply clean)\n\n## Notes\nFollowed the exact `eventTypes` join-table pattern: each list field gets its own table with FK cascade delete, Oracle-specific INSERT ALL syntax, MyBatis `<collection>` mapping, and subquery LEFT JOINs in search/get queries. Search filter blocks for the new fields were intentionally omitted — they can be added when API search support is needed.",
-    "",
-    "",
+    "Both QA defects are fixed and committed.\n\n## Changes\n- `GlobalExecutionListenerControllerTest.java`: Created — 5 tests covering all REST endpoints (fixed search mock to use `searchGlobalExecutionListeners` instead of `search`)\n- `GlobalListenerRequestValidatorTest.java`: Created — 38 tests covering category expansion, event-element compatibility, create/update validation\n\n## Verification\n- Build: ✅ \n- Tests: ✅ Controller: 5/5 pass, Validator: 38/38 pass, existing GlobalTaskListenerControllerTest: 5/5 pass\n- Lint: ✅ spotless:apply clean\n\n## Notes\nThe search test was failing because the controller calls `searchGlobalExecutionListeners()` (a dedicated method with execution-listener-specific authorization), not the base `search()` method that the task listener controller uses. The mock needed to match the actual method being called.",
+    "Done. All 35 tests pass (0 failures).\n\n## Changes\n- `PermissionType.java`: Added `CREATE_EXECUTION_LISTENER`, `DELETE_EXECUTION_LISTENER`\n- `AuthorizationResourceType.java`: Added both new permissions to `GLOBAL_LISTENER` (8 total)\n- `GlobalListenerCreate/Delete/UpdateProcessor.java`: Permission now selected by listener type\n- `GlobalListenerValidator.java`: `isValidEventType()` checks execution listener events for `EXECUTION` type\n- `GlobalListenerRecord.java`: Added `EXECUTION_LISTENER_EVENT_TYPES` constant\n- 4 test files: Added auth tests + updated assertions\n\n## Verification\n- Build: ✅\n- Tests: ✅ (35/35 pass)\n- Lint: ✅ (spotless applied)\n\n## Notes\nThe core bug was two-fold: (1) all three processors hardcoded task listener permissions for every listener type, and (2) the validator only knew about task listener event types (`creating`, `assigned`, etc.), rejecting valid execution listener events (`start`, `end`). Both are now listener-type-aware via a `switch` on `record.getListenerType()`.",
     "All changes are complete and verified. Here's the final summary:\n\n## Changes\n- `identity/client/src/components/global/routePaths.ts`: Added `listeners()`, `listenersTasks()`, `listenersExecution()` path constants\n- `identity/client/src/utility/localization/en/components.json`: Added `listeners`, `listenersTask`, `listenersExecution` i18n keys\n- `identity/client/src/components/global/useGlobalRoutes.tsx`: Rewrote with typed `GlobalRoute` union (`FlatRoute | ParentRoute`), replaced flat nav entry with \"Listeners\" parent + Task/Execution subElements\n- `identity/client/src/components/layout/AppHeader.tsx`: Updated navbar mapping to handle `subElements` dropdown pattern\n- `identity/client/src/components/global/GlobalRoutes.tsx`: Added flatMap route rendering, backward compat redirect (`/global-task-listeners/*` → `/listeners/tasks`), parent redirect (`/listeners` → `/listeners/tasks`)\n- `identity/client/src/pages/global-execution-listeners/index.tsx`: Created placeholder page entry point\n- `identity/client/src/pages/global-execution-listeners/List.tsx`: Created minimal placeholder component\n\n## Verification\n- Build: ✅ (Vite build succeeds; pre-existing TS errors from unrelated `@camunda/camunda-api-zod-schemas` — none from our files)\n- Tests: ⏭️ (no test runner invoked — existing tests are unchanged, new pages have no tests yet)\n- Lint: ✅ (all 6 changed files pass ESLint with zero warnings)\n\n## Notes\nThe navigation restructuring uses a typed `GlobalRoute` union consumed by both the navbar (AppHeader) and route renderer (GlobalRoutes). The parent \"Listeners\" item renders as a C3Navigation dropdown via the `subElements` API (v0.22.1), with \"Task\" and \"Execution\" sub-items. Routes are flattened from the nested structure using `flatMap`. Backward compatibility is preserved via `<Navigate>` redirects for the old `/global-task-listeners` path.",
-    "",
-    "",
+    "All clean. Let me do a final summary of what was changed:\n\n## Changes\n- `identity/client/src/utility/localization/en/globalExecutionListeners.json`: Added 5 i18n keys: `source`, `sourceApi`, `sourceConfiguration`, `elementScope`, `allElements`\n- `identity/client/src/utility/localization/en/components.json`: Added `globalExecutionListeners` and `globalExecutionListener` entries for PageEmptyState\n- `identity/client/src/pages/global-execution-listeners/utility.tsx`: Added `getElementScopeLabel()` function combining categories and elementTypes into a display string\n- `identity/client/src/pages/global-execution-listeners/List.tsx`: Rewrote to match spec — 6 columns (ID, Type, Events, Element Scope, Priority, Source), Source column renders Carbon `Tag` (blue=API, cool-gray=Configuration), edit/delete menu items check source and only open modals for API-sourced listeners\n\n## Verification\n- Build: ✅ (`vite build` succeeds)\n- TypeScript: ✅ (`tsc --noEmit` passes)\n- Lint: ✅ (ESLint + Prettier clean after auto-fix)\n\n## Notes\nThe modals (AddModal, EditModal, DeleteModal) were already complete from prior work and required no changes. The main work was trimming List.tsx from 8 columns to the 6 specified (removing retries, execution order, separate elementTypes/categories), adding the Source column with Carbon Tag badges, adding the combined Element Scope column backed by a new `getElementScopeLabel` utility, and making edit/delete conditional on `source === \"API\"` (config-sourced listeners silently ignore edit/delete clicks).",
+    "All clean. Here's the summary:\n\n## Changes\n- `globalExecutionListeners.json`: Added `\"elementTypeAll\": \"All element types\"` i18n key\n- `AddModal.tsx`: Used `t(\"elementTypeAll\")` for element type \"all\" label (was `t(\"categoryAll\")`); simplified categories payload to `includes(\"all\") ? [\"all\"] : filter`\n- `EditModal.tsx`: Same two fixes as AddModal\n\n## Verification\n- Build: ✅ (prettier reports all files unchanged)\n- Lint: ✅ (tsc + eslint pass with 0 errors)\n\n## Notes\nFixed all 5 review items: (1) lint now passes clean, (2) element types \"all\" uses dedicated `elementTypeAll` key instead of reusing `categoryAll`, (3) categories payload simplified to match eventTypes pattern, (4) duplication acknowledged as consistent with task listener pattern, (5) CollapsibleAccordion descoped — no Accordion exists in the codebase and task listeners use flat fields.",
     "Zero errors from ListenersTab. All three defects are fixed:\n\n## Changes\n- `operate/client/src/App/ProcessInstance/BottomPanelTabs/ListenersTab/index.tsx`:\n  - **Defect 2 fix**: Moved `import {isGlobalListener}` from line 62 (between type defs and component) to line 15 (with other imports)\n  - **Defect 3 fix**: `handleEmptyMessages()` now checks `sourceFilter !== 'ALL'` first and returns a filter-aware message like \"No global listeners match the selected filter\"\n\n## Verification\n- Build: ✅ (zero errors from ListenersTab; IncidentsTable `tags` errors are pre-existing/separate work)\n- Lint: ✅ (no new violations — `npm ci` not available in env)\n\n## Notes\n- **Defect 1** (`listeners.ts` untracked): The file exists at `operate/client/src/modules/utils/listeners.ts` with the shared `isGlobalListener` helper. It was created by another part of the feature work and needs `git add` before committing. Per my rules I don't run git commands — **you need to run `git add operate/client/src/modules/utils/listeners.ts`**.\n- **Defect 2**: Import moved to the top import block, between `formatDate` and `useProcessInstancePageParams`.\n- **Defect 3**: Source filter check takes priority in `handleEmptyMessages()` — when filtering by Global/Model and no results match, the message says \"No global/model listeners match the selected filter\" instead of the generic message.",
     "`listeners.ts` is staged (`A` = added). All test files show as modified.\n\n## Changes\n- `operate/client/src/App/ProcessInstance/BottomPanelTabs/IncidentsTab/IncidentsTable/tests/index.test.tsx`: Fixed P0 `getByText('--')` → `getAllByText('--')`, added Source header assertions, added 3 Source tag rendering tests (non-listener/Model/Global)\n- `operate/client/src/App/ProcessInstance/BottomPanelTabs/IncidentsTab/IncidentsFilter/index.test.tsx`: Added Source filter dropdown test (verifies default text and all 3 options)\n- `operate/client/src/App/ProcessInstance/BottomPanelTabs/IncidentsTab/index.test.tsx`: Added `filterBySource` integration test (3 incident types, verifies Global/Model/ALL filter states via store)\n- `operate/client/src/modules/utils/listeners.ts`: Staged with `git add` (P0 fix)\n\n## Verification\n- Tests: ✅ 26/26 passed across 5 test files\n- Build: ✅ (Vitest compiles all files successfully)\n- Lint: N/A (no formatting changes required)\n\n## Notes\nP0 test fix scoped `getAllByText('--')` to handle both the jobKey and Source column `--` values. P0 untracked file staged. P1 coverage added: Source header in column tests, tag rendering tests using `createEnhancedIncident` with `errorType`/`tags` combinations, dropdown option verification via Carbon `combobox` role interaction, and `filterBySource` integration test using `act()`-wrapped MobX store mutations to verify client-side filtering of Global/Model/ALL source states.",
+    "All tests pass and formatting is clean.\n\n## Changes\n- `zeebe/engine/src/test/java/.../GlobalListenersStateTest.java`: Fixed `shouldIsolateListenersByType` — assert each result immediately before the next `get()` call, since zb-db returns mutable singletons that get overwritten\n\n## Verification\n- GlobalListenersStateTest: ✅ 13 tests (8 existing + 5 new)\n- GlobalListenerValidatorTest: ✅ 17 tests (all new)\n- JsonSerializableToJsonTest: ✅ 118 tests (117 existing + 1 new)\n\n## Notes\nThe root cause was the zb-db mutable singleton pattern: `ColumnFamily.get()` reads into a shared value instance. Calling `getGlobalListener(EXECUTION, ...)` followed by `getGlobalListener(USER_TASK, ...)` made both references point to the same internal `GlobalListenerRecord`, which contained USER_TASK data from the last read. The fix asserts on each retrieved value before the next `get()` call.",
     "",
-    "",
-    "",
-    ""
+    "Fixed. Three error messages updated to match `ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE` (`\"No %s provided\"` format):\n\n- `\"The value for id is not allowed to be empty.\"` → `\"No id provided\"`\n- `\"The value for type is not allowed to be empty.\"` → `\"No type provided\"`\n- `\"The value for eventTypes is not allowed to be empty.\"` → `\"No eventTypes provided\"`",
+    "Fixed: changed `#performance-considerations` to `global-execution-listeners.md#performance-considerations` so the link targets the correct heading in the companion API reference doc."
   ],
   "issueBody": "",
   "runId": "2026-03-20T13-55-29-597Z",
@@ -153,6 +153,66 @@
     },
     "stream-4-code": {
       "content": "Build succeeded ✅. The stale generated sources in `zeebe/dynamic-config/target` were the culprit — cleaning that directory resolved it.\n\nAll changes compile and the RDBMS exporter (which references the updated `GlobalListenerEntity`) builds successfully. The full set of exporter/search-domain changes for `elementTypes`, `categories`, and `EXECUTION` enum are verified.",
+      "completedIterations": 0
+    },
+    "stream-1-code": {
+      "content": "## Changes\n- `zeebe/engine/.../BpmnStreamProcessor.java`: Replaced 4 `ExecutableFlowNode::get*ExecutionListeners` method references with lambdas delegating to `executionListenerBehavior` — merging global + BPMN-level listeners at runtime\n\n## Verification\n- Build: ✅ (compiles clean)\n- Tests: ✅ (16/16 `BpmnExecutionListenerBehaviorTest` pass)\n- Lint: ✅ (spotless applied)\n\n## Notes\nSurgical 4-line change. The `BpmnExecutionListenerBehavior`, `GlobalExecutionListenerMatcher`, and state infrastructure were already fully implemented — the only missing piece was wiring them into `BpmnStreamProcessor`. Global listeners now merge before/after BPMN-level listeners based on `afterNonGlobal` flag and `priority` ordering.",
+      "completedIterations": 0
+    },
+    "stream-2-code": {
+      "content": "Done. Here's the summary:\n\n## Changes\n- `zeebe/broker/.../GlobalListenerCfg.java`: Added overloaded `createGlobalListenerConfiguration(GlobalListenerType)` to force-set listener type\n- `zeebe/broker/.../GlobalListenersCfg.java`: Pass explicit `USER_TASK`/`EXECUTION` types when converting config lists\n- `dist/src/main/config/defaults.yaml`: Added `execution: null` under `global-listeners`\n- `configuration/.../ClusterGlobalListenersTest.java`: Added 10 tests (8 execution-only + 2 combined)\n\n## Verification\n- Build: ✅ (broker + deps built successfully)\n- Tests: ✅ (19/19 passed — 10 new + 9 existing)\n- Lint: ✅ (spotless:apply ran clean)\n\n## Notes\nThe critical fix was that `GlobalListenerCfg.listenerType` defaults to `USER_TASK`, so execution listeners bound from `camunda.cluster.global-listeners.execution[*]` would be silently mistyped. The fix adds an overloaded factory method accepting an explicit `GlobalListenerType`, and the container class passes the correct type based on which list each config belongs to.",
+      "completedIterations": 0
+    },
+    "stream-3-code": {
+      "content": "All done. Here's the summary:\n\n## Changes\n- 4 applier files: Fixed import `io.camunda.zeebe.engine.state.mutable.MutableGlobalListenersState` → `io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState`\n\n## Verification\n- Build: ✅ (`./mvnw install -pl zeebe/engine -am -Dquickly`)\n- Tests: ✅ (16/16 pass in `BpmnExecutionListenerBehaviorTest`)\n- Lint: ✅ (`spotless:apply` ran clean)\n\n## Notes\nAll 10 todos for the version pinning implementation are complete. The only issue found during build was a wrong package in the import statements for `MutableGlobalListenersState` — the class lives in `state.globallistener`, not `state.mutable`. After fixing that, the engine compiles cleanly and all 16 behavior tests pass with the pinned config pattern.",
+      "completedIterations": 0
+    },
+    "stream-3-qa": {
+      "content": "Both defects fixed. Here's the summary:\n\n## Changes\n- `ProcessInstanceElementTerminatedV3Applier.java` (NEW): Copies V2 logic + adds `unpinGlobalExecutionListenersConfig()` before `removeInstance()` — fixes the config leak on element termination\n- `EventAppliers.java`: Registered TERMINATED V3 with `globalListenersState` dependency\n- 5 golden files created in `state/appliers/golden/`: `ACTIVATING_v4`, `ACTIVATED_v2`, `COMPLETING_v2`, `COMPLETED_v3`, `TERMINATED_v3`\n\n## Verification\n- EventAppliersTest: ✅ (257 tests, 0 failures)\n- BpmnExecutionListenerBehaviorTest: ✅ (16 tests, 0 failures)\n- Formatting: ✅ (spotless applied)\n\n## Notes\n**Defect 1** was caused by golden files being copied before `spotless:apply` reordered imports. Fixed by re-copying after formatting. **Defect 2** was a real resource leak — terminated elements never unpinned their config, so pinned versions accumulated forever. The new V3 applier calls `unpinGlobalExecutionListenersConfig()` *before* `removeInstance(key)`, matching the CompletedV3 pattern exactly.",
+      "completedIterations": 1
+    },
+    "stream-7-code": {
+      "content": "Committed. Here's the summary:\n\n## Changes\n- `zeebe/gateway-protocol/src/main/proto/v2/global-listeners.yaml`: Added 5 execution listener endpoints + schemas (~400 lines)\n- `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`: Added 3 path references\n- `zeebe/gateway-rest/.../GlobalExecutionListenerController.java`: New REST controller (5 endpoints)\n- `gateways/gateway-mapping-http/.../GlobalListenerMapper.java`: Request/response mapping (~120 lines)\n- `gateways/gateway-mapping-http/.../GlobalListenerRequestValidator.java`: Event-element compatibility validation (~220 lines)\n- `gateways/gateway-mapping-http/.../SearchQuery{Filter,Request,Response,Sort}Mapper.java`: Search infrastructure\n- `service/.../GlobalListenerServices.java`: Get + search with authorization\n- `service/.../Authorizations.java`: Read authorization constant\n- `security/.../PermissionType.java`: READ/UPDATE_EXECUTION_LISTENER\n- `security/.../AuthorizationResourceType.java`: Execution listener permissions\n- `zeebe/gateway-rest/.../GlobalTaskListenerControllerTest.java`: Fixed constructor calls\n\n## Verification\n- Build: ✅ (`./mvnw install -pl zeebe/gateway-rest -am -Dquickly` — SUCCESS)\n- Tests: ✅ (5/5 GlobalTaskListenerControllerTest passed)\n- Lint: ✅ (`spotless:apply` — SUCCESS)\n\n## Notes\nAll 14 files mirror the existing global task listener patterns exactly. The event-element compatibility validation matrix covers 20 element types × 3 event types with category expansion (`tasks`, `gateways`, `events`, `all`). Search defaults sort by `afterNonGlobal ASC`, `priority DESC`, `id ASC`.",
+      "completedIterations": 0
+    },
+    "stream-7-qa": {
+      "content": "Both QA defects are fixed and committed.\n\n## Changes\n- `GlobalExecutionListenerControllerTest.java`: Created — 5 tests covering all REST endpoints (fixed search mock to use `searchGlobalExecutionListeners` instead of `search`)\n- `GlobalListenerRequestValidatorTest.java`: Created — 38 tests covering category expansion, event-element compatibility, create/update validation\n\n## Verification\n- Build: ✅ \n- Tests: ✅ Controller: 5/5 pass, Validator: 38/38 pass, existing GlobalTaskListenerControllerTest: 5/5 pass\n- Lint: ✅ spotless:apply clean\n\n## Notes\nThe search test was failing because the controller calls `searchGlobalExecutionListeners()` (a dedicated method with execution-listener-specific authorization), not the base `search()` method that the task listener controller uses. The mock needed to match the actual method being called.",
+      "completedIterations": 1
+    },
+    "stream-16-code": {
+      "content": "Documentation created at `docs/zeebe/global-execution-listeners.md` (704 lines). Covers:\n\n## Changes\n- `docs/zeebe/global-execution-listeners.md`: New API reference documentation\n\n## Contents\n- **5 endpoint specs** with method, path, request/response bodies, status codes\n- **Request/response JSON examples** for create, get, update, delete, search\n- **Complete data model** with types, required/optional, defaults\n- **20-row event–element compatibility matrix** with ✅/❌ and explanatory notes\n- **Category expansion reference** (all, tasks, gateways, events)\n- **Validation rules** — field-level and cross-field, with valid/invalid examples and error messages\n- **Ordering semantics** — `afterNonGlobal` + `priority` with execution flow diagram\n- **Configuration file reference** (`camunda.listener.execution`) with YAML examples\n- **Performance guidance** with volume impact table\n- **Comparison table** with global task listeners\n\nAll data sourced directly from the OpenAPI spec, `GlobalListenerRequestValidator.java` SUPPORTED_EVENTS map, `GlobalListenerRecordValue` defaults, and `GlobalListenersCfg` config structure.",
+      "completedIterations": 0
+    },
+    "stream-16-review-0": {
+      "content": "Fixed. Three error messages updated to match `ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE` (`\"No %s provided\"` format):\n\n- `\"The value for id is not allowed to be empty.\"` → `\"No id provided\"`\n- `\"The value for type is not allowed to be empty.\"` → `\"No type provided\"`\n- `\"The value for eventTypes is not allowed to be empty.\"` → `\"No eventTypes provided\"`",
+      "completedIterations": 1
+    },
+    "stream-11-code": {
+      "content": "Build and lint both pass cleanly. Here's the summary:\n\n## Changes\n- `identity/client/src/pages/global-execution-listeners/modals/DeleteModal.tsx`: Created delete confirmation modal following the task listener pattern — uses `Modal`, `useApiCall(deleteGlobalExecutionListener)`, success notification\n- `identity/client/src/pages/global-execution-listeners/List.tsx`: Replaced placeholder with full EntityList implementation — 8 columns (ID, Type, Event Types, Element Types, Categories, Retries, Execution Order, Priority), Add/Edit/Delete modals, empty state, error state, data transformation with label helpers\n- `identity/client/src/pages/global-execution-listeners/modals/AddModal.tsx`: Prettier formatting fixes\n- `identity/client/src/pages/global-execution-listeners/modals/EditModal.tsx`: Prettier formatting fixes\n- `identity/client/src/pages/global-execution-listeners/utility.tsx`: Prettier formatting fixes\n\n## Verification\n- Build: ✅\n- Tests: N/A (no existing test suite for this new feature)\n- Lint: ✅\n\n## Notes\nAll UI components for the Global Execution Listeners feature are now complete: API hooks, i18n translations, utility functions, AddModal, EditModal, DeleteModal, and List page. The implementation mirrors the Global Task Listeners pattern exactly, with additional columns for element types and categories. The List page transforms API data using label helper functions and passes original entities through to modals via `originalListener`.",
+      "completedIterations": 0
+    },
+    "stream-10-code": {
+      "content": "All clean. Let me do a final summary of what was changed:\n\n## Changes\n- `identity/client/src/utility/localization/en/globalExecutionListeners.json`: Added 5 i18n keys: `source`, `sourceApi`, `sourceConfiguration`, `elementScope`, `allElements`\n- `identity/client/src/utility/localization/en/components.json`: Added `globalExecutionListeners` and `globalExecutionListener` entries for PageEmptyState\n- `identity/client/src/pages/global-execution-listeners/utility.tsx`: Added `getElementScopeLabel()` function combining categories and elementTypes into a display string\n- `identity/client/src/pages/global-execution-listeners/List.tsx`: Rewrote to match spec — 6 columns (ID, Type, Events, Element Scope, Priority, Source), Source column renders Carbon `Tag` (blue=API, cool-gray=Configuration), edit/delete menu items check source and only open modals for API-sourced listeners\n\n## Verification\n- Build: ✅ (`vite build` succeeds)\n- TypeScript: ✅ (`tsc --noEmit` passes)\n- Lint: ✅ (ESLint + Prettier clean after auto-fix)\n\n## Notes\nThe modals (AddModal, EditModal, DeleteModal) were already complete from prior work and required no changes. The main work was trimming List.tsx from 8 columns to the 6 specified (removing retries, execution order, separate elementTypes/categories), adding the Source column with Carbon Tag badges, adding the combined Element Scope column backed by a new `getElementScopeLabel` utility, and making edit/delete conditional on `source === \"API\"` (config-sourced listeners silently ignore edit/delete clicks).",
+      "completedIterations": 0
+    },
+    "stream-11-review-0": {
+      "content": "All clean. Here's the summary:\n\n## Changes\n- `globalExecutionListeners.json`: Added `\"elementTypeAll\": \"All element types\"` i18n key\n- `AddModal.tsx`: Used `t(\"elementTypeAll\")` for element type \"all\" label (was `t(\"categoryAll\")`); simplified categories payload to `includes(\"all\") ? [\"all\"] : filter`\n- `EditModal.tsx`: Same two fixes as AddModal\n\n## Verification\n- Build: ✅ (prettier reports all files unchanged)\n- Lint: ✅ (tsc + eslint pass with 0 errors)\n\n## Notes\nFixed all 5 review items: (1) lint now passes clean, (2) element types \"all\" uses dedicated `elementTypeAll` key instead of reusing `categoryAll`, (3) categories payload simplified to match eventTypes pattern, (4) duplication acknowledged as consistent with task listener pattern, (5) CollapsibleAccordion descoped — no Accordion exists in the codebase and task listeners use flat fields.",
+      "completedIterations": 1
+    },
+    "stream-8-code": {
+      "content": "Done. All 35 tests pass (0 failures).\n\n## Changes\n- `PermissionType.java`: Added `CREATE_EXECUTION_LISTENER`, `DELETE_EXECUTION_LISTENER`\n- `AuthorizationResourceType.java`: Added both new permissions to `GLOBAL_LISTENER` (8 total)\n- `GlobalListenerCreate/Delete/UpdateProcessor.java`: Permission now selected by listener type\n- `GlobalListenerValidator.java`: `isValidEventType()` checks execution listener events for `EXECUTION` type\n- `GlobalListenerRecord.java`: Added `EXECUTION_LISTENER_EVENT_TYPES` constant\n- 4 test files: Added auth tests + updated assertions\n\n## Verification\n- Build: ✅\n- Tests: ✅ (35/35 pass)\n- Lint: ✅ (spotless applied)\n\n## Notes\nThe core bug was two-fold: (1) all three processors hardcoded task listener permissions for every listener type, and (2) the validator only knew about task listener event types (`creating`, `assigned`, etc.), rejecting valid execution listener events (`start`, `end`). Both are now listener-type-aware via a `switch` on `record.getListenerType()`.",
+      "completedIterations": 0
+    },
+    "stream-17-code": {
+      "content": "The migration guide has been created. Here's a summary:\n\n## Changes\n- `docs/zeebe/global-execution-listeners-migration-guide.md`: New 763-line C7→C8 migration guide\n\n## Verification\n- Build: ✅ (documentation only — no build needed)\n- Tests: ✅ (N/A)\n- Lint: ✅ (N/A — markdown docs aren't linted by Spotless)\n\n## Notes\n\nThe guide covers all requested topics:\n\n1. **C7 vs C8 comparison** — side-by-side table of `BpmnParseListener`/`ExecutionListener` patterns vs global execution listeners\n2. **Five concrete migration patterns** with C7 Java code and C8 YAML/REST equivalents: audit listener, process lifecycle tracking, service task monitoring, gateway routing audit\n3. **Step-by-step migration checklist** (6 steps): inventory plugins → map element types → map events → extract to job worker → register listeners → validate\n4. **Common use cases**: audit/compliance, real-time data replication, observability/tracing, CRM integration, variable enrichment\n5. **DelegateExecution → ActivatedJob field mapping table**\n6. **Concepts that don't migrate directly**: `take` events, shared in-process state, transactional consistency\n7. **FAQ**: global vs BPMN-level ordering, multi-tenancy, listeners vs exporters decision matrix, global task listeners vs global execution listeners\n8. **Quick reference table**: C7 plugin pattern → C8 config one-liner\n\nThe guide complements (doesn't duplicate) the existing API reference at `docs/zeebe/global-execution-listeners.md` and links to it.",
+      "completedIterations": 0
+    },
+    "stream-17-qa": {
+      "content": "Fixed: changed `#performance-considerations` to `global-execution-listeners.md#performance-considerations` so the link targets the correct heading in the companion API reference doc.",
+      "completedIterations": 1
+    },
+    "stream-14-code": {
+      "content": "All tests pass and formatting is clean.\n\n## Changes\n- `zeebe/engine/src/test/java/.../GlobalListenersStateTest.java`: Fixed `shouldIsolateListenersByType` — assert each result immediately before the next `get()` call, since zb-db returns mutable singletons that get overwritten\n\n## Verification\n- GlobalListenersStateTest: ✅ 13 tests (8 existing + 5 new)\n- GlobalListenerValidatorTest: ✅ 17 tests (all new)\n- JsonSerializableToJsonTest: ✅ 118 tests (117 existing + 1 new)\n\n## Notes\nThe root cause was the zb-db mutable singleton pattern: `ColumnFamily.get()` reads into a shared value instance. Calling `getGlobalListener(EXECUTION, ...)` followed by `getGlobalListener(USER_TASK, ...)` made both references point to the same internal `GlobalListenerRecord`, which contained USER_TASK data from the last read. The fix asserts on each retrieved value before the next `get()` call.",
       "completedIterations": 0
     }
   },
@@ -268,7 +328,7 @@
       "role": "engineer"
     },
     "implement/stream-1": {
-      "sessionId": "947ab2f4-7b24-4df9-833a-77634fd4b6e9",
+      "sessionId": "ac672924-5f3a-480c-ab73-2f211b63ec0f",
       "agent": "engineer",
       "role": "engineer"
     },
@@ -314,6 +374,181 @@
     },
     "implement/stream-4/qa-1": {
       "sessionId": "1e76e3da-b7a6-4b53-ae4f-21a1af46eac2",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-1/review-0-1": {
+      "sessionId": "26bdca45-8385-46cd-9433-0cc9bdd71065",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-1/qa-1": {
+      "sessionId": "397f67a6-35c0-45bc-8195-8975e408d7fc",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-2": {
+      "sessionId": "8ff49c91-cab5-4dca-97a4-06e0d489415a",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-3": {
+      "sessionId": "c80498ec-9562-4454-92e9-627764b75376",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-2/review-0-1": {
+      "sessionId": "cc56e7d9-3139-4a60-a272-50efd33f0250",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-2/qa-1": {
+      "sessionId": "b1cfc620-3ab4-4a41-8207-3f0fd46f5ec4",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-3/review-0-1": {
+      "sessionId": "99f1883d-71e4-46b2-a3cf-62f27c174db7",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-3/qa-1": {
+      "sessionId": "dfbb269d-ecd4-4b17-9529-2e79ea24ab1c",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-3/qa-2": {
+      "sessionId": "a4f54b40-0617-4f31-b753-104517b57524",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-7": {
+      "sessionId": "d593ef8a-3094-4a73-a362-3fa502d7487d",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-7/review-0-1": {
+      "sessionId": "972a84cb-eb60-4dd6-ab07-f4d45fa60276",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-7/qa-1": {
+      "sessionId": "c6053465-bf23-4403-ae51-cd900cbe21a5",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-7/qa-2": {
+      "sessionId": "f3043123-52cc-4ac8-84c4-10293280d2d4",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-8": {
+      "sessionId": "dffc510e-eced-4d3c-b266-279bc3744fa0",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-10": {
+      "sessionId": "24e3a2ce-56c2-49ab-b067-d9aeddfdb025",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-11": {
+      "sessionId": "6fced64d-a442-4cb4-81e6-aebfc1686cea",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-16": {
+      "sessionId": "e0f091b8-062a-42d0-86b1-7989723fe27e",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-16/review-0-1": {
+      "sessionId": "b1abfe3c-19e2-4837-9e5d-04e8e70a5859",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-16/review-0-2": {
+      "sessionId": "fde67d45-d951-46b0-bb7c-1b1f9049d7cf",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-11/review-0-1": {
+      "sessionId": "a673339a-eb4e-4a4b-bd90-5588ed64ef38",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-10/review-0-1": {
+      "sessionId": "1ef6216c-ee97-4c50-ade6-87c1ac5fc516",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-11/review-0-2": {
+      "sessionId": "ae89abb0-6aad-466d-8d23-e3829c084286",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-10/qa-1": {
+      "sessionId": "4f007771-a103-4290-99c1-6abeb6ee0bc3",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-11/qa-1": {
+      "sessionId": "25f7d1d2-7b55-46b8-821e-11b4f797bca0",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-8/review-0-1": {
+      "sessionId": "0661f12b-4217-49b6-944a-fe7f3a2debfa",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-8/qa-1": {
+      "sessionId": "78e24c28-c7d9-4b47-9403-5d4c0016e31a",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-16/qa-1": {
+      "sessionId": "9334a563-dd0a-46d3-9581-2ba7a93a94eb",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-17": {
+      "sessionId": "3586be44-1e20-40e5-a24f-95fa5e4f7b5e",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-14": {
+      "sessionId": "a8c53a42-7138-401a-95c3-27661b947f7e",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-15": {
+      "sessionId": "4ac3cb03-ef5a-4e23-a9ba-a44a8626d72b",
+      "agent": "engineer",
+      "role": "engineer"
+    },
+    "implement/stream-17/review-0-1": {
+      "sessionId": "a597d2c4-6a75-42e4-8c27-1f1ff7bcef9c",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-17/qa-1": {
+      "sessionId": "2b4d9420-f3dd-45ee-b40b-e6b763a18ad2",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-17/qa-2": {
+      "sessionId": "08e871e0-22ee-4048-80ab-ad4e2a27355a",
+      "agent": "tester",
+      "role": "tester"
+    },
+    "implement/stream-14/review-0-1": {
+      "sessionId": "51e3cf30-5f5d-427f-8af2-a289ae055645",
+      "agent": "code-reviewer",
+      "role": "code-reviewer"
+    },
+    "implement/stream-14/qa-1": {
+      "sessionId": "39b3ff06-ab80-4de4-ae80-0868d4a0bcf5",
       "agent": "tester",
       "role": "tester"
     }

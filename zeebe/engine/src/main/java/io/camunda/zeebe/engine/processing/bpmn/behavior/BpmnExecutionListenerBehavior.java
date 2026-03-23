@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
@@ -31,9 +32,13 @@ import java.util.List;
 public final class BpmnExecutionListenerBehavior {
 
   private final GlobalListenersState globalListenersState;
+  private final ElementInstanceState elementInstanceState;
 
-  public BpmnExecutionListenerBehavior(final GlobalListenersState globalListenersState) {
+  public BpmnExecutionListenerBehavior(
+      final GlobalListenersState globalListenersState,
+      final ElementInstanceState elementInstanceState) {
     this.globalListenersState = globalListenersState;
+    this.elementInstanceState = elementInstanceState;
   }
 
   /**
@@ -43,7 +48,10 @@ public final class BpmnExecutionListenerBehavior {
   public List<ExecutionListener> getStartExecutionListeners(
       final ExecutableFlowNode node, final BpmnElementContext context) {
     return getMergedExecutionListeners(
-        node.getStartExecutionListeners(), context.getBpmnElementType(), "start");
+        node.getStartExecutionListeners(),
+        context.getBpmnElementType(),
+        "start",
+        context.getElementInstanceKey());
   }
 
   /**
@@ -53,20 +61,34 @@ public final class BpmnExecutionListenerBehavior {
   public List<ExecutionListener> getEndExecutionListeners(
       final ExecutableFlowNode node, final BpmnElementContext context) {
     return getMergedExecutionListeners(
-        node.getEndExecutionListeners(), context.getBpmnElementType(), "end");
+        node.getEndExecutionListeners(),
+        context.getBpmnElementType(),
+        "end",
+        context.getElementInstanceKey());
   }
 
   private List<ExecutionListener> getMergedExecutionListeners(
       final List<ExecutionListener> bpmnListeners,
       final BpmnElementType bpmnElementType,
-      final String eventType) {
+      final String eventType,
+      final long elementInstanceKey) {
 
-    final var currentConfig = globalListenersState.getCurrentConfig();
-    if (currentConfig == null) {
+    final var instance = elementInstanceState.getInstance(elementInstanceKey);
+    if (instance == null) {
       return bpmnListeners;
     }
 
-    final var globalListeners = currentConfig.getExecutionListeners();
+    final long configKey = instance.getExecutionListenersConfigKey();
+    if (configKey < 0) {
+      return bpmnListeners;
+    }
+
+    final var pinnedConfig = globalListenersState.getVersionedConfig(configKey);
+    if (pinnedConfig == null) {
+      return bpmnListeners;
+    }
+
+    final var globalListeners = pinnedConfig.getExecutionListeners();
     if (globalListeners.isEmpty()) {
       return bpmnListeners;
     }

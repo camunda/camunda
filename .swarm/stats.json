@@ -101,33 +101,33 @@
       }
     },
     "tester": {
-      "invocations": 5,
-      "totalElapsedMs": 1571178,
+      "invocations": 18,
+      "totalElapsedMs": 4294637,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 5
+        "claude-opus-4-6": 18
       }
     },
     "engineer": {
-      "invocations": 7,
-      "totalElapsedMs": 9182211,
+      "invocations": 18,
+      "totalElapsedMs": 25012478,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 7
+        "claude-opus-4-6": 18
       }
     },
     "code-reviewer": {
-      "invocations": 6,
-      "totalElapsedMs": 917535,
+      "invocations": 18,
+      "totalElapsedMs": 4197502,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 6
+        "claude-opus-4-6": 18
       }
     }
   },
-  "totalRuns": 1,
-  "lastUpdated": "2026-03-20T16:44:46.427Z"
+  "totalRuns": 2,
+  "lastUpdated": "2026-03-23T12:42:06.892Z"
 }

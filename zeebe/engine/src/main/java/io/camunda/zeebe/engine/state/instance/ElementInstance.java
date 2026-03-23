@@ -53,6 +53,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private static final StringValue COMPLETION_CONDITION_FULFILLED =
       new StringValue("completionConditionFulfilled");
   private static final StringValue PROCESS_DEPTH = new StringValue("processDepth");
+  private static final StringValue EXECUTION_LISTENERS_CONFIG_KEY =
+      new StringValue("executionListenersConfigKey");
   private final LongProperty parentKeyProp = new LongProperty(PARENT_KEY, -1L);
   private final IntegerProperty childCountProp = new IntegerProperty(CHILD_COUNT, 0);
   private final IntegerProperty childActivatedCountProp =
@@ -84,6 +86,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty processDepth = new IntegerProperty(PROCESS_DEPTH, 1);
   private final BooleanProperty completionConditionFulfilledProp =
       new BooleanProperty(COMPLETION_CONDITION_FULFILLED, false);
+  private final LongProperty executionListenersConfigKeyProp =
+      new LongProperty(EXECUTION_LISTENERS_CONFIG_KEY, -1L);
 
   /**
    * Expresses the current depth of the process instance in the called process tree.
@@ -100,7 +104,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    *     the property existed, will not have a correct depth.
    */
   public ElementInstance() {
-    super(18);
+    super(19);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -118,7 +122,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(taskListenerIndicesRecordProp)
         .declareProperty(processDepth)
         .declareProperty(interruptedByRuntimeInstructionProp)
-        .declareProperty(completionConditionFulfilledProp);
+        .declareProperty(completionConditionFulfilledProp)
+        .declareProperty(executionListenersConfigKeyProp);
   }
 
   public ElementInstance(
@@ -381,5 +386,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setCompletionConditionFulfilled(final boolean fulfilled) {
     completionConditionFulfilledProp.setValue(fulfilled);
+  }
+
+  public long getExecutionListenersConfigKey() {
+    return executionListenersConfigKeyProp.getValue();
+  }
+
+  public void setExecutionListenersConfigKey(final long configKey) {
+    executionListenersConfigKeyProp.setValue(configKey);
   }
 }

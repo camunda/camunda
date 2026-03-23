@@ -280,7 +280,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState);
 
     executionListenerBehavior =
-        new BpmnExecutionListenerBehavior(processingState.getGlobalListenersState());
+        new BpmnExecutionListenerBehavior(
+            processingState.getGlobalListenersState(), processingState.getElementInstanceState());
   }
 
   @Override

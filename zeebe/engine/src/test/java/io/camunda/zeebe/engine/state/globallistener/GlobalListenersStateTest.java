@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
 import java.util.Random;
 import org.assertj.core.api.Assertions;
@@ -153,6 +154,123 @@ public class GlobalListenersStateTest {
 
     // then
     Assertions.assertThat(globalListenersState.isConfigurationVersionPinned(versionKey)).isFalse();
+  }
+
+  // --- Execution listener specific tests ---
+
+  @Test
+  public void shouldCreateAndRetrieveExecutionListenerById() {
+    // given
+    final var record =
+        new GlobalListenerRecord()
+            .setId("exec-listener-1")
+            .setListenerType(GlobalListenerType.EXECUTION)
+            .setType("audit-job")
+            .setEventTypes(List.of("start", "end"))
+            .setRetries(3);
+    globalListenersState.create(record);
+
+    // when
+    final var retrieved =
+        globalListenersState.getGlobalListener(GlobalListenerType.EXECUTION, "exec-listener-1");
+
+    // then
+    Assertions.assertThat(retrieved).isNotNull();
+    assertThat(retrieved).hasId("exec-listener-1").hasType("audit-job").hasRetries(3);
+    Assertions.assertThat(retrieved.getEventTypes()).containsExactly("start", "end");
+    Assertions.assertThat(retrieved.getListenerType()).isEqualTo(GlobalListenerType.EXECUTION);
+  }
+
+  @Test
+  public void shouldReturnNullForNonExistentListener() {
+    // when
+    final var retrieved =
+        globalListenersState.getGlobalListener(GlobalListenerType.EXECUTION, "does-not-exist");
+
+    // then
+    Assertions.assertThat(retrieved).isNull();
+  }
+
+  @Test
+  public void shouldIsolateListenersByType() {
+    // given — two listeners with the same id but different types
+    final var executionListener =
+        new GlobalListenerRecord()
+            .setId("listener-1")
+            .setListenerType(GlobalListenerType.EXECUTION)
+            .setType("exec-job")
+            .setEventTypes(List.of("start"));
+    final var taskListener =
+        new GlobalListenerRecord()
+            .setId("listener-1")
+            .setListenerType(GlobalListenerType.USER_TASK)
+            .setType("task-job")
+            .setEventTypes(List.of("creating"));
+    globalListenersState.create(executionListener);
+    globalListenersState.create(taskListener);
+
+    // when/then — assert each result before the next get() call because
+    // zb-db uses mutable singletons: the second get() overwrites the first result's buffer
+    final var retrievedExec =
+        globalListenersState.getGlobalListener(GlobalListenerType.EXECUTION, "listener-1");
+    Assertions.assertThat(retrievedExec).isNotNull();
+    assertThat(retrievedExec).hasType("exec-job");
+    Assertions.assertThat(retrievedExec.getListenerType()).isEqualTo(GlobalListenerType.EXECUTION);
+
+    final var retrievedTask =
+        globalListenersState.getGlobalListener(GlobalListenerType.USER_TASK, "listener-1");
+    Assertions.assertThat(retrievedTask).isNotNull();
+    assertThat(retrievedTask).hasType("task-job");
+    Assertions.assertThat(retrievedTask.getListenerType()).isEqualTo(GlobalListenerType.USER_TASK);
+  }
+
+  @Test
+  public void shouldStoreExecutionListenerWithElementTypesAndCategories() {
+    // given
+    final var record =
+        new GlobalListenerRecord()
+            .setId("el-categories")
+            .setListenerType(GlobalListenerType.EXECUTION)
+            .setType("audit-job")
+            .setEventTypes(List.of("start", "end"))
+            .setElementTypes(List.of("serviceTask", "process"))
+            .setCategories(List.of("gateways"))
+            .setRetries(5);
+    globalListenersState.create(record);
+
+    // when
+    final var retrieved =
+        globalListenersState.getGlobalListener(GlobalListenerType.EXECUTION, "el-categories");
+
+    // then — elementTypes and categories survive the round-trip
+    Assertions.assertThat(retrieved).isNotNull();
+    Assertions.assertThat(retrieved.getElementTypes()).containsExactly("serviceTask", "process");
+    Assertions.assertThat(retrieved.getCategories()).containsExactly("gateways");
+    Assertions.assertThat(retrieved.getEventTypes()).containsExactly("start", "end");
+    assertThat(retrieved).hasRetries(5);
+  }
+
+  @Test
+  public void shouldDeleteExecutionListenerById() {
+    // given
+    final var record =
+        new GlobalListenerRecord()
+            .setId("to-delete")
+            .setListenerType(GlobalListenerType.EXECUTION)
+            .setType("audit-job")
+            .setEventTypes(List.of("start"));
+    globalListenersState.create(record);
+    Assertions.assertThat(
+            globalListenersState.getGlobalListener(GlobalListenerType.EXECUTION, "to-delete"))
+        .isNotNull();
+
+    // when
+    globalListenersState.delete(record);
+
+    // then
+    Assertions.assertThat(
+            globalListenersState.getGlobalListener(GlobalListenerType.EXECUTION, "to-delete"))
+        .isNull();
   }
 
   private void updateCurrentConfiguration(final GlobalListenerBatchRecord newConfig) {
