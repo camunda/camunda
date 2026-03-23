@@ -97,7 +97,7 @@ To set this value permanently, update the `vm.max_map_count` setting in /etc/sys
 
 On Operate we use Playwright for visual regression testing. These tests run on every push on every branch through Github Actions.
 
-Visual tests use a [Playwright Server in Docker](https://playwright.dev/docs/docker#remote-connection) to ensure consistent rendering across development machines and CI. The Docker container is started and stopped automatically by Playwright.
+On local machines, visual tests use a [Playwright Server in Docker](https://playwright.dev/docs/docker#remote-connection) to ensure consistent rendering across all environments. In CI, the tests run directly inside the Playwright Docker image without using the remote server connection. The Docker container is started and stopped automatically by Playwright.
 
 ### Prerequisites
 
