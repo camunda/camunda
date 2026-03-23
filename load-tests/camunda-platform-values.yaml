@@ -34,6 +34,11 @@ global:
       - name: harbor-registry
   # Identity authentication is enabled for Optimize
   identity:
+    keycloak:
+      auth:
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-keycloak-admin-password
     auth:
       enabled: true
       optimize:
