@@ -1,0 +1,156 @@
+# mssql.yaml — Plain Kubernetes manifests for Microsoft SQL Server 2022.
+#
+# Replaces the xrow/mssql Helm chart, which relies on OpenShift-specific
+# Security Context Constraints (SCC) RoleBindings unavailable on standard
+# Kubernetes clusters.
+#
+# No custom entrypoint is needed: the JDBC URL carries no databaseName, so
+# the application connects to master and manages its own schema (same as the
+# db/docker-compose.yml setup). Just env vars, identical pattern to local dev.
+#
+# Resources mirror the former Helm chart values:
+#   image           : mcr.microsoft.com/mssql/server:2022-latest
+#   storage         : 128 Gi, storageClass ssd (ReadWriteOnce)
+#   requests/limits : 4 Gi / 3 CPU  →  6 Gi / 3 CPU
+#   nodeSelector    : component=benchmark-n2-standard-4
+#   SA password     : Camunda#8_demo  ← load-test only, NOT for production
+#
+# The ClusterIP Service is named "mssql" to match the JDBC URL in
+# camunda-platform-values-mssql.yaml:
+#   jdbc:sqlserver://mssql:1433;Encrypt=false
+
+---
+# SA password – referenced by the StatefulSet container.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mssql-secret
+  labels:
+    app.kubernetes.io/name: mssql
+type: Opaque
+stringData:
+  SA_PASSWORD: "Camunda#8_demo"
+
+
+---
+# ClusterIP Service — "mssql" resolves to this service inside the namespace.
+# JDBC URL: jdbc:sqlserver://mssql:1433;Encrypt=false
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql
+  labels:
+    app.kubernetes.io/name: mssql
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mssql
+  ports:
+    - name: mssql
+      port: 1433
+      targetPort: 1433
+      protocol: TCP
+
+---
+# StatefulSet — single replica with a 128 Gi SSD PVC.
+# The volumeClaimTemplate creates a PVC named "mssql-data-mssql-0";
+# this PVC is NOT removed automatically when the StatefulSet is deleted
+# (see the clean target in the Makefile for explicit PVC cleanup).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssql
+  labels:
+    app.kubernetes.io/name: mssql
+spec:
+  serviceName: mssql
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mssql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mssql
+    spec:
+      # fsGroup 10001 ensures the mounted volume is writable by the mssql user
+      # inside the Microsoft SQL Server container image.
+      securityContext:
+        fsGroup: 10001
+
+      nodeSelector:
+        component: benchmark-n2-standard-4
+
+      tolerations:
+        - key: nodepool
+          operator: Equal
+          value: n2-standard-4
+          effect: NoSchedule
+
+      containers:
+        - name: mssql
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: SA_PASSWORD
+          ports:
+            - name: mssql
+              containerPort: 1433
+              protocol: TCP
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: "3000m"
+            limits:
+              memory: 6Gi
+              cpu: "3000m"
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - >-
+                  /opt/mssql-tools18/bin/sqlcmd
+                  -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C
+                  -Q "SELECT 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - >-
+                  /opt/mssql-tools18/bin/sqlcmd
+                  -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C
+                  -Q "SELECT 1"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: mssql-data
+              mountPath: /var/opt/mssql
+
+  # PVC template — creates "mssql-data-mssql-0" on first deployment.
+  # storageClass "ssd" provisions a 128 Gi SSD-backed volume.
+  volumeClaimTemplates:
+    - metadata:
+        name: mssql-data
+        labels:
+          app.kubernetes.io/name: mssql
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: ssd
+        resources:
+          requests:
+            storage: 128Gi
+
