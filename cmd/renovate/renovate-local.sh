@@ -8,6 +8,12 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
+# Ensure jq is installed (used for safe JSON construction of secrets)
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is not installed. Please install it (e.g. 'brew install jq' or 'apt install jq')."
+  exit 1
+fi
+
 # Login to GitHub CLI if not already authenticated
 if [ ! "$(gh auth status)" ]; then
   gh auth login -p https -h github.com -w
@@ -60,7 +66,7 @@ vault_field_for_secret() {
 # otherwise fall back to dummy values so the dry-run can still proceed.
 RENOVATE_SECRETS="{}"
 secret_names=$(grep -oE '\{\{\s*secrets\.[A-Z_a-z0-9]+\s*\}\}' "$LOCAL_RENOVATE_CONFIG" \
-  | sed 's/.*secrets\.\([A-Za-z0-9_]*\).*/\1/' | sort -u)
+  | sed 's/.*secrets\.\([A-Za-z0-9_]*\).*/\1/' | sort -u || true)
 if [ -n "$secret_names" ]; then
   vault_ok=false
   if command -v vault >/dev/null 2>&1 && vault token lookup >/dev/null 2>&1; then
@@ -70,10 +76,8 @@ if [ -n "$secret_names" ]; then
     echo "Vault not available — using dummy secret values (run 'vault login -method=oidc' for real values)"
   fi
 
-  json="{"
-  first=true
+  RENOVATE_SECRETS="{}"
   for name in $secret_names; do
-    if [ "$first" = true ]; then first=false; else json+=","; fi
     value="dummy-local-value"
     vault_field=$(vault_field_for_secret "$name")
 
@@ -89,10 +93,8 @@ if [ -n "$secret_names" ]; then
       echo "  ? $name: no Vault mapping defined, using dummy value"
     fi
 
-    json+="\"$name\":\"$value\""
+    RENOVATE_SECRETS=$(echo "$RENOVATE_SECRETS" | jq --arg k "$name" --arg v "$value" '. + {($k): $v}')
   done
-  json+="}"
-  RENOVATE_SECRETS="$json"
 fi
 
 echo "Processing repository: ${REPO_NAME}"

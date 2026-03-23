@@ -8,6 +8,7 @@ You can make use of the script [renovate-local.sh](./renovate-local.sh) to do so
 > [!IMPORTANT]
 > - [GitHub CLI](https://github.com/cli/cli/blob/trunk/docs/install_linux.md) — required
 > - [Docker](https://docs.docker.com/get-docker/) — required (runs the Renovate container)
+> - [jq](https://jqlang.github.io/jq/download/) — required (JSON processing for secrets)
 > - [HashiCorp Vault CLI](https://developer.hashicorp.com/vault/install) — recommended for proper testing with real registry credentials
 
 ### Installing Vault CLI
