@@ -106,7 +106,10 @@ public class VariableResponse {
     return new VariableResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
-        .setValue(variableEntity.getFullValue())
+        .setValue(
+            variableEntity.getIsPreview()
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue())
         .setTenantId(variableEntity.getTenantId());
   }
 
