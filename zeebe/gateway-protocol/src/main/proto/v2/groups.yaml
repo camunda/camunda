@@ -59,7 +59,7 @@ paths:
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
-          $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
   /groups/{groupId}:
     get:
