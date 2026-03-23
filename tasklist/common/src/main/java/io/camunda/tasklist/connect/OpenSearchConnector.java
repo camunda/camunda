@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.os;
+package io.camunda.tasklist.connect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginRepository;
@@ -90,12 +90,12 @@ public class OpenSearchConnector {
   }
 
   @VisibleForTesting
-  public void setTasklistProperties(final TasklistProperties tasklistProperties) {
+  void setTasklistProperties(final TasklistProperties tasklistProperties) {
     this.tasklistProperties = tasklistProperties;
   }
 
   @VisibleForTesting
-  public void setTasklistObjectMapper(final ObjectMapper tasklistObjectMapper) {
+  void setTasklistObjectMapper(final ObjectMapper tasklistObjectMapper) {
     this.tasklistObjectMapper = tasklistObjectMapper;
   }
 
@@ -354,7 +354,7 @@ public class OpenSearchConnector {
   }
 
   @VisibleForTesting
-  public boolean isHealthy(final OpenSearchClient osClient) {
+  boolean isHealthy(final OpenSearchClient osClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
     if (!osConfig.isHealthCheckEnabled()) {
       LOGGER.debug("Opensearch health check is disabled");
