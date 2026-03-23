@@ -3146,23 +3146,6 @@ public record %s(
     return sb.toString();
   }
 
-  // -- Helpers for resolving imports --
-
-  private static String resolveEntityImport(String entityClass, String explicitImport) {
-    if (explicitImport != null) return explicitImport;
-    return "io.camunda.search.entities." + entityClass;
-  }
-
-  private static String resolveAdapterImport(String adapterClass, String explicitImport) {
-    if (explicitImport != null) return explicitImport;
-    return "io.camunda.gateway.mapping.http.search.contract." + adapterClass;
-  }
-
-  private static String resolveQueryImport(String queryClass, String explicitImport) {
-    if (explicitImport != null) return explicitImport;
-    return "io.camunda.search.query." + queryClass;
-  }
-
   private static String simpleClassName(String className) {
     final int dotIdx = className.lastIndexOf('.');
     return dotIdx >= 0 ? className.substring(dotIdx + 1) : className;
