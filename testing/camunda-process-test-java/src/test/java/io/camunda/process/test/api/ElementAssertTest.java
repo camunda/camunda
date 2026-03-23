@@ -95,6 +95,8 @@ public class ElementAssertTest {
 
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Arrays.asList(elementInstanceA, elementInstanceB, elementInstanceC));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
     }
 
     @AfterEach
@@ -104,15 +106,14 @@ public class ElementAssertTest {
 
     @Test
     public void canCombineSelectors() {
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
+      // given
       final ElementSelector combined =
           ElementSelectors.byName("element_A").and(ElementSelectors.byId("A"));
 
+      // when
       CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements(combined);
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
@@ -123,13 +124,11 @@ public class ElementAssertTest {
     @Test
     @CamundaAssertExpectFailure
     public void combinedSelectorsRequireAllTestsToPass() {
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
+      // given
       final ElementSelector badCombination =
           ElementSelectors.byName("element_Foo").and(ElementSelectors.byId("A"));
 
+      // when/then
       Assertions.assertThatThrownBy(
               () ->
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -153,6 +152,8 @@ public class ElementAssertTest {
 
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Arrays.asList(elementInstanceA, elementInstanceB, elementInstanceC));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
     }
 
     @AfterEach
@@ -163,11 +164,9 @@ public class ElementAssertTest {
     @Test
     void shouldUseStringSelector() {
       // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements("A");
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
@@ -178,10 +177,7 @@ public class ElementAssertTest {
     @Test
     @CamundaAssertExpectFailure
     void shouldFailWithStringSelector() {
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
+      // when/then
       Assertions.assertThatThrownBy(
               () ->
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -199,22 +195,23 @@ public class ElementAssertTest {
       CamundaAssert.setElementSelector(ElementSelectors::byName);
 
       // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements("element_A");
 
       // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasActiveElements("element_A", "element_B");
+      verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
+
+      elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(elementInstanceFilter).elementName("element_A");
     }
 
     @Test
     void shouldUseByIdSelector() {
       // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(ElementSelectors.byId("A"));
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
@@ -225,10 +222,7 @@ public class ElementAssertTest {
     @Test
     @CamundaAssertExpectFailure
     void shouldFailWithByIdSelector() {
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
+      // when/then
       Assertions.assertThatThrownBy(
               () ->
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -246,29 +240,26 @@ public class ElementAssertTest {
     @Test
     void shouldUseByNameSelector() {
       // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(ElementSelectors.byName("element_A"));
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
       verify(elementInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(elementInstanceFilter).elementName("element_A");
     }
 
     @Test
     @CamundaAssertExpectFailure
     void shouldFailWithByNameSelector() {
       // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(
               ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
 
+      // then
       Assertions.assertThatThrownBy(
               () ->
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -293,13 +284,13 @@ public class ElementAssertTest {
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Collections.singletonList(elementInstanceA));
 
-      // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      // then
+      // when
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(ElementSelectors.byElementType(ElementInstanceType.SERVICE_TASK));
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
@@ -318,13 +309,13 @@ public class ElementAssertTest {
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Collections.singletonList(elementInstanceA));
 
-      // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      // then
+      // when
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(ElementSelectors.byElementInstanceKey(elementInstanceKey));
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
@@ -340,13 +331,13 @@ public class ElementAssertTest {
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Collections.singletonList(elementInstanceA));
 
-      // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      // then
+      // when
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(ElementSelectors.byState(ElementInstanceState.ACTIVE));
 
+      // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
       elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
