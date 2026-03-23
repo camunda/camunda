@@ -22,7 +22,6 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.List;
 
 /**
  * ArchUnit rules to enforce correct usage of the {@link io.camunda.zeebe.util.VisibleForTesting}
@@ -32,15 +31,10 @@ import java.util.List;
  * accessed from test code or from within the same class (self-usage). This prevents accidental
  * usage in production code outside their intended scope.
  *
- * <p>Some classes are excluded from these rules via the {@code EXCLUDED_CLASS_NAMES} list. These
- * should be investigated and removed from the exclusion list over time.
- *
  * @see io.camunda.zeebe.util.VisibleForTesting
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public class VisibleForTestingArchTest {
-
-  static final List<String> EXCLUDED_CLASS_NAMES = List.of();
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
@@ -121,9 +115,7 @@ public class VisibleForTestingArchTest {
   }
 
   private static boolean isViolation(final JavaClass javaOwner, final JavaClass javaOriginOwner) {
-    return !isCalledBySelf(javaOwner, javaOriginOwner)
-        && !isTestClass(javaOriginOwner)
-        && !isExcludedClass(javaOwner);
+    return !isCalledBySelf(javaOwner, javaOriginOwner) && !isTestClass(javaOriginOwner);
   }
 
   private static boolean isTestClass(final JavaClass javaClass) {
@@ -144,9 +136,5 @@ public class VisibleForTestingArchTest {
       topLevelClass = topLevelClass.getEnclosingClass().get();
     }
     return topLevelClass;
-  }
-
-  private static boolean isExcludedClass(final JavaClass javaClass) {
-    return EXCLUDED_CLASS_NAMES.contains(javaClass.getFullName());
   }
 }
