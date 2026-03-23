@@ -23,6 +23,14 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
+const generateFutureDates = () => {
+  const now = new Date();
+  return {
+    dueDate: new Date(now.getFullYear() + 1, 11, 31, 23, 59, 59, 0).toISOString(),
+    followUpDate: new Date(now.getFullYear() + 1, 5, 15, 10, 0, 0, 0).toISOString(),
+  };
+};
+  
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Update User Task Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} =
@@ -42,8 +50,8 @@ test.describe.parallel('Update User Task Tests', () => {
       headers: jsonHeaders(),
       data: {
         changeset: {
-          dueDate: '2026-12-31T23:59:59.000Z',
-          followUpDate: '2026-06-15T10:00:00.000Z',
+          dueDate: generateFutureDates().dueDate,
+          followUpDate: generateFutureDates().followUpDate,
           candidateUsers: ['user1', 'user2'],
           candidateGroups: ['group1', 'group2'],
           priority: 80,
@@ -66,7 +74,7 @@ test.describe.parallel('Update User Task Tests', () => {
       headers: jsonHeaders(),
       data: {
         changeset: {
-          dueDate: '2026-12-31T23:59:59.000Z',
+          dueDate: generateFutureDates().dueDate,
         },
       },
     });
@@ -85,7 +93,7 @@ test.describe.parallel('Update User Task Tests', () => {
       headers: jsonHeaders(),
       data: {
         changeset: {
-          followUpDate: '2026-06-15T10:00:00.000Z',
+          followUpDate: generateFutureDates().followUpDate,
         },
       },
     });
@@ -233,6 +241,8 @@ test.describe.parallel('Update User Task Tests', () => {
       'CREATED',
     );
 
+    const dueDate = generateFutureDates().dueDate;
+
     await test.step('Update the user task', async () => {
       const updateRes = await request.patch(
         buildUrl(`/user-tasks/${userTaskKey}`),
@@ -240,7 +250,7 @@ test.describe.parallel('Update User Task Tests', () => {
           headers: jsonHeaders(),
           data: {
             changeset: {
-              dueDate: '2026-12-31T23:59:59.000Z',
+              dueDate: dueDate,
               candidateUsers: ['verifyUser'],
               priority: 90,
             },
@@ -260,7 +270,7 @@ test.describe.parallel('Update User Task Tests', () => {
         );
         await assertStatusCode(getRes, 200);
         const json = await getRes.json();
-        expect(json.dueDate).toBe('2026-12-31T23:59:59.000Z');
+        expect(json.dueDate).toBe(dueDate);
         expect(json.candidateUsers).toEqual(['verifyUser']);
         expect(json.priority).toBe(90);
       }).toPass(defaultAssertionOptions);
