@@ -18,16 +18,21 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -62,29 +67,29 @@ final class BulkIndexRequest {
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(DecisionRequirementsMetadataValue.class, IgnoreDeploymentKeyMixin.class)
+          .addMixIn(DecisionRequirementsRecordValue.class, IgnoreDeploymentKeyMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(IncidentRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(JobBatchRecordValue.class, JobBatchMixin.class)
           .addMixIn(
               JobRecordValue.class,
               IgnoreRootProcessInstanceKeyAndJobToUserTaskMigrationMixin.class)
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .addMixIn(
               ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
           .addMixIn(
-              ProcessInstanceRecordValue.class,
-              IgnoreRootProcessInstanceKeyAndBusinessIdMixin.class)
-          .addMixIn(
               ProcessInstanceModificationRecordValue.class, ProcessInstanceModificationMixin.class)
-          .addMixIn(
-              ProcessInstanceCreationRecordValue.class,
-              IgnoreRootProcessInstanceKeyAndBusinessIdMixin.class)
-          .addMixIn(
-              ProcessInstanceMigrationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationMixin.class)
+          .addMixIn(ProcessInstanceMigrationRecordValue.class, ProcessInstanceMigrationMixin.class)
           .addMixIn(
               ProcessInstanceModificationTerminateInstructionValue.class,
               TerminateInstructionsMixin.class)
-          .addMixIn(UserTaskRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
-          .addMixIn(VariableRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(ProcessInstanceBatchRecordValue.class, IgnoreProcessDefinitionKeyMixin.class)
+          .addMixIn(ResourceDeletionRecordValue.class, ResourceDeletionMixin.class)
+          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
+          .addMixIn(VariableRecordValue.class, VariableMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -104,6 +109,19 @@ final class BulkIndexRequest {
   private static final String ROOT_PROCESS_INSTANCE_KEY_PROPERTY = "rootProcessInstanceKey";
   private static final String BUSINESS_ID_PROPERTY = "businessId";
   private static final String JOB_TO_USER_TASK_MIGRATION_PROPERTY = "jobToUserTaskMigration";
+  private static final String ELEMENT_INSTANCE_KEY_PROPERTY = "elementInstanceKey";
+  private static final String TAGS_PROPERTY = "tags";
+  private static final String TENANT_FILTER_PROPERTY = "tenantFilter";
+  private static final String SOURCE_PROPERTY = "source";
+  private static final String LISTENERS_CONFIG_KEY_PROPERTY = "listenersConfigKey";
+  private static final String TENANT_ID_PROPERTY = "tenantId";
+  private static final String BPMN_PROCESS_ID_PROPERTY = "bpmnProcessId";
+  private static final String DEPLOYMENT_KEY_PROPERTY = "deploymentKey";
+  private static final String DELETE_HISTORY_PROPERTY = "deleteHistory";
+  private static final String BATCH_OPERATION_KEY_PROPERTY = "batchOperationKey";
+  private static final String BATCH_OPERATION_TYPE_PROPERTY = "batchOperationType";
+  private static final String RESOURCE_TYPE_PROPERTY = "resourceType";
+  private static final String RESOURCE_ID_PROPERTY = "resourceId";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -259,11 +277,65 @@ final class BulkIndexRequest {
   @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY})
   private static final class IgnoreRootProcessInstanceKeyMixin {}
 
-  @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY, BUSINESS_ID_PROPERTY})
-  private static final class IgnoreRootProcessInstanceKeyAndBusinessIdMixin {}
-
   @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY, JOB_TO_USER_TASK_MIGRATION_PROPERTY})
   private static final class IgnoreRootProcessInstanceKeyAndJobToUserTaskMigrationMixin {}
+
+  @JsonIgnoreProperties({
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY,
+    BUSINESS_ID_PROPERTY,
+    ELEMENT_INSTANCE_KEY_PROPERTY,
+    TAGS_PROPERTY
+  })
+  private static final class ProcessInstanceMixin {}
+
+  @JsonIgnoreProperties({
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY,
+    BUSINESS_ID_PROPERTY,
+    ELEMENT_INSTANCE_KEY_PROPERTY,
+    TAGS_PROPERTY
+  })
+  private static final class ProcessInstanceCreationMixin {}
+
+  @JsonIgnoreProperties({TENANT_FILTER_PROPERTY})
+  private static final class JobBatchMixin {}
+
+  @JsonIgnoreProperties({
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY,
+    ELEMENT_INSTANCE_KEY_PROPERTY,
+    SOURCE_PROPERTY
+  })
+  private static final class VariableMixin {}
+
+  @JsonIgnoreProperties({
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY,
+    LISTENERS_CONFIG_KEY_PROPERTY,
+    TAGS_PROPERTY
+  })
+  private static final class UserTaskMixin {}
+
+  @JsonIgnoreProperties({
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY,
+    MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY,
+    TENANT_ID_PROPERTY,
+    BPMN_PROCESS_ID_PROPERTY,
+    ELEMENT_INSTANCE_KEY_PROPERTY
+  })
+  private static final class ProcessInstanceMigrationMixin {}
+
+  @JsonIgnoreProperties({DEPLOYMENT_KEY_PROPERTY})
+  private static final class IgnoreDeploymentKeyMixin {}
+
+  @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  private static final class IgnoreProcessDefinitionKeyMixin {}
+
+  @JsonIgnoreProperties({
+    DELETE_HISTORY_PROPERTY,
+    BATCH_OPERATION_KEY_PROPERTY,
+    BATCH_OPERATION_TYPE_PROPERTY,
+    RESOURCE_TYPE_PROPERTY,
+    RESOURCE_ID_PROPERTY
+  })
+  private static final class ResourceDeletionMixin {}
 
   public interface TerminateInstructionsMixin {
     @JsonIgnore

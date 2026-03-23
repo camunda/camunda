@@ -13,7 +13,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -21,16 +23,19 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -817,6 +822,434 @@ final class BulkIndexRequestTest {
       assertThat(value.get("businessId"))
           .describedAs("Expect that the records are serialized with businessId")
           .isEqualTo(businessId);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithoutElementInstanceKeyOnPreviousVersion(final ValueType valueType)
+        throws Exception {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("elementInstanceKey"))
+          .describedAs("Expect that the records are serialized without elementInstanceKey")
+          .isNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithElementInstanceKeyOnCurrentVersion(final ValueType valueType)
+        throws Exception {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("elementInstanceKey"))
+          .describedAs("Expect that the records are serialized with elementInstanceKey")
+          .isNotNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+        })
+    void shouldIndexWithoutTagsOnPreviousVersion(final ValueType valueType) throws Exception {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("tags"))
+          .describedAs("Expect that the records are serialized without tags")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexJobBatchRecordWithoutTenantFilterOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobBatchRecord()
+                              .setType("test")
+                              .setTenantFilter(TenantFilter.ASSIGNED)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("tenantFilter"))
+          .describedAs("Expect that the records are serialized without tenantFilter")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexJobBatchRecordWithTenantFilter() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobBatchRecord()
+                              .setType("test")
+                              .setTenantFilter(TenantFilter.ASSIGNED)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("tenantFilter"))
+          .describedAs("Expect that the records are serialized with tenantFilter")
+          .isEqualTo(TenantFilter.ASSIGNED.name());
+    }
+
+    @Test
+    void shouldIndexVariableRecordWithoutSourceOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.VARIABLE, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("source"))
+          .describedAs("Expect that the records are serialized without source")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexVariableRecordWithoutElementInstanceKeyOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.VARIABLE, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("elementInstanceKey"))
+          .describedAs("Expect that the records are serialized without elementInstanceKey")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithoutListenersConfigKeyOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new UserTaskRecord()
+                              .setUserTaskKey(1L)
+                              .setListenersConfigKey(42L)
+                              .setTags(Set.of("tag1"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("listenersConfigKey"))
+          .describedAs("Expect that the records are serialized without listenersConfigKey")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithoutTagsOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new UserTaskRecord().setUserTaskKey(1L).setTags(Set.of("tag1", "tag2"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("tags"))
+          .describedAs("Expect that the records are serialized without tags")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithTagsOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new UserTaskRecord().setUserTaskKey(1L).setTags(Set.of("tag1"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("tags"))
+          .describedAs("Expect that the records are serialized with tags")
+          .isNotNull();
+    }
+
+    @Test
+    void shouldIndexProcessInstanceMigrationWithoutNewFieldsOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MIGRATION,
+              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processDefinitionKey"))
+          .describedAs("processDefinitionKey should be absent")
+          .isNull();
+      assertThat(value.get("tenantId")).describedAs("tenantId should be absent").isNull();
+      assertThat(value.get("bpmnProcessId")).describedAs("bpmnProcessId should be absent").isNull();
+      assertThat(value.get("elementInstanceKey"))
+          .describedAs("elementInstanceKey should be absent")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexDecisionRequirementsRecordWithoutDeploymentKeyOnPreviousVersion()
+        throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new DecisionRequirementsRecord().setDeploymentKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("deploymentKey"))
+          .describedAs("Expect that the records are serialized without deploymentKey")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexDecisionRequirementsRecordWithDeploymentKey() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new DecisionRequirementsRecord().setDeploymentKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("deploymentKey"))
+          .describedAs("Expect that the records are serialized with deploymentKey")
+          .isEqualTo(12345);
+    }
+
+    @Test
+    void shouldIndexProcessInstanceBatchRecordWithoutProcessDefinitionKeyOnPreviousVersion()
+        throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_BATCH,
+              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized without processDefinitionKey")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexProcessInstanceBatchRecordWithProcessDefinitionKey() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_BATCH, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized with processDefinitionKey")
+          .isNotNull();
+    }
+
+    @Test
+    void shouldIndexResourceDeletionRecordWithoutNewFieldsOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.RESOURCE_DELETION,
+              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("deleteHistory")).describedAs("deleteHistory should be absent").isNull();
+      assertThat(value.get("batchOperationKey"))
+          .describedAs("batchOperationKey should be absent")
+          .isNull();
+      assertThat(value.get("batchOperationType"))
+          .describedAs("batchOperationType should be absent")
+          .isNull();
+      assertThat(value.get("resourceType")).describedAs("resourceType should be absent").isNull();
+      assertThat(value.get("resourceId")).describedAs("resourceId should be absent").isNull();
+    }
+
+    @Test
+    void shouldIndexResourceDeletionRecordWithNewFieldsOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.RESOURCE_DELETION, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("deleteHistory"))
+          .describedAs("deleteHistory should be present")
+          .isNotNull();
+      assertThat(value.get("batchOperationKey"))
+          .describedAs("batchOperationKey should be present")
+          .isNotNull();
+      assertThat(value.get("batchOperationType"))
+          .describedAs("batchOperationType should be present")
+          .isNotNull();
+      assertThat(value.get("resourceType"))
+          .describedAs("resourceType should be present")
+          .isNotNull();
+      assertThat(value.get("resourceId")).describedAs("resourceId should be present").isNotNull();
     }
 
     private static String getBusinessId(final RecordValue recordValue) throws Exception {
