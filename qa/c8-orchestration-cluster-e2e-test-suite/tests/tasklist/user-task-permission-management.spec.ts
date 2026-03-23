@@ -26,6 +26,7 @@ import {
 } from 'utils/beans/requestBeans';
 
 const PROCESS_ID = 'user_task_api_test_process';
+const TASK_NAME = 'test user task api';
 
 let aliceUser: {
   username: string;
@@ -112,11 +113,11 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText(PROCESS_ID),
+        taskPanelPage.availableTasks.getByText(TASK_NAME),
       ).toBeVisible();
     }).toPass({timeout: 30000});
 
-    await taskPanelPage.openTask(PROCESS_ID);
+    await taskPanelPage.openTask(TASK_NAME);
 
     await expect(taskDetailsPage.assignee).toContainText('Assigned to me');
   });
@@ -180,7 +181,7 @@ test.describe
 
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText(PROCESS_ID),
+        taskPanelPage.availableTasks.getByText(TASK_NAME),
       ).toBeVisible();
     }).toPass({timeout: 30000});
   });
@@ -266,7 +267,7 @@ test.describe.serial('Task not visible to user without READ permission', () => {
     await expect(async () => {
       await expect(page.getByText('No tasks found')).toBeVisible();
       await expect(
-        taskPanelPage.availableTasks.getByText(PROCESS_ID),
+        taskPanelPage.availableTasks.getByText(TASK_NAME),
       ).toBeHidden();
     }).toPass({timeout: 30000});
   });
@@ -275,7 +276,6 @@ test.describe.serial('Task not visible to user without READ permission', () => {
     page,
     loginPage,
     taskPanelPage,
-    taskDetailsPage,
   }) => {
     await navigateToApp(page, 'tasklist');
     await loginPage.login(aliceUser.username, aliceUser.password);
@@ -283,7 +283,9 @@ test.describe.serial('Task not visible to user without READ permission', () => {
 
     await taskPanelPage.goToTaskDetails(bobUserTaskKey);
 
-    await expect(taskDetailsPage.pickATaskHeader).toBeVisible({timeout: 10000});
+    await expect(page.getByTestId('details-info')).toBeHidden({
+      timeout: 10000,
+    });
   });
 });
 
