@@ -20,327 +20,202 @@ jobs:
       - name: Create sub-issues for skipped Operate E2E tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: camunda/camunda
-          PARENT_ISSUE: 49095
+        shell: python3 {0}
         run: |
-          set -euo pipefail
-
-          # Function to create an issue and link it as a sub-issue of the parent
-          create_sub_issue() {
-            local title="$1"
-            local body="$2"
-
-            # Check if an issue with this title already exists to avoid duplicates
-            EXISTING=$(gh issue list \
-              --repo "$REPO" \
-              --search "$title" \
-              --state open \
-              --json number,title \
-              --jq ".[] | select(.title == \"$title\") | .number" \
-              | head -1)
-
-            if [ -n "$EXISTING" ]; then
-              echo "Issue already exists: #$EXISTING - $title"
-              ISSUE_NUMBER="$EXISTING"
-            else
-              # Create the new issue
-              ISSUE_URL=$(gh issue create \
-                --repo "$REPO" \
-                --title "$title" \
-                --body "$body" \
-                --label "kind/task" \
-                --label "component/operate")
-              ISSUE_NUMBER="${ISSUE_URL##*/}"
-              echo "Created issue #$ISSUE_NUMBER: $title"
-            fi
-
-            # Link it as a sub-issue of the parent issue
-            EXISTING_SUBISSUE=$(gh api \
-              "/repos/$REPO/issues/$PARENT_ISSUE/sub_issues" \
-              --jq ".[] | select(.number == $ISSUE_NUMBER) | .number" \
-              2>/dev/null || echo "")
-
-            if [ -n "$EXISTING_SUBISSUE" ]; then
-              echo "Issue #$ISSUE_NUMBER is already a sub-issue of #$PARENT_ISSUE"
-            else
-              gh api \
-                --method POST \
-                "/repos/$REPO/issues/$PARENT_ISSUE/sub_issues" \
-                -f sub_issue_id="$ISSUE_NUMBER" \
-                && echo "Added #$ISSUE_NUMBER as sub-issue of #$PARENT_ISSUE" \
-                || echo "Warning: Could not add #$ISSUE_NUMBER as sub-issue (may need to enable sub-issues feature)"
-            fi
-          }
-
-          # ─────────────────────────────────────────────────────────────
-          # 1. auditLog.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E test: Audit log entries can be filtered by process instance key" \
-            "## Context
-
-Fix and reenable the following test skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/auditLog.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Audit log entries can be filtered by process instance key')\`
-
-## Acceptance criteria
-
-- [ ] The test passes reliably and is re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 2. callActivities.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E test: Navigate to called and parent process instances" \
-            "## Context
-
-Fix and reenable the following test skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/callActivities.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Navigate to called and parent process instances')\`
-
-## Acceptance criteria
-
-- [ ] The test passes reliably and is re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 3. decisionNavigation.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E test: Navigation between process and decision" \
-            "## Context
-
-Fix and reenable the following test skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/decisionNavigation.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Navigation between process and decision')\`
-
-## Acceptance criteria
-
-- [ ] The test passes reliably and is re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 4. multiInstanceSelection.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E tests in multiInstanceSelection.spec.ts" \
-            "## Context
-
-Fix and reenable the following tests skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/multiInstanceSelection.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('verify execution counts and incidents display for multi-instance flow node')\`
-- \`test.skip('select single task')\`
-
-## Acceptance criteria
-
-- [ ] Both tests pass reliably and are re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 5. processInstanceAuditLog.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E tests in processInstanceAuditLog.spec.ts" \
-            "## Context
-
-Fix and reenable the following test suite skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceAuditLog.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.describe.skip('Process Instance Audit Log')\` (entire suite)
-
-## Acceptance criteria
-
-- [ ] All tests in the suite pass reliably and the suite is re-enabled (change \`test.describe.skip\` back to \`test.describe\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 6. processInstanceHistory.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E tests in processInstanceHistory.spec.ts" \
-            "## Context
-
-Fix and reenable the following test suite skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceHistory.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.describe.skip('Process Instance History')\` (entire suite)
-
-## Acceptance criteria
-
-- [ ] All tests in the suite pass reliably and the suite is re-enabled (change \`test.describe.skip\` back to \`test.describe\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 7. processInstanceIncidents.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E tests in processInstanceIncidents.spec.ts" \
-            "## Context
-
-Fix and reenable the following tests skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceIncidents.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Resolve an incident')\`
-- \`test.skip('Cancel an instance')\`
-- \`test.skip('Should render collapsed sub process and navigate between planes')\`
-- \`test.skip('Verify Incident root cause instance')\`
-
-## Acceptance criteria
-
-- [ ] All skipped tests pass reliably and are re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 8. processInstanceListeners.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E tests in processInstanceListeners.spec.ts" \
-            "## Context
-
-Fix and reenable the following test suite skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceListeners.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.describe.skip('Process Instance Listeners')\` (entire suite)
-
-## Acceptance criteria
-
-- [ ] All tests in the suite pass reliably and the suite is re-enabled (change \`test.describe.skip\` back to \`test.describe\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 9. processInstanceMigration.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E test: Migrated tasks" \
-            "## Context
-
-Fix and reenable the following test skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceMigration.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Migrated tasks')\`
-
-## Acceptance criteria
-
-- [ ] The test passes reliably and is re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 10. processInstanceModifications.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E tests in processInstanceModifications.spec.ts" \
-            "## Context
-
-Fix and reenable the following tests skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceModifications.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Should apply/remove edit variable modifications')\`
-- \`test.skip('Verify Variables functionality in Modification mode')\`
-- \`test.skip('Should apply/remove add variable modifications')\`
-
-## Acceptance criteria
-
-- [ ] All skipped tests pass reliably and are re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          # ─────────────────────────────────────────────────────────────
-          # 11. processInstanceVariables.spec.ts
-          # ─────────────────────────────────────────────────────────────
-          create_sub_issue \
-            "Fix skipped Operate E2E test: Add variables" \
-            "## Context
-
-Fix and reenable the following test skipped due to the process instance page redesign (#46750),
-tracked in #49093.
-
-**Test file:** \`qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceVariables.spec.ts\`
-
-## Skipped test(s)
-
-- \`test.skip('Add variables')\`
-
-## Acceptance criteria
-
-- [ ] The test passes reliably and is re-enabled (change \`test.skip\` back to \`test\`)
-
-## Parent issue
-
-Sub-issue of #49095"
-
-          echo ""
-          echo "✅ Done! All sub-issues have been created/verified under #$PARENT_ISSUE"
+          import subprocess
+          import json
+          import sys
+
+          REPO = "camunda/camunda"
+          PARENT_ISSUE = 49095
+
+          # Test files and their skipped tests, from PR #49093
+          sub_issues = [
+              {
+                  "title": "Fix skipped Operate E2E test: Audit log entries can be filtered by process instance key",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/auditLog.spec.ts",
+                  "tests": [
+                      "test.skip('Audit log entries can be filtered by process instance key')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E test: Navigate to called and parent process instances",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/callActivities.spec.ts",
+                  "tests": [
+                      "test.skip('Navigate to called and parent process instances')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E test: Navigation between process and decision",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/decisionNavigation.spec.ts",
+                  "tests": [
+                      "test.skip('Navigation between process and decision')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E tests in multiInstanceSelection.spec.ts",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/multiInstanceSelection.spec.ts",
+                  "tests": [
+                      "test.skip('verify execution counts and incidents display for multi-instance flow node')",
+                      "test.skip('select single task')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E tests in processInstanceAuditLog.spec.ts",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceAuditLog.spec.ts",
+                  "tests": [
+                      "test.describe.skip('Process Instance Audit Log') (entire suite)",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E tests in processInstanceHistory.spec.ts",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceHistory.spec.ts",
+                  "tests": [
+                      "test.describe.skip('Process Instance History') (entire suite)",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E tests in processInstanceIncidents.spec.ts",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceIncidents.spec.ts",
+                  "tests": [
+                      "test.skip('Resolve an incident')",
+                      "test.skip('Cancel an instance')",
+                      "test.skip('Should render collapsed sub process and navigate between planes')",
+                      "test.skip('Verify Incident root cause instance')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E tests in processInstanceListeners.spec.ts",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceListeners.spec.ts",
+                  "tests": [
+                      "test.describe.skip('Process Instance Listeners') (entire suite)",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E test: Migrated tasks",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceMigration.spec.ts",
+                  "tests": [
+                      "test.skip('Migrated tasks')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E tests in processInstanceModifications.spec.ts",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceModifications.spec.ts",
+                  "tests": [
+                      "test.skip('Should apply/remove edit variable modifications')",
+                      "test.skip('Verify Variables functionality in Modification mode')",
+                      "test.skip('Should apply/remove add variable modifications')",
+                  ],
+              },
+              {
+                  "title": "Fix skipped Operate E2E test: Add variables",
+                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceVariables.spec.ts",
+                  "tests": [
+                      "test.skip('Add variables')",
+                  ],
+              },
+          ]
+
+
+          def run_gh(args, input=None):
+              result = subprocess.run(
+                  ["gh"] + args,
+                  capture_output=True,
+                  text=True,
+                  input=input,
+              )
+              if result.returncode != 0:
+                  print(f"ERROR: gh {' '.join(args)}\n{result.stderr}", file=sys.stderr)
+                  raise RuntimeError(f"gh command failed: {result.stderr}")
+              return result.stdout.strip()
+
+
+          def get_existing_sub_issues():
+              """Return set of issue numbers already linked as sub-issues."""
+              try:
+                  output = run_gh(["api", f"/repos/{REPO}/issues/{PARENT_ISSUE}/sub_issues"])
+                  items = json.loads(output)
+                  return {item["number"] for item in items}
+              except Exception as e:
+                  print(f"Warning: Could not list sub-issues: {e}")
+                  return set()
+
+
+          def find_existing_issue(title):
+              """Return issue number if an open issue with this title already exists."""
+              try:
+                  output = run_gh([
+                      "issue", "list",
+                      "--repo", REPO,
+                      "--search", title,
+                      "--state", "open",
+                      "--json", "number,title",
+                  ])
+                  items = json.loads(output)
+                  for item in items:
+                      if item["title"] == title:
+                          return item["number"]
+              except Exception:
+                  pass
+              return None
+
+
+          def build_body(issue):
+              tests_md = "\n".join(f"- `{t}`" for t in issue["tests"])
+              return (
+                  "## Context\n\n"
+                  "Fix and reenable the following test(s) skipped due to the process instance page redesign"
+                  " ([#46750](https://github.com/camunda/camunda/issues/46750)),"
+                  " tracked in [#49093](https://github.com/camunda/camunda/pull/49093).\n\n"
+                  f"**Test file:** `{issue['file']}`\n\n"
+                  "## Skipped test(s)\n\n"
+                  f"{tests_md}\n\n"
+                  "## Acceptance criteria\n\n"
+                  "- [ ] All skipped tests pass reliably and are re-enabled\n\n"
+                  "## Parent issue\n\n"
+                  f"Sub-issue of #{PARENT_ISSUE}"
+              )
+
+
+          existing_sub_issues = get_existing_sub_issues()
+          print(f"Existing sub-issues of #{PARENT_ISSUE}: {existing_sub_issues}")
+
+          for issue in sub_issues:
+              title = issue["title"]
+              body = build_body(issue)
+
+              # Check if issue already exists
+              existing = find_existing_issue(title)
+              if existing:
+                  print(f"Issue #{existing} already exists: {title}")
+                  issue_number = existing
+              else:
+                  # Create the issue
+                  url = run_gh([
+                      "issue", "create",
+                      "--repo", REPO,
+                      "--title", title,
+                      "--body", body,
+                      "--label", "kind/task",
+                      "--label", "component/operate",
+                  ])
+                  issue_number = int(url.split("/")[-1])
+                  print(f"Created issue #{issue_number}: {title}")
+
+              # Link as sub-issue if not already linked
+              if issue_number in existing_sub_issues:
+                  print(f"  #{issue_number} is already a sub-issue of #{PARENT_ISSUE}")
+              else:
+                  try:
+                      run_gh([
+                          "api",
+                          "--method", "POST",
+                          f"/repos/{REPO}/issues/{PARENT_ISSUE}/sub_issues",
+                          "-f", f"sub_issue_id={issue_number}",
+                      ])
+                      print(f"  Linked #{issue_number} as sub-issue of #{PARENT_ISSUE}")
+                      existing_sub_issues.add(issue_number)
+                  except Exception as e:
+                      print(f"  Warning: Could not link #{issue_number} as sub-issue: {e}")
+
+          print("\nDone!")
