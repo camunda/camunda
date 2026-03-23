@@ -159,7 +159,9 @@ class OperateProcessInstancePage {
     this.executionCountToggleOff = this.instanceHistory.getByLabel(
       'hide execution count',
     );
-    this.listenersTabButton = page.getByTestId('listeners-tab-button');
+    this.listenersTabButton = page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Listeners$/i});
     this.operationsLogTabButton = page.getByRole('tab', {
       name: /^Operations Log$/i,
     });
