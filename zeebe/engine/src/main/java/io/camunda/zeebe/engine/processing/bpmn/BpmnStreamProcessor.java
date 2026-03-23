@@ -224,7 +224,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return processElementWithListeners(
         element,
         context,
-        ExecutableFlowNode::getStartExecutionListeners,
+        node -> executionListenerBehavior.getStartExecutionListeners(node, context),
         processor::finalizeActivation);
   }
 
@@ -235,7 +235,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return processElementWithListeners(
         element,
         context,
-        ExecutableFlowNode::getEndExecutionListeners,
+        node -> executionListenerBehavior.getEndExecutionListeners(node, context),
         processor::finalizeCompletion);
   }
 
@@ -276,7 +276,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return onExecutionListenerComplete(
         element,
         context,
-        ExecutableFlowNode::getStartExecutionListeners,
+        node -> executionListenerBehavior.getStartExecutionListeners(node, context),
         processor::finalizeActivation);
   }
 
@@ -288,7 +288,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return onExecutionListenerComplete(
         element,
         context,
-        ExecutableFlowNode::getEndExecutionListeners,
+        node -> executionListenerBehavior.getEndExecutionListeners(node, context),
         processor::finalizeCompletion);
   }
 
