@@ -127,15 +127,15 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
 
     await test.step('Verify incidents banner shows 25 incidents', async () => {
-      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
-      await expect(operateProcessInstancePage.incidentsBanner).toContainText(
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+      await expect(operateProcessInstancePage.incidentsTab).toContainText(
         '25 Incidents occurred',
       );
     });
 
     await test.step('Click incidents banner to open incidents table', async () => {
       await operateProcessInstancePage.navigateToRootScope();
-      await operateProcessInstancePage.incidentsBanner.click();
+      await operateProcessInstancePage.incidentsTab.click();
       await expect(
         operateProcessInstancePage.incidentsViewHeader,
       ).toBeVisible();
