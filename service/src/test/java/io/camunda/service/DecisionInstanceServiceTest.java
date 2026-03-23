@@ -60,6 +60,7 @@ class DecisionInstanceServiceTest {
   private DecisionInstanceServices services;
   private DecisionInstanceSearchClient client;
   private BrokerClient brokerClient;
+  private SecurityContextProvider securityContextProvider;
   private final CamundaAuthentication authentication = CamundaAuthentication.none();
 
   @BeforeEach
@@ -67,12 +68,13 @@ class DecisionInstanceServiceTest {
     final ApiServicesExecutorProvider executorProvider = mock(ApiServicesExecutorProvider.class);
     client = mock(DecisionInstanceSearchClient.class);
     brokerClient = mock(BrokerClient.class);
+    securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new DecisionInstanceServices(
             brokerClient,
-            mock(SecurityContextProvider.class),
+            securityContextProvider,
             client,
             executorProvider,
             mock(BrokerRequestAuthorizationConverter.class));
@@ -264,11 +266,14 @@ class DecisionInstanceServiceTest {
     // when
     services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
 
-    // then - verify that search was called (existence check happens with anonymous auth internally)
+    // then - verify that anonymous authentication was used for the existence check
+    final var authCaptor = ArgumentCaptor.forClass(CamundaAuthentication.class);
+    verify(securityContextProvider).provideSecurityContext(authCaptor.capture());
+    assertThat(authCaptor.getValue().isAnonymous()).isTrue();
+
+    // Also verify the query was for the correct decision instance key
     final var queryCaptor = ArgumentCaptor.forClass(DecisionInstanceQuery.class);
     verify(client).searchDecisionInstances(queryCaptor.capture());
-
-    // Verify the query was for the correct decision instance key
     final var capturedQuery = queryCaptor.getValue();
     assertThat(capturedQuery.filter().decisionInstanceKeys()).containsExactly(decisionInstanceKey);
   }
