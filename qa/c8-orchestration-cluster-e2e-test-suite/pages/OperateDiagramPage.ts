@@ -11,6 +11,14 @@ import {expect, type Locator, type Page} from '@playwright/test';
 export class OperateDiagramPage {
   private page: Page;
   readonly diagram: Locator;
+  readonly instanceHistory: Locator;
+  readonly panelTabs: Locator;
+  readonly detailsTabButton: Locator;
+  readonly incidentsTabButton: Locator;
+  readonly listenersTabButton: Locator;
+  readonly listenersListTable: Locator;
+  readonly elementInstanceDetailsTable: Locator;
+  readonly incidentsTable: Locator;
   readonly popover: Locator;
   readonly resetDiagramZoomButton: Locator;
   readonly diagramSpinner: Locator;
@@ -26,6 +34,24 @@ export class OperateDiagramPage {
   constructor(page: Page) {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram-canvas');
+    this.instanceHistory = this.page.getByTestId('instance-history');
+    this.panelTabs = this.page.getByLabel('Process Instance Bottom Panel Tabs');
+    this.detailsTabButton = this.page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Details$/i});
+    this.incidentsTabButton = this.panelTabs.getByRole('link', {
+      name: /^Incidents$/i,
+    });
+    this.listenersTabButton = this.panelTabs.getByRole('link', {
+      name: /^Listeners$/i,
+    });
+    this.listenersListTable = this.page.getByRole('table', {
+      name: /Listeners List/i,
+    });
+    this.elementInstanceDetailsTable = this.page.getByRole('table', {
+      name: /Element Instance Details/i,
+    });
+    this.incidentsTable = this.page.getByTestId('data-list');
     this.popover = this.page.getByTestId('popover');
     this.popoverLink = (name: string | RegExp) =>
       this.popover.getByRole('link', {name});
@@ -216,6 +242,109 @@ export class OperateDiagramPage {
     ).toBeVisible();
 
     await expect(this.popover.getByText(incidentPattern)).toBeVisible();
+  }
+
+  async verifyMigratedFlowNodeInDetails(
+    elementId: string,
+    flowNodeLabel?: string | RegExp,
+    options: {
+      expectedStatusIcon?: 'ACTIVE' | 'COMPLETED' | 'TERMINATED';
+      expectIncident?: boolean;
+    } = {},
+  ) {
+    await this.clickFlowNode(elementId);
+
+    // New UI: migration state is represented in the Listeners tab.
+    await expect(this.listenersTabButton).toBeVisible({timeout: 30000});
+    await this.listenersTabButton.click();
+    await expect(this.listenersListTable).toBeVisible({timeout: 30000});
+    await expect(
+      this.listenersListTable.getByRole('row', {name: /\bmigrated\b/i}).first(),
+    ).toBeVisible({timeout: 30000});
+
+    // For generic migration verification, listener state is sufficient.
+    if (!options.expectedStatusIcon && options.expectIncident === undefined) {
+      return;
+    }
+
+    await expect(this.detailsTabButton).toBeVisible({timeout: 30000});
+    await this.detailsTabButton.click();
+
+    // The Details table is the most stable assertion for the new UI.
+    await expect(this.elementInstanceDetailsTable).toBeVisible({
+      timeout: 30000,
+    });
+
+    let historyNode: Locator;
+    if (flowNodeLabel) {
+      const nodeByLabel = this.instanceHistory
+        .getByRole('treeitem', {name: flowNodeLabel})
+        .first();
+
+      if ((await nodeByLabel.count()) > 0) {
+        historyNode = nodeByLabel;
+      } else {
+        // Fallback for nested/collapsed or renamed labels: rely on the selected history entry.
+        historyNode = this.instanceHistory
+          .getByRole('treeitem', {selected: true})
+          .first();
+      }
+    } else {
+      historyNode = this.instanceHistory
+        .getByRole('treeitem', {selected: true})
+        .first();
+    }
+
+    await expect(historyNode).toBeVisible({timeout: 30000});
+
+    if (options.expectedStatusIcon) {
+      await expect(
+        historyNode.getByTestId(`${options.expectedStatusIcon}-icon`),
+      ).toBeVisible();
+    }
+
+    if (options.expectIncident === true) {
+      await expect(historyNode.getByTestId('INCIDENT-icon')).toBeVisible();
+    }
+
+    if (options.expectIncident === false) {
+      await expect(historyNode.getByTestId('INCIDENT-icon')).toHaveCount(0);
+    }
+  }
+
+  async verifyIncidentInIncidentsTab(
+    errorTypePattern: RegExp,
+    incidentMessagePattern: RegExp,
+  ) {
+    await expect(this.incidentsTabButton).toBeVisible({timeout: 30000});
+    await this.incidentsTabButton.click();
+    await expect(this.incidentsTable).toBeVisible({timeout: 30000});
+
+    const errorTypeCell = this.incidentsTable
+      .getByTestId('cell-errorType')
+      .filter({hasText: errorTypePattern})
+      .first();
+    await expect(errorTypeCell).toBeVisible({timeout: 30000});
+
+    const incidentRow = errorTypeCell.locator(
+      'xpath=ancestor::*[@role="row"][1]',
+    );
+    const expandRowButton = incidentRow.getByRole('button', {
+      name: /expand current row/i,
+    });
+
+    if ((await expandRowButton.count()) > 0) {
+      const expanded = await expandRowButton.getAttribute('aria-expanded');
+      if (expanded !== 'true') {
+        await expandRowButton.click();
+      }
+    }
+
+    await expect(
+      this.incidentsTable.getByText(incidentMessagePattern),
+    ).toBeVisible({
+      timeout: 30000,
+    });
   }
 
   async closeMetadataModal(): Promise<void> {

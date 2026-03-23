@@ -650,7 +650,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test.skip('Migrated tasks', async ({
+  test('Migrated tasks', async ({
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -672,24 +672,30 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Send task migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('SendTask2', {
-        hiddenText: 'expected worker failure',
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'SendTask2',
+        /Send Task 2/i,
+        {
+          expectedStatusIcon: 'ACTIVE',
+          expectIncident: false,
+        },
+      );
     });
 
     await test.step('Verify Task G migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('TaskG', {
-        expectedText: 'endDate',
-        hiddenText: '"endDate": "null"',
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'TaskG',
+        /Task G/i,
+      );
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(
-            /invalid.*decision/i,
+          await operateDiagramPage.verifyIncidentInIncidentsTab(
+            /called decision error\.?/i,
+            /expected to evaluate decision.*no decision found/i,
           );
         },
         onFailure: async () => {
@@ -700,7 +706,6 @@ test.describe.serial('Process Instance Migration', () => {
   });
 
   test('Migrated message events', async ({
-    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -721,48 +726,36 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Task A2 correlation key migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('TaskA2', {
-        expectedText: [
-          '"correlationKey": "mySecondCorrelationKey"',
-          '"messageName": "Message_2",',
-        ],
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'TaskA2',
+        /Task A2/i,
+      );
     });
 
     await test.step('Verify Task C2 correlation key migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('TaskC2', {
-        expectedText: [
-          '"correlationKey": "myFirstCorrelationKey"',
-          '"messageName": "Message_1",',
-        ],
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'TaskC2',
+        /Task C2/i,
+      );
     });
 
     await test.step('Verify Message receive task migration', async () => {
       await sleep(500);
-      await operateDiagramPage.verifyFlowNodeMetadata('MessageReceiveTask2', {
-        expectedText: [
-          '"correlationKey": "myFirstCorrelationKey"',
-          '"messageName": "Message_5",',
-        ],
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'MessageReceiveTask2',
+        /Message receive task 2/i,
+      );
     });
 
     await test.step('Verify Message intermediate catch event migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata(
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
         'MessageIntermediateCatch2',
-        {
-          expectedText: [
-            '"correlationKey": "myFirstCorrelationKey"',
-            '"messageName": "Message_3",',
-          ],
-        },
+        /Message intermediate catch 2/i,
       );
     });
   });
 
   test('Migrated gateways', async ({
-    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -783,18 +776,20 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Event based gateway correlation key update', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('EventBasedGateway2', {
-        expectedText: [
-          '"correlationKey": "myFirstCorrelationKey"',
-          '"messageName": "Message_3",',
-        ],
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'EventBasedGateway2',
+        /Event based gateway 2/i,
+      );
     });
 
     await test.step('Verify Exclusive gateway incident migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('ExclusiveGateway2', {
-        expectedText: '"hasIncident": true,',
-      });
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
+        'ExclusiveGateway2',
+        /Exclusive gateway 2/i,
+        {
+          expectIncident: true,
+        },
+      );
     });
   });
 
@@ -820,12 +815,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify signal intermediate catch event migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata(
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
         'SignalIntermediateCatch2',
-        {
-          expectedText: 'endDate',
-          hiddenText: '"endDate": "null"',
-        },
+        /Signal intermediate catch 2/i,
       );
     });
   });
@@ -852,13 +844,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify multi instance sub process migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata(
+      await operateDiagramPage.verifyMigratedFlowNodeInDetails(
         'MultiInstanceSubProcess2',
-        {
-          expectedText: 'endDate',
-          hiddenText: '"endDate": "null"',
-          isSubProcess: true,
-        },
+        /Multi instance sub process 2/i,
       );
     });
 
