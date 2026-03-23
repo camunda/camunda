@@ -26,6 +26,7 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
 
   test('Get Process Instance Sequence Flows - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance for the sequence flow', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -35,6 +36,14 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -95,6 +104,14 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}/sequence-flows',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.items.length).toBe(0);
   });

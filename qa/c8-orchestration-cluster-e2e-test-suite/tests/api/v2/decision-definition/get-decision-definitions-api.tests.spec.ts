@@ -10,12 +10,12 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertEqualsForKeys,
   assertBadRequest,
   textXMLHeaders,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {decisionDefinitionRequiredFields} from '../../../../utils/beans/requestBeans';
@@ -25,6 +25,7 @@ import {
 } from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import fs from 'fs';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get Decision Definitions API Tests', () => {
@@ -58,9 +59,16 @@ test.describe.parallel('Get Decision Definitions API Tests', () => {
         {headers: jsonHeaders()},
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/{decisionDefinitionKey}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, decisionDefinitionRequiredFields);
       assertEqualsForKeys(
         json,
         expectedBody1,
@@ -115,7 +123,7 @@ test.describe.parallel('Get Decision Definitions API Tests', () => {
         {headers: textXMLHeaders()},
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       expect(await res.text()).toEqual(
         fs.readFileSync('./resources/simpleDecisionTable1.dmn', 'utf-8'),
       );

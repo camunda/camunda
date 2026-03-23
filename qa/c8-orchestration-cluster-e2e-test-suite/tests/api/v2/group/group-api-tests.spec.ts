@@ -10,13 +10,14 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_NEW_GROUP,
   groupRequiredFields,
@@ -52,11 +53,18 @@ test.describe.parallel('Groups API Tests', () => {
       data: requestBody,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/groups',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
 
     (state['createdIds'] as string[]).push(json.groupId);
-    assertRequiredFields(json, groupRequiredFields);
     assertEqualsForKeys(json, requestBody, groupRequiredFields);
   });
 
@@ -99,11 +107,17 @@ test.describe.parallel('Groups API Tests', () => {
         headers: jsonHeaders(),
         data: body,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
-      assertRequiredFields(json.items[0], groupRequiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, groupRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -126,11 +140,17 @@ test.describe.parallel('Groups API Tests', () => {
       data: body,
     });
 
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/groups/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(1);
-    assertRequiredFields(json.items[0], groupRequiredFields);
     assertEqualsForKeys(json.items[0], expectedBody, groupRequiredFields);
   });
 
@@ -146,9 +166,16 @@ test.describe.parallel('Groups API Tests', () => {
       data: body,
     });
 
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/groups/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
   });
@@ -183,9 +210,16 @@ test.describe.parallel('Groups API Tests', () => {
         headers: jsonHeaders(),
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, groupRequiredFields);
       assertEqualsForKeys(json, expectedBody, groupRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -226,9 +260,16 @@ test.describe.parallel('Groups API Tests', () => {
         data: body,
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, ['groupId', 'name']);
       assertEqualsForKeys(json, {name: body.name}, ['name']);
       assertEqualsForKeys(json, {description: body.description}, [
         'description',
@@ -285,7 +326,7 @@ test.describe.parallel('Groups API Tests', () => {
         const res = await request.delete(buildUrl('/groups/{groupId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

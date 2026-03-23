@@ -26,6 +26,7 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
 
   test('Get Process Instance Statistics - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance to get the statistics for', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -35,6 +36,14 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -42,21 +51,21 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
     await test.step('Get Process Instance Statistics', async () => {
       await expect(async () => {
         const res = await request.get(
-            buildUrl(
-                `/process-instances/${localState['processInstanceKey']}/statistics/element-instances`,
-            ),
-            {
-              headers: jsonHeaders(),
-            },
+          buildUrl(
+            `/process-instances/${localState['processInstanceKey']}/statistics/element-instances`,
+          ),
+          {
+            headers: jsonHeaders(),
+          },
         );
 
         await validateResponse(
-            {
-              path: '/process-instances/{processInstanceKey}/statistics/element-instances',
-              method: 'GET',
-              status: '200',
-            },
-            res,
+          {
+            path: '/process-instances/{processInstanceKey}/statistics/element-instances',
+            method: 'GET',
+            status: '200',
+          },
+          res,
         );
 
         const json = await res.json();
@@ -64,10 +73,10 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
         expect(json.items).toHaveLength(2);
 
         const userTask = json.items.find(
-            (item: any) => item.elementId === 'Activity_1xci2nh',
+          (item: any) => item.elementId === 'Activity_1xci2nh',
         );
         const startEvent = json.items.find(
-            (item: any) => item.elementId === 'StartEvent_1',
+          (item: any) => item.elementId === 'StartEvent_1',
         );
 
         expect(userTask).toBeDefined();
@@ -112,6 +121,14 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}/statistics/element-instances',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.items).toHaveLength(0);
   });

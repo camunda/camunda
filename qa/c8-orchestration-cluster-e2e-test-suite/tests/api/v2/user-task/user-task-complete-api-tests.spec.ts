@@ -25,7 +25,9 @@ test.describe.parallel('Complete User Task Tests', () => {
     setupProcessInstanceForTests('user_task_api_test_process');
 
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Search, complete and verify completion', async ({request}) => {

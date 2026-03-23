@@ -82,6 +82,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThan(1);
@@ -103,6 +111,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       const states = body.items.map(
         (item: Record<string, unknown>) => item.state,
@@ -127,6 +143,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
       expect(body.items.length).toBe(expectedTotal);
@@ -151,6 +175,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
       expect(body.items.length).toBe(expectedTotal);
@@ -173,6 +205,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(expectedTotal);
       expect(body.items.length).toBeGreaterThanOrEqual(expectedTotal);
@@ -197,6 +237,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
       expect(body.items.length).toBe(expectedTotal);
@@ -221,6 +269,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
       expect(body.items.length).toBe(expectedTotal);
@@ -242,6 +298,14 @@ test.describe('Element Instance Search API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/element-instances/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBe(1);
       expect(body.items.length).toBe(1);

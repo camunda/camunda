@@ -10,19 +10,19 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertEqualsForKeys,
   assertBadRequest,
   assertUnauthorizedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   EVALUATE_DECISION_EXPECTED_BODY,
   EVALUATED_DECISION_EXPECTED_BODY,
-  evaluateDecisionRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {deployDecisionAndStoreResponse} from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {validateResponse} from 'json-body-assertions';
 
 test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -85,9 +85,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
@@ -136,9 +143,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
@@ -187,9 +201,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
@@ -240,9 +261,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
@@ -311,9 +339,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
@@ -382,9 +417,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
@@ -435,9 +477,16 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/evaluation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, evaluateDecisionRequiredFields);
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
       expect(json['evaluatedDecisions'].length).toBe(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];

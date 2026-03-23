@@ -14,7 +14,9 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   defaultAssertionOptions,
   generateUniqueId,
@@ -57,7 +59,7 @@ test.describe.parallel('Tenant Clients API Tests', () => {
         buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -72,7 +74,7 @@ test.describe.parallel('Tenant Clients API Tests', () => {
       buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   });
 
   test('Assign Client To Tenant Non Existent Tenant Not Found', async ({
@@ -133,6 +135,14 @@ test.describe.parallel('Tenant Clients API Tests', () => {
         }),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}/clients/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 3,
         itemsLengthEqualTo: 3,
@@ -161,6 +171,14 @@ test.describe.parallel('Tenant Clients API Tests', () => {
       buildUrl('/tenants/{tenantId}/clients/search', p),
       {headers: jsonHeaders(), data: {}},
     );
+    await validateResponse(
+      {
+        path: '/tenants/{tenantId}/clients/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -178,7 +196,7 @@ test.describe.parallel('Tenant Clients API Tests', () => {
           buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -187,6 +205,14 @@ test.describe.parallel('Tenant Clients API Tests', () => {
         const res = await request.post(
           buildUrl('/tenants/{tenantId}/clients/search', p),
           {headers: jsonHeaders(), data: {}},
+        );
+        await validateResponse(
+          {
+            path: '/tenants/{tenantId}/clients/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
         );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,

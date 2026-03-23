@@ -9,6 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {validateResponse} from 'json-body-assertions';
 
 export interface CorrelatedMessageSubscription {
   correlationKey: string;
@@ -44,6 +45,14 @@ export async function searchCorrelatedMessageSubscriptions(
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.page.totalItems).toEqual(1);
     expect(json.items.length).toEqual(1);

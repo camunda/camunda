@@ -20,6 +20,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe.parallel('Process Definition Get Statistics API', () => {
   const state: Record<string, string> = {};
+
   test.beforeAll(async () => {
     await deploy(['./resources/process_definition_api_tests.bpmn']);
     await createInstances('process_definition_api_tests', 1, 1).then(
@@ -121,6 +122,14 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
       );
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.items.length).toBe(1);
       expect(body.items[0].elementId).toBe('StartEvent');
     }).toPass(defaultAssertionOptions);
@@ -144,6 +153,14 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
+    validateResponseShape(
+      {
+        path: '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        method: 'POST',
+        status: '200',
+      },
+      body,
+    );
     expect(body.items.length).toBe(0);
   });
 
@@ -165,6 +182,14 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
       );
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.items.length).toBe(2);
       const elementIds = body.items.map(
         (item: Record<string, number>) => item.elementId,

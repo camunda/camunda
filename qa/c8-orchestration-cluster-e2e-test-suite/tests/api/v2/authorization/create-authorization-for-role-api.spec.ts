@@ -17,7 +17,6 @@ import {
   assertConflictRequest,
   encode,
   assertStatusCode,
-  assertRequiredFields,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {
@@ -32,10 +31,7 @@ import {
   createRole,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
-import {
-  CREATE_CUSTOM_AUTHORIZATION_BODY,
-  authorizedComponentRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
@@ -47,6 +43,7 @@ test.describe
     name: `authorization Role`,
     description: 'Create Authorization Success API test role',
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create role for Authorization tests', async () => {
       successRole = await createRole(request);
@@ -92,9 +89,6 @@ test.describe
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -127,9 +121,6 @@ test.describe
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -166,6 +157,7 @@ test.describe
     name: `authorization fail role`,
     description: 'Create Authorization Fail API test role',
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create role for Authorization tests', async () => {
       failRole = await createRole(request);
@@ -350,6 +342,7 @@ test.describe('Create Authorization for role - Forbidden', () => {
       ]);
     },
   );
+
   test('Create Authorization for role - 403 Forbidden', async ({request}) => {
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,

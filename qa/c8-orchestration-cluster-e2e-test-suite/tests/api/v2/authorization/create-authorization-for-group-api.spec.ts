@@ -17,7 +17,6 @@ import {
   assertConflictRequest,
   encode,
   assertStatusCode,
-  assertRequiredFields,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -29,10 +28,7 @@ import {
   createGroup,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
-import {
-  CREATE_CUSTOM_AUTHORIZATION_BODY,
-  authorizedComponentRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
@@ -43,6 +39,7 @@ test.describe
     name: string;
     description: string;
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create group for Authorization tests', async () => {
       successGroup = await createGroup(request);
@@ -88,9 +85,6 @@ test.describe
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -123,9 +117,6 @@ test.describe
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -161,6 +152,7 @@ test.describe
     name: string;
     description: string;
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create group for Authorization tests', async () => {
       failGroup = await createGroup(request);
@@ -344,6 +336,7 @@ test.describe('Create Authorization for Group - Forbidden', () => {
       ]);
     },
   );
+
   test('Create Authorization for group - 403 Forbidden', async ({request}) => {
     await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(

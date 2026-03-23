@@ -226,9 +226,18 @@ test.describe
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/process-instances/incident-resolution',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,
@@ -317,9 +326,18 @@ test.describe
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/process-instances/incident-resolution',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,

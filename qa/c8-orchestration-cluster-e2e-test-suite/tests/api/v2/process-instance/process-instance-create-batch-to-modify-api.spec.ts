@@ -20,8 +20,8 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-
 import {findUserTask} from '@requestHelpers';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
@@ -189,6 +189,14 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/modification',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         expect(json.batchOperationType).toBe('MODIFY_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
@@ -212,6 +220,14 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           },
         });
         await assertStatusCode(res2, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res2,
+        );
         const body2 = await res2.json();
         const secondTask = body2.items.find(
           (i: {elementId?: string; state?: string}) =>
@@ -300,6 +316,14 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/modification',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         expect(json.batchOperationType).toBe('MODIFY_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
@@ -316,6 +340,14 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           },
         });
         await assertStatusCode(res1, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res1,
+        );
         const body1 = await res1.json();
         const firstTask = body1.items.find(
           (i: {elementId?: string; state?: string}) =>
@@ -341,6 +373,14 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           },
         });
         await assertStatusCode(res2, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res2,
+        );
         const body2 = await res2.json();
         const firstTask2 = body2.items.find(
           (i: {elementId?: string; state?: string}) =>

@@ -21,6 +21,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Definition Search API', () => {
   const state: Record<string, unknown> = {};
+
   test.beforeAll(async () => {
     await deploy([
       './resources/process_definition_tests_1.bpmn',
@@ -70,6 +71,14 @@ test.describe.parallel('Process Definition Search API', () => {
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.page.totalItems).toBe(body.items.length);
       expect(body.page.totalItems).toBe(1);
       expect(body.items[0].processDefinitionId).toBe(state.processDefinitionId);
@@ -91,6 +100,14 @@ test.describe.parallel('Process Definition Search API', () => {
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.page.totalItems).toBe(body.items.length);
       expect(body.page.totalItems).toBe(1);
       expect(body.items[0].version).toBe(1);
@@ -116,6 +133,14 @@ test.describe.parallel('Process Definition Search API', () => {
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.page.totalItems).toBe(body.items.length);
       expect(body.page.totalItems).toBe(1);
       expect(body.items[0].version).toBe(1);
@@ -138,6 +163,14 @@ test.describe.parallel('Process Definition Search API', () => {
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.page.totalItems).toBe(0);
       expect(body.items.length).toBe(0);
     }).toPass(defaultAssertionOptions);
@@ -155,6 +188,14 @@ test.describe.parallel('Process Definition Search API', () => {
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.page.totalItems).toBeGreaterThan(1);
       expect(body.items.length).toBe(1);
     }).toPass(defaultAssertionOptions);
@@ -190,6 +231,14 @@ test.describe.parallel('Process Definition Search API', () => {
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
       expect(body.page.totalItems).toBeGreaterThan(0);
       expect(body.items.length).toBeGreaterThan(0);
       expect(body.page.totalItems).toBe(body.items.length);

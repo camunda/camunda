@@ -15,6 +15,7 @@ import {
 import {
   assertEqualsForKeys,
   assertRequiredFields,
+  assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from '../http';
@@ -23,6 +24,7 @@ import {defaultAssertionOptions, generateUniqueId} from '../constants';
 import {groupIdFromState} from './get-value-from-state-requestHelpers';
 import {createGroupAndStoreResponseFields} from './group-requestHelpers';
 import {Serializable} from 'playwright-core/types/structs';
+import {validateResponse} from 'json-body-assertions';
 
 export async function createRole(
   request: APIRequestContext,
@@ -36,9 +38,17 @@ export async function createRole(
     data: body,
   });
 
-  expect(res.status()).toBe(201);
+  await assertStatusCode(res, 201);
   const json = await res.json();
   assertRequiredFields(json, roleRequiredFields);
+  await validateResponse(
+    {
+      path: '/roles',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   if (state && key) {
     state[`roleId${key}`] = json.roleId;
     state[`roleName${key}`] = json.name;
@@ -68,7 +78,15 @@ export async function createMappingRule(
       headers: jsonHeaders(),
       data: body,
     });
-    expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/mapping-rules',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
+    await assertStatusCode(res, 201);
     if (state && key) {
       const json = await res.json();
       state[`mappingRuleId${key}`] = json.mappingRuleId;
@@ -98,7 +116,7 @@ export async function assignRolesToMappingRules(
         buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -119,7 +137,7 @@ export async function assignClientsToRole(
       buildUrl('/roles/{roleId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
     state[`client${roleId}${i}`] = clientId;
   }
 }
@@ -148,7 +166,7 @@ export async function assignGroupsToRole(
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   }
 }
 

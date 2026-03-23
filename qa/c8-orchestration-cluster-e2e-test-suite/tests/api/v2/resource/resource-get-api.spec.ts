@@ -15,7 +15,10 @@ import {
   assertNotFoundRequest,
 } from '../../../../utils/http';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
-import {validateResponseShape} from '../../../../json-body-assertions';
+import {
+  validateResponse,
+  validateResponseShape,
+} from '../../../../json-body-assertions';
 import {deployResourceAndGetMetadata, ResourceMetadata} from '@requestHelpers';
 
 function validateResourceResponse(
@@ -59,6 +62,14 @@ test.describe.parallel('Resource Get API', () => {
     );
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/resources/{resourceKey}',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const body = await res.json();
     validateResourceResponse(body, metadata);
   });
