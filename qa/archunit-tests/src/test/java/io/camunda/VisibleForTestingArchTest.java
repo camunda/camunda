@@ -11,9 +11,12 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
+import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaField;
+import com.tngtech.archunit.core.domain.JavaMember;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.properties.HasName.AndFullName;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -22,6 +25,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Set;
 
 /**
  * ArchUnit rules to enforce correct usage of the {@link io.camunda.zeebe.util.VisibleForTesting}
@@ -38,77 +42,43 @@ public class VisibleForTestingArchTest {
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      classes()
-          .that()
-          .areAnnotatedWith(VisibleForTesting.class)
-          .should(classAccessedBySelfOrTest());
+      classes().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
 
   @ArchTest
   static final ArchRule METHOD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      methods()
-          .that()
-          .areAnnotatedWith(VisibleForTesting.class)
-          .should(methodAccessedBySelfOrTest());
+      methods().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
 
   @ArchTest
   static final ArchRule FIELD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      fields().that().areAnnotatedWith(VisibleForTesting.class).should(fieldAccessedBySelfOrTest());
+      fields().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
 
-  private static ArchCondition<JavaClass> classAccessedBySelfOrTest() {
+  private static <T extends AndFullName> ArchCondition<T> beAccessedBySelfOrTest() {
     return new ArchCondition<>("be accessed from test or self") {
       @Override
-      public void check(final JavaClass javaClass, final ConditionEvents events) {
+      public void check(final T element, final ConditionEvents events) {
 
-        javaClass.getAccessesToSelf().stream()
-            .filter(access -> isViolation(javaClass, access.getOriginOwner()))
+        final Set<? extends JavaAccess<?>> accessesToSelf;
+        final JavaClass owner;
+        if (element instanceof final JavaClass javaClass) {
+          accessesToSelf = javaClass.getAccessesToSelf();
+          owner = javaClass;
+        } else if (element instanceof final JavaMember javaMember) {
+          accessesToSelf = javaMember.getAccessesToSelf();
+          owner = javaMember.getOwner();
+        } else {
+          return;
+        }
+
+        accessesToSelf.stream()
+            .filter(access -> isViolation(owner, access.getOriginOwner()))
             .forEach(
                 violationAccess ->
                     events.add(
                         SimpleConditionEvent.violated(
                             violationAccess,
                             String.format(
-                                "Class %s is accessed from %s, which is not a test but still requires extended visibility.",
-                                javaClass.getFullName(),
-                                violationAccess.getOriginOwner().getFullName()))));
-      }
-    };
-  }
-
-  private static ArchCondition<JavaMethod> methodAccessedBySelfOrTest() {
-    return new ArchCondition<>("be accessed from test or self") {
-      @Override
-      public void check(final JavaMethod javaMethod, final ConditionEvents events) {
-
-        javaMethod.getAccessesToSelf().stream()
-            .filter(access -> isViolation(javaMethod.getOwner(), access.getOriginOwner()))
-            .forEach(
-                violationCall ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            violationCall,
-                            String.format(
-                                "Method %s is called from %s, which is not a test but still requires extended visibility.",
-                                javaMethod.getFullName(),
-                                violationCall.getOriginOwner().getFullName()))));
-      }
-    };
-  }
-
-  private static ArchCondition<JavaField> fieldAccessedBySelfOrTest() {
-    return new ArchCondition<>("be accessed from test or self") {
-      @Override
-      public void check(final JavaField javaField, final ConditionEvents events) {
-
-        javaField.getAccessesToSelf().stream()
-            .filter(fieldAccess -> isViolation(javaField.getOwner(), fieldAccess.getOriginOwner()))
-            .forEach(
-                violationAccess ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            violationAccess,
-                            String.format(
-                                "Field %s is accessed from %s, which is not a test but still requires extended visibility.",
-                                javaField.getFullName(),
+                                "%s is accessed from %s, which is not a test but still requires extended visibility.",
+                                displayName(element),
                                 violationAccess.getOriginOwner().getFullName()))));
       }
     };
@@ -136,5 +106,14 @@ public class VisibleForTestingArchTest {
       topLevelClass = topLevelClass.getEnclosingClass().get();
     }
     return topLevelClass;
+  }
+
+  private static String displayName(final AndFullName element) {
+    return switch (element) {
+      case final JavaClass javaClass -> "Class " + element.getFullName();
+      case final JavaMethod javaMethod -> "Method " + element.getFullName();
+      case final JavaField javaField -> "Field " + element.getFullName();
+      default -> element.getFullName();
+    };
   }
 }
