@@ -24,7 +24,9 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.judge.BaseProviderConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig.OpenAiCompatibleConfig;
 import io.camunda.process.test.impl.judge.OpenAiChatModelAdapterProvider;
+import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -172,16 +174,24 @@ public class JudgeConfigBootstrapIT {
         "camunda.process-test.judge.chatModel.provider=openai-compatible",
         "camunda.process-test.judge.chatModel.model=llama3",
         "camunda.process-test.judge.chatModel.baseUrl=http://localhost:11434/v1",
-        "camunda.process-test.judge.chat-model.headers.X-Test-Header=test-header-value"
+        "camunda.process-test.judge.chatModel.headers.X-Test-Header=test-header-value"
       })
   @CamundaSpringProcessTest
   class OpenAiCompatibleProviderWithHeaders {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
 
     @Test
     void shouldBootstrapOpenAiCompatibleProvider() {
       final JudgeConfig config = CamundaAssert.getJudgeConfig();
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isNotNull();
+
+      final ProviderConfig providerConfig = runtimeConfig.getJudge().toProviderConfig();
+      assertThat(providerConfig).isInstanceOf(OpenAiCompatibleConfig.class);
+      final Map<String, String> headers = ((OpenAiCompatibleConfig) providerConfig).getHeaders();
+      assertThat(headers).isNotNull();
+      assertThat(headers).containsEntry("X-Test-Header", "test-header-value");
     }
   }
 

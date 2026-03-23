@@ -40,13 +40,14 @@ final class OpenAiCompatibleChatModelBuilder {
         OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
 
     final Map<String, String> headers = config.getHeaders();
+    final boolean hasAuthorizationHeader =
+        headers != null && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase);
     if (hasText(config.getApiKey())) {
-      LOG.debug("Using configured API key");
-      builder.apiKey(config.getApiKey().trim());
-      if (headers != null
-          && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase)) {
+      if (hasAuthorizationHeader) {
         LOG.warn("Both API key and Authorization header are set. The API key will be ignored.");
-        builder.apiKey(null);
+      } else {
+        LOG.debug("Using configured API key");
+        builder.apiKey(config.getApiKey().trim());
       }
     }
 

@@ -67,7 +67,7 @@ class OpenAiCompatibleChatModelBuilderTest {
             "llama3",
             "http://localhost:11434/v1",
             "test-api-key",
-            Map.of("X-Test-Header", "test-header-value"));
+            Map.of("Authorization", "Bearer test-token"));
 
     // when
     final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
