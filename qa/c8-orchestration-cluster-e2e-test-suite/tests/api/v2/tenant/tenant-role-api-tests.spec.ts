@@ -10,11 +10,9 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
-  paginatedResponseFields,
   assertPaginatedRequest,
   assertStatusCode,
 } from '../../../../utils/http';
@@ -165,12 +163,12 @@ test.describe.parallel('Tenant Roles API Tests', () => {
 
         await assertStatusCode(res, 200);
         await validateResponse(
-            {
-                path: '/tenants/{tenantId}/roles/search',
-                method: 'POST',
-                status: '200',
-            },
-            res,
+          {
+            path: '/tenants/{tenantId}/roles/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
         );
         const json = await res.json();
         expect(json.page.totalItems).toBe(0);
@@ -297,7 +295,9 @@ test.describe.parallel('Tenant Roles API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search Tenant Roles Tenant - Not Found (empty response)', async ({request}) => {
+  test('Search Tenant Roles Tenant - Not Found (empty response)', async ({
+    request,
+  }) => {
     const p = {tenantId: 'invalid-tenant-id'};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/roles/search', p),
