@@ -271,10 +271,6 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	return startFlagSet
 }
 
-func createOperateUrl(settings *types.C8RunSettings) string {
-	return startupurl.OperateURL(*settings)
-}
-
 func createDefaultStartupUrl(settings *types.C8RunSettings, camundaVersion string) string {
 	return startupurl.Default(*settings, camundaVersion)
 }
