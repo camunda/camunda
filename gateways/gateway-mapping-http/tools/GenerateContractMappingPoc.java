@@ -4220,8 +4220,12 @@ package %s;
     }
     sb.append(") {\n");
 
-    // Resolve authentication context once per request
-    sb.append("    final var authentication = authenticationProvider.getCamundaAuthentication();\n");
+    // Resolve authentication context once per request.
+    // Unprotected endpoints (e.g. /v2/license, /v2/status) have no Spring Authentication
+    // in the security context — getCamundaAuthentication() throws when no converter handles
+    // null. Fall back to anonymous authentication for these endpoints.
+    sb.append("    final var authentication =\n");
+    sb.append("        authenticationProvider.getAnonymousIfUnavailable();\n");
 
     // Body: delegate directly to service adapter
     String adapterArgs = ep.params().stream()
