@@ -7,24 +7,25 @@
  */
 package io.camunda.exporter.store;
 
-import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.NdJsonpSerializable;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import jakarta.json.stream.JsonGenerator;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,16 +87,21 @@ public final class StreamingElasticsearchBatchRequest extends ElasticsearchBatch
       entity.setContentType("application/x-ndjson");
       final Request request = new Request("POST", "/_bulk");
       request.setEntity(entity);
-      final var response = restClient.performRequest(request);
+      final Response response = restClient.performRequest(request);
 
-      final BulkIndexResponse bulkIndexResponse;
+      // Buffer the response bytes so we can do a two-pass parse: first only the "errors" flag,
+      // then the full response with all items only when there are actual errors.
+      final byte[] responseBody;
       try (final var responseStream = response.getEntity().getContent()) {
-        bulkIndexResponse = objectMapper.readValue(responseStream, BulkIndexResponse.class);
+        responseBody = responseStream.readAllBytes();
       }
 
-      if (bulkIndexResponse.errors()) {
-        final List<BulkResponseItem> items = toBulkResponseItems(bulkIndexResponse);
-        validateNoErrors(items, customErrorHandlers);
+      final var summary = objectMapper.readValue(responseBody, BulkErrorSummary.class);
+      if (summary.errors()) {
+        final var parser =
+            jsonpMapper.jsonProvider().createParser(new ByteArrayInputStream(responseBody));
+        final var bulkIndexResponse = BulkResponse._DESERIALIZER.deserialize(parser, jsonpMapper);
+        validateNoErrors(bulkIndexResponse.items(), customErrorHandlers);
       }
       if (metrics != null) {
         metrics.recordBulkOperations(bulkRequest.operations().size());
@@ -118,7 +124,7 @@ public final class StreamingElasticsearchBatchRequest extends ElasticsearchBatch
       if (item == null) {
         continue;
       }
-      if (item instanceof NdJsonpSerializable nested && nested != value) {
+      if (item instanceof final NdJsonpSerializable nested && nested != value) {
         writeNdJson(out, nested);
       } else {
         final JsonGenerator generator = jsonpMapper.jsonProvider().createGenerator(out);
@@ -129,27 +135,6 @@ public final class StreamingElasticsearchBatchRequest extends ElasticsearchBatch
     }
   }
 
-  /** Maps our DTO items to the ES client's {@link BulkResponseItem} to reuse error handling. */
-  private List<BulkResponseItem> toBulkResponseItems(final BulkIndexResponse response) {
-    return response.items().stream()
-        .map(
-            item -> {
-              final var detail = item.detail();
-              if (detail == null) {
-                return null;
-              }
-              return BulkResponseItem.of(
-                  b -> {
-                    b.index(detail._index()).id(detail._id()).status(detail.status());
-                    if (detail.error() != null) {
-                      b.error(
-                          ErrorCause.of(
-                              e -> e.type(detail.error().type()).reason(detail.error().reason())));
-                    }
-                    return b;
-                  });
-            })
-        .filter(item -> item != null)
-        .toList();
-  }
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record BulkErrorSummary(boolean errors) {}
 }
