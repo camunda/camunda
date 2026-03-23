@@ -90,7 +90,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-auth</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

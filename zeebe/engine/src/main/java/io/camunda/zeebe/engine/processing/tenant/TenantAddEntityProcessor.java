@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -37,8 +36,12 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.Map;
 
 public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
+
+  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
+  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists.";
@@ -54,7 +57,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final TypedResponseWriter responseWriter;
   private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final SecurityConfiguration securityConfig;
   private final MembershipState membershipState;
 
   public TenantAddEntityProcessor(
@@ -62,8 +64,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
@@ -77,7 +78,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -109,7 +109,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityType, entityId)) {
+    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
@@ -157,9 +157,14 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }
 
-  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
-    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
-    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+  private boolean isEntityPresent(
+      final Map<String, Object> authorizations,
+      final EntityType entityType,
+      final String entityId) {
+    final boolean localUserEnabled =
+        (boolean) authorizations.getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
+    final boolean localGroupEnabled =
+        (boolean) authorizations.getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
     return switch (entityType) {
       case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();

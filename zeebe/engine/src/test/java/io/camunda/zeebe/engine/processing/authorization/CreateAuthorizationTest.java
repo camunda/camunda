@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -31,11 +30,6 @@ public class CreateAuthorizationTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @Before
-  public void setup() {
-    engine.user().newUser("ownerId").create();
-  }
 
   @Test
   public void shouldCreateAuthorization() {
