@@ -96,7 +96,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),
@@ -148,7 +148,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),
@@ -209,7 +209,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),
@@ -277,7 +277,7 @@ describe('<Task />', () => {
         );
       }),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(getQueryVariablesResponseMock([]));
         },
@@ -355,7 +355,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),
@@ -423,7 +423,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),
@@ -504,7 +504,7 @@ describe('<Task />', () => {
         );
       }),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),
@@ -556,9 +556,12 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
-      http.post('/v2/user-tasks/:userTaskKey/variables/search', () => {
-        return HttpResponse.json([]);
-      }),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+      ),
       http.delete('/v2/user-tasks/:userTaskKey/assignee', () => {
         return HttpResponse.json();
       }),
@@ -649,7 +652,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json(
             getQueryVariablesResponseMock(variableMocks.variables),

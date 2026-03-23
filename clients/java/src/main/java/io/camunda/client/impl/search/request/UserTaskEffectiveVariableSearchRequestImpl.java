@@ -1,0 +1,133 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.impl.search.request;
+
+import static io.camunda.client.api.search.request.SearchRequestBuilders.offsetPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskVariableFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.variableSort;
+
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.filter.UserTaskVariableFilter;
+import io.camunda.client.api.search.page.OffsetPage;
+import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.UserTaskEffectiveVariableSearchRequest;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
+import io.camunda.client.protocol.rest.UserTaskEffectiveVariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.VariableSearchQueryResult;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import org.apache.hc.client5.http.config.RequestConfig;
+
+public class UserTaskEffectiveVariableSearchRequestImpl
+    extends TypedSearchRequestPropertyProvider<UserTaskEffectiveVariableSearchQueryRequest>
+    implements UserTaskEffectiveVariableSearchRequest {
+
+  private final UserTaskEffectiveVariableSearchQueryRequest request;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final JsonMapper jsonMapper;
+  private final long userTaskKey;
+  private boolean withFullValues = false;
+
+  public UserTaskEffectiveVariableSearchRequestImpl(
+      final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
+    this.httpClient = httpClient;
+    this.jsonMapper = jsonMapper;
+    this.userTaskKey = userTaskKey;
+    httpRequestConfig = httpClient.newRequestConfig();
+    request = new UserTaskEffectiveVariableSearchQueryRequest();
+  }
+
+  @Override
+  public FinalSearchRequestStep<Variable> requestTimeout(final Duration requestTimeout) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    return this;
+  }
+
+  @Override
+  public CamundaFuture<SearchResponse<Variable>> send() {
+    final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
+
+    final Map<String, String> queryParams = new HashMap<>();
+    if (withFullValues) {
+      queryParams.put("truncateValues", String.valueOf(false));
+    }
+    httpClient.post(
+        String.format("/user-tasks/%d/effective-variables/search", userTaskKey),
+        queryParams,
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        VariableSearchQueryResult.class,
+        SearchResponseMapper::toVariableSearchResponse,
+        result);
+    return result;
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest filter(final UserTaskVariableFilter value) {
+    request.setFilter(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest filter(final Consumer<UserTaskVariableFilter> fn) {
+    return filter(userTaskVariableFilter(fn));
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest sort(final VariableSort value) {
+    request.setSort(
+        SearchRequestSortMapper.toUserTaskVariableSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
+    return this;
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest sort(final Consumer<VariableSort> fn) {
+    return sort(variableSort(fn));
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest page(final OffsetPage value) {
+    request.setPage(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest page(final Consumer<OffsetPage> fn) {
+    return page(offsetPage(fn));
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest withFullValues() {
+    withFullValues = true;
+    return this;
+  }
+
+  @Override
+  protected UserTaskEffectiveVariableSearchQueryRequest getSearchRequestProperty() {
+    return request;
+  }
+}

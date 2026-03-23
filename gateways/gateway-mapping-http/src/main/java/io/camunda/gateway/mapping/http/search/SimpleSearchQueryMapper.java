@@ -393,6 +393,14 @@ public class SimpleSearchQueryMapper {
         .name(getStringFilter(simple.getName()));
   }
 
+  public static OffsetPagination toOffsetPagination(
+      final io.camunda.gateway.protocol.model.simple.OffsetPagination simple) {
+    if (simple == null) {
+      return null;
+    }
+    return new OffsetPagination().from(simple.getFrom()).limit(simple.getLimit());
+  }
+
   private static List<VariableValueFilterProperty> mapVariableValueFilterProperties(
       final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty>
           variableFilters) {
