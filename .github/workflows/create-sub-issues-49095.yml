@@ -1,23 +1,21 @@
-name: Create Sub-Issues for Operate E2E Tests (#49095)
+name: Finalize Sub-Issues for Operate E2E Tests (#49095)
 
-# This workflow creates sub-issues in https://github.com/camunda/camunda/issues/49095
-# for every test file that was skipped in https://github.com/camunda/camunda/pull/49093
-# as part of the Operate process instance page redesign (issue #46750).
+# Context: 11 sub-issues were already created (#49225–#49235) via the Copilot agent
+# but without labels and without sub-issue linking (the OAuth token didn't have those perms).
+# This workflow applies the missing labels and links them as sub-issues of #49095.
+# Run via workflow_dispatch.
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - copilot/create-sub-issues-for-test-files
 
 permissions:
   issues: write
 
 jobs:
-  create-sub-issues:
+  finalize-sub-issues:
     runs-on: ubuntu-latest
     steps:
-      - name: Create sub-issues for skipped Operate E2E tests
+      - name: Apply labels and link as sub-issues of #49095
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: python3 {0}
@@ -25,197 +23,73 @@ jobs:
           import subprocess
           import json
           import sys
+          import time
 
           REPO = "camunda/camunda"
           PARENT_ISSUE = 49095
 
-          # Test files and their skipped tests, from PR #49093
-          sub_issues = [
-              {
-                  "title": "Fix skipped Operate E2E test: Audit log entries can be filtered by process instance key",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/auditLog.spec.ts",
-                  "tests": [
-                      "test.skip('Audit log entries can be filtered by process instance key')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E test: Navigate to called and parent process instances",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/callActivities.spec.ts",
-                  "tests": [
-                      "test.skip('Navigate to called and parent process instances')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E test: Navigation between process and decision",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/decisionNavigation.spec.ts",
-                  "tests": [
-                      "test.skip('Navigation between process and decision')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E tests in multiInstanceSelection.spec.ts",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/multiInstanceSelection.spec.ts",
-                  "tests": [
-                      "test.skip('verify execution counts and incidents display for multi-instance flow node')",
-                      "test.skip('select single task')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E tests in processInstanceAuditLog.spec.ts",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceAuditLog.spec.ts",
-                  "tests": [
-                      "test.describe.skip('Process Instance Audit Log') (entire suite)",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E tests in processInstanceHistory.spec.ts",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceHistory.spec.ts",
-                  "tests": [
-                      "test.describe.skip('Process Instance History') (entire suite)",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E tests in processInstanceIncidents.spec.ts",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceIncidents.spec.ts",
-                  "tests": [
-                      "test.skip('Resolve an incident')",
-                      "test.skip('Cancel an instance')",
-                      "test.skip('Should render collapsed sub process and navigate between planes')",
-                      "test.skip('Verify Incident root cause instance')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E tests in processInstanceListeners.spec.ts",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceListeners.spec.ts",
-                  "tests": [
-                      "test.describe.skip('Process Instance Listeners') (entire suite)",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E test: Migrated tasks",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceMigration.spec.ts",
-                  "tests": [
-                      "test.skip('Migrated tasks')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E tests in processInstanceModifications.spec.ts",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceModifications.spec.ts",
-                  "tests": [
-                      "test.skip('Should apply/remove edit variable modifications')",
-                      "test.skip('Verify Variables functionality in Modification mode')",
-                      "test.skip('Should apply/remove add variable modifications')",
-                  ],
-              },
-              {
-                  "title": "Fix skipped Operate E2E test: Add variables",
-                  "file": "qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceVariables.spec.ts",
-                  "tests": [
-                      "test.skip('Add variables')",
-                  ],
-              },
-          ]
+          # The 11 issues already created — one per test file changed in PR #49093
+          CREATED_ISSUES = [49225, 49226, 49227, 49228, 49229, 49230, 49231, 49232, 49233, 49234, 49235]
+          LABELS = ["kind/task", "component/operate"]
 
 
-          def run_gh(args, input=None):
+          def run_gh(args):
               result = subprocess.run(
                   ["gh"] + args,
                   capture_output=True,
                   text=True,
-                  input=input,
               )
               if result.returncode != 0:
-                  print(f"ERROR: gh {' '.join(args)}\n{result.stderr}", file=sys.stderr)
-                  raise RuntimeError(f"gh command failed: {result.stderr}")
+                  print(f"ERROR: gh {' '.join(args[:4])}\n{result.stderr[:200]}", file=sys.stderr)
+                  return None
               return result.stdout.strip()
 
 
           def get_existing_sub_issues():
-              """Return set of issue numbers already linked as sub-issues."""
-              try:
-                  output = run_gh(["api", f"/repos/{REPO}/issues/{PARENT_ISSUE}/sub_issues"])
-                  items = json.loads(output)
-                  return {item["number"] for item in items}
-              except Exception as e:
-                  print(f"Warning: Could not list sub-issues: {e}")
+              output = run_gh(["api", f"/repos/{REPO}/issues/{PARENT_ISSUE}/sub_issues"])
+              if not output:
                   return set()
-
-
-          def find_existing_issue(title):
-              """Return issue number if an open issue with this title already exists."""
-              try:
-                  output = run_gh([
-                      "issue", "list",
-                      "--repo", REPO,
-                      "--search", title,
-                      "--state", "open",
-                      "--json", "number,title",
-                  ])
-                  items = json.loads(output)
-                  for item in items:
-                      if item["title"] == title:
-                          return item["number"]
-              except Exception:
-                  pass
-              return None
-
-
-          def build_body(issue):
-              tests_md = "\n".join(f"- `{t}`" for t in issue["tests"])
-              return (
-                  "## Context\n\n"
-                  "Fix and reenable the following test(s) skipped due to the process instance page redesign"
-                  " ([#46750](https://github.com/camunda/camunda/issues/46750)),"
-                  " tracked in [#49093](https://github.com/camunda/camunda/pull/49093).\n\n"
-                  f"**Test file:** `{issue['file']}`\n\n"
-                  "## Skipped test(s)\n\n"
-                  f"{tests_md}\n\n"
-                  "## Acceptance criteria\n\n"
-                  "- [ ] All skipped tests pass reliably and are re-enabled\n\n"
-                  "## Parent issue\n\n"
-                  f"Sub-issue of #{PARENT_ISSUE}"
-              )
+              items = json.loads(output)
+              return {item["number"] for item in items}
 
 
           existing_sub_issues = get_existing_sub_issues()
           print(f"Existing sub-issues of #{PARENT_ISSUE}: {existing_sub_issues}")
 
-          for issue in sub_issues:
-              title = issue["title"]
-              body = build_body(issue)
+          for issue_number in CREATED_ISSUES:
+              print(f"\nProcessing #{issue_number}...")
 
-              # Check if issue already exists
-              existing = find_existing_issue(title)
-              if existing:
-                  print(f"Issue #{existing} already exists: {title}")
-                  issue_number = existing
+              # Apply labels
+              label_result = run_gh([
+                  "issue", "edit",
+                  str(issue_number),
+                  "--repo", REPO,
+                  "--add-label", ",".join(LABELS),
+              ])
+              if label_result is not None:
+                  print(f"  ✓ Labels applied: {LABELS}")
               else:
-                  # Create the issue
-                  url = run_gh([
-                      "issue", "create",
-                      "--repo", REPO,
-                      "--title", title,
-                      "--body", body,
-                      "--label", "kind/task",
-                      "--label", "component/operate",
-                  ])
-                  issue_number = int(url.split("/")[-1])
-                  print(f"Created issue #{issue_number}: {title}")
+                  print(f"  ✗ Failed to apply labels")
 
-              # Link as sub-issue if not already linked
+              # Link as sub-issue
               if issue_number in existing_sub_issues:
-                  print(f"  #{issue_number} is already a sub-issue of #{PARENT_ISSUE}")
+                  print(f"  ✓ Already linked as sub-issue of #{PARENT_ISSUE}")
               else:
-                  try:
-                      run_gh([
-                          "api",
-                          "--method", "POST",
-                          f"/repos/{REPO}/issues/{PARENT_ISSUE}/sub_issues",
-                          "-f", f"sub_issue_id={issue_number}",
-                      ])
-                      print(f"  Linked #{issue_number} as sub-issue of #{PARENT_ISSUE}")
+                  link_result = run_gh([
+                      "api",
+                      "--method", "POST",
+                      f"/repos/{REPO}/issues/{PARENT_ISSUE}/sub_issues",
+                      "-f", f"sub_issue_id={issue_number}",
+                  ])
+                  if link_result is not None:
+                      print(f"  ✓ Linked as sub-issue of #{PARENT_ISSUE}")
                       existing_sub_issues.add(issue_number)
-                  except Exception as e:
-                      print(f"  Warning: Could not link #{issue_number} as sub-issue: {e}")
+                  else:
+                      print(f"  ✗ Failed to link as sub-issue")
 
-          print("\nDone!")
+              time.sleep(0.3)
+
+          print(f"\n✅ Done! Finalized {len(CREATED_ISSUES)} sub-issues under #{PARENT_ISSUE}")
+          print("\nSub-issue URLs:")
+          for n in CREATED_ISSUES:
+              print(f"  https://github.com/{REPO}/issues/{n}")
