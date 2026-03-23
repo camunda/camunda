@@ -127,8 +127,11 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   }
 
   private int largeBatchSize() {
-    return Math.min(
-        MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * config.getRolloverBatchSize());
+    final int rolloverBatchSize = config.getRolloverBatchSize();
+    final int largeBatchSize =
+        Math.min(MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * rolloverBatchSize);
+    // just in case rollover batch size is configured very high
+    return Math.max(largeBatchSize, rolloverBatchSize);
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
