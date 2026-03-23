@@ -2217,7 +2217,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   /**
    * Executes a search request to query effective variables related to a user task. Returns
    * deduplicated variables where the innermost scope wins when the same variable name exists at
-   * multiple scope levels. Uses offset-based pagination only.
+   * multiple scope levels.
    *
    * <pre>
    *   long userTaskKey = ...;
