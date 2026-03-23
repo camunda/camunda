@@ -10607,7 +10607,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/DecisionDefinitionId'
         variables:
-          description: The message variables as JSON document.
+          description: The decision evaluation variables as JSON document.
           additionalProperties: true
           type: object
         tenantId:
@@ -10624,7 +10624,7 @@ components:
         decisionDefinitionKey:
           $ref: '#/components/schemas/DecisionDefinitionKey'
         variables:
-          description: The message variables as JSON document.
+          description: The decision evaluation variables as JSON document.
           additionalProperties: true
           type: object
         tenantId:
