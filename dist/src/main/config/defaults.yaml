@@ -84,6 +84,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     gateway-id: null # Type: String, Env: CAMUNDA_CLUSTER_GATEWAYID
     global-listeners: # Type: io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg
       user-task: null # Type: List<io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg>, Env: CAMUNDA_CLUSTER_GLOBALLISTENERS_USERTASK
+      execution: null # Type: List<io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg>, Env: CAMUNDA_CLUSTER_GLOBALLISTENERS_EXECUTION
 
     # Allows to specify a list of known other nodes to connect to on startup. The contact points of the
     # internal network configuration must be specified.

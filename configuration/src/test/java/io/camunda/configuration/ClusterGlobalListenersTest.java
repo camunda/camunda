@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -150,6 +151,138 @@ public class ClusterGlobalListenersTest {
           brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask();
       assertThat(taskListeners).hasSize(1);
       assertThat(taskListeners.getFirst().isAfterNonGlobal()).isEqualTo(true);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.cluster.global-listeners.execution.0.type=audit-event",
+        "camunda.cluster.global-listeners.execution.0.event-types.0=start",
+        "camunda.cluster.global-listeners.execution.0.event-types.1=end",
+        "camunda.cluster.global-listeners.execution.0.retries=5",
+        "camunda.cluster.global-listeners.execution.0.after-non-global=true",
+        "camunda.cluster.global-listeners.execution.0.priority=100",
+        "camunda.cluster.global-listeners.execution.0.element-types.0=process",
+        "camunda.cluster.global-listeners.execution.0.element-types.1=serviceTask",
+        "camunda.cluster.global-listeners.execution.0.categories.0=gateways"
+      })
+  class WithExecutionListenerConfig {
+    final BrokerBasedProperties brokerCfg;
+
+    WithExecutionListenerConfig(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetExecutionListenerType() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getType()).isEqualTo("audit-event");
+    }
+
+    @Test
+    void shouldSetExecutionListenerEventTypes() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getEventTypes()).containsExactly("start", "end");
+    }
+
+    @Test
+    void shouldSetExecutionListenerRetries() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getRetries()).isEqualTo("5");
+    }
+
+    @Test
+    void shouldSetExecutionListenerAfterNonGlobalFlag() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().isAfterNonGlobal()).isTrue();
+    }
+
+    @Test
+    void shouldSetExecutionListenerPriority() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getPriority()).isEqualTo(100);
+    }
+
+    @Test
+    void shouldSetExecutionListenerElementTypes() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getElementTypes()).containsExactly("process", "serviceTask");
+    }
+
+    @Test
+    void shouldSetExecutionListenerCategories() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getCategories()).containsExactly("gateways");
+    }
+
+    @Test
+    void shouldNotAffectUserTaskListeners() {
+      final List<GlobalListenerCfg> taskListeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask();
+      assertThat(taskListeners).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.cluster.global-listeners.execution.0.type=audit-event",
+        "camunda.cluster.global-listeners.execution.0.event-types.0=start",
+        "camunda.cluster.global-listeners.execution.0.element-types.0=process",
+        "camunda.cluster.global-listeners.user-task.0.type=task-hook",
+        "camunda.cluster.global-listeners.user-task.0.event-types.0=creating"
+      })
+  class WithBothUserTaskAndExecutionListeners {
+    final BrokerBasedProperties brokerCfg;
+
+    WithBothUserTaskAndExecutionListeners(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldConfigureBothListenerTypesIndependently() {
+      final List<GlobalListenerCfg> executionListeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      final List<GlobalListenerCfg> taskListeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask();
+      assertThat(executionListeners).hasSize(1);
+      assertThat(executionListeners.getFirst().getType()).isEqualTo("audit-event");
+      assertThat(taskListeners).hasSize(1);
+      assertThat(taskListeners.getFirst().getType()).isEqualTo("task-hook");
+    }
+
+    @Test
+    void shouldForceSetCorrectListenerTypesInRuntimeConfiguration() {
+      // given
+      final var globalListenersCfg = brokerCfg.getExperimental().getEngine().getGlobalListeners();
+
+      // when
+      final var runtimeConfig = globalListenersCfg.createGlobalListenersConfiguration();
+
+      // then — execution listeners must have EXECUTION type, not the USER_TASK default
+      assertThat(runtimeConfig.execution()).hasSize(1);
+      assertThat(runtimeConfig.execution().getFirst().listenerType())
+          .isEqualTo(GlobalListenerType.EXECUTION);
+
+      // then — user-task listeners must have USER_TASK type
+      assertThat(runtimeConfig.userTask()).hasSize(1);
+      assertThat(runtimeConfig.userTask().getFirst().listenerType())
+          .isEqualTo(GlobalListenerType.USER_TASK);
     }
   }
 }

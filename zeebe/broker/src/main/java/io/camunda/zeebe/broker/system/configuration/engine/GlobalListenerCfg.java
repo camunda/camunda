@@ -99,8 +99,25 @@ public class GlobalListenerCfg implements ConfigurationEntry {
   }
 
   public GlobalListenerConfiguration createGlobalListenerConfiguration() {
+    return createGlobalListenerConfiguration(listenerType);
+  }
+
+  /**
+   * Creates a {@link GlobalListenerConfiguration} using the provided listener type, overriding the
+   * configured {@link #listenerType} field. This is used by {@link GlobalListenersCfg} to force-set
+   * the correct type based on which config list (userTask vs execution) the entry belongs to.
+   */
+  public GlobalListenerConfiguration createGlobalListenerConfiguration(
+      final GlobalListenerType overrideListenerType) {
     return new GlobalListenerConfiguration(
-        id, eventTypes, type, retries, afterNonGlobal, priority, listenerType, elementTypes,
+        id,
+        eventTypes,
+        type,
+        retries,
+        afterNonGlobal,
+        priority,
+        overrideListenerType,
+        elementTypes,
         categories);
   }
 }

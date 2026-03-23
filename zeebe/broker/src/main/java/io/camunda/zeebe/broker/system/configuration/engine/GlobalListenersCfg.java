@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.GlobalListenersConfiguration;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +45,11 @@ public class GlobalListenersCfg implements ConfigurationEntry {
 
   public GlobalListenersConfiguration createGlobalListenersConfiguration() {
     return new GlobalListenersConfiguration(
-        userTask.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList(),
-        execution.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList());
+        userTask.stream()
+            .map(cfg -> cfg.createGlobalListenerConfiguration(GlobalListenerType.USER_TASK))
+            .toList(),
+        execution.stream()
+            .map(cfg -> cfg.createGlobalListenerConfiguration(GlobalListenerType.EXECUTION))
+            .toList());
   }
 }
