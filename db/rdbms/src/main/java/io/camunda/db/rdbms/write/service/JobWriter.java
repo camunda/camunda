@@ -52,7 +52,9 @@ public class JobWriter {
             WriteStatementType.UPDATE,
             job.jobKey(),
             "io.camunda.db.rdbms.sql.JobMapper.update",
-            job));
+            job.truncateErrorMessage(
+                vendorDatabaseProperties.errorMessageSize(),
+                vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
   public void scheduleForHistoryCleanup(
