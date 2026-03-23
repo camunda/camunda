@@ -46,7 +46,9 @@ final class ProcessInstanceElementCompletingV2Applier
       return;
     }
     final var currentConfigKey = currentConfig.getGlobalListenerBatchKey();
-    globalListenersState.storeConfigurationVersion(currentConfig);
+    if (!globalListenersState.isConfigurationVersionStored(currentConfigKey)) {
+      globalListenersState.storeConfigurationVersion(currentConfig);
+    }
     globalListenersState.pinConfiguration(currentConfigKey, elementInstanceKey);
     elementInstanceState.updateInstance(
         elementInstanceKey, instance -> instance.setExecutionListenersConfigKey(currentConfigKey));

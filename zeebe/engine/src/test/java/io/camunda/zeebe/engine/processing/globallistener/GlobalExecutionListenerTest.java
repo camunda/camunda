@@ -13,25 +13,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 /**
  * Integration tests verifying that global execution listeners produce listener jobs when process
  * instances execute, and that the merge ordering with BPMN-level execution listeners is correct.
+ *
+ * <p>Uses {@code @Rule} (not {@code @ClassRule}) so each test gets a fresh engine — global listener
+ * registrations do not accumulate across tests.
  */
 public class GlobalExecutionListenerTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @Rule public final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "gel-test-process";
   private static final String GLOBAL_EL_TYPE = "global_el_job";
@@ -586,6 +591,242 @@ public class GlobalExecutionListenerTest {
                 .withElementId("task")
                 .limit(2))
         .hasSize(2);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(piKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Empty scope matches all element types
+  // ---------------------------------------------------------------------------
+
+  @Test
+  public void shouldMatchAllElementTypesWhenNoScopeConfigured() {
+    // given — listener with no elementTypes or categories (matches all element types)
+    ENGINE
+        .globalListener()
+        .withId("el-all-scope")
+        .withType(GLOBAL_EL_TYPE)
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .withEventTypes("start")
+        .create();
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long piKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then — EL job fires on the process start AND the service task start
+    final var elJobs =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withType(GLOBAL_EL_TYPE)
+            .limit(2)
+            .toList();
+
+    assertThat(elJobs).hasSize(2);
+    assertThat(elJobs.get(0).getValue().getElementId()).isEqualTo(PROCESS_ID);
+    assertThat(elJobs.get(1).getValue().getElementId()).isEqualTo("task");
+
+    // complete all jobs so the process finishes
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).complete(); // process start EL
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).complete(); // task start EL
+    ENGINE.job().ofInstance(piKey).withType(SERVICE_TASK_TYPE).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(piKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Combined categories + elementTypes (union)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  public void shouldMatchUnionOfCategoriesAndElementTypes() {
+    // given — listener combining categories (gateways) with explicit elementTypes (serviceTask)
+    ENGINE
+        .globalListener()
+        .withId("el-union")
+        .withType(GLOBAL_EL_TYPE)
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .withEventTypes("start")
+        .withCategories("gateways")
+        .withElementTypes("serviceTask")
+        .create();
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .exclusiveGateway("gw")
+            .sequenceFlowId("to-task")
+            .defaultFlow()
+            .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long piKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then — EL fires on both the exclusive gateway (from gateways category) and the service task
+    final var elJobs =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withType(GLOBAL_EL_TYPE)
+            .limit(2)
+            .toList();
+
+    assertThat(elJobs).hasSize(2);
+    assertThat(elJobs.get(0).getValue().getElementId()).isEqualTo("gw");
+    assertThat(elJobs.get(1).getValue().getElementId()).isEqualTo("task");
+
+    // complete all jobs
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).complete(); // gw start EL
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).complete(); // task start EL
+    ENGINE.job().ofInstance(piKey).withType(SERVICE_TASK_TYPE).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(piKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Gateway element type — start supported, end not supported
+  // ---------------------------------------------------------------------------
+
+  @Test
+  public void shouldCreateGlobalELJobOnGatewayStartButNotEnd() {
+    // given — two listeners: one for start, one for end, both on exclusiveGateway
+    ENGINE
+        .globalListener()
+        .withId("el-gw-start")
+        .withType(GLOBAL_EL_TYPE + "_start")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .withEventTypes("start")
+        .withElementTypes("exclusiveGateway")
+        .create();
+
+    ENGINE
+        .globalListener()
+        .withId("el-gw-end")
+        .withType(GLOBAL_EL_TYPE + "_end")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .withEventTypes("end")
+        .withElementTypes("exclusiveGateway")
+        .create();
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .exclusiveGateway("gw")
+            .sequenceFlowId("to-end")
+            .defaultFlow()
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long piKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then — start EL fires on the gateway
+    final var startElJob =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withType(GLOBAL_EL_TYPE + "_start")
+            .getFirst();
+    assertThat(startElJob.getValue().getElementId()).isEqualTo("gw");
+
+    // complete the start EL job
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE + "_start").complete();
+
+    // wait for the process to complete (no service task to block on)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(piKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+
+    // then — end EL should NOT have fired (gateways don't support end events)
+    assertThat(
+            jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(piKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withType(GLOBAL_EL_TYPE + "_end")
+                .exists())
+        .isFalse();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Incident on failed global execution listener job
+  // ---------------------------------------------------------------------------
+
+  @Test
+  public void shouldCreateIncidentWhenGlobalELJobFails() {
+    // given
+    ENGINE
+        .globalListener()
+        .withId("el-incident")
+        .withType(GLOBAL_EL_TYPE)
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .withEventTypes("start")
+        .withElementTypes("serviceTask")
+        .create();
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long piKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when — fail the global EL job with no retries remaining
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).withRetries(0).fail();
+
+    // then — incident is created
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(piKey)
+        .hasErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES)
+        .hasErrorMessage("No more retries left.");
+
+    // when — resolve the incident by updating retries and resolving
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).withRetries(1).updateRetries();
+    ENGINE.incident().ofInstance(piKey).withKey(incident.getKey()).resolve();
+
+    // then — EL job can now complete and the process finishes
+    ENGINE.job().ofInstance(piKey).withType(GLOBAL_EL_TYPE).complete();
+    ENGINE.job().ofInstance(piKey).withType(SERVICE_TASK_TYPE).complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)

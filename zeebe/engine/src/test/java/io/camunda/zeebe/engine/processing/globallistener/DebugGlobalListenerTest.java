@@ -132,9 +132,7 @@ public class DebugGlobalListenerTest {
                 .startEvent()
                 .serviceTask(
                     "task",
-                    t ->
-                        t.zeebeJobType("main-job")
-                            .zeebeStartExecutionListener("bpmn-el-type"))
+                    t -> t.zeebeJobType("main-job").zeebeStartExecutionListener("bpmn-el-type"))
                 .endEvent()
                 .done())
         .deploy();
