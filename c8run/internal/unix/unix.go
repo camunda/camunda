@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"syscall"
@@ -41,20 +40,6 @@ func (w *UnixC8Run) ProcessTree(commandPid int) []int {
 
 func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd {
 	return exec.CommandContext(ctx, javaBinaryPath, "--version")
-}
-
-func (w *UnixC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd {
-	elasticsearchCmdString := filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch")
-	elasticsearchCmd := exec.CommandContext(
-		ctx,
-		elasticsearchCmdString,
-		"-E", "xpack.ml.enabled=false",
-		"-E", "xpack.security.enabled=false",
-		"-E", "discovery.type=single-node",
-		"-E", "cluster.routing.allocation.disk.threshold_enabled=false",
-	)
-	elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	return elasticsearchCmd
 }
 
 func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
