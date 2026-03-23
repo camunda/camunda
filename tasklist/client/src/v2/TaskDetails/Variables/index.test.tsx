@@ -65,9 +65,12 @@ describe('<Variables />', () => {
 
   it("should show an error message if variables can't be loaded", async () => {
     nodeMockServer.use(
-      http.post('/v2/user-tasks/:userTaskKey/effective-variables/search', () => {
-        return HttpResponse.json(null, {status: 404});
-      }),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
+        () => {
+          return HttpResponse.json(null, {status: 404});
+        },
+      ),
     );
 
     render(
