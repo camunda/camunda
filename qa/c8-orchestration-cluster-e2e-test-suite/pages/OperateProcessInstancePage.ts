@@ -563,22 +563,31 @@ class OperateProcessInstancePage {
 
   async getProcessInstanceKey(): Promise<string> {
     const table = this.page.getByTestId('instance-header').locator('table');
+    const firstRow = table.locator('tbody tr').first();
+    await expect(firstRow).toBeVisible();
+
     const headers = await table.locator('thead tr th').allTextContents();
     const keyColumnIndex = headers.findIndex((header) =>
       /process\s+instance\s+key/i.test(header.trim()),
     );
 
-    if (keyColumnIndex === -1) {
-      throw new Error('Could not find Process Instance Key column in header');
+    if (keyColumnIndex !== -1) {
+      const keyCell = firstRow.locator('td').nth(keyColumnIndex);
+      await expect(keyCell).toBeVisible();
+      return (await keyCell.textContent())?.trim() ?? '';
     }
 
-    const keyCell = table
-      .locator('tbody tr')
-      .first()
-      .locator('td')
-      .nth(keyColumnIndex);
-    await expect(keyCell).toBeVisible();
-    return (await keyCell.textContent())?.trim() ?? '';
+    const firstCell = firstRow.locator('td').first();
+    await expect(firstCell).toBeVisible();
+    const fallbackKey = (await firstCell.textContent())?.trim() ?? '';
+
+    if (fallbackKey) {
+      return fallbackKey;
+    }
+
+    throw new Error(
+      'Could not extract Process Instance Key from instance header table',
+    );
   }
 
   async gotoProcessInstancePage({id}: {id: string}): Promise<void> {
