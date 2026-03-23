@@ -109,10 +109,15 @@ public final class DecisionInstanceServices
     // - 403 FORBIDDEN: instance exists but user lacks DELETE permission (checked in broker request)
     // This matches the pattern used in ProcessInstanceServices.deleteProcessInstance().
     final var searchResult =
-        search(
-            decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceKeys(decisionEvaluationKey))),
-            CamundaAuthentication.anonymous());
+        executeSearchRequest(
+            () ->
+                decisionInstanceSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            CamundaAuthentication.anonymous()))
+                    .searchDecisionInstances(
+                        decisionInstanceSearchQuery(
+                            q -> q.filter(f -> f.decisionInstanceKeys(decisionEvaluationKey)))));
 
     if (searchResult.items().isEmpty()) {
       throw ErrorMapper.mapSearchError(
