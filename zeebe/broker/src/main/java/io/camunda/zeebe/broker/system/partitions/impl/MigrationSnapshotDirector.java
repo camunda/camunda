@@ -13,7 +13,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.ExponentialBackoff;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -79,7 +78,6 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
     }
   }
 
-  @VisibleForTesting
   public boolean isSnapshotTaken() {
     return snapshotTaken;
   }
