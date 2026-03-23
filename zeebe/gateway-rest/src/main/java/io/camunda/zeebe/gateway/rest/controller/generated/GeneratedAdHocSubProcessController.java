@@ -37,14 +37,15 @@ public class GeneratedAdHocSubProcessController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> activateAdHocSubProcessActivities(
       @PathVariable("adHocSubProcessInstanceKey") final Long adHocSubProcessInstanceKey,
-      @RequestBody final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract adHocSubProcessActivateActivitiesInstruction
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.activateAdHocSubProcessActivities(adHocSubProcessInstanceKey, adHocSubProcessActivateActivitiesInstruction, authentication);
+      @RequestBody
+          final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract
+              adHocSubProcessActivateActivitiesInstruction) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.activateAdHocSubProcessActivities(
+        adHocSubProcessInstanceKey, adHocSubProcessActivateActivitiesInstruction, authentication);
   }
 }

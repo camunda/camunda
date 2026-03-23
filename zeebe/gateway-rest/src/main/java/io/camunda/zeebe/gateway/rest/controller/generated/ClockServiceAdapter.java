@@ -15,18 +15,14 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Clock operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Clock operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ClockServiceAdapter {
 
   ResponseEntity<Void> pinClock(
-      GeneratedClockPinRequestStrictContract clockPinRequest,
-      CamundaAuthentication authentication
-  );
+      GeneratedClockPinRequestStrictContract clockPinRequest, CamundaAuthentication authentication);
 
-  ResponseEntity<Void> resetClock(
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Void> resetClock(CamundaAuthentication authentication);
 }

@@ -40,65 +40,62 @@ public class GeneratedIncidentController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/incidents/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchIncidents(
-      @RequestBody(required = false) final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchIncidents(incidentSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/incidents/{incidentKey}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Object> getIncident(
-      @PathVariable("incidentKey") final Long incidentKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Object> getIncident(@PathVariable("incidentKey") final Long incidentKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getIncident(incidentKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/incidents/{incidentKey}/resolution",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> resolveIncident(
       @PathVariable("incidentKey") final Long incidentKey,
-      @RequestBody(required = false) final GeneratedIncidentResolutionRequestStrictContract incidentResolutionRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedIncidentResolutionRequestStrictContract incidentResolutionRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resolveIncident(incidentKey, incidentResolutionRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/incidents/statistics/process-instances-by-error",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceStatisticsByError(
-      @RequestBody(required = false) final GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract incidentProcessInstanceStatisticsByErrorQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getProcessInstanceStatisticsByError(incidentProcessInstanceStatisticsByErrorQuery, authentication);
+      @RequestBody(required = false)
+          final GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract
+              incidentProcessInstanceStatisticsByErrorQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getProcessInstanceStatisticsByError(
+        incidentProcessInstanceStatisticsByErrorQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/incidents/statistics/process-instances-by-definition",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceStatisticsByDefinition(
-      @RequestBody final GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract incidentProcessInstanceStatisticsByDefinitionQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getProcessInstanceStatisticsByDefinition(incidentProcessInstanceStatisticsByDefinitionQuery, authentication);
+      @RequestBody
+          final GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract
+              incidentProcessInstanceStatisticsByDefinitionQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getProcessInstanceStatisticsByDefinition(
+        incidentProcessInstanceStatisticsByDefinitionQuery, authentication);
   }
 }

@@ -15,8 +15,8 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Variable operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Variable operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface VariableServiceAdapter {
@@ -24,11 +24,7 @@ public interface VariableServiceAdapter {
   ResponseEntity<Object> searchVariables(
       Boolean truncateValues,
       GeneratedVariableSearchQueryRequestStrictContract variableSearchQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getVariable(
-      Long variableKey,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getVariable(Long variableKey, CamundaAuthentication authentication);
 }

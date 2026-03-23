@@ -15,14 +15,13 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Expression operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Expression operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ExpressionServiceAdapter {
 
   ResponseEntity<Object> evaluateExpression(
       GeneratedExpressionEvaluationRequestStrictContract expressionEvaluationRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 }

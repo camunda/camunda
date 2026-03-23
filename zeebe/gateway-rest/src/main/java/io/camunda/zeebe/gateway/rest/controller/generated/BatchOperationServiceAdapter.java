@@ -16,39 +16,29 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for BatchOperation operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for BatchOperation operations. Implements request mapping, service delegation,
+ * and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface BatchOperationServiceAdapter {
 
   ResponseEntity<Object> getBatchOperation(
-      String batchOperationKey,
-      CamundaAuthentication authentication
-  );
+      String batchOperationKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchBatchOperations(
       GeneratedBatchOperationSearchQueryRequestStrictContract batchOperationSearchQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> cancelBatchOperation(
-      String batchOperationKey,
-      CamundaAuthentication authentication
-  );
+      String batchOperationKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> suspendBatchOperation(
-      String batchOperationKey,
-      CamundaAuthentication authentication
-  );
+      String batchOperationKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> resumeBatchOperation(
-      String batchOperationKey,
-      CamundaAuthentication authentication
-  );
+      String batchOperationKey, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchBatchOperationItems(
       GeneratedBatchOperationItemSearchQueryRequestStrictContract batchOperationItemSearchQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 }

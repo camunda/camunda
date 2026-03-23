@@ -37,37 +37,34 @@ public class GeneratedDecisionRequirementsController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/decision-requirements/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchDecisionRequirements(
-      @RequestBody(required = false) final GeneratedDecisionRequirementsSearchQueryRequestStrictContract decisionRequirementsSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchDecisionRequirements(decisionRequirementsSearchQuery, authentication);
+      @RequestBody(required = false)
+          final GeneratedDecisionRequirementsSearchQueryRequestStrictContract
+              decisionRequirementsSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchDecisionRequirements(
+        decisionRequirementsSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/decision-requirements/{decisionRequirementsKey}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionRequirements(
-      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionRequirements(decisionRequirementsKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/decision-requirements/{decisionRequirementsKey}/xml",
-      produces = { "text/xml", "application/problem+json" })
+      produces = {"text/xml", "application/problem+json"})
   public ResponseEntity<Void> getDecisionRequirementsXML(
-      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionRequirementsXML(decisionRequirementsKey, authentication);
   }
 }

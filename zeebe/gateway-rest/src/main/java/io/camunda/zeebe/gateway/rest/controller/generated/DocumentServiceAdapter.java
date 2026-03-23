@@ -19,8 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 /**
- * Service adapter for Document operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Document operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface DocumentServiceAdapter {
@@ -30,34 +30,24 @@ public interface DocumentServiceAdapter {
       String documentId,
       Part file,
       GeneratedDocumentMetadataStrictContract metadata,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> createDocuments(
       String storeId,
       List<Part> files,
       List<GeneratedDocumentMetadataStrictContract> metadataList,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<StreamingResponseBody> getDocument(
-      String documentId,
-      String storeId,
-      String contentHash,
-      CamundaAuthentication authentication
-  );
+      String documentId, String storeId, String contentHash, CamundaAuthentication authentication);
 
   ResponseEntity<Void> deleteDocument(
-      String documentId,
-      String storeId,
-      CamundaAuthentication authentication
-  );
+      String documentId, String storeId, CamundaAuthentication authentication);
 
   ResponseEntity<Object> createDocumentLink(
       String documentId,
       String storeId,
       String contentHash,
       GeneratedDocumentLinkRequestStrictContract documentLinkRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 }

@@ -36,13 +36,12 @@ public class GeneratedExpressionController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/expression/evaluation",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> evaluateExpression(
-      @RequestBody final GeneratedExpressionEvaluationRequestStrictContract expressionEvaluationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody
+          final GeneratedExpressionEvaluationRequestStrictContract expressionEvaluationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.evaluateExpression(expressionEvaluationRequest, authentication);
   }
 }

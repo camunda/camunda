@@ -15,19 +15,15 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for AuditLog operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for AuditLog operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface AuditLogServiceAdapter {
 
   ResponseEntity<Object> searchAuditLogs(
       GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getAuditLog(
-      Long auditLogKey,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getAuditLog(Long auditLogKey, CamundaAuthentication authentication);
 }

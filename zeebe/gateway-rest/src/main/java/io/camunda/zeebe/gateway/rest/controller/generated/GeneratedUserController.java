@@ -39,64 +39,52 @@ public class GeneratedUserController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/users",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createUser(
-      @RequestBody final GeneratedUserRequestStrictContract userRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedUserRequestStrictContract userRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createUser(userRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/users/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchUsers(
-      @RequestBody final GeneratedUserSearchQueryRequestStrictContract userSearchQueryRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedUserSearchQueryRequestStrictContract userSearchQueryRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchUsers(userSearchQueryRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/users/{username}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Object> getUser(
-      @PathVariable("username") final String username
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Object> getUser(@PathVariable("username") final String username) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getUser(username, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/users/{username}",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> updateUser(
       @PathVariable("username") final String username,
-      @RequestBody final GeneratedUserUpdateRequestStrictContract userUpdateRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedUserUpdateRequestStrictContract userUpdateRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.updateUser(username, userUpdateRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.DELETE,
       value = "/users/{username}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Void> deleteUser(
-      @PathVariable("username") final String username
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Void> deleteUser(@PathVariable("username") final String username) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteUser(username, authentication);
   }
 }

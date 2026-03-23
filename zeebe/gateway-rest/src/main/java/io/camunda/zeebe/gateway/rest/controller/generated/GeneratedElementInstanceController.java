@@ -39,53 +39,49 @@ public class GeneratedElementInstanceController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/element-instances/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchElementInstances(
-      @RequestBody(required = false) final GeneratedElementInstanceSearchQueryRequestStrictContract elementInstanceSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedElementInstanceSearchQueryRequestStrictContract
+              elementInstanceSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchElementInstances(elementInstanceSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/element-instances/{elementInstanceKey}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getElementInstance(
-      @PathVariable("elementInstanceKey") final Long elementInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getElementInstance(elementInstanceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/element-instances/{elementInstanceKey}/variables",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> createElementInstanceVariables(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey,
-      @RequestBody final GeneratedSetVariableRequestStrictContract setVariableRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.createElementInstanceVariables(elementInstanceKey, setVariableRequest, authentication);
+      @RequestBody final GeneratedSetVariableRequestStrictContract setVariableRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.createElementInstanceVariables(
+        elementInstanceKey, setVariableRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/element-instances/{elementInstanceKey}/incidents/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchElementInstanceIncidents(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey,
-      @RequestBody final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchElementInstanceIncidents(elementInstanceKey, incidentSearchQuery, authentication);
+      @RequestBody final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchElementInstanceIncidents(
+        elementInstanceKey, incidentSearchQuery, authentication);
   }
 }

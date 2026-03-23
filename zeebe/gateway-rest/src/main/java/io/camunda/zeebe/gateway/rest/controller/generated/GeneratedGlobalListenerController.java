@@ -39,64 +39,60 @@ public class GeneratedGlobalListenerController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/global-task-listeners",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createGlobalTaskListener(
-      @RequestBody final GeneratedCreateGlobalTaskListenerRequestStrictContract createGlobalTaskListenerRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody
+          final GeneratedCreateGlobalTaskListenerRequestStrictContract
+              createGlobalTaskListenerRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createGlobalTaskListener(createGlobalTaskListenerRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/global-task-listeners/{id}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Object> getGlobalTaskListener(
-      @PathVariable("id") final String id
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Object> getGlobalTaskListener(@PathVariable("id") final String id) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getGlobalTaskListener(id, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/global-task-listeners/{id}",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> updateGlobalTaskListener(
       @PathVariable("id") final String id,
-      @RequestBody final GeneratedUpdateGlobalTaskListenerRequestStrictContract updateGlobalTaskListenerRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.updateGlobalTaskListener(id, updateGlobalTaskListenerRequest, authentication);
+      @RequestBody
+          final GeneratedUpdateGlobalTaskListenerRequestStrictContract
+              updateGlobalTaskListenerRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.updateGlobalTaskListener(
+        id, updateGlobalTaskListenerRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.DELETE,
       value = "/global-task-listeners/{id}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Void> deleteGlobalTaskListener(
-      @PathVariable("id") final String id
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Void> deleteGlobalTaskListener(@PathVariable("id") final String id) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteGlobalTaskListener(id, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/global-task-listeners/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchGlobalTaskListeners(
-      @RequestBody final GeneratedGlobalTaskListenerSearchQueryRequestStrictContract globalTaskListenerSearchQueryRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchGlobalTaskListeners(globalTaskListenerSearchQueryRequest, authentication);
+      @RequestBody
+          final GeneratedGlobalTaskListenerSearchQueryRequestStrictContract
+              globalTaskListenerSearchQueryRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchGlobalTaskListeners(
+        globalTaskListenerSearchQueryRequest, authentication);
   }
 }

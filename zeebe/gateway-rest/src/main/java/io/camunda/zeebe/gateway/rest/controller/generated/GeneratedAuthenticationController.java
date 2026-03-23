@@ -38,10 +38,9 @@ public class GeneratedAuthenticationController {
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/authentication/me",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getAuthentication() {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuthentication(authentication);
   }
 }

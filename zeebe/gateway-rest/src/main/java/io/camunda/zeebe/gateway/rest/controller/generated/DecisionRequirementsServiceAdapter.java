@@ -15,24 +15,19 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for DecisionRequirements operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for DecisionRequirements operations. Implements request mapping, service
+ * delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface DecisionRequirementsServiceAdapter {
 
   ResponseEntity<Object> searchDecisionRequirements(
       GeneratedDecisionRequirementsSearchQueryRequestStrictContract decisionRequirementsSearchQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> getDecisionRequirements(
-      Long decisionRequirementsKey,
-      CamundaAuthentication authentication
-  );
+      Long decisionRequirementsKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> getDecisionRequirementsXML(
-      Long decisionRequirementsKey,
-      CamundaAuthentication authentication
-  );
+      Long decisionRequirementsKey, CamundaAuthentication authentication);
 }

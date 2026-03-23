@@ -17,35 +17,27 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for MappingRule operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for MappingRule operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface MappingRuleServiceAdapter {
 
   ResponseEntity<Object> createMappingRule(
       GeneratedMappingRuleCreateRequestStrictContract mappingRuleCreateRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> updateMappingRule(
       String mappingRuleId,
       GeneratedMappingRuleUpdateRequestStrictContract mappingRuleUpdateRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> deleteMappingRule(
-      String mappingRuleId,
-      CamundaAuthentication authentication
-  );
+      String mappingRuleId, CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getMappingRule(
-      String mappingRuleId,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getMappingRule(String mappingRuleId, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchMappingRule(
       GeneratedMappingRuleSearchQueryRequestStrictContract mappingRuleSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 }

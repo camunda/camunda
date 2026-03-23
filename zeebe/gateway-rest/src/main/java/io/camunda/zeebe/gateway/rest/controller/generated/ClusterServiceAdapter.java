@@ -14,17 +14,13 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Cluster operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Cluster operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ClusterServiceAdapter {
 
-  ResponseEntity<Object> getTopology(
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getTopology(CamundaAuthentication authentication);
 
-  ResponseEntity<Void> getStatus(
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Void> getStatus(CamundaAuthentication authentication);
 }

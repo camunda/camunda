@@ -381,6 +381,35 @@ public class GenerateContractMappingPoc {
     }
     System.out.println(universalCount + " universal controller(s) generated.");
     System.out.println(adapterCount + " service adapter interface(s) generated.");
+
+    // Format generated files with google-java-format via Maven Spotless.
+    formatGeneratedFiles();
+  }
+
+  /**
+   * Runs {@code mvn spotless:apply} on modules containing generated code so that the output
+   * matches the project's google-java-format configuration. Without this step, the pre-commit
+   * spotless hook reformats every generated file, creating noisy diffs for developers.
+   */
+  private static void formatGeneratedFiles() throws Exception {
+    final var repoRoot = ROOT.resolve("../..").normalize().toFile();
+    final var mvnw = System.getProperty("os.name").toLowerCase().contains("win")
+        ? "mvnw.cmd" : "./mvnw";
+    System.out.println("Formatting generated files (spotless:apply)...");
+    final var process = new ProcessBuilder(
+        mvnw, "spotless:apply",
+        "-pl", "gateways/gateway-mapping-http,zeebe/gateway-rest",
+        "-T1C", "-q")
+        .directory(repoRoot)
+        .inheritIO()
+        .start();
+    final var exitCode = process.waitFor();
+    if (exitCode != 0) {
+      System.err.println("Warning: spotless:apply exited with code " + exitCode
+          + ". Run 'mvn spotless:apply' manually to format generated files.");
+    } else {
+      System.out.println("Formatting complete.");
+    }
   }
 
   /**

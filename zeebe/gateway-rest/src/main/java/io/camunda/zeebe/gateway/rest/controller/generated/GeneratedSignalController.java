@@ -36,13 +36,11 @@ public class GeneratedSignalController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/signals/broadcast",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> broadcastSignal(
-      @RequestBody final GeneratedSignalBroadcastRequestStrictContract signalBroadcastRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedSignalBroadcastRequestStrictContract signalBroadcastRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.broadcastSignal(signalBroadcastRequest, authentication);
   }
 }

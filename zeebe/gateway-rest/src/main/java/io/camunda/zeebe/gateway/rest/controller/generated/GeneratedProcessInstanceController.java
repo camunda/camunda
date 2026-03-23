@@ -49,228 +49,225 @@ public class GeneratedProcessInstanceController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createProcessInstance(
-      @RequestBody final GeneratedProcessInstanceCreationInstructionStrictContract processInstanceCreationInstruction
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody
+          final GeneratedProcessInstanceCreationInstructionStrictContract
+              processInstanceCreationInstruction) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createProcessInstance(processInstanceCreationInstruction, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-instances/{processInstanceKey}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstance(
-      @PathVariable("processInstanceKey") final Long processInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstance(processInstanceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-instances/{processInstanceKey}/sequence-flows",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceSequenceFlows(
-      @PathVariable("processInstanceKey") final Long processInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceSequenceFlows(processInstanceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-instances/{processInstanceKey}/statistics/element-instances",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceStatistics(
-      @PathVariable("processInstanceKey") final Long processInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceStatistics(processInstanceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchProcessInstances(
-      @RequestBody(required = false) final GeneratedProcessInstanceSearchQueryRequestStrictContract processInstanceSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedProcessInstanceSearchQueryRequestStrictContract
+              processInstanceSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchProcessInstances(processInstanceSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/{processInstanceKey}/incidents/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchProcessInstanceIncidents(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
-      @RequestBody(required = false) final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchProcessInstanceIncidents(processInstanceKey, incidentSearchQuery, authentication);
+      @RequestBody(required = false)
+          final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchProcessInstanceIncidents(
+        processInstanceKey, incidentSearchQuery, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/{processInstanceKey}/incident-resolution",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> resolveProcessInstanceIncidents(
-      @PathVariable("processInstanceKey") final Long processInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resolveProcessInstanceIncidents(processInstanceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/{processInstanceKey}/cancellation",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> cancelProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
-      @RequestBody(required = false) final GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.cancelProcessInstance(processInstanceKey, cancelProcessInstanceRequest, authentication);
+      @RequestBody(required = false)
+          final GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.cancelProcessInstance(
+        processInstanceKey, cancelProcessInstanceRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/cancellation",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> cancelProcessInstancesBatchOperation(
-      @RequestBody final GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract processInstanceCancellationBatchOperationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.cancelProcessInstancesBatchOperation(processInstanceCancellationBatchOperationRequest, authentication);
+      @RequestBody
+          final GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract
+              processInstanceCancellationBatchOperationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.cancelProcessInstancesBatchOperation(
+        processInstanceCancellationBatchOperationRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/incident-resolution",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> resolveIncidentsBatchOperation(
-      @RequestBody(required = false) final GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract processInstanceIncidentResolutionBatchOperationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.resolveIncidentsBatchOperation(processInstanceIncidentResolutionBatchOperationRequest, authentication);
+      @RequestBody(required = false)
+          final GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract
+              processInstanceIncidentResolutionBatchOperationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.resolveIncidentsBatchOperation(
+        processInstanceIncidentResolutionBatchOperationRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/migration",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> migrateProcessInstancesBatchOperation(
-      @RequestBody final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract processInstanceMigrationBatchOperationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.migrateProcessInstancesBatchOperation(processInstanceMigrationBatchOperationRequest, authentication);
+      @RequestBody
+          final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract
+              processInstanceMigrationBatchOperationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.migrateProcessInstancesBatchOperation(
+        processInstanceMigrationBatchOperationRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/modification",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> modifyProcessInstancesBatchOperation(
-      @RequestBody final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract processInstanceModificationBatchOperationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.modifyProcessInstancesBatchOperation(processInstanceModificationBatchOperationRequest, authentication);
+      @RequestBody
+          final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract
+              processInstanceModificationBatchOperationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.modifyProcessInstancesBatchOperation(
+        processInstanceModificationBatchOperationRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/{processInstanceKey}/deletion",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
-      @RequestBody(required = false) final GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.deleteProcessInstance(processInstanceKey, deleteProcessInstanceRequest, authentication);
+      @RequestBody(required = false)
+          final GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.deleteProcessInstance(
+        processInstanceKey, deleteProcessInstanceRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/deletion",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> deleteProcessInstancesBatchOperation(
-      @RequestBody final GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract processInstanceDeletionBatchOperationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.deleteProcessInstancesBatchOperation(processInstanceDeletionBatchOperationRequest, authentication);
+      @RequestBody
+          final GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract
+              processInstanceDeletionBatchOperationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.deleteProcessInstancesBatchOperation(
+        processInstanceDeletionBatchOperationRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/{processInstanceKey}/migration",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> migrateProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
-      @RequestBody final GeneratedProcessInstanceMigrationInstructionStrictContract processInstanceMigrationInstruction
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.migrateProcessInstance(processInstanceKey, processInstanceMigrationInstruction, authentication);
+      @RequestBody
+          final GeneratedProcessInstanceMigrationInstructionStrictContract
+              processInstanceMigrationInstruction) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.migrateProcessInstance(
+        processInstanceKey, processInstanceMigrationInstruction, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-instances/{processInstanceKey}/modification",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> modifyProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
-      @RequestBody final GeneratedProcessInstanceModificationInstructionStrictContract processInstanceModificationInstruction
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.modifyProcessInstance(processInstanceKey, processInstanceModificationInstruction, authentication);
+      @RequestBody
+          final GeneratedProcessInstanceModificationInstructionStrictContract
+              processInstanceModificationInstruction) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.modifyProcessInstance(
+        processInstanceKey, processInstanceModificationInstruction, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-instances/{processInstanceKey}/call-hierarchy",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getProcessInstanceCallHierarchy(
-      @PathVariable("processInstanceKey") final Long processInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessInstanceCallHierarchy(processInstanceKey, authentication);
   }
 }

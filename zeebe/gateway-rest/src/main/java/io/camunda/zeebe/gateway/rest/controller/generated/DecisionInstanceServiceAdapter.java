@@ -17,30 +17,26 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for DecisionInstance operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for DecisionInstance operations. Implements request mapping, service delegation,
+ * and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface DecisionInstanceServiceAdapter {
 
   ResponseEntity<Object> searchDecisionInstances(
       GeneratedDecisionInstanceSearchQueryRequestStrictContract decisionInstanceSearchQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> getDecisionInstance(
-      Long decisionEvaluationInstanceKey,
-      CamundaAuthentication authentication
-  );
+      Long decisionEvaluationInstanceKey, CamundaAuthentication authentication);
 
   ResponseEntity<Void> deleteDecisionInstance(
       Long decisionInstanceKey,
       GeneratedDeleteDecisionInstanceRequestStrictContract deleteDecisionInstanceRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> deleteDecisionInstancesBatchOperation(
-      GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract decisionInstanceDeletionBatchOperationRequest,
-      CamundaAuthentication authentication
-  );
+      GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract
+          decisionInstanceDeletionBatchOperationRequest,
+      CamundaAuthentication authentication);
 }

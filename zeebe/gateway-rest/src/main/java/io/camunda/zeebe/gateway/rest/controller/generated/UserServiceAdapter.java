@@ -17,35 +17,25 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for User operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for User operations. Implements request mapping, service delegation, and response
+ * construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface UserServiceAdapter {
 
   ResponseEntity<Object> createUser(
-      GeneratedUserRequestStrictContract userRequest,
-      CamundaAuthentication authentication
-  );
+      GeneratedUserRequestStrictContract userRequest, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchUsers(
       GeneratedUserSearchQueryRequestStrictContract userSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getUser(
-      String username,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getUser(String username, CamundaAuthentication authentication);
 
   ResponseEntity<Object> updateUser(
       String username,
       GeneratedUserUpdateRequestStrictContract userUpdateRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Void> deleteUser(
-      String username,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Void> deleteUser(String username, CamundaAuthentication authentication);
 }

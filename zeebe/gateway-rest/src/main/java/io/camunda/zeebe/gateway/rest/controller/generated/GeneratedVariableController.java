@@ -38,26 +38,22 @@ public class GeneratedVariableController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/variables/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchVariables(
       @RequestParam(name = "truncateValues", required = false) final Boolean truncateValues,
-      @RequestBody(required = false) final GeneratedVariableSearchQueryRequestStrictContract variableSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedVariableSearchQueryRequestStrictContract variableSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchVariables(truncateValues, variableSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/variables/{variableKey}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Object> getVariable(
-      @PathVariable("variableKey") final Long variableKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Object> getVariable(@PathVariable("variableKey") final Long variableKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getVariable(variableKey, authentication);
   }
 }

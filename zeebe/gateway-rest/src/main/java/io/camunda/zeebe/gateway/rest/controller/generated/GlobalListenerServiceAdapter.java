@@ -17,35 +17,27 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for GlobalListener operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for GlobalListener operations. Implements request mapping, service delegation,
+ * and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface GlobalListenerServiceAdapter {
 
   ResponseEntity<Object> createGlobalTaskListener(
       GeneratedCreateGlobalTaskListenerRequestStrictContract createGlobalTaskListenerRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getGlobalTaskListener(
-      String id,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getGlobalTaskListener(String id, CamundaAuthentication authentication);
 
   ResponseEntity<Object> updateGlobalTaskListener(
       String id,
       GeneratedUpdateGlobalTaskListenerRequestStrictContract updateGlobalTaskListenerRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Void> deleteGlobalTaskListener(
-      String id,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Void> deleteGlobalTaskListener(String id, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchGlobalTaskListeners(
-      GeneratedGlobalTaskListenerSearchQueryRequestStrictContract globalTaskListenerSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      GeneratedGlobalTaskListenerSearchQueryRequestStrictContract
+          globalTaskListenerSearchQueryRequest,
+      CamundaAuthentication authentication);
 }

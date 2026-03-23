@@ -34,20 +34,18 @@ public class GeneratedClusterController {
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/topology",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getTopology() {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getTopology(authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/status",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> getStatus() {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getStatus(authentication);
   }
 }

@@ -34,10 +34,9 @@ public class GeneratedLicenseController {
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/license",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getLicense() {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getLicense(authentication);
   }
 }

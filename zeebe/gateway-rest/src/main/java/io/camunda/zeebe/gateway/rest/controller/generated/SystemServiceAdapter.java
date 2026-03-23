@@ -14,8 +14,8 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for System operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for System operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface SystemServiceAdapter {
@@ -25,10 +25,7 @@ public interface SystemServiceAdapter {
       String endTime,
       String tenantId,
       Boolean withTenants,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getSystemConfiguration(
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getSystemConfiguration(CamundaAuthentication authentication);
 }

@@ -38,13 +38,11 @@ public class GeneratedSetupController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/setup/user",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createAdminUser(
-      @RequestBody final GeneratedUserRequestStrictContract userRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedUserRequestStrictContract userRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createAdminUser(userRequest, authentication);
   }
 }

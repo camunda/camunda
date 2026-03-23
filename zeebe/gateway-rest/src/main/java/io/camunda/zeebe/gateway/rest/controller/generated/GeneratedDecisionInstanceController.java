@@ -40,25 +40,23 @@ public class GeneratedDecisionInstanceController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/decision-instances/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchDecisionInstances(
-      @RequestBody(required = false) final GeneratedDecisionInstanceSearchQueryRequestStrictContract decisionInstanceSearchQuery
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedDecisionInstanceSearchQueryRequestStrictContract
+              decisionInstanceSearchQuery) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchDecisionInstances(decisionInstanceSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/decision-instances/{decisionEvaluationInstanceKey}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getDecisionInstance(
-      @PathVariable("decisionEvaluationInstanceKey") final Long decisionEvaluationInstanceKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("decisionEvaluationInstanceKey") final Long decisionEvaluationInstanceKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDecisionInstance(decisionEvaluationInstanceKey, authentication);
   }
 
@@ -66,28 +64,30 @@ public class GeneratedDecisionInstanceController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/decision-instances/{decisionInstanceKey}/deletion",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteDecisionInstance(
       @PathVariable("decisionInstanceKey") final Long decisionInstanceKey,
-      @RequestBody(required = false) final GeneratedDeleteDecisionInstanceRequestStrictContract deleteDecisionInstanceRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.deleteDecisionInstance(decisionInstanceKey, deleteDecisionInstanceRequest, authentication);
+      @RequestBody(required = false)
+          final GeneratedDeleteDecisionInstanceRequestStrictContract
+              deleteDecisionInstanceRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.deleteDecisionInstance(
+        decisionInstanceKey, deleteDecisionInstanceRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/decision-instances/deletion",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> deleteDecisionInstancesBatchOperation(
-      @RequestBody final GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract decisionInstanceDeletionBatchOperationRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.deleteDecisionInstancesBatchOperation(decisionInstanceDeletionBatchOperationRequest, authentication);
+      @RequestBody
+          final GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract
+              decisionInstanceDeletionBatchOperationRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.deleteDecisionInstancesBatchOperation(
+        decisionInstanceDeletionBatchOperationRequest, authentication);
   }
 }

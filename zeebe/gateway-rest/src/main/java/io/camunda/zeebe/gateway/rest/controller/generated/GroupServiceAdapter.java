@@ -21,95 +21,64 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Group operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Group operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface GroupServiceAdapter {
 
   ResponseEntity<Object> createGroup(
       GeneratedGroupCreateRequestStrictContract groupCreateRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchGroups(
       GeneratedGroupSearchQueryRequestStrictContract groupSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Object> getGroup(
-      String groupId,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Object> getGroup(String groupId, CamundaAuthentication authentication);
 
   ResponseEntity<Object> updateGroup(
       String groupId,
       GeneratedGroupUpdateRequestStrictContract groupUpdateRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
-  ResponseEntity<Void> deleteGroup(
-      String groupId,
-      CamundaAuthentication authentication
-  );
+  ResponseEntity<Void> deleteGroup(String groupId, CamundaAuthentication authentication);
 
   ResponseEntity<Void> assignUserToGroup(
-      String groupId,
-      String username,
-      CamundaAuthentication authentication
-  );
+      String groupId, String username, CamundaAuthentication authentication);
 
   ResponseEntity<Void> unassignUserFromGroup(
-      String groupId,
-      String username,
-      CamundaAuthentication authentication
-  );
+      String groupId, String username, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchUsersForGroup(
       String groupId,
       GeneratedGroupUserSearchQueryRequestStrictContract groupUserSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> assignClientToGroup(
-      String groupId,
-      String clientId,
-      CamundaAuthentication authentication
-  );
+      String groupId, String clientId, CamundaAuthentication authentication);
 
   ResponseEntity<Void> unassignClientFromGroup(
-      String groupId,
-      String clientId,
-      CamundaAuthentication authentication
-  );
+      String groupId, String clientId, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchClientsForGroup(
       String groupId,
       GeneratedGroupClientSearchQueryRequestStrictContract groupClientSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> assignMappingRuleToGroup(
-      String groupId,
-      String mappingRuleId,
-      CamundaAuthentication authentication
-  );
+      String groupId, String mappingRuleId, CamundaAuthentication authentication);
 
   ResponseEntity<Void> unassignMappingRuleFromGroup(
-      String groupId,
-      String mappingRuleId,
-      CamundaAuthentication authentication
-  );
+      String groupId, String mappingRuleId, CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchMappingRulesForGroup(
       String groupId,
       GeneratedMappingRuleSearchQueryRequestStrictContract mappingRuleSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchRolesForGroup(
       String groupId,
       GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 }

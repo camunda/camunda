@@ -36,13 +36,13 @@ public class GeneratedConditionalController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/conditionals/evaluation",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> evaluateConditionals(
-      @RequestBody final GeneratedConditionalEvaluationInstructionStrictContract conditionalEvaluationInstruction
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody
+          final GeneratedConditionalEvaluationInstructionStrictContract
+              conditionalEvaluationInstruction) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.evaluateConditionals(conditionalEvaluationInstruction, authentication);
   }
 }

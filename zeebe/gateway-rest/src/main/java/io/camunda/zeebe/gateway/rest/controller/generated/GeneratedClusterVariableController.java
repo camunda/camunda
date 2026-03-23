@@ -42,13 +42,12 @@ public class GeneratedClusterVariableController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/cluster-variables/global",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createGlobalClusterVariable(
-      @RequestBody final GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody
+          final GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createGlobalClusterVariable(createClusterVariableRequest, authentication);
   }
 
@@ -56,40 +55,38 @@ public class GeneratedClusterVariableController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/cluster-variables/tenants/{tenantId}",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId,
-      @RequestBody final GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.createTenantClusterVariable(tenantId, createClusterVariableRequest, authentication);
+      @RequestBody
+          final GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.createTenantClusterVariable(
+        tenantId, createClusterVariableRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/cluster-variables/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchClusterVariables(
       @RequestParam(name = "truncateValues", required = false) final Boolean truncateValues,
-      @RequestBody(required = false) final GeneratedClusterVariableSearchQueryRequestStrictContract clusterVariableSearchQueryRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchClusterVariables(truncateValues, clusterVariableSearchQueryRequest, authentication);
+      @RequestBody(required = false)
+          final GeneratedClusterVariableSearchQueryRequestStrictContract
+              clusterVariableSearchQueryRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchClusterVariables(
+        truncateValues, clusterVariableSearchQueryRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/cluster-variables/global/{name}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Object> getGlobalClusterVariable(
-      @PathVariable("name") final String name
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Object> getGlobalClusterVariable(@PathVariable("name") final String name) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getGlobalClusterVariable(name, authentication);
   }
 
@@ -97,40 +94,34 @@ public class GeneratedClusterVariableController {
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/cluster-variables/global/{name}",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> updateGlobalClusterVariable(
       @PathVariable("name") final String name,
-      @RequestBody final GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.updateGlobalClusterVariable(name, updateClusterVariableRequest, authentication);
+      @RequestBody
+          final GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.updateGlobalClusterVariable(
+        name, updateClusterVariableRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.DELETE,
       value = "/cluster-variables/global/{name}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Void> deleteGlobalClusterVariable(
-      @PathVariable("name") final String name
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Void> deleteGlobalClusterVariable(@PathVariable("name") final String name) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteGlobalClusterVariable(name, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/cluster-variables/tenants/{tenantId}/{name}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> getTenantClusterVariable(
-      @PathVariable("tenantId") final String tenantId,
-      @PathVariable("name") final String name
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getTenantClusterVariable(tenantId, name, authentication);
   }
 
@@ -138,29 +129,26 @@ public class GeneratedClusterVariableController {
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/cluster-variables/tenants/{tenantId}/{name}",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> updateTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId,
       @PathVariable("name") final String name,
-      @RequestBody final GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.updateTenantClusterVariable(tenantId, name, updateClusterVariableRequest, authentication);
+      @RequestBody
+          final GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.updateTenantClusterVariable(
+        tenantId, name, updateClusterVariableRequest, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.DELETE,
       value = "/cluster-variables/tenants/{tenantId}/{name}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteTenantClusterVariable(
-      @PathVariable("tenantId") final String tenantId,
-      @PathVariable("name") final String name
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteTenantClusterVariable(tenantId, name, authentication);
   }
 }

@@ -44,31 +44,29 @@ public class GeneratedDocumentController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/documents",
-      consumes = { MediaType.MULTIPART_FORM_DATA_VALUE },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createDocument(
       @RequestParam(name = "storeId", required = false) final String storeId,
       @RequestParam(name = "documentId", required = false) final String documentId,
       @RequestPart("file") final Part file,
-      @RequestPart(value = "metadata", required = false) final GeneratedDocumentMetadataStrictContract metadata
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestPart(value = "metadata", required = false)
+          final GeneratedDocumentMetadataStrictContract metadata) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDocument(storeId, documentId, file, metadata, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/documents/batch",
-      consumes = { MediaType.MULTIPART_FORM_DATA_VALUE },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createDocuments(
       @RequestParam(name = "storeId", required = false) final String storeId,
       @RequestPart("files") final List<Part> files,
-      @RequestPart(value = "metadataList", required = false) final List<GeneratedDocumentMetadataStrictContract> metadataList
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestPart(value = "metadataList", required = false)
+          final List<GeneratedDocumentMetadataStrictContract> metadataList) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDocuments(storeId, files, metadataList, authentication);
   }
 
@@ -79,39 +77,35 @@ public class GeneratedDocumentController {
   public ResponseEntity<StreamingResponseBody> getDocument(
       @PathVariable("documentId") final String documentId,
       @RequestParam(name = "storeId", required = false) final String storeId,
-      @RequestParam(name = "contentHash", required = false) final String contentHash
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestParam(name = "contentHash", required = false) final String contentHash) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getDocument(documentId, storeId, contentHash, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.DELETE,
       value = "/documents/{documentId}",
-      produces = { "application/json", "application/problem+json" })
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Void> deleteDocument(
       @PathVariable("documentId") final String documentId,
-      @RequestParam(name = "storeId", required = false) final String storeId
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestParam(name = "storeId", required = false) final String storeId) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteDocument(documentId, storeId, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/documents/{documentId}/links",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> createDocumentLink(
       @PathVariable("documentId") final String documentId,
       @RequestParam(name = "storeId", required = false) final String storeId,
       @RequestParam(name = "contentHash", required = false) final String contentHash,
-      @RequestBody(required = false) final GeneratedDocumentLinkRequestStrictContract documentLinkRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.createDocumentLink(documentId, storeId, contentHash, documentLinkRequest, authentication);
+      @RequestBody(required = false)
+          final GeneratedDocumentLinkRequestStrictContract documentLinkRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.createDocumentLink(
+        documentId, storeId, contentHash, documentLinkRequest, authentication);
   }
 }

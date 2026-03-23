@@ -24,70 +24,56 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Job operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Job operations. Implements request mapping, service delegation, and response
+ * construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface JobServiceAdapter {
 
   ResponseEntity<Object> getGlobalJobStatistics(
-      String from,
-      String to,
-      String jobType,
-      CamundaAuthentication authentication
-  );
+      String from, String to, String jobType, CamundaAuthentication authentication);
 
   ResponseEntity<Object> getJobTypeStatistics(
       GeneratedJobTypeStatisticsQueryStrictContract jobTypeStatisticsQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> getJobWorkerStatistics(
       GeneratedJobWorkerStatisticsQueryStrictContract jobWorkerStatisticsQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> getJobTimeSeriesStatistics(
       GeneratedJobTimeSeriesStatisticsQueryStrictContract jobTimeSeriesStatisticsQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> getJobErrorStatistics(
       GeneratedJobErrorStatisticsQueryStrictContract jobErrorStatisticsQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> activateJobs(
       GeneratedJobActivationRequestStrictContract jobActivationRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Object> searchJobs(
       GeneratedJobSearchQueryRequestStrictContract jobSearchQuery,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> failJob(
       Long jobKey,
       GeneratedJobFailRequestStrictContract jobFailRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> throwJobError(
       Long jobKey,
       GeneratedJobErrorRequestStrictContract jobErrorRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> completeJob(
       Long jobKey,
       GeneratedJobCompletionRequestStrictContract jobCompletionRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 
   ResponseEntity<Void> updateJob(
       Long jobKey,
       GeneratedJobUpdateRequestStrictContract jobUpdateRequest,
-      CamundaAuthentication authentication
-  );
+      CamundaAuthentication authentication);
 }

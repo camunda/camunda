@@ -37,25 +37,21 @@ public class GeneratedAuditLogController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/audit-logs/search",
-      consumes = { "application/json" },
-      produces = { "application/json", "application/problem+json" })
+      consumes = {"application/json"},
+      produces = {"application/json", "application/problem+json"})
   public ResponseEntity<Object> searchAuditLogs(
-      @RequestBody(required = false) final GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequest
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false)
+          final GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequest) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchAuditLogs(auditLogSearchQueryRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/audit-logs/{auditLogKey}",
-      produces = { "application/json", "application/problem+json" })
-  public ResponseEntity<Object> getAuditLog(
-      @PathVariable("auditLogKey") final Long auditLogKey
-  ) {
-    final var authentication =
-        authenticationProvider.getAnonymousIfUnavailable();
+      produces = {"application/json", "application/problem+json"})
+  public ResponseEntity<Object> getAuditLog(@PathVariable("auditLogKey") final Long auditLogKey) {
+    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuditLog(auditLogKey, authentication);
   }
 }

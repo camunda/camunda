@@ -15,14 +15,12 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Setup operations.
- * Implements request mapping, service delegation, and response construction.
+ * Service adapter for Setup operations. Implements request mapping, service delegation, and
+ * response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface SetupServiceAdapter {
 
   ResponseEntity<Object> createAdminUser(
-      GeneratedUserRequestStrictContract userRequest,
-      CamundaAuthentication authentication
-  );
+      GeneratedUserRequestStrictContract userRequest, CamundaAuthentication authentication);
 }
