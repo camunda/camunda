@@ -143,6 +143,6 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   private boolean extractHasUserTasks(final Process process) {
     return ProcessModelReader.of(process.getResource(), process.getBpmnProcessId())
         .map(ProcessModelReader::extractHasUserTasks)
-        .orElse(false);
+        .orElse(true);
   }
 }

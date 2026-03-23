@@ -87,17 +87,7 @@ public final class ProcessModelReader {
   }
 
   public boolean extractHasUserTasks() {
-    return process.getChildElementsByType(FlowNode.class).stream().anyMatch(this::containsUserTask);
-  }
-
-  private boolean containsUserTask(final FlowNode flowNode) {
-    if (flowNode instanceof UserTask) {
-      return true;
-    } else if (flowNode instanceof SubProcess) {
-      return flowNode.getChildElementsByType(FlowNode.class).stream()
-          .anyMatch(this::containsUserTask);
-    }
-    return false;
+    return extractFlowNodes().stream().anyMatch(UserTask.class::isInstance);
   }
 
   private boolean isPublic(final ZeebeProperties properties) {
