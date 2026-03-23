@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.57d958a8.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.4d268618.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.f876bf8c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.c61c63f9.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -189,11 +189,8 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 <li class="">Spring Security Configuration (<code>WebSecurityConfig.OidcConfiguration</code>): Spring <code>@Configuration</code> subclass of <code>WebSecurityConfig</code>, activated by <code>camunda.security.authentication.method=oidc</code>. It is responsible for configuring all OIDC-related Spring Security filter chains and registering the following beans:<!-- -->
 <ul>
 <li class="">Client Registration Repository (<code>InMemoryClientRegistrationRepository</code>): holds the OAuth2 client registrations (one per configured OIDC provider), built from <code>OidcAuthenticationConfigurationRepository</code>.</li>
-<li class="">Jwt Decoder (<code>SupplierJwtDecoder</code>): decodes and validates Bearer JWT tokens; uses a single-provider decoder or an issuer-aware multi-provider decoder depending on the number of registered providers.</li>
 <li class="">OIDC Provider Repository (<code>OidcAuthenticationConfigurationRepository</code>): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from <code>SecurityConfiguration</code>.</li>
-<li class="">Authorized Client Manager (<code>DefaultOAuth2AuthorizedClientManager</code>): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including <code>private_key_jwt</code> client authentication).</li>
 <li class="">OAuth2AuthorizedClientRepository (<code>HttpSessionOAuth2AuthorizedClientRepository</code>): stores authorized client state in the HTTP session.</li>
-<li class="">OIDC User Service (<code>OidcUserService</code>): loads OIDC user details from the IdP&#x27;s userinfo endpoint during browser login.</li>
 <li class="">OIDC Token Converter (<code>OidcTokenAuthenticationConverter</code>): converts Bearer JWTs (M2M) into a <code>CamundaAuthentication</code> (OIDC M2M only).</li>
 </ul>
 </li>
@@ -204,7 +201,13 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 </ul>
 <p>Extern responsibilities:</p>
 <ul>
-<li class="">Spring Security (<code>OAuth2LoginAuthenticationFilter</code>, <code>BearerTokenAuthenticationFilter</code>): manages the OIDC authorization code flow and Bearer token validation.</li>
+<li class="">Spring Security (<code>OAuth2LoginAuthenticationFilter</code>, <code>BearerTokenAuthenticationFilter</code>): manages the OIDC authorization code flow and Bearer token validation.<!-- -->
+<ul>
+<li class="">Jwt Decoder (<code>SupplierJwtDecoder</code>): decodes and validates Bearer JWT tokens; uses a single-provider decoder or an issuer-aware multi-provider decoder depending on the number of registered providers.</li>
+<li class="">Authorized Client Manager (<code>DefaultOAuth2AuthorizedClientManager</code>): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including <code>private_key_jwt</code> client authentication).</li>
+<li class="">OIDC User Service (<code>OidcUserService</code>): loads OIDC user details from the IdP&#x27;s userinfo endpoint during browser login.</li>
+</ul>
+</li>
 <li class="">OIDC IdP: issues ID tokens, access tokens, and JWKS for signature verification.</li>
 <li class="">Camunda Services: provide access to role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include <code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, and <code>MappingRuleServices</code> (via <code>DefaultMembershipService</code>).</li>
 <li class="">Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.</li>
