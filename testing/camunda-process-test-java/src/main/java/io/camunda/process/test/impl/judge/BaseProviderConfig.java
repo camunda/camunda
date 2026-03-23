@@ -49,7 +49,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     return model;
   }
 
-  @Override
   public Duration getTimeout() {
     return timeout;
   }
@@ -58,7 +57,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     this.timeout = timeout;
   }
 
-  @Override
   public Double getTemperature() {
     return temperature;
   }

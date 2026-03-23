@@ -277,7 +277,8 @@ public class JudgeConfigBootstrapIT {
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isNotNull();
 
-      final ProviderConfig providerConfig = runtimeConfig.getJudge().toProviderConfig();
+      final BaseProviderConfig providerConfig =
+          (BaseProviderConfig) runtimeConfig.getJudge().toProviderConfig();
       assertThat(providerConfig.getTimeout()).isEqualTo(java.time.Duration.ofSeconds(45));
     }
   }
@@ -302,7 +303,8 @@ public class JudgeConfigBootstrapIT {
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isNotNull();
 
-      final ProviderConfig providerConfig = runtimeConfig.getJudge().toProviderConfig();
+      final BaseProviderConfig providerConfig =
+          (BaseProviderConfig) runtimeConfig.getJudge().toProviderConfig();
       assertThat(providerConfig.getTemperature()).isEqualTo(0.7);
     }
   }
