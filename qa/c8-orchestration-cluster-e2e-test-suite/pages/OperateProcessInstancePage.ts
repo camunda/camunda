@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -68,7 +67,6 @@ class OperateProcessInstancePage {
   readonly stateOverlayActive: Locator;
   readonly stateOverlayCompletedEndEvents: Locator;
   readonly cancelInstanceButton: (instanceId: string) => Locator;
-  readonly incidentBannerButton: (count: number) => Locator;
   readonly incidentTypeFilter: Locator;
   readonly cancellationScheduledToast: Locator;
   readonly executionCountToggle: Locator;
@@ -90,13 +88,7 @@ class OperateProcessInstancePage {
   readonly viewParentInstanceLink: Locator;
   readonly incidentIconsInHistory: Locator;
   readonly modifyDialog: Locator;
-  readonly metadataPopover: Locator;
-  readonly incidentSection: Locator;
-  readonly rootCauseProcessName: Locator;
-  readonly rootCauseProcessId: Locator;
-  readonly incidentErrorType: Locator;
   readonly incidentErrorIndicators: Locator;
-  readonly incidentErrorMessage: Locator;
   readonly modifyDialogContinueButton: Locator;
   private variableValueCellLocator: (name: string) => Locator;
   private variableButtonsCellLocator: (name: string) => Locator;
@@ -254,10 +246,6 @@ class OperateProcessInstancePage {
     );
     this.cancelInstanceButton = (instanceId: string) =>
       page.getByRole('button', {name: `Cancel Instance ${instanceId}`});
-    this.incidentBannerButton = (count: number) =>
-      page.getByRole('button', {
-        name: new RegExp(`view ${count} incidents in instance`, 'i'),
-      });
     this.incidentTypeFilter = page.getByRole('combobox', {
       name: /filter by incident type/i,
     });
@@ -355,16 +343,6 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
-    this.metadataPopover = page.getByTestId('popover');
-    this.incidentErrorType = this.metadataPopover
-      .getByText('Type')
-      .locator('xpath=following-sibling::*[1]');
-    this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
-    this.incidentSection = page.getByText(/incident\s*view/i);
-    this.rootCauseProcessName = this.metadataPopover.getByText(
-      /root cause process name/i,
-    );
-    this.rootCauseProcessId = this.metadataPopover.getByRole('link').first();
   }
 
   async checkExistingVariableErrorMessageText(
@@ -379,14 +357,6 @@ class OperateProcessInstancePage {
       this.existingVariableByName(variableName).editVariableModal
         .valueErrorMessage;
     await expect(errorMessage!).toHaveText(message);
-  }
-
-  async connectorResultVariableName(name: string): Promise<Locator> {
-    return this.page.getByTestId(name);
-  }
-
-  async connectorResultVariableValue(variableName: string): Promise<Locator> {
-    return this.page.getByTestId(variableName).locator('td').last();
   }
 
   private async waitForIconWithRetry(
@@ -464,10 +434,6 @@ class OperateProcessInstancePage {
 
   async clickReviewModifications() {
     await this.reviewModificationsButton.click();
-  }
-
-  async clickAddVariable() {
-    await this.addVariableModificationButton.click();
   }
 
   async clickDeleteVariableModification() {
@@ -565,16 +531,6 @@ class OperateProcessInstancePage {
     await this.page.keyboard.press('Tab');
   }
 
-  async navigateToProcessInstance(id: string) {
-    await this.page.goto(`operate/processes/${id}`);
-  }
-
-  async getNthTreeNodeTestId(n: number) {
-    return this.page
-      .getByTestId(/^tree-node-/)
-      .nth(n)
-      .getAttribute('data-testid');
-  }
   async clickEditVariableButton(variableName: string): Promise<void> {
     const editVariableButton = 'Edit variable ' + variableName;
     await this.page.getByLabel(editVariableButton).click();
@@ -790,10 +746,6 @@ class OperateProcessInstancePage {
     await this.applyButton.click();
   }
 
-  async clickIncidentBanner(count: number): Promise<void> {
-    await this.incidentBannerButton(count).click();
-  }
-
   async toggleExecutionCount(): Promise<void> {
     await this.executionCountToggle.waitFor({state: 'visible'});
     if (
@@ -846,52 +798,8 @@ class OperateProcessInstancePage {
     await this.viewParentInstanceLink.click();
   }
 
-  async getAllIncidentIconsAmountInHistory(): Promise<number> {
-    return await this.incidentIconsInHistory.count();
-  }
-
   async clickIncidentsTab(): Promise<void> {
     await this.incidentsTab.click();
-  }
-
-  async getIncidentRowByErrorMessage(errorMessage: string) {
-    const legacyRow = this.incidentsTable.getByRole('row').filter({
-      has: this.page
-        .getByTestId('cell-errorMessage')
-        .filter({hasText: errorMessage}),
-    });
-
-    if ((await legacyRow.count()) > 0) {
-      return legacyRow.first();
-    }
-
-    const parentRows = this.incidentsTable.locator(
-      'tr[data-parent-row="true"]',
-    );
-    const parentRowsCount = await parentRows.count();
-
-    for (let i = 0; i < parentRowsCount; i++) {
-      const parentRow = parentRows.nth(i);
-      const expandButton = parentRow.getByRole('button', {
-        name: /expand current row/i,
-      });
-
-      await expandButton.click();
-      const expandedRowId = await expandButton.getAttribute('aria-controls');
-
-      if (!expandedRowId) {
-        continue;
-      }
-
-      const expandedRow = this.incidentsTable.locator(`#${expandedRowId}`);
-      if ((await expandedRow.getByText(errorMessage).count()) > 0) {
-        return parentRow;
-      }
-    }
-
-    return this.incidentsTable.getByRole('row').filter({
-      has: this.page.getByText(errorMessage),
-    });
   }
 
   async getIncidentRowByErrorType(errorType: string) {
@@ -922,12 +830,6 @@ class OperateProcessInstancePage {
     });
   }
 
-  async retryIncidentByErrorMessage(errorMessage: string) {
-    const incidentRow = await this.getIncidentRowByErrorMessage(errorMessage);
-    const retryButton = incidentRow.getByTestId('retry-operation');
-    await retryButton.click();
-  }
-
   async retryIncidentByErrorType(errorType: string) {
     const incidentRow = await this.getIncidentRowByErrorType(errorType);
     const retryButton = incidentRow.getByTestId('retry-operation');
@@ -940,13 +842,6 @@ class OperateProcessInstancePage {
 
   async clickModifyDialogContinueButton(): Promise<void> {
     await this.modifyDialogContinueButton.click();
-  }
-
-  async getAllInstanceHistoryNodeDetails(): Promise<Locator[]> {
-    return this.instanceHistory
-      .getByRole('treeitem')
-      .getByTestId(/^node-details-/)
-      .all();
   }
 
   async checkIfPresentExpandeingElementsInMainProcess(
@@ -1059,21 +954,6 @@ class OperateProcessInstancePage {
     await this.clickDiagramElement(elementId);
   }
 
-  async closeIncidentsPanel(): Promise<void> {
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(this.incidentsViewHeader).toBeHidden({
-          timeout: 3000,
-        });
-      },
-      onFailure: async () => {
-        await this.detailsTabButton.scrollIntoViewIfNeeded();
-        await this.detailsTabButton.click();
-      },
-      maxRetries: 3,
-    });
-  }
-
   async getIncidentCount(): Promise<number> {
     await expect(this.incidentsViewHeader).toBeVisible();
     const headingText = await this.incidentsViewHeader.innerText();
@@ -1088,21 +968,6 @@ class OperateProcessInstancePage {
   async verifyIncidentCount(expectedCount: number): Promise<void> {
     const actualCount = await this.getIncidentCount();
     expect(actualCount).toBe(expectedCount);
-  }
-  getCalledProcessLink(processName: string): Locator {
-    return this.page.getByRole('link', {name: processName});
-  }
-  async clickOnRootCauseProcessName(): Promise<void> {
-    await expect(this.rootCauseProcessName).toBeVisible();
-    await this.rootCauseProcessId.click();
-  }
-
-  async clickCalledProcessLink(processName: string): Promise<void> {
-    await this.getCalledProcessLink(processName).click();
-  }
-
-  getIncidentErrorMessageByText(errorText: string): Locator {
-    return this.metadataPopover.getByText(errorText);
   }
 
   getOperationsLogTableRowCount(): Promise<number> {
