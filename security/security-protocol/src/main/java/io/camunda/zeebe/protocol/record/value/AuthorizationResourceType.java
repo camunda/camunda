@@ -43,7 +43,9 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE_TASK_LISTENER,
       PermissionType.READ_TASK_LISTENER,
       PermissionType.UPDATE_TASK_LISTENER,
-      PermissionType.DELETE_TASK_LISTENER),
+      PermissionType.DELETE_TASK_LISTENER,
+      PermissionType.READ_EXECUTION_LISTENER,
+      PermissionType.UPDATE_EXECUTION_LISTENER),
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),

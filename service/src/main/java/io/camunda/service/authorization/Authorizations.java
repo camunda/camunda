@@ -9,6 +9,7 @@ package io.camunda.service.authorization;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_EXECUTION_LISTENER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_TASK_LISTENER;
 
 import io.camunda.search.entities.AuditLogEntity;
@@ -128,6 +129,10 @@ public abstract class Authorizations {
 
   public static final Authorization<GlobalListenerEntity> GLOBAL_TASK_LISTENER_READ_AUTHORIZATION =
       Authorization.of(a -> a.globalListener().permissionType(READ_TASK_LISTENER));
+
+  public static final Authorization<GlobalListenerEntity>
+      GLOBAL_EXECUTION_LISTENER_READ_AUTHORIZATION =
+          Authorization.of(a -> a.globalListener().permissionType(READ_EXECUTION_LISTENER));
 
   public static final Authorization<ProcessInstanceEntity>
       PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION =

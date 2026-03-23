@@ -50,11 +50,13 @@ public enum PermissionType {
   READ_USAGE_METRIC(true),
   READ_USER_TASK(true),
   READ_TASK_LISTENER(true),
+  READ_EXECUTION_LISTENER(true),
 
   UPDATE,
   UPDATE_PROCESS_INSTANCE,
   UPDATE_USER_TASK,
-  UPDATE_TASK_LISTENER;
+  UPDATE_TASK_LISTENER,
+  UPDATE_EXECUTION_LISTENER;
 
   private final boolean isReadPermission;
 

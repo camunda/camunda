@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.GLOBAL_EXECUTION_LISTENER_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.GLOBAL_TASK_LISTENER_READ_AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 
@@ -64,6 +65,20 @@ public final class GlobalListenerServices
                     request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
   }
 
+  public GlobalListenerEntity getGlobalExecutionListener(
+      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            globalListenerSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(
+                            GLOBAL_EXECUTION_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
+                .getGlobalListener(
+                    request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
+  }
+
   public CompletableFuture<GlobalListenerRecord> updateGlobalListener(
       final GlobalListenerRecord request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(new BrokerUpdateGlobalListenerRequest(request), authentication);
@@ -77,12 +92,28 @@ public final class GlobalListenerServices
   @Override
   public SearchQueryResult<GlobalListenerEntity> search(
       final GlobalListenerQuery query, final CamundaAuthentication authentication) {
+    return searchGlobalTaskListeners(query, authentication);
+  }
+
+  public SearchQueryResult<GlobalListenerEntity> searchGlobalTaskListeners(
+      final GlobalListenerQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             globalListenerSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, GLOBAL_TASK_LISTENER_READ_AUTHORIZATION))
+                .searchGlobalListeners(query));
+  }
+
+  public SearchQueryResult<GlobalListenerEntity> searchGlobalExecutionListeners(
+      final GlobalListenerQuery query, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            globalListenerSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, GLOBAL_EXECUTION_LISTENER_READ_AUTHORIZATION))
                 .searchGlobalListeners(query));
   }
 }
