@@ -25,8 +25,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.sort.SortOption.FieldSorting;
-import io.camunda.search.sort.SortOrder;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -47,7 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -314,23 +312,22 @@ public final class UserTaskServices
         variableSearchQuery(
             q ->
                 q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
+                    .sort(variableQuery.sort())
                     .unlimited());
 
     final var allVariables =
         executeSearchRequest(
             () -> variableServices.search(unlimitedQuery, CamundaAuthentication.anonymous()));
 
+    // Deduplicate variables by name, keeping the one from the innermost scope.
+    // Since ES has already sorted the results by the user's criteria, we iterate through
+    // them in order and use a LinkedHashMap to preserve that order while deduplicating.
     final List<VariableEntity> dedupedVariables =
         deduplicateVariablesByScope(allVariables.items(), treePathList);
-
-    // Sort the deduplicated variables according to the user's requested sort
-    final var fieldSortings = variableQuery.sort().getFieldSortings();
-    sortVariables(dedupedVariables, fieldSortings);
 
     // Apply offset-based pagination to the deduplicated and sorted result.
     // Cursor-based pagination (after/before) is not supported for this endpoint because
     // deduplication and sorting are performed in-memory after fetching from the search backend.
-    // The Tasklist UI uses offset-based pagination for variables exclusively.
     final var page = variableQuery.page();
     final int size = page.size() != null ? page.size() : SearchQueryPage.DEFAULT_SIZE;
     final int total = dedupedVariables.size();
@@ -344,72 +341,46 @@ public final class UserTaskServices
 
   /**
    * Deduplicates variables by name, keeping the variable from the innermost scope (closest to the
-   * user task). The tree path is ordered root→leaf, so we reverse it and walk from innermost to
-   * outermost, using putIfAbsent to keep the first (innermost) occurrence of each variable name.
+   * user task). The variables list is already sorted by ES according to the user's criteria. We
+   * iterate through them in order, and for each variable name, we keep the one from the closest
+   * scope. If a variable from a closer scope is encountered later, we replace the previous one and
+   * move it to the end of the LinkedHashMap, preserving the relative order from ES while ensuring
+   * innermost scope wins.
    */
   private List<VariableEntity> deduplicateVariablesByScope(
       final List<VariableEntity> variables, final List<Long> treePathList) {
 
-    final Map<Long, List<VariableEntity>> variablesByScopeKey =
-        variables.stream().collect(Collectors.groupingBy(VariableEntity::scopeKey));
+    // Create a map from scope key to its depth (distance from root).
+    // Higher depth = closer to innermost (user task).
+    final Map<Long, Integer> scopeDepth = new HashMap<>();
+    for (int i = 0; i < treePathList.size(); i++) {
+      scopeDepth.put(treePathList.get(i), i);
+    }
 
+    // Iterate through ES-sorted variables and deduplicate by name,
+    // keeping the one from the closest scope (highest depth).
     final var dedupedMap = new LinkedHashMap<String, VariableEntity>();
-    final var reversedScopeKeys = new ArrayList<>(treePathList);
-    Collections.reverse(reversedScopeKeys);
 
-    for (final Long scopeKey : reversedScopeKeys) {
-      final var scopeVars = variablesByScopeKey.getOrDefault(scopeKey, List.of());
-      for (final VariableEntity variable : scopeVars) {
-        dedupedMap.putIfAbsent(variable.name(), variable);
+    for (final VariableEntity variable : variables) {
+      final var currentDepth = scopeDepth.get(variable.scopeKey());
+      final var existing = dedupedMap.get(variable.name());
+
+      if (existing == null) {
+        // First time seeing this variable name, add it
+        dedupedMap.put(variable.name(), variable);
+      } else {
+        final var existingDepth = scopeDepth.get(existing.scopeKey());
+        if (currentDepth > existingDepth) {
+          // This variable is from a closer scope, replace the existing one.
+          // Remove and re-add to move it to the end of the LinkedHashMap.
+          dedupedMap.remove(variable.name());
+          dedupedMap.put(variable.name(), variable);
+        }
+        // else: existing variable is from a closer or equal scope, keep it
       }
     }
 
     return new ArrayList<>(dedupedMap.values());
-  }
-
-  private void sortVariables(
-      final List<VariableEntity> variables, final List<FieldSorting> fieldSortings) {
-    if (fieldSortings == null || fieldSortings.isEmpty()) {
-      return;
-    }
-
-    Comparator<VariableEntity> comparator = null;
-
-    for (final FieldSorting sorting : fieldSortings) {
-      final Comparator<VariableEntity> fieldComparator = buildFieldComparator(sorting);
-      comparator = comparator == null ? fieldComparator : comparator.thenComparing(fieldComparator);
-    }
-
-    variables.sort(comparator);
-  }
-
-  /**
-   * Builds a comparator for a single field sorting criterion using an explicit mapping of allowed
-   * field names to typed accessors.
-   */
-  private Comparator<VariableEntity> buildFieldComparator(final FieldSorting sorting) {
-    final Comparator<VariableEntity> comparator =
-        switch (sorting.field()) {
-          case "name" ->
-              Comparator.comparing(
-                  VariableEntity::name, Comparator.nullsLast(Comparator.naturalOrder()));
-          case "value" ->
-              Comparator.comparing(
-                  VariableEntity::value, Comparator.nullsLast(Comparator.naturalOrder()));
-          case "tenantId" ->
-              Comparator.comparing(
-                  VariableEntity::tenantId, Comparator.nullsLast(Comparator.naturalOrder()));
-          case "variableKey" -> Comparator.comparingLong(VariableEntity::variableKey);
-          case "scopeKey" -> Comparator.comparingLong(VariableEntity::scopeKey);
-          case "processInstanceKey" -> Comparator.comparingLong(VariableEntity::processInstanceKey);
-          default ->
-              throw new IllegalArgumentException(
-                  "Unknown variable sort field: "
-                      + sorting.field()
-                      + ". Add a case to buildFieldComparator.");
-        };
-
-    return sorting.order() == SortOrder.DESC ? comparator.reversed() : comparator;
   }
 
   public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(
