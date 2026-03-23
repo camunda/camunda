@@ -158,7 +158,7 @@ final class OpensearchExporterIT {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             String.valueOf(record.getPartitionId()),
-            record);
+            normalizeExpectedRecord(valueType, record));
   }
 
   // both tests below are regression tests for https://github.com/camunda/camunda/issues/4640
@@ -173,6 +173,7 @@ final class OpensearchExporterIT {
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
             .withCustomHeaders(Map.of("x", "1", "x.y", "2"))
+            .withJobToUserTaskMigration(false)
             .build();
     final Record<JobRecordValue> record =
         factory.generateRecord(
@@ -196,6 +197,7 @@ final class OpensearchExporterIT {
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
             .withCustomHeaders(Map.of("x", "1", "x.y", "2"))
+            .withJobToUserTaskMigration(false)
             .build();
     final JobBatchRecordValue value =
         ImmutableJobBatchRecordValue.builder()
@@ -371,7 +373,7 @@ final class OpensearchExporterIT {
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
               String.valueOf(record.getPartitionId()),
-              record);
+              normalizeExpectedRecord(valueType, record));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(OpenSearchException.class)
@@ -405,6 +407,44 @@ final class OpensearchExporterIT {
             indexRouter.idFor(record),
             String.valueOf(record.getPartitionId()),
             modifyExpectedRecordForPreviousVersion(valueType, record));
+  }
+
+  private Record normalizeExpectedRecord(final ValueType valueType, final Record record) {
+    final var copyFactory = new ProtocolFactory(factory.getSeed());
+    final RecordValue recordValue =
+        (RecordValue)
+            switch (valueType) {
+              case JOB ->
+                  ImmutableJobRecordValue.builder()
+                      .from((ImmutableJobRecordValue) record.getValue())
+                      .withJobToUserTaskMigration(false)
+                      .build();
+              case JOB_BATCH ->
+                  ImmutableJobBatchRecordValue.builder()
+                      .from((ImmutableJobBatchRecordValue) record.getValue())
+                      .withJobs(
+                          ((ImmutableJobBatchRecordValue) record.getValue())
+                              .getJobs().stream()
+                                  .map(
+                                      job ->
+                                          ImmutableJobRecordValue.builder()
+                                              .from(job)
+                                              .withJobToUserTaskMigration(false)
+                                              .build())
+                                  .toList())
+                      .build();
+              default -> record.getValue();
+            };
+    if (recordValue == record.getValue()) {
+      return record;
+    }
+    return copyFactory.generateRecord(
+        valueType,
+        r ->
+            r.withValue(recordValue)
+                .withAuthorizations(record.getAuthorizations())
+                .withBrokerVersion(record.getBrokerVersion())
+                .withBatchOperationReference(record.getBatchOperationReference()));
   }
 
   private Record modifyExpectedRecordForPreviousVersion(
