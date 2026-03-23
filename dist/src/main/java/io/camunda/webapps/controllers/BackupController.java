@@ -130,7 +130,7 @@ public class BackupController {
   }
 
   @VisibleForTesting
-  public static HistoryStateCode mapState(final BackupStateDto state) {
+  static HistoryStateCode mapState(final BackupStateDto state) {
     return switch (state) {
       case IN_PROGRESS -> HistoryStateCode.IN_PROGRESS;
       case INCOMPLETE -> HistoryStateCode.INCOMPLETE;

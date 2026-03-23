@@ -78,7 +78,7 @@ public class ProcessInstanceItemProvider implements ItemProvider {
   }
 
   @VisibleForTesting
-  public ProcessInstanceFilter getFilter() {
+  ProcessInstanceFilter getFilter() {
     return filter;
   }
 }

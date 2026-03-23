@@ -67,7 +67,7 @@ public class IncidentItemProvider implements ItemProvider {
   }
 
   @VisibleForTesting
-  public ProcessInstanceFilter getFilter() {
+  ProcessInstanceFilter getFilter() {
     return filter;
   }
 

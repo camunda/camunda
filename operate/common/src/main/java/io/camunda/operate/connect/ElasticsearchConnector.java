@@ -79,7 +79,7 @@ public class ElasticsearchConnector {
   }
 
   @VisibleForTesting
-  public void setObjectMapper(final ObjectMapper objectMapper) {
+  void setObjectMapper(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

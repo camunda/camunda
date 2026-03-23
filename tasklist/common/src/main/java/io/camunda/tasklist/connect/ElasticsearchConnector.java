@@ -83,7 +83,7 @@ public class ElasticsearchConnector {
   @Autowired private TasklistProperties tasklistProperties;
 
   @VisibleForTesting
-  public void setTasklistProperties(final TasklistProperties tasklistProperties) {
+  void setTasklistProperties(final TasklistProperties tasklistProperties) {
     this.tasklistProperties = tasklistProperties;
   }
 

@@ -85,7 +85,7 @@ public class OpenSearchConnector {
   private ObjectMapper tasklistObjectMapper;
 
   @VisibleForTesting
-  public void setOsClientRepository(final PluginRepository osClientRepository) {
+  void setOsClientRepository(final PluginRepository osClientRepository) {
     this.osClientRepository = osClientRepository;
   }
 
