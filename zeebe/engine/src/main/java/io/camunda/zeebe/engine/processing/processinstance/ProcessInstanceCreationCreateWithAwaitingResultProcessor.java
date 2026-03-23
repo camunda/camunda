@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -125,6 +126,11 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
             .setFetchVariables(record.fetchVariables());
     elementInstanceState.setAwaitResultRequestMetadata(
         record.getProcessInstanceKey(), awaitResultMetadata);
+
+    // Clear variables before writing the CREATED follow-up event.
+    // Variables have already been persisted to state via setVariablesFromDocument()
+    // and are available in the Variable:CREATED records.
+    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
     metrics.processInstanceCreated(record);
