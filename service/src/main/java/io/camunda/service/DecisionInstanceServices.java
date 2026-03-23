@@ -108,7 +108,7 @@ public final class DecisionInstanceServices
         search(
             decisionInstanceSearchQuery(
                 q -> q.filter(f -> f.decisionInstanceKeys(decisionEvaluationKey))),
-            authentication);
+            CamundaAuthentication.anonymous());
 
     if (searchResult.items().isEmpty()) {
       throw ErrorMapper.mapSearchError(
