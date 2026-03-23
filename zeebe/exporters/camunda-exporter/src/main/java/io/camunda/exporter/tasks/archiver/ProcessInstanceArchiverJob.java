@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -17,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -27,11 +29,17 @@ import org.slf4j.Logger;
  * node instances, variable updates, etc).
  */
 public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchiveBatch> {
+  private static final int MAX_LARGE_BATCH_SIZE = 5_000;
+  private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
 
+  private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final Queue<ProcessInstanceArchiveBatch> pendingBatches =
+      new java.util.concurrent.ConcurrentLinkedQueue<>();
 
   public ProcessInstanceArchiverJob(
+      final HistoryConfiguration config,
       final ArchiverRepository repository,
       final ListViewTemplate processInstanceTemplate,
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -45,6 +53,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         executor,
         metrics::recordProcessInstancesArchiving,
         metrics::recordProcessInstancesArchived);
+    this.config = config;
     this.processInstanceTemplate = processInstanceTemplate;
     this.processInstanceDependants =
         processInstanceDependants.stream()
@@ -59,7 +68,18 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch();
+    if (!pendingBatches.isEmpty()) {
+      return CompletableFuture.completedFuture(pendingBatches.poll());
+    }
+    return getArchiverRepository()
+        .getProcessInstancesNextBatch(largeBatchSize())
+        .thenApply(
+            batch -> {
+              final var chunks = batch.chunk(config.getRolloverBatchSize());
+              final var first = chunks.removeFirst();
+              pendingBatches.addAll(chunks);
+              return first;
+            });
   }
 
   @Override
@@ -104,6 +124,14 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
           batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
     }
     return idsMap;
+  }
+
+  private int largeBatchSize() {
+    final int rolloverBatchSize = config.getRolloverBatchSize();
+    final int largeBatchSize =
+        Math.min(MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * rolloverBatchSize);
+    // just in case rollover batch size is configured very high
+    return Math.max(largeBatchSize, rolloverBatchSize);
   }
 
   private CompletableFuture<Void> archiveProcessDependants(

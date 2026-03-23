@@ -91,7 +91,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(mock(SearchResponse.class)));
 
     // when
-    repository.getProcessInstancesNextBatch();
+    repository.getProcessInstancesNextBatch(100);
 
     // then
     final var captor = ArgumentCaptor.forClass(SearchRequest.class);
@@ -115,7 +115,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
 
     // then
     assertThat(batch.processInstanceKeys()).containsExactly(1L, 2L);
@@ -137,7 +137,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
 
     // then
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
@@ -160,7 +160,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         .thenReturn(CompletableFuture.completedFuture(response));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
 
     // then - purely based on mapping logic which splits by root key presence
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
