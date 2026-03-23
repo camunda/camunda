@@ -39,6 +39,7 @@ import {
   formatBatchTitle,
   formatModalHeading,
   getActorIcon,
+  isValidProcessInstanceKey,
   mapToCellDetailsData,
   mapToCellEntityKeyData,
 } from 'modules/utils/operationsLog';
@@ -162,7 +163,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           </VerticallyAlignedRow>
           {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
             auditLog.entityType,
-          ) ? (
+          ) && isValidProcessInstanceKey(auditLog.processInstanceKey) ? (
             <VerticallyAlignedRow>
               <FirstColumn noWrap>
                 <IconText>
