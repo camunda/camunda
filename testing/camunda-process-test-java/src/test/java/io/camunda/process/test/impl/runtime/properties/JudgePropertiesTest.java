@@ -208,7 +208,8 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.timeout", "PT30S");
 
     // when
-    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
 
     // then
     assertThat(config.getTimeout()).isEqualTo(Duration.ofSeconds(30));
@@ -224,7 +225,8 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.timeout", "PT2M");
 
     // when
-    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
 
     // then
     assertThat(config.getTimeout()).isEqualTo(Duration.ofMinutes(2));
@@ -239,7 +241,8 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.apiKey", "test-key");
 
     // when
-    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
 
     // then
     assertThat(config.getTimeout()).isNull();
@@ -267,7 +270,9 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.timeout", "${TIMEOUT}");
 
     // when
-    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+    // when
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
 
     // then
     assertThat(config.getTimeout()).isNull();
@@ -283,8 +288,8 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.temperature", "0.7");
 
     // when
-    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
-
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
     // then
     assertThat(config.getTemperature()).isEqualTo(0.7);
   }
@@ -298,7 +303,8 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.apiKey", "test-key");
 
     // when
-    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
 
     // then
     assertThat(config.getTemperature()).isNull();
