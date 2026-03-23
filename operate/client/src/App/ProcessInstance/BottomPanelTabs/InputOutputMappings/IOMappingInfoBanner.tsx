@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ActionableNotification} from '@carbon/react';
 import {storeStateLocally} from 'modules/utils/localStorage';
+import {FullSizeActionableNotification} from './styled';
 
 type Props = {
   type: 'Input' | 'Output';
@@ -17,7 +17,7 @@ type Props = {
 
 const IOMappingInfoBanner: React.FC<Props> = ({type, text, onClose}) => {
   return (
-    <ActionableNotification
+    <FullSizeActionableNotification
       kind="info"
       inline
       lowContrast
