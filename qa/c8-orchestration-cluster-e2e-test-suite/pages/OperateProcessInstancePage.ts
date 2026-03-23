@@ -586,11 +586,23 @@ class OperateProcessInstancePage {
   }
 
   async getProcessInstanceKey(): Promise<string> {
-    const processInstanceKey = this.page
-      .getByTestId('instance-header')
-      .locator('table tbody tr td')
-      .nth(1);
-    return (await processInstanceKey.textContent()) ?? '';
+    const table = this.page.getByTestId('instance-header').locator('table');
+    const headers = await table.locator('thead tr th').allTextContents();
+    const keyColumnIndex = headers.findIndex((header) =>
+      /process\s+instance\s+key/i.test(header.trim()),
+    );
+
+    if (keyColumnIndex === -1) {
+      throw new Error('Could not find Process Instance Key column in header');
+    }
+
+    const keyCell = table
+      .locator('tbody tr')
+      .first()
+      .locator('td')
+      .nth(keyColumnIndex);
+    await expect(keyCell).toBeVisible();
+    return (await keyCell.textContent())?.trim() ?? '';
   }
 
   async gotoProcessInstancePage({id}: {id: string}): Promise<void> {
