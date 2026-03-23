@@ -320,8 +320,8 @@ public final class UserTaskServices
             () -> variableServices.search(unlimitedQuery, CamundaAuthentication.anonymous()));
 
     // Deduplicate variables by name, keeping the one from the innermost scope.
-    // Since ES has already sorted the results by the user's criteria, we iterate through
-    // them in order and use a LinkedHashMap to preserve that order while deduplicating.
+    // Since this is a sorted result set by the user's criteria, we iterate through
+    // it in order and use a LinkedHashMap to preserve that order while deduplicating.
     final List<VariableEntity> dedupedVariables =
         deduplicateVariablesByScope(allVariables.items(), treePathList);
 
@@ -341,11 +341,11 @@ public final class UserTaskServices
 
   /**
    * Deduplicates variables by name, keeping the variable from the innermost scope (closest to the
-   * user task). The variables list is already sorted by ES according to the user's criteria. We
-   * iterate through them in order, and for each variable name, we keep the one from the closest
-   * scope. If a variable from a closer scope is encountered later, we replace the previous one and
-   * move it to the end of the LinkedHashMap, preserving the relative order from ES while ensuring
-   * innermost scope wins.
+   * user task). The variables list is already sorted according to the user's criteria. We iterate
+   * through them in order, and for each variable name, we keep the one from the closest scope. If a
+   * variable from a closer scope is encountered later, we replace the previous one and move it to
+   * the end of the LinkedHashMap, preserving the relative order while ensuring innermost scope
+   * wins.
    */
   private List<VariableEntity> deduplicateVariablesByScope(
       final List<VariableEntity> variables, final List<Long> treePathList) {
@@ -357,7 +357,7 @@ public final class UserTaskServices
       scopeDepth.put(treePathList.get(i), i);
     }
 
-    // Iterate through ES-sorted variables and deduplicate by name,
+    // Iterate through sorted variables and deduplicate by name,
     // keeping the one from the closest scope (highest depth).
     final var dedupedMap = new LinkedHashMap<String, VariableEntity>();
 
