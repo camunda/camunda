@@ -117,7 +117,7 @@ public final class ProcessCacheUtil {
       return new ProcessDiagramData(callActivityIds, flowNodesMap, hasUserTasks);
     }
 
-    return new ProcessDiagramData(List.of(), Map.of(), false);
+    return new ProcessDiagramData(List.of(), Map.of(), true);
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {

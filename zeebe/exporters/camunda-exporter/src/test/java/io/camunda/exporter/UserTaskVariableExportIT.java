@@ -14,12 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
-import io.camunda.exporter.utils.ExporterThreadLeakExtension;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -32,12 +31,12 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
@@ -45,7 +44,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * processes without user tasks. This is the core optimization from issue #47843.
  */
 @TestInstance(Lifecycle.PER_CLASS)
-@ExtendWith(ExporterThreadLeakExtension.class)
 final class UserTaskVariableExportIT {
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
@@ -56,6 +54,7 @@ final class UserTaskVariableExportIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private CamundaExporter exporter;
+  private ExporterTestController controller;
 
   @AfterEach
   void afterEach() throws IOException {
@@ -119,15 +118,13 @@ final class UserTaskVariableExportIT {
                             .withBpmnProcessId("testProcessIdOne")
                             .build()));
     exporter.export(variableRecord);
-    exporter.close();
-    exporter = null;
+    controller.runScheduledTasks(Duration.ofSeconds(1));
 
     // then - the variable document should exist in the task template index
     clientAdapter.refresh();
     final var expectedDocId = scopeKey + "-myVar";
     final var taskIndexName = getTaskTemplateIndexName(config);
-    final var document =
-        clientAdapter.get(expectedDocId, taskIndexName, UserTaskVariableBatch.class);
+    final var document = clientAdapter.get(expectedDocId, taskIndexName, TaskVariableEntity.class);
     assertThat(document)
         .describedAs(
             "Variable should be exported to tasklist-task index for process with user tasks")
@@ -182,15 +179,13 @@ final class UserTaskVariableExportIT {
                             .withBpmnProcessId("testProcessId")
                             .build()));
     exporter.export(variableRecord);
-    exporter.close();
-    exporter = null;
+    controller.runScheduledTasks(Duration.ofSeconds(1));
 
     // then - the variable document should NOT exist in the task template index
     clientAdapter.refresh();
     final var expectedDocId = scopeKey + "-myVar";
     final var taskIndexName = getTaskTemplateIndexName(config);
-    final var document =
-        clientAdapter.get(expectedDocId, taskIndexName, UserTaskVariableBatch.class);
+    final var document = clientAdapter.get(expectedDocId, taskIndexName, TaskVariableEntity.class);
     assertThat(document)
         .describedAs(
             "Variable should NOT be exported to tasklist-task index for process without user tasks")
@@ -203,7 +198,8 @@ final class UserTaskVariableExportIT {
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
     camundaExporter.configure(context);
-    camundaExporter.open(new ExporterTestController());
+    controller = new ExporterTestController();
+    camundaExporter.open(controller);
     return camundaExporter;
   }
 

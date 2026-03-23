@@ -69,7 +69,7 @@ public class UserTaskVariableHandler
     }
 
     LOG.warn(
-        "Process definition key '{}' not found in cache, exporting variable to tasklist-task index as a safety measure",
+        "Process definition key '{}' not found in cache or database, exporting variable to tasklist-task index as a safety measure",
         processDefinitionKey);
     return true;
   }
