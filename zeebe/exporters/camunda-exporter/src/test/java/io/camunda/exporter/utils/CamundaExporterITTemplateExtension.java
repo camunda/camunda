@@ -58,9 +58,13 @@ public class CamundaExporterITTemplateExtension
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
+      final var esConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
+      final var esStreamingConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
+      esStreamingConfig.getBulk().setUseStreamingBulk(true);
       return Stream.of(
           invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter),
-          invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
+          invocationContext(esConfig, elsClientAdapter),
+          invocationContext(esStreamingConfig, elsClientAdapter, " [streaming]"));
     } else {
       return Stream.of(
           invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter));
@@ -105,11 +109,18 @@ public class CamundaExporterITTemplateExtension
 
   private TestTemplateInvocationContext invocationContext(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+    return invocationContext(config, clientAdapter, "");
+  }
+
+  private TestTemplateInvocationContext invocationContext(
+      final ExporterConfiguration config,
+      final SearchClientAdapter clientAdapter,
+      final String displayNameSuffix) {
     return new TestTemplateInvocationContext() {
 
       @Override
       public String getDisplayName(final int invocationIndex) {
-        return config.getConnect().getType();
+        return config.getConnect().getType() + displayNameSuffix;
       }
 
       @Override
