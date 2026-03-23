@@ -212,4 +212,148 @@ public class VariablesControllerIT extends TasklistZeebeIntegrationTest {
         .hasInstanceId()
         .hasMessage("Variable with id %s not found.", variableId);
   }
+
+  @Test
+  public void getTaskVariableByIdWithTruncatedValue() throws Exception {
+    // given - create a large variable value that will be truncated
+    final var bpmnProcessId = "simpleTestProcess";
+    final var flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+    // Create a large string (> 8191 chars, the default variable size threshold)
+    final var largeValue = "\"" + "x".repeat(10000) + "\"";
+
+    final var variables =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .then()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(bpmnProcessId, "{\"largeVar\": " + largeValue + "}")
+            .then()
+            .variablesExist("largeVar")
+            .and()
+            .taskIsCreated(flowNodeBpmnId)
+            .and()
+            .claimAndCompleteHumanTask(flowNodeBpmnId)
+            .then()
+            .getTaskVariables();
+
+    assertThat(variables).hasSize(1);
+    final var variableId = variables.get(0).getId();
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.VARIABLES_URL_V1.concat("/{variableId}"), variableId));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, VariableResponse.class)
+        .satisfies(
+            var -> {
+              assertThat(var.getId()).isEqualTo(variableId);
+              assertThat(var.getName()).isEqualTo("largeVar");
+              // Value should be the full value, not truncated
+              assertThat(var.getValue()).isNotNull();
+              assertThat(var.getValue()).isEqualTo(largeValue);
+              assertThat(var.getValue().length()).isGreaterThan(8191);
+            });
+  }
+
+  @Test
+  public void getCompletedTaskVariableWithTruncatedValue() throws Exception {
+    // given - complete a task with a large variable value
+    final var bpmnProcessId = "simpleTestProcess";
+    final var flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+    // Create a large string (> 8191 chars, the default variable size threshold)
+    final var largeValue = "\"" + "y".repeat(9000) + "\"";
+
+    final var taskTester =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .then()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(bpmnProcessId)
+            .and()
+            .taskIsCreated(flowNodeBpmnId)
+            .and()
+            .claimHumanTask(flowNodeBpmnId);
+
+    final var taskId = taskTester.getTaskId();
+
+    // Complete task with large variable
+    taskTester.completeHumanTask(flowNodeBpmnId, "largeCompletionVar", largeValue);
+
+    final var variables = taskTester.then().getTaskVariables();
+    assertThat(variables).hasSize(1);
+    final var variableId = variables.get(0).getId();
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.VARIABLES_URL_V1.concat("/{variableId}"), variableId));
+
+    // then - verify the v1 API returns the full value for truncated variables
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, VariableResponse.class)
+        .satisfies(
+            var -> {
+              assertThat(var.getId()).isEqualTo(variableId);
+              assertThat(var.getName()).isEqualTo("largeCompletionVar");
+              // Value should be the full value, not null or truncated
+              assertThat(var.getValue()).isNotNull();
+              assertThat(var.getValue()).isEqualTo(largeValue);
+              assertThat(var.getValue().length()).isGreaterThan(8191);
+            });
+  }
+
+  @Test
+  public void getCompletedTaskVariableWithNonTruncatedValue() throws Exception {
+    // given - complete a task with a small variable value
+    final var bpmnProcessId = "simpleTestProcess";
+    final var flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+    final var smallValue = "\"small value\"";
+
+    final var taskTester =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .then()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(bpmnProcessId)
+            .and()
+            .taskIsCreated(flowNodeBpmnId)
+            .and()
+            .claimHumanTask(flowNodeBpmnId);
+
+    // Complete task with small variable
+    taskTester.completeHumanTask(flowNodeBpmnId, "smallCompletionVar", smallValue);
+
+    final var variables = taskTester.then().getTaskVariables();
+    assertThat(variables).hasSize(1);
+    final var variableId = variables.get(0).getId();
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.VARIABLES_URL_V1.concat("/{variableId}"), variableId));
+
+    // then - verify the v1 API returns the value correctly for non-truncated variables
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, VariableResponse.class)
+        .satisfies(
+            var -> {
+              assertThat(var.getId()).isEqualTo(variableId);
+              assertThat(var.getName()).isEqualTo("smallCompletionVar");
+              // Value should be the actual value (not null)
+              assertThat(var.getValue()).isNotNull();
+              assertThat(var.getValue()).isEqualTo(smallValue);
+            });
+  }
 }
