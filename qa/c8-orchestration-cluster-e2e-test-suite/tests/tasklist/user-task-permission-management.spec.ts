@@ -124,7 +124,7 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 });
 
 test.describe
-  .serial('Assignee can see their task without READ permission', () => {
+  .serial('Assignee cannot see their task without READ permission', () => {
   test.beforeAll(async ({request}) => {
     authorizationKeys.length = 0;
     createdUsernames.length = 0;
@@ -168,7 +168,7 @@ test.describe
     await captureFailureVideo(page, testInfo);
   });
 
-  test('should display task to the assignee in Assigned to me even without READ permission', async ({
+  test('should not display the assigned task without READ permission', async ({
     page,
     loginPage,
     taskPanelPage,
@@ -180,9 +180,10 @@ test.describe
     await taskPanelPage.filterBy('Assigned to me');
 
     await expect(async () => {
+      await expect(page.getByText('No tasks found')).toBeVisible();
       await expect(
         taskPanelPage.availableTasks.getByText(TASK_NAME),
-      ).toBeVisible();
+      ).toBeHidden();
     }).toPass({timeout: 30000});
   });
 });
