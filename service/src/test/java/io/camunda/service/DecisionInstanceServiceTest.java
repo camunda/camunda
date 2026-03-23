@@ -207,6 +207,22 @@ class DecisionInstanceServiceTest {
   }
 
   @Test
+  void shouldReturn404WhenDecisionInstanceDoesNotExist() {
+    // given
+    final var result = mock(SearchQueryResult.class);
+    when(result.items()).thenReturn(List.of());
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class))).thenReturn(result);
+
+    // when/then
+    assertThatThrownBy(
+            () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
+        .isInstanceOf(ServiceException.class)
+        .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found")
+        .extracting(e -> ((ServiceException) e).getStatus())
+        .isEqualTo(Status.NOT_FOUND);
+  }
+
+  @Test
   void shouldNotDeleteDecisionInstance() {
     // given
     when(client.searchDecisionInstances(any(DecisionInstanceQuery.class)))
@@ -220,6 +236,41 @@ class DecisionInstanceServiceTest {
             () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
+  }
+
+  @Test
+  void shouldUseAnonymousAuthenticationForExistenceCheckWhenDeleting() {
+    // given
+    final var decisionInstanceKey = 123L;
+    final var tenantId = "tenantId";
+
+    final var entity = mock(DecisionInstanceEntity.class);
+    when(entity.decisionDefinitionId()).thenReturn(DECISION_DEFINITION_ID);
+    when(entity.tenantId()).thenReturn(tenantId);
+
+    final var result = mock(SearchQueryResult.class);
+    when(result.items()).thenReturn(List.of(entity));
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class))).thenReturn(result);
+
+    final var record =
+        new HistoryDeletionRecord()
+            .setResourceKey(decisionInstanceKey)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setDecisionDefinitionId(DECISION_DEFINITION_ID)
+            .setTenantId(tenantId);
+    when(brokerClient.sendRequest(any(BrokerDeleteHistoryRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
+
+    // then - verify that search was called (existence check happens with anonymous auth internally)
+    final var queryCaptor = ArgumentCaptor.forClass(DecisionInstanceQuery.class);
+    verify(client).searchDecisionInstances(queryCaptor.capture());
+
+    // Verify the query was for the correct decision instance key
+    final var capturedQuery = queryCaptor.getValue();
+    assertThat(capturedQuery.filter().decisionInstanceKeys()).containsExactly(decisionInstanceKey);
   }
 
   @Test
