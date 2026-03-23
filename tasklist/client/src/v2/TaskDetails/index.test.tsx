@@ -556,9 +556,12 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
-      http.post('/v2/user-tasks/:userTaskKey/effective-variables/search', () => {
-        return HttpResponse.json([]);
-      }),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+      ),
       http.delete('/v2/user-tasks/:userTaskKey/assignee', () => {
         return HttpResponse.json();
       }),
