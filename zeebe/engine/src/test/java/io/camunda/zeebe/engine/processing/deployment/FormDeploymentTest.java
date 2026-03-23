@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.junit.Rule;
@@ -396,6 +397,29 @@ public class FormDeploymentTest {
     assertThat(formMetadata2.getChecksum())
         .describedAs("Expect the MD5 checksum of the DMN resource")
         .isEqualTo(getChecksum(TEST_FORM_2));
+  }
+
+  @Test
+  public void shouldRejectWhenFormJsonIsMalformed() {
+    // given
+    final byte[] malformedJson = "{not valid json".getBytes(StandardCharsets.UTF_8);
+
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonResource(malformedJson, "malformed.form")
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains("Failed to parse form JSON. 'malformed.form':");
   }
 
   @Test
