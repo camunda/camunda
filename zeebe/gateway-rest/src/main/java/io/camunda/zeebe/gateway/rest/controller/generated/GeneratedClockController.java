@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -34,20 +36,23 @@ public class GeneratedClockController {
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/clock",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> pinClock(
-      @RequestBody final GeneratedClockPinRequestStrictContract clockPinRequest) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedClockPinRequestStrictContract clockPinRequest
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.pinClock(clockPinRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/clock/reset",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> resetClock() {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resetClock(authentication);
   }
 }

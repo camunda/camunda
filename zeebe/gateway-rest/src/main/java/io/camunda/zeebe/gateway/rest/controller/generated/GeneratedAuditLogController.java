@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -35,21 +37,25 @@ public class GeneratedAuditLogController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/audit-logs/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchAuditLogs(
-      @RequestBody(required = false)
-          final GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequest) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false) final GeneratedAuditLogSearchQueryRequestStrictContract auditLogSearchQueryRequest
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchAuditLogs(auditLogSearchQueryRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/audit-logs/{auditLogKey}",
-      produces = {"application/json", "application/problem+json"})
-  public ResponseEntity<Object> getAuditLog(@PathVariable("auditLogKey") final Long auditLogKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      produces = { "application/json", "application/problem+json" })
+  public ResponseEntity<Object> getAuditLog(
+      @PathVariable("auditLogKey") final Long auditLogKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuditLog(auditLogKey, authentication);
   }
 }

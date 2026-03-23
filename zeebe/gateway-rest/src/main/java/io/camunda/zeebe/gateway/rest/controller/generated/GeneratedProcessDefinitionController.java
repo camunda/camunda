@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -39,100 +41,102 @@ public class GeneratedProcessDefinitionController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-definitions/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchProcessDefinitions(
-      @RequestBody(required = false)
-          final GeneratedProcessDefinitionSearchQueryRequestStrictContract
-              processDefinitionSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false) final GeneratedProcessDefinitionSearchQueryRequestStrictContract processDefinitionSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchProcessDefinitions(processDefinitionSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-definitions/{processDefinitionKey}",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getProcessDefinition(
-      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinition(processDefinitionKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-definitions/{processDefinitionKey}/xml",
-      produces = {"text/xml", "application/problem+json"})
+      produces = { "text/xml", "application/problem+json" })
   public ResponseEntity<Void> getProcessDefinitionXML(
-      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getProcessDefinitionXML(processDefinitionKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/process-definitions/{processDefinitionKey}/form",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getStartProcessForm(
-      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getStartProcessForm(processDefinitionKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-definitions/{processDefinitionKey}/statistics/element-instances",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getProcessDefinitionStatistics(
       @PathVariable("processDefinitionKey") final Long processDefinitionKey,
-      @RequestBody(required = false)
-          final GeneratedProcessDefinitionElementStatisticsQueryStrictContract
-              processDefinitionElementStatisticsQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getProcessDefinitionStatistics(
-        processDefinitionKey, processDefinitionElementStatisticsQuery, authentication);
+      @RequestBody(required = false) final GeneratedProcessDefinitionElementStatisticsQueryStrictContract processDefinitionElementStatisticsQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getProcessDefinitionStatistics(processDefinitionKey, processDefinitionElementStatisticsQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-definitions/statistics/message-subscriptions",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getProcessDefinitionMessageSubscriptionStatistics(
-      @RequestBody(required = false)
-          final GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract
-              processDefinitionMessageSubscriptionStatisticsQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getProcessDefinitionMessageSubscriptionStatistics(
-        processDefinitionMessageSubscriptionStatisticsQuery, authentication);
+      @RequestBody(required = false) final GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract processDefinitionMessageSubscriptionStatisticsQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getProcessDefinitionMessageSubscriptionStatistics(processDefinitionMessageSubscriptionStatisticsQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-definitions/statistics/process-instances",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getProcessDefinitionInstanceStatistics(
-      @RequestBody(required = false)
-          final GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract
-              processDefinitionInstanceStatisticsQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getProcessDefinitionInstanceStatistics(
-        processDefinitionInstanceStatisticsQuery, authentication);
+      @RequestBody(required = false) final GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract processDefinitionInstanceStatisticsQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getProcessDefinitionInstanceStatistics(processDefinitionInstanceStatisticsQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/process-definitions/statistics/process-instances-by-version",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getProcessDefinitionInstanceVersionStatistics(
-      @RequestBody
-          final GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract
-              processDefinitionInstanceVersionStatisticsQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getProcessDefinitionInstanceVersionStatistics(
-        processDefinitionInstanceVersionStatisticsQuery, authentication);
+      @RequestBody final GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract processDefinitionInstanceVersionStatisticsQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getProcessDefinitionInstanceVersionStatistics(processDefinitionInstanceVersionStatisticsQuery, authentication);
   }
 }

@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -15,26 +17,31 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for ElementInstance operations. Implements request mapping, service delegation,
- * and response construction.
+ * Service adapter for ElementInstance operations.
+ * Implements request mapping, service delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ElementInstanceServiceAdapter {
 
   ResponseEntity<Object> searchElementInstances(
       GeneratedElementInstanceSearchQueryRequestStrictContract elementInstanceSearchQuery,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getElementInstance(
-      Long elementInstanceKey, CamundaAuthentication authentication);
+      Long elementInstanceKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> createElementInstanceVariables(
       Long elementInstanceKey,
       GeneratedSetVariableRequestStrictContract setVariableRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchElementInstanceIncidents(
       Long elementInstanceKey,
       GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 }

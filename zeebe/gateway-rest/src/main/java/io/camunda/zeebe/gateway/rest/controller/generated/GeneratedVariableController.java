@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -36,22 +38,26 @@ public class GeneratedVariableController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/variables/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchVariables(
       @RequestParam(name = "truncateValues", required = false) final Boolean truncateValues,
-      @RequestBody(required = false)
-          final GeneratedVariableSearchQueryRequestStrictContract variableSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false) final GeneratedVariableSearchQueryRequestStrictContract variableSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchVariables(truncateValues, variableSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/variables/{variableKey}",
-      produces = {"application/json", "application/problem+json"})
-  public ResponseEntity<Object> getVariable(@PathVariable("variableKey") final Long variableKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      produces = { "application/json", "application/problem+json" })
+  public ResponseEntity<Object> getVariable(
+      @PathVariable("variableKey") final Long variableKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getVariable(variableKey, authentication);
   }
 }

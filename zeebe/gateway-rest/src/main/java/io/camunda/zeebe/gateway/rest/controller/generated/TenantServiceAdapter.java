@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -20,81 +22,125 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for Tenant operations. Implements request mapping, service delegation, and
- * response construction.
+ * Service adapter for Tenant operations.
+ * Implements request mapping, service delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface TenantServiceAdapter {
 
   ResponseEntity<Object> createTenant(
       GeneratedTenantCreateRequestStrictContract tenantCreateRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchTenants(
       GeneratedTenantSearchQueryRequestStrictContract tenantSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
-  ResponseEntity<Object> getTenant(String tenantId, CamundaAuthentication authentication);
+  ResponseEntity<Object> getTenant(
+      String tenantId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> updateTenant(
       String tenantId,
       GeneratedTenantUpdateRequestStrictContract tenantUpdateRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
-  ResponseEntity<Void> deleteTenant(String tenantId, CamundaAuthentication authentication);
+  ResponseEntity<Void> deleteTenant(
+      String tenantId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> assignUserToTenant(
-      String tenantId, String username, CamundaAuthentication authentication);
+      String tenantId,
+      String username,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> unassignUserFromTenant(
-      String tenantId, String username, CamundaAuthentication authentication);
+      String tenantId,
+      String username,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchUsersForTenant(
       String tenantId,
       GeneratedTenantUserSearchQueryRequestStrictContract tenantUserSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> assignClientToTenant(
-      String tenantId, String clientId, CamundaAuthentication authentication);
+      String tenantId,
+      String clientId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> unassignClientFromTenant(
-      String tenantId, String clientId, CamundaAuthentication authentication);
+      String tenantId,
+      String clientId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchClientsForTenant(
       String tenantId,
       GeneratedTenantClientSearchQueryRequestStrictContract tenantClientSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> assignGroupToTenant(
-      String tenantId, String groupId, CamundaAuthentication authentication);
+      String tenantId,
+      String groupId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> unassignGroupFromTenant(
-      String tenantId, String groupId, CamundaAuthentication authentication);
+      String tenantId,
+      String groupId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchGroupIdsForTenant(
       String tenantId,
       GeneratedTenantGroupSearchQueryRequestStrictContract tenantGroupSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchRolesForTenant(
       String tenantId,
       GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> assignRoleToTenant(
-      String tenantId, String roleId, CamundaAuthentication authentication);
+      String tenantId,
+      String roleId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> unassignRoleFromTenant(
-      String tenantId, String roleId, CamundaAuthentication authentication);
+      String tenantId,
+      String roleId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> assignMappingRuleToTenant(
-      String tenantId, String mappingRuleId, CamundaAuthentication authentication);
+      String tenantId,
+      String mappingRuleId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> unassignMappingRuleFromTenant(
-      String tenantId, String mappingRuleId, CamundaAuthentication authentication);
+      String tenantId,
+      String mappingRuleId,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchMappingRulesForTenant(
       String tenantId,
       GeneratedMappingRuleSearchQueryRequestStrictContract mappingRuleSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 }

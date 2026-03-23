@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -34,24 +36,26 @@ public class GeneratedSystemController {
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/system/usage-metrics",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getUsageMetrics(
       @RequestParam(name = "startTime", required = false) final String startTime,
       @RequestParam(name = "endTime", required = false) final String endTime,
       @RequestParam(name = "tenantId", required = false) final String tenantId,
-      @RequestParam(name = "withTenants", required = false) final Boolean withTenants) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.getUsageMetrics(
-        startTime, endTime, tenantId, withTenants, authentication);
+      @RequestParam(name = "withTenants", required = false) final Boolean withTenants
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.getUsageMetrics(startTime, endTime, tenantId, withTenants, authentication);
   }
 
   @RequiresSecondaryStorage
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/system/configuration",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getSystemConfiguration() {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getSystemConfiguration(authentication);
   }
 }

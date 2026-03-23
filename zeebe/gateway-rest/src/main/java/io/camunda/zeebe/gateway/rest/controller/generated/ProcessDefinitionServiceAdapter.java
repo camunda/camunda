@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -17,43 +19,50 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for ProcessDefinition operations. Implements request mapping, service delegation,
- * and response construction.
+ * Service adapter for ProcessDefinition operations.
+ * Implements request mapping, service delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ProcessDefinitionServiceAdapter {
 
   ResponseEntity<Object> searchProcessDefinitions(
       GeneratedProcessDefinitionSearchQueryRequestStrictContract processDefinitionSearchQuery,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessDefinition(
-      Long processDefinitionKey, CamundaAuthentication authentication);
+      Long processDefinitionKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> getProcessDefinitionXML(
-      Long processDefinitionKey, CamundaAuthentication authentication);
+      Long processDefinitionKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getStartProcessForm(
-      Long processDefinitionKey, CamundaAuthentication authentication);
+      Long processDefinitionKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessDefinitionStatistics(
       Long processDefinitionKey,
-      GeneratedProcessDefinitionElementStatisticsQueryStrictContract
-          processDefinitionElementStatisticsQuery,
-      CamundaAuthentication authentication);
+      GeneratedProcessDefinitionElementStatisticsQueryStrictContract processDefinitionElementStatisticsQuery,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessDefinitionMessageSubscriptionStatistics(
-      GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract
-          processDefinitionMessageSubscriptionStatisticsQuery,
-      CamundaAuthentication authentication);
+      GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract processDefinitionMessageSubscriptionStatisticsQuery,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessDefinitionInstanceStatistics(
-      GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract
-          processDefinitionInstanceStatisticsQuery,
-      CamundaAuthentication authentication);
+      GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract processDefinitionInstanceStatisticsQuery,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessDefinitionInstanceVersionStatistics(
-      GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract
-          processDefinitionInstanceVersionStatisticsQuery,
-      CamundaAuthentication authentication);
+      GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract processDefinitionInstanceVersionStatisticsQuery,
+      CamundaAuthentication authentication
+  );
 }

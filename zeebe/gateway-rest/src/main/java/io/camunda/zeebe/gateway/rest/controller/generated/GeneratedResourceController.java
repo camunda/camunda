@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -39,44 +41,52 @@ public class GeneratedResourceController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/deployments",
-      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { MediaType.MULTIPART_FORM_DATA_VALUE },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> createDeployment(
       @RequestPart("resources") final List<Part> resources,
-      @RequestPart(value = "tenantId", required = false) final String tenantId) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestPart(value = "tenantId", required = false) final String tenantId
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createDeployment(resources, tenantId, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/resources/{resourceKey}",
-      produces = {"application/json", "application/problem+json"})
-  public ResponseEntity<Object> getResource(@PathVariable("resourceKey") final Long resourceKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      produces = { "application/json", "application/problem+json" })
+  public ResponseEntity<Object> getResource(
+      @PathVariable("resourceKey") final Long resourceKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getResource(resourceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/resources/{resourceKey}/content",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> getResourceContent(
-      @PathVariable("resourceKey") final Long resourceKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("resourceKey") final Long resourceKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getResourceContent(resourceKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/resources/{resourceKey}/deletion",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> deleteResource(
       @PathVariable("resourceKey") final Long resourceKey,
-      @RequestBody(required = false)
-          final GeneratedDeleteResourceRequestStrictContract deleteResourceRequest) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false) final GeneratedDeleteResourceRequestStrictContract deleteResourceRequest
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteResource(resourceKey, deleteResourceRequest, authentication);
   }
 }

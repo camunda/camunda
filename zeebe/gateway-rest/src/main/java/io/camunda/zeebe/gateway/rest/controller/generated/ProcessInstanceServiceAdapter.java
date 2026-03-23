@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -24,84 +26,99 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for ProcessInstance operations. Implements request mapping, service delegation,
- * and response construction.
+ * Service adapter for ProcessInstance operations.
+ * Implements request mapping, service delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ProcessInstanceServiceAdapter {
 
   ResponseEntity<Object> createProcessInstance(
       GeneratedProcessInstanceCreationInstructionStrictContract processInstanceCreationInstruction,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessInstance(
-      Long processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessInstanceSequenceFlows(
-      Long processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessInstanceStatistics(
-      Long processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchProcessInstances(
       GeneratedProcessInstanceSearchQueryRequestStrictContract processInstanceSearchQuery,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchProcessInstanceIncidents(
       Long processInstanceKey,
       GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQuery,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> resolveProcessInstanceIncidents(
-      Long processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> cancelProcessInstance(
       Long processInstanceKey,
       GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> cancelProcessInstancesBatchOperation(
-      GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract
-          processInstanceCancellationBatchOperationRequest,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract processInstanceCancellationBatchOperationRequest,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> resolveIncidentsBatchOperation(
-      GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract
-          processInstanceIncidentResolutionBatchOperationRequest,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract processInstanceIncidentResolutionBatchOperationRequest,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> migrateProcessInstancesBatchOperation(
-      GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract
-          processInstanceMigrationBatchOperationRequest,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract processInstanceMigrationBatchOperationRequest,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> modifyProcessInstancesBatchOperation(
-      GeneratedProcessInstanceModificationBatchOperationRequestStrictContract
-          processInstanceModificationBatchOperationRequest,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceModificationBatchOperationRequestStrictContract processInstanceModificationBatchOperationRequest,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> deleteProcessInstance(
       Long processInstanceKey,
       GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> deleteProcessInstancesBatchOperation(
-      GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract
-          processInstanceDeletionBatchOperationRequest,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract processInstanceDeletionBatchOperationRequest,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> migrateProcessInstance(
       Long processInstanceKey,
-      GeneratedProcessInstanceMigrationInstructionStrictContract
-          processInstanceMigrationInstruction,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceMigrationInstructionStrictContract processInstanceMigrationInstruction,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> modifyProcessInstance(
       Long processInstanceKey,
-      GeneratedProcessInstanceModificationInstructionStrictContract
-          processInstanceModificationInstruction,
-      CamundaAuthentication authentication);
+      GeneratedProcessInstanceModificationInstructionStrictContract processInstanceModificationInstruction,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getProcessInstanceCallHierarchy(
-      Long processInstanceKey, CamundaAuthentication authentication);
+      Long processInstanceKey,
+      CamundaAuthentication authentication
+  );
 }

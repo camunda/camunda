@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -14,18 +16,19 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for MessageSubscription operations. Implements request mapping, service
- * delegation, and response construction.
+ * Service adapter for MessageSubscription operations.
+ * Implements request mapping, service delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface MessageSubscriptionServiceAdapter {
 
   ResponseEntity<Object> searchMessageSubscriptions(
       GeneratedMessageSubscriptionSearchQueryRequestStrictContract messageSubscriptionSearchQuery,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchCorrelatedMessageSubscriptions(
-      GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract
-          correlatedMessageSubscriptionSearchQuery,
-      CamundaAuthentication authentication);
+      GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract correlatedMessageSubscriptionSearchQuery,
+      CamundaAuthentication authentication
+  );
 }

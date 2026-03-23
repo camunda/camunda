@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -37,22 +39,25 @@ public class GeneratedBatchOperationController {
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/batch-operations/{batchOperationKey}",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getBatchOperation(
-      @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("batchOperationKey") final String batchOperationKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getBatchOperation(batchOperationKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/batch-operations/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchBatchOperations(
-      @RequestBody(required = false)
-          final GeneratedBatchOperationSearchQueryRequestStrictContract batchOperationSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false) final GeneratedBatchOperationSearchQueryRequestStrictContract batchOperationSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchBatchOperations(batchOperationSearchQuery, authentication);
   }
 
@@ -60,10 +65,12 @@ public class GeneratedBatchOperationController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/batch-operations/{batchOperationKey}/cancellation",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> cancelBatchOperation(
-      @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("batchOperationKey") final String batchOperationKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.cancelBatchOperation(batchOperationKey, authentication);
   }
 
@@ -71,10 +78,12 @@ public class GeneratedBatchOperationController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/batch-operations/{batchOperationKey}/suspension",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> suspendBatchOperation(
-      @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("batchOperationKey") final String batchOperationKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.suspendBatchOperation(batchOperationKey, authentication);
   }
 
@@ -82,23 +91,25 @@ public class GeneratedBatchOperationController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/batch-operations/{batchOperationKey}/resumption",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> resumeBatchOperation(
-      @PathVariable("batchOperationKey") final String batchOperationKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("batchOperationKey") final String batchOperationKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.resumeBatchOperation(batchOperationKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/batch-operation-items/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchBatchOperationItems(
-      @RequestBody(required = false)
-          final GeneratedBatchOperationItemSearchQueryRequestStrictContract
-              batchOperationItemSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody(required = false) final GeneratedBatchOperationItemSearchQueryRequestStrictContract batchOperationItemSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchBatchOperationItems(batchOperationItemSearchQuery, authentication);
   }
 }

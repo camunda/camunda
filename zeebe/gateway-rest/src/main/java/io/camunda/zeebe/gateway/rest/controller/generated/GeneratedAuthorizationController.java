@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -36,56 +38,64 @@ public class GeneratedAuthorizationController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/authorizations",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> createAuthorization(
-      @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.createAuthorization(authorizationRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.PUT,
       value = "/authorizations/{authorizationKey}",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> updateAuthorization(
       @PathVariable("authorizationKey") final Long authorizationKey,
-      @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.updateAuthorization(
-        authorizationKey, authorizationRequest, authentication);
+      @RequestBody final GeneratedAuthorizationRequestStrictContract authorizationRequest
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.updateAuthorization(authorizationKey, authorizationRequest, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.GET,
       value = "/authorizations/{authorizationKey}",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> getAuthorization(
-      @PathVariable("authorizationKey") final Long authorizationKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("authorizationKey") final Long authorizationKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.getAuthorization(authorizationKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.DELETE,
       value = "/authorizations/{authorizationKey}",
-      produces = {"application/json", "application/problem+json"})
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Void> deleteAuthorization(
-      @PathVariable("authorizationKey") final Long authorizationKey) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @PathVariable("authorizationKey") final Long authorizationKey
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.deleteAuthorization(authorizationKey, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/authorizations/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchAuthorizations(
-      @RequestBody
-          final GeneratedAuthorizationSearchQueryRequestStrictContract authorizationSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
+      @RequestBody final GeneratedAuthorizationSearchQueryRequestStrictContract authorizationSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
     return serviceAdapter.searchAuthorizations(authorizationSearchQuery, authentication);
   }
 }

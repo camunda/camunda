@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -35,28 +37,26 @@ public class GeneratedMessageSubscriptionController {
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/message-subscriptions/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchMessageSubscriptions(
-      @RequestBody(required = false)
-          final GeneratedMessageSubscriptionSearchQueryRequestStrictContract
-              messageSubscriptionSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchMessageSubscriptions(
-        messageSubscriptionSearchQuery, authentication);
+      @RequestBody(required = false) final GeneratedMessageSubscriptionSearchQueryRequestStrictContract messageSubscriptionSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchMessageSubscriptions(messageSubscriptionSearchQuery, authentication);
   }
 
   @RequestMapping(
       method = RequestMethod.POST,
       value = "/correlated-message-subscriptions/search",
-      consumes = {"application/json"},
-      produces = {"application/json", "application/problem+json"})
+      consumes = { "application/json" },
+      produces = { "application/json", "application/problem+json" })
   public ResponseEntity<Object> searchCorrelatedMessageSubscriptions(
-      @RequestBody(required = false)
-          final GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract
-              correlatedMessageSubscriptionSearchQuery) {
-    final var authentication = authenticationProvider.getAnonymousIfUnavailable();
-    return serviceAdapter.searchCorrelatedMessageSubscriptions(
-        correlatedMessageSubscriptionSearchQuery, authentication);
+      @RequestBody(required = false) final GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract correlatedMessageSubscriptionSearchQuery
+  ) {
+    final var authentication =
+        authenticationProvider.getAnonymousIfUnavailable();
+    return serviceAdapter.searchCorrelatedMessageSubscriptions(correlatedMessageSubscriptionSearchQuery, authentication);
   }
 }

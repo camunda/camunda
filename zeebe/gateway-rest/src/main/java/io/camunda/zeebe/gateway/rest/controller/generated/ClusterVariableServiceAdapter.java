@@ -4,6 +4,8 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
  */
 package io.camunda.zeebe.gateway.rest.controller.generated;
 
@@ -15,46 +17,61 @@ import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Service adapter for ClusterVariable operations. Implements request mapping, service delegation,
- * and response construction.
+ * Service adapter for ClusterVariable operations.
+ * Implements request mapping, service delegation, and response construction.
  */
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public interface ClusterVariableServiceAdapter {
 
   ResponseEntity<Object> createGlobalClusterVariable(
       GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> createTenantClusterVariable(
       String tenantId,
       GeneratedCreateClusterVariableRequestStrictContract createClusterVariableRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> searchClusterVariables(
       Boolean truncateValues,
       GeneratedClusterVariableSearchQueryRequestStrictContract clusterVariableSearchQueryRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getGlobalClusterVariable(
-      String name, CamundaAuthentication authentication);
+      String name,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> updateGlobalClusterVariable(
       String name,
       GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> deleteGlobalClusterVariable(
-      String name, CamundaAuthentication authentication);
+      String name,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> getTenantClusterVariable(
-      String tenantId, String name, CamundaAuthentication authentication);
+      String tenantId,
+      String name,
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Object> updateTenantClusterVariable(
       String tenantId,
       String name,
       GeneratedUpdateClusterVariableRequestStrictContract updateClusterVariableRequest,
-      CamundaAuthentication authentication);
+      CamundaAuthentication authentication
+  );
 
   ResponseEntity<Void> deleteTenantClusterVariable(
-      String tenantId, String name, CamundaAuthentication authentication);
+      String tenantId,
+      String name,
+      CamundaAuthentication authentication
+  );
 }
