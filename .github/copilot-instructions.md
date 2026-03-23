@@ -17,10 +17,12 @@ testing the entire project.
 Before modifying code in any module:
 
 1. Read the module's `README.md` (if present) and any documentation in its directory.
-2. Check `docs/` for cross-cutting guides (e.g., `docs/testing.md`, `docs/rest-controller.md`).
+2. Check `docs/` for cross-cutting guides (e.g., `docs/testing.md`, `docs/rest-controller.md`, or
+   documents `docs/data-layer` when there are changes relating to secondary storage).
 3. If working on the workflow engine, read `zeebe/engine/README.md`.
 
-Not every module has a README yet — when one exists, treat it as the primary reference for that module.
+Not every module has a README yet — when one exists, treat it as the primary reference for that
+module.
 
 ### Key Modules
 
@@ -76,7 +78,8 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 - Test behavior, not implementation — assert on observable outcomes rather than internal state.
 - Prefix test methods with `should` (e.g., `shouldRejectInvalidInput`).
 - Structure tests with `// given`, `// when`, `// then` comments.
-- Prefer AssertJ for assertions. Avoid introducing new JUnit or Hamcrest assertions unless the surrounding test already uses them.
+- Prefer AssertJ for assertions. Avoid introducing new JUnit or Hamcrest assertions unless the
+  surrounding test already uses them.
 - Use [Awaitility](http://www.awaitility.org/) for async waiting. Never use `Thread.sleep`.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
@@ -90,7 +93,8 @@ Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars
 <type>: <description>
 ```
 
-Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`, `test`
+Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`,
+`test`
 
 - Separate behavioral changes from structural/refactoring changes into distinct commits
 - Commit messages should explain *why*, not just *what* changed
@@ -112,11 +116,13 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 **Always** follow the "Before Submitting" checklist below.
 
 **Ask first:**
+
 - Modifying shared libraries (`webapps-common/`, `client-components/`, `security/`)
 - Changing public API contracts (REST controllers, gRPC, exported types)
 - Adding new dependencies to `pom.xml` or `package.json`
 
 **Never:**
+
 - Run full-repo builds for single-module work
 - Commit secrets, tokens, or credentials
 - Force-push `main`
@@ -135,5 +141,6 @@ Additional instruction files are auto-loaded when you edit matching paths:
 
 - Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
 - MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
-- Load tests (`load-tests/`, load test workflows) → `.github/instructions/load-tests.instructions.md`
+- Load tests (`load-tests/`, load test workflows) →
+  `.github/instructions/load-tests.instructions.md`
 
