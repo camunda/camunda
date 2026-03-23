@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -111,6 +112,13 @@ public final class ProcessInstanceCreationCreateProcessor
     }
 
     helper.updateCreationRecord(record, processInstance);
+
+    // Clear variables before writing the CREATED follow-up event.
+    // Variables have already been persisted to state via setVariablesFromDocument()
+    // and are available in the Variable:CREATED records.
+    // Including them in this event is unnecessary and wastes batch space,
+    // causing ExceededBatchRecordSizeException for large payloads.
+    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
 
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
