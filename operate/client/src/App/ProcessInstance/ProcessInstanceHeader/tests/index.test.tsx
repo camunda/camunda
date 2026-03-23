@@ -127,6 +127,40 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
   });
 
+  it('should not render an incidents count after incidents are resolved', async () => {
+    const failedInstance = {
+      ...mockInstance,
+      state: 'ACTIVE',
+      hasIncident: true,
+    } satisfies typeof mockInstance;
+    mockSearchIncidentsByProcessInstance(
+      failedInstance.processInstanceKey,
+    ).withSuccess(searchResult([createIncident(), createIncident()]));
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    const {rerender} = render(
+      <ProcessInstanceHeader processInstance={failedInstance} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByText('2 incidents')).toBeInTheDocument();
+    expect(screen.getByTestId(`INCIDENT-icon`)).toBeInTheDocument();
+
+    const resolvedInstance = {
+      ...mockInstance,
+      state: 'ACTIVE',
+      hasIncident: false,
+    } satisfies typeof mockInstance;
+
+    rerender(<ProcessInstanceHeader processInstance={resolvedInstance} />);
+
+    expect(screen.queryByText('2 incidents')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`INCIDENT-icon`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`ACTIVE-icon`)).toBeInTheDocument();
+  });
+
   it('should render "View All" link for call activity process', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
