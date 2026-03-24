@@ -1,5 +1,5 @@
 # description: Tracks stale backport PRs and notifies authors via GitHub comments and Slack.
-#   Runs daily, on manual dispatch, and can be triggered by chatops or release workflows.
+#   Runs every 4 hours on weekdays, on manual dispatch, and can be called by other workflows.
 # type: CI Helper
 # owner: @camunda/monorepo-devops-team
 ---
@@ -275,7 +275,7 @@ jobs:
 
       - name: Update existing Slack message
         if: steps.find-message.outputs.found == 'true'
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         continue-on-error: true
         with:
           method: chat.update
@@ -288,7 +288,7 @@ jobs:
 
       - name: Post new Slack message
         if: steps.find-message.outputs.found != 'true'
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         continue-on-error: true
         with:
           method: chat.postMessage
@@ -349,7 +349,7 @@ jobs:
                 "| Backport PR | Target Branch | Age | Draft | Assignees |\n" +
                 "|-------------|---------------|-----|-------|-----------|\n" +
                 ([.backport_prs[] |
-                  "| [#\(.backport_pr_number)](\(.backport_pr_url)) | `\(.target_branch)` | \(if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h" end) | \(if .is_draft then "⚠️ Yes" else "No" end) | \(.assignees | join(", ") // "none") |"
+                  "| [#\(.backport_pr_number)](\(.backport_pr_url)) | `\(.target_branch)` | \(if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h" end) | \(if .is_draft then "⚠️ Yes" else "No" end) | \(if (.assignees | length) > 0 then (.assignees | join(", ")) else "none" end) |"
                 ] | join("\n")) + "\n"
               ] | join("\n"))
             '

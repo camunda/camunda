@@ -80,7 +80,7 @@ for repo in "${REPO_LIST[@]}"; do
   jq -c --arg now "$current_timestamp" --arg threshold "$STALE_HOURS_THRESHOLD" --arg repo "$repo" '
     [.[] |
       # Extract original PR number from the body ("Backport of #NNNN")
-      (.body // "" | capture("Backport of #(?<num>[0-9]+)") // {num: null}) as $orig |
+      (.body // "" | try capture("Backport of #(?<num>[0-9]+)") catch {num: null}) as $orig |
 
       # Calculate age in hours (createdAt format: "2025-01-15T10:30:00Z")
       ((.createdAt | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime) // 0) as $created |

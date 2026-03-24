@@ -6,10 +6,14 @@
 # Required env vars:
 #   SLACK_BOT_TOKEN - Slack bot token with users:read scope
 #
-# Matching strategy (first match wins):
+# Matching strategy (first unique match wins):
 #   1. Exact match on real_name (case-insensitive)
 #   2. Exact match on display_name (case-insensitive)
-#   3. First-name match: GitHub name matches first word of real_name (unique match only)
+#   3. First-name match: first word of GitHub name matches first word of real_name
+#   4. Parenthetical-stripped real_name match (e.g., "John Smith (Contractor)" → "john smith")
+#   5. Accent-normalized real_name match (e.g., "Vinícius" → "vinicius")
+#   6. Normalized display_name match (underscores→spaces, "-ext" suffix stripped)
+#   7. Combined parenthetical stripping + accent normalization
 
 set -euo pipefail
 
@@ -115,9 +119,10 @@ while IFS= read -r name; do
       "$TMPDIR_WORK/all_members.json")
   fi
 
-  # Strategy 3: GitHub name matches first word of real_name, unique only
+  # Strategy 3: First name of GitHub name matches first word of real_name, unique only
   if [[ -z "$slack_id" ]]; then
-    slack_id=$(jq -r --arg name "$name_lower" \
+    name_first=$(echo "$name_lower" | awk '{print $1}')
+    slack_id=$(jq -r --arg name "$name_first" \
       '[.[] | select((.real_name_lower | split(" ") | first) == $name)] | if length == 1 then .[0].id else "" end' \
       "$TMPDIR_WORK/all_members.json")
   fi

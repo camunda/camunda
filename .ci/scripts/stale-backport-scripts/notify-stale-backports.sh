@@ -51,7 +51,7 @@ current_timestamp=$("$DATE_PROGRAM" +%s)
 renotify_threshold_seconds=$((RENOTIFY_AFTER_DAYS * 86400))
 
 # Extract scalar fields from each group using jq to avoid shell escaping issues
-jq -c 'range(length) as $i | {index: $i, group: .[$i]}' "$TMPDIR_WORK/stale_data.json" | while IFS= read -r entry; do
+while IFS= read -r entry; do
   group_idx=$(echo "$entry" | jq -r '.index')
 
   repo=$(jq -r ".[$group_idx].repository // \"unknown\"" "$TMPDIR_WORK/stale_data.json")
@@ -205,6 +205,6 @@ Please review and merge/close these backport PRs.
       fi
     fi
   fi
-done
+done < <(jq -c 'range(length) as $i | {index: $i, group: .[$i]}' "$TMPDIR_WORK/stale_data.json")
 
 echo "📊 Notifications: ${notified_count} new, ${updated_count} re-notified, ${skipped_count} skipped (recently notified)" >&2
