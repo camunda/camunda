@@ -75,28 +75,32 @@ describe('Input Mappings', () => {
   it.each([
     {
       type: 'Input',
-      message:
-        'Input mappings are defined while modelling the diagram. They are used to create new local variables inside the element scope with the specified assignment.',
+      title: 'Input mappings are defined while modelling the diagram.',
+      subtitle:
+        'They are used to create new local variables inside the element scope with the specified assignment.',
     },
     {
       type: 'Output',
-      message:
-        'Output mappings are defined while modelling the diagram. They are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
+      title: 'Output mappings are defined while modelling the diagram.',
+      subtitle:
+        'They are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
     },
   ] as const)(
     'should display/hide information banner for input/output mappings',
-    async ({type, message}) => {
+    async ({type, title, subtitle}) => {
       const {user, rerender} = render(
         <InputOutputMappings type={type} elementId="Activity_0qtp1k6" />,
         {
           wrapper: Wrapper,
         },
       );
-      expect(screen.getByText(message)).toBeInTheDocument();
+      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getByText(subtitle)).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', {name: /close/}));
 
-      expect(screen.queryByText(message)).not.toBeInTheDocument();
+      expect(screen.queryByText(title)).not.toBeInTheDocument();
+      expect(screen.queryByText(subtitle)).not.toBeInTheDocument();
 
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
@@ -104,7 +108,8 @@ describe('Input Mappings', () => {
       rerender(
         <InputOutputMappings type={type} elementId="Activity_0qtp1k6" />,
       );
-      expect(screen.queryByText(message)).not.toBeInTheDocument();
+      expect(screen.queryByText(title)).not.toBeInTheDocument();
+      expect(screen.queryByText(subtitle)).not.toBeInTheDocument();
     },
   );
 
