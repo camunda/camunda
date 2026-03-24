@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 class UserTaskSearchTest {
   private static Long userTaskKeyTaskAssigned;
   private static Long userTaskSubprocessKey;
+  private static Long userTaskOverlapKey;
   private static final String LARGE_VAR_NAME = "largeVariable";
   private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
 
@@ -56,6 +57,9 @@ class UserTaskSearchTest {
     deployProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
     deployProcessFromResourcePath(
         "/process/bpmn_subprocess_case.bpmn", "bpmn_subprocess_case.bpmn");
+    deployProcessFromResourcePath(
+        "/process/process_with_overlapping_variables.bpmn",
+        "process_with_overlapping_variables.bpmn");
 
     deployResource(camundaClient, "form/form.form");
     deployProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
@@ -66,6 +70,7 @@ class UserTaskSearchTest {
     startProcessInstance(camundaClient, "process");
     startProcessInstance(camundaClient, "process-3");
     startProcessInstance(camundaClient, "bpmProcessVariable");
+    startProcessInstance(camundaClient, "processWithOverlappingVars");
     startProcessInstance(camundaClient, "processWithForm");
     startProcessInstance(
         camundaClient, "processWithSubProcess", Map.of(LARGE_VAR_NAME, LARGE_VALUE));
@@ -79,6 +84,14 @@ class UserTaskSearchTest {
     final var userTaskList =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
     userTaskSubprocessKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
+
+    final var overlapUserTaskList =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("TaskOverlap"))
+            .send()
+            .join();
+    userTaskOverlapKey = overlapUserTaskList.items().stream().findFirst().get().getUserTaskKey();
   }
 
   @Test
@@ -363,7 +376,7 @@ class UserTaskSearchTest {
   @Test
   public void shouldRetrieveAllTasks() {
     final var result = camundaClient.newUserTaskSearchRequest().send().join();
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
   }
 
   @Test
@@ -429,7 +442,7 @@ class UserTaskSearchTest {
             .filter(f -> f.state(UserTaskState.CREATED))
             .send()
             .join();
-    assertThat(resultCreated.items()).hasSize(7);
+    assertThat(resultCreated.items()).hasSize(8);
     resultCreated
         .items()
         .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskState.CREATED));
@@ -541,7 +554,7 @@ class UserTaskSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items()).hasSize(7);
+    assertThat(resultAfter.items()).hasSize(8);
     // apply searchBefore
     final var resultBefore =
         camundaClient
@@ -558,7 +571,7 @@ class UserTaskSearchTest {
     final var result =
         camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().asc()).send().join();
 
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     final UserTask firstItem = result.items().get(0);
@@ -572,7 +585,7 @@ class UserTaskSearchTest {
     final var result =
         camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().desc()).send().join();
 
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
 
     assertThat(result.items().get(0).getCreationDate())
         .isAfterOrEqualTo(result.items().get(1).getCreationDate());
@@ -596,7 +609,7 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.tenantId("<default>")).send().join();
-    assertThat(resultDefaultTenant.items()).hasSize(8);
+    assertThat(resultDefaultTenant.items()).hasSize(9);
     resultDefaultTenant
         .items()
         .forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
@@ -809,6 +822,27 @@ class UserTaskSearchTest {
   }
 
   @Test
+  void shouldReturnEffectiveVariablesDeduplicatedByScope() {
+    // given - the process has sharedVar at both process and subprocess scope
+    // when - effective-variables endpoint should deduplicate, keeping innermost scope
+    final var result =
+        camundaClient
+            .newUserTaskEffectiveVariableSearchRequest(userTaskOverlapKey)
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
+
+    // then - 3 effective variables (sharedVar appears once with subprocess value)
+    assertThat(result.items()).hasSize(3);
+    assertThat(result.items().stream().map(Variable::getName))
+        .containsExactly("processOnly", "sharedVar", "subOnly");
+    // sharedVar should have the subprocess (innermost) value, not the process value
+    final var sharedVar =
+        result.items().stream().filter(v -> v.getName().equals("sharedVar")).findFirst().get();
+    assertThat(sharedVar.getValue()).isEqualTo("\"subprocess\"");
+  }
+
+  @Test
   void shouldReturnUserTaskByCreationDateExists() {
     // when
     final var result =
@@ -819,7 +853,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
   }
 
   @Test
@@ -1429,7 +1463,7 @@ class UserTaskSearchTest {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskSearchRequest().send().join();
-              assertThat(result.items()).hasSize(8);
+              assertThat(result.items()).hasSize(9);
               userTaskKeyTaskAssigned = result.items().getFirst().getUserTaskKey();
             });
 
