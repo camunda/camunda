@@ -123,16 +123,17 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
   protected Incident searchHitToIncident(SearchHit searchHit) {
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
     return new Incident()
-        .setKey((Long) searchHitAsMap.get(IncidentTemplate.KEY))
-        .setProcessInstanceKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_INSTANCE_KEY))
-        .setProcessDefinitionKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_DEFINITION_KEY))
+        .setKey(getLong(searchHitAsMap.get(IncidentTemplate.KEY)))
+        .setProcessInstanceKey(getLong(searchHitAsMap.get(IncidentTemplate.PROCESS_INSTANCE_KEY)))
+        .setProcessDefinitionKey(
+            getLong(searchHitAsMap.get(IncidentTemplate.PROCESS_DEFINITION_KEY)))
         .setType((String) searchHitAsMap.get(IncidentTemplate.ERROR_TYPE))
         .setMessage((String) searchHitAsMap.get(IncidentTemplate.ERROR_MSG))
         .setCreationTime(
             dateTimeFormatter.convertGeneralToApiDateTime(
                 (String) searchHitAsMap.get(Incident.CREATION_TIME)))
         .setState((String) searchHitAsMap.get(Incident.STATE))
-        .setJobKey((Long) searchHitAsMap.get(Incident.JOB_KEY))
+        .setJobKey(getLong(searchHitAsMap.get(Incident.JOB_KEY)))
         .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));
   }
 
