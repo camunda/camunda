@@ -2,8 +2,8 @@
 <Configuration status="WARN" monitorInterval="30">
   <Properties>
     <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
-    <Property name="log.stackdriver.serviceName">${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-optimize}</Property>
-    <Property name="log.stackdriver.serviceVersion">${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-}</Property>
+    <Property name="log.stackdriver.serviceName">${env:CAMUNDA_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-optimize}}</Property>
+    <Property name="log.stackdriver.serviceVersion">${env:CAMUNDA_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-}}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT" follow="true">
@@ -20,7 +20,7 @@
     <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-warn}" />
 
     <Root level="info">
-      <AppenderRef ref="${env:OPTIMIZE_LOG_APPENDER:-Console}"/>
+      <AppenderRef ref="${env:CAMUNDA_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-Console}}"/>
     </Root>
   </Loggers>
 </Configuration>

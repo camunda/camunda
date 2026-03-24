@@ -14,7 +14,7 @@
   <Loggers>
     <Logger name="io.camunda.tasklist" level="info" />
     <Root level="info">
-      <AppenderRef ref="${env:TASKLIST_LOG_APPENDER:-Console}"/>
+      <AppenderRef ref="${env:CAMUNDA_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}"/>
     </Root>
   </Loggers>
 </Configuration>

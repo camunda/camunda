@@ -7,8 +7,8 @@
   <Properties>
     <Property name="log.path" value="${sys:app.home}/logs" />
     <Property name="log.pattern" value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] %notEmpty{[%X] }%-5level \t%logger{36} - %msg%n" />
-    <Property name="log.stackdriver.serviceName" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}"/>
-    <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
+    <Property name="log.stackdriver.serviceName" value="${env:CAMUNDA_LOG_STACKDRIVER_SERVICENAME:-${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}}"/>
+    <Property name="log.stackdriver.serviceVersion" value="${env:CAMUNDA_LOG_STACKDRIVER_SERVICEVERSION:-${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}}"/>
   </Properties>
 
   <Appenders>
@@ -60,7 +60,7 @@
       <AppenderRef ref="RollingFile" />
 
       <!-- remove to disable console logging -->
-      <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}}"/>
+      <AppenderRef ref="${env:CAMUNDA_LOG_APPENDER:-${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}}}"/>
     </Root>
   </Loggers>
 
