@@ -47,6 +47,7 @@ on:
           - custom
           - latency
           - realistic
+          - realisticLargePayload
           - typical
           - max
         default: custom
@@ -113,7 +114,7 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
+        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, realisticLargePayload, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
         type: string
         required: false
         default: custom
@@ -259,6 +260,10 @@ jobs:
               ;;
             realistic)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
+              ;;
+            realisticLargePayload)
+              echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml --set starter.payloadPath=bpmn/realistic/largeRealisticPayload.json --set starter.rate=1" >> "$GITHUB_OUTPUT"
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)
