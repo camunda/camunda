@@ -149,6 +149,7 @@ test.describe('Process Instance History', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+          await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
