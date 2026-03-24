@@ -16,22 +16,22 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
-import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.reindex.Source;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
@@ -63,7 +63,6 @@ import org.slf4j.Logger;
 
 public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
     implements ArchiverRepository {
-  private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
   private final int partitionId;
@@ -310,28 +309,78 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String destinationIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    final var source =
-        new Source.Builder()
-            .index(sourceIndexName)
-            .query(q -> q.terms(buildIdTermsQuery(idFieldName, processInstanceKeys)))
-            .build();
+    final var timer = Timer.start();
+    return scrollAndBulkMove(
+            sourceIndexName, destinationIndexName, idFieldName, processInstanceKeys)
+        .whenCompleteAsync(
+            (ignored, error) -> metrics.measureArchiverReindex(null, timer), executor);
+  }
+
+  private CompletableFuture<Void> scrollAndBulkMove(
+      final String sourceIndex,
+      final String destIndex,
+      final String idField,
+      final List<String> ids) {
+    final var termsQuery = buildIdTermsQuery(idField, ids);
     final var request =
-        new ReindexRequest.Builder()
-            .source(source)
-            .dest(dest -> dest.index(destinationIndexName))
-            .conflicts(Conflicts.Proceed)
-            .scroll(REINDEX_SCROLL_TIMEOUT)
-            .slices(AUTO_SLICES)
+        new SearchRequest.Builder()
+            .index(sourceIndex)
+            .query(q -> q.terms(termsQuery))
+            .scroll(SCROLL_KEEP_ALIVE)
+            .size(SCROLL_PAGE_SIZE)
             .build();
 
-    final var timer = Timer.start();
     return client
-        .reindex(request)
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(ignored -> null, executor);
+        .search(request, ObjectNode.class)
+        .thenComposeAsync(
+            response ->
+                clearScrollOnComplete(
+                    response.scrollId(),
+                    processScrollPage(
+                        response.hits().hits(), response.scrollId(), destIndex)),
+            executor);
+  }
+
+  private CompletableFuture<Void> processScrollPage(
+      final List<Hit<ObjectNode>> hits, final String scrollId, final String destIndex) {
+    if (hits.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var operations =
+        hits.stream()
+            .map(
+                hit ->
+                    BulkOperation.of(
+                        op ->
+                            op.index(
+                                idx ->
+                                    idx.index(destIndex)
+                                        .id(hit.id())
+                                        .routing(hit.routing())
+                                        .document(hit.source()))))
+            .toList();
+
+    final var bulkRequest = new BulkRequest.Builder().operations(operations).build();
+
+    return client
+        .bulk(bulkRequest)
+        .thenComposeAsync(
+            bulkResponse -> {
+              if (bulkResponse.errors()) {
+                return CompletableFuture.<Void>failedFuture(
+                    collectBulkErrors(bulkResponse.items()));
+              }
+              return client
+                  .scroll(
+                      r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), ObjectNode.class)
+                  .thenComposeAsync(
+                      scrollResp ->
+                          processScrollPage(
+                              scrollResp.hits().hits(), scrollResp.scrollId(), destIndex),
+                      executor);
+            },
+            executor);
   }
 
   @Override

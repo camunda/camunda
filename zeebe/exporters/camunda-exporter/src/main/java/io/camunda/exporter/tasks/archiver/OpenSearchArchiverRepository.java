@@ -11,6 +11,7 @@ import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_K
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
@@ -45,18 +46,17 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
+import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
-import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.reindex.Source;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -65,7 +65,6 @@ import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
-  private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
 
   private final int partitionId;
@@ -314,27 +313,78 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String destinationIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    final var source =
-        new Source.Builder()
-            .index(sourceIndexName)
-            .query(q -> q.terms(buildIdTermsQuery(idFieldName, processInstanceKeys)))
-            .build();
+    final var timer = Timer.start();
+    return scrollAndBulkMove(
+            sourceIndexName, destinationIndexName, idFieldName, processInstanceKeys)
+        .whenCompleteAsync(
+            (ignored, error) -> metrics.measureArchiverReindex(null, timer), executor);
+  }
+
+  private CompletableFuture<Void> scrollAndBulkMove(
+      final String sourceIndex,
+      final String destIndex,
+      final String idField,
+      final List<String> ids) {
+    final var termsQuery = buildIdTermsQuery(idField, ids);
     final var request =
-        new ReindexRequest.Builder()
-            .source(source)
-            .dest(dest -> dest.index(destinationIndexName))
-            .conflicts(Conflicts.Proceed)
-            .scroll(REINDEX_SCROLL_TIMEOUT)
-            .slices(AUTO_SLICES)
+        new SearchRequest.Builder()
+            .index(sourceIndex)
+            .query(q -> q.terms(termsQuery))
+            .scroll(SCROLL_KEEP_ALIVE)
+            .size(SCROLL_PAGE_SIZE)
             .build();
 
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.reindex(request))
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(ignored -> null, executor);
+    return sendRequestAsync(() -> client.search(request, ObjectNode.class))
+        .thenComposeAsync(
+            response ->
+                clearScrollOnComplete(
+                    response.scrollId(),
+                    processScrollPage(
+                        response.hits().hits(), response.scrollId(), destIndex)),
+            executor);
+  }
+
+  private CompletableFuture<Void> processScrollPage(
+      final List<Hit<ObjectNode>> hits, final String scrollId, final String destIndex) {
+    if (hits.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var operations =
+        hits.stream()
+            .map(
+                hit ->
+                    BulkOperation.of(
+                        op ->
+                            op.index(
+                                idx ->
+                                    idx.index(destIndex)
+                                        .id(hit.id())
+                                        .routing(hit.routing())
+                                        .document(hit.source()))))
+            .toList();
+
+    final var bulkRequest = new BulkRequest.Builder().operations(operations).build();
+
+    return sendRequestAsync(() -> client.bulk(bulkRequest))
+        .thenComposeAsync(
+            bulkResponse -> {
+              if (bulkResponse.errors()) {
+                return CompletableFuture.<Void>failedFuture(
+                    collectBulkErrors(bulkResponse.items()));
+              }
+              return sendRequestAsync(
+                      () ->
+                          client.scroll(
+                              r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE),
+                              ObjectNode.class))
+                  .thenComposeAsync(
+                      scrollResp ->
+                          processScrollPage(
+                              scrollResp.hits().hits(), scrollResp.scrollId(), destIndex),
+                      executor);
+            },
+            executor);
   }
 
   @Override

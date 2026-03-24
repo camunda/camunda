@@ -104,7 +104,7 @@ public class ElasticsearchRepository implements AutoCloseable {
             r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator, transformer, type));
   }
 
-  private <T> CompletionStage<T> clearScrollOnComplete(
+  protected <T> CompletionStage<T> clearScrollOnComplete(
       final String scrollId, final CompletionStage<T> scrollOperation) {
     return scrollOperation
         // we combine `handleAsync` and `thenComposeAsync` to emulate the behavior of a try/finally

@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 
 public class OpensearchRepository implements AutoCloseable {
 
-  private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
-  private static final int SCROLL_PAGE_SIZE = 100;
+  protected static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
+  protected static final int SCROLL_PAGE_SIZE = 100;
   protected final OpenSearchAsyncClient client;
   protected final Executor executor;
   protected final Logger logger;
@@ -90,7 +90,7 @@ public class OpensearchRepository implements AutoCloseable {
     }
   }
 
-  private <T> CompletionStage<T> clearScrollOnComplete(
+  protected <T> CompletionStage<T> clearScrollOnComplete(
       final String scrollId, final CompletionStage<T> scrollOperation) {
     return scrollOperation
         // we combine `handleAsync` and `thenComposeAsync` to emulate the behavior of a try/finally
