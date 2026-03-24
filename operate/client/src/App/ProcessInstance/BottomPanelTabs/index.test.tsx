@@ -21,6 +21,8 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {createProcessInstance, searchResult} from 'modules/testUtils';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = '123';
@@ -410,5 +412,101 @@ describe('<BottomPanelTabs />', () => {
     });
     expect(incidentsTab).toBeVisible();
     expect(await screen.findByText('5')).toBeVisible();
+  });
+
+  it('should display an incident count filtered to a selected element instance', async () => {
+    const elementInstanceKey = '456';
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockFetchElementInstance(':key').withSuccess({
+      elementInstanceKey,
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: '2223894723423800',
+      processDefinitionId: 'someKey',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: null,
+      state: 'ACTIVE',
+      incidentKey: null,
+      elementId: 'someElement',
+      elementName: null,
+      type: 'SERVICE_TASK',
+      tenantId: '<default>',
+      hasIncident: true,
+      rootProcessInstanceKey: null,
+    });
+    mockSearchIncidentsByElementInstance(':key').withSuccess(
+      searchResult([], 2),
+    );
+
+    const path = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement&elementInstanceKey=${elementInstanceKey}`;
+    render(<BottomPanelTabs />, {wrapper: getWrapper(path)});
+
+    expect(
+      await screen.findByRole('link', {name: /^Incidents$/i}),
+    ).toBeVisible();
+    expect(await screen.findByText('2')).toBeVisible();
+  });
+
+  it('should display an incident count filtered to selected element when no single instance is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(
+      searchResult(
+        [
+          {
+            elementInstanceKey: '1001',
+            processInstanceKey: PROCESS_INSTANCE_ID,
+            processDefinitionKey: '2223894723423800',
+            processDefinitionId: 'someKey',
+            startDate: '2024-01-01T00:00:00.000Z',
+            endDate: null,
+            state: 'ACTIVE',
+            incidentKey: null,
+            elementId: 'multiElement',
+            elementName: null,
+            type: 'SERVICE_TASK',
+            tenantId: '<default>',
+            hasIncident: true,
+            rootProcessInstanceKey: null,
+          },
+          {
+            elementInstanceKey: '1002',
+            processInstanceKey: PROCESS_INSTANCE_ID,
+            processDefinitionKey: '2223894723423800',
+            processDefinitionId: 'someKey',
+            startDate: '2024-01-01T00:00:00.000Z',
+            endDate: null,
+            state: 'ACTIVE',
+            incidentKey: null,
+            elementId: 'multiElement',
+            elementName: null,
+            type: 'SERVICE_TASK',
+            tenantId: '<default>',
+            hasIncident: true,
+            rootProcessInstanceKey: null,
+          },
+        ],
+        2,
+      ),
+    );
+    mockSearchIncidentsByProcessInstance(':key').withSuccess(
+      searchResult([], 3),
+    );
+
+    const selectedPath = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=multiElement`;
+    render(<BottomPanelTabs />, {wrapper: getWrapper(selectedPath)});
+
+    expect(
+      await screen.findByRole('link', {name: /^Incidents$/i}),
+    ).toBeVisible();
+    expect(await screen.findByText('3')).toBeVisible();
   });
 });

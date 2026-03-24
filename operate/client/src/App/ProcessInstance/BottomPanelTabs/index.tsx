@@ -15,6 +15,37 @@ import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
+import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
+
+function useSelectionAwareIncidentsCount(
+  processInstanceKey: string,
+  hasIncident: boolean,
+) {
+  const {resolvedElementInstance, isFetchingElement, selectedElementId} =
+    useProcessInstanceElementSelection();
+  const resolvedElementInstanceKey =
+    resolvedElementInstance?.elementInstanceKey;
+
+  const isElementInstanceSelected =
+    resolvedElementInstanceKey !== undefined &&
+    resolvedElementInstanceKey !== processInstanceKey;
+
+  const processIncidentsCount = useProcessInstanceIncidentsCount(
+    processInstanceKey ?? '',
+    {
+      enabled: hasIncident && !isElementInstanceSelected && !isFetchingElement,
+      filter: {elementId: selectedElementId ?? undefined},
+    },
+  );
+  const elementIncidentsCount = useElementInstanceIncidentsCount(
+    resolvedElementInstanceKey ?? '',
+    {enabled: hasIncident && isElementInstanceSelected},
+  );
+
+  return isElementInstanceSelected
+    ? elementIncidentsCount
+    : processIncidentsCount;
+}
 
 const BottomPanelTabs: React.FC = () => {
   const {hasSelection} = useProcessInstanceElementSelection();
@@ -22,10 +53,11 @@ const BottomPanelTabs: React.FC = () => {
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
   const hasIncident = processInstance?.hasIncident === true;
-  const incidentsCount = useProcessInstanceIncidentsCount(
+  const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
-    {enabled: hasIncident},
+    hasIncident,
   );
+
   const tabItems = [
     {
       label: 'Incidents',
