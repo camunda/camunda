@@ -27,38 +27,40 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 final class BedrockChatModelBuilder {
 
+  public static final String AMAZON_BEDROCK = "amazon-bedrock";
   private static final Logger LOG = LoggerFactory.getLogger(BedrockChatModelBuilder.class);
 
   private BedrockChatModelBuilder() {}
 
   static ChatModel build(final BaseProviderConfig.AmazonBedrockConfig config) {
     LOG.debug("Building Amazon Bedrock chat model");
+    final ChatModel chatModel = build(config, BedrockChatModel.builder());
+    LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", config.getModel());
+    return chatModel;
+  }
 
-    final String model = require(config.getModel(), "model", "amazon-bedrock");
-
+  // visible for testing
+  static ChatModel build(
+      final BaseProviderConfig.AmazonBedrockConfig config, final BedrockChatModel.Builder builder) {
+    final String model = require(config.getModel(), "model", AMAZON_BEDROCK);
     final BedrockRuntimeClient client =
         BedrockRuntimeClientFactory.build(
             config.getRegion(),
             config.getApiKey(),
             config.getCredentialsAccessKey(),
             config.getCredentialsSecretKey());
-
-    final BedrockChatModel.Builder bedrockBuilder =
-        BedrockChatModel.builder().client(client).modelId(model);
-
+    builder.client(client);
+    builder.modelId(model);
     if (config.getTimeout() != null) {
       LOG.debug("Setting timeout to {}", config.getTimeout());
-      bedrockBuilder.timeout(config.getTimeout());
+      builder.timeout(config.getTimeout());
     }
     if (config.getTemperature() != null) {
       LOG.debug("Setting temperature to {}", config.getTemperature());
       final BedrockChatRequestParameters requestParameters =
           BedrockChatRequestParameters.builder().temperature(config.getTemperature()).build();
-      bedrockBuilder.defaultRequestParameters(requestParameters);
+      builder.defaultRequestParameters(requestParameters);
     }
-
-    final ChatModel chatModel = bedrockBuilder.build();
-    LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", model);
-    return chatModel;
+    return builder.build();
   }
 }

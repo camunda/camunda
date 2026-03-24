@@ -76,11 +76,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.azure</groupId>
-      <artifactId>azure-identity</artifactId>
-    </dependency>
-
     <!--  test scope  -->
 
     <dependency>

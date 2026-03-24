@@ -24,19 +24,24 @@ import org.slf4j.LoggerFactory;
 
 final class AnthropicChatModelBuilder {
 
+  public static final String ANTHROPIC = "anthropic";
   private static final Logger LOG = LoggerFactory.getLogger(AnthropicChatModelBuilder.class);
 
   private AnthropicChatModelBuilder() {}
 
   static ChatModel build(final BaseProviderConfig.AnthropicConfig config) {
     LOG.debug("Building Anthropic chat model");
+    final ChatModel chatModel = build(config, AnthropicChatModel.builder());
+    LOG.debug("Successfully built Anthropic chat model with model '{}'", config.getModel());
+    return chatModel;
+  }
 
-    final String model = require(config.getModel(), "model", "anthropic");
-    final String apiKey = require(config.getApiKey(), "apiKey", "anthropic");
-
-    final AnthropicChatModel.AnthropicChatModelBuilder builder =
-        AnthropicChatModel.builder().apiKey(apiKey).modelName(model);
-
+  // visible for testing
+  static ChatModel build(
+      final BaseProviderConfig.AnthropicConfig config,
+      final AnthropicChatModel.AnthropicChatModelBuilder builder) {
+    builder.apiKey(require(config.getApiKey(), "apiKey", ANTHROPIC));
+    builder.modelName(require(config.getModel(), "model", ANTHROPIC));
     if (config.getTimeout() != null) {
       LOG.debug("Setting timeout to {}", config.getTimeout());
       builder.timeout(config.getTimeout());
@@ -45,9 +50,6 @@ final class AnthropicChatModelBuilder {
       LOG.debug("Setting temperature to {}", config.getTemperature());
       builder.temperature(config.getTemperature());
     }
-
-    final ChatModel chatModel = builder.build();
-    LOG.debug("Successfully built Anthropic chat model with model '{}'", model);
-    return chatModel;
+    return builder.build();
   }
 }

@@ -35,13 +35,20 @@ final class OpenAiCompatibleEmbeddingModelBuilder {
 
   static EmbeddingModel build(final OpenAiCompatibleConfig config) {
     LOG.debug("Building OpenAI-compatible embedding model");
+    final EmbeddingModel embeddingModel = build(config, OpenAiEmbeddingModel.builder());
+    LOG.debug(
+        "Successfully built OpenAI-compatible embedding model with baseUrl '{}' and model '{}'",
+        config.getBaseUrl(),
+        config.getModel());
+    return embeddingModel;
+  }
 
-    final String model = require(config.getModel(), "model", OPENAI_COMPATIBLE);
-    final String baseUrl = require(config.getBaseUrl(), "baseUrl", OPENAI_COMPATIBLE);
-
-    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder =
-        OpenAiEmbeddingModel.builder().baseUrl(baseUrl).modelName(model);
-
+  // visible for testing
+  static EmbeddingModel build(
+      final OpenAiCompatibleConfig config,
+      final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {
+    builder.baseUrl(require(config.getBaseUrl(), "baseUrl", OPENAI_COMPATIBLE));
+    builder.modelName(require(config.getModel(), "model", OPENAI_COMPATIBLE));
     final Map<String, String> headers = config.getHeaders();
     final boolean hasAuthorizationHeader =
         headers != null && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase);
@@ -53,20 +60,12 @@ final class OpenAiCompatibleEmbeddingModelBuilder {
         builder.apiKey(config.getApiKey().trim());
       }
     }
-
     if (headers != null && !headers.isEmpty()) {
       builder.customHeaders(headers);
     }
-
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
     }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug(
-        "Successfully built OpenAI-compatible embedding model with baseUrl '{}' and model '{}'",
-        baseUrl,
-        model);
-    return embeddingModel;
+    return builder.build();
   }
 }

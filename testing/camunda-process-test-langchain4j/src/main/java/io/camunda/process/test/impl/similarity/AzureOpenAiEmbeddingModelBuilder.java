@@ -34,13 +34,18 @@ final class AzureOpenAiEmbeddingModelBuilder {
 
   static EmbeddingModel build(final AzureOpenAiConfig config) {
     LOG.debug("Building Azure OpenAI embedding model");
+    final EmbeddingModel embeddingModel = build(config, AzureOpenAiEmbeddingModel.builder());
+    LOG.debug(
+        "Successfully built Azure OpenAI embedding model with deploymentName '{}'",
+        config.getModel());
+    return embeddingModel;
+  }
 
-    final String endpoint = require(config.getEndpoint(), "endpoint", AZURE_OPENAI);
-    final String deploymentName = require(config.getModel(), "model", AZURE_OPENAI);
-
-    final AzureOpenAiEmbeddingModel.Builder builder =
-        AzureOpenAiEmbeddingModel.builder().endpoint(endpoint).deploymentName(deploymentName);
-
+  // visible for testing
+  static EmbeddingModel build(
+      final AzureOpenAiConfig config, final AzureOpenAiEmbeddingModel.Builder builder) {
+    builder.endpoint(require(config.getEndpoint(), "endpoint", AZURE_OPENAI));
+    builder.deploymentName(require(config.getModel(), "model", AZURE_OPENAI));
     if (hasText(config.getApiKey())) {
       LOG.debug("Using API key authentication");
       builder.apiKey(config.getApiKey().trim());
@@ -50,14 +55,9 @@ final class AzureOpenAiEmbeddingModelBuilder {
               + "(environment, workload identity, managed identity, Azure CLI)");
       builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
     }
-
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
     }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug(
-        "Successfully built Azure OpenAI embedding model with deploymentName '{}'", deploymentName);
-    return embeddingModel;
+    return builder.build();
   }
 }

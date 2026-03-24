@@ -32,19 +32,19 @@ final class OpenAiEmbeddingModelBuilder {
 
   static EmbeddingModel build(final OpenAiConfig config) {
     LOG.debug("Building OpenAI embedding model");
+    final EmbeddingModel embeddingModel = build(config, OpenAiEmbeddingModel.builder());
+    LOG.debug("Successfully built OpenAI embedding model with model '{}'", config.getModel());
+    return embeddingModel;
+  }
 
-    final String model = require(config.getModel(), "model", OPENAI);
-    final String apiKey = require(config.getApiKey(), "apiKey", OPENAI);
-
-    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder =
-        OpenAiEmbeddingModel.builder().apiKey(apiKey).modelName(model);
-
+  // visible for testing
+  static EmbeddingModel build(
+      final OpenAiConfig config, final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {
+    builder.apiKey(require(config.getApiKey(), "apiKey", OPENAI));
+    builder.modelName(require(config.getModel(), "model", OPENAI));
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
     }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug("Successfully built OpenAI embedding model with model '{}'", model);
-    return embeddingModel;
+    return builder.build();
   }
 }

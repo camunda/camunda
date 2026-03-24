@@ -17,8 +17,14 @@ package io.camunda.process.test.impl.similarity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiCompatibleConfig;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -28,14 +34,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class OpenAiCompatibleEmbeddingModelBuilderTest {
 
-  @ParameterizedTest
-  @NullAndEmptySource
-  @ValueSource(strings = {"  "})
-  void shouldBuildEmbeddingModelWithoutApiKey(final String apiKey) {
-    // given — null or blank apiKey is treated as absent
+  private static final String MODEL = "nomic-embed-text";
+  private static final String BASE_URL = "http://localhost:11434/v1";
+  private static final String API_KEY = "test-api-key";
+
+  @Test
+  void shouldBuildEmbeddingModel() {
+    // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(
-            "nomic-embed-text", "http://localhost:11434/v1", apiKey, null, null);
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null, null);
 
     // when
     final EmbeddingModel embeddingModel = OpenAiCompatibleEmbeddingModelBuilder.build(config);
@@ -45,21 +52,102 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   }
 
   @Test
-  void shouldBuildEmbeddingModelWithOptionalFields() {
+  void shouldSetRequiredFieldsOnBuilder() {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(
-            "nomic-embed-text",
-            "http://localhost:11434/v1",
-            "optional-key",
-            768,
-            Map.of("X-Custom-Header", "value"));
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null, null);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
     // when
-    final EmbeddingModel embeddingModel = OpenAiCompatibleEmbeddingModelBuilder.build(config);
+    OpenAiCompatibleEmbeddingModelBuilder.build(config, mockBuilder);
 
     // then
-    assertThat(embeddingModel).isNotNull();
+    verify(mockBuilder).baseUrl(BASE_URL);
+    verify(mockBuilder).modelName(MODEL);
+    verify(mockBuilder, never()).apiKey(any());
+    verify(mockBuilder, never()).customHeaders(anyMap());
+    verify(mockBuilder, never()).dimensions(any());
+  }
+
+  @Test
+  void shouldApplyApiKeyToBuilderWhenNoAuthorizationHeader() {
+    // given
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null, null);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiCompatibleEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).apiKey(API_KEY);
+  }
+
+  @Test
+  void shouldNotApplyApiKeyWhenAuthorizationHeaderPresent() {
+    // given
+    final Map<String, String> headers = Map.of("Authorization", "Bearer test-token");
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null, headers);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiCompatibleEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder, never()).apiKey(any());
+    verify(mockBuilder).customHeaders(headers);
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldNotApplyApiKeyToBuilderWhenNullOrBlank(final String apiKey) {
+    // given
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, apiKey, null, null);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiCompatibleEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder, never()).apiKey(any());
+  }
+
+  @Test
+  void shouldApplyHeadersToBuilder() {
+    // given
+    final Map<String, String> headers = Map.of("X-Custom-Header", "value");
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null, headers);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiCompatibleEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).customHeaders(headers);
+  }
+
+  @Test
+  void shouldApplyDimensionsToBuilder() {
+    // given
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, 768, null);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiCompatibleEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).dimensions(768);
   }
 
   @ParameterizedTest
@@ -68,7 +156,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(model, "http://localhost:11434/v1", null, null, null);
+        new OpenAiCompatibleConfig(model, BASE_URL, null, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleEmbeddingModelBuilder.build(config))
@@ -83,7 +171,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig("nomic-embed-text", baseUrl, null, null, null);
+        new OpenAiCompatibleConfig(MODEL, baseUrl, null, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleEmbeddingModelBuilder.build(config))

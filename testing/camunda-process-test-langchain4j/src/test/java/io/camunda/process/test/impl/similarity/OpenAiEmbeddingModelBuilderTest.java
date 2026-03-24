@@ -17,8 +17,13 @@ package io.camunda.process.test.impl.similarity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,10 +32,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class OpenAiEmbeddingModelBuilderTest {
 
+  private static final String MODEL = "text-embedding-3-small";
+  private static final String API_KEY = "test-api-key";
+
   @Test
   void shouldBuildEmbeddingModel() {
     // given
-    final OpenAiConfig config = new OpenAiConfig("text-embedding-3-small", "test-api-key", null);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, null);
 
     // when
     final EmbeddingModel embeddingModel = OpenAiEmbeddingModelBuilder.build(config);
@@ -39,12 +47,42 @@ class OpenAiEmbeddingModelBuilderTest {
     assertThat(embeddingModel).isNotNull();
   }
 
+  @Test
+  void shouldSetRequiredFieldsOnBuilder() {
+    // given
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, null);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).apiKey(API_KEY);
+    verify(mockBuilder).modelName(MODEL);
+    verify(mockBuilder, never()).dimensions(any());
+  }
+
+  @Test
+  void shouldApplyDimensionsToBuilder() {
+    // given
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, 512);
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).dimensions(512);
+  }
+
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final OpenAiConfig config = new OpenAiConfig("text-embedding-3-small", apiKey, null);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, apiKey, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiEmbeddingModelBuilder.build(config))
@@ -58,7 +96,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final OpenAiConfig config = new OpenAiConfig(model, "test-api-key", null);
+    final OpenAiConfig config = new OpenAiConfig(model, API_KEY, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiEmbeddingModelBuilder.build(config))

@@ -26,19 +26,27 @@ import org.slf4j.LoggerFactory;
 
 final class AzureOpenAiChatModelBuilder {
 
+  public static final String AZURE_OPENAI = "azure-openai";
   private static final Logger LOG = LoggerFactory.getLogger(AzureOpenAiChatModelBuilder.class);
 
   private AzureOpenAiChatModelBuilder() {}
 
   static ChatModel build(final BaseProviderConfig.AzureOpenAiConfig config) {
     LOG.debug("Building Azure OpenAI chat model");
+    final ChatModel chatModel = build(config, AzureOpenAiChatModel.builder());
+    LOG.debug(
+        "Successfully built Azure OpenAI chat model with endpoint '{}' and deployment '{}'",
+        config.getEndpoint(),
+        config.getModel());
+    return chatModel;
+  }
 
-    final String model = require(config.getModel(), "model", "azure-openai");
-    final String endpoint = require(config.getEndpoint(), "endpoint", "azure-openai");
-
-    final AzureOpenAiChatModel.Builder builder =
-        AzureOpenAiChatModel.builder().endpoint(endpoint).deploymentName(model);
-
+  // visible for testing
+  static ChatModel build(
+      final BaseProviderConfig.AzureOpenAiConfig config,
+      final AzureOpenAiChatModel.Builder builder) {
+    builder.endpoint(require(config.getEndpoint(), "endpoint", AZURE_OPENAI));
+    builder.deploymentName(require(config.getModel(), "model", AZURE_OPENAI));
     if (hasText(config.getApiKey())) {
       LOG.debug("Using API key authentication");
       builder.apiKey(config.getApiKey().trim());
@@ -48,7 +56,6 @@ final class AzureOpenAiChatModelBuilder {
               + "(environment, workload identity, managed identity, Azure CLI)");
       builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
     }
-
     if (config.getTimeout() != null) {
       LOG.debug("Setting timeout to {}", config.getTimeout());
       builder.timeout(config.getTimeout());
@@ -57,12 +64,6 @@ final class AzureOpenAiChatModelBuilder {
       LOG.debug("Setting temperature to {}", config.getTemperature());
       builder.temperature(config.getTemperature());
     }
-
-    final ChatModel chatModel = builder.build();
-    LOG.debug(
-        "Successfully built Azure OpenAI chat model with endpoint '{}' and deployment '{}'",
-        endpoint,
-        model);
-    return chatModel;
+    return builder.build();
   }
 }

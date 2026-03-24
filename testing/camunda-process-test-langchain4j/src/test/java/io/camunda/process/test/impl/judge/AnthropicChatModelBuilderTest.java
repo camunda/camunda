@@ -17,8 +17,14 @@ package io.camunda.process.test.impl.judge;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
+import io.camunda.process.test.impl.judge.BaseProviderConfig.AnthropicConfig;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,11 +33,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class AnthropicChatModelBuilderTest {
 
+  private static final String MODEL = "claude-3-5-sonnet-20241022";
+  private static final String API_KEY = "test-api-key";
+
   @Test
   void shouldBuildChatModel() {
     // given
-    final BaseProviderConfig.AnthropicConfig config =
-        new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
+    final AnthropicConfig config = new AnthropicConfig(MODEL, API_KEY);
 
     // when
     final ChatModel chatModel = AnthropicChatModelBuilder.build(config);
@@ -41,31 +49,50 @@ class AnthropicChatModelBuilderTest {
   }
 
   @Test
-  void shouldBuildChatModelWithTimeout() {
+  void shouldSetRequiredFieldsOnBuilder() {
     // given
-    final BaseProviderConfig.AnthropicConfig config =
-        new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
+    final AnthropicConfig config = new AnthropicConfig(MODEL, API_KEY);
+    final AnthropicChatModel.AnthropicChatModelBuilder mockBuilder =
+        mock(AnthropicChatModel.AnthropicChatModelBuilder.class);
+
+    // when
+    AnthropicChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).apiKey(API_KEY);
+    verify(mockBuilder).modelName(MODEL);
+  }
+
+  @Test
+  void shouldApplyTimeoutToBuilder() {
+    // given
+    final AnthropicConfig config = new AnthropicConfig(MODEL, API_KEY);
     config.setTimeout(Duration.ofSeconds(30));
+    final AnthropicChatModel.AnthropicChatModelBuilder mockBuilder =
+        mock(AnthropicChatModel.AnthropicChatModelBuilder.class);
 
     // when
-    final ChatModel chatModel = AnthropicChatModelBuilder.build(config);
+    AnthropicChatModelBuilder.build(config, mockBuilder);
 
     // then
-    assertThat(chatModel).isNotNull();
+    verify(mockBuilder).timeout(Duration.ofSeconds(30));
+    verify(mockBuilder, never()).temperature(any());
   }
 
   @Test
-  void shouldBuildChatModelWithTemperature() {
+  void shouldApplyTemperatureToBuilder() {
     // given
-    final BaseProviderConfig.AnthropicConfig config =
-        new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
+    final AnthropicConfig config = new AnthropicConfig(MODEL, API_KEY);
     config.setTemperature(0.7);
+    final AnthropicChatModel.AnthropicChatModelBuilder mockBuilder =
+        mock(AnthropicChatModel.AnthropicChatModelBuilder.class);
 
     // when
-    final ChatModel chatModel = AnthropicChatModelBuilder.build(config);
+    AnthropicChatModelBuilder.build(config, mockBuilder);
 
     // then
-    assertThat(chatModel).isNotNull();
+    verify(mockBuilder, never()).timeout(any());
+    verify(mockBuilder).temperature(0.7);
   }
 
   @ParameterizedTest
@@ -73,8 +100,7 @@ class AnthropicChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final BaseProviderConfig.AnthropicConfig config =
-        new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", apiKey);
+    final AnthropicConfig config = new AnthropicConfig(MODEL, apiKey);
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(config))
@@ -88,8 +114,7 @@ class AnthropicChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final BaseProviderConfig.AnthropicConfig config =
-        new BaseProviderConfig.AnthropicConfig(model, "test-api-key");
+    final AnthropicConfig config = new AnthropicConfig(model, API_KEY);
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(config))

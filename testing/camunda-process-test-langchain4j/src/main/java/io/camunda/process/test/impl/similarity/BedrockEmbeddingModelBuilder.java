@@ -35,29 +35,30 @@ final class BedrockEmbeddingModelBuilder {
 
   static EmbeddingModel build(final AmazonBedrockConfig config) {
     LOG.debug("Building Amazon Bedrock embedding model");
+    final EmbeddingModel embeddingModel = build(config, BedrockTitanEmbeddingModel.builder());
+    LOG.debug(
+        "Successfully built Amazon Bedrock embedding model with modelId '{}'", config.getModel());
+    return embeddingModel;
+  }
 
+  // visible for testing
+  static EmbeddingModel build(
+      final AmazonBedrockConfig config, final BedrockTitanEmbeddingModelBuilder builder) {
     final String model = require(config.getModel(), "model", AMAZON_BEDROCK);
-
     final BedrockRuntimeClient client =
         BedrockRuntimeClientFactory.build(
             config.getRegion(),
             config.getApiKey(),
             config.getCredentialsAccessKey(),
             config.getCredentialsSecretKey());
-
-    final BedrockTitanEmbeddingModelBuilder builder =
-        BedrockTitanEmbeddingModel.builder().client(client).model(model);
-
+    builder.client(client);
+    builder.model(model);
     if (config.getDimensions() != null) {
       builder.dimensions(config.getDimensions());
     }
-
     if (config.getNormalize() != null) {
       builder.normalize(config.getNormalize());
     }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug("Successfully built Amazon Bedrock embedding model with modelId '{}'", model);
-    return embeddingModel;
+    return builder.build();
   }
 }
