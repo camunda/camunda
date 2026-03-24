@@ -64,6 +64,10 @@ final class ProcessInstanceElementCompletedApplier
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
 
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      elementInstanceState.removeRuntimeInstructions(key);
+    }
+
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
     if (flowScopeInstance == null) {
