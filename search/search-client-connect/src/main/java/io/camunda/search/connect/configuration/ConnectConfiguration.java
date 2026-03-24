@@ -159,4 +159,48 @@ public class ConnectConfiguration {
   public void setProxy(final ProxyConfiguration proxy) {
     this.proxy = proxy;
   }
+
+  @Override
+  public String toString() {
+    return "ConnectConfiguration{"
+        + "type='"
+        + type
+        + '\''
+        + ", clusterName='"
+        + clusterName
+        + '\''
+        + ", dateFormat='"
+        + dateFormat
+        + '\''
+        + ", fieldDateFormat='"
+        + fieldDateFormat
+        + '\''
+        + ", socketTimeout="
+        + socketTimeout
+        + ", connectTimeout="
+        + connectTimeout
+        + ", url='"
+        + url
+        + '\''
+        + ", urls="
+        + urls
+        + ", username='"
+        + username
+        + '\''
+        + ", password='"
+        + (password != null ? "*****" : null)
+        + '\''
+        + ", security="
+        + security
+        + ", indexPrefix='"
+        + indexPrefix
+        + '\''
+        + ", interceptorPlugins="
+        + interceptorPlugins
+        + ", isAwsEnabled="
+        + isAwsEnabled
+        + ", proxy="
+        + proxy
+        + '}';
+  }
 }
