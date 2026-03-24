@@ -41,10 +41,14 @@ public abstract class ToolsTest {
     mcpClient = createMcpClient();
   }
 
+  protected String endpoint() {
+    return "/mcp/cluster";
+  }
+
   private McpSyncClient createMcpClient() {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =
         HttpClientStreamableHttpTransport.builder("http://localhost:%d".formatted(serverPort))
-            .endpoint("/mcp/cluster")
+            .endpoint(endpoint())
             .openConnectionOnStartup(false);
 
     return McpClient.sync(transportBuilder.build()).build();
