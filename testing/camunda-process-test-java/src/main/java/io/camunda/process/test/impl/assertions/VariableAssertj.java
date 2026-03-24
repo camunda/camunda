@@ -129,7 +129,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableSelector,
                 variableValue,
                 () ->
-                    findVariablesBySelector(
+                    findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
   }
 
@@ -141,7 +141,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     hasVariable(
         variableSelector,
         variableValue,
-        () -> findVariablesBySelector(processInstanceKey, processInstanceKey, variableSelector));
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   private void hasVariable(
@@ -190,7 +190,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableValueType,
                 requirement,
                 () ->
-                    findVariablesBySelector(
+                    findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
   }
 
@@ -204,7 +204,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         variableSelector,
         variableValueType,
         requirement,
-        () -> findVariablesBySelector(processInstanceKey, processInstanceKey, variableSelector));
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   private void hasVariableSatisfies(
@@ -375,8 +375,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     final String rawValue =
         waitForVariable(
             variableSelector,
-            () ->
-                findVariablesBySelector(processInstanceKey, processInstanceKey, variableSelector));
+            () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
 
     evaluateJudge(variableSelector, expectation, rawValue);
   }
@@ -442,7 +441,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 assertVariableExists(
                     variableSelector,
                     () ->
-                        findVariablesBySelector(
+                        findLocalVariablesBySelector(
                             processInstanceKey,
                             instance.getElementInstanceKey(),
                             variableSelector))));
@@ -554,14 +553,20 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     return toMap(ensureVariablesAreNotTruncated(variables));
   }
 
-  private List<Variable> findVariablesBySelector(
-      final long processInstanceKey, final long scopeKey, final VariableSelector selector) {
+  private List<Variable> findGlobalVariablesBySelector(
+      final long processInstanceKey, final VariableSelector selector) {
+    return findLocalVariablesBySelector(processInstanceKey, processInstanceKey, selector);
+  }
 
+  private List<Variable> findLocalVariablesBySelector(
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final VariableSelector selector) {
     return ensureVariablesAreNotTruncated(
         dataSource.findVariables(
             filter ->
                 selector.applyFilter(
-                    filter.processInstanceKey(processInstanceKey).scopeKey(scopeKey))));
+                    filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey))));
   }
 
   private List<Variable> ensureVariablesAreNotTruncated(final List<Variable> variablesToCheck) {
