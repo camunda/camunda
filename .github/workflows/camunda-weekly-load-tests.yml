@@ -65,7 +65,7 @@ jobs:
     needs: test-data
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -94,11 +94,16 @@ jobs:
         with:
           directory: ./identity/client
           package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Optimize Frontend
+        with:
+          directory: ./optimize/client
+          package-manager: "yarn"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -PskipFrontendBuild -Pinclude-optimize
       - uses: ./.github/actions/build-platform-docker
         name: Build and Push Camunda Docker Image
         with:
@@ -107,6 +112,14 @@ jobs:
           version: ${{ needs.test-data.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          push: true
+          version: ${{ needs.test-data.outputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
