@@ -106,7 +106,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         {
           headers: jsonHeaders(),
           data: {
-            filter: {id: {$like: `${prefix}-%`}},
+            filter: {id: {$in: listeners.map((l) => l.id)}},
             sort: [{field: 'priority', order: 'ASC'}],
           },
         },
@@ -138,7 +138,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         {
           headers: jsonHeaders(),
           data: {
-            filter: {id: {$like: `${prefix}-%`}},
+            filter: {id: {$in: listeners.map((l) => l.id)}},
             sort: [{field: 'priority', order: 'DESC'}],
           },
         },
@@ -164,7 +164,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         {
           headers: jsonHeaders(),
           data: {
-            filter: {id: {$like: `${prefix}-%`}},
+            filter: {id: {$in: listeners.map((l) => l.id)}},
             sort: [{field: 'id', order: 'ASC'}],
           },
         },
@@ -189,7 +189,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         {
           headers: jsonHeaders(),
           data: {
-            filter: {id: {$like: `${prefix}-%`}},
+            filter: {id: {$in: listeners.map((l) => l.id)}},
             sort: [{field: 'id', order: 'DESC'}],
           },
         },
@@ -215,7 +215,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         {
           headers: jsonHeaders(),
           data: {
-            filter: {id: {$like: `${prefix}-%`}},
+            filter: {id: {$in: listeners.map((l) => l.id)}},
             sort: [
               {field: 'priority', order: 'ASC'},
               {field: 'id', order: 'ASC'},

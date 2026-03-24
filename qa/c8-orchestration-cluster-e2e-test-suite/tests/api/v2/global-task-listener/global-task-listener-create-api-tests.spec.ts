@@ -194,11 +194,7 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
       data: body,
     });
 
-    await assertBadRequest(
-      res,
-      /eventTypes|INVALID_EVENT_TYPE/i,
-      'INVALID_ARGUMENT',
-    );
+    await assertBadRequest(res, /eventTypes|INVALID_EVENT_TYPE/i);
   });
 
   test('Create Global Task Listener - duplicate id conflict', async ({

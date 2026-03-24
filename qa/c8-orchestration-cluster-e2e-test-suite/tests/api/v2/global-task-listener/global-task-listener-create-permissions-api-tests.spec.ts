@@ -67,7 +67,7 @@ test.describe('Global Task Listener API - Create Permission Tests', () => {
       ownerType: 'USER',
       resourceType: 'GLOBAL_LISTENER',
       resourceId: '*',
-      permissionTypes: ['READ'],
+      permissionTypes: ['READ_TASK_LISTENER'],
     });
     authorizationKeys.push(readOnlyAuthKey);
   });

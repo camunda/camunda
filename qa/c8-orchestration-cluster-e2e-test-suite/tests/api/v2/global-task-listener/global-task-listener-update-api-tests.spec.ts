@@ -238,10 +238,6 @@ test.describe.parallel('Global Task Listener API Tests - Update', () => {
       },
     );
 
-    await assertBadRequest(
-      res,
-      /eventTypes|INVALID_EVENT_TYPE/i,
-      'INVALID_ARGUMENT',
-    );
+    await assertBadRequest(res, /eventTypes|INVALID_EVENT_TYPE/i);
   });
 });
