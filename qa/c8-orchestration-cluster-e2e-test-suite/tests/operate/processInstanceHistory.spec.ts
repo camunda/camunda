@@ -59,7 +59,7 @@ test.beforeAll(async () => {
   };
 });
 
-test.describe.skip('Process Instance History', () => {
+test.describe('Process Instance History', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -148,9 +148,7 @@ test.describe.skip('Process Instance History', () => {
       await expect(operateProcessInstancePage.instanceHistory).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
-          await expect(
-            operateProcessInstancePage.incidentsBanner,
-          ).toBeVisible();
+          await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -171,6 +169,7 @@ test.describe.skip('Process Instance History', () => {
     });
 
     await test.step('Add variable to the process', async () => {
+      await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.clickAddVariableButton();
       await operateProcessInstancePage.fillNewVariable('goUp', '6');
       await operateProcessInstancePage.clickSaveVariableButton();
@@ -178,18 +177,16 @@ test.describe.skip('Process Instance History', () => {
     });
 
     await test.step('Retry incident', async () => {
-      await operateProcessInstancePage.clickIncidentsBanner();
-      const errorMessage = "Expected result of the expression 'goUp < 0'";
-      await operateProcessInstancePage.retryIncidentByErrorMessage(
-        errorMessage,
-      );
+      await operateProcessInstancePage.clickIncidentsTab();
+      const errorType = 'Extract value error.';
+      await operateProcessInstancePage.retryIncidentByErrorType(errorType);
     });
 
     await test.step('Verify incident is resolved in Instance History', async () => {
       await page.waitForTimeout(12000);
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+          await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
         },
         onFailure: async () => {
           await page.reload();
