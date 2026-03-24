@@ -203,6 +203,9 @@ public interface BackupCompatibilityAcceptance {
         .atMost(Duration.ofSeconds(60))
         .until(() -> partitionsActuator.query().get(1).snapshotId(), Objects::nonNull);
 
+    // Initiate additional processing to progress logstream so that backup doesn't fail
+    createProcessInstanceWithJob(broker);
+
     // Use the 8.8 actuator path (/actuator/backups) rather than the current
     // /actuator/backupRuntime
     final var backupActuator =
