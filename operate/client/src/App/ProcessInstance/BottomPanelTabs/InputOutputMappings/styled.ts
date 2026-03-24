@@ -7,6 +7,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {ActionableNotification as BaseActionableNotification} from '@carbon/react';
 import {EmptyMessage as BaseEmptyMessage} from 'modules/components/EmptyMessage';
 
 type ContentProps = {
@@ -34,4 +35,8 @@ const EmptyMessage = styled(BaseEmptyMessage)`
   margin: auto;
 `;
 
-export {Content, EmptyMessage};
+const ActionableNotification = styled(BaseActionableNotification)`
+  min-width: 100%;
+`;
+
+export {Content, EmptyMessage, ActionableNotification};
