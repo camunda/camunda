@@ -14,7 +14,7 @@
 
 **Answer:**
 
-First Phase should be Camunda 8 Self-Managed. In first phase we do not need Azure Event Hub. Ideally we can support both Kafka Self-Managed and SaaS (Confluent) in first phase.
+First Phase should be Camunda 8 Self-Managed. In first phase we do not need Azure Event Hub. Ideally we can support both Kafka Self-Managed and SaaS (Confluent) in first phase, but if scope is tight, Self-Managed ships first and SaaS follows in phase 2 (consistent with Q4). The Confluent/SaaS support in phase 1 refers to customers connecting to Confluent Cloud from their Self-Managed deployment, not the Camunda SaaS platform.
 
 
 ### Q2
@@ -189,6 +189,8 @@ Per Cluster configuration.
 > Should tenants be able to configure their own Kafka endpoints in SaaS, or does Camunda operate a shared Kafka infrastructure that customers consume from?
 
 **Answer:**
+
+Customers configure their own Kafka endpoints (customer-managed Kafka). Camunda does not operate shared Kafka infrastructure. Consistent with Design Q22.
 
 
 ### Q24
@@ -376,6 +378,8 @@ This is not essential for initial implementation, but would be nice to have.
 
 **Answer:**
 
+Individual record exports at TRACE, batch send operations at DEBUG, Kafka producer errors and connection issues at WARN, configuration errors and fatal failures at ERROR. Follow existing broker logging conventions.
+
 
 ### Q46
 > Should the Kafka record format be identical to the JSON format used by the ES/OS exporters (including the `sequence` field for deduplication), or should it be a different, potentially simpler format?
@@ -483,7 +487,7 @@ Ideally all of the above, handled via configuration
 
 **Answer:**
 
-Zeebe partitionId is good for initial implementation, which will also guarantee entity ordering.
+Zeebe partitionId-position is good for initial implementation, which will also guarantee entity ordering. Use `partitionId-position` as the Kafka **message key** (unique, consistent with PM Q17 and Design Q7). To ensure ordering per Zeebe partition, use a custom partitioner or key prefix strategy so all records from the same Zeebe partition route to the same Kafka partition.
 
 
 ### Q7
@@ -499,7 +503,7 @@ By default, have a default catch-all topic (`camunda-events` for example). Allow
 
 **Answer:**
 
-Yes
+Yes — include `valueType`, `intent`, `partitionId`, `recordType`, `tenantId`, and `brokerVersion` as Kafka headers (consistent with PM Q18 and Design Q8).
 
 
 ### Q9
@@ -523,6 +527,8 @@ Initially raw is fine.
 
 **Answer:**
 
+Not for the initial implementation. JSON with a `schemaVersion` field in each message is sufficient (consistent with PM Q47). Schema Registry support can be added later when Avro/Protobuf serialization is implemented.
+
 
 ### Q12
 > The `Record` interface includes `authorizations` and `agent` fields that are stripped by ES/OS exporters for security. Should these fields be excluded by default from Kafka messages as well, or should this be configurable?
@@ -545,9 +551,10 @@ These are likely all relevant, but we can start with a subset (ValueType and Rec
 
 **Answer:**
 
+Default to `RecordType.EVENT` only (consistent with PM Q9: "Only Events"), but make it configurable so users can opt in to `COMMAND_REJECTION` records if needed. Do not export `COMMAND` records by default.
 
-### Q15
-> Should the filtering be configurable per topic (e.g., "topic A gets only process events, topic B gets only incident events"), or is a single global filter sufficient?
+
+### Q15 (e.g., "topic A gets only process events, topic B gets only incident events"), or is a single global filter sufficient?
 
 **Answer:**
 
@@ -597,9 +604,10 @@ Consider how this is already handled in Connectors and initially use the same pa
 
 **Answer:**
 
+Not as dedicated configuration properties in the first iteration. Since Kafka producer properties are exposed via a pass-through map (Eng Q17/Q18), users can configure `ssl.truststore.location`, `ssl.truststore.password`, etc. directly through that map. This keeps implementation simple while still supporting TLS.
 
-### Q22
-> What delivery guarantee should the Kafka exporter provide? At-least-once (Kafka `acks=all` + exporter position tracking — duplicates possible on restart): simplest, most common; exactly-once (Kafka transactions + idempotent producer): more complex, higher overhead. The existing exporter API's `Controller.updateLastExportedRecordPosition()` naturally supports at-least-once semantics.
+
+### Q22 At-least-once (Kafka `acks=all` + exporter position tracking — duplicates possible on restart): simplest, most common; exactly-once (Kafka transactions + idempotent producer): more complex, higher overhead. The existing exporter API's `Controller.updateLastExportedRecordPosition()` naturally supports at-least-once semantics.
 
 **Answer:**
 
@@ -619,9 +627,10 @@ The exporter should never block other exporters. Implement a bounded buffer with
 
 **Answer:**
 
+Target comparable throughput to the ES exporter (thousands of records/second per partition). End-to-end latency target of sub-second under normal load. No quantified SLA for the initial implementation — measure and document actual performance. The exporter must not measurably degrade engine processing latency.
 
-### Q25
-> Should the exporter support batching before sending to Kafka (like the app-integrations-exporter's `Batch` class with size + time thresholds), or should it send each record individually? Kafka's own producer already batches internally via `linger.ms` and `batch.size`.
+
+### Q25 (like the app-integrations-exporter's `Batch` class with size + time thresholds), or should it send each record individually? Kafka's own producer already batches internally via `linger.ms` and `batch.size`.
 
 **Answer:**
 
@@ -633,9 +642,10 @@ Yes, it should batch in a similar way to the Camunda Exporter. The same defaults
 
 **Answer:**
 
+Out of scope for phase 1 (Self-Managed only). For phase 2, pre-deploy the exporter and activate per cluster via the Console UI, using the existing `ExporterState` mechanism for enable/disable. Consistent with PM Q4 and Design Q20.
 
-### Q27
-> For SaaS, is there a network connectivity assumption? (e.g., customer Kafka accessible via public internet with TLS, or via VPC peering/Private Link?) This affects timeout defaults and retry strategies.
+
+### Q27 (e.g., customer Kafka accessible via public internet with TLS, or via VPC peering/Private Link?) This affects timeout defaults and retry strategies.
 
 **Answer:**
 
@@ -645,6 +655,8 @@ No assumption but document the different scenarios
 > Should the Kafka exporter in SaaS support Confluent Cloud as a first-class target with dedicated configuration helpers (e.g., auto-configuring `sasl.mechanism=PLAIN`, `security.protocol=SASL_SSL`, API key/secret)?
 
 **Answer:**
+
+No dedicated configuration helpers in the first iteration. Since all Kafka producer properties are exposed via the pass-through map, users can configure Confluent Cloud settings (`sasl.mechanism=PLAIN`, `security.protocol=SASL_SSL`, API key/secret) directly. Provide a documented Confluent Cloud configuration example in the quickstart guide (consistent with PM Q50).
 
 
 ### Q29
@@ -724,7 +736,7 @@ These are a good starting point
 
 **Answer:**
 
-Not for the initial implementation
+Minimal lifecycle logging only: log connection failures, authentication errors, and misconfiguration at WARN/ERROR level (consistent with PM Q33). Skip verbose lifecycle logging (topic auto-created, connection established) for the initial implementation. Individual record exports at TRACE, batch operations at DEBUG.
 
 
 ### Q39
@@ -781,7 +793,7 @@ new exporter module
 
 **Answer:**
 
-A generic module name with kafka as the first implementation would be fine
+Name it `kafka-exporter` for now (consistent with Eng Q1: `zeebe/exporters/kafka-exporter/`). Use internal interfaces/abstractions that would allow extracting a shared module later, but avoid a generic module name with only one implementation — it adds confusion. We can rename or extract a common event-streaming module when a second transport is added.
 
 
 ### Q3
@@ -899,6 +911,7 @@ Use the map-based configuration approach to allow pass-through of all Kafka prod
 
 **Answer:**
 
+SASL/PLAIN, SASL/SCRAM-SHA-256/512, and no auth (consistent with Eng Q19). Since all Kafka producer properties are exposed via the pass-through map, SASL/OAUTHBEARER and mTLS are technically available to advanced users without dedicated support. Document common configurations for each auth mechanism.
 
 
 ### Q18
@@ -906,6 +919,7 @@ Use the map-based configuration approach to allow pass-through of all Kafka prod
 
 **Answer:**
 
+Via the Kafka producer properties pass-through map. Users configure `ssl.truststore.location`, `ssl.keystore.location`, `security.protocol`, etc. directly as Kafka properties. No dedicated TLS configuration abstraction for the initial implementation — the pass-through map handles all cases. Consistent with Eng Q21.
 
 
 ### Q19
@@ -926,6 +940,8 @@ It cannot be env var based, so customers must have a UI in console to do this
 > In SaaS, how will credentials (Kafka bootstrap servers, SASL passwords, Schema Registry URLs) be managed? Via Camunda Console secrets? Vault integration? This affects whether the exporter reads config from environment variables, a secrets manager, or YAML.
 
 **Answer:**
+
+Out of scope for phase 1 (Self-Managed only). For phase 2, follow the pattern established by Connectors for credential management (consistent with Eng Q20). Likely Console-managed secrets injected at runtime.
 
 
 ### Q22
@@ -1047,12 +1063,14 @@ Opt-in. Disabled by default but can be enabled optionally via configuration.
 
 **Answer:**
 
-No upgrade path, but clear documentation.
+No automated upgrade path, but clear migration documentation. Aim for a similar JSON structure to the community exporter where natural (raw record JSON), but don't constrain the design to maintain exact byte-level compatibility. Document differences clearly. This is consistent with PM Q3 ("there can be breaking changes") and PM Q52 ("ideally compatible").
 
 ### Q39
 > For the planned Azure Event Hub support (next phase), should Azure Event Hub be treated as "Kafka protocol compatible" (using Kafka client with `SASL/OAUTHBEARER` and Event Hub namespace), or should it have its own native transport using the Azure SDK?
 
 **Answer:**
+
+Treat it as Kafka protocol compatible (using `SASL/OAUTHBEARER` with the Event Hub namespace as the Kafka-compatible endpoint). This is simpler and avoids a separate SDK dependency. A native Azure SDK transport can be considered later only if the Kafka-compatible approach proves insufficient.
 
 
 ### Q40
