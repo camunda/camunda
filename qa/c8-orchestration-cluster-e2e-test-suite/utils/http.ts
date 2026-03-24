@@ -168,6 +168,45 @@ export async function assertInvalidArgument(
   expect(json.detail).toContain(detail);
 }
 
+// ---------------------------------------------------------------------------
+// Forward-compatibility: when AJB_ALLOW_EXTRA_FIELDS=true, tolerate
+//   1. extra keys in actual nested objects (newer server added fields)
+//   2. null ≈ '' for scalar values (newer server returns null instead of '')
+// ---------------------------------------------------------------------------
+const _forwardCompat = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
+
+/**
+ * Recursively strips keys from `actual` that are not present in `expected`.
+ * This ensures that `JSON.stringify` comparisons are not broken by new fields
+ * added in a newer server version.
+ */
+function _stripExtraKeys(actual: unknown, expected: unknown): unknown {
+  if (
+    actual === null ||
+    expected === null ||
+    typeof actual !== 'object' ||
+    typeof expected !== 'object'
+  ) {
+    return actual;
+  }
+
+  if (Array.isArray(actual) && Array.isArray(expected)) {
+    return actual.map((item, i) =>
+      i < expected.length ? _stripExtraKeys(item, expected[i]) : item,
+    );
+  }
+
+  const rec = actual as Record<string, unknown>;
+  const exp = expected as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(exp)) {
+    if (Object.prototype.hasOwnProperty.call(rec, key)) {
+      result[key] = _stripExtraKeys(rec[key], exp[key]);
+    }
+  }
+  return result;
+}
+
 export function assertEqualsForKeys(
   obj: unknown,
   expected: Record<string, unknown>,
@@ -195,7 +234,7 @@ export function assertEqualsForKeys(
       throw new Error(`Missing key '${k}' in expected values`);
     }
 
-    const actual = rec[k];
+    let actual = rec[k];
     const exp = expected[k];
 
     const bothObjects =
@@ -204,9 +243,24 @@ export function assertEqualsForKeys(
       exp !== null &&
       typeof exp === 'object';
 
-    const equal = bothObjects
-      ? fmt(actual) === fmt(exp)
-      : Object.is(actual, exp);
+    let equal: boolean;
+    if (bothObjects) {
+      // In forward-compat mode, strip extra keys from actual before comparison
+      // so that new fields added by a newer server don't break JSON.stringify.
+      const comparable = _forwardCompat
+        ? _stripExtraKeys(actual, exp)
+        : actual;
+      equal = fmt(comparable) === fmt(exp);
+    } else if (_forwardCompat) {
+      // In forward-compat mode, treat null ≈ '' (newer server may return null
+      // where the older version returned an empty string, or vice-versa).
+      equal =
+        Object.is(actual, exp) ||
+        (actual === null && exp === '') ||
+        (actual === '' && exp === null);
+    } else {
+      equal = Object.is(actual, exp);
+    }
 
     if (!equal) {
       throw new Error(
