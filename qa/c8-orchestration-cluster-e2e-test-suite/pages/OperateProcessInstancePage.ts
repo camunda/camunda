@@ -162,7 +162,7 @@ class OperateProcessInstancePage {
     this.listenersTabButton = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Listeners$/i});
-    this.operationsLogTabButton = page.getByRole('tab', {
+    this.operationsLogTabButton = page.getByRole('link', {
       name: /^Operations Log$/i,
     });
     this.operationsLogTable = page
