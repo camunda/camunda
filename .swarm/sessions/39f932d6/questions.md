@@ -575,6 +575,7 @@ Expose all through a map
 
 **Answer:**
 
+Yes
 
 ### Q19
 > What Kafka authentication mechanisms must be supported? The Kafka ecosystem uses: SASL/PLAIN (username + password); SASL/SCRAM-SHA-256 / SCRAM-SHA-512; SASL/OAUTHBEARER (OAuth2 / OIDC tokens); mTLS (mutual TLS with client certificates); no auth (development/testing). Which are required for initial release? The backup stores use a sealed `Authentication` interface pattern (see `GcsConnectionConfig.Authentication`) — should we follow the same pattern?
@@ -589,6 +590,7 @@ SASL/PLAIN and SASL/SCRAM and no auth
 
 **Answer:**
 
+Consider how this is already handled in Connectors and initially use the same pattern.
 
 ### Q21
 > Should the exporter support TLS truststore/keystore configuration (JKS/PKCS12 files) for connecting to Kafka clusters with custom CA certificates, following the pattern in `zeebe/gateway-grpc`'s TLS configuration?
@@ -637,6 +639,7 @@ Yes, it should batch in a similar way to the Camunda Exporter. The same defaults
 
 **Answer:**
 
+No assumption but document the different scenarios
 
 ### Q28
 > Should the Kafka exporter in SaaS support Confluent Cloud as a first-class target with dedicated configuration helpers (e.g., auto-configuring `sasl.mechanism=PLAIN`, `security.protocol=SASL_SSL`, API key/secret)?
@@ -761,6 +764,7 @@ A nice stretch goal
 
 **Answer:**
 
+Out of scope initially
 
 ## Design (`plan-design-clarify`)
 
@@ -809,6 +813,7 @@ JSON is fine for initial implementation, but we should target having configurabl
 
 **Answer:**
 
+Self-describing messages are fine for initial implementation, but we should design with a view to adding Schema Registry support later if needed.
 
 ### Q7
 > What should the Kafka message key be for each record type? Options include: `partitionId-position` (unique, matches ES/OS document ID pattern); `processInstanceKey` (enables per-instance ordering); configurable per value type?
@@ -847,6 +852,7 @@ prefix + value type. No tenant id in the name during first implementation, but i
 
 **Answer:**
 
+All of the above, but we can start with a simpler subset (e.g., ValueType and RecordType filtering) and add more advanced filters later if needed.
 
 ### Q12
 > What delivery guarantee is required? At-least-once (the exporter SPI naturally supports this via position acknowledgment — records are replayed from the last acknowledged position on restart); exactly-once (requires Kafka transactions + idempotent producer); should this be configurable?
@@ -885,11 +891,14 @@ Not it should never block exporting, it should be completely decoupled with conf
 
 **Answer:**
 
+Use the map-based configuration approach to allow pass-through of all Kafka producer properties, with sensible defaults for common settings like `acks=all`, `linger.ms=100`, `batch.size=16384`, etc. Document recommended settings for different use cases (e.g., high throughput vs low latency).
+
 
 ### Q17
 > For authentication to Kafka, which mechanisms must be supported at launch? PLAINTEXT (no auth); SASL/PLAIN (username + password); SASL/SCRAM-SHA-256/512; SASL/OAUTHBEARER (for Confluent Cloud, Azure Event Hub via Kafka protocol); mTLS (client certificate); should there be a pass-through for `security.protocol` and `sasl.*` properties?
 
 **Answer:**
+
 
 
 ### Q18
@@ -898,17 +907,20 @@ Not it should never block exporting, it should be completely decoupled with conf
 **Answer:**
 
 
+
 ### Q19
 > Where should the exporter be configured in the unified config hierarchy? Under `camunda.data.exporters.kafkaExporter` (existing exporter config pattern), or under a new `camunda.eventExport` namespace?
 
 **Answer:**
 
+`camunda.data.exporters.kafka` would be sufficient
 
 ### Q20
 > For Camunda SaaS, how will users configure the Kafka exporter? Is there a SaaS control plane API, a UI in the Camunda Console, or environment-variable-based configuration? Does SaaS require a different configuration surface than Self-Managed YAML?
 
 **Answer:**
 
+It cannot be env var based, so customers must have a UI in console to do this
 
 ### Q21
 > In SaaS, how will credentials (Kafka bootstrap servers, SASL passwords, Schema Registry URLs) be managed? Via Camunda Console secrets? Vault integration? This affects whether the exporter reads config from environment variables, a secrets manager, or YAML.
@@ -921,66 +933,77 @@ Not it should never block exporting, it should be completely decoupled with conf
 
 **Answer:**
 
+Customer-managed only
 
 ### Q23
 > Are there network connectivity constraints in SaaS? Will the exporter need to connect to customer Kafka clusters over the public internet (requiring TLS, authentication), through VPC peering, or via Private Link/PrivateLink endpoints?
 
 **Answer:**
 
+Internet with TLS and authentication, but document the different scenarios and how to configure for them
 
 ### Q24
 > In a multi-tenant deployment, should events from different tenants be exported to: different Kafka topics (e.g., `camunda.{tenantId}.process-instance`)? The same topic with `tenantId` in the message key or headers? Separate Kafka clusters? Configurable per tenant?
 
 **Answer:**
 
+Keep it simple for the initial implementation with all tenants in the same topic and tenantId in the headers. We can consider more complex multi-tenant routing in a future phase if needed, but this is likely sufficient for most use cases and keeps the architecture simpler.
 
 ### Q25
 > Should the exporter enforce data isolation — ensuring a tenant's events only go to that tenant's configured Kafka endpoint? Or is this an infrastructure concern outside the exporter?
 
 **Answer:**
 
+We don't have a SaaS multi-tenancy solution just yet, so keep this out of scope for the initial implementation
 
 ### Q26
 > What metrics should the Kafka exporter expose? Baseline candidates from existing exporters include: export latency (time from record commit to Kafka ack); batch size distribution; failed/retried sends; records exported per value type; Kafka producer buffer utilization; are there additional Kafka-specific metrics needed (e.g., topic partition lag)?
 
 **Answer:**
 
+Those are good for the initial implementation
 
 ### Q27
 > Should the exporter expose a health indicator (Spring Boot actuator) reflecting Kafka connectivity status? The existing exporters have no dedicated health indicator.
 
 **Answer:**
 
+Stretch goal would be nice
 
 ### Q28
 > Should the exporter integrate with the existing `/actuator/exporters` management API for enable/disable/delete at runtime, or does it need additional management endpoints (e.g., to view topic assignments, lag)?
 
 **Answer:**
 
+Existing
 
 ### Q29
 > Should exported events include process variables? Variables can be large (MBs of JSON). Options: always include variables; never include variables (reference only); configurable include/exclude by variable name (like the existing `VariableNameFilter`); configurable max variable size with truncation?
 
 **Answer:**
 
+Include variables by default. Consider configuration to exclude or truncate them
 
 ### Q30
 > Should the exporter produce events in a domain-friendly schema (e.g., flattened process instance events with business-meaningful field names) or a raw protocol schema (the full `Record<RecordValue>` with all internal metadata like positions, keys, partitions)?
 
 **Answer:**
 
+The raw protocol schema is fine for the initial implementation, as it provides maximum flexibility for consumers to do their own transformations as needed
 
 ### Q31
 > Should the exporter support the existing audit log transformation from `zeebe/exporter-common/auditlog/` to produce structured audit log entries, or should it export raw engine records and leave transformation to consumers?
 
 **Answer:**
 
+Export raw engine records and leave transformation to customers
 
 ### Q32
 > How should binary/large data (e.g., BPMN XML in deployment records, form JSON) be handled? Inline in the Kafka message, or a reference/pointer pattern?
 
 **Answer:**
 
+Inline is fine initially
 
 ### Q33
 > Should the exporter support field-level redaction or masking of sensitive data before publishing to Kafka (e.g., masking variable values, PII in user task assignments)?
@@ -995,23 +1018,28 @@ Not in the initial implementation. This could be added in a future phase, potent
 
 **Answer:**
 
+Allow any configuration, but document recommended security settings and best practices for production deployments.
 
 ### Q35
 > Does the exporter need to support encryption at rest for any local buffering, or is that delegated to the Kafka cluster's configuration?
 
 **Answer:**
 
+Keep the buffer in-memory to avoid the complexity of disk-based buffering and encryption
 
 ### Q36
 > For integration testing, should the test suite use Testcontainers with a real Kafka broker (like the ES/OS exporter ITs), or an embedded Kafka? Should tests cover Confluent Cloud, MSK, and Azure Event Hub compatibility?
 
 **Answer:**
 
+Each test class should use Testcontainers with a real Kafka broker
 
 ### Q37
 > Should the exporter be enabled by default in new deployments, or opt-in? The existing ES/OS/RDBMS exporters are pre-configured in Spring profiles (`application-elasticsearch.yaml` etc.).
 
 **Answer:**
+
+Opt-in. Disabled by default but can be enabled optionally via configuration.
 
 
 ### Q38
@@ -1019,6 +1047,7 @@ Not in the initial implementation. This could be added in a future phase, potent
 
 **Answer:**
 
+No upgrade path, but clear documentation.
 
 ### Q39
 > For the planned Azure Event Hub support (next phase), should Azure Event Hub be treated as "Kafka protocol compatible" (using Kafka client with `SASL/OAUTHBEARER` and Event Hub namespace), or should it have its own native transport using the Azure SDK?
@@ -1031,9 +1060,12 @@ Not in the initial implementation. This could be added in a future phase, potent
 
 **Answer:**
 
+Each exporter instance should have one destination, but we can allow multiple exporter instances to be configured in the same deployment for multiple destinations
 
 ### Q41
 > Should the exporter support webhook/callback for delivery confirmation, or is Kafka's built-in acknowledgment (`acks=all`) sufficient for the "reliable" requirement?
 
 **Answer:**
+
+acks=all is sufficient for the initial implementation
 
