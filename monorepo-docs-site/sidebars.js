@@ -42,6 +42,7 @@ const sidebars = {
                     'architecture/components/identity/adr/oidc-default-production-authentication',
                     'architecture/components/identity/adr/resource-based-authorization-model',
                     'architecture/components/identity/adr/multi-jwks-endpoints-per-issuer',
+                    'architecture/components/identity/adr/support-forward-slashes-in-entity-ids',
                   ],
                 },
                 {
