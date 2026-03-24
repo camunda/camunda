@@ -193,6 +193,7 @@ final class UserTaskVariableExportIT {
   }
 
   private CamundaExporter createAndOpenExporter(final ExporterConfiguration config) {
+    config.setSkipVariableWriteWithoutUserTasks(true);
     final var camundaExporter = new CamundaExporter();
     final var context =
         new ExporterTestContext()
