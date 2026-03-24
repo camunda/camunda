@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.fa6d2e94.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.7eb9c719.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.7b49d64f.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.e7b56598.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -148,7 +148,7 @@ No separate identity database; Identity entities reuse Zeebe primary and seconda
 <!-- -->
 <p>Main building blocks:</p>
 <ul>
-<li class="">REST APIs: Orchestration Cluster REST API (v2), Administration API, Web Modeler API</li>
+<li class="">Gateway Rest: Orchestration Cluster REST API (v2), Administration API, Web Modeler API</li>
 <li class="">Camunda Services: Enhances the commands and queries with the given authentication and the necessary authorizations.</li>
 <li class="">Camunda Search Client: Used for querying the secondary database against ES, OS, or RDBMS, depending on the configuration.</li>
 <li class="">Authentication: Contains authentication-related converters, helpers, utils, and services among others for spring security.</li>
@@ -252,7 +252,7 @@ It does not communicate with the external IdP directly.</p>
 <p>Participants:</p>
 <ul>
 <li class="">Spring Security: Manages the authentication process and redirects to the login form. (<code>UsernamePasswordAuthenticationFilter</code>)</li>
-<li class="">Token Converter: Converts credentials and resolves claims to build a <code>CamundaAuthentication</code>. (<code>UsernamePasswordAuthenticationTokenConverter</code> -&gt; <code>TokenClaimsConverter</code>)</li>
+<li class="">Auth Converter: Converts credentials and resolves claims to build a <code>CamundaAuthentication</code>. (<code>UsernamePasswordAuthenticationTokenConverter</code> -&gt; <code>TokenClaimsConverter</code>)</li>
 <li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
 <li class="">Camunda Services: Service that provides access to Camunda Search Client (secondary database). (via UserServices, RoleServices, GroupServices, TenantServices )</li>
 </ul>
