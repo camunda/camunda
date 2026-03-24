@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
@@ -200,19 +201,71 @@ public class RepeatingIntervalTest {
   }
 
   @Test
-  public void shouldNotBeLessThanCurrentTime() {
+  public void shouldReturnFromEpochMilliWhenStartDateIsInThePast() {
     // given
-    final Interval interval = new Interval(Period.ZERO, Duration.ofSeconds(10));
     final Instant currentTime = Instant.now();
     final long fromEpochMilli = currentTime.toEpochMilli();
-
-    // set start time to be less than current time
-    final Instant start = currentTime.minus(Duration.ofDays(1));
+    final Instant pastStart = currentTime.minus(Duration.ofDays(1));
+    final Interval interval =
+        new Interval(
+            Optional.of(ZonedDateTime.ofInstant(pastStart, ZoneId.systemDefault())),
+            Period.ZERO,
+            Duration.ofSeconds(10));
 
     // when
-    final long dueDate = interval.withStart(start).toEpochMilli(fromEpochMilli);
+    final long dueDate = interval.toEpochMilli(fromEpochMilli);
 
-    // then
-    assertThat(dueDate).isEqualTo(currentTime.plusSeconds(10).toEpochMilli());
+    // then — start date is in the past, so fromEpochMilli is returned unchanged
+    assertThat(dueDate).isEqualTo(fromEpochMilli);
+  }
+
+  @Test
+  public void shouldReturnStartDateWhenStartDateIsInTheFuture() {
+    // given — start date is after fromEpochMilli
+    final Instant now = Instant.now();
+    final long fromEpochMilli = now.toEpochMilli();
+    final Instant futureStart = now.plus(Duration.ofHours(1));
+    final Interval interval =
+        new Interval(
+            Optional.of(ZonedDateTime.ofInstant(futureStart, ZoneId.systemDefault())),
+            Period.ZERO,
+            Duration.ofSeconds(10));
+
+    // when
+    final long dueDate = interval.toEpochMilli(fromEpochMilli);
+
+    // then — must return the future start date unchanged
+    assertThat(dueDate).isEqualTo(futureStart.toEpochMilli());
+  }
+
+  @Test
+  public void shouldReturnFromEpochMilliPlusDurationWhenNoStartDatePresent() {
+    // given — no start date, short duration
+    final Interval interval = new Interval(Period.ZERO, Duration.ofSeconds(30));
+    final long fromEpochMilli = Instant.now().toEpochMilli();
+
+    // when
+    final long dueDate = interval.toEpochMilli(fromEpochMilli);
+
+    // then — due date is exactly fromEpochMilli + duration
+    assertThat(dueDate).isEqualTo(fromEpochMilli + Duration.ofSeconds(30).toMillis());
+  }
+
+  @Test
+  public void shouldReturnCalendarAdjustedDateWhenNoStartDatePresent() {
+    // given — no start date, period-based interval
+    final Interval interval = new Interval(Period.ofMonths(1), Duration.ZERO);
+    final ZonedDateTime from = ZonedDateTime.of(2026, 1, 31, 0, 0, 0, 0, ZoneId.systemDefault());
+    final long fromEpochMilli = from.toInstant().toEpochMilli();
+
+    // when
+    final long dueDate = interval.toEpochMilli(fromEpochMilli);
+
+    // then — calendar arithmetic: Jan 31 + P1M = Feb 28, not Jan 31 + 31 days
+    final long expected =
+        ZonedDateTime.of(2026, 2, 28, 0, 0, 0, 0, ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli();
+    assertThat(dueDate).isEqualTo(expected);
   }
 }
