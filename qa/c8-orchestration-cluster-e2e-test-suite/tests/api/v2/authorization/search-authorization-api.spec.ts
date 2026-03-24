@@ -14,6 +14,7 @@ import {
   assertUnauthorizedRequest,
   encode,
   assertStatusCode,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -339,7 +340,9 @@ test.describe.parallel('Search Authorization API', () => {
       });
       await assertBadRequest(
         res,
-        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
+        isForwardCompat
+          ? "Unexpected value 'invalidField' for enum field 'field'"
+          : "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
       );
     }).toPass(defaultAssertionOptions);
   });
