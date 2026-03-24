@@ -104,7 +104,7 @@ public final class ZeebePartitionFactory {
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
-  private volatile SharedRocksDbResources sharedRocksDbResources;
+  private final SharedRocksDbResources sharedRocksDbResources;
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
 
@@ -174,7 +174,7 @@ public final class ZeebePartitionFactory {
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             sharedRocksDbResources,
             getPartitionsPerBroker(
-                clusterConfigurationService, membershipService.getLocalMember().id(), brokerCfg));
+                clusterConfigurationService, membershipService.getLocalMember().id()));
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
@@ -226,21 +226,17 @@ public final class ZeebePartitionFactory {
 
     final var localMemberId = clusterServices.getMembershipService().getLocalMember().id();
     final int partitionsPerBroker =
-        getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg);
-    sharedRocksDbResources =
-        RocksDbSharedCache.allocateSharedCache(brokerCfg, brokerMeterRegistry, partitionsPerBroker);
+        getPartitionsPerBroker(clusterConfigurationService, localMemberId);
+    sharedRocksDbResources.allocate(
+        RocksDbSharedCache.getSharedCacheSize(brokerCfg, brokerMeterRegistry, partitionsPerBroker));
   }
 
   /**
-   * Determines the number of partitions this broker is responsible for. First attempts to get the
-   * actual partition count from the cluster topology. If no partitions are assigned yet (e.g.,
-   * during initial cluster bootstrap), falls back to a static calculation based on cluster
-   * configuration.
+   * Determines the number of partitions this broker is responsible for. Attempts to get the actual
+   * partition count from the cluster topology.
    */
   private static int getPartitionsPerBroker(
-      final ClusterConfigurationService clusterConfigurationService,
-      final MemberId localMemberId,
-      final BrokerCfg brokerCfg) {
+      final ClusterConfigurationService clusterConfigurationService, final MemberId localMemberId) {
     final var partitionDistribution = clusterConfigurationService.getPartitionDistribution();
 
     if (partitionDistribution != null) {
@@ -250,17 +246,14 @@ public final class ZeebePartitionFactory {
               .count();
       if (partitionCount > 0) {
         return (int) partitionCount;
+      } else {
+        throw new IllegalStateException(
+            "Local broker with member id %s is not assigned to any partition in the topology."
+                .formatted(localMemberId));
       }
     }
-
-    // Fallback to static calculation if partition distribution not yet available
-    final int partitionsCount = brokerCfg.getCluster().getPartitionsCount();
-    final int brokerCount = brokerCfg.getCluster().getClusterSize();
-    final int replicationFactor = brokerCfg.getCluster().getReplicationFactor();
-    final double estimatedPartitionsPerBroker =
-        (double) partitionsCount * replicationFactor / brokerCount;
-    // Round up to ensure enough resources are allocated, even if the division is not even
-    return (int) Math.ceil(estimatedPartitionsPerBroker);
+    throw new IllegalStateException(
+        "Partition distribution is not available during partition construction.");
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
