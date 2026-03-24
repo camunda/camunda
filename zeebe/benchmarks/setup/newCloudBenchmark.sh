@@ -45,6 +45,10 @@ if [[ ! "$namespace" =~ ^c8- ]]; then
 fi
 
 kubectl create namespace $namespace
+
+# Label namespace with registry (required to inject image pull secrets)
+kubectl label namespace "$namespace" registry=harbor --overwrite
+
 cp -rv cloud-default/ $namespace
 cd $namespace
 
