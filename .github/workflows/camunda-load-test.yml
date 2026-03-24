@@ -338,20 +338,6 @@ jobs:
         with:
           directory: ./tasklist/client
           package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Identity Frontend
-        id: build-identity-fe
-        if: ${{ inputs.build-frontend }}
-        with:
-          directory: ./identity/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Optimize Frontend
-        id: build-optimize-fe
-        if: ${{ inputs.build-frontend && inputs.enable-optimize }}
-        with:
-          directory: ./optimize/client
-          package-manager: "yarn"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda
