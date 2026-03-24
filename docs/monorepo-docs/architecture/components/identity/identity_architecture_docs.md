@@ -1067,6 +1067,7 @@ The architectural decisions for Identity are documented as individual ADR files:
 - [ADR-0002: OIDC as Default Production Authentication](adr/0002-oidc-default-production-authentication.md)
 - [ADR-0003: Resource-Based Authorization Model](adr/0003-resource-based-authorization-model.md)
 - [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](adr/0004-multi-jwks-endpoints-per-issuer.md)
+- [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](adr/0005-support-forward-slashes-in-entity-ids.md)
 
 ## 10. Risks and technical debt
 

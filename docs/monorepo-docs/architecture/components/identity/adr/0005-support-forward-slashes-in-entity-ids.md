@@ -1,4 +1,4 @@
-# ADR-0002: Support Forward Slashes in Entity IDs via URL Encoding
+# ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding
 
 ## Status
 
