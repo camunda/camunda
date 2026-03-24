@@ -228,11 +228,15 @@ public class CommandWrapperTest {
     final CommandWrapper wrapper =
         new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
-    wrapper.executeAsyncWithMetrics(increaser);
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsyncWithMetrics(increaser);
 
-    sendFuture.complete(new Object());
+    final Object response = new Object();
+    sendFuture.complete(response);
 
     verify(increaser, times(1)).accept(metricsRecorder, metricsContext);
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
+    assertThat(((CommandOutcome.Completed) result.join()).response()).isSameAs(response);
   }
 
   @Test
@@ -241,18 +245,21 @@ public class CommandWrapperTest {
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
     final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
-    when(strategy.handleCommandError(any(), any()))
-        .thenReturn(new CommandOutcome.Failed(new RuntimeException(), 1));
+    final RuntimeException error = new RuntimeException("fail");
+    when(strategy.handleCommandError(any(), any())).thenReturn(new CommandOutcome.Failed(error, 1));
     final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
 
     final CommandWrapper wrapper =
         new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
-    wrapper.executeAsyncWithMetrics(increaser);
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsyncWithMetrics(increaser);
 
-    sendFuture.completeExceptionally(new RuntimeException("fail"));
+    sendFuture.completeExceptionally(error);
 
     verify(increaser, never()).accept(any(), any());
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
+    assertThat(((CommandOutcome.Failed) result.join()).cause()).isSameAs(error);
   }
 
   @Test
@@ -316,6 +323,58 @@ public class CommandWrapperTest {
     assertThat(result).isDone();
     assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
     verify(increaser, times(1)).accept(metricsRecorder, metricsContext);
+  }
+
+  @Test
+  void shouldIncreaseBackoffDelayOnConsecutiveRetries() {
+    // given
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    final CompletableFuture<Object> secondSend = new CompletableFuture<>();
+    final CompletableFuture<Object> thirdSend = new CompletableFuture<>();
+    when(command.send())
+        .thenReturn(asCamundaFuture(firstSend))
+        .thenReturn(asCamundaFuture(secondSend))
+        .thenReturn(asCamundaFuture(thirdSend));
+
+    final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+    final BackoffSupplier backoff =
+        BackoffSupplier.newBackoffBuilder().jitterFactor(0).backoffFactor(2).build();
+    final DefaultCommandExceptionHandlingStrategy strategy =
+        new DefaultCommandExceptionHandlingStrategy(backoff, executor);
+
+    // initial delay in CommandWrapper is 50ms
+    final CommandWrapper wrapper =
+        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 5);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    // when — first failure triggers retry with delay 50 * 2 = 100ms
+    firstSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    // then
+    final ArgumentCaptor<Long> delayCaptor = ArgumentCaptor.forClass(Long.class);
+    final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(executor).schedule(runnableCaptor.capture(), delayCaptor.capture(), any(TimeUnit.class));
+    assertThat(delayCaptor.getValue()).isEqualTo(100L);
+
+    // when — second failure triggers retry with delay 100 * 2 = 200ms
+    runnableCaptor.getValue().run();
+    secondSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    // then
+    verify(executor, times(2))
+        .schedule(runnableCaptor.capture(), delayCaptor.capture(), any(TimeUnit.class));
+    assertThat(delayCaptor.getValue()).isEqualTo(200L);
+
+    // complete the third attempt successfully
+    runnableCaptor.getValue().run();
+    final Object response = new Object();
+    thirdSend.complete(response);
+
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
+    assertThat(((CommandOutcome.Completed) result.join()).response()).isSameAs(response);
+    assertThat(((CommandOutcome.Completed) result.join()).attempts()).isEqualTo(3);
   }
 
   private static <T> CamundaFuture<T> asCamundaFuture(final CompletableFuture<T> delegate) {
