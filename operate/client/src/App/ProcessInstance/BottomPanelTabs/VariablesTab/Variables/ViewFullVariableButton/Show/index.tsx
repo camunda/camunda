@@ -12,6 +12,7 @@ import {Button} from '@carbon/react';
 import {Maximize} from '@carbon/react/icons';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import type {ViewFullVariableButtonProps} from '../types';
+import {InlineLoading} from '../../Operations/styled';
 
 const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonProps> = ({
   variableName,
@@ -23,7 +24,9 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonProps> = ({
   });
   const variableValue = data?.value;
 
-  return (
+  return isLoading ? (
+    <InlineLoading data-testid="variable-operation-spinner" />
+  ) : (
     <>
       <Button
         kind="ghost"
@@ -43,7 +46,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonProps> = ({
           isVisible={isModalVisible}
           readOnly
           onClose={() => setIsModalVisible(false)}
-          title={`Full value of "${variableName}"`}
+          title={`Full value of ${variableName}`}
         />
       )}
     </>

@@ -36,8 +36,8 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonProps> = ({
         hasIconOnly
         renderIcon={Maximize}
         size="sm"
-        aria-label={`Edit Variable ${variableName}`}
-        iconDescription={`Edit Variable ${variableName}`}
+        aria-label="Open JSON editor"
+        iconDescription="Open JSON editor"
         tooltipPosition="left"
         onClick={() => {
           if (variableEditor.isSubmittingForm) {

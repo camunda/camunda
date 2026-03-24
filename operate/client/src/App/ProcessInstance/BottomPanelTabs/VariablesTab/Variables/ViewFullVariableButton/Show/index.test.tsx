@@ -11,7 +11,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ViewFullVariableButton} from './index';
+import {ViewFullVariableButtonShow} from './index';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
@@ -41,9 +41,10 @@ describe('<ViewFullVariableButton />', () => {
     );
 
     const {user} = render(
-      <ViewFullVariableButton
+      <ViewFullVariableButtonShow
         variableName={mockVariableName}
         variableKey={mockVariableKey}
+        variableValue={mockVariableValue}
       />,
       {wrapper: createWrapper()},
     );

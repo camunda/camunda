@@ -95,7 +95,7 @@ const VariablesTable: React.FC<Props> = ({
                   isEditMode={Boolean(isEditMode(name))}
                 />
                 {(() => {
-                  if (isModificationModeEnabled) {
+                  if (isModificationModeEnabled || !isProcessInstanceRunning) {
                     return null;
                   }
 

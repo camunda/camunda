@@ -21,6 +21,7 @@ import {Layer} from '@carbon/react';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useVariableEditor} from 'modules/hooks/useVariableEditor';
+import {useFieldError} from '../../../../../modules/hooks/useFieldError';
 
 type Props = {
   id?: string;
@@ -35,6 +36,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
     const formState = useFormState();
 
     const variableEditor = useVariableEditor(variableName, variableValue);
+    const fieldError = useFieldError(variableEditor.fieldName);
 
     const {
       data: variable,
@@ -86,6 +88,8 @@ const ExistingVariableValue: React.FC<Props> = observer(
               data-testid="edit-variable-value"
               autoFocus={!isModificationModeEnabled || meta.active}
               isLoading={isLoading}
+              invalid={!variableEditor.isValid}
+              invalidText={fieldError}
               onFocus={(event) => {
                 if (!meta.active) {
                   input.onFocus(event);
