@@ -35,7 +35,7 @@ test.beforeAll(async ({request}) => {
   await waitForProcessInstances(request, [instance.processInstanceKey], 1);
 });
 
-test.describe.skip('Process Instance Audit Log', () => {
+test.describe('Process Instance Audit Log', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
