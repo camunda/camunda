@@ -119,7 +119,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = SharedRocksDbResources.uninitialized();
+    sharedRocksDbResources = new SharedRocksDbResources();
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
