@@ -689,6 +689,8 @@ class DecisionInstanceSearchIT {
             .getEvaluatedDecisions()
             .getFirst()
             .getDecisionKey();
+    final long rootDecisionDefinitionKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionKey();
     final var result =
         camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
@@ -706,7 +708,7 @@ class DecisionInstanceSearchIT {
     assertThat(result.getDecisionDefinitionType()).isEqualTo(DecisionDefinitionType.DECISION_TABLE);
     assertThat(result.getTenantId()).isEqualTo("<default>");
     assertThat(result.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
-    assertThat(result.getRootDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(result.getRootDecisionDefinitionKey()).isEqualTo(rootDecisionDefinitionKey);
     assertThat(result.getResult()).isEqualTo("\"day-to-day expense\"");
     assertThat(result.getEvaluationDate()).isNotNull();
 
