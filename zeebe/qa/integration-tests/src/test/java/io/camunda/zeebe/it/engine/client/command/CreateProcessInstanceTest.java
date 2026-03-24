@@ -140,6 +140,15 @@ public final class CreateProcessInstanceTest {
             .getFirst();
 
     assertThat(createdEvent.getValue().getVariables()).isEmpty();
+
+    final var variableRecord =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(event.getProcessInstanceKey())
+            .withName("foo")
+            .getFirst();
+
+    assertThat(variableRecord.getValue().getName()).isEqualTo("foo");
+    assertThat(variableRecord.getValue().getValue()).isEqualTo("123");
   }
 
   @ParameterizedTest
@@ -338,6 +347,15 @@ public final class CreateProcessInstanceTest {
             .getFirst();
 
     assertThat(createdEvent.getValue().getVariables()).isEmpty();
+
+    final var variableRecord =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(event.getProcessInstanceKey())
+            .withName(key)
+            .getFirst();
+
+    assertThat(variableRecord.getValue().getName()).isEqualTo(key);
+    assertThat(variableRecord.getValue().getValue()).isEqualTo("\"" + value + "\"");
   }
 
   @ParameterizedTest
