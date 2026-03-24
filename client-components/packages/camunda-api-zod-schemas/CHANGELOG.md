@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.54
+
+### 🚀 Enhancements
+
+- Updated audit-log schema to support `processDefinitionId` filtering. ([#49391](https://github.com/camunda/camunda/issues/49391))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.53
 
 ### 🚀 Enhancements
