@@ -104,7 +104,7 @@ test.describe('Global Task Listener API - Create Permission Tests', () => {
 
       await assertForbiddenRequest(
         res,
-        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE' on resource 'GLOBAL_LISTENER'",
+        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_TASK_LISTENER' on resource 'GLOBAL_LISTENER'",
       );
     }).toPass(defaultAssertionOptions);
   });
@@ -124,7 +124,7 @@ test.describe('Global Task Listener API - Create Permission Tests', () => {
 
       await assertForbiddenRequest(
         res,
-        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE' on resource 'GLOBAL_LISTENER'",
+        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_TASK_LISTENER' on resource 'GLOBAL_LISTENER'",
       );
     }).toPass(defaultAssertionOptions);
   });
