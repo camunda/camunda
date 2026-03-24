@@ -205,6 +205,21 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   }
 
   @Test
+  void shouldReturnEmptyBatchIfNoIdsGiven() {
+    // given
+    repository.batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of());
+
+    // when
+    final var nextBatch = job.getNextBatch().toCompletableFuture().join();
+
+    // then
+    assertThat(nextBatch)
+        .isEqualTo(new ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
+
+    verify(repository).getProcessInstancesNextBatch(1_000);
+  }
+
+  @Test
   void shouldRequestLargeBatchAndChunkIt() {
     // given
     repository.batch =
