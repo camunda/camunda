@@ -32,6 +32,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch || 'main' }}
+      - name: Create fake dry-run tags
+        run: |
+          for tag in 0.0.0-dryrun-minor 0.0.0-dryrun-alpha; do
+            git tag -f "$tag"
+            git push origin --force "refs/tags/${tag}"
+            echo "Prepared fake dry-run tag: ${tag}"
+          done
       - name: Resolve release branch
         id: resolve-branch
         run: |
@@ -88,6 +95,12 @@ jobs:
       - uses: actions/checkout@v6
       - name: Delete temporary release branch
         run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
+      - name: Delete fake dry-run tags
+        if: ${{ needs.dry-run-release.result == 'success' }}
+        run: |
+          for tag in 0.0.0-dryrun-minor 0.0.0-dryrun-alpha; do
+            git push origin --delete "refs/tags/${tag}" 2>/dev/null || true
+          done
       - name: Observe build status
         if: always()
         continue-on-error: true
