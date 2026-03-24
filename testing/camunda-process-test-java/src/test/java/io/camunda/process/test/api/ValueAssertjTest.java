@@ -30,7 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class EvaluationAssertjTest {
+public class ValueAssertjTest {
 
   @AfterEach
   void resetJudgeConfig() {
@@ -48,7 +48,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when / then - should not throw
-      EvaluationAssertions.assertThat("Hello, World!").satisfiesExpectation("should be a greeting");
+      ValueAssertions.assertThat("Hello, World!").satisfiesExpectation("should be a greeting");
     }
 
     @Test
@@ -62,7 +62,7 @@ public class EvaluationAssertjTest {
       // when / then
       Assertions.assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("random text")
+                  ValueAssertions.assertThat("random text")
                       .satisfiesExpectation("should be an email address"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("did not satisfy expectation")
@@ -81,7 +81,7 @@ public class EvaluationAssertjTest {
       // when / then
       Assertions.assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("the actual text value")
+                  ValueAssertions.assertThat("the actual text value")
                       .satisfiesExpectation("should be something else"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("the actual text value")
@@ -98,7 +98,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when / then - score == threshold (0.5 >= 0.5) should pass
-      EvaluationAssertions.assertThat("borderline value").satisfiesExpectation("some expectation");
+      ValueAssertions.assertThat("borderline value").satisfiesExpectation("some expectation");
     }
 
     @Test
@@ -109,7 +109,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when / then - should pass with low threshold
-      EvaluationAssertions.assertThat("some text")
+      ValueAssertions.assertThat("some text")
           .withJudgeConfig(config -> config.withThreshold(0.2))
           .satisfiesExpectation("some expectation");
     }
@@ -121,7 +121,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when / then - chaining should work
-      EvaluationAssertions.assertThat("Hello, how can I help you today?")
+      ValueAssertions.assertThat("Hello, how can I help you today?")
           .satisfiesExpectation("should be a greeting")
           .satisfiesExpectation("should offer help");
     }
@@ -134,7 +134,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel).withThreshold(0.0));
 
       // when / then - should not throw; the null value is passed to the LLM
-      EvaluationAssertions.assertThat(null).satisfiesExpectation("should be something");
+      ValueAssertions.assertThat(null).satisfiesExpectation("should be something");
     }
 
     @Test
@@ -147,8 +147,7 @@ public class EvaluationAssertjTest {
       // when / then
       Assertions.assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("some value")
-                      .satisfiesExpectation("some expectation"))
+                  ValueAssertions.assertThat("some value").satisfiesExpectation("some expectation"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("Judge evaluation failed")
           .hasMessageContaining("unparseable response")
@@ -168,8 +167,7 @@ public class EvaluationAssertjTest {
       // when / then
       Assertions.assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("some value")
-                      .satisfiesExpectation("some expectation"))
+                  ValueAssertions.assertThat("some value").satisfiesExpectation("some expectation"))
           .isInstanceOf(RuntimeException.class)
           .hasMessageContaining("Connection refused");
     }
@@ -184,7 +182,7 @@ public class EvaluationAssertjTest {
 
       // when / then
       assertThatThrownBy(
-              () -> EvaluationAssertions.assertThat("some value").satisfiesExpectation(expectation))
+              () -> ValueAssertions.assertThat("some value").satisfiesExpectation(expectation))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("expectation must not be null or empty");
     }
@@ -196,8 +194,7 @@ public class EvaluationAssertjTest {
       // when / then
       assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("some value")
-                      .satisfiesExpectation("some expectation"))
+                  ValueAssertions.assertThat("some value").satisfiesExpectation("some expectation"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("JudgeConfig is not set");
     }
@@ -210,8 +207,7 @@ public class EvaluationAssertjTest {
       // when / then
       assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("some value")
-                      .satisfiesExpectation("some expectation"))
+                  ValueAssertions.assertThat("some value").satisfiesExpectation("some expectation"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("ChatModelAdapter");
     }
@@ -227,8 +223,7 @@ public class EvaluationAssertjTest {
       // when / then - score 0.7 is below configured threshold 0.8
       Assertions.assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("some value")
-                      .satisfiesExpectation("some expectation"))
+                  ValueAssertions.assertThat("some value").satisfiesExpectation("some expectation"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("Score: 0.70")
           .hasMessageContaining("threshold: 0.80");
@@ -251,7 +246,7 @@ public class EvaluationAssertjTest {
           JudgeConfig.of(mockModel).withCustomPrompt("You are a domain-specific evaluator."));
 
       // when
-      EvaluationAssertions.assertThat("Hello").satisfiesExpectation("should be a greeting");
+      ValueAssertions.assertThat("Hello").satisfiesExpectation("should be a greeting");
 
       // then
       Assertions.assertThat(capturedPrompt.get())
@@ -273,7 +268,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when
-      EvaluationAssertions.assertThat("Hello").satisfiesExpectation("should be a greeting");
+      ValueAssertions.assertThat("Hello").satisfiesExpectation("should be a greeting");
 
       // then
       Assertions.assertThat(capturedPrompt.get())
@@ -296,7 +291,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(globalModel));
 
       // when / then — override judge passes (0.9 >= 0.5)
-      EvaluationAssertions.assertThat("Hello")
+      ValueAssertions.assertThat("Hello")
           .withJudgeConfig(config -> config.withChatModelAdapter(overrideModel))
           .satisfiesExpectation("should be a greeting");
     }
@@ -319,7 +314,7 @@ public class EvaluationAssertjTest {
           };
 
       // when
-      EvaluationAssertions.assertThat("Hello")
+      ValueAssertions.assertThat("Hello")
           .withJudgeConfig(config -> config.withChatModelAdapter(judgeA))
           .satisfiesExpectation("expectation A")
           .withJudgeConfig(config -> config.withChatModelAdapter(judgeB))
@@ -337,7 +332,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when / then
-      assertThatThrownBy(() -> EvaluationAssertions.assertThat("value").withJudgeConfig(null))
+      assertThatThrownBy(() -> ValueAssertions.assertThat("value").withJudgeConfig(null))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("modifier must not be null");
     }
@@ -350,7 +345,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when / then — should pass with lowered threshold
-      EvaluationAssertions.assertThat("some text")
+      ValueAssertions.assertThat("some text")
           .withJudgeConfig(config -> config.withThreshold(0.2))
           .satisfiesExpectation("some expectation");
     }
@@ -367,7 +362,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       // when — second withJudgeConfig overwrites the first
-      EvaluationAssertions.assertThat("Hello")
+      ValueAssertions.assertThat("Hello")
           .withJudgeConfig(config -> config.withCustomPrompt("First prompt"))
           .withJudgeConfig(config -> config.withCustomPrompt("Second prompt"))
           .satisfiesExpectation("some expectation");
@@ -383,7 +378,7 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel).withThreshold(0.5));
 
       // when — modify threshold locally
-      EvaluationAssertions.assertThat("Hello")
+      ValueAssertions.assertThat("Hello")
           .withJudgeConfig(config -> config.withThreshold(0.8))
           .satisfiesExpectation("some expectation");
 
@@ -397,7 +392,7 @@ public class EvaluationAssertjTest {
       final ChatModelAdapter mockModel = prompt -> "{\"score\": 0.9, \"reasoning\": \"match\"}";
 
       // when / then — withJudgeConfig creates a blank default, withChatModelAdapter sets the model
-      EvaluationAssertions.assertThat("Hello")
+      ValueAssertions.assertThat("Hello")
           .withJudgeConfig(config -> config.withChatModelAdapter(mockModel))
           .satisfiesExpectation("should be a greeting");
     }
@@ -409,7 +404,7 @@ public class EvaluationAssertjTest {
       // when / then
       assertThatThrownBy(
               () ->
-                  EvaluationAssertions.assertThat("value")
+                  ValueAssertions.assertThat("value")
                       .withJudgeConfig(config -> config.withThreshold(0.8))
                       .satisfiesExpectation("some expectation"))
           .isInstanceOf(IllegalStateException.class)
@@ -431,13 +426,13 @@ public class EvaluationAssertjTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(globalModel));
 
       // when — use override on first assertion
-      EvaluationAssertions.assertThat("Hello")
+      ValueAssertions.assertThat("Hello")
           .withJudgeConfig(config -> JudgeConfig.of(overrideModel))
           .satisfiesExpectation("some expectation");
 
       // then — new assertThat uses global default
       globalCalled.set(false);
-      EvaluationAssertions.assertThat("Hello").satisfiesExpectation("some expectation");
+      ValueAssertions.assertThat("Hello").satisfiesExpectation("some expectation");
 
       Assertions.assertThat(globalCalled).isTrue();
     }

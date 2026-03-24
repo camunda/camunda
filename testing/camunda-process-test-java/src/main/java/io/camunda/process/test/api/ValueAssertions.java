@@ -15,9 +15,9 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.process.test.api.assertions.EvaluationAssert;
+import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.impl.assertions.EvaluationAssertj;
+import io.camunda.process.test.impl.assertions.ValueAssertj;
 
 /**
  * Entry point for standalone LLM judge assertions on string values. Uses the global {@link
@@ -26,9 +26,9 @@ import io.camunda.process.test.impl.assertions.EvaluationAssertj;
  * @see JudgeConfig
  * @see CamundaAssert#setJudgeConfig(JudgeConfig)
  */
-public final class EvaluationAssertions {
+public final class ValueAssertions {
 
-  private EvaluationAssertions() {}
+  private ValueAssertions() {}
 
   /**
    * Creates a new judge assertion for the given value.
@@ -36,7 +36,7 @@ public final class EvaluationAssertions {
    * @param actual the string value to evaluate
    * @return the assertion object
    */
-  public static EvaluationAssert assertThat(final String actual) {
-    return new EvaluationAssertj(actual, CamundaAssert.getJudgeConfig());
+  public static ValueAssert assertThat(final String actual) {
+    return new ValueAssertj(actual, CamundaAssert.getJudgeConfig());
   }
 }
