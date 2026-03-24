@@ -113,20 +113,18 @@ public final class ProcessInstanceCreationCreateProcessor
 
     helper.updateCreationRecord(record, processInstance);
 
-    // Clear variables before writing the CREATED follow-up event.
-    // Variables have already been persisted to state via setVariablesFromDocument()
-    // and are available in the Variable:CREATED records.
-    // Including them in this event is unnecessary and wastes batch space,
-    // causing ExceededBatchRecordSizeException for large payloads.
-    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
-
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
-    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
     if (command.hasRequestMetadata()) {
       responseWriter.writeEventOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }
+
+    // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
+    // space.
+    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
+
+    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
 
     metrics.processInstanceCreated(record);
   }
