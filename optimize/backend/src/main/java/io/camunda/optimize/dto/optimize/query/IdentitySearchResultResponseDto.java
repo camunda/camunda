@@ -7,31 +7,17 @@
  */
 package io.camunda.optimize.dto.optimize.query;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.lucene.search.ScoreDoc;
 
 public class IdentitySearchResultResponseDto {
 
   private List<IdentityWithMetadataResponseDto> result = new ArrayList<>();
 
-  /**
-   * ScoreDoc holds a reference to the ScoreDoc of the last result the result list. Used to paginate
-   * through the searchableIdentityCache.
-   */
-  @JsonIgnore private ScoreDoc scoreDoc;
-
   public IdentitySearchResultResponseDto(final List<IdentityWithMetadataResponseDto> result) {
     this.result = result;
-  }
-
-  public IdentitySearchResultResponseDto(
-      final List<IdentityWithMetadataResponseDto> result, final ScoreDoc scoreDoc) {
-    this.result = result;
-    this.scoreDoc = scoreDoc;
   }
 
   public IdentitySearchResultResponseDto() {}
@@ -44,22 +30,13 @@ public class IdentitySearchResultResponseDto {
     this.result = result;
   }
 
-  public ScoreDoc getScoreDoc() {
-    return scoreDoc;
-  }
-
-  @JsonIgnore
-  public void setScoreDoc(final ScoreDoc scoreDoc) {
-    this.scoreDoc = scoreDoc;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof IdentitySearchResultResponseDto;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(result, scoreDoc);
+    return Objects.hash(result);
   }
 
   @Override
@@ -71,15 +48,11 @@ public class IdentitySearchResultResponseDto {
       return false;
     }
     final IdentitySearchResultResponseDto that = (IdentitySearchResultResponseDto) o;
-    return Objects.equals(result, that.result) && Objects.equals(scoreDoc, that.scoreDoc);
+    return Objects.equals(result, that.result);
   }
 
   @Override
   public String toString() {
-    return "IdentitySearchResultResponseDto(result="
-        + getResult()
-        + ", scoreDoc="
-        + getScoreDoc()
-        + ")";
+    return "IdentitySearchResultResponseDto(result=" + getResult() + ")";
   }
 }
