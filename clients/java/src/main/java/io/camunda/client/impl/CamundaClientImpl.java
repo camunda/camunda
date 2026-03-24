@@ -152,6 +152,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
+import io.camunda.client.api.search.request.UserTaskEffectiveVariableSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -290,6 +291,7 @@ import io.camunda.client.impl.search.request.RolesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesSearchRequestImpl;
 import io.camunda.client.impl.search.request.TenantsSearchRequestImpl;
+import io.camunda.client.impl.search.request.UserTaskEffectiveVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
@@ -1080,6 +1082,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(final long userTaskKey) {
     return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  @Override
+  public UserTaskEffectiveVariableSearchRequest newUserTaskEffectiveVariableSearchRequest(
+      final long userTaskKey) {
+    return new UserTaskEffectiveVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
