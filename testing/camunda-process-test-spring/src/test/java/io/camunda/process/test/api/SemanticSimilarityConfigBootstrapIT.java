@@ -156,7 +156,7 @@ public class SemanticSimilarityConfigBootstrapIT {
         "camunda.process-test.similarity.embeddingModel.model=nomic-embed-text",
         "camunda.process-test.similarity.embeddingModel.baseUrl=http://localhost:11434/v1",
         "camunda.process-test.similarity.embeddingModel.apiKey=test-key",
-        "camunda.process-test.judge.chatModel.headers.X-Test-Header=test-header-value"
+        "camunda.process-test.similarity.embeddingModel.headers.X-Test-Header=test-header-value"
       })
   @CamundaSpringProcessTest
   class OpenAiCompatibleProviderWithHeaders {

@@ -164,7 +164,7 @@ class BedrockRuntimeClientFactoryTest {
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
   void shouldThrowWhenOnlyAccessKeyProvided(final String secretKey) {
-    assertThatThrownBy(() -> BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, null))
+    assertThatThrownBy(() -> BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, secretKey))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
@@ -174,7 +174,7 @@ class BedrockRuntimeClientFactoryTest {
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
   void shouldThrowWhenOnlySecretKeyProvided(final String accessKey) {
-    assertThatThrownBy(() -> BedrockRuntimeClientFactory.build(REGION, null, null, SECRET_KEY))
+    assertThatThrownBy(() -> BedrockRuntimeClientFactory.build(REGION, null, accessKey, SECRET_KEY))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
