@@ -10,6 +10,8 @@ package io.camunda.zeebe.exporter.filter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filters variable records based on whether they are local (scoped to a sub-element) or root
@@ -20,6 +22,8 @@ import io.camunda.zeebe.util.SemanticVersion;
  * variables and all non-variable records are always accepted.
  */
 public final class ExportLocalVariablesFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ExportLocalVariablesFilter.class);
 
   private static final SemanticVersion MIN_BROKER_VERSION =
       new SemanticVersion(8, 10, 0, null, null);
@@ -38,7 +42,16 @@ public final class ExportLocalVariablesFilter implements ExporterRecordFilter, R
     if (exportLocalVariablesEnabled) {
       return true;
     }
-    return !VariableScope.isLocal(variableRecordValue);
+    final boolean isLocal = VariableScope.isLocal(variableRecordValue);
+    if (isLocal && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "ExportLocalVariablesFilter rejected record {}: variable '{}' is local (scopeKey={} != processInstanceKey={})",
+          record.getKey(),
+          variableRecordValue.getName(),
+          variableRecordValue.getScopeKey(),
+          variableRecordValue.getProcessInstanceKey());
+    }
+    return !isLocal;
   }
 
   @Override

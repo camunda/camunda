@@ -11,6 +11,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filters variable records by name, applying separate rules depending on whether the variable is
@@ -23,6 +25,8 @@ import java.util.List;
  * scope, all variables in that scope pass through. Non-variable records are always accepted.
  */
 public final class VariableNameScopeFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableNameScopeFilter.class);
 
   private static final SemanticVersion MIN_BROKER_VERSION =
       new SemanticVersion(8, 10, 0, null, null);
@@ -53,11 +57,24 @@ public final class VariableNameScopeFilter implements ExporterRecordFilter, Reco
       return true;
     }
 
-    if (VariableScope.isLocal(variableRecordValue)) {
-      return !hasLocalRules || localFilter.accept(variableRecordValue.getName());
+    final boolean isLocal = VariableScope.isLocal(variableRecordValue);
+    final String scope = isLocal ? "local" : "root";
+    final boolean accepted;
+
+    if (isLocal) {
+      accepted = !hasLocalRules || localFilter.accept(variableRecordValue.getName());
     } else {
-      return !hasRootRules || rootFilter.accept(variableRecordValue.getName());
+      accepted = !hasRootRules || rootFilter.accept(variableRecordValue.getName());
     }
+
+    if (!accepted && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "VariableNameScopeFilter rejected record {}: {} variable name '{}' did not match name rules",
+          record.getKey(),
+          scope,
+          variableRecordValue.getName());
+    }
+    return accepted;
   }
 
   @Override
