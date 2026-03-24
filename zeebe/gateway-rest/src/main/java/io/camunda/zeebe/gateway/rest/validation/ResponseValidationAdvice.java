@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.validation;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -85,12 +86,24 @@ public class ResponseValidationAdvice implements ResponseBodyAdvice<Object> {
 
     final Set<ConstraintViolation<Object>> violations = validator.validate(body);
     if (!violations.isEmpty()) {
+      final String details =
+          violations.stream()
+              .map(
+                  v ->
+                      v.getPropertyPath()
+                          + ": "
+                          + v.getMessage()
+                          + " (was: "
+                          + v.getInvalidValue()
+                          + ")")
+              .sorted()
+              .collect(Collectors.joining("; "));
       LOG.error(
-          "Response validation failed for {} {} — {} violation(s) detected: {}",
+          "Response validation failed for {} {} — {} violation(s): {}",
           request.getMethod(),
           request.getURI().getPath(),
           violations.size(),
-          violations);
+          details);
       throw new ResponseValidationException(violations);
     }
 
