@@ -15,6 +15,7 @@ import {Paths} from 'modules/Routes';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
 import {ItemKeyCell} from './ItemKeyCell';
+import {TableContainer} from './BatchItemsTable.styled';
 
 const COMMON_HEADER_COLUMNS = [
   {key: 'state', header: 'Batch state', isDisabled: true},
@@ -172,7 +173,7 @@ export const BatchItemsTable: React.FC<Props> = ({
   };
 
   return (
-    <div>
+    <TableContainer>
       <BasePanelHeader
         count={totalItems}
         title="Items"
@@ -196,6 +197,6 @@ export const BatchItemsTable: React.FC<Props> = ({
           fetchNextPage,
         }}
       />
-    </div>
+    </TableContainer>
   );
 };
