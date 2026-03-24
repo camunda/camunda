@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ProcessInstanceCreationCreateProcessor
     implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
@@ -115,16 +116,18 @@ public final class ProcessInstanceCreationCreateProcessor
 
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
+    // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
+    // space.
+    final var variablesBuffer = BufferUtil.cloneBuffer(record.getVariablesBuffer());
+    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
+
+    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
+
+    record.setVariables(variablesBuffer);
     if (command.hasRequestMetadata()) {
       responseWriter.writeEventOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }
-
-    // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
-    // space.
-    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
-
-    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
 
     metrics.processInstanceCreated(record);
   }
