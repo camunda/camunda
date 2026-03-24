@@ -112,8 +112,9 @@ public final class ProcessCacheUtil {
 
     if (reader != null) {
       final List<String> callActivityIds = sortedCallActivityIds(reader.extractCallActivities());
-      final Map<String, String> flowNodesMap = getFlowNodesMap(reader.extractFlowNodes());
-      final boolean hasUserTasks = reader.extractHasUserTasks();
+      final Collection<FlowNode> flowNodes = reader.extractFlowNodes();
+      final Map<String, String> flowNodesMap = getFlowNodesMap(flowNodes);
+      final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       return new ProcessDiagramData(callActivityIds, flowNodesMap, hasUserTasks);
     }
 
