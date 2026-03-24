@@ -280,7 +280,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState);
 
     externalResourceBehavior =
-        new ExternalResourceBehavior(stateBehavior, processingState.getResourceState());
+        new ExternalResourceBehavior(
+            stateBehavior,
+            processingState.getResourceState(),
+            expressionLanguage,
+            expressionProcessor);
   }
 
   @Override
