@@ -214,7 +214,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ListViewFlowNodeFromProcessInstanceHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewVariableFromVariableHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()),
             new VariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),

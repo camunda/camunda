@@ -4,13 +4,13 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
-ARG BASE_DIGEST="sha256:582cecb4f3fb341909d32af1b2c4cc1074e095b237b9545e06ba3f58a14c0f61"
+ARG BASE_DIGEST="sha256:78d925a51dc0c2761d2327d96226452a3db3cc3a6dc4c5ce37e3fc31bdbf0c1d"
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:b35184e04749777b79e711cef0dbf95c7e7cdf1e8c59dab3b0c85bf1cc345127"
+ARG BASE_DIGEST_PUBLIC="sha256:be00aca3f4747fa3f4b936fc35dc64eb5862349e262b2ad8d3299cb96a305780"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball

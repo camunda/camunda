@@ -118,9 +118,9 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
     final Variable variable =
         new Variable()
-            .setKey((Long) searchHitAsMap.get(Variable.KEY))
-            .setProcessInstanceKey((Long) searchHitAsMap.get(Variable.PROCESS_INSTANCE_KEY))
-            .setScopeKey((Long) searchHitAsMap.get(Variable.SCOPE_KEY))
+            .setKey(getLong(searchHitAsMap.get(Variable.KEY)))
+            .setProcessInstanceKey(getLong(searchHitAsMap.get(Variable.PROCESS_INSTANCE_KEY)))
+            .setScopeKey(getLong(searchHitAsMap.get(Variable.SCOPE_KEY)))
             .setTenantId((String) searchHitAsMap.get(Variable.TENANT_ID))
             .setName((String) searchHitAsMap.get(Variable.NAME))
             .setValue((String) searchHitAsMap.get(Variable.VALUE))

@@ -86,7 +86,8 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
     return new SequenceFlow()
         .setId((String) searchHitAsMap.get(SequenceFlowTemplate.ID))
         .setActivityId((String) searchHitAsMap.get(SequenceFlowTemplate.ACTIVITY_ID))
-        .setProcessInstanceKey((Long) searchHitAsMap.get(SequenceFlowTemplate.PROCESS_INSTANCE_KEY))
+        .setProcessInstanceKey(
+            getLong(searchHitAsMap.get(SequenceFlowTemplate.PROCESS_INSTANCE_KEY)))
         .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));
   }
 }

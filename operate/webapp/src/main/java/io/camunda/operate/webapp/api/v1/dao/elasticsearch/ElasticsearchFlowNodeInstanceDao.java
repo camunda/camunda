@@ -123,10 +123,11 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
     final FlowNodeInstance flowNodeInstance =
         new FlowNodeInstance()
-            .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
-            .setProcessInstanceKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY))
+            .setKey(getLong(searchHitAsMap.get(FlowNodeInstance.KEY)))
+            .setProcessInstanceKey(
+                getLong(searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY)))
             .setProcessDefinitionKey(
-                (Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_DEFINITION_KEY))
+                getLong(searchHitAsMap.get(FlowNodeInstance.PROCESS_DEFINITION_KEY)))
             .setStartDate(
                 dateTimeFormatter.convertGeneralToApiDateTime(
                     (String) searchHitAsMap.get(FlowNodeInstance.START_DATE)))
@@ -137,7 +138,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
             .setState((String) searchHitAsMap.get(FlowNodeInstance.STATE))
             .setFlowNodeId((String) searchHitAsMap.get(FlowNodeInstance.FLOW_NODE_ID))
             .setIncident((Boolean) searchHitAsMap.get(FlowNodeInstance.INCIDENT))
-            .setIncidentKey((Long) searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY))
+            .setIncidentKey(getLong(searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY)))
             .setTenantId((String) searchHitAsMap.get(FlowNodeInstance.TENANT_ID));
 
     if (flowNodeInstance.getFlowNodeId() != null) {

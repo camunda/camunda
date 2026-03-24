@@ -875,6 +875,7 @@ final class ElasticsearchArchiverRepositoryIT {
     doReturn(indicesClientSpy).when(asyncClient).indices();
     final var repository = createRepository(asyncClient);
     final var captor = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
+    final int templateCount = resourceProvider.getIndexTemplateDescriptors().size();
 
     // when
     repository.setLifeCycleToAllIndexes();
@@ -882,15 +883,11 @@ final class ElasticsearchArchiverRepositoryIT {
     // then
     Awaitility.await()
         .untilAsserted(
-            () ->
-                verify(
-                        indicesClientSpy, times(18) // number of index templates
-                        )
-                    .putSettings(captor.capture()));
+            () -> verify(indicesClientSpy, times(templateCount)).putSettings(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(18)
+        .hasSize(templateCount)
         .allSatisfy(
             request -> {
               assertThat(request.index()).hasSize(1);
