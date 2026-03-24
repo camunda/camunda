@@ -489,7 +489,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -503,7 +503,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
