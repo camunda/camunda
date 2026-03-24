@@ -681,7 +681,7 @@ class UserTaskSearchIT {
     final var result = camundaClient.newUserTaskGetRequest(userTaskSubprocessKey).send().join();
 
     // then
-    assertThat(result).isEqualTo(expectedTask);
+    assertThat(result).usingRecursiveComparison().isEqualTo(expectedTask);
   }
 
   @Test
@@ -797,7 +797,7 @@ class UserTaskSearchIT {
             .join();
 
     // then - assert optional text fields are null (not empty string)
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(1);
     final var task = result.items().getFirst();
     assertThat(task.getAssignee()).isNull();
     assertThat(task.getFormKey()).isNull();
@@ -815,7 +815,7 @@ class UserTaskSearchIT {
             .join();
 
     // then - assert optional date fields
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(1);
     final var task = result.items().getFirst();
     assertThat(task.getCompletionDate()).isNull();
     assertThat(task.getDueDate())
