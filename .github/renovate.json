@@ -265,16 +265,11 @@
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
-      "description": "Exclude internal Maven modules and Maven dependencies lacking metadata.",
+      "description": "Exclude Maven dependencies lacking metadata.",
       "matchManagers": [
         "maven"
       ],
       "matchPackageNames": [
-        "/io.camunda:operate-parent/",
-        "/io.camunda:operate-qa/",
-        "/io.camunda:operate-qa-migration-tests-parent/",
-        "/io.camunda:tasklist-qa/",
-        "/io.camunda:tasklist-qa-migration-tests-parent/",
         "/net.jcip:jcip-annotations/"
       ],
       "enabled": false
@@ -351,6 +346,19 @@
       ],
       "matchDepTypes": [
         "parent-root"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable internal io.camunda Maven updates on stable branches; versions are controlled by the release process.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchPackageNames": [
+        "/^io\\.camunda:.+/"
       ],
       "enabled": false
     },
