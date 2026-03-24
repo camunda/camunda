@@ -9,24 +9,24 @@
 import {useState, useRef, useEffect} from 'react';
 
 /**
- * Returns a (faked) progress percentage and an isComplete indicator
- * based on totalCount, completedCount and isFinished parameters.
+ * Returns a (faked) progress percentage and an isVisuallyCompleted indicator
+ * based on totalCount, processedCount and isCompleted parameters.
  *
- * isFinished means the operation itself is finished
- * isComplete is true when the visual progress has finished
+ * isCompleted is true when the operation itself is completed
+ * isVisuallyCompleted is true when the visual progress is completed
  */
 const useLoadingProgress = ({
   totalCount,
   processedCount,
-  isFinished,
+  isCompleted,
 }: {
   totalCount: number;
   processedCount: number;
-  isFinished: boolean;
+  isCompleted: boolean;
 }) => {
   const [fakeProgressPercentage, setFakeProgressPercentage] = useState(0);
-  const [isComplete, setIsComplete] = useState(isFinished);
-  const initialCompleteRef = useRef(isFinished);
+  const [isVisuallyCompleted, setIsVisuallyCompleted] = useState(isCompleted);
+  const initialCompleteRef = useRef(isCompleted);
   const fakeTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fakeStartPercentage = 10;
@@ -64,10 +64,10 @@ const useLoadingProgress = ({
   }, [fakeProgressPercentage, totalCount, processedCount]);
 
   useEffect(() => {
-    if (isFinished && !initialCompleteRef.current && !isComplete) {
+    if (isCompleted && !initialCompleteRef.current && !isVisuallyCompleted) {
       setFakeProgressPercentage(100);
       completedTimeoutId.current = setTimeout(() => {
-        setIsComplete(true);
+        setIsVisuallyCompleted(true);
       }, 2000);
     }
 
@@ -77,9 +77,9 @@ const useLoadingProgress = ({
         completedTimeoutId.current = null;
       }
     };
-  }, [isFinished, isComplete]);
+  }, [isCompleted, isVisuallyCompleted]);
 
-  return {fakeProgressPercentage, isComplete};
+  return {fakeProgressPercentage, isVisuallyCompleted};
 };
 
 export {useLoadingProgress};

@@ -201,6 +201,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         operation={{
           ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          state: 'ACTIVE',
           endDate: undefined,
           operationsTotalCount: 10,
           operationsCompletedCount: 0,
@@ -232,6 +233,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         operation={{
           ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          state: 'ACTIVE',
           endDate: undefined,
           operationsTotalCount: 10,
           operationsCompletedCount: 5,
@@ -266,6 +268,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         operation={{
           ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          state: 'ACTIVE',
           endDate: undefined,
           operationsTotalCount: 5,
           operationsCompletedCount: 0,
@@ -320,6 +323,24 @@ describe('OperationsEntry', () => {
           operationsTotalCount: 8,
           operationsCompletedCount: 8,
           operationsFailedCount: 2,
+        }}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
+  it('should not show progress bar when operation is completed with 0', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={{
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          endDate: '2023-11-22T09:03:29.564+0100',
+          operationsTotalCount: 0,
+          operationsCompletedCount: 0,
+          operationsFailedCount: 0,
         }}
       />,
       {wrapper: createWrapper()},

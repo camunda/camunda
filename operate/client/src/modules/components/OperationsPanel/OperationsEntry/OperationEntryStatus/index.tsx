@@ -64,7 +64,8 @@ const OperationEntryStatus: React.FC<Props> = ({
       {state === 'PARTIALLY_COMPLETED' && <PartiallyCompleted />}
       {state === 'FAILED' && <Failed />}
       <StatusContainer>
-        {completedCount > 0 ? (
+        {completedCount > 0 ||
+        (completedCount === 0 && failedCount === 0 && state === 'COMPLETED') ? (
           <>
             <CheckmarkFilled />
             <Text>{getSuccessMessage(type, completedCount)}</Text>
