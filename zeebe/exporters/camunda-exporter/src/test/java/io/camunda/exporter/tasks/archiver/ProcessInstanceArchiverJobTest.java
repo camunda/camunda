@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ProcessInstancesArchiverJobTest {
+final class ProcessInstanceArchiverJobTest {
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessInstancesArchiverJobTest.class);
+      LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
   private final TestRepository repository = new TestRepository();
@@ -35,8 +35,8 @@ final class ProcessInstancesArchiverJobTest {
   private final SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
-  private final ProcessInstancesArchiverJob job =
-      new ProcessInstancesArchiverJob(
+  private final ProcessInstanceArchiverJob job =
+      new ProcessInstanceArchiverJob(
           repository,
           processInstanceTemplate,
           List.of(sequenceFlowTemplate, decisionInstanceTemplate),
@@ -98,7 +98,7 @@ final class ProcessInstancesArchiverJobTest {
     // given
     final var dependant = new WeirdlyNamedDependant();
     final var job =
-        new ProcessInstancesArchiverJob(
+        new ProcessInstanceArchiverJob(
             repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
     repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
 

@@ -18,7 +18,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class ProcessInstancesArchiverJob implements ArchiverJob {
+public class ProcessInstanceArchiverJob implements ArchiverJob {
 
   private final ArchiverRepository repository;
   private final ListViewTemplate template;
@@ -27,7 +27,7 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
   private final Logger logger;
   private final Executor executor;
 
-  public ProcessInstancesArchiverJob(
+  public ProcessInstanceArchiverJob(
       final ArchiverRepository repository,
       final ListViewTemplate template,
       final List<ProcessInstanceDependant> dependants,
