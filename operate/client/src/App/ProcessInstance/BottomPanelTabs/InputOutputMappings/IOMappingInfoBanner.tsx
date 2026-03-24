@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ActionableNotification} from '@carbon/react';
+import {ActionableNotification} from './styled';
 import {storeStateLocally} from 'modules/utils/localStorage';
 
 type Props = {
