@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -43,17 +41,10 @@ public final class VariableTypeFilter implements ExporterRecordFilter, RecordVer
       final Set<VariableValueType> inclusion,
       final Set<VariableValueType> exclusion) {
     this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
+    Objects.requireNonNull(inclusion, "inclusion must not be null");
+    Objects.requireNonNull(exclusion, "exclusion must not be null");
 
-    final EnumSet<VariableValueType> allowed;
-    if (inclusion.isEmpty()) {
-      allowed = EnumSet.allOf(VariableValueType.class);
-      allowed.removeAll(exclusion);
-    } else {
-      allowed = EnumSet.copyOf(inclusion);
-      allowed.removeAll(exclusion);
-    }
-
-    allowedTypes = Collections.unmodifiableSet(allowed);
+    allowedTypes = VariableValueType.buildAllowedSet(inclusion, exclusion);
   }
 
   @Override
@@ -61,41 +52,10 @@ public final class VariableTypeFilter implements ExporterRecordFilter, RecordVer
     if (!(record.getValue() instanceof final VariableRecordValue variableRecordValue)) {
       return true;
     }
-    final VariableValueType inferredType = inferValueType(variableRecordValue.getValue());
+    final VariableValueType inferredType =
+        VariableValueType.infer(objectMapper, variableRecordValue.getValue());
 
     return allowedTypes.contains(inferredType);
-  }
-
-  /**
-   * Infers a logical type from the JSON representation of the variable value, mirroring Optimize's
-   * ZeebeVariableImportService#getVariableTypeFromJsonNode:
-   *
-   * <p>NUMBER -> NUMBER BOOLEAN -> BOOLEAN STRING -> STRING OBJECT -> OBJECT ARRAY -> OBJECT
-   *
-   * <p>If parsing fails, falls back to UNKNOWN. Null raw value -> NULL.
-   */
-  private VariableValueType inferValueType(final String raw) {
-    if (raw == null) {
-      return VariableValueType.NULL;
-    }
-
-    try {
-      final JsonNode jsonNode = objectMapper.readTree(raw);
-      if (jsonNode == null) {
-        return VariableValueType.UNKNOWN;
-      }
-
-      return switch (jsonNode.getNodeType()) {
-        case NUMBER -> VariableValueType.NUMBER;
-        case BOOLEAN -> VariableValueType.BOOLEAN;
-        case STRING -> VariableValueType.STRING;
-        case OBJECT, ARRAY -> VariableValueType.OBJECT;
-        case NULL -> VariableValueType.NULL;
-        default -> VariableValueType.UNKNOWN;
-      };
-    } catch (final JsonProcessingException e) {
-      return VariableValueType.UNKNOWN;
-    }
   }
 
   public static Set<VariableValueType> parseTypes(final List<String> rawValues) {
@@ -145,15 +105,5 @@ public final class VariableTypeFilter implements ExporterRecordFilter, RecordVer
   @Override
   public SemanticVersion minRecordBrokerVersion() {
     return MIN_BROKER_VERSION;
-  }
-
-  /** Inferred variable value types (aligned with Optimize's JSON-node based mapping). */
-  public enum VariableValueType {
-    BOOLEAN,
-    NUMBER,
-    STRING,
-    OBJECT,
-    NULL,
-    UNKNOWN
   }
 }
