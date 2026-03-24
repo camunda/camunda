@@ -86,8 +86,8 @@ public final class ProcessModelReader {
     return callActivities;
   }
 
-  public boolean extractHasUserTasks() {
-    return extractFlowNodes().stream().anyMatch(UserTask.class::isInstance);
+  public static boolean hasUserTasks(final Collection<FlowNode> flowNodes) {
+    return flowNodes.stream().anyMatch(UserTask.class::isInstance);
   }
 
   private boolean isPublic(final ZeebeProperties properties) {
