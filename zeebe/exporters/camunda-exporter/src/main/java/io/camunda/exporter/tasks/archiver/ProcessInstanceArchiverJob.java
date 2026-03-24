@@ -78,10 +78,13 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
         .getProcessInstancesNextBatch(largeBatchSize())
         .thenApply(
             batch -> {
-              final var chunks = batch.chunk(config.getRolloverBatchSize());
-              final var first = chunks.removeFirst();
-              pendingBatches.addAll(chunks);
-              return first;
+              if (batch != null) {
+                final var chunks = batch.chunk(config.getRolloverBatchSize());
+                final var first = chunks.removeFirst();
+                pendingBatches.addAll(chunks);
+                return first;
+              }
+              return batch;
             });
   }
 
