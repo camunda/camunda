@@ -16,7 +16,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -31,43 +30,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final MeterRegistry meterRegistry;
   private final InstantSource streamClock;
 
+  private final CamundaArchiverMetrics archiverMetrics;
+
+  /** time spent on counting process instances awaiting archiving */
+  private final Timer processInstancesAwaitingArchivalTimer;
+
   private final Timer flushLatency;
-
-  /** Count of completed process instances that are in progress of archiving. */
-  private final Counter processInstancesArchiving;
-
-  /** Count of completed process instances that have been archived. */
-  private final Counter processInstancesArchived;
-
-  /** Count of completed batch operations that are in progress of archiving. */
-  private final Counter batchOperationsArchiving;
-
-  /** Count of completed batch operations that have been archived. */
-  private final Counter batchOperationsArchived;
-
-  /** Count of usage-metrics that are in progress of archiving. */
-  private final Counter usageMetricsArchiving;
-
-  /** Count of usage-metrics that have been archived. */
-  private final Counter usageMetricsArchived;
-
-  /** Count of usage-metrics-task-users that are in progress of archiving. */
-  private final Counter usageMetricsTUArchiving;
-
-  /** Count of usage-metrics-task-users that have been archived. */
-  private final Counter usageMetricsTUArchived;
-
-  /** Count of standalone-decisions that are in progress of archiving. */
-  private final Counter standaloneDecisionsArchiving;
-
-  /** Count of standalone-decisions that have been archived. */
-  private final Counter standaloneDecisionsArchived;
-
-  /** Count of job-batch-metrics that are in progress of archiving. */
-  private final Counter jobBatchMetricsArchiving;
-
-  /** Count of job-batch-metrics that have been archived. */
-  private final Counter jobBatchMetricsArchived;
 
   /** Count of incident updates that needed retrying. */
   private final Counter incidentUpdatesRetriesNeeded;
@@ -78,19 +46,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of document updated when incident updates were processed. */
   private final Counter incidentUpdatesDocumentsUpdated;
 
-  /** Count of audit logs that are in progress of archiving. */
-  private final Counter auditLogsArchiving;
-
-  /** Count of audit logs that have been archived. */
-  private final Counter auditLogsArchived;
-
-  private final Timer archiverSearchTimer;
-  private final Timer archiverDeleteTimer;
-  private final Counter archiverDeletedDocs;
-  private final Counter archiverReindexedDocs;
-  private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
-  private final Timer archivingDuration;
   private final DistributionSummary bulkSize;
   private final Counter bulkOperations;
   private final Timer flushDuration;
@@ -108,6 +64,15 @@ public class CamundaExporterMetrics implements AutoCloseable {
       final MeterRegistry meterRegistry, final InstantSource streamClock) {
     this.meterRegistry = meterRegistry;
     this.streamClock = streamClock;
+    archiverMetrics = new CamundaArchiverMetrics(meterRegistry, this::meterName);
+
+    processInstancesAwaitingArchivalTimer =
+        Timer.builder(meterName("process.instances.awaiting.archival.request.duration"))
+            .description(
+                "Duration of how long it takes to get the count of process instances that need to be archived.")
+            .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
 
     flushLatency =
         Timer.builder(meterName("flush.latency"))
@@ -116,110 +81,6 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .publishPercentileHistogram()
             .register(meterRegistry);
 
-    processInstancesArchived =
-        Counter.builder(meterName("archiver.process.instances"))
-            .tag("state", "archived")
-            .description("Count of completed process instances, that have been archived.")
-            .register(meterRegistry);
-    processInstancesArchiving =
-        Counter.builder(meterName("archiver.process.instances"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed process instances that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
-    batchOperationsArchived =
-        Counter.builder(meterName("archiver.batch.operations"))
-            .tag("state", "archived")
-            .description("Count of completed batch operations, that have been archived.")
-            .register(meterRegistry);
-    batchOperationsArchiving =
-        Counter.builder(meterName("archiver.batch.operations"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed batch operations that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
-    usageMetricsArchived =
-        Counter.builder(meterName("archiver.usage.metrics"))
-            .tag("state", "archived")
-            .description("Count of completed usage-metrics, that have been archived.")
-            .register(meterRegistry);
-    usageMetricsArchiving =
-        Counter.builder(meterName("archiver.usage.metrics"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed usage-metrics that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
-    usageMetricsTUArchived =
-        Counter.builder(meterName("archiver.usage.metrics.tu"))
-            .tag("state", "archived")
-            .description("Count of completed usage-metrics-task-users, that have been archived.")
-            .register(meterRegistry);
-    usageMetricsTUArchiving =
-        Counter.builder(meterName("archiver.usage.metrics.tu"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed usage-metrics-task-users that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
-    standaloneDecisionsArchived =
-        Counter.builder(meterName("archiver.standalone.decisions"))
-            .tag("state", "archived")
-            .description("Count of completed standalone-decisions, that have been archived.")
-            .register(meterRegistry);
-    standaloneDecisionsArchiving =
-        Counter.builder(meterName("archiver.standalone.decisions"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed standalone-decisions that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
-    jobBatchMetricsArchived =
-        Counter.builder(meterName("archiver.job.batch.metrics"))
-            .tag("state", "archived")
-            .description("Count of completed job-batch-metrics, that have been archived.")
-            .register(meterRegistry);
-    jobBatchMetricsArchiving =
-        Counter.builder(meterName("archiver.job.batch.metrics"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed job-batch-metrics that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
-    archiverSearchTimer =
-        Timer.builder(meterName("archiver.request.duration"))
-            .description(
-                "Duration of how long it takes to run the search request to resolve completed entities, that need to be archived.")
-            .tags("type", "search")
-            .publishPercentileHistogram()
-            .register(meterRegistry);
-    archiverDeleteTimer =
-        Timer.builder(meterName("archiver.request.duration"))
-            .description(
-                "Duration of how long it takes to run the delete request to remove completed entities, from old indices.")
-            .tags("type", "delete")
-            .publishPercentileHistogram()
-            .register(meterRegistry);
-    archiverDeletedDocs =
-        Counter.builder(meterName("archiver.docs"))
-            .tags("type", "delete")
-            .description("Count of how many documents the archiver has deleted from old indices.")
-            .register(meterRegistry);
-    archiverReindexTimer =
-        Timer.builder(meterName("archiver.request.duration"))
-            .description(
-                "Duration of how long it takes to run the reindex request to copy over to the dated indices, from old indices.")
-            .tags("type", "reindex")
-            .publishPercentileHistogram()
-            .register(meterRegistry);
-    archiverReindexedDocs =
-        Counter.builder(meterName("archiver.docs"))
-            .tags("type", "reindex")
-            .description(
-                "Count of how many documents the archiver has reindexed to copy over to the dated indices, from old indices.")
-            .register(meterRegistry);
-    archivingDuration =
-        Timer.builder(meterName("archiver.duration"))
-            .description(
-                "Duration of how long it takes from resolving to archiving entities, all in all together.")
-            .publishPercentileHistogram()
-            .register(meterRegistry);
     incidentUpdatesRetriesNeeded =
         Counter.builder(meterName("incident.updates"))
             .tag("action", "retry")
@@ -262,17 +123,6 @@ public class CamundaExporterMetrics implements AutoCloseable {
                 "How much time it took to export a record from the moment it was written (not committed)")
             .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
             .register(meterRegistry);
-    auditLogsArchived =
-        Counter.builder(meterName("archiver.standalone.audit-logs"))
-            .tag("state", "archived")
-            .description("Count of standalone audit logs, that have been archived.")
-            .register(meterRegistry);
-    auditLogsArchiving =
-        Counter.builder(meterName("archiver.standalone.audit-logs"))
-            .tag("state", "archiving")
-            .description(
-                "Count of completed standalone audit logs that have been found, and are now in progress of archiving.")
-            .register(meterRegistry);
 
     TimeGauge.builder(
             meterName("since.last.flush.seconds"), this::secondSinceLastFlush, TimeUnit.SECONDS)
@@ -287,12 +137,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
         .register(meterRegistry);
   }
 
-  public CloseableSilently measureFlushDuration() {
-    return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
+  public void measureProcessInstancesAwaitingArchivalDuration(final Timer.Sample sample) {
+    sample.stop(processInstancesAwaitingArchivalTimer);
   }
 
-  public void measureArchiverSearch(final Timer.Sample sample) {
-    sample.stop(archiverSearchTimer);
+  public CloseableSilently measureFlushDuration() {
+    return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
   }
 
   public void recordBulkSize(final int bulkSize) {
@@ -315,62 +165,6 @@ public class CamundaExporterMetrics implements AutoCloseable {
     if (flushLatencyMeasurement != null) {
       flushLatencyMeasurement.stop(flushLatency);
     }
-  }
-
-  public void recordProcessInstancesArchived(final int count) {
-    processInstancesArchived.increment(count);
-  }
-
-  public void recordProcessInstancesArchiving(final int count) {
-    processInstancesArchiving.increment(count);
-  }
-
-  public void recordBatchOperationsArchived(final int count) {
-    batchOperationsArchived.increment(count);
-  }
-
-  public void recordBatchOperationsArchiving(final int count) {
-    batchOperationsArchiving.increment(count);
-  }
-
-  public void recordUsageMetricsArchived(final int count) {
-    usageMetricsArchived.increment(count);
-  }
-
-  public void recordUsageMetricsArchiving(final int count) {
-    usageMetricsArchiving.increment(count);
-  }
-
-  public void recordUsageMetricsTUArchived(final int count) {
-    usageMetricsTUArchived.increment(count);
-  }
-
-  public void recordUsageMetricsTUArchiving(final int count) {
-    usageMetricsTUArchiving.increment(count);
-  }
-
-  public void recordStandaloneDecisionsArchived(final int count) {
-    standaloneDecisionsArchived.increment(count);
-  }
-
-  public void recordStandaloneDecisionsArchiving(final int count) {
-    standaloneDecisionsArchiving.increment(count);
-  }
-
-  public void recordAuditLogsArchived(final int count) {
-    auditLogsArchived.increment(count);
-  }
-
-  public void recordAuditLogsArchiving(final int count) {
-    auditLogsArchiving.increment(count);
-  }
-
-  public void recordJobBatchMetricsArchived(final int count) {
-    jobBatchMetricsArchived.increment(count);
-  }
-
-  public void recordJobBatchMetricsArchiving(final int count) {
-    jobBatchMetricsArchiving.increment(count);
   }
 
   public void recordIncidentUpdatesRetriesNeeded(final int count) {
@@ -418,48 +212,28 @@ public class CamundaExporterMetrics implements AutoCloseable {
     return NAMESPACE + "." + name;
   }
 
-  public void measureArchiverDelete(final Long docsDeleted, final Sample timer) {
-    if (docsDeleted != null) {
-      archiverDeletedDocs.increment(docsDeleted);
-    }
-    timer.stop(archiverDeleteTimer);
-  }
-
-  public void measureArchiverReindex(final Long docsReindexed, final Sample timer) {
-    if (docsReindexed != null) {
-      archiverReindexedDocs.increment(docsReindexed);
-    }
-    timer.stop(archiverReindexTimer);
-  }
-
-  public void measureArchivingDuration(final Sample timer) {
-    timer.stop(archivingDuration);
+  public CamundaArchiverMetrics getArchiverMetrics() {
+    return archiverMetrics;
   }
 
   @Override
   public void close() {
+    // cleanup archiver metrics
+    archiverMetrics.close();
+
     // clean up all registered meters
+    meterRegistry.remove(processInstancesAwaitingArchivalTimer);
     meterRegistry.remove(flushLatency);
-    meterRegistry.remove(processInstancesArchived);
-    meterRegistry.remove(processInstancesArchiving);
-    meterRegistry.remove(batchOperationsArchived);
-    meterRegistry.remove(batchOperationsArchiving);
-    meterRegistry.remove(archiverSearchTimer);
-    meterRegistry.remove(archiverDeleteTimer);
-    meterRegistry.remove(archiverDeletedDocs);
-    meterRegistry.remove(archiverReindexTimer);
-    meterRegistry.remove(archiverReindexedDocs);
-    meterRegistry.remove(archivingDuration);
+
+    meterRegistry.remove(incidentUpdatesRetriesNeeded);
+    meterRegistry.remove(incidentUpdatesProcessed);
+    meterRegistry.remove(incidentUpdatesDocumentsUpdated);
+
     meterRegistry.remove(bulkSize);
     meterRegistry.remove(bulkOperations);
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
-    meterRegistry.remove(incidentUpdatesRetriesNeeded);
-    meterRegistry.remove(incidentUpdatesProcessed);
-    meterRegistry.remove(incidentUpdatesDocumentsUpdated);
-    meterRegistry.remove(jobBatchMetricsArchiving);
-    meterRegistry.remove(jobBatchMetricsArchived);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));

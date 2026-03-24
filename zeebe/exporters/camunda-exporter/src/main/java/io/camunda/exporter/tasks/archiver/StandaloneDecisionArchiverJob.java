@@ -7,7 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -28,17 +29,11 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch
   public StandaloneDecisionArchiverJob(
       final ArchiverRepository repository,
       final DecisionInstanceTemplate decisionInstanceTemplate,
-      final CamundaExporterMetrics metrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger,
       final Executor executor,
       final List<DecisionInstanceDependant> decisionInstanceDependants) {
-    super(
-        repository,
-        metrics,
-        logger,
-        executor,
-        metrics::recordStandaloneDecisionsArchiving,
-        metrics::recordStandaloneDecisionsArchived);
+    super(repository, archiverMetrics, logger, executor);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
     this.decisionInstanceDependants =
         decisionInstanceDependants.stream()
@@ -53,8 +48,8 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch
   }
 
   @Override
-  CompletableFuture<BasicArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getStandaloneDecisionNextBatch();
+  CompletableFuture<BasicArchiveBatch> getNextBatch(final ArchiverJobMetrics archiverJobMetrics) {
+    return getArchiverRepository().getStandaloneDecisionNextBatch(archiverJobMetrics);
   }
 
   @Override

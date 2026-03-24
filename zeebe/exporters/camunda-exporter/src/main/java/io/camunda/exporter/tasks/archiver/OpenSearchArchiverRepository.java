@@ -16,7 +16,7 @@ import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -80,7 +81,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final IndexTemplateDescriptor jobMetricsBatchTemplateDescriptor;
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
-  private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
   private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
@@ -92,7 +92,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final OpenSearchGenericClient genericClient,
       final Executor executor,
-      final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
     this.partitionId = partitionId;
@@ -110,7 +109,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class);
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
-    this.metrics = metrics;
     this.genericClient = genericClient;
     lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
   }
@@ -138,103 +136,103 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
-    final var request = createFinishedProcessInstancesSearchRequest();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            (response) ->
-                createProcessInstanceBatch(
-                    response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
-            executor);
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
+    final var searchRequest = createFinishedProcessInstancesSearchRequest();
+    return searchDocuments(
+        archiverJobMetrics,
+        searchRequest,
+        ProcessInstanceForListViewEntity.class,
+        listViewTemplateDescriptor,
+        response ->
+            createProcessInstanceBatch(
+                response, ListViewTemplate.END_DATE, listViewTemplateDescriptor));
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     final var searchRequest = createFinishedBatchOperationsSearchRequest();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            (response) ->
-                createBasicBatch(
-                    response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
-            executor);
+    return searchDocuments(
+        archiverJobMetrics,
+        searchRequest,
+        Object.class,
+        batchOperationTemplateDescriptor,
+        response ->
+            createBasicBatch(
+                response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor));
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     final var searchRequest =
         createUsageMetricSearchRequest(
             usageMetricTUTemplateDescriptor.getFullQualifiedName(),
             UsageMetricTUTemplate.END_TIME,
             UsageMetricTUTemplate.PARTITION_ID);
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createBasicBatch(
-                    response,
-                    UsageMetricTUTemplate.END_TIME,
-                    usageMetricTUTemplateDescriptor,
-                    config.getUsageMetricsRolloverInterval()),
-            executor);
+    return searchDocuments(
+        archiverJobMetrics,
+        searchRequest,
+        Object.class,
+        usageMetricTUTemplateDescriptor,
+        response ->
+            createBasicBatch(
+                response,
+                UsageMetricTUTemplate.END_TIME,
+                usageMetricTUTemplateDescriptor,
+                config.getUsageMetricsRolloverInterval()));
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     final var searchRequest =
         createUsageMetricSearchRequest(
             usageMetricTemplateDescriptor.getFullQualifiedName(),
             UsageMetricTemplate.END_TIME,
             UsageMetricTemplate.PARTITION_ID);
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createBasicBatch(
-                    response,
-                    UsageMetricTemplate.END_TIME,
-                    usageMetricTemplateDescriptor,
-                    config.getUsageMetricsRolloverInterval()),
-            executor);
+    return searchDocuments(
+        archiverJobMetrics,
+        searchRequest,
+        Object.class,
+        usageMetricTemplateDescriptor,
+        response ->
+            createBasicBatch(
+                response,
+                UsageMetricTemplate.END_TIME,
+                usageMetricTemplateDescriptor,
+                config.getUsageMetricsRolloverInterval()));
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     final var searchRequest = createJobBatchMetricsSearchRequest();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createBasicBatch(
-                    response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
-            executor);
+    return searchDocuments(
+        archiverJobMetrics,
+        searchRequest,
+        Object.class,
+        jobMetricsBatchTemplateDescriptor,
+        response ->
+            createBasicBatch(
+                response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor));
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     final var searchRequest = createStandaloneDecisionSearchRequest();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createBasicBatch(
-                    response,
-                    DecisionInstanceTemplate.EVALUATION_DATE,
-                    decisionInstanceTemplateDescriptor),
-            executor);
+    return searchDocuments(
+        archiverJobMetrics,
+        searchRequest,
+        Object.class,
+        decisionInstanceTemplateDescriptor,
+        response ->
+            createBasicBatch(
+                response,
+                DecisionInstanceTemplate.EVALUATION_DATE,
+                decisionInstanceTemplateDescriptor));
   }
 
   @Override
@@ -287,15 +285,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    return deleteDocuments(sourceIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final Map<String, String> filters,
+      final ArchiverJobMetrics archiverJobMetrics) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -311,8 +304,18 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.deleteByQuery(request))
         .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
+            (response, error) -> {
+              archiverJobMetrics.measureArchiverDeleteDuration(timer);
+
+              if (error != null) {
+                archiverJobMetrics.measureArchiverDeleteFailure(
+                    sourceIndexName, timer, null, error);
+              } else {
+                // if successful, no reason for response to be null
+                archiverJobMetrics.measureArchiverDeleteSuccess(
+                    sourceIndexName, timer, response != null ? response.deleted() : null);
+              }
+            },
             executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
@@ -322,16 +325,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   public CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final Map<String, String> filters,
+      final ArchiverJobMetrics archiverJobMetrics) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -348,8 +344,17 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
+            (response, error) -> {
+              archiverJobMetrics.measureArchiverReindexDuration(timer);
+
+              if (error != null) {
+                archiverJobMetrics.measureArchiverCopyFailure(sourceIndexName, timer, null, error);
+              } else {
+                // if successful, no reason for response to be null
+                archiverJobMetrics.measureArchiverCopySuccess(
+                    sourceIndexName, timer, response != null ? response.total() : null);
+              }
+            },
             executor)
         .thenApplyAsync(ignored -> null, executor);
   }
@@ -369,6 +374,34 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  private <BatchType, EntityType> CompletableFuture<BatchType> searchDocuments(
+      final ArchiverJobMetrics archiverJobMetrics,
+      final SearchRequest searchRequest,
+      final Class<EntityType> responseEntityType,
+      final IndexTemplateDescriptor templateDescriptor,
+      final Function<SearchResponse<EntityType>, CompletableFuture<BatchType>> responseComposer) {
+    final var timer = Timer.start();
+
+    return sendRequestAsync(() -> client.search(searchRequest, responseEntityType))
+        .whenCompleteAsync(
+            (response, error) -> {
+              archiverJobMetrics.measureArchiverRequestSearchDuration(timer);
+
+              if (error != null) {
+                archiverJobMetrics.measureArchiverReadFailure(
+                    templateDescriptor.getFullQualifiedName(), timer, null, error);
+              } else {
+                // if successful, no reason for response to be null
+                archiverJobMetrics.measureArchiverReadSuccess(
+                    templateDescriptor.getFullQualifiedName(),
+                    timer,
+                    response != null ? (long) response.hits().hits().size() : null);
+              }
+            },
+            executor)
+        .thenComposeAsync(responseComposer::apply, executor);
   }
 
   private SearchRequest createUsageMetricSearchRequest(

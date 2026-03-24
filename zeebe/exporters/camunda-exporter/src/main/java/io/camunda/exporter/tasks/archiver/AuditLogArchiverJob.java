@@ -8,7 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -28,17 +29,11 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
       final AuditLogArchiverRepository repository,
       final ArchiverRepository archiverRepository,
       final AuditLogTemplate auditLogTemplate,
-      final CamundaExporterMetrics exporterMetrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final HistoryConfiguration historyConfig,
       final Logger logger,
       final Executor executor) {
-    super(
-        archiverRepository,
-        exporterMetrics,
-        logger,
-        executor,
-        exporterMetrics::recordAuditLogsArchiving,
-        exporterMetrics::recordAuditLogsArchived);
+    super(archiverRepository, archiverMetrics, logger, executor);
     this.repository = repository;
     this.auditLogTemplate = auditLogTemplate;
     this.historyConfig = historyConfig;
@@ -50,8 +45,9 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
   }
 
   @Override
-  CompletableFuture<AuditLogCleanupBatch> getNextBatch() {
-    return repository.getNextBatch();
+  CompletableFuture<AuditLogCleanupBatch> getNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
+    return repository.getNextBatch(archiverJobMetrics);
   }
 
   @Override
@@ -96,6 +92,6 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
     if (batch.auditLogCleanupIds().isEmpty()) {
       return CompletableFuture.completedFuture(0);
     }
-    return repository.deleteAuditLogCleanupMetadata(batch);
+    return repository.deleteAuditLogCleanupMetadata(batch, getArchiverJobMetrics());
   }
 }

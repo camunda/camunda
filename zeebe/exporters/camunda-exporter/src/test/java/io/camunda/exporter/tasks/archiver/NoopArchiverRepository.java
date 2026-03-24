@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import java.util.List;
 import java.util.Map;
@@ -15,37 +16,43 @@ import java.util.concurrent.CompletableFuture;
 public class NoopArchiverRepository implements ArchiverRepository {
 
   @Override
-  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getBatchOperationsNextBatch() {
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getBatchOperationsNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getUsageMetricTUNextBatch() {
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getUsageMetricTUNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getUsageMetricNextBatch() {
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getUsageMetricNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getJobBatchMetricsNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getStandaloneDecisionNextBatch() {
+  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getStandaloneDecisionNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
   }
@@ -62,23 +69,10 @@ public class NoopArchiverRepository implements ArchiverRepository {
 
   @Override
   public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField) {
+      final Map<String, String> filters,
+      final ArchiverJobMetrics archiveMetrics) {
     return CompletableFuture.completedFuture(null);
   }
 
@@ -87,7 +81,8 @@ public class NoopArchiverRepository implements ArchiverRepository {
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final Map<String, String> filters,
+      final ArchiverJobMetrics archiveMetrics) {
     return CompletableFuture.completedFuture(null);
   }
 

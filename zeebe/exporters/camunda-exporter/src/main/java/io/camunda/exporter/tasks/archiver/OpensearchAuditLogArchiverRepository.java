@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -16,6 +17,7 @@ import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.time.InstantSource;
 import java.time.LocalDate;
@@ -61,9 +63,11 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<AuditLogCleanupBatch> getNextBatch() {
+  public CompletableFuture<AuditLogCleanupBatch> getNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
     final var searchRequest = createAuditLogCleanupEntitiesSearchRequest();
 
+    final var timer = Timer.start();
     return sendRequestAsync(
         () ->
             client
@@ -84,6 +88,27 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
                                   .search(
                                       createAuditLogEntitiesSearchRequest(cleanupEntities),
                                       Object.class)
+                                  .whenCompleteAsync(
+                                      (response, error) -> {
+                                        archiverJobMetrics.measureArchiverRequestSearchDuration(
+                                            timer);
+
+                                        if (error != null) {
+                                          archiverJobMetrics.measureArchiverReadFailure(
+                                              auditLogCleanupIndex.getFullQualifiedName(),
+                                              timer,
+                                              null,
+                                              error);
+                                        } else {
+                                          // if successful, no reason for response to be null
+                                          archiverJobMetrics.measureArchiverReadSuccess(
+                                              auditLogCleanupIndex.getFullQualifiedName(),
+                                              timer,
+                                              response != null
+                                                  ? (long) response.hits().hits().size()
+                                                  : null);
+                                        }
+                                      })
                                   .thenComposeAsync(
                                       auditLogResponse -> {
                                         final var finishDate =
@@ -108,7 +133,7 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
-      final AuditLogCleanupBatch batch) {
+      final AuditLogCleanupBatch batch, final ArchiverJobMetrics archiverJobMetrics) {
     final var bulkRequestBuilder = new BulkRequest.Builder();
     final var sourceIndexName = auditLogCleanupIndex.getFullQualifiedName();
     final var ids = batch.auditLogCleanupIds();
@@ -116,10 +141,27 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
     ids.forEach(
         id -> bulkRequestBuilder.operations(op -> op.delete(d -> d.index(sourceIndexName).id(id))));
 
+    final var timer = Timer.start();
     return sendRequestAsync(
         () ->
             client
                 .bulk(bulkRequestBuilder.build())
+                .whenCompleteAsync(
+                    (response, error) -> {
+                      archiverJobMetrics.measureArchiverDeleteDuration(timer);
+
+                      if (error != null) {
+                        archiverJobMetrics.measureArchiverDeleteFailure(
+                            sourceIndexName, timer, null, error);
+                      } else {
+                        // if successful, no reason for response to be null
+                        archiverJobMetrics.measureArchiverDeleteSuccess(
+                            sourceIndexName,
+                            timer,
+                            response != null ? (long) response.items().size() : null);
+                      }
+                    },
+                    executor)
                 .thenComposeAsync(
                     response -> {
                       if (response.errors()) {

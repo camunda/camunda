@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -16,6 +17,7 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
@@ -57,6 +59,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
 
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final HistoryConfiguration config = new HistoryConfiguration();
+  private final ArchiverJobMetrics archiverJobMetrics = mock(ArchiverJobMetrics.class);
   private String auditLogIndex;
   private String auditLogCleanupIndex;
   private TestExporterResourceProvider resourceProvider;
@@ -88,7 +91,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     final var repository = createRepository();
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -117,7 +120,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -153,7 +156,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -194,7 +197,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -228,7 +231,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -270,7 +273,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -307,7 +310,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -343,7 +346,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
             "2026-02-19", List.of("cleanup-1", "cleanup-2"), List.of());
 
     // when
-    final var result = repository.deleteAuditLogCleanupMetadata(batch);
+    final var result = repository.deleteAuditLogCleanupMetadata(batch, archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -389,7 +392,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(auditLogCleanupIndex, auditLogIndex));
 
     // when
-    final var result = repository.getNextBatch();
+    final var result = repository.getNextBatch(archiverJobMetrics);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));

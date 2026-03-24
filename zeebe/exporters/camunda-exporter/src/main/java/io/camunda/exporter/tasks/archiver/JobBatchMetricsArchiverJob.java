@@ -7,7 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.metrics.ArchiverJobMetrics;
+import io.camunda.exporter.metrics.CamundaArchiverMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
@@ -24,16 +25,10 @@ public class JobBatchMetricsArchiverJob extends ArchiverJob<BasicArchiveBatch> {
   public JobBatchMetricsArchiverJob(
       final ArchiverRepository repository,
       final JobMetricsBatchTemplate jobMetricsBatchTemplate,
-      final CamundaExporterMetrics exporterMetrics,
+      final CamundaArchiverMetrics archiverMetrics,
       final Logger logger,
       final Executor executor) {
-    super(
-        repository,
-        exporterMetrics,
-        logger,
-        executor,
-        exporterMetrics::recordJobBatchMetricsArchiving,
-        exporterMetrics::recordJobBatchMetricsArchived);
+    super(repository, archiverMetrics, logger, executor);
     this.jobMetricsBatchTemplate = jobMetricsBatchTemplate;
   }
 
@@ -43,8 +38,9 @@ public class JobBatchMetricsArchiverJob extends ArchiverJob<BasicArchiveBatch> {
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getJobBatchMetricsNextBatch();
+  public CompletableFuture<BasicArchiveBatch> getNextBatch(
+      final ArchiverJobMetrics archiverJobMetrics) {
+    return getArchiverRepository().getJobBatchMetricsNextBatch(archiverJobMetrics);
   }
 
   @Override
