@@ -334,7 +334,7 @@ public class ElementInstanceSearchIT {
     final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then
-    assertThat(result).isNotNull().isEqualTo(elementInstance);
+    assertThat(result).isEqualTo(elementInstance);
   }
 
   @Test

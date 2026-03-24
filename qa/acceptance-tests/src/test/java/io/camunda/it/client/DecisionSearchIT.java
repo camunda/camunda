@@ -567,9 +567,16 @@ class DecisionSearchIT {
             .send()
             .join();
 
-    // then
+    // then - assert all fields
     assertThat(result.getDecisionRequirementsKey())
         .isEqualTo(exampleDecisionRequirements.getDecisionRequirementsKey());
+    assertThat(result.getDmnDecisionRequirementsId())
+        .isEqualTo(exampleDecisionRequirements.getDmnDecisionRequirementsId());
+    assertThat(result.getDmnDecisionRequirementsName())
+        .isEqualTo(exampleDecisionRequirements.getDmnDecisionRequirementsName());
+    assertThat(result.getVersion()).isEqualTo(exampleDecisionRequirements.getVersion());
+    assertThat(result.getResourceName()).isEqualTo(exampleDecisionRequirements.getResourceName());
+    assertThat(result.getTenantId()).isEqualTo(exampleDecisionRequirements.getTenantId());
   }
 
   @Test
