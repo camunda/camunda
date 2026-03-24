@@ -7,10 +7,13 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
+import static io.camunda.operate.entities.dmn.DecisionInstanceState.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionType;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
@@ -18,9 +21,6 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
-import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
   private static final String DECISION_RESULT = "\"standalone result\"";
+  private static final String DEFAULT_TENANT_ID = "<default>";
   private final String evaluationDate = "2024-02-15T22:40:10.834+0000";
 
   @Autowired private DecisionInstanceDao dao;
@@ -49,7 +50,7 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
         new DecisionInstanceEntity()
             .setId("9999999999999999-1")
             .setKey(9999999999999999L)
-            .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
+            .setState(EVALUATED)
             .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(evaluationDate))
             .setProcessDefinitionKey(-1) // -1 for standalone decisions
             .setProcessInstanceKey(-1) // -1 for standalone decisions
@@ -67,7 +68,7 @@ public class StandaloneDecisionInstanceDaoIT extends OperateSearchAbstractIT {
         new DecisionInstanceEntity()
             .setId("9999999999999997-1")
             .setKey(9999999999999997L)
-            .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
+            .setState(EVALUATED)
             .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(evaluationDate))
             .setProcessDefinitionKey(-1L)
             .setProcessInstanceKey(-1L)
