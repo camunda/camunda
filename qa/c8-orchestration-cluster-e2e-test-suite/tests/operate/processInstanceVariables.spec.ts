@@ -90,7 +90,7 @@ test.describe('Process Instance Variables', () => {
     });
   });
 
-  test.skip('Add variables', async ({
+  test('Add variables', async ({
     page,
     operateProcessInstancePage,
     operateHomePage,
