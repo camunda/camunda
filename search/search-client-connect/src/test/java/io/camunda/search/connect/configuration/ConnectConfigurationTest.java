@@ -87,4 +87,31 @@ public class ConnectConfigurationTest {
     assertThat(result).contains("password='*****'");
     assertThat(result).doesNotContain("proxysecret");
   }
+
+  @Test
+  public void shouldMaskEmbeddedCredentialsInUrlInToString() {
+    // given
+    final var config = new ConnectConfiguration();
+    config.setUrl("http://user:secret@localhost:9200");
+
+    // when
+    final String result = config.toString();
+
+    // then
+    assertThat(result).doesNotContain("secret");
+    assertThat(result).contains("url='http://*****@localhost:9200'");
+  }
+
+  @Test
+  public void shouldNotAlterUrlWithoutCredentialsInToString() {
+    // given
+    final var config = new ConnectConfiguration();
+    config.setUrl("http://localhost:9200");
+
+    // when
+    final String result = config.toString();
+
+    // then
+    assertThat(result).contains("url='http://localhost:9200'");
+  }
 }

@@ -8,8 +8,10 @@
 package io.camunda.search.connect.configuration;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ConnectConfiguration {
 
@@ -180,10 +182,10 @@ public class ConnectConfiguration {
         + ", connectTimeout="
         + connectTimeout
         + ", url='"
-        + url
+        + sanitizeUrl(url)
         + '\''
         + ", urls="
-        + urls
+        + urls.stream().map(ConnectConfiguration::sanitizeUrl).collect(Collectors.toList())
         + ", username='"
         + username
         + '\''
@@ -202,5 +204,22 @@ public class ConnectConfiguration {
         + ", proxy="
         + proxy
         + '}';
+  }
+
+  private static String sanitizeUrl(final String url) {
+    if (url == null) {
+      return null;
+    }
+    try {
+      final var uri = URI.create(url);
+      if (uri.getUserInfo() != null) {
+        return new URI(
+                uri.getScheme(), "*****", uri.getHost(), uri.getPort(), uri.getPath(), null, null)
+            .toString();
+      }
+    } catch (final Exception ignored) {
+      // not a valid URI — return as-is
+    }
+    return url;
   }
 }
