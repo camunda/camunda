@@ -22,7 +22,7 @@ public class RocksDbSharedCache {
   public static final double ADVICE_MAX_MEMORY_FRACTION = 0.5;
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbSharedCache.class);
 
-  public static SharedRocksDbResources allocateSharedCache(
+  public static long getSharedCacheSize(
       final BrokerCfg brokerCfg, final MeterRegistry meterRegistry, final int partitionsPerBroker) {
     final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
     final long rocksDbMemoryLimit = getMemoryLimitBytes(rocksdbCfg, partitionsPerBroker);
@@ -45,6 +45,8 @@ public class RocksDbSharedCache {
         totalMemorySize,
         totalMemorySize / (1024 * 1024),
         partitionsPerBroker);
+
+    RocksDbSharedCacheMetrics.registerAllocationStrategy(meterRegistry, memoryAllocationStrategy);
 
     return rocksDbResources;
   }
