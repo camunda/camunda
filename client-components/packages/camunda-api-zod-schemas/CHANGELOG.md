@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.55
+
+### 🚀 Enhancements
+
+- Copy 8.9 defs into 8.10 ([#49454](https://github.com/camunda/camunda/issues/49454))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.54
 
 ### 🚀 Enhancements
