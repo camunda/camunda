@@ -38,7 +38,7 @@ class JudgeAssertj {
    *
    * @param modifier function that transforms the current config
    */
-  void withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
+  public void withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
     if (modifier == null) {
       throw new IllegalArgumentException("modifier must not be null");
     }
