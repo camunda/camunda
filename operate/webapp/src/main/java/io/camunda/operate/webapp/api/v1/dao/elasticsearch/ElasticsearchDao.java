@@ -140,4 +140,14 @@ public abstract class ElasticsearchDao<T> {
     }
     return null;
   }
+
+  protected Long getLong(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Number) {
+      return ((Number) value).longValue();
+    }
+    throw new NumberFormatException(String.format("Value %s cannot be converted to Long", value));
+  }
 }
