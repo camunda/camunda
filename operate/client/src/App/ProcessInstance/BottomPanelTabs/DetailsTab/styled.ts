@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Callout as BaseCallout} from '@carbon/react';
 import styled from 'styled-components';
 
 const EmptyMessageContainer = styled.div`
@@ -22,4 +23,8 @@ const Container = styled.div`
   padding-inline: var(--cds-spacing-05);
 `;
 
-export {EmptyMessageContainer, Container};
+const Callout = styled(BaseCallout)`
+  min-width: 100%;
+`;
+
+export {EmptyMessageContainer, Container, Callout};

@@ -8,7 +8,7 @@
 
 import {useMemo} from 'react';
 import {Navigate, useLocation} from 'react-router-dom';
-import {Callout, StructuredListSkeleton} from '@carbon/react';
+import {StructuredListSkeleton} from '@carbon/react';
 import {Link} from 'modules/components/Link';
 import {Paths, Locations} from 'modules/Routes';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
@@ -19,7 +19,7 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {getExecutionDuration} from './getExecutionDuration';
-import {EmptyMessageContainer, Container} from './styled';
+import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
