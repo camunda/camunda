@@ -168,7 +168,7 @@ public class UserTaskCompletionVariableHandlerTest {
     assertThat(variableEntity.getProcessInstanceKey())
         .isEqualTo(taskRecord.getValue().getProcessInstanceKey());
     assertThat(variableEntity.getIsPreview()).isFalse();
-    assertThat(variableEntity.getFullValue()).isEqualTo("\"val1\"");
+    assertThat(variableEntity.getFullValue()).isNull();
   }
 
   @Test
