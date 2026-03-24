@@ -118,13 +118,14 @@ public final class ProcessInstanceCreationCreateProcessor
 
     // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
     // space.
-    final var variablesBuffer = BufferUtil.cloneBuffer(record.getVariablesBuffer());
+    final var variablesBuffer =
+        command.hasRequestMetadata() ? BufferUtil.cloneBuffer(record.getVariablesBuffer()) : null;
     record.setVariables(DocumentValue.EMPTY_DOCUMENT);
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
 
-    record.setVariables(variablesBuffer);
     if (command.hasRequestMetadata()) {
+      record.setVariables(variablesBuffer);
       responseWriter.writeEventOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }

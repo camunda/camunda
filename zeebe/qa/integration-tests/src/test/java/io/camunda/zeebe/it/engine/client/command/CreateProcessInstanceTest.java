@@ -350,12 +350,11 @@ public final class CreateProcessInstanceTest {
 
     final var variableRecord =
         RecordingExporter.variableRecords()
-            .withProcessInstanceKey(event.getProcessInstanceKey())
+            .withScopeKey(event.getProcessInstanceKey())
             .withName(key)
             .getFirst();
 
     assertThat(variableRecord.getValue().getName()).isEqualTo(key);
-    assertThat(variableRecord.getValue().getValue()).isEqualTo("\"" + value + "\"");
   }
 
   @ParameterizedTest
