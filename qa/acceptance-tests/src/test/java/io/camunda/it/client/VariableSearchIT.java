@@ -326,7 +326,7 @@ class VariableSearchIT {
     final var result = camundaClient.newVariableGetRequest(variable.getVariableKey()).send().join();
 
     // then
-    assertThat(result).isEqualTo(variable);
+    assertThat(result).usingRecursiveComparison().isEqualTo(variable);
   }
 
   @Test
