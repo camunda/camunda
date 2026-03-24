@@ -202,7 +202,9 @@ class OperateProcessInstancePage {
         name: /process instance/i,
       });
     this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
-    this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
+    this.modifyInstanceButton = this.instanceHeader.getByRole('button', {
+      name: /modify instance/i,
+    });
     this.modifyDialog = this.page.getByLabel(
       'Process Instance Modification Mode',
     );
