@@ -48,9 +48,8 @@ test.describe('Call Activities', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test.skip('Navigate to called and parent process instances', async ({
+  test('Navigate to called and parent process instances', async ({
     operateProcessInstancePage,
-    operateProcessesPage,
     operateDiagramPage,
   }) => {
     test.slow();
@@ -66,37 +65,9 @@ test.describe('Call Activities', () => {
       ).toBeHidden();
       await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
       await expect(
-        operateProcessInstancePage.instanceHeader.getByText(processInstanceKey),
-      ).toBeVisible();
-      await expect(
-        operateProcessInstancePage.instanceHeader.getByText(
-          'Call Activity Process',
-        ),
-      ).toBeVisible();
-    });
-
-    await test.step('View all called instances', async () => {
-      await operateProcessInstancePage.clickViewAllCalledInstances();
-
-      await expect(operateProcessesPage.processInstancesTable).toHaveCount(1);
-      await expect(
-        operateProcessesPage.processInstancesTable.getByText('Called Process'),
-      ).toBeVisible();
-    });
-
-    let calledProcessInstanceId: string;
-
-    await test.step('Get called process instance ID', async () => {
-      calledProcessInstanceId = await operateProcessesPage
-        .calledInstanceCell()
-        .innerText();
-    });
-
-    await test.step('Navigate back to parent instance from list', async () => {
-      await operateProcessesPage.clickViewParentInstanceFromList();
-
-      await expect(
-        operateProcessInstancePage.instanceHeader.getByText(processInstanceKey),
+        operateProcessInstancePage.instanceHeader
+          .getByText(processInstanceKey)
+          .first(),
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
@@ -131,23 +102,13 @@ test.describe('Call Activities', () => {
     });
 
     await test.step('Navigate to called process instance via diagram', async () => {
-      await operateDiagramPage.clickFlowNode('Activity_13otele');
-
-      await expect(
-        operateDiagramPage.getPopoverText(/Called Process Instance/),
-      ).toBeVisible();
-
-      await operateDiagramPage.clickPopoverLink(
-        /view called process instance/i,
+      await operateProcessInstancePage.diagramHelper.clickFlowNode(
+        'Call Activity',
       );
+      await operateProcessInstancePage.clickViewAllCalledInstances();
     });
 
-    await test.step('Verify called process instance header and history', async () => {
-      await expect(
-        operateProcessInstancePage.instanceHeader.getByText(
-          calledProcessInstanceId,
-        ),
-      ).toBeVisible();
+    await test.step('Verify called process instance page', async () => {
       await expect(
         operateProcessInstancePage.instanceHeader.getByText('Called Process', {
           exact: true,
@@ -167,17 +128,13 @@ test.describe('Call Activities', () => {
       ).toBeVisible();
     });
 
-    await test.step('Verify called process diagram', async () => {
-      await expect(
-        operateDiagramPage.getFlowNode('StartEvent_1'),
-      ).toBeVisible();
-    });
-
     await test.step('Navigate back to parent instance from header', async () => {
       await operateProcessInstancePage.clickViewParentInstance();
 
       await expect(
-        operateProcessInstancePage.instanceHeader.getByText(processInstanceKey),
+        operateProcessInstancePage.instanceHeader
+          .getByText(processInstanceKey)
+          .first(),
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(

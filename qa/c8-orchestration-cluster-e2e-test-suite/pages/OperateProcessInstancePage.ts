@@ -278,11 +278,12 @@ class OperateProcessInstancePage {
     });
     this.instanceHeaderSkeleton = page.getByTestId('instance-header-skeleton');
     this.viewAllCalledInstancesLink = page.getByRole('link', {
-      name: /view all called instances/i,
+      name: /View Called Process instance \d+/i,
     });
-    this.viewParentInstanceLink = page.getByRole('link', {
-      name: /view parent instance/i,
-    });
+    this.viewParentInstanceLink = page
+      .getByLabel('Breadcrumb')
+      .locator('.cds--breadcrumb-item:not(.cds--breadcrumb-item--current)')
+      .getByRole('link');
     this.executionCountToggle = this.page.locator('#toggle-execution-count');
     this.executionCountToggleLabel = this.page.locator(
       '#toggle-execution-count_label',
@@ -297,9 +298,6 @@ class OperateProcessInstancePage {
         .getByTestId(`variable-${name}`)
         .getByRole('cell')
         .nth(2);
-    this.incidentIconsInHistory = this.instanceHistory
-      .getByRole('treeitem')
-      .getByTestId('INCIDENT-icon');
 
     this.existingVariableByName = (name: string) => ({
       name: this.variablesList
@@ -800,6 +798,7 @@ class OperateProcessInstancePage {
   }
 
   async clickViewAllCalledInstances(): Promise<void> {
+    await this.clickDetailsTab();
     await this.viewAllCalledInstancesLink.click();
   }
 
@@ -935,9 +934,8 @@ class OperateProcessInstancePage {
   }
 
   /**
-   *
-   * @param itemName
-   * @param expectedStatus array of icons in expected order in history, can be 'COMPLETED', 'ACTIVE', 'TERMINATED', 'INCIDENT'
+   * @param itemName - The name of the history item to verify
+   * @param expectedStatus - Array of icons in expected order in history, can be 'COMPLETED', 'ACTIVE', 'TERMINATED', 'INCIDENT'
    */
   async verifyHistoryItemsStatus(
     itemName: string,
