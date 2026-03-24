@@ -129,8 +129,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
-  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
-    final var searchRequest = createFinishedInstancesSearchRequest();
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final int size) {
+    final var searchRequest = createFinishedInstancesSearchRequest(size);
 
     final var timer = Timer.start();
     return client
@@ -423,10 +424,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenApplyAsync(response -> new ArrayList<>(response.result().keySet()), executor);
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest() {
+  private SearchRequest createFinishedInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        size,
         ListViewTemplate.END_DATE,
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
   }
@@ -684,6 +686,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Query filterQuery,
       final String sortField,
       final String... extraFields) {
+    return createSearchRequest(
+        indexName, filterQuery, config.getRolloverBatchSize(), sortField, extraFields);
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName,
+      final Query filterQuery,
+      final int size,
+      final String sortField,
+      final String... extraFields) {
     logger.trace(
         "Create search request against index '{}', with filter '{}' and sortField '{}'",
         indexName,
@@ -703,7 +715,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
-        .size(config.getRolloverBatchSize())
+        .size(size)
         .build();
   }
 }
