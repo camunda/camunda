@@ -10,8 +10,9 @@ on:
     branches:
       - collect-stale-backport-prs  # TEMPORARY — remove before merging
   schedule:
-    # Run daily at 6 AM UTC (after check-outdated-prs at 4 AM)
-    - cron: '0 6 * * *'
+    # Run every 4 hours during weekday business hours (UTC): 6, 10, 14, 18
+    # First run at 6 AM creates a new message; subsequent runs update it in-place.
+    - cron: '0 6-18/4 * * 1-5'
   workflow_dispatch:
     inputs:
       target_branch:
@@ -179,6 +180,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Get Slack secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+             secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+
+      - name: Resolve Slack user IDs
+        id: slack-users
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+        run: |
+          chmod +x .ci/scripts/stale-backport-scripts/resolve-slack-users.sh
+
+          # Extract unique author names from stale data
+          names=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
+            jq '[.[].original_pr_author_name // empty] | unique')
+
+          # Resolve names to Slack user IDs
+          slack_user_map=$(echo "$names" | .ci/scripts/stale-backport-scripts/resolve-slack-users.sh)
+
+          {
+            echo "slack_user_map<<SLACK_MAP_EOF"
+            echo "$slack_user_map"
+            echo "SLACK_MAP_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Format Slack report
         id: format
         env:
@@ -186,6 +219,7 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           TARGET_BRANCH: ${{ inputs.target_branch || '' }}
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
+          SLACK_USER_MAP: ${{ steps.slack-users.outputs.slack_user_map }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
           payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
@@ -197,35 +231,70 @@ jobs:
             echo "PAYLOAD_EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Get Slack webhook from Vault
-        id: secrets
-        if: inputs.slack_webhook_url == ''
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |          
-             secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+      - name: Find existing Slack message to update
+        id: find-message
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: "C0AN1P08K6K"  # TEMPORARY — replace with channel ID before merging
+        run: |
+          # Look for the bot's most recent "Stale Backport PRs" message in the channel (last 24h)
+          oldest=$(date -u -d '24 hours ago' +%s 2>/dev/null || date -u -v-24H +%s)
+          response=$(curl -s \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            "https://slack.com/api/conversations.history?channel=${SLACK_CHANNEL}&oldest=${oldest}&limit=50")
 
-      # - name: Send Slack notification
-      #   uses: slackapi/slack-github-action@v3.0.1 # v3.0.0
+          # Debug: show API status
+          echo "API ok: $(echo "$response" | jq -r '.ok')" >&2
+          echo "API error: $(echo "$response" | jq -r '.error // "none"')" >&2
+          echo "Messages count: $(echo "$response" | jq '[(.messages // [])] | length')" >&2
+
+          # Find the most recent message from this bot containing our marker text
+          message_ts=$(echo "$response" | jq -r '
+            [(.messages // [])[] | select(
+              .bot_id != null and
+              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+            )] | first | .ts // ""')
+
+          if [[ -n "$message_ts" ]]; then
+            echo "Found existing message: $message_ts — will update" >&2
+            echo "message_ts=$message_ts" >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No existing message found — will post new" >&2
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # - name: Send Slack notification (webhook — uncomment for channel posting)
+      #   uses: slackapi/slack-github-action@v3.0.1
       #   continue-on-error: true
       #   with:
       #     webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
       #     webhook-type: incoming-webhook
       #     payload: ${{ steps.format.outputs.payload }}
 
-      - name: Send Slack DM  # TEMPORARY — remove before merging
+      - name: Update existing Slack message  # TEMPORARY DM target — remove before merging
+        if: steps.find-message.outputs.found == 'true'
+        uses: slackapi/slack-github-action@v3.0.1
+        continue-on-error: true
+        with:
+          method: chat.update
+          token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          payload: |
+            channel: "C0AN1P08K6K"
+            ts: "${{ steps.find-message.outputs.message_ts }}"
+            text: "Stale backport report"
+            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+
+      - name: Post new Slack message  # TEMPORARY DM target — remove before merging
+        if: steps.find-message.outputs.found != 'true'
         uses: slackapi/slack-github-action@v3.0.1
         continue-on-error: true
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           payload: |
-            channel: "U09B7CWMX4P"
+            channel: "C0AN1P08K6K"
             text: "Stale backport report"
             blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
       - name: Log notification status

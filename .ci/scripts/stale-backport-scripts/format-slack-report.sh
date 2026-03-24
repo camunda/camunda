@@ -9,6 +9,7 @@
 #   GITHUB_REPOSITORY  - owner/repo (for workflow link, defaults to camunda/camunda)
 #   GITHUB_RUN_ID      - workflow run ID (for workflow link)
 #   TARGET_BRANCH      - if set, shows in the header
+#   SLACK_USER_MAP     - JSON mapping of real names to Slack user IDs (e.g. '{"Peter Szabo": "U09B7CWMX4P"}')
 
 set -euo pipefail
 
@@ -17,9 +18,17 @@ GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-camunda/camunda}"
 GITHUB_RUN_ID="${GITHUB_RUN_ID:-}"
 REPOSITORIES="${REPOSITORIES:-}"
 
+# Default to empty JSON object if no Slack user map provided
+if [[ -z "${SLACK_USER_MAP:-}" ]]; then
+  SLACK_USER_MAP='{}'
+fi
+
 # Use temp files to avoid shell variable escaping issues with JSON
 TMPDIR_WORK=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_WORK"' EXIT
+
+# Save Slack user map to temp file for safe jq access
+printf '%s\n' "$SLACK_USER_MAP" > "$TMPDIR_WORK/slack_user_map.json"
 
 cat > "$TMPDIR_WORK/stale_data_raw.json"
 
@@ -66,8 +75,14 @@ fi
 # Build blocks array incrementally using jq and temp file
 echo '[]' > "$TMPDIR_WORK/blocks.json"
 
-# Header block
-jq -c --arg header "⏰ *Stale Backport PRs*${branch_header}" \
+# Header block with last-updated timestamp
+DATE_PROGRAM=date
+if command -v gdate >/dev/null; then
+  DATE_PROGRAM=gdate
+fi
+updated_at=$("$DATE_PROGRAM" -u '+%H:%M UTC')
+
+jq -c --arg header "⏰ *Stale Backport PRs*${branch_header}  ·  _Updated ${updated_at}_" \
   '. + [{type: "section", text: {type: "mrkdwn", text: $header}}]' \
   "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
 
@@ -102,17 +117,32 @@ while IFS= read -r repo_name; do
     # Filter groups for this repo and iterate
     jq -c --arg repo "$repo_name" '[.[] | select((.repository // "unknown") == $repo)] | .[]' "$TMPDIR_WORK/stale_data.json" | while IFS= read -r group; do
     # Build section text for this group in jq (safe from shell escaping)
-    section_text=$(echo "$group" | jq -r '
+    section_text=$(echo "$group" | jq -r --slurpfile slack_map "$TMPDIR_WORK/slack_user_map.json" '
+      $slack_map[0] as $smap |
+      # Author display: <@USLACKID> if Slack match, @RealName if available, otherwise GitHub username
+      (
+        if .original_pr_author_name and $smap[.original_pr_author_name] then
+          "<@\($smap[.original_pr_author_name])>"
+        elif .original_pr_author_name then
+          "@\(.original_pr_author_name)"
+        else
+          .original_pr_author // "unknown"
+        end
+      ) as $author_display |
+
       # Header with original PR
+      "── ── ── ── ──\n" +
+      "*Original PR:* " +
       (if .original_pr_url != "" then
-        "📌 <\(.original_pr_url)|#\(.original_pr_number // "?")> \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
+        ":pull-request-merged: <\(.original_pr_url)|#\(.original_pr_number // "?")> \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
       else
-        "📌 #\(.original_pr_number // "?") — \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
-      end) + "\n👤 *Author:* \(.original_pr_author // "unknown")\n" +
+        ":pull-request-merged: #\(.original_pr_number // "?") — \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
+      end) + "  · 👤 \($author_display)\n" +
+      "*Stale backports:*\n" +
       ([.backport_prs[] |
         (if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h \((.age_minutes // 0) % 60)m" end) as $age |
         (if .is_draft then "⚠️ " else "" end) as $draft |
-        "  \($draft)• <\(.backport_pr_url)|#\(.backport_pr_number)> → `\(.target_branch)` (open *\($age)*)"
+        "  ↳ \($draft):pull-request-open: <\(.backport_pr_url)|#\(.backport_pr_number)> → `\(.target_branch)` (open *\($age)*)"
       ] | join("\n"))
     ')
 

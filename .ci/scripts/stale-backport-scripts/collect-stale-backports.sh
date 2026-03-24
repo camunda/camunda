@@ -147,6 +147,42 @@ for repo in "${REPO_LIST[@]}"; do
   echo "  ✅ ${repo}: $repo_stale stale backport PR(s)" >&2
 done
 
+# Resolve GitHub usernames to real names (deduplicated)
+echo "" >&2
+echo "👤 Resolving author names..." >&2
+
+# Collect all unique usernames (authors + assignees)
+jq -r '[.[].original_pr_author, .[].original_pr_assignees[]?, .[].backport_prs[].assignees[]?] | unique | .[] | select(. != "unknown" and . != "")' \
+  "$TMPDIR_WORK/all_groups.json" > "$TMPDIR_WORK/usernames.txt"
+
+# Build a username→name mapping JSON object
+echo '{}' > "$TMPDIR_WORK/name_map.json"
+while IFS= read -r username; do
+  # Skip bot accounts
+  if [[ "$username" =~ ^(backport-action|app/.*)$ ]]; then
+    continue
+  fi
+  real_name=$(gh api "users/${username}" --jq '.name // ""' 2>/dev/null || echo "")
+  if [[ -n "$real_name" ]]; then
+    jq -c --arg user "$username" --arg name "$real_name" '. + {($user): $name}' \
+      "$TMPDIR_WORK/name_map.json" > "$TMPDIR_WORK/name_map_tmp.json" && mv "$TMPDIR_WORK/name_map_tmp.json" "$TMPDIR_WORK/name_map.json"
+    echo "  ✅ ${username} → ${real_name}" >&2
+  else
+    echo "  ⚠️  ${username} → (no name set)" >&2
+  fi
+done < "$TMPDIR_WORK/usernames.txt"
+
+# Enrich all groups with author_name field
+jq --argjson names "$(cat "$TMPDIR_WORK/name_map.json")" '
+  [.[] | . + {
+    original_pr_author_name: ($names[.original_pr_author] // null),
+    backport_prs: [.backport_prs[] | . + {
+      assignee_names: [.assignees[] | {username: ., name: ($names[.] // null)}]
+    }]
+  }]
+' "$TMPDIR_WORK/all_groups.json" > "$TMPDIR_WORK/all_groups_enriched.json"
+mv "$TMPDIR_WORK/all_groups_enriched.json" "$TMPDIR_WORK/all_groups.json"
+
 cat "$TMPDIR_WORK/all_groups.json"
 
 total_stale=$(jq '[.[].backport_prs | length] | add // 0' "$TMPDIR_WORK/all_groups.json")
