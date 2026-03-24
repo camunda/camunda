@@ -112,11 +112,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class RecordingExporter implements Exporter {
   public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
+  public static final long DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME = Duration.ofMillis(200).toMillis();
 
   private static final ConcurrentSkipListMap<Integer, Record<?>> RECORDS =
       new ConcurrentSkipListMap<Integer, Record<?>>();
@@ -125,8 +127,11 @@ public final class RecordingExporter implements Exporter {
 
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
-
   private Controller controller;
+
+  static long getMaximumWaitTime() {
+    return maximumWaitTime;
+  }
 
   public static void setMaximumWaitTime(final long maximumWaitTime) {
     RecordingExporter.maximumWaitTime = maximumWaitTime;
@@ -644,6 +649,22 @@ public final class RecordingExporter implements Exporter {
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
     autoAcknowledge = shouldAcknowledgeRecords;
+  }
+
+  /**
+   * This method should be used when you expect that no records will be written that match the
+   * criteria defined in the consumer. It temporarily sets the maximum wait time to {@link
+   * RecordingExporter#DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME} to speed up the test execution, and
+   * resets it after.
+   */
+  public static <T> T expectNoMatchingRecords(final Function<RecordStream, T> consumer) {
+    final var previousMaximumWaitTime = maximumWaitTime;
+    maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
+    try {
+      return consumer.apply(records());
+    } finally {
+      maximumWaitTime = previousMaximumWaitTime;
+    }
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {
