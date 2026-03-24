@@ -29,7 +29,6 @@ const IOMappingInfoBanner: React.FC<Props> = ({
       lowContrast
       title={title}
       subtitle={subtitle}
-      hasFocus={false}
       actionButtonLabel="Learn more"
       onActionButtonClick={() => {
         window.open(
