@@ -19,6 +19,7 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -102,4 +103,6 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getAssertionProperties();
 
   public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
+  public static final SemanticSimilarityProperties SEMANTIC_SIMILARITY_PROPERTIES =
+      PROPERTIES_UTIL.getSemanticSimilarityProperties();
 }

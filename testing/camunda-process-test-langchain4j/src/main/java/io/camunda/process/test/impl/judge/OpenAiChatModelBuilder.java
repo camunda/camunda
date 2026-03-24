@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;

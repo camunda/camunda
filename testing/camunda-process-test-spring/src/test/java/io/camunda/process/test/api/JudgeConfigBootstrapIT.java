@@ -55,8 +55,8 @@ public class JudgeConfigBootstrapIT {
   @Configuration
   static class GenericChatModelAdapterConfig {
 
-    @Bean("my-generic")
-    ChatModelAdapter genericAdapter() {
+    @Bean("judge.my-generic")
+    ChatModelAdapter genericChatModelAdapter() {
       return ADAPTER_A;
     }
   }
@@ -64,13 +64,13 @@ public class JudgeConfigBootstrapIT {
   @Configuration
   static class MultipleChatModelAdapterConfig {
 
-    @Bean("my-custom")
-    ChatModelAdapter customAdapter() {
+    @Bean("judge.my-custom")
+    ChatModelAdapter customChatModelAdapter() {
       return ADAPTER_A;
     }
 
-    @Bean("another-adapter")
-    ChatModelAdapter anotherAdapter() {
+    @Bean("judge.another-provider")
+    ChatModelAdapter anotherChatModelAdapter() {
       return ADAPTER_B;
     }
   }

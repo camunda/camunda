@@ -28,6 +28,7 @@ import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntim
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
 import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,6 +59,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
   private final JudgeProperties judgeProperties;
+  private final SemanticSimilarityProperties semanticSimilarityProperties;
   private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
   private final AssertionProperties assertionProperties;
 
@@ -84,6 +86,7 @@ public final class ContainerRuntimePropertiesUtil {
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
     judgeProperties = new JudgeProperties(properties);
+    semanticSimilarityProperties = new SemanticSimilarityProperties(properties);
     camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
     assertionProperties = new AssertionProperties(properties);
 
@@ -269,5 +272,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   public AssertionProperties getAssertionProperties() {
     return assertionProperties;
+  }
+
+  public SemanticSimilarityProperties getSemanticSimilarityProperties() {
+    return semanticSimilarityProperties;
   }
 }

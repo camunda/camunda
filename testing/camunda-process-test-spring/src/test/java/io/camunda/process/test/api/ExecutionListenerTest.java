@@ -30,6 +30,7 @@ import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -121,6 +122,7 @@ public class ExecutionListenerTest {
   @AfterEach
   void resetJudgeConfig() {
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
   }
 
   @BeforeEach
@@ -159,6 +161,9 @@ public class ExecutionListenerTest {
         .when(applicationContext.getBean(CamundaClientProperties.class))
         .thenReturn(camundaClientProperties);
     lenient().when(applicationContext.getBeansOfType(ChatModelAdapter.class)).thenReturn(Map.of());
+    lenient()
+        .when(applicationContext.getBeansOfType(EmbeddingModelAdapter.class))
+        .thenReturn(Map.of());
   }
 
   @Test

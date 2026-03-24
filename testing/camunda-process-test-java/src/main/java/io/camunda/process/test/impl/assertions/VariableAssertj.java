@@ -26,6 +26,7 @@ import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import java.util.Arrays;
@@ -52,18 +53,21 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
   private final CamundaAssertJsonMapper jsonMapper;
   private JudgeConfig judgeConfig;
+  private SemanticSimilarityConfig semanticSimilarityConfig;
 
   public VariableAssertj(
       final CamundaDataSource dataSource,
       final Supplier<CamundaAssertAwaitBehavior> awaitBehavior,
       final CamundaAssertJsonMapper jsonMapper,
       final JudgeConfig judgeConfig,
+      final SemanticSimilarityConfig semanticSimilarityConfig,
       final String failureMessagePrefix) {
     super(failureMessagePrefix, VariableAssertj.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
     this.judgeConfig = judgeConfig;
+    this.semanticSimilarityConfig = semanticSimilarityConfig;
   }
 
   public void hasLocalVariableNames(
@@ -491,6 +495,89 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private static void assertExpectationNotEmpty(final String expectation) {
     if (expectation == null || expectation.trim().isEmpty()) {
       throw new IllegalArgumentException("expectation must not be null or empty");
+    }
+  }
+
+  // --- Semantic similarity evaluation methods ---
+
+  SemanticSimilarityConfig getSemanticSimilarityConfig() {
+    return semanticSimilarityConfig;
+  }
+
+  void setSemanticSimilarityConfig(final SemanticSimilarityConfig similarityConfig) {
+    semanticSimilarityConfig = similarityConfig;
+  }
+
+  public void hasVariableSimilarTo(
+      final long processInstanceKey,
+      final VariableSelector variableSelector,
+      final String expectedValue) {
+
+    assertSimilarityCheckHasAllRequiredSettings();
+    assertExpectationNotEmpty(expectedValue);
+
+    hasVariableSatisfies(
+        variableSelector,
+        rawValue -> evaluateSimilarity(variableSelector.describe(), expectedValue, rawValue),
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
+  }
+
+  public void hasLocalVariableSimilarTo(
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final VariableSelector variableSelector,
+      final String expectedValue) {
+
+    assertSimilarityCheckHasAllRequiredSettings();
+    assertExpectationNotEmpty(expectedValue);
+
+    withLocalVariableAssertion(
+        processInstanceKey,
+        selector,
+        instance ->
+            hasVariableSatisfies(
+                variableSelector,
+                rawValue ->
+                    evaluateSimilarity(variableSelector.describe(), expectedValue, rawValue),
+                () ->
+                    findLocalVariablesBySelector(
+                        processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
+  }
+
+  private void evaluateSimilarity(
+      final String variableName, final String expectedValue, final String variableValue) {
+    if (variableValue == null || variableValue.trim().isEmpty()) {
+      fail(
+          "%s variable '%s' is present but has no value to compare for semantic similarity.",
+          actual, variableName);
+    }
+    final SimilarityEvaluation evaluation =
+        new SimilarityEvaluation(
+            semanticSimilarityConfig.getEmbeddingModel(),
+            semanticSimilarityConfig.getPreprocessors(),
+            expectedValue);
+    final SimilarityEvaluation.Result result = evaluation.evaluate(variableValue);
+    LOG.debug("Computed similarity score for variable '{}': {}", variableName, result.getScore());
+    final double threshold = semanticSimilarityConfig.getThreshold();
+    if (!result.passed(threshold)) {
+      fail(
+          "%s variable '%s' did not satisfy similarity check.\n"
+              + "  Expectation: %s\n"
+              + "  Actual value: %s\n"
+              + "  Score: %.2f (threshold: %.2f)\n",
+          actual, variableName, expectedValue, variableValue, result.getScore(), threshold);
+    }
+  }
+
+  private void assertSimilarityCheckHasAllRequiredSettings() {
+    if (semanticSimilarityConfig == null) {
+      throw new IllegalStateException(
+          "SemanticSimilarityConfig is not set. Ensure to provide a SemanticSimilarityConfig instance to use similarity assertions.");
+    }
+    if (semanticSimilarityConfig.getEmbeddingModel() == null) {
+      throw new IllegalStateException(
+          "SemanticSimilarityConfig has no EmbeddingModelAdapter configured. "
+              + "Use SemanticSimilarityConfig.of(embeddingModel) or withSemanticSimilarityConfig(config -> config.withEmbeddingModelAdapter(embeddingModel)).");
     }
   }
 

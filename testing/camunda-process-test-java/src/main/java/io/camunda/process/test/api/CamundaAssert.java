@@ -30,6 +30,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
@@ -97,6 +98,8 @@ public class CamundaAssert {
       new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
 
   private static JudgeConfig judgeConfig;
+
+  private static SemanticSimilarityConfig semanticSimilarityConfig;
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -224,6 +227,22 @@ public class CamundaAssert {
     CamundaAssert.judgeConfig = judgeConfig;
   }
 
+  static SemanticSimilarityConfig getSemanticSimilarityConfig() {
+    return semanticSimilarityConfig;
+  }
+
+  /**
+   * Configures the embedding model for semantic similarity assertions.
+   *
+   * @param semanticSimilarityConfig the similarity configuration, or null to disable similarity
+   *     assertions
+   * @see SemanticSimilarityConfig
+   */
+  public static void setSemanticSimilarityConfig(
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
+    CamundaAssert.semanticSimilarityConfig = semanticSimilarityConfig;
+  }
+
   // ======== Assertions ========
 
   /**
@@ -320,7 +339,8 @@ public class CamundaAssert {
         jsonMapper,
         processInstanceSelector,
         elementSelector,
-        judgeConfig);
+        judgeConfig,
+        semanticSimilarityConfig);
   }
 
   /**
@@ -343,7 +363,8 @@ public class CamundaAssert {
         jsonMapper,
         processInstanceKey,
         elementSelector,
-        judgeConfig);
+        judgeConfig,
+        semanticSimilarityConfig);
   }
 
   /**

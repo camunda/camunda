@@ -42,6 +42,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.similarity.SemanticSimilarityConfigResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
@@ -161,6 +162,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
     initializeJudgeConfig(testContext, runtimeConfiguration);
     initializeAssertions(runtimeConfiguration.getAssertion());
+    initializeSemanticSimilarityConfig(testContext, runtimeConfiguration);
   }
 
   @Override
@@ -268,6 +270,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime.close();
 
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
   }
 
   private void initializeJsonMapper(
@@ -291,6 +294,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private void initializeAssertions(final AssertionConfiguration assertionConfiguration) {
     assertionConfiguration.getTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
     assertionConfiguration.getInterval().ifPresent(CamundaAssert::setAssertionInterval);
+  }
+
+  private void initializeSemanticSimilarityConfig(
+      final TestContext testContext,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+    SemanticSimilarityConfigResolver.resolve(
+            testContext.getApplicationContext(), runtimeConfiguration.getSimilarity())
+        .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
   }
 
   private CamundaManagementClient createManagementClient(
