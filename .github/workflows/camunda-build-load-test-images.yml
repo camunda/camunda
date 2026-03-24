@@ -1,0 +1,165 @@
+# description: Reusable workflow to build Camunda platform and load test Docker images.
+# This is called by camunda-load-test.yml and camunda-weekly-load-tests.yml
+# to avoid duplicating the build logic.
+# type: CI
+# owner: camunda/orchestration-cluster-team
+
+name: Build Load Test Images
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref (branch, tag, or SHA) to checkout and build from'
+        type: string
+        default: 'main'
+        required: false
+      image-tag:
+        description: 'Docker image tag to use for all built images'
+        type: string
+        required: true
+      build-frontend:
+        description: 'Build frontend projects as part of the image build'
+        type: boolean
+        default: false
+        required: false
+      enable-optimize:
+        description: 'Include Optimize in the platform build and build the Optimize Docker image'
+        type: boolean
+        default: true
+        required: false
+      build-camunda-image:
+        description: 'Whether to build the Camunda platform and Optimize Docker images'
+        type: boolean
+        default: true
+        required: false
+      build-load-test-images:
+        description: 'Whether to build the Starter and Worker Docker images'
+        type: boolean
+        default: true
+        required: false
+
+env:
+  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  build-camunda-image:
+    name: Build Camunda
+    if: ${{ inputs.build-camunda-image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        id: build-operate-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
+        id: build-tasklist-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        id: build-identity-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Optimize Frontend
+        id: build-optimize-fe
+        if: ${{ inputs.build-frontend && inputs.enable-optimize }}
+        with:
+          directory: ./optimize/client
+          package-manager: "yarn"
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Platform
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/camunda'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ inputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ inputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-load-test-images:
+    name: Build Starter and Worker
+    if: ${{ inputs.build-load-test-images }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      - name: Build Starter Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ inputs.image-tag }}"
+      - name: Build Worker Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ inputs.image-tag }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
