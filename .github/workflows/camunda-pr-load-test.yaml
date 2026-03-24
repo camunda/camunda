@@ -1,4 +1,6 @@
 # description: Create a Camunda load test for an individual PR. When a PR is closed, the test is cleaned up and removed
+# Supports both 'benchmark' (Elasticsearch) and 'benchmark-rdbms' (PostgreSQL) labels.
+# Images are built once and shared across both benchmarks via reuse-tag.
 # type: CI
 # owner @camunda/reliability-testing
 name: Camunda Pull Request Benchmark
@@ -9,6 +11,10 @@ on:
       - unlabeled
       - synchronize
       - closed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -25,15 +31,36 @@ jobs:
     name: Sanitize Branch Name
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      contents: read
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
+      sanitized-name-rdbms: c8-${{ steps.sanitize.outputs.branch_name }}-rdbms
+      image-tag: ${{ steps.image-tag.outputs.image-tag }}
+      cluster: ${{ env.CLUSTER }}
+      teleport-join-token: ${{ env.TELEPORT_JOIN_TOKEN }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.event.pull_request.head.ref }}
-          max_length: 50  # reduced to account for load-test prefix "c8-"" and potential suffixes for uniqueness
+          max_length: 44  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
+      - uses: actions/checkout@v6
+        if: >
+          (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+           || github.event.action == 'synchronize') &&
+          (contains(github.event.pull_request.labels.*.name, 'benchmark')
+           || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Compute image tag
+        id: image-tag
+        if: >
+          (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+           || github.event.action == 'synchronize') &&
+          (contains(github.event.pull_request.labels.*.name, 'benchmark')
+           || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
+        run: echo "image-tag=c8-${{ steps.sanitize.outputs.branch_name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -44,131 +71,91 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  create-benchmark:
-    name: Benchmark
+  build-images:
+    name: Build Images
     needs: sanitize-branch-name
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize') &&
+      (contains(github.event.pull_request.labels.*.name, 'benchmark')
+       || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      ref: ${{ github.event.pull_request.head.ref }}
+      image-tag: ${{ needs.sanitize-branch-name.outputs.image-tag }}
+
+  create-benchmark:
+    name: Benchmark (Elasticsearch)
+    needs: [sanitize-branch-name, build-images]
+    if: >
+      !cancelled() &&
+      needs.sanitize-branch-name.result == 'success' &&
+      (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
+      contains(github.event.pull_request.labels.*.name, 'benchmark') &&
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref }}
       scenario: 'max'
+      reuse-tag: ${{ needs.sanitize-branch-name.outputs.image-tag }}
 
-  await-benchmark:
-    name: Await Benchmark
+  create-benchmark-rdbms:
+    name: Benchmark (RDBMS)
+    needs: [sanitize-branch-name, build-images]
+    if: >
+      !cancelled() &&
+      needs.sanitize-branch-name.result == 'success' &&
+      (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
+      contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms') &&
+      (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms'
+       || github.event.action == 'synchronize')
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}
+      ref: ${{ github.event.pull_request.head.ref }}
+      scenario: 'max'
+      secondary-storage-type: 'postgresql'
+      reuse-tag: ${{ needs.sanitize-branch-name.outputs.image-tag }}
+
+  profile-and-comment:
+    name: Profile and Comment (Elasticsearch)
     needs: [sanitize-branch-name, create-benchmark]
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Wait for load test to stabilize
-        run: sleep 900  # 15 minutes
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  run-profiling:
-    name: Run Profiling
-    needs: [sanitize-branch-name, await-benchmark]
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    uses: ./.github/workflows/profile-load-test.yml
+      !cancelled() &&
+      needs.create-benchmark.result == 'success'
+    uses: ./.github/workflows/profile-benchmark.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      pod: ''
+      database: 'elasticsearch'
+      cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
+      teleport-join-token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
 
-  comment-pr:
-    name: Comment on PR with profiling results
-    needs: [sanitize-branch-name, run-profiling]
+  profile-and-comment-rdbms:
+    name: Profile and Comment (RDBMS)
+    needs: [sanitize-branch-name, create-benchmark-rdbms]
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: 'read'
-      pull-requests: 'write'
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-      - name: Comment PR with profiling results
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            // List all downloaded artifacts
-            const artifactPath = 'artifacts';
-            const artifacts = fs.readdirSync(artifactPath);
-
-            // Get artifact IDs from GitHub API
-            const { data: workflowArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
-
-            let comment = '## Profiling Results\n\n';
-            comment += 'The benchmark has been profiled with the following events:\n\n';
-            comment += '| Event | Pod | Artifact |\n';
-            comment += '|-------|-----|----------|\n';
-
-            artifacts.forEach(artifact => {
-              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
-              if (match) {
-                const event = match[1];
-                const pod = match[2];
-
-                // Find the artifact ID for this artifact name
-                const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
-                if (artifactInfo) {
-                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
-                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
-                } else {
-                  comment += `| ${event} | ${pod} | N/A |\n`;
-                }
-              }
-            });
-
-            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      !cancelled() &&
+      needs.create-benchmark-rdbms.result == 'success'
+    uses: ./.github/workflows/profile-benchmark.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}
+      database: 'rdbms'
+      cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
+      teleport-join-token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
 
   delete-benchmark:
     name: Benchmark Cleanup
     needs: sanitize-branch-name
     if: >
-      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) ||
+      (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -181,17 +168,24 @@ jobs:
         uses: teleport-actions/setup@v1
         with:
           version: 17.2.2
-
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2
         with:
           proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
-
-      - name: Delete benchmarks
+          token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
+          kubernetes-cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
+      - name: Delete benchmark namespace
+        if: >
+          (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark')) ||
+          (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
         run: |
-          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}" --ignore-not-found
+      - name: Delete RDBMS benchmark namespace
+        if: >
+          (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')) ||
+          (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark-rdbms')
+        run: |
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}" --ignore-not-found
       - name: Observe build status
         if: always()
         continue-on-error: true
