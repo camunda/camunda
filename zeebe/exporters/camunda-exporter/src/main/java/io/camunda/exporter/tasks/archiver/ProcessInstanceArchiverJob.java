@@ -50,7 +50,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   public CompletionStage<Integer> archiveNextBatch() {
     final var timer = Timer.start();
     return repository
-        .getProcessInstancesNextBatch()
+        .getProcessInstancesNextBatch(config.getRolloverBatchSize())
         .thenComposeAsync(this::archiveBatch, executor)
         // we schedule us after the archiveBatch future - to correctly measure
         // the time it takes all in all, including searching, reindexing, deletion

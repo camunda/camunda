@@ -132,7 +132,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(final int size) {
     return withArchivingStatus()
         .thenComposeAsync(
             status -> {
@@ -140,7 +140,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 logger.debug("Archiving is currently blocked.");
                 return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
               }
-              final var searchRequest = createFinishedInstancesSearchRequest();
+              final var searchRequest = createFinishedInstancesSearchRequest(size);
 
               final var timer = Timer.start();
               return client
@@ -384,10 +384,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenApplyAsync(response -> new ArrayList<>(response.result().keySet()), executor);
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest() {
+  private SearchRequest createFinishedInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        size,
         ListViewTemplate.END_DATE);
   }
 
@@ -530,6 +531,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   private SearchRequest createSearchRequest(
       final String indexName, final Query filterQuery, final String sortField) {
+    return createSearchRequest(indexName, filterQuery, config.getRolloverBatchSize(), sortField);
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName, final Query filterQuery, final int size, final String sortField) {
     logger.trace(
         "Create search request against index '{}', with filter '{}' and sortField '{}'",
         indexName,
@@ -545,7 +551,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
-        .size(config.getRolloverBatchSize())
+        .size(size)
         .build();
   }
 }

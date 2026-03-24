@@ -27,7 +27,7 @@ public interface ArchiverRepository extends AutoCloseable {
           UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
           UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
 
-  CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch();
+  CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(final int size);
 
   CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch();
 
@@ -83,7 +83,7 @@ public interface ArchiverRepository extends AutoCloseable {
   class NoopArchiverRepository implements ArchiverRepository {
 
     @Override
-    public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+    public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(final int size) {
       return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
     }
 
