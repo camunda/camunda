@@ -18,10 +18,10 @@ import {
 	incidentProcessInstanceStatisticsByErrorQueryResultSchema,
 } from './gen';
 
-const incidentErrorTypeSchema = incidentResultSchema.shape.errorType.unwrap();
+const incidentErrorTypeSchema = incidentResultSchema.shape.errorType;
 type IncidentErrorType = z.infer<typeof incidentErrorTypeSchema>;
 
-const incidentStateSchema = incidentResultSchema.shape.state.unwrap();
+const incidentStateSchema = incidentResultSchema.shape.state;
 type IncidentState = z.infer<typeof incidentStateSchema>;
 
 const incidentSchema = incidentResultSchema;
