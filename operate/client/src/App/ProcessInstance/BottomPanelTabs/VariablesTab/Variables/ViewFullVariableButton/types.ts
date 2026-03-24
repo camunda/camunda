@@ -6,12 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export interface ViewFullVariableButtonProps {
+export interface ViewFullVariableButtonAddProps {
+  mode: 'add';
+  variableName: string;
+  scopeId: string | null;
+}
+
+export interface ViewFullVariableButtonEditProps {
+  mode: 'edit';
   variableName: string;
   variableValue: string;
   variableKey: string;
 }
 
-export interface ViewFullVariableWrapperProps extends ViewFullVariableButtonProps {
-  isEditMode: boolean;
+export interface ViewFullVariableButtonShowProps {
+  mode: 'show';
+  variableName: string;
+  variableValue: string;
+  variableKey: string;
 }
+
+export type ViewFullVariableWrapperProps =
+  | ViewFullVariableButtonAddProps
+  | ViewFullVariableButtonEditProps
+  | ViewFullVariableButtonShowProps;

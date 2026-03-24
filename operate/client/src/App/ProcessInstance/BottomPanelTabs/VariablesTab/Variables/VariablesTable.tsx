@@ -92,7 +92,7 @@ const VariablesTable: React.FC<Props> = ({
                   variableName={name}
                   variableKey={variableKey}
                   variableValue={value}
-                  isEditMode={Boolean(isEditMode(name))}
+                  mode={isEditMode(name) ? 'edit' : 'show'}
                 />
                 {(() => {
                   if (isModificationModeEnabled || !isProcessInstanceRunning) {
@@ -175,12 +175,19 @@ const VariablesTable: React.FC<Props> = ({
                       },
                       {
                         cellContent: (
-                          <Operation
-                            variableName={variableName}
-                            onRemove={() => {
-                              fields.remove(index);
-                            }}
-                          />
+                          <Operations>
+                            <ViewFullVariableButton
+                              mode="add"
+                              scopeId={scopeId}
+                              variableName={variableName}
+                            />
+                            <Operation
+                              variableName={variableName}
+                              onRemove={() => {
+                                fields.remove(index);
+                              }}
+                            />
+                          </Operations>
                         ),
                         width: '120px',
                       },

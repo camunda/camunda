@@ -11,10 +11,10 @@ import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {Button} from '@carbon/react';
 import {Maximize} from '@carbon/react/icons';
 import {useVariable} from 'modules/queries/variables/useVariable';
-import type {ViewFullVariableButtonProps} from '../types';
+import type {ViewFullVariableButtonShowProps} from '../types';
 import {InlineLoading} from '../../Operations/styled';
 
-const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonProps> = ({
+const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   variableName,
   variableKey,
 }) => {

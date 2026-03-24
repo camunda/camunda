@@ -10,7 +10,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 import {useField, useFormState} from 'react-final-form';
-import {createVariableFieldName} from '../../App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/createVariableFieldName';
+import {createVariableFieldName} from './createVariableFieldName';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
 
 const createModification = ({
@@ -66,7 +66,10 @@ const createModification = ({
   }
 };
 
-export function useVariableEditor(variableName: string, variableValue: string) {
+export function useExistingVariableEditor(
+  variableName: string,
+  variableValue: string,
+) {
   const {isModificationModeEnabled} = modificationsStore;
 
   const variableScopeKey = useVariableScopeKey();

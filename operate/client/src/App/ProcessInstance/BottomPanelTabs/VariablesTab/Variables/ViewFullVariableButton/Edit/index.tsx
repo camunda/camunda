@@ -12,11 +12,11 @@ import {Button} from '@carbon/react';
 import {Maximize} from '@carbon/react/icons';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {tracking} from 'modules/tracking';
-import {useVariableEditor} from 'modules/hooks/useVariableEditor';
+import {useExistingVariableEditor} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/useExistingVariableEditor';
 import {useForm} from 'react-final-form';
-import type {ViewFullVariableButtonProps} from '../types';
+import type {ViewFullVariableButtonEditProps} from '../types';
 
-const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonProps> = ({
+const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
   variableName,
   variableKey,
   variableValue,
@@ -27,7 +27,7 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonProps> = ({
   });
 
   const form = useForm();
-  const variableEditor = useVariableEditor(variableName, variableValue);
+  const variableEditor = useExistingVariableEditor(variableName, variableValue);
 
   return (
     <>

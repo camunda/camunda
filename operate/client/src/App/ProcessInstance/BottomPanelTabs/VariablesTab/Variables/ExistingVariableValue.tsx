@@ -20,7 +20,7 @@ import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useVariableEditor} from 'modules/hooks/useVariableEditor';
+import {useExistingVariableEditor} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/useExistingVariableEditor';
 import {useFieldError} from '../../../../../modules/hooks/useFieldError';
 
 type Props = {
@@ -35,7 +35,10 @@ const ExistingVariableValue: React.FC<Props> = observer(
     const {isModificationModeEnabled} = modificationsStore;
     const formState = useFormState();
 
-    const variableEditor = useVariableEditor(variableName, variableValue);
+    const variableEditor = useExistingVariableEditor(
+      variableName,
+      variableValue,
+    );
     const fieldError = useFieldError(variableEditor.fieldName);
 
     const {

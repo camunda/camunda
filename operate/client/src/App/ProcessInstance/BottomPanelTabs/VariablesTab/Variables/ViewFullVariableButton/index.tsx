@@ -8,17 +8,27 @@
 
 import {ViewFullVariableButtonEdit} from './Edit';
 import {ViewFullVariableButtonShow} from './Show';
+import {ViewFullVariableButtonAdd} from './Add';
 import type {ViewFullVariableWrapperProps} from './types';
 
-const ViewFullVariableButton: React.FC<ViewFullVariableWrapperProps> = ({
-  isEditMode,
-  ...props
-}) => {
-  return isEditMode ? (
-    <ViewFullVariableButtonEdit {...props} />
-  ) : (
-    <ViewFullVariableButtonShow {...props} />
-  );
+const ViewFullVariableButton: React.FC<ViewFullVariableWrapperProps> = (
+  props,
+) => {
+  if (props.mode === 'add') {
+    return (
+      <ViewFullVariableButtonAdd
+        mode="add"
+        scopeId={props.scopeId}
+        variableName={props.variableName}
+      />
+    );
+  }
+
+  if (props.mode === 'edit') {
+    return <ViewFullVariableButtonEdit {...props} />;
+  }
+
+  return <ViewFullVariableButtonShow {...props} />;
 };
 
 export {ViewFullVariableButton};
