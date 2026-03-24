@@ -12,14 +12,18 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
 public class ProcessInstanceArchiverJob implements ArchiverJob {
+  private static final int MAX_LARGE_BATCH_SIZE = 5_000;
+  private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
 
   private final HistoryConfiguration config;
   private final ArchiverRepository repository;
@@ -28,6 +32,8 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
   private final Executor executor;
+  private final Queue<ArchiveBatch> pendingBatches =
+      new java.util.concurrent.ConcurrentLinkedQueue<>();
 
   public ProcessInstanceArchiverJob(
       final HistoryConfiguration config,
@@ -49,8 +55,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   @Override
   public CompletionStage<Integer> archiveNextBatch() {
     final var timer = Timer.start();
-    return repository
-        .getProcessInstancesNextBatch(config.getRolloverBatchSize())
+    return getNextBatch()
         .thenComposeAsync(this::archiveBatch, executor)
         // we schedule us after the archiveBatch future - to correctly measure
         // the time it takes all in all, including searching, reindexing, deletion
@@ -62,6 +67,22 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
               return CompletableFuture.completedFuture(count);
             },
             executor);
+  }
+
+  @VisibleForTesting
+  CompletableFuture<ArchiveBatch> getNextBatch() {
+    if (!pendingBatches.isEmpty()) {
+      return CompletableFuture.completedFuture(pendingBatches.poll());
+    }
+    return repository
+        .getProcessInstancesNextBatch(largeBatchSize())
+        .thenApply(
+            batch -> {
+              final var chunks = batch.chunk(config.getRolloverBatchSize());
+              final var first = chunks.removeFirst();
+              pendingBatches.addAll(chunks);
+              return first;
+            });
   }
 
   private CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
@@ -107,6 +128,11 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
             processInstanceKeys,
             executor)
         .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
+  }
+
+  private int largeBatchSize() {
+    return Math.min(
+        MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * config.getRolloverBatchSize());
   }
 
   @Override
