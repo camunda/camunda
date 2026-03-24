@@ -39,6 +39,12 @@ inputs:
     description: The path to Docker Hub secrets
     required: false
     default: "secret/data/products/zeebe/ci/zeebe"
+  minimus:
+    description: |
+      If enabled, logs into Minimus registry with a CI account.
+      Minimus login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
 
 outputs: {}
 
@@ -73,6 +79,21 @@ runs:
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
           ${{ inputs.docker-secret-path }} REGISTRY_HUB_DOCKER_COM_USR;
           ${{ inputs.docker-secret-path }} ${{ inputs.docker-token }};
+          secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+
+    - name: Check for Fork
+      uses: ./.github/actions/is-fork
+      id: is-fork      
+    # Minimus login is disabled for fork PRs
+    - name: Logs on to Minimus    
+      if: >-      
+        steps.is-fork.outputs.is-fork != 'true' &&
+        inputs.minimus == 'true'    
+      uses: docker/login-action@v3    
+      with:
+        registry: reg.mini.dev
+        username: minimus
+        password: ${{ steps.secrets.outputs.minimus-token }}
     - uses: actions/setup-java@v4
       if: inputs.java == 'true'
       with:

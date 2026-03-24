@@ -50,7 +50,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Log Input Variables
         run: |
@@ -89,6 +89,7 @@ jobs:
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
 
       - name: Git User Setup
         run: |
@@ -156,6 +157,16 @@ jobs:
             echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
           } >> "$GITHUB_ENV"
 
+      - name: Check for Fork
+        uses: ./.github/actions/is-fork
+        id: is-fork
+      - name: Login to Minimus Registry
+        if: steps.is-fork.outputs.is-fork != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: reg.mini.dev
+          username: minimus
+          password: ${{ steps.secrets.outputs.minimus-token }} 
       - name: Login to prod Harbor docker registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
@@ -171,21 +182,21 @@ jobs:
 
       - id: "auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+        uses: "google-github-actions/auth@v3"
         with:
           token_format: "access_token"
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
 
       - name: Login to infosec registry
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Checkout release branch
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
@@ -311,7 +322,7 @@ jobs:
           export VERSION="${RELEASE_VERSION}"
           export DATE="$(date +%FT%TZ)"
           export REVISION="${REVISION}"
-          export BASE_IMAGE=docker.io/library/alpine:3.23.0
+          export BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
 
           # if CI (GHA) export the variables for pushing in a later step
           if [ "${CI}" = "true" ]; then
@@ -324,6 +335,7 @@ jobs:
               --build-arg VERSION="${RELEASE_VERSION}" \
               --build-arg DATE="${DATE}" \
               --build-arg REVISION="${REVISION}" \
+              --build-arg BASE_IMAGE="${BASE_IMAGE}" \
               --provenance false \
               --load \
               -f optimize.Dockerfile \
@@ -357,7 +369,7 @@ jobs:
         if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.3.1
+        uses: octokit/request-action@v2.4.0
         with:
           route: POST /repos/camunda/camunda/releases
           make_latest: "false"
