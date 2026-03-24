@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.04a73f4a.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.1f22442e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.1e2bbe30.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.04ead04a.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -225,12 +225,13 @@ It implements the shared RBAC framework for data access control, ensuring that s
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="523-engine-identity---level-2">5.2.3 Engine Identity - Level 2<a href="#523-engine-identity---level-2" class="hash-link" aria-label="Direct link to 5.2.3 Engine Identity - Level 2" title="Direct link to 5.2.3 Engine Identity - Level 2" translate="no">​</a></h4>
 <p>Engine Identity is the RBAC authorization engine embedded directly inside the Zeebe Engine.
-It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.</p>
+It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.
+It does not communicate with the external IdP directly.</p>
 <!-- -->
 <p>Key responsibilities:</p>
 <ul>
-<li class="">RBAC Authorization Engine (<code>AuthorizationCheckBehavior</code>): main entry point; receives the principal and the requested resource + action and decides whether to allow or deny the command. It does not read directly from RocksDB but instead delegates to the engine&#x27;s State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>), which abstract the underlying RocksDB storage.</li>
-<li class="">Claims Extractor (<code>ClaimsExtractor</code>): extracts username, clientId, and groups from the raw claims in an authorization request.</li>
+<li class="">RBAC Authorization Engine (<code>AuthorizationCheckBehavior</code>): main entry point; receives the command authentication context (derived from upstream <code>CamundaAuthentication</code>) and the requested resource + action, and decides whether to allow or deny the command. It does not read directly from RocksDB but instead delegates to the engine&#x27;s State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>), which abstract the underlying RocksDB storage.</li>
+<li class="">Claims Extractor (<code>ClaimsExtractor</code>): extracts username, clientId, and groups from claims attached to the command authentication context in the authorization request.</li>
 <li class="">Tenant Resolver (<code>TenantResolver</code>): resolves the set of tenants the principal is authorized for, using membership state and mapping rules read from primary storage via the State classes.</li>
 <li class="">Permission Check (<code>AuthorizationRequest</code>): record holding the resource type, required permission, tenant ID, and property constraints for a single authorization check.</li>
 <li class="">State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>): abstract the RocksDB state access; <code>AuthorizationCheckBehavior</code> reads all identity state (authorizations, roles, memberships, mapping rules) through these classes.</li>
@@ -307,8 +308,8 @@ No external IdP is involved; credentials are verified directly against Identity 
 <ol>
 <li class="">Client sends a <code>POST /v2/process-instances</code> request with a valid credential (session cookie, Basic auth header, or JWT bearer token).</li>
 <li class="">Spring Security authenticates the request and resolves a <code>CamundaAuthentication</code> principal.</li>
-<li class="">The REST API delegates to Camunda Services, which issues a <code>CreateProcessInstance</code> command to the Zeebe Engine.</li>
-<li class="">Before applying the command, the Engine calls <code>AuthorizationCheckBehavior</code> with an <code>AuthorizationRequest</code> for the <code>PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE</code> permission.</li>
+<li class="">The REST API delegates to Camunda Services, which issues a <code>CreateProcessInstance</code> command to the Zeebe Engine together with the resolved authentication context (claims and principal data from <code>CamundaAuthentication</code>).</li>
+<li class="">Before applying the command, the Engine calls <code>AuthorizationCheckBehavior</code> with an <code>AuthorizationRequest</code> for the <code>PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE</code> permission. Engine Identity performs this check against local engine state and does not call the external IdP.</li>
 <li class=""><code>AuthorizationCheckBehavior</code> reads the principal&#x27;s authorizations and role memberships from the Primary Database (RocksDB) via the State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>).</li>
 <li class="">If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.</li>
 <li class="">Camunda Services returns a <code>CreateProcessInstanceResponse</code> and the REST API responds with <code>200 OK</code> containing the process instance key.</li>
