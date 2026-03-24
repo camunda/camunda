@@ -23,12 +23,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import java.util.List;
 import java.util.Map;
 import org.junit.ClassRule;
@@ -633,5 +635,115 @@ public final class CreateProcessInstanceTest {
                 .getValue())
         .hasBusinessId(businessId)
         .hasProcessInstanceKey(secondInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithLargeVariablesBelowMaxMessageSize() {
+    final String processId = helper.getBpmnProcessId();
+
+    // given - deploy a simple process
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // Near 4MB variable value
+    final int variableSize = (int) ByteValue.ofMegabytes(3) + (int) ByteValue.ofKilobytes(900);
+    final String largeValue = "x".repeat(variableSize);
+
+    // when - create a process instance with the large variable
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("large_variable", largeValue)
+            .create();
+
+    // then - the process instance should be created successfully as we no longer put variables to
+    // follow-up events, which caused the command rejection with EXCEEDED_BATCH_RECORD_SIZE instead
+    // of being processed.
+    assertThat(processInstanceKey).isGreaterThan(0);
+
+    // Verify the CREATED event was produced for the process instance creation
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .findFirst())
+        .isPresent();
+
+    // Verify the variable was actually created
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("large_variable")
+                .findFirst())
+        .isPresent();
+
+    // Verify the process instance was activated (i.e., not stuck)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .findFirst())
+        .isPresent();
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithResultWithLargeVariablesBelowMaxMessageSize() {
+    final String processId = helper.getBpmnProcessId();
+
+    // given - deploy a simple process that completes immediately
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
+
+    // Near 4MB variable value
+    final int variableSize = (int) ByteValue.ofMegabytes(3) + (int) ByteValue.ofKilobytes(900);
+    final String largeValue = "x".repeat(variableSize);
+
+    // when - create a process instance with result and the large variable
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("large_variable", largeValue)
+            .withResult()
+            .create();
+
+    // then - the process instance should be created successfully as we no longer put variables to
+    // follow-up events, which caused the command rejection with EXCEEDED_BATCH_RECORD_SIZE instead
+    // of being processed.
+    assertThat(processInstanceKey).isGreaterThan(0);
+
+    // Verify the CREATED event was produced for the process instance creation
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .findFirst())
+        .isPresent();
+
+    // Verify the process instance completed
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .findFirst())
+        .isPresent();
+
+    // Verify the variable was persisted
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("large_variable")
+                .findFirst())
+        .isPresent();
   }
 }
