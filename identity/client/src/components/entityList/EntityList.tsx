@@ -77,7 +77,7 @@ type TextMenuItem<D> = {
   onClick: (entity: D) => void;
   isDangerous?: boolean;
   disabled?: boolean;
-  hidden?: boolean;
+  hidden?: boolean | ((entity: D) => boolean);
 };
 
 type MenuItem<D> = TextMenuItem<D> & {
@@ -367,57 +367,59 @@ const EntityList = <D extends EntityData>({
                           <TableCell>
                             {menuItems?.length > MAX_ICON_ACTIONS ? (
                               <OverflowMenu flipped>
-                                {getVisibleMenuItems(menuItems).map(
-                                  ({ label, onClick, isDangerous }) => (
-                                    <OverflowMenuItem
+                                {getVisibleMenuItems(
+                                  menuItems,
+                                  index[rowId],
+                                ).map(({ label, onClick, isDangerous }) => (
+                                  <OverflowMenuItem
+                                    key={`${label}-${rowId}`}
+                                    itemText={<p>{label}</p>}
+                                    isDelete={isDangerous}
+                                    onClick={handleMenuItemClick(
+                                      rowId,
+                                      onClick,
+                                    )}
+                                  />
+                                ))}
+                              </OverflowMenu>
+                            ) : (
+                              <Flex>
+                                {getVisibleMenuItems(
+                                  menuItems,
+                                  index[rowId],
+                                ).map((menuItem) => {
+                                  const {
+                                    label,
+                                    onClick,
+                                    icon,
+                                    isDangerous,
+                                    disabled,
+                                  } = menuItem as MenuItem<D>;
+
+                                  const kind: ButtonKind = isDangerous
+                                    ? "danger--ghost"
+                                    : "ghost";
+                                  const hasIconOnly = !!icon && !isDangerous;
+
+                                  return (
+                                    <Button
                                       key={`${label}-${rowId}`}
-                                      itemText={<p>{label}</p>}
-                                      isDelete={isDangerous}
+                                      kind={kind}
+                                      size="md"
+                                      disabled={disabled}
+                                      hasIconOnly={hasIconOnly}
+                                      renderIcon={icon}
+                                      tooltipAlignment="end"
+                                      iconDescription={label}
                                       onClick={handleMenuItemClick(
                                         rowId,
                                         onClick,
                                       )}
-                                    />
-                                  ),
-                                )}
-                              </OverflowMenu>
-                            ) : (
-                              <Flex>
-                                {getVisibleMenuItems(menuItems).map(
-                                  (menuItem) => {
-                                    const {
-                                      label,
-                                      onClick,
-                                      icon,
-                                      isDangerous,
-                                      disabled,
-                                    } = menuItem as MenuItem<D>;
-
-                                    const kind: ButtonKind = isDangerous
-                                      ? "danger--ghost"
-                                      : "ghost";
-                                    const hasIconOnly = !!icon && !isDangerous;
-
-                                    return (
-                                      <Button
-                                        key={`${label}-${rowId}`}
-                                        kind={kind}
-                                        size="md"
-                                        disabled={disabled}
-                                        hasIconOnly={hasIconOnly}
-                                        renderIcon={icon}
-                                        tooltipAlignment="end"
-                                        iconDescription={label}
-                                        onClick={handleMenuItemClick(
-                                          rowId,
-                                          onClick,
-                                        )}
-                                      >
-                                        {hasIconOnly ? "" : label}
-                                      </Button>
-                                    );
-                                  },
-                                )}
+                                    >
+                                      {hasIconOnly ? "" : label}
+                                    </Button>
+                                  );
+                                })}
                               </Flex>
                             )}
                           </TableCell>
@@ -460,8 +462,17 @@ const EntityList = <D extends EntityData>({
 
 function getVisibleMenuItems<D>(
   menuItems?: (MenuItem<D> | TextMenuItem<D>)[],
+  entity?: D,
 ): (MenuItem<D> | TextMenuItem<D>)[] {
-  return menuItems ? menuItems.filter((item) => !item.hidden) : [];
+  return menuItems
+    ? menuItems.filter((item) => {
+        const isHidden =
+          typeof item.hidden === "function"
+            ? item.hidden(entity as D)
+            : item.hidden;
+        return !isHidden;
+      })
+    : [];
 }
 
 export default EntityList;

@@ -1051,6 +1051,18 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setGlobalListeners(unifiedConfiguration.getCamunda().getCluster().getGlobalListeners());
+
+    // Merge entries from camunda.listener.execution into the broker execution list
+    final var listenerExecution =
+        unifiedConfiguration.getCamunda().getListener().getExecution();
+    if (listenerExecution != null && !listenerExecution.isEmpty()) {
+      override
+          .getExperimental()
+          .getEngine()
+          .getGlobalListeners()
+          .getExecution()
+          .addAll(listenerExecution);
+    }
   }
 
   private void populateFromProcessInstanceCreation(final BrokerBasedProperties override) {

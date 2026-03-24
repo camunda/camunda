@@ -879,6 +879,9 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Defaults to {@link EngineConfiguration#DEFAULT_EXPRESSION_EVALUATION_TIMEOUT}.
     timeout: null # Type: Duration, Env: CAMUNDA_EXPRESSION_TIMEOUT
 
+  listener: # Type: io.camunda.configuration.Listener
+    execution: null # Type: List<GlobalListenerCfg>
+
   # Defines the mode in which Camunda is running. This is used to activate/deactivate certain features.
   # The mode can be set via the "camunda.mode" property. Valid values are: - "all-in-one" - "broker" -
   # "gateway" The mode is meant to be interpreted as case-insensitive. A null value means that launch

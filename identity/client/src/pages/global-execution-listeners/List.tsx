@@ -125,24 +125,26 @@ const List: FC = () => {
           {
             label: t("editGlobalExecutionListener"),
             icon: Edit,
+            hidden: (entity) =>
+              (entity.originalListener as GlobalExecutionListener)?.source !==
+              "API",
             onClick: (entity) => {
               const listener =
                 entity.originalListener as GlobalExecutionListener;
-              if (listener.source === "API") {
-                editGlobalExecutionListener(listener);
-              }
+              editGlobalExecutionListener(listener);
             },
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
+            hidden: (entity) =>
+              (entity.originalListener as GlobalExecutionListener)?.source !==
+              "API",
             onClick: (entity) => {
               const listener =
                 entity.originalListener as GlobalExecutionListener;
-              if (listener.source === "API") {
-                deleteGlobalExecutionListener(listener);
-              }
+              deleteGlobalExecutionListener(listener);
             },
           },
         ]}

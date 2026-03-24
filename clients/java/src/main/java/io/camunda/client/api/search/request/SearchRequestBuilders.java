@@ -25,6 +25,7 @@ import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.GlobalExecutionListenerFilter;
 import io.camunda.client.api.search.filter.GlobalTaskListenerFilter;
 import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -57,6 +58,7 @@ import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
+import io.camunda.client.api.search.sort.GlobalExecutionListenerSort;
 import io.camunda.client.api.search.sort.GlobalTaskListenerSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
@@ -87,6 +89,7 @@ import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.GlobalExecutionListenerFilterImpl;
 import io.camunda.client.impl.search.filter.GlobalTaskListenerFilterImpl;
 import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
@@ -120,6 +123,7 @@ import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
+import io.camunda.client.impl.search.sort.GlobalExecutionListenerSortImpl;
 import io.camunda.client.impl.search.sort.GlobalTaskListenerSortImpl;
 import io.camunda.client.impl.search.sort.GroupSortImpl;
 import io.camunda.client.impl.search.sort.GroupUserSortImpl;
@@ -558,6 +562,20 @@ public final class SearchRequestBuilders {
   public static GlobalTaskListenerSort globalTaskListenerSort(
       final Consumer<GlobalTaskListenerSort> fn) {
     final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static GlobalExecutionListenerFilter globalExecutionListenerFilter(
+      final Consumer<GlobalExecutionListenerFilter> fn) {
+    final GlobalExecutionListenerFilter filter = new GlobalExecutionListenerFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GlobalExecutionListenerSort globalExecutionListenerSort(
+      final Consumer<GlobalExecutionListenerSort> fn) {
+    final GlobalExecutionListenerSort sort = new GlobalExecutionListenerSortImpl();
     fn.accept(sort);
     return sort;
   }

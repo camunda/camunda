@@ -29,6 +29,8 @@ public class Camunda {
   @NestedConfigurationProperty private Expression expression = new Expression();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
 
+  @NestedConfigurationProperty private Listener listener = new Listener();
+
   @NestedConfigurationProperty
   private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
 
@@ -111,6 +113,14 @@ public class Camunda {
 
   public void setProcessInstanceCreation(final ProcessInstanceCreation processInstanceCreation) {
     this.processInstanceCreation = processInstanceCreation;
+  }
+
+  public Listener getListener() {
+    return listener;
+  }
+
+  public void setListener(final Listener listener) {
+    this.listener = listener;
   }
 
   public void setMode(final String mode) {

@@ -682,6 +682,109 @@ public final class SystemContext {
     }
 
     listeners.setUserTask(validListeners);
+
+    // Validate execution listeners using the same logic
+    final String execPropertyLocation = "camunda.listener.execution";
+    final List<GlobalListenerCfg> execListeners = listeners.getExecution();
+    final List<GlobalListenerCfg> validExecutionListeners = new ArrayList<>();
+    for (int i = 0; i < execListeners.size(); i++) {
+      final GlobalListenerCfg listenerCfg = execListeners.get(i);
+      final String propertyPrefix = String.format("%s.%d", execPropertyLocation, i);
+
+      // Check if retries actually contains a number
+      try {
+        if (Integer.parseInt(listenerCfg.getRetries()) <= 0) {
+          throw new NumberFormatException();
+        }
+      } catch (final NumberFormatException e) {
+        LOG.warn(
+            "Invalid retries for global listener: '{}'; listener will be ignored [{}.retries]",
+            listenerCfg.getRetries(),
+            propertyPrefix);
+        continue;
+      }
+
+      // Convert to record using forced EXECUTION type
+      final GlobalListenerRecord listenerRecord =
+          listenerCfg.createGlobalListenerConfiguration(GlobalListenerType.EXECUTION).toRecord();
+
+      // Check if id is present
+      if (globalListenerValidator.idProvided(listenerRecord).isLeft()) {
+        LOG.warn(
+            "Missing id for global listener; listener will be ignored [{}.type]", propertyPrefix);
+        continue;
+      }
+
+      // Check if type is present
+      if (globalListenerValidator.typeProvided(listenerRecord).isLeft()) {
+        LOG.warn(
+            "Missing job type for global listener; listener will be ignored [{}.type]",
+            propertyPrefix);
+        continue;
+      }
+
+      // Validate event types
+      final var eventTypes =
+          listenerRecord.getEventTypes().stream().map(String::toLowerCase).toList();
+      final boolean containsAllEventsKeyword =
+          eventTypes.contains(GlobalListenerRecord.ALL_EVENT_TYPES);
+
+      final List<String> validEventTypes =
+          eventTypes.stream()
+              .filter(
+                  eventType -> {
+                    if (globalListenerValidator.isValidEventType(listenerRecord, eventType)) {
+                      return true;
+                    } else {
+                      LOG.warn(
+                          "Invalid event type will be ignored: '{}' [{}.eventTypes]",
+                          eventType,
+                          propertyPrefix);
+                      return false;
+                    }
+                  })
+              .filter(
+                  eventType -> {
+                    if (!GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)
+                        && containsAllEventsKeyword) {
+                      LOG.warn(
+                          "Extra event type defined alongside '{}' will be ignored: '{}' [{}.eventTypes]",
+                          GlobalListenerRecord.ALL_EVENT_TYPES,
+                          eventType,
+                          propertyPrefix);
+                      return false;
+                    }
+                    return true;
+                  })
+              .toList();
+
+      // Remove duplicates
+      final List<String> uniqueEventTypes = new ArrayList<>();
+      validEventTypes.forEach(
+          eventType -> {
+            if (uniqueEventTypes.contains(eventType)) {
+              LOG.warn(
+                  "Duplicated event type will be considered only once: '{}' [{}.eventTypes]",
+                  eventType,
+                  propertyPrefix);
+            } else {
+              uniqueEventTypes.add(eventType);
+            }
+          });
+
+      // Check if valid event types have been provided
+      if (uniqueEventTypes.isEmpty()) {
+        LOG.warn(
+            "Missing event types for global listener; listener will be ignored [{}.eventTypes]",
+            propertyPrefix);
+        continue;
+      }
+
+      listenerCfg.setEventTypes(uniqueEventTypes);
+      validExecutionListeners.add(listenerCfg);
+    }
+
+    listeners.setExecution(validExecutionListeners);
   }
 
   private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {

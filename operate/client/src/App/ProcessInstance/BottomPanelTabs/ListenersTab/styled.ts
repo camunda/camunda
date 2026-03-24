@@ -10,7 +10,7 @@ import {StructuredList as BaseStructuredList} from 'modules/components/Structure
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 import {supportError, spacing01, spacing03} from '@carbon/elements';
 import styled from 'styled-components';
-import {Stack as BaseStack, Dropdown as BaseDropdown} from '@carbon/react';
+import {Stack as BaseStack, Dropdown as BaseDropdown, Tag} from '@carbon/react';
 
 const Content = styled.div`
   position: relative;
@@ -61,6 +61,10 @@ const Stack = styled(BaseStack)`
   overflow-y: auto;
 `;
 
+const SourceTag = styled(Tag)`
+  margin: 0;
+`;
+
 export {
   Content,
   StructuredList,
@@ -69,4 +73,5 @@ export {
   Dropdown,
   EmptyMessageWrapper,
   Stack,
+  SourceTag,
 };

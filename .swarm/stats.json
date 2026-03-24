@@ -101,33 +101,42 @@
       }
     },
     "tester": {
-      "invocations": 18,
-      "totalElapsedMs": 4294637,
+      "invocations": 20,
+      "totalElapsedMs": 6762070,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 18
+        "claude-opus-4-6": 20
       }
     },
     "engineer": {
-      "invocations": 21,
-      "totalElapsedMs": 30412495,
+      "invocations": 40,
+      "totalElapsedMs": 56177292,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 21
+        "claude-opus-4-6": 40
       }
     },
     "code-reviewer": {
-      "invocations": 18,
-      "totalElapsedMs": 4197502,
+      "invocations": 19,
+      "totalElapsedMs": 4497583,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 18
+        "claude-opus-4-6": 19
+      }
+    },
+    "cross-model": {
+      "invocations": 125,
+      "totalElapsedMs": 173749428,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "gpt-5.3-codex": 125
       }
     }
   },
-  "totalRuns": 5,
-  "lastUpdated": "2026-03-23T15:45:33.536Z"
+  "totalRuns": 8,
+  "lastUpdated": "2026-03-24T17:49:28.828Z"
 }

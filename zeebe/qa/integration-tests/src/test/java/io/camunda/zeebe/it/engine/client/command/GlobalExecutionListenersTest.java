@@ -10,6 +10,8 @@ package io.camunda.zeebe.it.engine.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.GlobalExecutionListenerElementType;
+import io.camunda.client.api.search.enums.GlobalExecutionListenerEventType;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -378,6 +380,230 @@ public class GlobalExecutionListenersTest {
         .containsExactly("svcTask", "scriptTask");
   }
 
+  @Test
+  void shouldMergeConfigurationAndApiGlobalExecutionListeners() {
+    // given: global execution listeners defined through both configuration and API
+
+    // configure global listeners via config
+    configureGlobalExecutionListeners(
+        List.of(
+            createListenerConfig(
+                "10_configuration",
+                "10_configuration",
+                List.of("start"),
+                List.of("serviceTask"),
+                false),
+            createListenerConfig(
+                "20_configuration",
+                "20_configuration",
+                List.of("start"),
+                List.of("serviceTask"),
+                false)));
+    restartBroker();
+
+    // add global listener via API (no restart needed)
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("15_api")
+        .type("15_api")
+        .eventTypes(GlobalExecutionListenerEventType.START)
+        .elementTypes(GlobalExecutionListenerElementType.SERVICE_TASK)
+        .send()
+        .join();
+
+    // setup workers for all listeners
+    setupAutocompleteWorker("10_configuration");
+    setupAutocompleteWorker("15_api");
+    setupAutocompleteWorker("20_configuration");
+
+    // deploy process definition
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("mergeConfigApiTest")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType("serviceTaskJob"))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+    setupAutocompleteWorker("serviceTaskJob");
+
+    // when: process instance is created
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // then: all listeners (config + API) are executed in correct order
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+                            && r.getValue() instanceof ProcessInstanceRecordValue pirv
+                            && pirv.getProcessInstanceKey() == processInstanceKey
+                            && pirv.getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+                .limit(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+                            && r.getValue() instanceof ProcessInstanceRecordValue pirv
+                            && pirv.getProcessInstanceKey() == processInstanceKey
+                            && pirv.getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+                .jobRecords()
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.START)
+        .extracting(JobRecordValue::getType)
+        .containsExactly("10_configuration", "15_api", "20_configuration");
+  }
+
+  @Test
+  void shouldReplaceOnlyConfigurationDefinedGlobalExecutionListenersAfterRestart() {
+    // given: global execution listeners defined through both configuration and API
+
+    // configure "old" global listeners
+    configureGlobalExecutionListeners(
+        List.of(
+            createListenerConfig(
+                "10_configuration",
+                "10_configuration",
+                List.of("start"),
+                List.of("serviceTask"),
+                false),
+            createListenerConfig(
+                "20_configuration",
+                "20_configuration",
+                List.of("end"),
+                List.of("serviceTask"),
+                false)));
+    restartBroker();
+
+    // add global listeners via API (no restart needed)
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("15_api")
+        .type("15_api")
+        .eventTypes(GlobalExecutionListenerEventType.START)
+        .elementTypes(GlobalExecutionListenerElementType.SERVICE_TASK)
+        .send()
+        .join();
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("30_api")
+        .type("30_api")
+        .eventTypes(GlobalExecutionListenerEventType.START)
+        .elementTypes(GlobalExecutionListenerElementType.SERVICE_TASK)
+        .send()
+        .join();
+
+    // setup workers for all listeners
+    setupAutocompleteWorker("10_configuration");
+    setupAutocompleteWorker("20_configuration");
+    setupAutocompleteWorker("15_api");
+    setupAutocompleteWorker("30_api");
+
+    // deploy process definition
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("replaceConfigTest")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType("serviceTaskJob"))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // when: the configuration is changed and the cluster restarted
+    configureGlobalExecutionListeners(
+        List.of(
+            // 10_configuration removed
+            // 20_configuration still there but with different event type (now start instead of end)
+            createListenerConfig(
+                "20_configuration",
+                "20_configuration",
+                List.of("start"),
+                List.of("serviceTask"),
+                false),
+            // 40_configuration added
+            createListenerConfig(
+                "40_configuration",
+                "40_configuration",
+                List.of("start"),
+                List.of("serviceTask"),
+                false)));
+    restartBroker();
+
+    // setup worker for new listener
+    setupAutocompleteWorker("40_configuration");
+    setupAutocompleteWorker("serviceTaskJob");
+
+    // then: the correct listeners are executed — old config-defined are replaced,
+    //       API-defined are preserved
+    // Expected: 15_api, 20_configuration (updated), 30_api, 40_configuration (new)
+    // Note: 10_configuration should NOT execute (removed from config)
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+                            && r.getValue() instanceof ProcessInstanceRecordValue pirv
+                            && pirv.getProcessInstanceKey() == processInstanceKey
+                            && pirv.getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+                .limit(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+                            && r.getValue() instanceof ProcessInstanceRecordValue pirv
+                            && pirv.getProcessInstanceKey() == processInstanceKey
+                            && pirv.getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+                .jobRecords()
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.START)
+        .extracting(JobRecordValue::getType)
+        .containsExactly("15_api", "20_configuration", "30_api", "40_configuration");
+  }
+
+  @Test
+  void shouldFireGlobalListenerOnProcessCancelEvent() {
+    // given: global listener for process cancel events
+    configureGlobalExecutionListeners(
+        List.of(
+            createListenerConfig(
+                "cancelListener", "cancelListener", List.of("cancel"), List.of("process"), false)));
+    restartBroker();
+
+    setupAutocompleteWorker("cancelListener");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("cancelTest")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType("blockingJob"))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // when: a process instance is created and then cancelled while blocked at the service task
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // wait for service task job to be created (process is blocked)
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("blockingJob")
+        .getFirst();
+
+    // cancel the process instance
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+
+    // then: the cancel execution listener job fires on the process element
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withType("cancelListener")
+                .getFirst())
+        .extracting(Record::getValue)
+        .satisfies(
+            job -> {
+              assertThat(job.getJobListenerEventType()).isEqualTo(JobListenerEventType.CANCELING);
+              assertThat(job.getElementId())
+                  .describedAs("Cancel listener should fire on the process element")
+                  .isEqualTo("cancelTest");
+            });
+  }
+
   private void setupAutocompleteWorker(final String jobType) {
     camundaClient
         .newWorker()
@@ -401,18 +627,122 @@ public class GlobalExecutionListenersTest {
     ZEEBE.awaitCompleteTopology();
   }
 
+  @Test
+  void shouldFireMultipleGlobalListenersOnSameElementWithDifferentJobTypes() {
+    // given: two global execution listeners matching serviceTask start, with different priorities
+    configureGlobalExecutionListeners(
+        List.of(
+            createListenerConfig(
+                "listener-a", "elTypeA", List.of("start"), List.of("serviceTask"), false, 100),
+            createListenerConfig(
+                "listener-b", "elTypeB", List.of("start"), List.of("serviceTask"), false, 50)));
+    restartBroker();
+
+    setupAutocompleteWorker("elTypeA");
+    setupAutocompleteWorker("elTypeB");
+    setupAutocompleteWorker("serviceTaskJob");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("multiListenerTest")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType("serviceTaskJob"))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // when
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // then: both listeners fire in priority order (higher priority first)
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+                            && r.getValue() instanceof ProcessInstanceRecordValue pirv
+                            && pirv.getProcessInstanceKey() == processInstanceKey
+                            && pirv.getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+                .limit(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+                            && r.getValue() instanceof ProcessInstanceRecordValue pirv
+                            && pirv.getProcessInstanceKey() == processInstanceKey
+                            && pirv.getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+                .jobRecords()
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getType)
+        .containsExactly("elTypeA", "elTypeB");
+  }
+
+  @Test
+  void shouldExecuteGlobalListenerOnSubprocessStartAndEnd() {
+    // given: global listener for subprocess start and end
+    configureGlobalExecutionListeners(
+        List.of(
+            createListenerConfig(
+                "subListener",
+                "subLifecycle",
+                List.of("start", "end"),
+                List.of("subprocess"),
+                false)));
+    restartBroker();
+
+    setupAutocompleteWorker("subLifecycle");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("subprocessTest")
+            .startEvent("start")
+            .subProcess(
+                "sub",
+                sp ->
+                    sp.embeddedSubProcess()
+                        .startEvent("subStart")
+                        .manualTask("subTask")
+                        .endEvent("subEnd"))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // when
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // then: both start and end EL jobs fire on the subprocess
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withType("subLifecycle")
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getJobListenerEventType)
+        .containsExactly(JobListenerEventType.START, JobListenerEventType.END);
+  }
+
   private GlobalListenerCfg createListenerConfig(
       final String id,
       final String type,
       final List<String> eventTypes,
       final List<String> elementTypes,
       final boolean afterNonGlobal) {
+    return createListenerConfig(id, type, eventTypes, elementTypes, afterNonGlobal, 0);
+  }
+
+  private GlobalListenerCfg createListenerConfig(
+      final String id,
+      final String type,
+      final List<String> eventTypes,
+      final List<String> elementTypes,
+      final boolean afterNonGlobal,
+      final int priority) {
     final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
     listenerCfg.setId(id);
     listenerCfg.setType(type);
     listenerCfg.setEventTypes(eventTypes);
     listenerCfg.setElementTypes(elementTypes);
     listenerCfg.setAfterNonGlobal(afterNonGlobal);
+    listenerCfg.setPriority(priority);
     return listenerCfg;
   }
 }

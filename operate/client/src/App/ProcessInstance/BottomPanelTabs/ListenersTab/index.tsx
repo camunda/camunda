@@ -12,6 +12,7 @@ import {Layer} from '@carbon/react';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {formatDate} from 'modules/utils/date';
+import {isGlobalListener} from 'modules/utils/listeners';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
@@ -25,9 +26,11 @@ import {
   Dropdown,
   EmptyMessageWrapper,
   Stack,
+  SourceTag,
 } from './styled';
 
 type ListenerTypeFilter = 'EXECUTION_LISTENER' | 'TASK_LISTENER';
+type SourceFilter = 'ALL' | 'GLOBAL' | 'MODEL';
 
 const FilterLabelMapping = {
   'All listeners': 'ALL_LISTENERS',
@@ -54,6 +57,7 @@ const ListenersTab: React.FC = () => {
     useState<ListenerTypeFilter>();
   const [selectedOption, setSelectedOption] =
     useState<FilterLabelMappingKeys>('All listeners');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
 
   const {
     data: jobs,
@@ -75,7 +79,24 @@ const ListenersTab: React.FC = () => {
 
   const listeners = jobs ?? [];
 
+  const filterBySource = (items: typeof listeners) => {
+    if (sourceFilter === 'ALL') return items;
+    return items.filter((item) => {
+      const isGlobal = isGlobalListener(item.tags ?? []);
+      return sourceFilter === 'GLOBAL' ? isGlobal : !isGlobal;
+    });
+  };
+
+  const filteredListeners = filterBySource(listeners);
+
   const handleEmptyMessages = () => {
+    if (sourceFilter === 'GLOBAL') {
+      return 'No global listeners match the selected filter';
+    }
+    if (sourceFilter === 'MODEL') {
+      return 'No model listeners match the selected filter';
+    }
+
     if (hasUserTaskSelected) {
       if (selectedOption === 'All listeners') {
         return 'This element has no execution listeners nor user task listeners';
@@ -117,16 +138,43 @@ const ListenersTab: React.FC = () => {
           }
         />
       )}
+      <Dropdown
+        id="sourceFilter"
+        data-testid="source-filter"
+        titleText="Source"
+        label="All sources"
+        hideLabel
+        onChange={({selectedItem}: {selectedItem: string}) => {
+          const value =
+            selectedItem === 'Global'
+              ? 'GLOBAL'
+              : selectedItem === 'Model'
+                ? 'MODEL'
+                : 'ALL';
+          setSourceFilter(value);
+        }}
+        items={['All sources', 'Global', 'Model']}
+        size="sm"
+        selectedItem={
+          sourceFilter === 'GLOBAL'
+            ? 'Global'
+            : sourceFilter === 'MODEL'
+              ? 'Model'
+              : 'All sources'
+        }
+        disabled={listeners?.length === 0}
+      />
       <Stack as={Layer}>
-        {listeners?.length > 0 ? (
+        {filteredListeners?.length > 0 ? (
           <StructuredList
             dataTestId="listeners-list"
             headerColumns={[
-              {cellContent: 'Listener type', width: '20%'},
-              {cellContent: 'Listener key', width: '20%'},
+              {cellContent: 'Listener type', width: '17%'},
+              {cellContent: 'Source', width: '10%'},
+              {cellContent: 'Listener key', width: '17%'},
               {cellContent: 'State', width: '10%'},
-              {cellContent: 'Job type', width: '15%'},
-              {cellContent: 'Event', width: '15%'},
+              {cellContent: 'Job type', width: '13%'},
+              {cellContent: 'Event', width: '13%'},
               {cellContent: 'Time', width: '20%'},
             ]}
             headerSize="sm"
@@ -142,8 +190,16 @@ const ListenersTab: React.FC = () => {
                 fetchNextPage();
               }
             }}
-            rows={listeners?.map(
-              ({kind, jobKey, state, type, listenerEventType, endTime}) => {
+            rows={filteredListeners?.map(
+              ({
+                kind,
+                jobKey,
+                state,
+                type,
+                listenerEventType,
+                endTime,
+                tags,
+              }) => {
                 return {
                   key: jobKey,
                   dataTestId: jobKey,
@@ -153,6 +209,24 @@ const ListenersTab: React.FC = () => {
                         <CellContainer orientation="horizontal" gap={3}>
                           {spaceAndCapitalize(kind)}
                           {state === 'FAILED' && <WarningFilled />}
+                        </CellContainer>
+                      ),
+                    },
+                    {
+                      cellContent: (
+                        <CellContainer>
+                          <SourceTag
+                            type={
+                              isGlobalListener(tags ?? [])
+                                ? 'blue'
+                                : 'high-contrast'
+                            }
+                            size="sm"
+                          >
+                            {isGlobalListener(tags ?? [])
+                              ? 'Global'
+                              : 'Model'}
+                          </SourceTag>
                         </CellContainer>
                       ),
                     },

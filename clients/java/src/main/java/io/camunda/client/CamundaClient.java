@@ -40,6 +40,7 @@ import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.client.api.command.CreateGlobalExecutionListenerCommandStep1;
 import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
@@ -50,6 +51,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.client.api.command.DeleteGlobalExecutionListenerCommandStep1;
 import io.camunda.client.api.command.DeleteGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
@@ -95,6 +97,7 @@ import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
+import io.camunda.client.api.command.UpdateGlobalExecutionListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
@@ -116,6 +119,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GlobalExecutionListenerGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -150,6 +154,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.GlobalExecutionListenerSearchRequest;
 import io.camunda.client.api.search.request.GlobalTaskListenerSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
@@ -3433,4 +3438,86 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching global task listeners
    */
   GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
+
+  /**
+   * Creates a request to register a new global execution listener.
+   *
+   * <pre>
+   *   GlobalExecutionListenerResponse response = camundaClient
+   *       .newCreateGlobalExecutionListenerRequest("my-listener")
+   *       .type("my-job-type")
+   *       .eventTypes(GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END)
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @param id the unique identifier for the new global execution listener
+   * @return a builder for creating a global execution listener
+   */
+  CreateGlobalExecutionListenerCommandStep1 newCreateGlobalExecutionListenerRequest(
+      final String id);
+
+  /**
+   * Creates a request to update an existing global execution listener.
+   *
+   * <pre>
+   *   GlobalExecutionListenerResponse response = camundaClient
+   *       .newUpdateGlobalExecutionListenerRequest("my-listener")
+   *       .type("my-job-type")
+   *       .eventTypes(GlobalExecutionListenerEventType.START)
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @param id the id of the global execution listener to update
+   * @return a builder for updating a global execution listener
+   */
+  UpdateGlobalExecutionListenerCommandStep1 newUpdateGlobalExecutionListenerRequest(
+      final String id);
+
+  /**
+   * Creates a request to delete a global execution listener.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newDeleteGlobalExecutionListenerRequest("my-listener")
+   *       .send();
+   * </pre>
+   *
+   * @param id the id of the global execution listener to delete
+   * @return a builder for deleting a global execution listener
+   */
+  DeleteGlobalExecutionListenerCommandStep1 newDeleteGlobalExecutionListenerRequest(
+      final String id);
+
+  /**
+   * Creates a request to fetch a global execution listener by id.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGlobalExecutionListenerGetRequest("my-listener")
+   *       .send();
+   * </pre>
+   *
+   * @param id the id of the global execution listener to fetch
+   * @return a builder for fetching a global execution listener
+   */
+  GlobalExecutionListenerGetRequest newGlobalExecutionListenerGetRequest(final String id);
+
+  /**
+   * Creates a request to search for global execution listeners.
+   *
+   * <p>Global execution listeners can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGlobalExecutionListenerSearchRequest()
+   *       .filter(f -> f.source(GlobalListenerSource.CONFIGURATION))
+   *       .sort(s -> s.priority().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching global execution listeners
+   */
+  GlobalExecutionListenerSearchRequest newGlobalExecutionListenerSearchRequest();
 }

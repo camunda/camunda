@@ -102,11 +102,11 @@ public final class GlobalListenerBatchConfigureProcessor
     final Map<String, GlobalListenerRecord> existingListeners =
         currentConfig == null
             ? Collections.emptyMap()
-            : currentConfig.getTaskListeners().stream()
+            : currentConfig.getAllListenerRecords().stream()
                 .collect(Collectors.toMap(GlobalListenerRecordValue::getId, Function.identity()));
     // Retrieve new requested listeners from command, mapped by ID
     final Map<String, GlobalListenerRecord> newListeners =
-        listenerBatchRecord.getTaskListeners().stream()
+        listenerBatchRecord.getAllListenerRecords().stream()
             .collect(Collectors.toMap(GlobalListenerRecordValue::getId, Function.identity()));
 
     // The new configuration should completely replace the old one.
@@ -144,7 +144,7 @@ public final class GlobalListenerBatchConfigureProcessor
 
   private void emitChangeEvents(final GlobalListenerBatchRecord listenerBatchRecord) {
     final Map<Long, GlobalListenerRecord> listenersByKey =
-        listenerBatchRecord.getTaskListeners().stream()
+        listenerBatchRecord.getAllListenerRecords().stream()
             .collect(
                 Collectors.toMap(
                     GlobalListenerRecordValue::getGlobalListenerKey, Function.identity()));

@@ -22,6 +22,7 @@ type EnhancedIncident = Incident & {
   processDefinitionName: string;
   elementName: string;
   isSelected: boolean;
+  tags?: string[];
 };
 
 const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
