@@ -2078,27 +2078,6 @@
         <version>${version.jna-platform}</version>
       </dependency>
 
-      <!-- Override the transitive dependency from org.elasticsearch:elasticsearch,
-      replacing the discontinued org.lz4:lz4-java with the maintained fork at.yawk.lz4:lz4-java.
-      This override will remain necessary unless Elasticsearch itself adopts the maintained fork. -->
-      <dependency>
-        <groupId>at.yawk.lz4</groupId>
-        <artifactId>lz4-java</artifactId>
-        <version>${version.lz4}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-core</artifactId>
-        <version>${version.lucene}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-join</artifactId>
-        <version>${version.lucene}</version>
-      </dependency>
-
       <dependency>
         <groupId>com.jayway.jsonpath</groupId>
         <artifactId>json-path</artifactId>
