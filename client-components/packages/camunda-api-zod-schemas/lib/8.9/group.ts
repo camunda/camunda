@@ -191,7 +191,6 @@ const assignMappingToGroup: Endpoint<{groupId: string; mappingRuleId: string}> =
 	method: 'PUT',
 	getUrl(params) {
 		const {groupId, mappingRuleId} = params;
-		const {groupId, mappingRuleId} = params;
 
 		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingRuleId}`;
 	},
@@ -200,7 +199,6 @@ const assignMappingToGroup: Endpoint<{groupId: string; mappingRuleId: string}> =
 const unassignMappingFromGroup: Endpoint<{groupId: string; mappingRuleId: string}> = {
 	method: 'DELETE',
 	getUrl(params) {
-		const {groupId, mappingRuleId} = params;
 		const {groupId, mappingRuleId} = params;
 
 		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingRuleId}`;

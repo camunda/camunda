@@ -48,9 +48,7 @@ const updateMappingRule: Endpoint<{mappingRuleId: string}> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {mappingRuleId} = params;
-		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
 };
@@ -59,9 +57,7 @@ const deleteMappingRule: Endpoint<{mappingRuleId: string}> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {mappingRuleId} = params;
-		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
 };
@@ -70,9 +66,7 @@ const getMappingRule: Endpoint<{mappingRuleId: string}> = {
 	method: 'GET',
 	getUrl(params) {
 		const {mappingRuleId} = params;
-		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
 };

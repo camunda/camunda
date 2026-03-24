@@ -197,7 +197,6 @@ const assignMappingToRole: Endpoint<{roleId: string; mappingRuleId: string}> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {roleId, mappingRuleId} = params;
-		const {roleId, mappingRuleId} = params;
 
 		return `/${API_VERSION}/roles/${roleId}/mappings/${mappingRuleId}`;
 	},
@@ -206,7 +205,6 @@ const assignMappingToRole: Endpoint<{roleId: string; mappingRuleId: string}> = {
 const unassignMappingFromRole: Endpoint<{roleId: string; mappingRuleId: string}> = {
 	method: 'DELETE',
 	getUrl(params) {
-		const {roleId, mappingRuleId} = params;
 		const {roleId, mappingRuleId} = params;
 
 		return `/${API_VERSION}/roles/${roleId}/mappings/${mappingRuleId}`;
