@@ -16,10 +16,16 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const INFORMATION_TEXT = {
-  Input:
-    'Input mappings are defined while modelling the diagram. They are used to create new local variables inside the element scope with the specified assignment.',
-  Output:
-    'Output mappings are defined while modelling the diagram. They are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
+  Input: {
+    title: 'Input mappings are defined while modelling the diagram.',
+    subtitle:
+      'They are used to create new local variables inside the element scope with the specified assignment.',
+  },
+  Output: {
+    title: 'Output mappings are defined while modelling the diagram.',
+    subtitle:
+      'They are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
+  },
 };
 
 type Props = {
@@ -44,7 +50,8 @@ const InputOutputMappings: React.FC<Props> = ({type, elementId}) => {
       {isInfoBannerVisible && (
         <IOMappingInfoBanner
           type={type}
-          text={INFORMATION_TEXT[type]}
+          title={INFORMATION_TEXT[type].title}
+          subtitle={INFORMATION_TEXT[type].subtitle}
           onClose={() => {
             setIsInfoBannerVisible(false);
           }}
