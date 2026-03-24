@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.1e2bbe30.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.04ead04a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.fa6d2e94.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.7eb9c719.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -243,12 +243,19 @@ It does not communicate with the external IdP directly.</p>
 <ol>
 <li class="">Browser navigates to a cluster UI (for example Operate).</li>
 <li class="">Spring Security redirects the browser to the built-in login form.</li>
-<li class="">User submits credentials; Spring Security delegates to <code>UsernamePasswordAuthenticationTokenConverter</code>.</li>
+<li class="">User submits credentials; Spring Security delegates to Token Converter (<code>UsernamePasswordAuthenticationTokenConverter</code>).</li>
 <li class="">The converter loads the user entity, roles, and tenants via Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.</li>
 <li class=""><code>TokenClaimsConverter</code> and <code>DefaultCamundaAuthenticationProvider</code> build a <code>CamundaAuthentication</code> and store it in the session.</li>
 <li class="">Subsequent requests are authenticated via the session.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Spring Security: Manages the authentication process and redirects to the login form. (<code>UsernamePasswordAuthenticationFilter</code>)</li>
+<li class="">Token Converter: Converts credentials and resolves claims to build a <code>CamundaAuthentication</code>. (<code>UsernamePasswordAuthenticationTokenConverter</code> -&gt; <code>TokenClaimsConverter</code>)</li>
+<li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
+<li class="">Camunda Services: Service that provides access to Camunda Search Client (secondary database). (via UserServices, RoleServices, GroupServices, TenantServices )</li>
+</ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="612-oidc">6.1.2 OIDC<a href="#612-oidc" class="hash-link" aria-label="Direct link to 6.1.2 OIDC" title="Direct link to 6.1.2 OIDC" translate="no">​</a></h4>
 <p>Scenario: human user logs into Operate or Tasklist via OIDC.</p>
 <ol>
@@ -259,6 +266,15 @@ It does not communicate with the external IdP directly.</p>
 <li class="">Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in <a class="" href="/camunda/pr-preview/pr-48843/architecture/components/identity/supporting-concepts/rp-initiated-logout/">RP‑initiated logout</a>.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Spring Security: Manages the OIDC authorization code flow and redirects to the IdP. (<code>OAuth2LoginAuthenticationFilter</code>)</li>
+<li class="">User &amp; Claims Converter: Post-processes OIDC tokens, extracts claims, and resolves membership data via Camunda Services. (<code>OidcUserAuthenticationConverter</code> -&gt; <code>TokenClaimsConverter</code>)</li>
+<li class="">Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations. (<code>MappingRuleMatcher</code>)</li>
+<li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
+<li class="">Session Repository: Creates and invalidates server-side sessions backed by secondary storage. (<code>WebSessionRepository</code>)</li>
+<li class="">Camunda Services: Provides access to role, group, tenant, and mapping rule data via the Camunda Search Client. (<code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, <code>MappingRuleServices</code>)</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="62-user-logout">6.2 User logout<a href="#62-user-logout" class="hash-link" aria-label="Direct link to 6.2 User logout" title="Direct link to 6.2 User logout" translate="no">​</a></h3>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="621-basic-auth">6.2.1 Basic Auth<a href="#621-basic-auth" class="hash-link" aria-label="Direct link to 6.2.1 Basic Auth" title="Direct link to 6.2.1 Basic Auth" translate="no">​</a></h4>
 <p>Scenario: human user logs out of a cluster UI when authenticated with Basic Auth.
@@ -283,6 +299,13 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 <li class="">The <code>PostLogoutController</code> validates and resolves the post-logout redirect URI, then redirects the browser to the application login page.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Spring Security: Intercepts the logout request and triggers session invalidation. (<code>LogoutFilter</code>)</li>
+<li class="">Session Repository: Invalidates the local server-side session. (<code>WebSessionRepository</code>)</li>
+<li class="">Logout Handler: Triggers RP-initiated logout and redirects to the IdP end-session endpoint. (<code>CamundaOidcLogoutSuccessHandler</code>)</li>
+<li class="">Post-Logout Controller: Validates and resolves the post-logout redirect URI. (<code>PostLogoutController</code>)</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="63-machinetomachine-access">6.3. Machine‑to‑machine access<a href="#63-machinetomachine-access" class="hash-link" aria-label="Direct link to 6.3. Machine‑to‑machine access" title="Direct link to 6.3. Machine‑to‑machine access" translate="no">​</a></h3>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="631-bearer-token--oidc">6.3.1 Bearer Token / OIDC<a href="#631-bearer-token--oidc" class="hash-link" aria-label="Direct link to 6.3.1 Bearer Token / OIDC" title="Direct link to 6.3.1 Bearer Token / OIDC" translate="no">​</a></h4>
 <p>Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Token acquired via the OAuth2 client credentials grant.</p>
@@ -293,6 +316,13 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 <li class=""><code>OidcTokenAuthenticationConverter</code> and <code>TokenClaimsConverter</code> extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Spring Security: Validates the Bearer JWT token signature via the IdP&#x27;s JWKS endpoint. (<code>BearerTokenAuthenticationFilter</code>)</li>
+<li class="">Auth Converters: Converts JWT to a <code>CamundaAuthentication</code> and extracts client claims. (<code>OidcTokenAuthenticationConverter</code>, <code>TokenClaimsConverter</code>)</li>
+<li class="">Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims. (<code>MappingRuleMatcher</code>)</li>
+<li class="">Camunda Services: Provides access to mapping rule data. (<code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, <code>MappingRuleServices</code>)</li>
+</ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="632-client-id--secret--basic-auth">6.3.2 Client ID + Secret / Basic Auth<a href="#632-client-id--secret--basic-auth" class="hash-link" aria-label="Direct link to 6.3.2 Client ID + Secret / Basic Auth" title="Direct link to 6.3.2 Client ID + Secret / Basic Auth" translate="no">​</a></h4>
 <p>Scenario: worker or backend service calls REST APIs using a Client ID and Secret via HTTP Basic authentication.
 No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.</p>
@@ -303,6 +333,13 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class=""><code>TokenClaimsConverter</code> and <code>DefaultCamundaAuthenticationProvider</code> build a <code>CamundaAuthentication</code> and the request is authorized.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Spring Security: Extracts Basic auth credentials from the request. (<code>UsernamePasswordAuthenticationFilter</code>)</li>
+<li class="">Auth Converters: Converts clientId/secret credentials and builds claims for <code>CamundaAuthentication</code>. (<code>UsernamePasswordAuthenticationTokenConverter</code>, <code>TokenClaimsConverter</code>)</li>
+<li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
+<li class="">Camunda Services: Loads the client entity, roles, and tenants. (<code>UserServices</code>, <code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>)</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="64-sending-a-command-via-rest">6.4 Sending a command via REST<a href="#64-sending-a-command-via-rest" class="hash-link" aria-label="Direct link to 6.4 Sending a command via REST" title="Direct link to 6.4 Sending a command via REST" translate="no">​</a></h3>
 <p>Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.</p>
 <ol>
@@ -315,6 +352,10 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">Camunda Services returns a <code>CreateProcessInstanceResponse</code> and the REST API responds with <code>200 OK</code> containing the process instance key.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Engine Authorization: Enforces RBAC and accesses authorization state before commands are applied. (<code>AuthorizationCheckBehavior</code>, <code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>)</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="65-reading-resources-via-rest">6.5 Reading resources via REST<a href="#65-reading-resources-via-rest" class="hash-link" aria-label="Direct link to 6.5 Reading resources via REST" title="Direct link to 6.5 Reading resources via REST" translate="no">​</a></h3>
 <p>Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security (<code>DefaultResourceAccessProvider</code>) to filter results to authorized resources only.</p>
 <ol>
@@ -329,6 +370,11 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">Camunda Services returns a <code>SearchProcessInstancesResponse</code> and the REST API responds with <code>200 OK</code> containing the filtered process instances.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Security Context Provider: Combines the <code>CamundaAuthentication</code> with authorization requirements before a query is executed. (<code>SecurityContextProvider</code>)</li>
+<li class="">Resource Access Provider: Determines the caller&#x27;s effective permissions and constructs a resource filter for the search query. (<code>DefaultResourceAccessProvider</code>)</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="66-creating-a-new-user">6.6 Creating a new user<a href="#66-creating-a-new-user" class="hash-link" aria-label="Direct link to 6.6 Creating a new user" title="Direct link to 6.6 Creating a new user" translate="no">​</a></h3>
 <p>Scenario: an administrator creates a new user via the REST API; the command is applied by the Engine, written to the Primary Database via State classes, and then asynchronously propagated to the Secondary Database by the Exporter.</p>
 <ol>
@@ -341,6 +387,12 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">Asynchronously, the Camunda or Rdbms Exporter picks up the <code>UserCreated</code> event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Engine Authorization: Enforces RBAC and accesses authorization/membership state before commands are applied. (<code>AuthorizationCheckBehavior</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>)</li>
+<li class="">Camunda Services: Issues the <code>CreateUser</code> command and returns the result. (<code>UserServices</code>)</li>
+<li class="">Exporter: Asynchronously propagates applied events to the secondary database. (<code>CamundaExporter</code> / <code>RdbmsExporter</code>)</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="67-creating-a-new-authorization">6.7 Creating a new authorization<a href="#67-creating-a-new-authorization" class="hash-link" aria-label="Direct link to 6.7 Creating a new authorization" title="Direct link to 6.7 Creating a new authorization" translate="no">​</a></h3>
 <p>Scenario: an administrator creates a new authorization (permission grant) via the REST API; the Engine applies and persists it to the Primary Database, and the Exporter propagates it asynchronously to the Secondary Database.</p>
 <ol>
@@ -353,6 +405,12 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">Asynchronously, the Camunda or RDBMS Exporter picks up the <code>AuthorizationCreated</code> event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.</li>
 </ol>
 <!-- -->
+<p>Participants:</p>
+<ul>
+<li class="">Engine Authorization: Enforces RBAC and accesses authorization/membership state before commands are applied. (<code>AuthorizationCheckBehavior</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>)</li>
+<li class="">Camunda Services: Issues the <code>CreateAuthorization</code> command and returns the result. (<code>AuthorizationServices</code>)</li>
+<li class="">Exporter: Asynchronously propagates applied events to the secondary database. (<code>CamundaExporter</code> / <code>RdbmsExporter</code>)</li>
+</ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-deployment-view">7. Deployment view<a href="#7-deployment-view" class="hash-link" aria-label="Direct link to 7. Deployment view" title="Direct link to 7. Deployment view" translate="no">​</a></h2>
 <p>Identity‑specific aspects:</p>
 <ul>
