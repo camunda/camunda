@@ -493,9 +493,17 @@ jobs:
         run: |
           release="${{ inputs.name }}"
           kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 9600 &
-          sleep 5
+          echo "Waiting for port-forward..."
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:9600/actuator/health 2>/dev/null; then
+              echo "Port-forward ready"
+              break
+            fi
+            echo "  attempt $i/30..."
+            sleep 2
+          done
           echo "Resuming exporters..."
-          curl -sf -X POST http://localhost:9600/actuator/exporting/resume
+          curl -sf --retry 5 --retry-delay 3 -X POST http://localhost:9600/actuator/exporting/resume
           echo ""
           # Wait for backlog to flush
           sleep 15
