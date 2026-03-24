@@ -60,28 +60,52 @@ public class DefaultCommandExceptionHandlingStrategy implements CommandException
   public CommandOutcome handleCommandError(
       final CommandWrapper command, final Throwable throwable) {
     if (throwable instanceof final StatusRuntimeException exception) {
-      final Status.Code code = exception.getStatus().getCode();
-
-      if (IGNORABLE_FAILURE_CODES.contains(code)) {
-        LOG.info("Ignoring {} as superseded, error type '{}'", command, code);
-        return new CommandOutcome.Ignored(throwable, command.getAttempts());
-      }
-
-      if (RETRIABLE_CODES.contains(code)) {
-        if (!command.hasMoreRetries()) {
-          return new CommandOutcome.Failed(throwable, command.getAttempts());
-        }
-        command.increaseBackoffUsing(backoffSupplier);
-        LOG.warn("Retrying {} after error of type '{}' with backoff", command, code);
-        command.scheduleExecutionUsing(scheduledExecutorService);
-        return null; // retry scheduled
-      }
-
-      // FAILURE_CODES and anything else
-      return new CommandOutcome.Failed(throwable, command.getAttempts());
+      return handleGrpcError(command, exception);
     }
-    // TODO: handle REST exceptions (ProblemException/ClientHttpException) — currently silently
-    // swallowed. REST 404 → Ignored, 429/502/503/504 → retriable, 4xx → Failed
+
+    // TODO: handle REST exceptions (ProblemException/ClientHttpException) — currently always fail
+    // e.g. REST 404 → Ignored, 429/502/503/504 → retriable, 4xx → Failed
+    LOG.error("Failed to execute {} due to unexpected exception", command, throwable);
     return new CommandOutcome.Failed(throwable, command.getAttempts());
+  }
+
+  private CommandOutcome handleGrpcError(
+      final CommandWrapper command, final StatusRuntimeException exception) {
+    final Status.Code code = exception.getStatus().getCode();
+
+    if (IGNORABLE_FAILURE_CODES.contains(code)) {
+      LOG.debug("Ignoring {} with gRPC status code '{}'", command, code);
+      return new CommandOutcome.Ignored(exception, command.getAttempts());
+    }
+
+    if (RETRIABLE_CODES.contains(code)) {
+      if (!command.hasMoreRetries()) {
+        LOG.error(
+            "Failed to execute {} after {} attempts, gRPC status code '{}'",
+            command,
+            command.getAttempts(),
+            code,
+            exception);
+        return new CommandOutcome.Failed(exception, command.getAttempts());
+      }
+
+      command.increaseBackoffUsing(backoffSupplier);
+      LOG.warn("Retrying {} after gRPC status code '{}' with backoff", command, code);
+      command.scheduleExecutionUsing(scheduledExecutorService);
+      return null; // retry scheduled
+    }
+
+    if (FAILURE_CODES.contains(code)) {
+      LOG.error(
+          "Failed to execute {} due to non-retriable gRPC status code '{}'",
+          command,
+          code,
+          exception);
+      return new CommandOutcome.Failed(exception, command.getAttempts());
+    }
+
+    LOG.error(
+        "Failed to execute {} due to unexpected gRPC status code '{}'", command, code, exception);
+    return new CommandOutcome.Failed(exception, command.getAttempts());
   }
 }
