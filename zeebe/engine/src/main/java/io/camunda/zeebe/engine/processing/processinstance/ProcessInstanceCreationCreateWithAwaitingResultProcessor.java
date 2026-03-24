@@ -127,9 +127,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     elementInstanceState.setAwaitResultRequestMetadata(
         record.getProcessInstanceKey(), awaitResultMetadata);
 
-    // Clear variables before writing the CREATED follow-up event.
-    // Variables have already been persisted to state via setVariablesFromDocument()
-    // and are available in the Variable:CREATED records.
+    // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
+    // space.
     record.setVariables(DocumentValue.EMPTY_DOCUMENT);
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
