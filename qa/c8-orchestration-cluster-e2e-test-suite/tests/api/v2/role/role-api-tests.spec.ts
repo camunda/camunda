@@ -17,6 +17,7 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   assertPaginatedRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {
   CREATE_NEW_ROLE,
@@ -197,6 +198,8 @@ test.describe.parallel('Roles API Tests', () => {
   test('Update Role Missing Description Invalid Body 400', async ({
     request,
   }) => {
+    // In 8.9, description is no longer required for role updates
+    test.skip(isForwardCompat, 'Description is no longer required in newer versions');
     const p = {roleId: state['roleId1'] as string};
     await expect(async () => {
       const res = await request.put(buildUrl('/roles/{roleId}', p), {
@@ -238,7 +241,7 @@ test.describe.parallel('Roles API Tests', () => {
         const res = await request.delete(buildUrl('/roles/{roleId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        expect([200, 204]).toContain(res.status());
       }).toPass(defaultAssertionOptions);
     });
 

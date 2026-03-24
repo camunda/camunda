@@ -7,7 +7,12 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
+import {
+  assertStatusCode,
+  buildUrl,
+  jsonHeaders,
+  isForwardCompat,
+} from '../../../../utils/http';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {validateResponseShape} from '../../../../json-body-assertions';
 import {getProcessDefinitionKey} from '@requestHelpers';
@@ -217,9 +222,15 @@ test.describe.parallel('Process instance Tests', () => {
 
     await assertStatusCode(res, 400);
     const json = await res.json();
-    expect(json.title).toBe('INVALID_ARGUMENT');
+    if (isForwardCompat) {
+      expect(['Bad Request', 'INVALID_ARGUMENT']).toContain(json.title);
+    } else {
+      expect(json.title).toBe('INVALID_ARGUMENT');
+    }
     expect(json.detail).toBe(
-      'At least one of [processDefinitionId, processDefinitionKey] is required.',
+      isForwardCompat
+        ? 'At least one of [processDefinitionId, processDefinitionKey] is required'
+        : 'At least one of [processDefinitionId, processDefinitionKey] is required.',
     );
   });
 

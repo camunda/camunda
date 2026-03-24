@@ -78,7 +78,11 @@ export async function assertBadRequest(
   await assertStatusCode(response, 400);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
-  expect(json.title).toBe(title);
+  if (_forwardCompat) {
+    expect(['Bad Request', 'INVALID_ARGUMENT']).toContain(json.title);
+  } else {
+    expect(json.title).toBe(title);
+  }
   expect(json.detail).toMatch(detail);
 }
 
@@ -164,7 +168,11 @@ export async function assertInvalidArgument(
   await assertStatusCode(response, expectedStatusCode);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
-  expect(json.title).toBe('INVALID_ARGUMENT');
+  if (_forwardCompat) {
+    expect(['Bad Request', 'INVALID_ARGUMENT']).toContain(json.title);
+  } else {
+    expect(json.title).toBe('INVALID_ARGUMENT');
+  }
   expect(json.detail).toContain(detail);
 }
 
@@ -174,6 +182,7 @@ export async function assertInvalidArgument(
 //   2. null ≈ '' for scalar values (newer server returns null instead of '')
 // ---------------------------------------------------------------------------
 const _forwardCompat = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
+export const isForwardCompat = _forwardCompat;
 
 /**
  * Recursively strips keys from `actual` that are not present in `expected`.

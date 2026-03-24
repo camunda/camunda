@@ -12,11 +12,17 @@ import {
   buildUrl,
   jsonHeaders,
   assertBadRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
-test.describe('Pin Clock API Tests', () => {
+// Clock endpoints are alpha — their behavior is not guaranteed across versions,
+// so we skip these tests when running in forward-compatibility mode.
+// eslint-disable-next-line playwright/no-skipped-test
+(isForwardCompat ? test.describe.skip : test.describe)(
+  'Pin Clock API Tests',
+  () => {
   let processDefinitionId: string;
   test.beforeAll(async ({request}) => {
     await test.step('Deploy process definition', async () => {

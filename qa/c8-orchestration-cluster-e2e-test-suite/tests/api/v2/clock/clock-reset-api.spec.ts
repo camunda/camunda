@@ -7,11 +7,21 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
+import {
+  assertStatusCode,
+  buildUrl,
+  jsonHeaders,
+  isForwardCompat,
+} from '../../../../utils/http';
 import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
-test.describe('Reset Clock API Tests', () => {
+// Clock endpoints are alpha — their behavior is not guaranteed across versions,
+// so we skip these tests when running in forward-compatibility mode.
+// eslint-disable-next-line playwright/no-skipped-test
+(isForwardCompat ? test.describe.skip : test.describe)(
+  'Reset Clock API Tests',
+  () => {
   const timestamp = Date.parse('2025-01-01T00:00:00Z');
   let processDefinitionId: string;
   test.beforeAll(async ({request}) => {

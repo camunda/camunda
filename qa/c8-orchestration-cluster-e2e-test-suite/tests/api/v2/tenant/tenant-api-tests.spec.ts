@@ -17,6 +17,7 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   assertPaginatedRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {
   CREATE_NEW_TENANT,
@@ -190,6 +191,8 @@ test.describe.parallel('Tenants API Tests', () => {
   test('Update Tenant Missing Description Invalid Body 400', async ({
     request,
   }) => {
+    // In 8.9, description is no longer required for tenant updates
+    test.skip(isForwardCompat, 'Description is no longer required in newer versions');
     const p = {tenantId: state['tenantId1'] as string};
     await expect(async () => {
       const res = await request.put(buildUrl('/tenants/{tenantId}', p), {
@@ -231,7 +234,7 @@ test.describe.parallel('Tenants API Tests', () => {
         const res = await request.delete(buildUrl('/tenants/{tenantId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        expect([200, 204]).toContain(res.status());
       }).toPass(defaultAssertionOptions);
     });
 

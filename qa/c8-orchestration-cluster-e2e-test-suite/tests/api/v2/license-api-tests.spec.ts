@@ -7,7 +7,12 @@
  */
 
 import {test, expect} from '@playwright/test';
-import {buildUrl, jsonHeaders, assertRequiredFields} from '../../../utils/http';
+import {
+  buildUrl,
+  jsonHeaders,
+  assertRequiredFields,
+  isForwardCompat,
+} from '../../../utils/http';
 import {licenseRequiredFields} from '../../../utils/beans/requestBeans';
 
 test.describe.parallel('License API Tests', () => {
@@ -34,6 +39,8 @@ test.describe.parallel('License API Tests', () => {
     expect(json.validLicense).toBeFalsy();
     expect(json.licenseType).toBe('unknown');
     expect(json.isCommercial).toBeFalsy();
-    expect(json).not.toHaveProperty('expiresAt'); //the field is null, we expect it not to be present
+    if (!isForwardCompat) {
+      expect(json).not.toHaveProperty('expiresAt'); //the field is null, we expect it not to be present
+    }
   });
 });

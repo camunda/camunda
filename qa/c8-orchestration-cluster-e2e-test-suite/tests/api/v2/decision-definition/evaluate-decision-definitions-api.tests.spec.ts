@@ -14,6 +14,7 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   assertUnauthorizedRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -461,7 +462,9 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
 
       await assertBadRequest(
         res,
-        'At least one of [decisionDefinitionId, decisionDefinitionKey] is required.',
+        isForwardCompat
+          ? 'At least one of [decisionDefinitionId, decisionDefinitionKey] is required'
+          : 'At least one of [decisionDefinitionId, decisionDefinitionKey] is required.',
         'INVALID_ARGUMENT',
       );
     }).toPass(defaultAssertionOptions);
