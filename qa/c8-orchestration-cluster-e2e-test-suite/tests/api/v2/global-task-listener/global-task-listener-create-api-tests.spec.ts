@@ -10,27 +10,25 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertBadRequest,
   assertConflictRequest,
   assertStatusCode,
+  assertForbiddenRequest,
+  encode,
 } from '../../../../utils/http';
 import {
   generateUniqueId,
   defaultAssertionOptions,
 } from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
-
-const GLOBAL_TASK_LISTENER_REQUIRED_FIELDS = [
-  'id',
-  'type',
-  'eventTypes',
-  'afterNonGlobal',
-  'priority',
-  'retries',
-  'source',
-];
+import {cleanupGlobalTaskListeners} from '../../../../utils/globalTaskListenerCleanup';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
+import {
+  createUser,
+  createComponentAuthorization,
+  cleanupAuthorizations,
+} from '@requestHelpers';
 
 function createUniqueGlobalTaskListenerBody(customId?: string) {
   const id = customId ?? `test-gl-${generateUniqueId()}`;
@@ -46,15 +44,7 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
   const createdListenerIds: string[] = [];
 
   test.afterAll(async ({request}) => {
-    for (const id of createdListenerIds) {
-      try {
-        await request.delete(buildUrl('/global-task-listeners/{id}', {id}), {
-          headers: jsonHeaders(),
-        });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
+    await cleanupGlobalTaskListeners(request, createdListenerIds);
   });
 
   test('Create Global Task Listener - success with required fields', async ({
@@ -74,7 +64,6 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, GLOBAL_TASK_LISTENER_REQUIRED_FIELDS);
       expect(json.id).toBe(body.id);
       expect(json.type).toBe(body.type);
       expect(json.eventTypes).toEqual(expect.arrayContaining(body.eventTypes));
@@ -107,7 +96,6 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, GLOBAL_TASK_LISTENER_REQUIRED_FIELDS);
       expect(json.id).toBe(body.id);
       expect(json.type).toBe(body.type);
       expect(json.retries).toBe(3);
@@ -202,26 +190,131 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
   }) => {
     const body = createUniqueGlobalTaskListenerBody();
 
-    // First creation should succeed
+    await test.step('First creation should succeed', async () => {
+      await expect(async () => {
+        const firstRes = await request.post(
+          buildUrl('/global-task-listeners'),
+          {
+            headers: jsonHeaders(),
+            data: body,
+          },
+        );
+        await assertStatusCode(firstRes, 201);
+
+        const json = await firstRes.json();
+        if (!createdListenerIds.includes(json.id)) {
+          createdListenerIds.push(json.id);
+        }
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Second creation with the same id should return 409', async () => {
+      const secondRes = await request.post(
+        buildUrl('/global-task-listeners'),
+        {
+          headers: jsonHeaders(),
+          data: body,
+        },
+      );
+      await assertConflictRequest(secondRes);
+    });
+  });
+});
+
+test.describe('Global Task Listener API - Create Permission Tests', () => {
+  let userWithoutPermission: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+  let userWithReadOnlyPermission: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+
+  const createdListenerIds: string[] = [];
+  const authorizationKeys: string[] = [];
+
+  test.beforeAll(async ({request}) => {
+    userWithoutPermission = await createUser(request);
+
+    userWithReadOnlyPermission = await createUser(request);
+
+    const readOnlyAuthKey = await createComponentAuthorization(request, {
+      ownerId: userWithReadOnlyPermission.username,
+      ownerType: 'USER',
+      resourceType: 'GLOBAL_LISTENER',
+      resourceId: '*',
+      permissionTypes: ['READ_TASK_LISTENER'],
+    });
+    authorizationKeys.push(readOnlyAuthKey);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupAuthorizations(request, authorizationKeys);
+    await cleanupUsers(request, [
+      userWithoutPermission.username,
+      userWithReadOnlyPermission.username,
+    ]);
+    await cleanupGlobalTaskListeners(request, createdListenerIds);
+  });
+
+  test('Create Global Task Listener - 403 Forbidden - user with no GLOBAL_LISTENER permissions', async ({
+    request,
+  }) => {
+    const token = encode(
+      `${userWithoutPermission.username}:${userWithoutPermission.password}`,
+    );
+
     await expect(async () => {
-      const firstRes = await request.post(buildUrl('/global-task-listeners'), {
+      const res = await request.post(buildUrl('/global-task-listeners'), {
+        headers: jsonHeaders(token),
+        data: createUniqueGlobalTaskListenerBody(),
+      });
+
+      await assertForbiddenRequest(
+        res,
+        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_TASK_LISTENER' on resource 'GLOBAL_LISTENER'",
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Create Global Task Listener - 403 Forbidden - user with READ-only GLOBAL_LISTENER permission', async ({
+    request,
+  }) => {
+    const token = encode(
+      `${userWithReadOnlyPermission.username}:${userWithReadOnlyPermission.password}`,
+    );
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/global-task-listeners'), {
+        headers: jsonHeaders(token),
+        data: createUniqueGlobalTaskListenerBody(),
+      });
+
+      await assertForbiddenRequest(
+        res,
+        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_TASK_LISTENER' on resource 'GLOBAL_LISTENER'",
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Create Global Task Listener - 201 Success - admin user with full permissions', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const body = createUniqueGlobalTaskListenerBody();
+      const res = await request.post(buildUrl('/global-task-listeners'), {
         headers: jsonHeaders(),
         data: body,
       });
-      await assertStatusCode(firstRes, 201);
 
-      const json = await firstRes.json();
-      if (!createdListenerIds.includes(json.id)) {
-        createdListenerIds.push(json.id);
-      }
+      await assertStatusCode(res, 201);
+      const json = await res.json();
+      createdListenerIds.push(json.id);
     }).toPass(defaultAssertionOptions);
-
-    // Second creation with the same id should return 409
-    const secondRes = await request.post(buildUrl('/global-task-listeners'), {
-      headers: jsonHeaders(),
-      data: body,
-    });
-
-    await assertConflictRequest(secondRes);
   });
 });

@@ -19,6 +19,8 @@ import {
   defaultAssertionOptions,
 } from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
+import {cleanupGlobalTaskListeners} from '../../../../utils/globalTaskListenerCleanup';
+import {createGlobalTaskListener} from '@requestHelpers';
 
 type GlobalTaskListenerItem = {
   id: string;
@@ -29,27 +31,6 @@ type GlobalTaskListenerItem = {
   retries: number | null;
   source: string;
 };
-
-async function createGlobalTaskListener(
-  request: import('@playwright/test').APIRequestContext,
-  body: {
-    id: string;
-    type: string;
-    eventTypes: string[];
-    priority?: number;
-    retries?: number;
-    afterNonGlobal?: boolean;
-  },
-) {
-  await expect(async () => {
-    const res = await request.post(buildUrl('/global-task-listeners'), {
-      headers: jsonHeaders(),
-      data: body,
-    });
-    await assertStatusCode(res, 201);
-  }).toPass(defaultAssertionOptions);
-  return body;
-}
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
@@ -85,16 +66,10 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
   });
 
   test.afterAll(async ({request}) => {
-    for (const listener of listeners) {
-      try {
-        await request.delete(
-          buildUrl('/global-task-listeners/{id}', {id: listener.id}),
-          {headers: jsonHeaders()},
-        );
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
+    await cleanupGlobalTaskListeners(
+      request,
+      listeners.map((l) => l.id),
+    );
   });
 
   test('Search Global Task Listeners - sort by priority ASC', async ({
@@ -145,6 +120,10 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
       );
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        res,
+      );
       const body = await res.json();
       expect(body.items.length).toBe(3);
 
@@ -171,6 +150,10 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
       );
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        res,
+      );
       const body = await res.json();
       expect(body.items.length).toBe(3);
 
@@ -196,6 +179,10 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
       );
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        res,
+      );
       const body = await res.json();
       expect(body.items.length).toBe(3);
 
@@ -225,6 +212,10 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
       );
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        res,
+      );
       const body = await res.json();
       expect(body.items.length).toBe(3);
 

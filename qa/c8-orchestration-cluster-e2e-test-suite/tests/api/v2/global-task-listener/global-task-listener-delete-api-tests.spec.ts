@@ -14,46 +14,16 @@ import {
   assertNotFoundRequest,
   assertStatusCode,
 } from '../../../../utils/http';
-import {
-  generateUniqueId,
-  defaultAssertionOptions,
-} from '../../../../utils/constants';
-
-async function createGlobalTaskListener(
-  request: import('@playwright/test').APIRequestContext,
-) {
-  const id = `test-gl-${generateUniqueId()}`;
-  const body = {
-    id,
-    type: `io.camunda.test.listener.${id}`,
-    eventTypes: ['creating', 'completing'],
-  };
-
-  await expect(async () => {
-    const res = await request.post(buildUrl('/global-task-listeners'), {
-      headers: jsonHeaders(),
-      data: body,
-    });
-    await assertStatusCode(res, 201);
-  }).toPass(defaultAssertionOptions);
-
-  return body;
-}
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {cleanupGlobalTaskListeners} from '../../../../utils/globalTaskListenerCleanup';
+import {createGlobalTaskListener} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Global Task Listener API Tests - Delete', () => {
   const createdListenerIds: string[] = [];
 
   test.afterAll(async ({request}) => {
-    for (const id of createdListenerIds) {
-      try {
-        await request.delete(buildUrl('/global-task-listeners/{id}', {id}), {
-          headers: jsonHeaders(),
-        });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
+    await cleanupGlobalTaskListeners(request, createdListenerIds);
   });
 
   test('Delete Global Task Listener - success', async ({request}) => {

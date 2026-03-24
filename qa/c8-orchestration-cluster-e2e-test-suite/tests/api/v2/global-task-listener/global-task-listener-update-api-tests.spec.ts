@@ -10,72 +10,22 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertBadRequest,
   assertNotFoundRequest,
   assertStatusCode,
 } from '../../../../utils/http';
-import {
-  generateUniqueId,
-  defaultAssertionOptions,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
-
-const GLOBAL_TASK_LISTENER_REQUIRED_FIELDS = [
-  'id',
-  'type',
-  'eventTypes',
-  'afterNonGlobal',
-  'priority',
-  'retries',
-  'source',
-];
-
-async function createGlobalTaskListener(
-  request: import('@playwright/test').APIRequestContext,
-  overrides?: Partial<{
-    id: string;
-    type: string;
-    eventTypes: string[];
-    retries: number;
-    afterNonGlobal: boolean;
-    priority: number;
-  }>,
-) {
-  const id = overrides?.id ?? `test-gl-${generateUniqueId()}`;
-  const body = {
-    id,
-    type: `io.camunda.test.listener.${id}`,
-    eventTypes: ['creating', 'completing'],
-    ...overrides,
-  };
-
-  await expect(async () => {
-    const res = await request.post(buildUrl('/global-task-listeners'), {
-      headers: jsonHeaders(),
-      data: body,
-    });
-    await assertStatusCode(res, 201);
-  }).toPass(defaultAssertionOptions);
-
-  return body;
-}
+import {cleanupGlobalTaskListeners} from '../../../../utils/globalTaskListenerCleanup';
+import {createGlobalTaskListener} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Global Task Listener API Tests - Update', () => {
   const createdListenerIds: string[] = [];
 
   test.afterAll(async ({request}) => {
-    for (const id of createdListenerIds) {
-      try {
-        await request.delete(buildUrl('/global-task-listeners/{id}', {id}), {
-          headers: jsonHeaders(),
-        });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
+    await cleanupGlobalTaskListeners(request, createdListenerIds);
   });
 
   test('Update Global Task Listener - success updating all fields', async ({
@@ -107,7 +57,6 @@ test.describe.parallel('Global Task Listener API Tests - Update', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, GLOBAL_TASK_LISTENER_REQUIRED_FIELDS);
       expect(json.id).toBe(created.id);
       expect(json.type).toBe(updateBody.type);
       expect(json.eventTypes).toEqual(
@@ -145,6 +94,10 @@ test.describe.parallel('Global Task Listener API Tests - Update', () => {
       );
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/{id}', method: 'PUT', status: '200'},
+        res,
+      );
       const json = await res.json();
       expect(json.id).toBe(created.id);
       expect(json.type).toBe(updateBody.type);
