@@ -118,6 +118,7 @@ public final class ProcessInstanceCreationCreateProcessor
 
     // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
     // space.
+    // Prevent buffer cloning overhead if response will not be returned.
     final var variablesBuffer =
         command.hasRequestMetadata() ? BufferUtil.cloneBuffer(record.getVariablesBuffer()) : null;
     record.setVariables(DocumentValue.EMPTY_DOCUMENT);
@@ -125,6 +126,7 @@ public final class ProcessInstanceCreationCreateProcessor
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
 
     if (command.hasRequestMetadata()) {
+      // set variables back to return them in the response
       record.setVariables(variablesBuffer);
       responseWriter.writeEventOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
