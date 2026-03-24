@@ -1778,7 +1778,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\",type!=\"PROCESS\", action!=\"activated\"}[$__range])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1864,7 +1864,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__range])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1946,7 +1946,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\",action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\",action=\"completed\", type=\"SERVICE_TASK\"}[$__range])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2036,7 +2036,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__range])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2049,6 +2049,7 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -2138,7 +2139,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__range])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2151,6 +2152,7 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -2240,7 +2242,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__range])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2253,6 +2255,7 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
