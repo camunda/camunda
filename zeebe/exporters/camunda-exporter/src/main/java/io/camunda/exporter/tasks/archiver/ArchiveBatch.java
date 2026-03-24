@@ -38,11 +38,11 @@ public interface ArchiveBatch {
     }
 
     public List<ProcessInstanceArchiveBatch> chunk(final int chunkSize) {
-      if (isEmpty()) {
-        return List.of(this);
-      }
-
       final var chunks = new ArrayList<ProcessInstanceArchiveBatch>();
+      if (isEmpty()) {
+        chunks.add(this);
+        return chunks;
+      }
 
       List<Long> currentRootProcessInstanceKeys = new ArrayList<>();
       List<Long> currentProcessInstanceKeys = new ArrayList<>();
