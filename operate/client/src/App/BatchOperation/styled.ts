@@ -13,7 +13,6 @@ const PageContainer = styled(Stack)`
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
   background-color: var(--cds-layer);
 `;
 
@@ -57,7 +56,7 @@ const Header = styled.div`
 const HeaderTitleContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--cds-spacing-02);
 `;
 
 export {
