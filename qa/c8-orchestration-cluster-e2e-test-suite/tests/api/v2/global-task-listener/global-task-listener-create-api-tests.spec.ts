@@ -209,13 +209,10 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
     });
 
     await test.step('Second creation with the same id should return 409', async () => {
-      const secondRes = await request.post(
-        buildUrl('/global-task-listeners'),
-        {
-          headers: jsonHeaders(),
-          data: body,
-        },
-      );
+      const secondRes = await request.post(buildUrl('/global-task-listeners'), {
+        headers: jsonHeaders(),
+        data: body,
+      });
       await assertConflictRequest(secondRes);
     });
   });
