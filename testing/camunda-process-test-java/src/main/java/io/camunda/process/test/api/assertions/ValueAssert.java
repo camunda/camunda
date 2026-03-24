@@ -37,5 +37,5 @@ public interface ValueAssert {
    * @param expectation the natural-language expectation
    * @return this assertion object
    */
-  ValueAssert satisfiesExpectation(String expectation);
+  ValueAssert satisfiesJudge(String expectation);
 }

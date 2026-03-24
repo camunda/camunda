@@ -40,7 +40,7 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
   }
 
   @Override
-  public ValueAssert satisfiesExpectation(final String expectation) {
+  public ValueAssert satisfiesJudge(final String expectation) {
     judgeAssertj.assertJudgeHasAllRequiredSettings();
     JudgeAssertj.assertExpectationNotEmpty(expectation);
     judgeAssertj.evaluateExpectation(expectation, actual, "");
