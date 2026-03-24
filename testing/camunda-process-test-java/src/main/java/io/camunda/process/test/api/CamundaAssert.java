@@ -437,9 +437,9 @@ public class CamundaAssert {
   }
 
   /**
-   * To verify a raw string value using LLM judge assertions.
+   * To verify a raw string value.
    *
-   * @param actual the string value to evaluate
+   * @param actual the string value to assert on
    * @return the assertion object
    */
   public static ValueAssert assertThatValue(final String actual) {
