@@ -15,33 +15,32 @@
  */
 package io.camunda.process.test.impl.assertions;
 
-import io.camunda.process.test.api.assertions.EvaluationAssert;
+import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.AbstractAssert;
 
 /**
- * AssertJ implementation of {@link EvaluationAssert}. Evaluates string values against
- * natural-language expectations using an LLM judge.
+ * AssertJ implementation of {@link ValueAssert}. Evaluates string values against natural-language
+ * expectations using an LLM judge.
  */
-public class EvaluationAssertj extends AbstractAssert<EvaluationAssertj, String>
-    implements EvaluationAssert {
+public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implements ValueAssert {
 
   private final JudgeAssertj judgeAssertj;
 
-  public EvaluationAssertj(final String actual, final JudgeConfig judgeConfig) {
-    super(actual, EvaluationAssertj.class);
+  public ValueAssertj(final String actual, final JudgeConfig judgeConfig) {
+    super(actual, ValueAssertj.class);
     this.judgeAssertj = new JudgeAssertj(judgeConfig);
   }
 
   @Override
-  public EvaluationAssert withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
+  public ValueAssert withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
     judgeAssertj.withJudgeConfig(modifier);
     return this;
   }
 
   @Override
-  public EvaluationAssert satisfiesExpectation(final String expectation) {
+  public ValueAssert satisfiesExpectation(final String expectation) {
     judgeAssertj.assertJudgeHasAllRequiredSettings();
     JudgeAssertj.assertExpectationNotEmpty(expectation);
     judgeAssertj.evaluateExpectation(expectation, actual, "");

@@ -18,8 +18,8 @@ package io.camunda.process.test.api.assertions;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import java.util.function.UnaryOperator;
 
-/** The assertion object to evaluate string values using an LLM judge. */
-public interface EvaluationAssert {
+/** The assertion object to evaluate raw string-based values. */
+public interface ValueAssert {
 
   /**
    * Overrides the {@link JudgeConfig} for subsequent evaluations in this chain. The modifier
@@ -28,7 +28,7 @@ public interface EvaluationAssert {
    * @param modifier function that transforms the current config
    * @return this assertion object
    */
-  EvaluationAssert withJudgeConfig(UnaryOperator<JudgeConfig> modifier);
+  ValueAssert withJudgeConfig(UnaryOperator<JudgeConfig> modifier);
 
   /**
    * Verifies that the actual value satisfies the given natural-language expectation using the LLM
@@ -37,5 +37,5 @@ public interface EvaluationAssert {
    * @param expectation the natural-language expectation
    * @return this assertion object
    */
-  EvaluationAssert satisfiesExpectation(String expectation);
+  ValueAssert satisfiesExpectation(String expectation);
 }
