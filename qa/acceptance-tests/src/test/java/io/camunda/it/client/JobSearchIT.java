@@ -247,7 +247,7 @@ public class JobSearchIT {
     // then - assert all fields with explicit expected values to ensure consistency across storage
     // backends
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst()).isEqualTo(taskABpmnJob);
+    assertThat(result.items().getFirst()).usingRecursiveComparison().isEqualTo(taskABpmnJob);
   }
 
   @Test
