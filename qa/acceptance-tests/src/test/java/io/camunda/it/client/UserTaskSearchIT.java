@@ -673,11 +673,7 @@ class UserTaskSearchIT {
   void shouldGetUserTaskByKey() {
     // given
     final var searchResult =
-        camundaClient
-            .newUserTaskSearchRequest()
-            .filter(f -> f.elementId("TaskSub"))
-            .send()
-            .join();
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
     assertThat(searchResult.items()).hasSize(1);
     final var expectedTask = searchResult.items().getFirst();
 
