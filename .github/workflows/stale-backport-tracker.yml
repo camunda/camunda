@@ -6,9 +6,6 @@
 name: Stale Backport Tracker
 
 on:
-  push:
-    branches:
-      - collect-stale-backport-prs  # TEMPORARY — remove before merging
   schedule:
     # Run every 4 hours during weekday business hours (UTC): 6, 10, 14, 18
     # First run at 6 AM creates a new message; subsequent runs update it in-place.
@@ -40,8 +37,8 @@ on:
         required: false
         default: '24'
         type: string
-      slack_webhook_url:
-        description: 'Slack incoming webhook URL. If provided, skips Vault lookup and sends to this URL.'
+      slack_channel_id:
+        description: 'Slack channel ID to post the report to. Required for manual runs — the default #top-monorepo-release channel is only used by the scheduled cron trigger.'
         required: false
         default: ''
         type: string
@@ -57,10 +54,20 @@ on:
         required: false
         default: true
         type: boolean
+      notify_github:
+        description: 'Add comments to stale backport PRs'
+        required: false
+        default: false
+        type: boolean
       stale_hours_threshold:
         description: 'Hours after which a backport PR is considered stale'
         required: false
         default: '24'
+        type: string
+      slack_channel_id:
+        description: 'Slack channel ID to post the report to. Required when notify_slack is true — the default #top-monorepo-release channel is only used by the scheduled cron trigger.'
+        required: false
+        default: ''
         type: string
 
 defaults:
@@ -125,36 +132,37 @@ jobs:
 
           echo "📊 Summary: $total_stale stale backport PR(s) found"
 
-  # notify-github:
-  #   name: Notify on GitHub PRs
-  #   needs: collect-stale-backports
-  #   if: |
-  #     needs.collect-stale-backports.outputs.has_stale == 'true' &&
-  #     (
-  #       (github.event_name == 'schedule') ||
-  #       (github.event_name == 'workflow_dispatch' && inputs.notify_github == true && inputs.dry_run == false)
-  #     )
-  #   runs-on: ubuntu-slim
-    # timeout-minutes: 10
-  #   permissions:
-  #     contents: read
-  #   steps:
-  #     - name: Generate GitHub token
-  #       id: github-token
-  #       uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
-  #       with:
-  #         github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
-  #         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
-  #         github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
-  #         github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-  #         vault-auth-method: approle
-  #         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-  #         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-  #         vault-url: ${{ secrets.VAULT_ADDR }}
-
+  notify-github:
+    name: Notify on GitHub PRs
+    needs: collect-stale-backports
+    if: |
+      needs.collect-stale-backports.outputs.has_stale == 'true' &&
+      (
+        (github.event_name == 'schedule') ||
+        (github.event_name == 'workflow_dispatch' && inputs.notify_github == true && inputs.dry_run == false) ||
+        (github.event_name == 'workflow_call' && inputs.notify_github == true)
+      )
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+  
       - name: Checkout repository
         uses: actions/checkout@v6
-
+  
       - name: Notify stale backport PRs
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -169,10 +177,9 @@ jobs:
     name: Post Slack report
     needs: collect-stale-backports
     if: |
-      (github.event_name == 'push') ||
       (github.event_name == 'schedule') ||
-      (github.event_name == 'workflow_dispatch' && inputs.notify_slack == true) ||
-      (github.event_name == 'workflow_call' && inputs.notify_slack == true)
+      (github.event_name == 'workflow_dispatch' && inputs.notify_slack == true && inputs.slack_channel_id != '') ||
+      (github.event_name == 'workflow_call' && inputs.notify_slack == true && inputs.slack_channel_id != '')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -191,6 +198,7 @@ jobs:
           exportEnv: false
           secrets: |
              secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_CHANNEL_ID;
 
       - name: Resolve Slack user IDs
         id: slack-users
@@ -236,7 +244,7 @@ jobs:
         continue-on-error: true
         env:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
-          SLACK_CHANNEL: "C0AN1P08K6K"  # TEMPORARY — replace with channel ID before merging
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}
         run: |
           # Look for the bot's most recent "Stale Backport PRs" message in the channel (last 24h)
           oldest=$(date -u -d '24 hours ago' +%s 2>/dev/null || date -u -v-24H +%s)
@@ -265,15 +273,7 @@ jobs:
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # - name: Send Slack notification (webhook — uncomment for channel posting)
-      #   uses: slackapi/slack-github-action@v3.0.1
-      #   continue-on-error: true
-      #   with:
-      #     webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
-      #     webhook-type: incoming-webhook
-      #     payload: ${{ steps.format.outputs.payload }}
-
-      - name: Update existing Slack message  # TEMPORARY DM target — remove before merging
+      - name: Update existing Slack message
         if: steps.find-message.outputs.found == 'true'
         uses: slackapi/slack-github-action@v3.0.1
         continue-on-error: true
@@ -281,12 +281,12 @@ jobs:
           method: chat.update
           token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           payload: |
-            channel: "C0AN1P08K6K"
+            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}"
             ts: "${{ steps.find-message.outputs.message_ts }}"
             text: "Stale backport report"
             blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
 
-      - name: Post new Slack message  # TEMPORARY DM target — remove before merging
+      - name: Post new Slack message
         if: steps.find-message.outputs.found != 'true'
         uses: slackapi/slack-github-action@v3.0.1
         continue-on-error: true
@@ -294,9 +294,10 @@ jobs:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           payload: |
-            channel: "C0AN1P08K6K"
+            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}"
             text: "Stale backport report"
             blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+
       - name: Log notification status
         if: always()
         run: |
