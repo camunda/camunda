@@ -263,7 +263,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserTaskVariableHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold(),
-                processCache),
+                processCache,
+                configuration.isSkipVariableWriteWithoutUserTasks()),
             new UserTaskCompletionVariableHandler(
                 indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold(),

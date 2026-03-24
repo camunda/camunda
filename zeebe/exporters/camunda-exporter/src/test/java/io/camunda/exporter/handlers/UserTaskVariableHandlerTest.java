@@ -41,7 +41,7 @@ public class UserTaskVariableHandlerTest {
   private final String indexName = "test-tasklist-task";
   private final TestProcessCache processCache = new TestProcessCache();
   private final UserTaskVariableHandler underTest =
-      new UserTaskVariableHandler(indexName, 100, processCache);
+      new UserTaskVariableHandler(indexName, 100, processCache, true);
 
   @Test
   void testGetHandledValueType() {
@@ -118,6 +118,31 @@ public class UserTaskVariableHandlerTest {
 
     // when - then
     assertThat(underTest.handlesRecord(variableRecord)).isTrue();
+  }
+
+  @Test
+  void shouldHandleRecordWhenSkipVariableWriteIsDisabled() {
+    // given
+    final var handlerWithSkipDisabled =
+        new UserTaskVariableHandler(indexName, 100, processCache, false);
+
+    final long processDefinitionKey = 789L;
+    processCache.put(
+        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withProcessDefinitionKey(processDefinitionKey)
+                            .build()));
+
+    // when - then
+    assertThat(handlerWithSkipDisabled.handlesRecord(variableRecord)).isTrue();
   }
 
   @Test

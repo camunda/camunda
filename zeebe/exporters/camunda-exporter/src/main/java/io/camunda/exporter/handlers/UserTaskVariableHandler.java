@@ -36,14 +36,17 @@ public class UserTaskVariableHandler
   protected final int variableSizeThreshold;
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final boolean skipVariableWriteWithoutUserTasks;
 
   public UserTaskVariableHandler(
       final String indexName,
       final int variableSizeThreshold,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final boolean skipVariableWriteWithoutUserTasks) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
     this.processCache = processCache;
+    this.skipVariableWriteWithoutUserTasks = skipVariableWriteWithoutUserTasks;
   }
 
   @Override
@@ -60,6 +63,10 @@ public class UserTaskVariableHandler
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
     if (VariableIntent.MIGRATED.equals(record.getIntent())) {
       return false;
+    }
+
+    if (!skipVariableWriteWithoutUserTasks) {
+      return true;
     }
 
     final long processDefinitionKey = record.getValue().getProcessDefinitionKey();
