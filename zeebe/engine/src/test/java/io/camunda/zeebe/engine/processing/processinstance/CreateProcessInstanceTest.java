@@ -652,7 +652,8 @@ public final class CreateProcessInstanceTest {
                 .done())
         .deploy();
 
-    final int variableSize = (int) ByteValue.ofMegabytes(2);
+    // Near 4MB variable value
+    final int variableSize = (int) ByteValue.ofMegabytes(3) + (int) ByteValue.ofKilobytes(900);
     final String largeValue = "x".repeat(variableSize);
 
     // when - create a process instance with the large variable
@@ -703,8 +704,8 @@ public final class CreateProcessInstanceTest {
         .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
         .deploy();
 
-    // A ~3MB variable value
-    final int variableSize = (int) ByteValue.ofMegabytes(3);
+    // Near 4MB variable value
+    final int variableSize = (int) ByteValue.ofMegabytes(3) + (int) ByteValue.ofKilobytes(900);
     final String largeValue = "x".repeat(variableSize);
 
     // when - create a process instance with result and the large variable
