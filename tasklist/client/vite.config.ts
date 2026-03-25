@@ -25,6 +25,8 @@ export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
   plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
   preview: {
+    port: 3003,
+    open: false,
     proxy: {},
   },
   server: {
