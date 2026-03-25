@@ -34,12 +34,33 @@ global:
 
 identity:
   enabled: false
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 identityKeycloak:
   enabled: false
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 optimize:
   enabled: false
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 connectors:
   enabled: false
