@@ -24,6 +24,9 @@ const outDir = 'build';
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
   plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
+  preview: {
+    proxy: {},
+  },
   server: {
     port: 3000,
     open: true,
