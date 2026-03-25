@@ -17,6 +17,7 @@ import {
   assertBadRequest,
   assertUnauthorizedRequest,
   encode,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {
   CORRELATE_MESSAGE,
@@ -383,7 +384,12 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       },
     );
-    await assertBadRequest(res, `For input string: \"${invalidFieldValue}\"`);
+    await assertBadRequest(
+      res,
+      isForwardCompat
+        ? /processInstanceKey.*invalidMeow/i
+        : `For input string: "${invalidFieldValue}"`,
+    );
   });
 
   test('Search Message Subscriptions - 401 Unauthorized', async ({request}) => {

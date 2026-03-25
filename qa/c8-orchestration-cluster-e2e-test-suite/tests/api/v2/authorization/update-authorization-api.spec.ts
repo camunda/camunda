@@ -570,7 +570,9 @@ test.describe.parallel('Update Authorization API', () => {
       await assertInvalidArgument(
         authRes,
         400,
-        'No ownerId provided. No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.',
+        isForwardCompat
+          ? 'At least one of [resourceId, resourcePropertyName] is required'
+          : 'No ownerId provided. No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.',
       );
     });
 

@@ -228,7 +228,9 @@ test.describe.parallel('Process instance Tests', () => {
       expect(json.title).toBe('INVALID_ARGUMENT');
     }
     expect(json.detail).toBe(
-      'At least one of [processDefinitionId, processDefinitionKey] is required.',
+      isForwardCompat
+        ? 'At least one of [processDefinitionId, processDefinitionKey] is required'
+        : 'At least one of [processDefinitionId, processDefinitionKey] is required.',
     );
   });
 

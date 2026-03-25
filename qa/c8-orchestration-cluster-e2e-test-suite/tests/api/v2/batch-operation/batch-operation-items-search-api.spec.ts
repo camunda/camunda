@@ -19,6 +19,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from '../../../../json-body-assertions';
@@ -472,7 +473,10 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         },
       );
 
-      await assertBadRequest(res, 'For input string: \"meow\"');
+      await assertBadRequest(
+        res,
+        isForwardCompat ? /itemKey.*meow/i : 'For input string: "meow"',
+      );
     }).toPass(defaultAssertionOptions);
   });
 });
