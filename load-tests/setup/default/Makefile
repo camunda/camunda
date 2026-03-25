@@ -55,16 +55,10 @@ platform_values := -f camunda-platform-values.yaml
 _secondary_storage_load_test_flags :=
 
 # Add secondary storage values
-ifeq ($(secondary_storage),postgresql)
-platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-postgresql.yaml
-else ifeq ($(secondary_storage),mysql)
-platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mysql.yaml
-else ifeq ($(secondary_storage),mssql)
-platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mssql.yaml
-else ifeq ($(secondary_storage),oracle)
-platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-oracle.yaml
+ifneq ($(filter $(secondary_storage),postgresql mysql mssql oracle),)
+	platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-$(secondary_storage).yaml
 else ifeq ($(secondary_storage),opensearch)
-platform_values += -f camunda-platform-values-opensearch.yaml
+	platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
 platform_values += -f camunda-platform-no-secondary-storage.yaml
 _secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
@@ -72,19 +66,11 @@ endif
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
-platform_values += --set optimize.enabled=false
-ifeq ($(secondary_storage),postgresql)
-platform_values += --set elasticsearch.enabled=false
-endif
-ifeq ($(secondary_storage),mysql)
-platform_values += --set elasticsearch.enabled=false
-endif
-ifeq ($(secondary_storage),mssql)
-platform_values += --set elasticsearch.enabled=false
-endif
-ifeq ($(secondary_storage),oracle)
-platform_values += --set elasticsearch.enabled=false
-endif
+	platform_values += --set optimize.enabled=false
+
+	ifneq ($(filter $(secondary_storage),postgresql mysql mssql oracle),)
+		platform_values += --set elasticsearch.enabled=false
+	endif
 endif
 
 # Platform values with stable configuration
@@ -131,13 +117,13 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install PostgreSQL database if secondary_storage is postgresql, MySQL if secondary_storage is mysql, MSSQL if secondary_storage is mssql, or OpenSearch if secondary_storage is opensearch
+# Install secondary storage based on configuration (PostgreSQL, MySQL, MSSQL, Oracle, OpenSearch)
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
 	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
-	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mysql)
@@ -292,24 +278,17 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
-ifeq ($(secondary_storage),postgresql)
-	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall postgres
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=postgresql
-else ifeq ($(secondary_storage),mysql)
-	@echo "Cleaning up MySQL database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall mysql
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=mysql
-else ifeq ($(secondary_storage),mssql)
+# Clean up secondary storage based on helm charts
+ifneq ($(filter $(secondary_storage),postgresql mysql),)
+	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
+	-helm --namespace $(namespace) uninstall $(secondary_storage)
+	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
+# MSSQL and Oracle are deployed via plain Kubernetes manifests, so we need to delete them via kubectl
+else ifneq ($(filter $(secondary_storage),mssql oracle),)
 	@echo "Cleaning up MSSQL database for namespace $(namespace)..."
 	-kubectl delete --namespace $(namespace) -f mssql.yaml
 	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
 	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=mssql
-else ifeq ($(secondary_storage),oracle)
-	@echo "Cleaning up Oracle database for namespace $(namespace)..."
-	-kubectl delete --namespace $(namespace) -f databases/oracle.yaml
-	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
-	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=oracle
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
