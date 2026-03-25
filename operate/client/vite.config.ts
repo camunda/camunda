@@ -12,8 +12,6 @@
 import {defineConfig, type PluginOption, type UserConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
-import license from 'rollup-plugin-license';
-import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
 import {playwright} from '@vitest/browser-playwright';
@@ -78,16 +76,6 @@ export default defineConfig(({mode}) => ({
         index:
           mode === 'visual-regression' ? './index.html' : './index.prod.html',
       },
-      plugins: [
-        license({
-          thirdParty: {
-            output: path.resolve(
-              __dirname,
-              `./${outDir}/assets/vendor.LICENSE.txt`,
-            ),
-          },
-        }),
-      ],
     },
   },
   resolve: {

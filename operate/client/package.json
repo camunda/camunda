@@ -101,7 +101,6 @@
     "playwright": "1.58.2",
     "prettier": "3.8.1",
     "resize-observer-polyfill": "1.5.1",
-    "rollup-plugin-license": "3.7.0",
     "rollup-plugin-sbom": "3.1.0",
     "sass": "1.98.0",
     "typescript": "5.9.3",
