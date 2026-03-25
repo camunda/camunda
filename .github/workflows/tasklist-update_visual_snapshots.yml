@@ -35,9 +35,6 @@ jobs:
       - name: Build frontend
         working-directory: ./tasklist/client
         run: npm run build:visual-regression
-      - name: Start server
-        working-directory: ./tasklist/client
-        run: npm run start:visual-regression &
       - name: Update snapshots
         working-directory: ./tasklist/client
         run: npm run test:visual --update-snapshots
