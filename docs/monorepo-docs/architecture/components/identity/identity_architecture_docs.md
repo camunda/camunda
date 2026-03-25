@@ -518,7 +518,7 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 2. Spring Security redirects the browser to the external IdP for login.
 3. IdP authenticates the user and returns ID/access tokens.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
-5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](supporting-concepts/rp-initiated-logout.md).
+5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](references/rp-initiated-logout.md).
 
 ```mermaid
 sequenceDiagram
