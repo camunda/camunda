@@ -153,7 +153,7 @@ const List: FC = () => {
       <PageHeader
         title={t("operationsLog")}
         linkText={t("operationsLog").toLowerCase()}
-        docsLinkPath="/docs/components/concepts/audit-log/"
+        docsLinkPath="/components/admin/audit-operations/"
       />
       <Grid condensed fullWidth>
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
