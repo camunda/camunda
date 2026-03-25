@@ -120,6 +120,11 @@ jobs:
     needs: [verify-and-cleanup-8-6, verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
     if: >-
       always() &&
+      (needs.verify-and-cleanup-8-6.result == 'success' ||
+       needs.verify-and-cleanup-8-7.result == 'success' ||
+       needs.verify-and-cleanup-8-8.result == 'success' ||
+       needs.verify-and-cleanup-8-9.result == 'success' ||
+       needs.verify-and-cleanup-main.result == 'success') &&
       (needs.verify-and-cleanup-8-6.result == 'success' || needs.verify-and-cleanup-8-6.result == 'skipped') &&
       (needs.verify-and-cleanup-8-7.result == 'success' || needs.verify-and-cleanup-8-7.result == 'skipped') &&
       (needs.verify-and-cleanup-8-8.result == 'success' || needs.verify-and-cleanup-8-8.result == 'skipped') &&
