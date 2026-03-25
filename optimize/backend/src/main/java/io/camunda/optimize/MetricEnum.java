@@ -22,7 +22,7 @@ public enum MetricEnum {
       "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
   REPORT_LATENCY_METRIC(
       MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report"),
-  ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurred across Optimize");
+  ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurring across Optimize");
   private final String id;
   private final String name;
   private final String description;

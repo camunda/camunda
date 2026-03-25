@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es;
 
+import static io.camunda.optimize.ErrorType.INDEX_NOT_FOUND;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -17,6 +18,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -79,6 +81,7 @@ public class ElasticsearchCompositeAggregationScroller {
             "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
             pathToAggregation.getLast(),
             searchRequest.index());
+        OptimizeMetrics.recordError(INDEX_NOT_FOUND);
         return Buckets.of(b -> b.array(List.of()));
       }
       throw e;

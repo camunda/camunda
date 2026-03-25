@@ -7,8 +7,10 @@
  */
 package io.camunda.optimize.service.db.os;
 
+import static io.camunda.optimize.ErrorType.INDEX_NOT_FOUND;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import java.util.Arrays;
 import java.util.Collections;
@@ -120,6 +122,7 @@ public class OpenSearchCompositeAggregationScroller {
             "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
             pathToAggregation.getLast(),
             indices);
+        OptimizeMetrics.recordError(INDEX_NOT_FOUND);
         return Collections.emptyList();
       }
       throw e;

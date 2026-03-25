@@ -20,6 +20,8 @@ import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public final class OptimizeMetrics {
 
@@ -32,6 +34,15 @@ public final class OptimizeMetrics {
   // Error-related tags
   public static final String ERROR_TYPE_TAG = "ERROR_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
+
+  private static final ConcurrentMap<ErrorType, Counter> ERROR_COUNTERS;
+
+  static {
+    ERROR_COUNTERS = new ConcurrentHashMap<>();
+    initializeCounters();
+  }
+
+  private OptimizeMetrics() {}
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
       final List<T> entities) {
@@ -56,21 +67,6 @@ public final class OptimizeMetrics {
   }
 
   /**
-   * Registers a counter with the given metric definition and tags. Counters are used to track the
-   * number of occurrences of an event.
-   *
-   * @param metricEnum the metric definition from {@link MetricEnum}
-   * @param tags the tags to apply to this counter
-   * @return a Counter instance registered to the global registry
-   */
-  public static Counter registerCounter(final MetricEnum metricEnum, final Tags tags) {
-    return Counter.builder(metricEnum.getName())
-        .description(metricEnum.getDescription())
-        .tags(tags)
-        .register(Metrics.globalRegistry);
-  }
-
-  /**
    * Registers a timer with the given metric definition and tags. Timers are used to track the
    * duration and frequency of events.
    *
@@ -91,9 +87,25 @@ public final class OptimizeMetrics {
    *
    * @param errorType the type of error
    */
-  public static void recordError(final String errorType) {
-    if (Objects.nonNull(errorType)) {
-      registerCounter(ERROR_METRIC, Tags.of(ERROR_TYPE_TAG, errorType)).increment();
+  public static void recordError(final ErrorType errorType) {
+    if (Objects.isNull(errorType)) {
+      return;
+    }
+    final Counter counter = ERROR_COUNTERS.get(errorType);
+    if (Objects.nonNull(counter)) {
+      counter.increment();
+    }
+  }
+
+  private static void initializeCounters() {
+
+    for (final ErrorType errorType : ErrorType.values()) {
+      final Counter counter =
+          Counter.builder(ERROR_METRIC.getName())
+              .description(ERROR_METRIC.getDescription())
+              .tag(ERROR_TYPE_TAG, errorType.getValue())
+              .register(Metrics.globalRegistry);
+      ERROR_COUNTERS.put(errorType, counter);
     }
   }
 }

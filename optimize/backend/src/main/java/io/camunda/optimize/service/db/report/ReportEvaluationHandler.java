@@ -292,7 +292,7 @@ public abstract class ReportEvaluationHandler {
       if (isTooManyBucketsException(e)) {
         final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
             new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
-        OptimizeMetrics.recordError(TOO_MANY_BUCKETS.getValue());
+        OptimizeMetrics.recordError(TOO_MANY_BUCKETS);
         throw new TooManyBucketsException(authorizedReportDefinitionDto, e);
       } else {
         throw e;
