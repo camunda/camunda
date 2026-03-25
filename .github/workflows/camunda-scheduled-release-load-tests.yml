@@ -72,7 +72,7 @@ jobs:
   verify-and-cleanup-8-6:
     name: Verify and cleanup (stable/8.6)
     needs: [release-load-test-8-6]
-    if: always() && needs.release-load-test-8-6.result == 'success'
+    if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -81,7 +81,7 @@ jobs:
   verify-and-cleanup-8-7:
     name: Verify and cleanup (stable/8.7)
     needs: [release-load-test-8-7]
-    if: always() && needs.release-load-test-8-7.result == 'success'
+    if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -90,7 +90,7 @@ jobs:
   verify-and-cleanup-8-8:
     name: Verify and cleanup (stable/8.8)
     needs: [release-load-test-8-8]
-    if: always() && needs.release-load-test-8-8.result == 'success'
+    if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -99,7 +99,7 @@ jobs:
   verify-and-cleanup-8-9:
     name: Verify and cleanup (stable/8.9)
     needs: [release-load-test-8-9]
-    if: always() && needs.release-load-test-8-9.result == 'success'
+    if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -108,7 +108,7 @@ jobs:
   verify-and-cleanup-main:
     name: Verify and cleanup (main)
     needs: [release-load-test-main]
-    if: always() && needs.release-load-test-main.result == 'success'
+    if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -120,16 +120,11 @@ jobs:
     needs: [verify-and-cleanup-8-6, verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
     if: >-
       always() &&
-      (needs.verify-and-cleanup-8-6.result == 'success' ||
-       needs.verify-and-cleanup-8-7.result == 'success' ||
-       needs.verify-and-cleanup-8-8.result == 'success' ||
-       needs.verify-and-cleanup-8-9.result == 'success' ||
-       needs.verify-and-cleanup-main.result == 'success') &&
-      (needs.verify-and-cleanup-8-6.result == 'success' || needs.verify-and-cleanup-8-6.result == 'skipped') &&
-      (needs.verify-and-cleanup-8-7.result == 'success' || needs.verify-and-cleanup-8-7.result == 'skipped') &&
-      (needs.verify-and-cleanup-8-8.result == 'success' || needs.verify-and-cleanup-8-8.result == 'skipped') &&
-      (needs.verify-and-cleanup-8-9.result == 'success' || needs.verify-and-cleanup-8-9.result == 'skipped') &&
-      (needs.verify-and-cleanup-main.result == 'success' || needs.verify-and-cleanup-main.result == 'skipped')
+      needs.verify-and-cleanup-8-6.result == 'success' &&
+      needs.verify-and-cleanup-8-7.result == 'success' &&
+      needs.verify-and-cleanup-8-8.result == 'success' &&
+      needs.verify-and-cleanup-8-9.result == 'success' &&
+      needs.verify-and-cleanup-main.result == 'success'
     timeout-minutes: 5
     permissions: {}
     steps:
