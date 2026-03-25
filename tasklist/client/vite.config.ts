@@ -11,13 +11,12 @@
 
 import {defineConfig, type PluginOption} from 'vite';
 import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
 import license from 'rollup-plugin-license';
 import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 
-const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
+const plugins: PluginOption[] = [react(), svgr()];
 const outDir = 'build';
 
 export default defineConfig(({mode}) => ({
@@ -71,9 +70,7 @@ export default defineConfig(({mode}) => ({
     },
   },
   resolve: {
-    alias: {
-      src: path.resolve(__dirname, './src'),
-    },
+    tsconfigPaths: true,
   },
   optimizeDeps: {
     exclude: ['monaco-editor'],
