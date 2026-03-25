@@ -13,7 +13,6 @@ import {defineConfig, type PluginOption} from 'vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
-import browserslistToEsbuild from 'browserslist-to-esbuild';
 import license from 'rollup-plugin-license';
 import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
@@ -63,7 +62,6 @@ export default defineConfig(({mode}) => ({
         },
       }),
     },
-    target: browserslistToEsbuild(),
     sourcemap: mode !== 'sbom',
   },
   esbuild: {

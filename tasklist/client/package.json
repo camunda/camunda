@@ -58,12 +58,6 @@
     "analyze-bundle": "npm run build && source-map-explorer 'build/assets/*.js'",
     "extract-sbom": "vite build --mode sbom"
   },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ],
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
     "@camunda/lint-config": "file:../../client-components/packages/lint-config",
@@ -86,8 +80,6 @@
     "@vitest/eslint-plugin": "1.6.13",
     "@vitest/ui": "4.1.2",
     "axe-core": "4.11.1",
-    "browserslist": "4.28.1",
-    "browserslist-to-esbuild": "2.1.1",
     "diagram-js": "15.10.0",
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
