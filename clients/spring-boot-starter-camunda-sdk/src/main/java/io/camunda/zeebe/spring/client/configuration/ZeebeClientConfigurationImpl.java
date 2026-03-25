@@ -343,6 +343,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
         configCache);
   }
 
+  @Override
+  public int getMaxHttpConnections() {
+    return camundaClientProperties.getMaxHttpConnections();
+  }
+
   private CredentialsProvider credentialsProvider() {
     final ClientMode clientMode = camundaClientProperties.getMode();
     if (ClientMode.selfManaged.equals(clientMode) || ClientMode.saas.equals(clientMode)) {
@@ -351,6 +356,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .clientSecret(camundaClientProperties.getAuth().getClientSecret())
           .audience(camundaClientProperties.getZeebe().getAudience())
           .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
+          .resource(camundaClientProperties.getAuth().getResource())
           .scope(camundaClientProperties.getZeebe().getScope())
           .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
           .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
@@ -366,11 +372,6 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .build();
     }
     return new NoopCredentialsProvider();
-  }
-
-  @Override
-  public int getMaxHttpConnections() {
-    return camundaClientProperties.getMaxHttpConnections();
   }
 
   private String composeGatewayAddress() {
@@ -426,6 +427,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .clientId(properties.getCloud().getClientId())
           .clientSecret(properties.getCloud().getClientSecret())
           .audience(properties.getCloud().getAudience())
+          .resource(camundaClientProperties.getAuth().getResource())
           .scope(properties.getCloud().getScope())
           .authorizationServerUrl(properties.getCloud().getAuthUrl())
           .credentialsCachePath(properties.getCloud().getCredentialsCachePath())

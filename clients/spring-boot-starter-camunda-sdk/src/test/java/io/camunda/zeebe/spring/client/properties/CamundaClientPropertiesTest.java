@@ -27,7 +27,10 @@ public class CamundaClientPropertiesTest {
   @Nested
   @SpringBootTest(
       classes = CamundaClientPropertiesTestConfig.class,
-      properties = {"camunda.client.auth.credentials-cache-path=/some/path"})
+      properties = {
+        "camunda.client.auth.credentials-cache-path=/some/path",
+        "camunda.client.auth.resource=https://api.example.com"
+      })
   class CredentialsCachePathConfigTest {
     @Autowired CamundaClientProperties camundaClientProperties;
 
@@ -35,6 +38,12 @@ public class CamundaClientPropertiesTest {
     void shouldApplyProperty() {
       assertThat(camundaClientProperties.getAuth().getCredentialsCachePath())
           .isEqualTo("/some/path");
+    }
+
+    @Test
+    void shouldReadResource() {
+      assertThat(camundaClientProperties.getAuth().getResource())
+          .isEqualTo("https://api.example.com");
     }
   }
 }
