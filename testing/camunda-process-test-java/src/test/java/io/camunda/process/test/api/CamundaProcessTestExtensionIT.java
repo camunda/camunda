@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.response.DecisionRequirements;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -207,6 +209,33 @@ public class CamundaProcessTestExtensionIT {
       CamundaAssert.assertThatProcessInstance(processInstance)
           .isCompleted()
           .hasCompletedElements(byId("timer"));
+    }
+  }
+
+  @Nested
+  class DeploymentAnnotationTests {
+
+    @TestDeployment(
+        resources = {
+          "camundaProcessTestExtensionIT/hello-world.bpmn",
+          "camundaProcessTestExtensionIT/greeting.dmn"
+        })
+    @Test
+    void shouldDeployResources() {
+      // then
+      Awaitility.await("Wait until deployment resources are available (eventually)")
+          .untilAsserted(
+              () -> {
+                assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
+                    .extracting(ProcessDefinition::getResourceName)
+                    .describedAs("Expect the BPMN process to be deployed")
+                    .contains("camundaProcessTestExtensionIT/hello-world.bpmn");
+
+                assertThat(client.newDecisionRequirementsSearchRequest().send().join().items())
+                    .extracting(DecisionRequirements::getResourceName)
+                    .describedAs("Expect the DMN decision to be deployed")
+                    .contains("camundaProcessTestExtensionIT/greeting.dmn");
+              });
     }
   }
 }
