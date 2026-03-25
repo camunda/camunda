@@ -11,9 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.protocol.model.BatchOperationResponse;
 import io.camunda.gateway.protocol.model.BatchOperationSearchQuery;
-import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
@@ -43,7 +41,7 @@ public class BatchOperationController {
   }
 
   @CamundaGetMapping(path = "/{batchOperationKey}")
-  public ResponseEntity<BatchOperationResponse> getById(
+  public ResponseEntity<Object> getById(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -57,7 +55,7 @@ public class BatchOperationController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<BatchOperationSearchQueryResult> searchBatchOperations(
+  public ResponseEntity<Object> searchBatchOperations(
       @RequestBody(required = false) final BatchOperationSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
@@ -94,7 +92,7 @@ public class BatchOperationController {
         .join();
   }
 
-  private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {
+  private ResponseEntity<Object> search(final BatchOperationQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = batchOperationServices.search(query, authentication);

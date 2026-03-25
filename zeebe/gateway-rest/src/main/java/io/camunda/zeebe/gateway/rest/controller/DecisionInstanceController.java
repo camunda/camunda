@@ -14,7 +14,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DecisionInstanceDeletionBatchOperationRequest;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
-import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DeleteDecisionInstanceRequest;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -48,7 +47,7 @@ public class DecisionInstanceController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<DecisionInstanceSearchQueryResult> searchDecisionInstances(
+  public ResponseEntity<Object> searchDecisionInstances(
       @RequestBody(required = false) final DecisionInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
@@ -88,8 +87,7 @@ public class DecisionInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationDeletion);
   }
 
-  private ResponseEntity<DecisionInstanceSearchQueryResult> search(
-      final DecisionInstanceQuery query) {
+  private ResponseEntity<Object> search(final DecisionInstanceQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var decisionInstances = decisionInstanceServices.search(query, authentication);
