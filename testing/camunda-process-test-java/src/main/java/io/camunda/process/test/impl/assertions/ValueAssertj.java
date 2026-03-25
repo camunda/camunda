@@ -30,7 +30,7 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
 
   public ValueAssertj(final String actual, final JudgeConfig judgeConfig) {
     super(actual, ValueAssertj.class);
-    this.judgeAssertj = new JudgeAssertj(judgeConfig);
+    judgeAssertj = new JudgeAssertj(judgeConfig);
   }
 
   @Override
@@ -42,8 +42,14 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
   @Override
   public ValueAssert satisfiesJudge(final String expectation) {
     judgeAssertj.assertJudgeHasAllRequiredSettings();
-    JudgeAssertj.assertExpectationNotEmpty(expectation);
+    assertExpectationNotEmpty(expectation);
     judgeAssertj.evaluateExpectation(expectation, actual, "");
     return this;
+  }
+
+  private static void assertExpectationNotEmpty(final String expectation) {
+    if (expectation == null || expectation.trim().isEmpty()) {
+      throw new IllegalArgumentException("expectation must not be null or empty");
+    }
   }
 }

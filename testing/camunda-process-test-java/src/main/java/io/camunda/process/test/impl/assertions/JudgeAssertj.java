@@ -68,18 +68,6 @@ class JudgeAssertj {
   }
 
   /**
-   * Validates that the expectation string is not null or blank.
-   *
-   * @param expectation the expectation to validate
-   * @throws IllegalArgumentException if the expectation is null or blank
-   */
-  static void assertExpectationNotEmpty(final String expectation) {
-    if (expectation == null || expectation.trim().isEmpty()) {
-      throw new IllegalArgumentException("expectation must not be null or empty");
-    }
-  }
-
-  /**
    * Evaluates the actual value against the expectation using the configured LLM judge.
    *
    * @param expectation the natural-language expectation
