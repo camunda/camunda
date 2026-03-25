@@ -28,6 +28,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -207,6 +209,48 @@ public class CamundaProcessTestExtensionIT {
       CamundaAssert.assertThatProcessInstance(processInstance)
           .isCompleted()
           .hasCompletedElements(byId("timer"));
+    }
+  }
+
+  @Nested
+  class VariableTests {
+
+    @Test
+    void shouldAssertTruncatedVariable() {
+      // given
+      final BpmnModelInstance process =
+          Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final Map<String, Object> variables = new HashMap<>();
+      variables.put("small", "smallValue");
+      variables.put("large", createLargeStringValue());
+
+      // when
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variables(variables)
+              .send()
+              .join();
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstance).hasVariables(variables);
+
+      assertThat(
+              client.newVariableSearchRequest().filter(f -> f.name("large")).execute().singleItem())
+          .describedAs("Ensure that the variable is large enough to be truncated")
+          .satisfies(variable -> assertThat(variable.isTruncated()).isTrue());
+    }
+
+    private String createLargeStringValue() {
+      final int sizeBytes = 100 * 1024; // 100 KB
+      final char[] chars = new char[sizeBytes];
+      java.util.Arrays.fill(chars, 'x');
+      return new String(chars);
     }
   }
 }
