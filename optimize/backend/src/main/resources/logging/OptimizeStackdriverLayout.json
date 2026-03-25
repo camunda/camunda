@@ -59,8 +59,8 @@
     "field": "name"
   },
   "serviceContext": {
-    "service": "${log4j:configProperties:log.stackdriver.serviceName}",
-    "version": "${log4j:configProperties:log.stackdriver.serviceVersion}"
+    "service": "${log4j:configProperties:log.stackdriver.serviceName:-}",
+    "version": "${log4j:configProperties:log.stackdriver.serviceVersion:-}"
   },
   "@type": {
     "$resolver": "optimizeStackdriver",
