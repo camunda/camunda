@@ -56,7 +56,7 @@ test.describe('Correlate Message API Tests', () => {
     const json = await res.json();
     assertRequiredFields(json, ['detail', 'title']);
     expect(json.title).toBe('INVALID_ARGUMENT');
-    expect(json.detail).toBe('No messageName provided.');
+    expect(json.detail).toBe('No name provided.');
   });
 
   test('Correlate Message Not found', async ({request}) => {

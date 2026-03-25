@@ -3492,7 +3492,7 @@ public record %s(
     int primaryStatusCode = -1;
     var pathParams = new ArrayList<SpecQueryParam>();
     var queryParams = new ArrayList<SpecQueryParam>();
-    boolean bodyRequired = true; // default per OpenAPI spec
+    boolean bodyRequired = false; // OpenAPI 3.0: requestBody.required defaults to false
     boolean requiresSecondaryStorage = false;
     boolean codeGenerationSkip = false;
     String springConditional = null;
@@ -3528,7 +3528,7 @@ public record %s(
           currentPath = null; currentMethod = null; operationId = null; tag = null;
           requestSchema = null; responseSchema = null; primaryStatusCode = -1;
           pathParams.clear(); queryParams.clear(); section = null; sectionIndent = -1; inResponseSuccess = false;
-          bodyRequired = true; requiresSecondaryStorage = false; codeGenerationSkip = false;
+          bodyRequired = false; requiresSecondaryStorage = false; codeGenerationSkip = false;
           springConditional = null; springProfile = null;
           isMultipart = false; multipartParts.clear(); isBinaryResponse = false; responseMediaType = null;
         }
@@ -3550,7 +3550,7 @@ public record %s(
         currentMethod = null; operationId = null; tag = null;
         requestSchema = null; responseSchema = null; primaryStatusCode = -1;
         pathParams.clear(); queryParams.clear(); section = null; sectionIndent = -1; inResponseSuccess = false;
-        bodyRequired = true; requiresSecondaryStorage = false; codeGenerationSkip = false;
+        bodyRequired = false; requiresSecondaryStorage = false; codeGenerationSkip = false;
         springConditional = null; springProfile = null;
         isMultipart = false; multipartParts.clear(); isBinaryResponse = false; responseMediaType = null;
         continue;
@@ -3570,7 +3570,7 @@ public record %s(
           operationId = null; tag = null; requestSchema = null; responseSchema = null;
           primaryStatusCode = -1; pathParams.clear(); queryParams.clear(); section = null; sectionIndent = -1;
           inResponseSuccess = false;
-          bodyRequired = true; requiresSecondaryStorage = false; codeGenerationSkip = false;
+          bodyRequired = false; requiresSecondaryStorage = false; codeGenerationSkip = false;
           springConditional = null; springProfile = null;
           isMultipart = false; multipartParts.clear(); isBinaryResponse = false; responseMediaType = null;
           continue;
