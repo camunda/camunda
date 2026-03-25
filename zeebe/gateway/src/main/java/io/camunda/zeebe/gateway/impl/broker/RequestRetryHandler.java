@@ -39,16 +39,22 @@ import org.slf4j.LoggerFactory;
 public final class RequestRetryHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(RequestRetryHandler.class);
 
-  private final RequestDispatchStrategy roundRobinDispatchStrategy =
-      RequestDispatchStrategy.roundRobin();
-
+  private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
 
   public RequestRetryHandler(
       final BrokerClient brokerClient, final BrokerTopologyManager topologyManager) {
+    this(brokerClient, topologyManager, RequestDispatchStrategy.roundRobin());
+  }
+
+  public RequestRetryHandler(
+      final BrokerClient brokerClient,
+      final BrokerTopologyManager topologyManager,
+      final RequestDispatchStrategy dispatchStrategy) {
     this.brokerClient = brokerClient;
     this.topologyManager = topologyManager;
+    this.dispatchStrategy = dispatchStrategy;
   }
 
   public <BrokerResponseT> void sendRequest(
@@ -194,7 +200,7 @@ public final class RequestRetryHandler {
   }
 
   private PartitionIdIterator partitionIdIteratorForType(final int partitionsCount) {
-    final int nextPartitionId = roundRobinDispatchStrategy.determinePartition(topologyManager);
+    final int nextPartitionId = dispatchStrategy.determinePartition(topologyManager);
     return new PartitionIdIterator(nextPartitionId, partitionsCount, topologyManager);
   }
 }
