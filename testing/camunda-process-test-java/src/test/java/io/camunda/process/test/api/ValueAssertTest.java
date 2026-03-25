@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,9 +34,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class ValueAssertTest {
 
+  private static final float[] UNIT_VEC_X = {1.0f, 0.0f};
+  private static final float[] UNIT_VEC_Y = {0.0f, 1.0f};
+
   @AfterEach
-  void resetJudgeConfig() {
+  void resetConfigs() {
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
   }
 
   @Nested
@@ -430,6 +436,243 @@ public class ValueAssertTest {
       CamundaAssert.assertThatValue("Hello").satisfiesJudge("some expectation");
 
       Assertions.assertThat(globalCalled).isTrue();
+    }
+  }
+
+  @Nested
+  class IsSimilarTo {
+
+    @Test
+    void shouldPassWhenSimilarityScoreAboveThreshold() {
+      // given — identical vectors → cosine similarity == 1.0
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then — should not throw
+      CamundaAssert.assertThatValue("Hello, World!").isSimilarTo("Hello, World!");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWhenSimilarityScoreBelowThreshold() {
+      // given — orthogonal vectors → cosine similarity == 0.0
+      final EmbeddingModelAdapter model =
+          text -> text.equals("expected text") ? UNIT_VEC_X : UNIT_VEC_Y;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThatValue("unrelated text").isSimilarTo("expected text"))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("did not satisfy similarity check")
+          .hasMessageContaining("Score: 0.00")
+          .hasMessageContaining("threshold: 0.50");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldIncludeExpectationAndActualValueInFailureMessage() {
+      // given — orthogonal vectors → score 0.0
+      final EmbeddingModelAdapter model =
+          text -> text.equals("the expected value") ? UNIT_VEC_X : UNIT_VEC_Y;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatValue("the actual text value")
+                      .isSimilarTo("the expected value"))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("the actual text value")
+          .hasMessageContaining("the expected value")
+          .hasMessageContaining("Score: 0.00")
+          .hasMessageContaining("threshold: 0.50");
+    }
+
+    @Test
+    void shouldPassWhenScoreExactlyAtThreshold() {
+      // given — identical vectors → score == 1.0; set threshold == 1.0
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(
+          SemanticSimilarityConfig.of(model).withThreshold(1.0));
+
+      // when / then — score == threshold should pass
+      CamundaAssert.assertThatValue("some text").isSimilarTo("some text");
+    }
+
+    @Test
+    void shouldSupportChainingMultipleIsSimilarToAssertions() {
+      // given — identical vectors → score == 1.0
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then — chaining should work
+      CamundaAssert.assertThatValue("some text")
+          .isSimilarTo("expectation A")
+          .isSimilarTo("expectation B");
+    }
+
+    @Test
+    void shouldHandleNullActualValue() {
+      // given — identical vectors → score == 1.0
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then - should not throw; the null value is passed to the embedding model
+      CamundaAssert.assertThatValue("some text")
+          .isSimilarTo("expectation A")
+          .isSimilarTo("expectation B");
+    }
+
+    @Test
+    void shouldThrowWhenSemanticSimilarityConfigNotSet() {
+      // given — no config set
+
+      // when / then
+      assertThatThrownBy(() -> CamundaAssert.assertThatValue("some value").isSimilarTo("expected"))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("SemanticSimilarityConfig is not set");
+    }
+
+    @Test
+    void shouldThrowWhenEmbeddingModelNotConfigured() {
+      // given — config with no embedding model
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.defaults());
+
+      // when / then
+      assertThatThrownBy(() -> CamundaAssert.assertThatValue("some value").isSimilarTo("expected"))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("EmbeddingModelAdapter");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    void shouldThrowWhenExpectedValueIsNullOrBlank(final String expectedValue) {
+      // given
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then
+      assertThatThrownBy(
+              () -> CamundaAssert.assertThatValue("some value").isSimilarTo(expectedValue))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("expectation must not be null or empty");
+    }
+  }
+
+  @Nested
+  class WithSemanticSimilarityConfig {
+
+    @Test
+    void shouldUseOverriddenConfig() {
+      // given — global model returns orthogonal vector (would fail), override uses identical vector
+      final EmbeddingModelAdapter globalModel = text -> UNIT_VEC_Y;
+      final EmbeddingModelAdapter overrideModel = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(globalModel));
+
+      // when / then — override model passes (score == 1.0)
+      CamundaAssert.assertThatValue("Hello")
+          .withSemanticSimilarityConfig(
+              c -> SemanticSimilarityConfig.defaults().withEmbeddingModelAdapter(overrideModel))
+          .isSimilarTo("Hello");
+    }
+
+    @Test
+    void shouldModifyThresholdViaOverride() {
+      // given — identical vectors → score 1.0; set high threshold globally, lower it locally
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(
+          SemanticSimilarityConfig.of(model).withThreshold(0.5));
+
+      // when / then — override lowers threshold; still passes because score is 1.0
+      CamundaAssert.assertThatValue("text")
+          .withSemanticSimilarityConfig(c -> c.withThreshold(0.1))
+          .isSimilarTo("text");
+    }
+
+    @Test
+    void shouldNotAffectGlobalConfig() {
+      // given — orthogonal vectors → score 0.0; global threshold 0.5 would fail, local 0.0 passes
+      final EmbeddingModelAdapter model = text -> text.equals("expected") ? UNIT_VEC_X : UNIT_VEC_Y;
+      CamundaAssert.setSemanticSimilarityConfig(
+          SemanticSimilarityConfig.of(model).withThreshold(0.5));
+
+      // when — locally lower the threshold so the score 0.0 passes; if the global threshold (0.5)
+      // were accidentally used instead, the assertion would fail, proving the override is needed
+      CamundaAssert.assertThatValue("actual")
+          .withSemanticSimilarityConfig(c -> c.withThreshold(0.0))
+          .isSimilarTo("expected");
+
+      // then — global config unchanged
+      Assertions.assertThat(CamundaAssert.getSemanticSimilarityConfig().getThreshold())
+          .isEqualTo(0.5);
+    }
+
+    @Test
+    void shouldCreateBlankConfigWhenNoGlobalConfigSet() {
+      // given — no global config, set up everything inline
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+
+      // when / then — withSemanticSimilarityConfig creates a blank default, sets model inline
+      CamundaAssert.assertThatValue("Hello")
+          .withSemanticSimilarityConfig(c -> c.withEmbeddingModelAdapter(model))
+          .isSimilarTo("Hello");
+    }
+
+    @Test
+    void shouldThrowWhenModifierIsNull() {
+      // given
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then
+      assertThatThrownBy(
+              () -> CamundaAssert.assertThatValue("value").withSemanticSimilarityConfig(null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("modifier must not be null");
+    }
+
+    @Test
+    void shouldThrowWhenModifierReturnsNull() {
+      // given
+      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
+
+      // when / then
+      assertThatThrownBy(
+              () -> CamundaAssert.assertThatValue("value").withSemanticSimilarityConfig(c -> null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("modifier must not return null");
+    }
+
+    @Test
+    void shouldSwitchBetweenConfigsInSameChain() {
+      // given — two models, both return identical vectors
+      final AtomicBoolean modelACalled = new AtomicBoolean(false);
+      final AtomicBoolean modelBCalled = new AtomicBoolean(false);
+
+      final EmbeddingModelAdapter modelA =
+          text -> {
+            modelACalled.set(true);
+            return UNIT_VEC_X;
+          };
+      final EmbeddingModelAdapter modelB =
+          text -> {
+            modelBCalled.set(true);
+            return UNIT_VEC_X;
+          };
+
+      // when
+      CamundaAssert.assertThatValue("Hello")
+          .withSemanticSimilarityConfig(c -> SemanticSimilarityConfig.of(modelA))
+          .isSimilarTo("expectation A")
+          .withSemanticSimilarityConfig(c -> SemanticSimilarityConfig.of(modelB))
+          .isSimilarTo("expectation B");
+
+      // then
+      Assertions.assertThat(modelACalled).isTrue();
+      Assertions.assertThat(modelBCalled).isTrue();
     }
   }
 }
