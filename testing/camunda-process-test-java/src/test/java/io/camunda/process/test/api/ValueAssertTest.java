@@ -590,8 +590,7 @@ public class ValueAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(model).withThreshold(0.5));
 
-      // when / then — locally lower threshold to 0.0; if global threshold (0.5) were accidentally
-      // used instead, the assertion would fail since score (0.0) < 0.5
+      // when / then — locally lower threshold to 0.0
       CamundaAssert.assertThatValue("actual")
           .withSemanticSimilarityConfig(c -> c.withThreshold(0.0))
           .isSimilarTo("expected");
