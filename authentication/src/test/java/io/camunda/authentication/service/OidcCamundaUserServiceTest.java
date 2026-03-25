@@ -170,6 +170,21 @@ public class OidcCamundaUserServiceTest {
   }
 
   @Test
+  void shouldNormalizeIdentityComponentToAdmin() {
+    // given
+    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "identity");
+    when(resourceAccessProvider.resolveResourceAccess(
+            eq(camundaAuthentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.allowed(allowedAuthorization));
+
+    // when
+    final var currentUser = userService.getCurrentUser();
+
+    // then
+    assertThat(currentUser.authorizedComponents()).containsExactlyInAnyOrder("admin");
+  }
+
+  @Test
   void shouldContainWildcardInAuthorizedComponents() {
     // given
     final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");

@@ -168,7 +168,14 @@ public class OidcCamundaUserService implements CamundaUserService {
     final var componentAccess =
         resourceAccessProvider.resolveResourceAccess(
             authentication, COMPONENT_ACCESS_AUTHORIZATION);
-    return componentAccess.allowed() ? componentAccess.authorization().resourceIds() : List.of();
+    if (!componentAccess.allowed()) {
+      return List.of();
+    }
+    final var resourceIds = componentAccess.authorization().resourceIds();
+    if (resourceIds == null) {
+      return List.of();
+    }
+    return resourceIds.stream().map(id -> "identity".equals(id) ? "admin" : id).distinct().toList();
   }
 
   protected List<TenantEntity> getTenantsForCamundaAuthentication(
