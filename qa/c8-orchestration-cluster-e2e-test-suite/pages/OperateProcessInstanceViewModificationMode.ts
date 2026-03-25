@@ -88,18 +88,16 @@ export class OperateProcessInstanceViewModificationModePage {
       .getByText('Process Instance Modification Mode')
       .first();
     this.flowNodeModificationsPopup = page.getByText('Element Modifications');
-    this.addModificationButtononPopup = page.getByTitle(
-      'Add single element instance',
-    );
-    this.moveAllButtononPopup = page.getByTitle(
-      'Move all running instances in this element to another target',
-    );
-    this.cancelButtonPopup = page.getByTitle(
-      'Cancel selected instance in this element',
-    );
-    this.cancelAllButtonPopup = page.getByTitle(
-      'Cancel all running element instances in this element',
-    );
+    this.addModificationButtononPopup = page.getByRole('button', {
+      name: /Add single (flow node|element) instance/i,
+    });
+    this.moveAllButtononPopup = page.getByRole('button', {name: /Move all/i});
+    this.cancelButtonPopup = page.getByRole('button', {
+      name: /Cancel selected instance in this (flow node|element)/i,
+    });
+    this.cancelAllButtonPopup = page.getByRole('button', {
+      name: /Cancel all running (flow node|element) instances in this (flow node|element)/i,
+    });
     this.reviewModificationsButton = page.getByTestId(
       'review-modifications-button',
     );
@@ -111,7 +109,7 @@ export class OperateProcessInstanceViewModificationModePage {
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
     this.moveTokensMessage = page.getByText(
-      'Select the target element in the diagram',
+      /Select the target (flow node|element) in the diagram/,
     );
     this.diagram = this.page.getByTestId('diagram');
     this.multipleInstancesAlert = page
@@ -126,7 +124,7 @@ export class OperateProcessInstanceViewModificationModePage {
       name: 'Add single element instance',
     });
     this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this element to another target',
+      name: /Move selected instance in this (flow node|element) to another target/,
     });
     this.modificationModeText = page.getByText(
       'Process Instance Modification Mode',
@@ -392,9 +390,9 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   getFlowNode(flowNodeName: string) {
-    return this.diagram
-      .locator('.djs-group')
-      .locator(`[data-element-id="${flowNodeName}"]`);
+    return this.diagram.locator(
+      `.djs-element[data-element-id="${flowNodeName}"]`,
+    );
   }
 
   async addTokenToFlowNodeAndApplyChanges(flowNodeName: string): Promise<void> {
