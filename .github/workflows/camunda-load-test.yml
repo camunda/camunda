@@ -268,7 +268,7 @@ jobs:
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             multiInstanceElements)
-              echo "load-test-load=--set starter.rate=1 --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0" >> "$GITHUB_OUTPUT"
+              echo "load-test-load=--set starter.rate=1 --set global.extraEnvVars[0].name=CONFIG_FORCE_app_starter_rateDuration --set global.extraEnvVars[0].value=5m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0" >> "$GITHUB_OUTPUT"
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)

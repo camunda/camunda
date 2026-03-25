@@ -22,6 +22,7 @@ public class StarterCfg {
 
   private String processId;
   private int rate;
+  private Duration rateDuration = Duration.ofSeconds(1);
   private int threads;
 
   /** Paths are relative to classpath. */
@@ -70,6 +71,14 @@ public class StarterCfg {
 
   public void setRate(final int rate) {
     this.rate = rate;
+  }
+
+  public Duration getRateDuration() {
+    return rateDuration;
+  }
+
+  public void setRateDuration(final Duration rateDuration) {
+    this.rateDuration = rateDuration;
   }
 
   public int getThreads() {

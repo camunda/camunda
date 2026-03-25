@@ -21,9 +21,14 @@
         <bpmn:outgoing>Flow_Outer_1</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:subProcess id="InnerSubprocess" name="Inner Loop">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="=outerItems" target="outerItems" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
         <bpmn:incoming>Flow_Outer_1</bpmn:incoming>
         <bpmn:outgoing>Flow_Outer_2</bpmn:outgoing>
-        <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
           <bpmn:extensionElements>
             <zeebe:loopCharacteristics inputCollection="=innerItems" inputElement="innerItem" />
           </bpmn:extensionElements>

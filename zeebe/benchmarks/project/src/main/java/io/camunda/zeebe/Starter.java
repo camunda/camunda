@@ -53,7 +53,7 @@ public class Starter extends App {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
-  private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  private static final long DEFAULT_RATE_DURATION_NANOS = Duration.ofSeconds(1).toNanos();
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -187,8 +187,13 @@ public class Starter extends App {
       final CountDownLatch countDownLatch,
       final CamundaClient client) {
 
-    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, starterCfg.getRate());
-    LOG.info("Creating an instance every {}ns", intervalNanos);
+    final long rateDurationNanos = starterCfg.getRateDuration().toNanos();
+    final long intervalNanos = Math.floorDiv(rateDurationNanos, starterCfg.getRate());
+    LOG.info(
+        "Creating {} instance(s) per {}, interval={}ns",
+        starterCfg.getRate(),
+        starterCfg.getRateDuration(),
+        intervalNanos);
 
     final String variablesString = readVariables(starterCfg.getPayloadPath());
     final Map<String, Object> baseVariables =
