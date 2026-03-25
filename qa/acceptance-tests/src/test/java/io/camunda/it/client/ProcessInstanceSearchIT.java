@@ -124,18 +124,20 @@ public class ProcessInstanceSearchIT {
     final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
 
     // then
-    assertThat(result).isNotNull();
     assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(result.getProcessDefinitionId()).isEqualTo(bpmnProcessId);
     assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
     assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
+    assertThat(result.getProcessDefinitionVersionTag()).isNull();
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(result.getParentProcessInstanceKey()).isNull();
+    assertThat(result.getParentElementInstanceKey()).isNull();
     assertThat(result.getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo(ACTIVE);
     assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
+    assertThat(result.getTags()).isEmpty();
   }
 
   @Test
@@ -487,7 +489,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -501,7 +503,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -769,6 +771,9 @@ public class ProcessInstanceSearchIT {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("child_process_v1");
+    // Verify that parentProcessInstanceKey is correctly set in the results
+    assertThat(result.items().getFirst().getParentProcessInstanceKey())
+        .isEqualTo(parentProcessInstanceKey);
     assertThat(result.items().getFirst().getRootProcessInstanceKey())
         .isEqualTo(parentProcessInstanceKey);
   }
