@@ -52,7 +52,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
   @BeforeEach
   void setUp() {
     // given
-    repository.batch = new BasicArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new BasicArchiveBatch("2024-01-01", List.of("1", "2", "3")));
   }
 
   @AfterEach
@@ -151,7 +151,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     final var job =
         new StandaloneDecisionArchiverJob(
             repository, decisionInstanceTemplate, metrics, LOGGER, executor, List.of(dependant));
-    repository.batch = new BasicArchiveBatch("2024-01-01", List.of("1", "2"));
+    repository.batches = List.of(new BasicArchiveBatch("2024-01-01", List.of("1", "2")));
 
     // when
     final int count = job.execute().toCompletableFuture().join();

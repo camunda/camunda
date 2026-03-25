@@ -94,6 +94,10 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
     return archiverRepository;
   }
 
+  protected CamundaExporterMetrics getExporterMetrics() {
+    return exporterMetrics;
+  }
+
   protected Executor getExecutor() {
     return executor;
   }
