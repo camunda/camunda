@@ -7,13 +7,14 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  single_zone        Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
   -h, --help         Show this help message.
@@ -80,6 +81,27 @@ else
   echo "Namespace '$namespace' already exists"
 fi
 
+# Pick a "random" zone, selected from the input value.
+function hashmod_zone() {
+    local input="${1?"Specify an initial value to compute the zone from"}"
+
+    # We can get the list of zones with already created nodes with:
+    # kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io\/zone}{"\n"}{end}' | sort | uniq -c
+    zones=(
+        europe-west1-b
+        europe-west1-c
+        europe-west1-d
+    )
+    nb_zones=${#zones[@]}
+
+    # bc only accept hexadecimal with capitalized letters
+    checksum="$(echo "$input" | md5sum | cut -c 1-32 | tr "a-z" "A-Z")"
+    hashmod="$(echo "ibase=16; $checksum % $nb_zones" | bc)"
+
+    zone="${zones[$hashmod]}"
+    echo "$zone"
+}
+
 # Sanitize a string to be a valid Kubernetes label value
 sanitize_k8s_label() {
   local value="$1"
@@ -126,11 +148,22 @@ cp -v ../*.yaml $namespace/
 
 cd $namespace
 
+enable_single_zone="${5:-true}"
+enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
+if [[ "$enable_single_zone" == "true" ]]; then
+    availability_zone="$(hashmod_zone "$namespace")"
+    echo "Will configure pods to deploy into the $availability_zone AZ only."
+else
+    availability_zone="~"
+    echo "Will NOT configure pods to deploy into a single zone."
+fi
+
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

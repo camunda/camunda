@@ -15,3 +15,6 @@ serviceMonitor:
   # Labels used by the service monitor, specific to our prometheus installation
   labels:
     release: monitoring
+
+nodeSelector:
+  topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
