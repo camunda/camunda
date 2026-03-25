@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.activateAndCompleteJobs;
 import static io.camunda.it.util.TestHelper.activateAndFailJobs;
+import static io.camunda.it.util.TestHelper.cancelInstance;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForJobTypeStatistics;
@@ -81,14 +82,29 @@ public class JobTypeStatisticsIT {
     // Wait for failure to be reflected
     waitForJobs(adminClient, f -> f.state(JobState.FAILED).type(JOB_TYPE_A), 1);
 
-    // Wait for metrics to be exported
+    // Start a 3rd process instance and cancel it to verify cancellation doesn't affect metrics
+    final var instanceToCancel = startProcessInstance(adminClient, PROCESS_ID);
+
+    // Wait for its taskA job to be visible before cancelling
+    waitForJobs(adminClient, f -> f.state(JobState.CREATED).type(JOB_TYPE_A), 1);
+
+    // Cancel the process instance (which cancels its pending taskA job)
+    cancelInstance(adminClient, instanceToCancel);
+
+    // Wait for the cancelled job to be reflected
+    waitForJobs(adminClient, f -> f.state(JobState.CANCELED).type(JOB_TYPE_A), 1);
+
+    // Wait for metrics to be exported (3 taskA created: 1 completed, 1 failed, 1 cancelled)
     waitForJobTypeStatistics(
         adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         stats -> {
-          // We should have 2 job types: taskA and taskB
           assertThat(stats.items()).hasSize(2);
+          // Ensure all 3 created jobs are reflected, with failed still at 1 (not incremented by
+          // cancellation)
+          assertThat(stats.items().get(0).getCreated().getCount()).isEqualTo(3L);
+          assertThat(stats.items().get(0).getFailed().getCount()).isEqualTo(1L);
         });
   }
 
@@ -97,7 +113,7 @@ public class JobTypeStatisticsIT {
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     // when/then
     // We have:
-    // - taskA: 2 created, 1 completed, 1 failed
+    // - taskA: 3 created (2 original + 1 cancelled), 1 completed, 1 failed
     // - taskB: 1 created (after completing taskA in instance 1)
     waitForJobTypeStatistics(
         adminClient,
@@ -109,7 +125,7 @@ public class JobTypeStatisticsIT {
           // Results should be sorted by jobType ASC
           final var taskAStats = stats.items().get(0);
           assertThat(taskAStats.getJobType()).isEqualTo(JOB_TYPE_A);
-          assertThat(taskAStats.getCreated().getCount()).isEqualTo(2L);
+          assertThat(taskAStats.getCreated().getCount()).isEqualTo(3L);
           assertThat(taskAStats.getCompleted().getCount()).isEqualTo(1L);
           assertThat(taskAStats.getFailed().getCount()).isEqualTo(1L);
           assertThat(taskAStats.getWorkers()).isEqualTo(1);
@@ -120,6 +136,27 @@ public class JobTypeStatisticsIT {
           assertThat(taskBStats.getCompleted().getCount()).isZero();
           assertThat(taskBStats.getFailed().getCount()).isZero();
           assertThat(taskBStats.getWorkers()).isEqualTo(0); // no worker activated taskB yet
+        });
+  }
+
+  @Test
+  void shouldNotCountCancelledJobInStatistics(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // when/then - a cancelled job should not increment the failed count
+    waitForJobTypeStatistics(
+        adminClient,
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        f -> f.jobType(JOB_TYPE_A),
+        stats -> {
+          assertThat(stats.items()).hasSize(1);
+
+          final var taskAStats = stats.items().get(0);
+          // The cancelled job was created, so created count includes it
+          assertThat(taskAStats.getCreated().getCount()).isEqualTo(3L);
+          // Cancellation must NOT increment completed or failed
+          assertThat(taskAStats.getCompleted().getCount()).isEqualTo(1L);
+          assertThat(taskAStats.getFailed().getCount()).isEqualTo(1L);
         });
   }
 
@@ -137,7 +174,7 @@ public class JobTypeStatisticsIT {
 
           final var taskAStats = stats.items().get(0);
           assertThat(taskAStats.getJobType()).isEqualTo(JOB_TYPE_A);
-          assertThat(taskAStats.getCreated().getCount()).isEqualTo(2L);
+          assertThat(taskAStats.getCreated().getCount()).isEqualTo(3L);
           assertThat(taskAStats.getCompleted().getCount()).isEqualTo(1L);
           assertThat(taskAStats.getFailed().getCount()).isEqualTo(1L);
         });
