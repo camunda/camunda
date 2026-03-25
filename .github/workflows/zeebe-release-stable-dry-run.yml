@@ -64,7 +64,7 @@ jobs:
   dry-run-release-89:
     name: "Release from stable/8.9"
     needs: create-dry-run-branches
-    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@fix-release-fail-lifecycle-unknown-stable
+    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.9
     secrets: inherit
     strategy:
       fail-fast: false
