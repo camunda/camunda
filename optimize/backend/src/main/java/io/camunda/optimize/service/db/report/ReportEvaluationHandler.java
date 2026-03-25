@@ -8,11 +8,13 @@
 package io.camunda.optimize.service.db.report;
 
 import static io.camunda.optimize.ErrorType.TOO_MANY_BUCKETS;
-import static io.camunda.optimize.MetricEnum.REPORT_LATENCY_METRIC;
 import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static io.camunda.optimize.service.util.ExceptionUtil.isTooManyBucketsException;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.stream.Collectors.mapping;
 
+import io.camunda.optimize.MetricEnum;
 import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.RoleType;
@@ -47,9 +49,11 @@ import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.variable.ProcessVariableService;
+import io.micrometer.core.instrument.Tags;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,12 +62,16 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public abstract class ReportEvaluationHandler {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+  @Value("${optimize.metrics.report-latency.enabled:true}")
+  private boolean reportLatencyEnabled;
 
   private final ReportService reportService;
   private final SingleReportEvaluator singleReportEvaluator;
@@ -89,31 +97,56 @@ public abstract class ReportEvaluationHandler {
 
   public AuthorizedReportEvaluationResult evaluateReport(
       final ReportEvaluationInfo evaluationInfo) {
-    return OptimizeMetrics.recordLatency(
-        REPORT_LATENCY_METRIC,
-        evaluationInfo::getReport,
-        () -> {
-          evaluationInfo.postFetchSavedReport(reportService);
-          updateAndSetLatestReportDefinitionXml(evaluationInfo);
-          setDataSourcesForSystemGeneratedReports(evaluationInfo);
-          final RoleType currentUserRole =
-              getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
-                  .orElseThrow(
-                      () ->
-                          new ForbiddenException(
-                              String.format(
-                                  "User [%s] is not authorized to evaluate report [%s].",
-                                  evaluationInfo.getUserId(),
-                                  evaluationInfo.getReport().getName())));
-          final ReportEvaluationResult result;
-          if (evaluationInfo.getReport().isCombined()) {
-            result = evaluateCombinedReport(evaluationInfo, currentUserRole);
-          } else {
-            result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
-          }
+    final long startNanos = System.nanoTime();
+    try {
+      evaluationInfo.postFetchSavedReport(reportService);
+      updateAndSetLatestReportDefinitionXml(evaluationInfo);
+      setDataSourcesForSystemGeneratedReports(evaluationInfo);
+      final RoleType currentUserRole =
+          getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
+              .orElseThrow(
+                  () ->
+                      new ForbiddenException(
+                          String.format(
+                              "User [%s] is not authorized to evaluate report [%s].",
+                              evaluationInfo.getUserId(), evaluationInfo.getReport().getName())));
+      final ReportEvaluationResult result;
+      if (evaluationInfo.getReport().isCombined()) {
+        result = evaluateCombinedReport(evaluationInfo, currentUserRole);
+      } else {
+        result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
+      }
 
-          return new AuthorizedReportEvaluationResult(result, currentUserRole);
-        });
+      return new AuthorizedReportEvaluationResult(result, currentUserRole);
+    } finally {
+      if (Objects.nonNull(evaluationInfo.getReport())) {
+        recordReportLatency(startNanos, evaluationInfo.getReport());
+      }
+    }
+  }
+
+  /** Records report latency metrics if enabled via configuration. */
+  private void recordReportLatency(final long startNanos, final ReportDefinitionDto<?> report) {
+    final long durationMillis = NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+    final String reportName =
+        Optional.ofNullable(report).map(ReportDefinitionDto::getName).orElse("Unknown");
+    final String reportId =
+        Optional.ofNullable(report).map(ReportDefinitionDto::getId).orElse("Unsaved");
+    logger.debug(
+        "Recording report latency - reportId: {}, reportName: {}, duration: {}ms",
+        reportId,
+        reportName,
+        durationMillis);
+    if (reportLatencyEnabled) {
+      OptimizeMetrics.registerTimer(
+              MetricEnum.REPORT_LATENCY_METRIC,
+              Tags.of(
+                  OptimizeMetrics.REPORT_ID_TAG,
+                  reportId,
+                  OptimizeMetrics.REPORT_NAME_TAG,
+                  reportName))
+          .record(durationMillis, MILLISECONDS);
+    }
   }
 
   private void updateAndSetLatestReportDefinitionXml(
