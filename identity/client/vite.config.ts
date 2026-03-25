@@ -37,9 +37,7 @@ export default defineConfig(
     base: "",
     plugins: mode === "sbom" ? [...plugins, sbom()] : plugins,
     resolve: {
-      alias: {
-        src: "/src",
-      },
+      tsconfigPaths: true,
     },
     build: {
       outDir,
