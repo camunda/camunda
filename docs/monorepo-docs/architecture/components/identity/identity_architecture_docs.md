@@ -526,6 +526,8 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
 5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](references/rp-initiated-logout.md).
 
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+
 ```mermaid
 sequenceDiagram
   actor USER as User (Browser)
@@ -674,6 +676,8 @@ Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Tok
 3. Spring Security (`BearerTokenAuthenticationFilter`) validates the token signature via the IdP's JWKS endpoint — no local credential storage needed.
 4. `OidcTokenAuthenticationConverter` and `TokenClaimsConverter` extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.
 
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+
 ```mermaid
 sequenceDiagram
   box Customer System
@@ -774,6 +778,8 @@ Scenario: a client starts a process instance via the REST API; the Zeebe Engine 
 6. If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.
 7. Camunda Services returns a `CreateProcessInstanceResponse` and the REST API responds with `200 OK` containing the process instance key.
 
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+
 ```mermaid
 sequenceDiagram
   box Customer System
@@ -823,6 +829,8 @@ Scenario: a client queries process instances via the REST API; the Camunda Searc
 7. The resolved permissions are translated into a resource filter (e.g. restricting results to specific process definition keys or tenants) and applied to the search query.
 8. The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.
 9. Camunda Services returns a `SearchProcessInstancesResponse` and the REST API responds with `200 OK` containing the filtered process instances.
+
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -877,6 +885,8 @@ Scenario: an administrator creates a new user via the REST API; the command is a
 5. The Engine applies the command: `MutableMembershipState` (and related State classes) persist the new user record to the Primary Database (RocksDB).
 6. The Engine returns a command acknowledgement and `UserServices` returns the created user to the REST API, which responds with `201 Created` and the new user key.
 7. Asynchronously, the Camunda or Rdbms Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
+
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -934,6 +944,8 @@ Scenario: an administrator creates a new authorization (permission grant) via th
 5. The Engine applies the command: `MutableAuthorizationState` persists the new authorization record to the Primary Database (RocksDB).
 6. The Engine returns a command acknowledgement and `AuthorizationServices` returns the created authorization to the REST API, which responds with `201 Created` and the new authorization key.
 7. Asynchronously, the Camunda or RDBMS Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
+
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
