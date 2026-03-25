@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.11d71947.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.4b1921df.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.1bd15c75.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.8e3830ab.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -276,6 +276,7 @@ It does not communicate with the external IdP directly.</p>
 <li class="">Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.</li>
 <li class="">Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in <a class="" href="/camunda/pr-preview/pr-48843/architecture/components/identity/references/rp-initiated-logout/">RP‑initiated logout</a>.</li>
 </ol>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -326,6 +327,7 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 <li class="">Spring Security (<code>BearerTokenAuthenticationFilter</code>) validates the token signature via the IdP&#x27;s JWKS endpoint — no local credential storage needed.</li>
 <li class=""><code>OidcTokenAuthenticationConverter</code> and <code>TokenClaimsConverter</code> extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.</li>
 </ol>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -362,6 +364,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.</li>
 <li class="">Camunda Services returns a <code>CreateProcessInstanceResponse</code> and the REST API responds with <code>200 OK</code> containing the process instance key.</li>
 </ol>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -380,6 +383,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.</li>
 <li class="">Camunda Services returns a <code>SearchProcessInstancesResponse</code> and the REST API responds with <code>200 OK</code> containing the filtered process instances.</li>
 </ol>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -397,6 +401,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">The Engine returns a command acknowledgement and <code>UserServices</code> returns the created user to the REST API, which responds with <code>201 Created</code> and the new user key.</li>
 <li class="">Asynchronously, the Camunda or Rdbms Exporter picks up the <code>UserCreated</code> event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.</li>
 </ol>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -415,6 +420,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">The Engine returns a command acknowledgement and <code>AuthorizationServices</code> returns the created authorization to the REST API, which responds with <code>201 Created</code> and the new authorization key.</li>
 <li class="">Asynchronously, the Camunda or RDBMS Exporter picks up the <code>AuthorizationCreated</code> event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.</li>
 </ol>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
