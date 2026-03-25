@@ -11,7 +11,6 @@
 
 import {defineConfig, type PluginOption, type UserConfig} from 'vite';
 import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
 import license from 'rollup-plugin-license';
 import path from 'node:path';
@@ -19,7 +18,7 @@ import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
 import {playwright} from '@vitest/browser-playwright';
 
-const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
+const plugins: PluginOption[] = [react(), svgr()];
 const outDir = 'build';
 
 function getReporters(): Pick<
@@ -91,7 +90,9 @@ export default defineConfig(({mode}) => ({
       ],
     },
   },
-  resolve: {alias: {src: path.resolve(__dirname, './src')}},
+  resolve: {
+    tsconfigPaths: true,
+  },
   test: {
     globals: true,
     restoreMocks: true,
