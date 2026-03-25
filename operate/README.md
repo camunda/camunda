@@ -102,7 +102,7 @@ On local machines, visual tests use a [Playwright Server in Docker](https://play
 ### Prerequisites
 
 - Docker or Docker Desktop with host networking enabled (`Settings` → `Resources` → `Network` → `Enable host networking`)
-- Needed Playwright image will be automatically pulled by tests. In case of a timeout after 3 minutes, you can run `docker pull mcr.microsoft.com/playwright:v{version in package.json}`.
+- Required Playwright image will be automatically pulled by tests. In case of a timeout after 3 minutes, you can run `docker pull mcr.microsoft.com/playwright:v{version in package.json}`.
 
 ### Running the tests
 
