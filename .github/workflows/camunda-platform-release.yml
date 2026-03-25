@@ -174,7 +174,8 @@ jobs:
           #
           # -DpreparationGoals
           #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
-          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
+          #   Default is 'clean verify'. We only run spotless to keep release-prepare generated POM changes
+          #   in a consistent format before the release commit is created.
           #
           # -Darguments
           #   Additional arguments to pass to the Maven executions, separated by spaces.
@@ -199,7 +200,7 @@ jobs:
             -DremoteTagging="${PUSH_CHANGES}" \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
-            -DpreparationGoals="" \
+            -DpreparationGoals="spotless:apply" \
             ${PROFILE_FLAGS} \
             -Darguments="${ARGUMENTS_PROFILE}"
 
