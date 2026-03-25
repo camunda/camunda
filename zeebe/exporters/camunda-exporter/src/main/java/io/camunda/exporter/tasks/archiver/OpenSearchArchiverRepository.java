@@ -138,7 +138,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(final int size) {
     try {
       return withArchivingStatus()
           .thenComposeAsync(
@@ -147,7 +147,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                   logger.debug("Archiving is currently blocked.");
                   return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
                 }
-                final var request = createFinishedInstancesSearchRequest();
+                final var request = createFinishedInstancesSearchRequest(size);
 
                 final var timer = Timer.start();
                 return sendRequestAsync(() -> client.search(request, Object.class))
@@ -508,10 +508,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return CompletableFuture.completedFuture(null);
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest() {
+  private SearchRequest createFinishedInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        size,
         ListViewTemplate.END_DATE);
   }
 
@@ -636,6 +637,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   private SearchRequest createSearchRequest(
       final String indexName, final Query filterQuery, final String sortField) {
+    return createSearchRequest(indexName, filterQuery, config.getRolloverBatchSize(), sortField);
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName, final Query filterQuery, final int size, final String sortField) {
     logger.trace(
         "Create search request against index '{}', with filter '{}' and sortField '{}'",
         indexName,
@@ -651,7 +657,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
-        .size(config.getRolloverBatchSize())
+        .size(size)
         .build();
   }
 

@@ -18,7 +18,7 @@ final class TestRepository extends NoopArchiverRepository {
   ArchiveBatch batch;
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(final int size) {
     return CompletableFuture.completedFuture(batch);
   }
 

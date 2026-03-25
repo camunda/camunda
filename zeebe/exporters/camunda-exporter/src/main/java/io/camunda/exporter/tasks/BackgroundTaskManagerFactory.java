@@ -21,8 +21,8 @@ import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
-import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
@@ -313,7 +313,8 @@ public final class BackgroundTaskManagerFactory {
         .forEach(dependantTemplates::add);
 
     return buildReschedulingArchiverTask(
-        new ProcessInstancesArchiverJob(
+        new ProcessInstanceArchiverJob(
+            config.getHistory(),
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
             dependantTemplates,
