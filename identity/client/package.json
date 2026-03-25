@@ -47,7 +47,7 @@
     "@types/react-transition-group": "4.4.12",
     "@typescript-eslint/eslint-plugin": "8.57.2",
     "@typescript-eslint/parser": "8.57.2",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "6.0.1",
     "eslint": "9.39.4",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-license-header": "^0.9.0",
@@ -59,12 +59,12 @@
     "monaco-editor": "0.55.1",
     "prettier": "3.8.1",
     "rollup": "4.60.0",
-    "rollup-plugin-license": "^3.5.3",
+    "rollup-plugin-license": "3.7.0",
     "rollup-plugin-sbom": "3.1.0",
     "sass": "1.98.0",
     "typescript": "5.9.3",
-    "vite": "7.3.1",
-    "vite-plugin-svgr": "^4.3.0"
+    "vite": "8.0.3",
+    "vite-plugin-svgr": "4.5.0"
   },
   "stableVersion": "8.9.0-SNAPSHOT",
   "overrides": {
