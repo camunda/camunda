@@ -56,11 +56,11 @@ const sidebars = {
                 },
                 {
                   type: 'category',
-                  label: 'Supporting concepts',
+                  label: 'References',
                   items: [
-                    'architecture/components/identity/supporting-concepts/data-model',
-                    'architecture/components/identity/supporting-concepts/default-roles',
-                    'architecture/components/identity/supporting-concepts/rp-initiated-logout',
+                    'architecture/components/identity/references/data-model',
+                    'architecture/components/identity/references/default-roles',
+                    'architecture/components/identity/references/rp-initiated-logout',
                   ],
                 },
               ],

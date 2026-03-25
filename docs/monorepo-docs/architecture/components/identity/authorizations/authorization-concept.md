@@ -157,7 +157,7 @@ See the individual pages for details.
 
 ## Relationship to Identity Model
 
-Authorizations are granted to identity entities (users, roles, groups, mapping rules, clients). See [Identity documentation](../supporting-concepts/data-model.md) for the full data model. The key relationships are:
+Authorizations are granted to identity entities (users, roles, groups, mapping rules, clients). See [Identity documentation](../references/data-model.md) for the full data model. The key relationships are:
 
 - A **User**, **Role**, **Group**, **Mapping Rule**, or **Client** can be granted one or more `Authorization` records.
 - Each `Authorization` contains one or more `Permission` entries scoped to specific resources.
