@@ -19,7 +19,7 @@ orchestration:
   data:
     secondaryStorage:
       rdbms:
-        url: jdbc:postgresql://postgres-postgresql:5432/camunda
+        url: jdbc:postgresql://postgresql:5432/camunda
 
 ###########################################################################
 #

@@ -19,7 +19,7 @@ additional_load_test_configuration ?= --set global.image.repository=registry.cam
 platform_values := -f camunda-platform-values.yaml
 
 # Add secondary storage values
-ifneq ($(filter $(secondary_storage),postgresql mysql mssql oracle),)
+ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 	platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-$(secondary_storage).yaml
 else ifeq ($(secondary_storage),opensearch)
 	platform_values += -f camunda-platform-values-opensearch.yaml
@@ -31,7 +31,7 @@ endif
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
 
-	ifneq ($(filter $(secondary_storage),postgresql mysql mssql oracle),)
+	ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 		platform_values += --set elasticsearch.enabled=false
 	endif
 endif
@@ -48,7 +48,7 @@ install: install-storage create-credentials install-platform install-load-test i
 .PHONY: install-stable
 install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Install secondary storage based on configuration (PostgreSQL, MySQL, MSSQL, Oracle, OpenSearch)
+# Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
@@ -61,6 +61,12 @@ else ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
 	# Install MySQL database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
+		--namespace $(namespace) \
+		$(platform_values)
+else ifeq ($(secondary_storage),mariadb)
+	@echo "Installing MariaDB database for namespace $(namespace)..."
+	# Install MariaDB database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mariadb.yaml
+	helm upgrade --install mariadb oci://registry-1.docker.io/bitnamicharts/mariadb \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mssql)
@@ -173,16 +179,16 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
 # Clean up secondary storage based on helm charts
-ifneq ($(filter $(secondary_storage),postgresql mysql),)
+ifneq ($(filter $(secondary_storage),postgresql mysql mariadb),)
 	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall $(secondary_storage)
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
 # MSSQL and Oracle are deployed via plain Kubernetes manifests, so we need to delete them via kubectl
 else ifneq ($(filter $(secondary_storage),mssql oracle),)
 	@echo "Cleaning up MSSQL database for namespace $(namespace)..."
-	-kubectl delete --namespace $(namespace) -f mssql.yaml
+	-kubectl delete --namespace $(namespace) -f databases/$(secondary_storage).yaml
 	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
-	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=mssql
+	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch

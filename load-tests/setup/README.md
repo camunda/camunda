@@ -91,7 +91,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mssql, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: false.
 
@@ -123,7 +123,9 @@ You can specify a secondary storage type as the second argument:
 . ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
 . ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
 . ./newLoadTest.sh my-load-test-name mysql          # Uses MySQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name mariadb        # Uses MariaDB (RDBMS)
 . ./newLoadTest.sh my-load-test-name mssql          # Uses Microsoft SQL Server (RDBMS)
+. ./newLoadTest.sh my-load-test-name oracle         # Uses Oracle (RDBMS)
 . ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 
@@ -258,7 +260,7 @@ make install-load-test
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
 
 ```sh
-# Run typical workload, with 10 tasks 
+# Run typical workload, with 10 tasks
 make typical
 
 # Run a realistic workload with multi-instance call activities, etc.

@@ -127,11 +127,11 @@ spec:
               protocol: TCP
           resources:
             requests:
-              memory: 8Gi
-              cpu: "4000m"
+              memory: 3Gi
+              cpu: "3000m"
             limits:
-              memory: 12Gi
-              cpu: "4000m"
+              memory: 6Gi
+              cpu: "3000m"
           # startupProbe gates liveness/readiness until Oracle is fully open.
           # On first run the slim image creates the database from scratch (~20-30
           # minutes). failureThreshold * periodSeconds gives a 30-minute window.
