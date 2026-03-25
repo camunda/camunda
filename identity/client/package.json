@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-api-zod-schemas": "0.0.52",
+    "@camunda/camunda-api-zod-schemas": "0.0.54",
     "@camunda/camunda-composite-components": "0.22.5",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.100.0",
@@ -32,7 +32,7 @@
     "react-dom": "18.3.1",
     "react-hook-form": "7.71.2",
     "react-i18next": "16.5.8",
-    "react-router-dom": "7.13.1",
+    "react-router-dom": "7.13.2",
     "react-transition-group": "4.4.5",
     "styled-components": "6.3.12",
     "zod": "4.3.6"
@@ -58,7 +58,7 @@
     "license-checker": "25.0.1",
     "monaco-editor": "0.55.1",
     "prettier": "3.8.1",
-    "rollup": "4.59.0",
+    "rollup": "4.59.1",
     "rollup-plugin-license": "^3.5.3",
     "rollup-plugin-sbom": "3.0.5",
     "sass": "1.97.3",
