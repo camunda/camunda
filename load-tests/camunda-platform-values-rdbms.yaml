@@ -58,7 +58,7 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 2000
         # set to 2001 and not 2000 to directly see when queue is full in metrics dashboard
         camunda.data.secondary-storage.rdbms.queue-size: 2001
-        camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
+        camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT48H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
     # This file is loaded after application.yml (higher priority). It is empty by default,
@@ -105,7 +105,7 @@ primary:
       effect: NoSchedule
 
   persistence:
-    size: 128Gi
+    size: 512Gi
     storageClass: "ssd"
 
   extendedConfiguration: |-
