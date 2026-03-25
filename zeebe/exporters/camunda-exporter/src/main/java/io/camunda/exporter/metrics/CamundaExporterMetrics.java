@@ -454,6 +454,23 @@ public class CamundaExporterMetrics implements AutoCloseable {
     timer.stop(archivingDuration);
   }
 
+  public void measureArchiveIndexDuration(
+      final String sourceIndex, final Sample sample, final Long count) {
+    final Timer timer =
+        Timer.builder(meterName("archiver.index.duration"))
+            .description("Duration of how long it takes to archive.")
+            .tag("source", sourceIndex)
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    sample.stop(timer);
+
+    Counter.builder(meterName("archiver.index.docs"))
+        .tag("source", sourceIndex)
+        .description("Count of how many documents archived.")
+        .register(meterRegistry)
+        .increment(count);
+  }
+
   @Override
   public void close() {
     // clean up all registered meters

@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -24,7 +25,9 @@ import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -39,6 +42,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.Pro
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiverTaskSupplier.DocIdsSearchResponse;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -67,7 +71,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
-  private static final int MAX_DOCS_BATCH_SIZE = 10_000;
+  private static final int MAX_DOCS_BATCH_SIZE = 1000;
   private final int partitionId;
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
@@ -364,11 +368,28 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
       final Executor executor) {
-    return AsyncRepeatUntil.repeatUntil(
-        () ->
-            moveBatchOfDocuments(
-                sourceIndexName, destinationIndexName, keysByField, filters, executor),
-        docsMoved -> docsMoved < MAX_DOCS_BATCH_SIZE);
+    final ArchiverTaskSupplier<FieldValue> taskSupplier =
+        new ArchiverTaskSupplier<>(
+            sourceIndexName,
+            destinationIndexName,
+            searchAfter -> searchForDocIdsBatch(sourceIndexName, keysByField, filters, searchAfter),
+            this::reindexDocumentsById,
+            this::deleteDocumentsById,
+            executor);
+
+    final var timer = Timer.start();
+    return AsyncRepeatUntil.repeatUntil(taskSupplier::getNextBatch, x -> taskSupplier.isComplete())
+        .thenComposeAsync(docIds -> setIndexLifeCycle(destinationIndexName), executor)
+        .thenApply(
+            ignored -> {
+              System.out.println(
+                  "REINDEX COMPLETED for " + sourceIndexName + " to " + destinationIndexName);
+              taskSupplier.printStatus();
+
+              metrics.measureArchiveIndexDuration(
+                  sourceIndexName, timer, taskSupplier.getTotalArchived());
+              return ignored;
+            });
   }
 
   @Override
@@ -384,53 +405,43 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
   }
 
-  public CompletableFuture<Integer> moveBatchOfDocuments(
+  private CompletableFuture<DocIdsSearchResponse<FieldValue>> searchForDocIdsBatch(
       final String sourceIndexName,
-      final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters,
-      final Executor executor) {
-    return searchForDocIdsBatch(sourceIndexName, keysByField, filters)
-        .thenComposeAsync(
-            docIds ->
-                reindexDocumentsById(sourceIndexName, destinationIndexName, docIds)
-                    .thenApply(ok -> docIds),
-            executor)
-        .thenComposeAsync(
-            docIds -> setIndexLifeCycle(destinationIndexName).thenApply(ok -> docIds), executor)
-        .thenComposeAsync(
-            docIds -> deleteDocumentsById(sourceIndexName, docIds).thenApply(ok -> docIds),
-            executor)
-        .thenApply(List::size);
-  }
-
-  private CompletableFuture<List<String>> searchForDocIdsBatch(
-      final String sourceIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
+      final List<FieldValue> searchAfter) {
 
     final var query = buildFilterQuery(keysByField, filters);
 
-    final var request =
+    final Builder requestBuilder =
         new SearchRequest.Builder()
             .index(sourceIndexName)
             .query(query)
-            .size(MAX_DOCS_BATCH_SIZE)
+            .size(config.getReindexBatchSize())
             .source(s -> s.fetch(false))
-            .build();
+            .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
+
+    if (searchAfter != null && !searchAfter.isEmpty()) {
+      requestBuilder.searchAfter(searchAfter);
+    }
 
     final var timer = Timer.start();
     return client
-        .search(request)
+        .search(requestBuilder.build())
         .whenCompleteAsync(
             (response, error) -> metrics.measureDocBatchArchiverSearch(timer), executor)
         .thenApply(
             response -> {
-              return response.hits().hits().stream().map(Hit::id).toList();
+              final List<Hit<Void>> hits = response.hits().hits();
+              if (hits.isEmpty()) {
+                return DocIdsSearchResponse.empty();
+              }
+              return DocIdsSearchResponse.from(
+                  hits.stream().map(Hit::id).toList(), hits.getLast().sort());
             });
   }
 
-  private CompletableFuture<Void> reindexDocumentsById(
+  private CompletableFuture<Long> reindexDocumentsById(
       final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
     if (docIds.isEmpty()) {
       return CompletableFuture.completedFuture(null);
@@ -449,14 +460,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var timer = Timer.start();
     return client
         .reindex(request)
+        .thenApplyAsync(ReindexResponse::total)
         .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(ignored -> null, executor);
+            (total, error) -> metrics.measureArchiverReindex(total, timer), executor);
   }
 
-  private CompletableFuture<Void> deleteDocumentsById(
+  private CompletableFuture<Long> deleteDocumentsById(
       final String sourceIndexName, final List<String> docIds) {
     if (docIds.isEmpty()) {
       return CompletableFuture.completedFuture(null);
@@ -473,12 +482,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var timer = Timer.start();
     return client
         .bulk(request)
+        .thenApplyAsync(response -> (long) response.items().size())
         .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(
-                    response != null ? (long) response.items().size() : null, timer),
-            executor)
-        .thenApplyAsync(ignored -> null, executor);
+            (idsSize, error) -> metrics.measureArchiverDelete(idsSize, timer), executor);
   }
 
   private Query finishedProcessInstancesQuery(
