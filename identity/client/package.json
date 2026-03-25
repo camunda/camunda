@@ -64,7 +64,7 @@
     "vite": "8.0.3",
     "vite-plugin-svgr": "4.5.0"
   },
-  "stableVersion": "8.9.0-SNAPSHOT",
+  "stableVersion": "8.10.0-SNAPSHOT",
   "overrides": {
     "@carbon/react": {
       "react-is": "18.3.1"
