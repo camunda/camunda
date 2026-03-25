@@ -17,6 +17,7 @@ import {createModification} from '../../NewVariableModification/createModificati
 import {createNewVariableFieldName} from '../../createVariableFieldName';
 import {useVariableFormFields} from '../../NewVariableModification/useVariableFormFields';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
+import {MaximizeButton} from '../MaximizeButton';
 
 const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
   variableName,
@@ -34,14 +35,8 @@ const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
 
   return (
     <>
-      <Button
-        kind="ghost"
-        hasIconOnly
-        renderIcon={Maximize}
-        size="sm"
-        aria-label="Open JSON editor"
-        iconDescription="Open JSON editor"
-        tooltipPosition="left"
+      <MaximizeButton
+        label="Open JSON editor"
         onClick={() => {
           setIsModalVisible(true);
         }}

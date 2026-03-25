@@ -15,9 +15,9 @@ import {
 } from '../validators';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
-import {Layer, TextInput} from '@carbon/react';
+import {Layer} from '@carbon/react';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
-import {useFieldError} from '../../../../../../modules/hooks/useFieldError';
+import {TextInputField} from 'modules/components/TextInputField';
 
 type Props = {
   variableName: string;
@@ -28,7 +28,6 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
   const form = useForm();
   const valueFieldName = createNewVariableFieldName(variableName, 'value');
   const selectedElementName = useSelectedElementName() || '';
-  const error = useFieldError(valueFieldName);
 
   const {currentName, currentValue, currentId, areFormFieldsValid} =
     useVariableFormFields(variableName);
@@ -44,7 +43,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         parse={(value) => value}
       >
         {({input}) => (
-          <TextInput
+          <TextInputField
             {...input}
             data-testid="new-variable-value"
             size="sm"
@@ -53,8 +52,6 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
             hideLabel
             labelText="Value"
             placeholder="Value"
-            invalid={error !== undefined}
-            invalidText={error}
             onBlur={() => {
               form.mutators?.triggerValidation?.(valueFieldName);
               input.onBlur();

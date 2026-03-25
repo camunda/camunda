@@ -6,6 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+export interface MaximizeButtonProps {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ViewFullVariableButtonAddProps {
   mode: 'add';
   variableName: string;

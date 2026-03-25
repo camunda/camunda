@@ -13,6 +13,7 @@ import {Maximize} from '@carbon/react/icons';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import type {ViewFullVariableButtonShowProps} from '../types';
 import {InlineLoading} from '../../Operations/styled';
+import {MaximizeButton} from '../MaximizeButton';
 
 const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   variableName,
@@ -28,14 +29,8 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
     <InlineLoading data-testid="variable-operation-spinner" />
   ) : (
     <>
-      <Button
-        kind="ghost"
-        hasIconOnly
-        renderIcon={Maximize}
-        size="sm"
-        aria-label={`View full value of ${variableName}`}
-        iconDescription={`View full value of ${variableName}`}
-        tooltipPosition="left"
+      <MaximizeButton
+        label={`View full value of ${variableName}`}
         onClick={async () => {
           setIsModalVisible(true);
         }}

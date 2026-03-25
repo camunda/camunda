@@ -8,13 +8,12 @@
 
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {Button} from '@carbon/react';
-import {Maximize} from '@carbon/react/icons';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {tracking} from 'modules/tracking';
 import {useExistingVariableEditor} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/useExistingVariableEditor';
 import {useForm} from 'react-final-form';
 import type {ViewFullVariableButtonEditProps} from '../types';
+import {MaximizeButton} from '../MaximizeButton';
 
 const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
   variableName,
@@ -31,14 +30,8 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
 
   return (
     <>
-      <Button
-        kind="ghost"
-        hasIconOnly
-        renderIcon={Maximize}
-        size="sm"
-        aria-label="Open JSON editor"
-        iconDescription="Open JSON editor"
-        tooltipPosition="left"
+      <MaximizeButton
+        label="Open JSON editor"
         onClick={() => {
           if (variableEditor.isSubmittingForm) {
             return;
