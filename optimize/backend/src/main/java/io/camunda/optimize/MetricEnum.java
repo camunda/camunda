@@ -21,7 +21,8 @@ public enum MetricEnum {
       "newPageFetchTime",
       "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
   REPORT_LATENCY_METRIC(
-      MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report");
+      MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report"),
+  ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurred across Optimize");
   private final String id;
   private final String name;
   private final String description;
@@ -46,7 +47,8 @@ public enum MetricEnum {
 
   private enum MetricType {
     IMPORT("optimize.import"),
-    REPORT("optimize.report");
+    REPORT("optimize.report"),
+    GENERAL("optimize");
     private final String prefix;
 
     MetricType(final String prefix) {
