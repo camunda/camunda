@@ -1,0 +1,190 @@
+# oracle.yaml — Plain Kubernetes manifests for Oracle Database Free 23c.
+#
+# Uses the gvenzl/oracle-free image (same as db/docker-compose.yml) which runs
+# Oracle Database Free 23c. The plain slim variant is used instead of
+# slim-faststart because the faststart image copies a pre-built database from
+# the image layer on first start. In Kubernetes that copy fails with
+# ORA-00205 (cannot identify control file), which leaves Oracle in a half-
+# started state; the subsequent restart then sees its own lock file and fails
+# with ORA-01081. The slim image avoids this by creating the database from
+# scratch via dbca, which is slower (~20-30 min on first run) but reliable.
+# The startupProbe below gives a 30-minute window to cover that first run;
+# subsequent pod restarts reuse the PVC and start in seconds.
+# Using the default entrypoint without modification keeps behaviour identical to
+# Docker Compose, letting runOracle.sh handle startup the same way in both
+# environments.
+#
+# /dev/shm: Kubernetes pods default to 64 MB of shared memory, which is far too
+# small for Oracle's Automatic Memory Management (AMM). Oracle Free's SGA alone
+# is ~2 GB. Without a sufficiently large /dev/shm Oracle fails to allocate the
+# SGA, crashes mid-startup, and on the next attempt sees its own partially-
+# created lock file → ORA-01081. The dshm emptyDir (medium: Memory) below
+# removes this limit, mirroring what Docker (and Docker Compose) provide on a
+# typical host.
+#
+# Resources:
+#   image           : gvenzl/oracle-free:23-slim
+#   storage         : 128 Gi, storageClass ssd (ReadWriteOnce)
+#   requests/limits : 8 Gi / 12 Gi  ·  4 CPU
+#   nodeSelector    : component=benchmark-n2-standard-4
+#   SYS password    : sys_user_password  ← load-test only, NOT for production
+#   APP user        : camunda / camunda  ← load-test only, NOT for production
+#
+# The ClusterIP Service is named "oracle" to match the JDBC URL in
+# camunda-platform-values-oracle.yaml:
+#   jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+
+---
+# Passwords — referenced by the StatefulSet container.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oracle-secret
+  labels:
+    app.kubernetes.io/name: oracle
+type: Opaque
+stringData:
+  ORACLE_PASSWORD: "sys_user_password"
+  APP_USER_PASSWORD: "camunda"
+
+
+---
+# ClusterIP Service — "oracle" resolves to this service inside the namespace.
+# JDBC URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle
+  labels:
+    app.kubernetes.io/name: oracle
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: oracle
+  ports:
+    - name: oracle
+      port: 1521
+      targetPort: 1521
+      protocol: TCP
+
+---
+# StatefulSet — single replica with a 128 Gi SSD PVC.
+# The volumeClaimTemplate creates a PVC named "oracle-data-oracle-0";
+# this PVC is NOT removed automatically when the StatefulSet is deleted
+# (see the clean target in the Makefile for explicit PVC cleanup).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: oracle
+  labels:
+    app.kubernetes.io/name: oracle
+spec:
+  serviceName: oracle
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oracle
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oracle
+    spec:
+      # fsGroup 54321 ensures the mounted PVC is writable by the oracle user
+      # (UID/GID 54321) inside the gvenzl/oracle-free container image.
+      securityContext:
+        fsGroup: 54321
+
+      nodeSelector:
+        component: benchmark-n2-standard-4
+
+      tolerations:
+        - key: nodepool
+          operator: Equal
+          value: n2-standard-4
+          effect: NoSchedule
+
+      containers:
+        - name: oracle
+          image: gvenzl/oracle-free:23-slim
+          # No command override — use the image's default entrypoint (runOracle.sh)
+          # exactly as Docker Compose does.
+          env:
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: ORACLE_PASSWORD
+            - name: APP_USER
+              value: "camunda"
+            - name: APP_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: APP_USER_PASSWORD
+          ports:
+            - name: oracle
+              containerPort: 1521
+              protocol: TCP
+          resources:
+            requests:
+              memory: 8Gi
+              cpu: "4000m"
+            limits:
+              memory: 12Gi
+              cpu: "4000m"
+          # startupProbe gates liveness/readiness until Oracle is fully open.
+          # On first run the slim image creates the database from scratch (~20-30
+          # minutes). failureThreshold * periodSeconds gives a 30-minute window.
+          # Subsequent restarts reuse the PVC and finish within the initial delay.
+          startupProbe:
+            exec:
+              command:
+                - healthcheck.sh
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 60   # 60 × 30 s = 1800 s ≈ 30 minutes
+          readinessProbe:
+            exec:
+              command:
+                - healthcheck.sh
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - healthcheck.sh
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+            - name: oracle-data
+              mountPath: /opt/oracle/oradata
+            - name: dshm
+              mountPath: /dev/shm
+
+      # Provide Oracle with a /dev/shm large enough for its SGA.
+      # The default Kubernetes /dev/shm is 64 MB; Oracle AMM needs ~2 GB.
+      # medium: Memory makes this an in-memory tmpfs; its size is bounded by
+      # the pod's memory limit rather than needing a separate sizeLimit.
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+
+  # PVC template — creates "oracle-data-oracle-0" on first deployment.
+  # storageClass "ssd" provisions a 128 Gi SSD-backed volume.
+  volumeClaimTemplates:
+    - metadata:
+        name: oracle-data
+        labels:
+          app.kubernetes.io/name: oracle
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: ssd
+        resources:
+          requests:
+            storage: 128Gi
+
