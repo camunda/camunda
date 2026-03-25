@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
@@ -86,6 +87,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
               INVALID_TYPE_ERROR_MESSAGE_WITH_OPTIONS.formatted(invalidValue, typeName, options);
         }
       }
+    } else if (isFilterPropertyEnumError(ex)) {
+      // Filter property enum validation — deserializer already formatted the full message.
+      detail = ((InvalidFormatException) ex.getCause()).getOriginalMessage();
     } else if (isMismatchedInputError(ex)) {
       final var mismatchedInputException = (MismatchedInputException) ex.getCause();
       final var path =
@@ -168,6 +172,13 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   private boolean isMismatchedInputError(final Exception ex) {
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof MismatchedInputException;
+  }
+
+  private boolean isFilterPropertyEnumError(final Exception ex) {
+    return ex instanceof HttpMessageNotReadableException
+        && ex.getCause() instanceof final InvalidFormatException ife
+        && ife.getMessage() != null
+        && ife.getMessage().startsWith("Unexpected value '");
   }
 
   private boolean isUnknownEnumError(final Exception ex) {

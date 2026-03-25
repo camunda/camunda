@@ -190,6 +190,8 @@ public class GenerateContractMappingPoc {
         final var deserializerName = sealedName.replace("StrictContract", "Deserializer");
         final var primitiveJavaType = filterPropertyPrimitiveJavaType(parentSchema.node());
         final var isLongKey = isLongKeyFilterProperty(parentSchemaName);
+        final var enumSchemaName = resolveFilterPropertyEnumSchema(
+            parentSchema.node(), allSchemas, parentSchema.fileName());
 
         // Register the advanced filter as implementing the sealed interface.
         branchToSealedInterface.put(branchNames.getFirst(), sealedName);
@@ -199,7 +201,8 @@ public class GenerateContractMappingPoc {
         Files.writeString(
             wrapperFile,
             renderFilterPlainValueWrapper(
-                parentSchema.fileName(), parentSchemaName, sealedName, wrapperName, primitiveJavaType),
+                parentSchema.fileName(), parentSchemaName, sealedName, wrapperName,
+                primitiveJavaType),
             StandardCharsets.UTF_8);
         System.out.println("generated filter wrapper: " + ROOT.relativize(wrapperFile));
 
@@ -209,7 +212,8 @@ public class GenerateContractMappingPoc {
             deserializerFile,
             renderFilterPropertyDeserializer(
                 parentSchema.fileName(), parentSchemaName, sealedName, wrapperName,
-                advancedFilterDtoClass, deserializerName, primitiveJavaType, isLongKey),
+                advancedFilterDtoClass, deserializerName, primitiveJavaType, isLongKey,
+                enumSchemaName, allSchemas),
             StandardCharsets.UTF_8);
         System.out.println("generated filter deserializer: " + ROOT.relativize(deserializerFile));
 
@@ -714,6 +718,41 @@ public class GenerateContractMappingPoc {
   }
 
   /**
+   * Resolves the enum schema referenced by the inline oneOf branch of a filter property, if any.
+   * Returns the enum schema name (e.g. "BatchOperationItemStateEnum") or null if the plain-value
+   * branch does not reference an enum.
+   */
+  private static String resolveFilterPropertyEnumSchema(
+      Node node, Map<SchemaKey, SchemaDef> allSchemas, String contextFile) {
+    if (node.oneOfInlineAllOfRefs().isEmpty()) {
+      return null;
+    }
+    for (var ref : node.oneOfInlineAllOfRefs()) {
+      final var schemaName = refToSchemaName(ref);
+      // Look up in allSchemas to check if it's an enum
+      final var key = new SchemaKey(contextFile, schemaName);
+      final var target = allSchemas.get(key);
+      if (target != null && isEnumSchema(target)) {
+        return schemaName;
+      }
+    }
+    return null;
+  }
+
+  /** Resolves the enum values list for a named enum schema. */
+  private static List<String> resolveEnumValues(
+      String enumSchemaName, String contextFile, Map<SchemaKey, SchemaDef> allSchemas) {
+    final var key = new SchemaKey(contextFile, enumSchemaName);
+    final var schema = allSchemas.get(key);
+    if (schema == null || schema.node().enumValues().isEmpty()) {
+      throw new IllegalStateException(
+          "Expected enum schema '%s' in '%s' but not found or has no enum values"
+              .formatted(enumSchemaName, contextFile));
+    }
+    return schema.node().enumValues();
+  }
+
+  /**
    * Extracts the schema name from a $ref string.
    * E.g. "#/components/schemas/AuthorizationIdBasedRequest" → "AuthorizationIdBasedRequest"
    */
@@ -936,9 +975,11 @@ public record %s(%s value) implements %s {
   private static String renderFilterPropertyDeserializer(
       String sourceFile, String schemaName, String sealedName, String wrapperName,
       String advancedFilterDtoClass, String deserializerName,
-      String primitiveJavaType, boolean isLongKey) {
+      String primitiveJavaType, boolean isLongKey,
+      String enumSchemaName, Map<SchemaKey, SchemaDef> allSchemas) {
     // Build the token-to-value mapping for the plain-value branch.
     final String plainValueCase;
+    var enumSetStr = "";
     if ("Integer".equals(primitiveJavaType)) {
       plainValueCase = """
           case VALUE_NUMBER_INT -> new %s(p.getIntValue());
@@ -957,8 +998,26 @@ public record %s(%s value) implements %s {
           case VALUE_STRING -> new %s(p.getText());
           case VALUE_NUMBER_INT -> new %s(String.valueOf(p.getLongValue()));"""
         .formatted(wrapperName, wrapperName);
+    } else if (enumSchemaName != null) {
+      // Enum-typed: validate string against known enum values at deserialization time.
+      final var enumValues = resolveEnumValues(enumSchemaName, sourceFile, allSchemas);
+      final var enumListStr = enumValues.stream().collect(Collectors.joining(", "));
+      enumSetStr = enumValues.stream()
+          .map(v -> "\"" + v + "\"")
+          .collect(Collectors.joining(", "));
+      plainValueCase = """
+          case VALUE_STRING -> {
+            final var text = p.getText();
+            if (!VALID_VALUES.contains(text)) {
+              throw InvalidFormatException.from(p,
+                "Unexpected value '" + text + "' for enum field '" + p.currentName() + "'. Use any of the following values: [%s]",
+                text, String.class);
+            }
+            yield new %s(text);
+          }"""
+        .formatted(enumListStr, wrapperName);
     } else {
-      // String-typed (including date-time and enum filter properties)
+      // String-typed (including date-time filter properties)
       plainValueCase = """
           case VALUE_STRING -> new %s(p.getText());"""
         .formatted(wrapperName);
@@ -983,10 +1042,10 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.annotation.Generated;
 import java.io.IOException;
-
+%s
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public final class %s extends JsonDeserializer<%s> {
-
+%s
   @Override
   public %s deserialize(final JsonParser p, final DeserializationContext ctxt)
       throws IOException {
@@ -1000,7 +1059,10 @@ public final class %s extends JsonDeserializer<%s> {
 }
 """
     .formatted(sourceFile, schemaName, TARGET_PACKAGE,
-        deserializerName, sealedName, sealedName,
+        enumSchemaName != null ? "import java.util.Set;\n" : "",
+        deserializerName, sealedName,
+        enumSchemaName != null ? "\n  private static final Set<String> VALID_VALUES = Set.of(" + enumSetStr + ");\n" : "",
+        sealedName,
         plainValueCase, advancedFilterDtoClass, primitiveJavaType);
   }
 
@@ -1270,8 +1332,7 @@ public enum %s {
         + "import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;\n"
         + (hasLongKeyCoercion ? "import io.camunda.gateway.mapping.http.util.KeyUtil;\n" : "")
         + "import jakarta.annotation.Generated;\n"
-        + (hasListCoercion ? "import java.util.ArrayList;\n" : "")
-        + (hasRequiredNonNullable ? "import java.util.Objects;\n" : "")
+        + (hasListCoercion || hasRequiredNonNullable ? "import java.util.ArrayList;\n" : "")
         + "import org.jspecify.annotations.NullMarked;\n"
         + (hasNullable ? "import org.jspecify.annotations.Nullable;\n" : "");
 
@@ -1294,18 +1355,21 @@ public enum %s {
     {
       final var checks = new ArrayList<String>();
 
-      // Null checks for required non-nullable fields.
-      for (var f : fields) {
-        if (f.required() && !f.nullable()) {
-          // Sort request "field" property uses a specific message for backward compatibility.
+      // Null checks for required non-nullable fields — aggregate all missing fields.
+      final var requiredNonNullFields = fields.stream()
+          .filter(f -> f.required() && !f.nullable())
+          .toList();
+      if (!requiredNonNullFields.isEmpty()) {
+        checks.add("    var missingFields = new ArrayList<String>();");
+        for (var f : requiredNonNullFields) {
           final var message = schemaName.contains("SortRequest") && "field".equals(f.name())
-              ? "Sort field must not be null"
+              ? "Sort field must not be null."
               : "No " + f.name() + " provided.";
           checks.add(
-              "    Objects.requireNonNull("
-                  + f.identifier()
-                  + ", \"" + message + "\");");
+              "    if (" + f.identifier() + " == null) missingFields.add(\"" + message + "\");");
         }
+        checks.add(
+            "    if (!missingFields.isEmpty()) throw new IllegalArgumentException(String.join(\" \", missingFields));");
       }
 
       // Spec-derived constraint checks (only for request schemas, not response DTOs).
@@ -2197,6 +2261,7 @@ public record %s(
     final var oneOfRefs = new ArrayList<String>();
     String oneOfInlineType = null;
     String oneOfInlineFormat = null;
+    final var oneOfInlineAllOfRefs = new ArrayList<String>();
     final var properties = new LinkedHashMap<String, Node>();
     Long minimum = null;
     Long maximum = null;
@@ -2303,6 +2368,20 @@ public record %s(
                   break;
                 }
               }
+              // Also capture allOf refs from this inline branch (e.g. enum schema refs)
+              for (int ai = oi + 1; ai < oneOfBlockEnd; ai++) {
+                final var aLine = lines.get(ai);
+                if (isIgnorable(aLine)) continue;
+                final int aInd = indent(aLine);
+                if (aInd <= indent(oLine)) break;
+                final var aTrimmed = trimmed(aLine);
+                if (aTrimmed.startsWith("allOf:")) {
+                  final int allOfEnd = findNestedBlockEnd(lines, ai + 1, oneOfBlockEnd, aInd + 2);
+                  final var refList = parseRefList(lines, ai + 1, allOfEnd, aInd + 2);
+                  oneOfInlineAllOfRefs.addAll(refList.refs());
+                  break;
+                }
+              }
               break; // only capture the first inline type
             }
           }
@@ -2343,7 +2422,7 @@ public record %s(
       }
     }
 
-    return new Node(type, format, nullable, ref, items, required, enumValues, allOfRefs, oneOfRefs, oneOfInlineType, oneOfInlineFormat, properties, uniqueItems, additionalProperties, minimum, maximum, minLength, maxLength, pattern, minItems, maxItems, defaultValue);
+    return new Node(type, format, nullable, ref, items, required, enumValues, allOfRefs, oneOfRefs, oneOfInlineType, oneOfInlineFormat, oneOfInlineAllOfRefs, properties, uniqueItems, additionalProperties, minimum, maximum, minLength, maxLength, pattern, minItems, maxItems, defaultValue);
   }
 
   private static PropertiesParseResult parseProperties(
@@ -2799,6 +2878,8 @@ public record %s(
       String oneOfInlineType,
       /** Inline primitive format from a oneOf branch (e.g. "int32", "date-time"). */
       String oneOfInlineFormat,
+      /** allOf $ref targets from the inline oneOf branch (e.g. enum schema refs). */
+      List<String> oneOfInlineAllOfRefs,
       Map<String, Node> properties,
       boolean uniqueItems,
       Node additionalProperties,
