@@ -1,0 +1,106 @@
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  # needed to allow the pass-through-cache for Bitnami images
+  security:
+    allowInsecureImages: true
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  data:
+    secondaryStorage:
+      rdbms:
+        url: jdbc:mariadb://mariadb:3306/camunda
+
+###########################################################################
+#
+#    MARIA DB
+#
+###########################################################################
+# Use the internal registry mirror to avoid Docker Hub rate limiting in the benchmark cluster
+image:
+  registry: europe-west1-docker.pkg.dev
+  repository: camunda-benchmark/dockerhub/bitnamilegacy/mariadb
+  tag: "latest"
+
+auth:
+  rootPassword: camunda
+  database: camunda
+  username: camunda
+  password: camunda
+  rootHost: "%"
+
+primary:
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 6Gi
+
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  persistence:
+    size: 128Gi
+    storageClass: "ssd"
+
+  configuration: |-
+    [mysqld]
+    # ---- Bitnami required paths -----------------------------------------------
+    # primary.configuration replaces the ENTIRE my.cnf. Bitnami's init script
+    # normally injects these at runtime, so they must be included explicitly here.
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mariadb
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    datadir=/bitnami/mariadb/data
+    tmpdir=/opt/bitnami/mariadb/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+    log-error=/opt/bitnami/mariadb/logs/mysqld.log
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_uca1400_ai_ci
+
+    # ---- Performance tuning ---------------------------------------------------
+    innodb_log_buffer_size         = 128M      # default 64MB; doubled to reduce redo flush frequency
+    innodb_flush_log_at_trx_commit = 2         # default 1 (full fsync per commit); flush once/sec instead
+    innodb_flush_method            = O_DIRECT  # default on Linux; explicit for clarity
+
+    # Buffer pool (default: 128MB)
+    innodb_buffer_pool_size        = 3G        # ~50% of 6Gi limit
+
+    # Write I/O (not a dynamic variable — must live in my.cnf, cannot SET GLOBAL)
+    innodb_write_io_threads        = 8         # default 4; doubled for write-heavy workload
+
+    # MVCC Purge safety valves (defaults: 0 = unlimited)
+    innodb_max_purge_lag           = 10000000  # throttle DML if unpurged rows exceed this
+    innodb_max_purge_lag_delay     = 300000    # cap the imposed delay at 300ms
+
+    # Monitoring
+    slow_query_log                 = ON        # default OFF
+    long_query_time                = 1         # default 10s
+    log_queries_not_using_indexes  = ON        # default OFF
+    min_examined_row_limit         = 100       # suppress noise from single-row writes
+
+    [client]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    default-character-set=utf8mb4
+
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
