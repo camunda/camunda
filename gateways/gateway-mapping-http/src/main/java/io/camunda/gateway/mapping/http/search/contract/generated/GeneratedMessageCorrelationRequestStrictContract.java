@@ -39,6 +39,7 @@ public record GeneratedMessageCorrelationRequestStrictContract(
       if (!tenantId.matches("^(<default>|[A-Za-z0-9_@.+-]+)$"))
         throw new IllegalArgumentException(
             "The provided tenantId contains illegal characters. It must match the pattern '^(<default>|[A-Za-z0-9_@.+-]+)$'.");
+    if (correlationKey == null) correlationKey = "";
   }
 
   public static NameStep builder() {

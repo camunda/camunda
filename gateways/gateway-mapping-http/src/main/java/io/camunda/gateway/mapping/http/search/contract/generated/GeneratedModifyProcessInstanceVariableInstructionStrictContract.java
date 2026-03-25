@@ -27,6 +27,7 @@ public record GeneratedModifyProcessInstanceVariableInstructionStrictContract(
 
   public GeneratedModifyProcessInstanceVariableInstructionStrictContract {
     Objects.requireNonNull(variables, "No variables provided.");
+    if (scopeId == null) scopeId = "";
   }
 
   public static VariablesStep builder() {

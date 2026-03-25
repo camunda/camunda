@@ -23,6 +23,10 @@ import org.jspecify.annotations.Nullable;
 public record GeneratedDocumentLinkRequestStrictContract(
     @JsonProperty("timeToLive") @Nullable Long timeToLive) {
 
+  public GeneratedDocumentLinkRequestStrictContract {
+    if (timeToLive == null) timeToLive = 3600000L;
+  }
+
   public static OptionalStep builder() {
     return new Builder();
   }

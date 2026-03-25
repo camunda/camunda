@@ -36,6 +36,7 @@ public record GeneratedChangesetStrictContract(
       if (priority > 100)
         throw new IllegalArgumentException(
             "The value for priority is '" + priority + "' but must be at most 100.");
+    if (priority == null) priority = 50;
   }
 
   public static OptionalStep builder() {

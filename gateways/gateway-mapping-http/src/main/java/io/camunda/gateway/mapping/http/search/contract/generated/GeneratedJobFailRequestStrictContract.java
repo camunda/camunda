@@ -26,6 +26,11 @@ public record GeneratedJobFailRequestStrictContract(
     @JsonProperty("retryBackOff") @Nullable Long retryBackOff,
     @JsonProperty("variables") java.util.@Nullable Map<String, Object> variables) {
 
+  public GeneratedJobFailRequestStrictContract {
+    if (retries == null) retries = 0;
+    if (retryBackOff == null) retryBackOff = 0L;
+  }
+
   public static OptionalStep builder() {
     return new Builder();
   }

@@ -33,6 +33,11 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
     @JsonProperty("type") @Nullable String type)
     implements GeneratedJobStrictContract {
 
+  public GeneratedJobResultAdHocSubProcessStrictContract {
+    if (isCompletionConditionFulfilled == null) isCompletionConditionFulfilled = false;
+    if (isCancelRemainingInstances == null) isCancelRemainingInstances = false;
+  }
+
   public static java.util.List<GeneratedJobResultActivateElementStrictContract>
       coerceActivateElements(final Object value) {
     if (value == null) {

@@ -71,6 +71,9 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
       if (businessId.length() > 256)
         throw new IllegalArgumentException(
             "The provided businessId exceeds the limit of 256 characters.");
+    if (processDefinitionVersion == null) processDefinitionVersion = -1;
+    if (awaitCompletion == null) awaitCompletion = false;
+    if (requestTimeout == null) requestTimeout = 0L;
   }
 
   public static java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>

@@ -32,6 +32,7 @@ public record GeneratedSetVariableRequestStrictContract(
       if (operationReference < 1L)
         throw new IllegalArgumentException(
             "The value for operationReference is '" + operationReference + "' but must be > 0.");
+    if (local == null) local = false;
   }
 
   public static VariablesStep builder() {

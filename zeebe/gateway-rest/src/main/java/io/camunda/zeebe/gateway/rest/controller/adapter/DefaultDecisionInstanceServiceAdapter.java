@@ -56,12 +56,11 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Object> getDecisionInstance(
-      final Long decisionEvaluationInstanceKey, final CamundaAuthentication authentication) {
+      final String decisionEvaluationInstanceKey, final CamundaAuthentication authentication) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
-              decisionInstanceServices.getById(
-                  String.valueOf(decisionEvaluationInstanceKey), authentication)));
+              decisionInstanceServices.getById(decisionEvaluationInstanceKey, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

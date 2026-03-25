@@ -287,13 +287,73 @@ public class GenerateContractMappingPoc {
         for (var branchName : branchNames) {
           branchToSealedInterface.put(branchName, sealedName);
         }
-        final var sealedFile = packagePath.resolve(sealedName + ".java");
-        Files.writeString(
-            sealedFile,
-            renderPolymorphicSealedInterface(
-                parentSchema.fileName(), parentSchemaName, branchDtoClasses),
-            StandardCharsets.UTF_8);
-        System.out.println("generated sealed interface: " + ROOT.relativize(sealedFile));
+
+        // Compute discriminating fields for each branch: required fields whose property names
+        // are unique to that branch (not present as properties in any other branch).
+        // This lets us generate a custom deserializer with helpful error messages.
+        final var branchDiscriminators = new ArrayList<PolymorphicBranch>();
+        final var allBranchPropertyNames = new LinkedHashSet<String>();
+        final var branchSchemas = new ArrayList<SchemaDef>();
+        for (var branchName : branchNames) {
+          final var branchSchema = allSchemas.values().stream()
+              .filter(s -> s.schemaName().equals(branchName))
+              .findFirst().orElse(null);
+          branchSchemas.add(branchSchema);
+          if (branchSchema != null) {
+            allBranchPropertyNames.addAll(branchSchema.node().properties().keySet());
+          }
+        }
+        for (int bi = 0; bi < branchNames.size(); bi++) {
+          final var branchSchema = branchSchemas.get(bi);
+          final var dtoClass = branchDtoClasses.get(bi);
+          if (branchSchema != null) {
+            // Unique properties: present in this branch but not in any other branch.
+            final var otherBranchProps = new LinkedHashSet<String>();
+            for (int oi = 0; oi < branchSchemas.size(); oi++) {
+              if (oi != bi && branchSchemas.get(oi) != null) {
+                otherBranchProps.addAll(branchSchemas.get(oi).node().properties().keySet());
+              }
+            }
+            final var uniqueProps = new ArrayList<>(branchSchema.node().properties().keySet());
+            uniqueProps.removeAll(otherBranchProps);
+            branchDiscriminators.add(new PolymorphicBranch(dtoClass, uniqueProps));
+          } else {
+            branchDiscriminators.add(new PolymorphicBranch(dtoClass, List.of()));
+          }
+        }
+
+        final boolean hasDiscriminators = branchDiscriminators.stream()
+            .anyMatch(b -> !b.uniqueFields().isEmpty());
+
+        if (hasDiscriminators) {
+          // Generate custom deserializer with helpful error messages.
+          final var deserializerName = sealedName.replace("StrictContract", "Deserializer");
+          final var deserializerFile = packagePath.resolve(deserializerName + ".java");
+          Files.writeString(
+              deserializerFile,
+              renderPolymorphicDeserializer(
+                  parentSchema.fileName(), parentSchemaName, sealedName,
+                  deserializerName, branchDiscriminators),
+              StandardCharsets.UTF_8);
+          System.out.println("generated polymorphic deserializer: " + ROOT.relativize(deserializerFile));
+
+          final var sealedFile = packagePath.resolve(sealedName + ".java");
+          Files.writeString(
+              sealedFile,
+              renderPolymorphicSealedInterfaceWithDeserializer(
+                  parentSchema.fileName(), parentSchemaName, branchDtoClasses, deserializerName),
+              StandardCharsets.UTF_8);
+          System.out.println("generated sealed interface: " + ROOT.relativize(sealedFile));
+        } else {
+          // Fall back to Jackson DEDUCTION (no unique discriminating fields available).
+          final var sealedFile = packagePath.resolve(sealedName + ".java");
+          Files.writeString(
+              sealedFile,
+              renderPolymorphicSealedInterface(
+                  parentSchema.fileName(), parentSchemaName, branchDtoClasses),
+              StandardCharsets.UTF_8);
+          System.out.println("generated sealed interface: " + ROOT.relativize(sealedFile));
+        }
       }
       sealedCount++;
     }
@@ -812,6 +872,114 @@ public sealed interface %s permits
     .formatted(sourceFile, schemaName, TARGET_PACKAGE, subtypes, sealedName, permits);
   }
 
+  /**
+   * Generates a sealed interface with @JsonDeserialize pointing to a custom deserializer,
+   * replacing the @JsonTypeInfo(DEDUCTION) approach for polymorphic oneOf schemas where
+   * we can provide better error messages.
+   */
+  private static String renderPolymorphicSealedInterfaceWithDeserializer(
+      String sourceFile, String schemaName, List<String> branchDtoClasses,
+      String deserializerName) {
+    final var sealedName = dtoClassName(schemaName);
+    final var permits = String.join(",\n        ", branchDtoClasses);
+    return """
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
+ */
+package %s;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jakarta.annotation.Generated;
+
+@JsonDeserialize(using = %s.class)
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public sealed interface %s permits
+        %s {
+}
+"""
+    .formatted(sourceFile, schemaName, TARGET_PACKAGE, deserializerName, sealedName, permits);
+  }
+
+  /**
+   * Generates a custom Jackson deserializer for a polymorphic oneOf sealed interface.
+   * Uses tree-model parsing to detect which branch's unique fields are present,
+   * and produces a helpful error message when no branch matches.
+   */
+  private static String renderPolymorphicDeserializer(
+      String sourceFile, String schemaName, String sealedName,
+      String deserializerName, List<PolymorphicBranch> branches) {
+
+    // Build the dispatching logic: for each branch, check if its unique field is present.
+    final var branchCases = new StringBuilder();
+    final var allUniqueFields = new ArrayList<String>();
+    for (var branch : branches) {
+      if (!branch.uniqueFields().isEmpty()) {
+        allUniqueFields.addAll(branch.uniqueFields());
+        final var fieldCheck = branch.uniqueFields().stream()
+            .map(f -> "node.has(\"" + f + "\")")
+            .collect(Collectors.joining(" && "));
+        branchCases.append("""
+          if (%s) {
+            return p.getCodec().treeToValue(node, %s.class);
+          }
+    """.formatted(fieldCheck, branch.dtoClass()));
+      }
+    }
+
+    // Build the error message listing discriminating fields (sorted for deterministic output).
+    allUniqueFields.sort(null);
+    final var fieldList = allUniqueFields.stream()
+        .collect(Collectors.joining(", "));
+
+    return """
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
+ */
+package %s;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import jakarta.annotation.Generated;
+import java.io.IOException;
+
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public final class %s extends JsonDeserializer<%s> {
+
+  @Override
+  public %s deserialize(final JsonParser p, final DeserializationContext ctxt)
+      throws IOException {
+    final JsonNode node = p.readValueAsTree();
+%s
+    throw ValueInstantiationException.from(p,
+        "At least one of [%s] is required",
+        ctxt.constructType(%s.class),
+        new IllegalArgumentException("At least one of [%s] is required"));
+  }
+}
+"""
+    .formatted(sourceFile, schemaName, TARGET_PACKAGE,
+        deserializerName, sealedName, sealedName,
+        branchCases.toString(),
+        fieldList, sealedName, fieldList);
+  }
+
   /** Generates a sealed interface for a filter property oneOf with @JsonDeserialize. */
   private static String renderFilterPropertySealedInterface(
       String sourceFile, String schemaName, String sealedName,
@@ -1145,6 +1313,7 @@ public enum %s {
           isUriFormat(node, contextFile, allSchemas)
               || (hasInlineEnum && propertyName.contains("."));
       final var fieldConstraints = resolveConstraints(node, contextFile, allSchemas);
+      final var fieldDefault = resolveDefaultValue(node, contextFile, allSchemas);
       final var identifier = uniqueIdentifier(toJavaIdentifier(propertyName), usedIdentifiers);
       final var mapperMethod = toJavaMethodName(propertyName);
       // Generate a nested enum in the DTO for sort request fields with inline enum values.
@@ -1166,7 +1335,8 @@ public enum %s {
               hasMapperFieldIncompatibility,
               typeInfo,
               fieldConstraints,
-              useNestedEnum ? node.enumValues() : List.of()));
+              useNestedEnum ? node.enumValues() : List.of(),
+              fieldDefault));
     }
     return fields;
   }
@@ -1330,6 +1500,17 @@ public enum %s {
                   + ") throw new IllegalArgumentException(\""
                   + name + " must have at most " + c.maxItems() + " items\");");
         }
+        }
+      }
+
+      // Apply spec-declared defaults for nullable fields that were not provided.
+      for (var f : fields) {
+        if (f.defaultValue() != null && f.nullable()) {
+          final var literal = toJavaDefaultLiteral(f.defaultValue(), f.javaType());
+          if (literal != null) {
+            checks.add(
+                "    if (" + f.identifier() + " == null) " + f.identifier() + " = " + literal + ";");
+          }
         }
       }
 
@@ -2279,6 +2460,7 @@ public final class %s {
     String pattern = null;
     Integer minItems = null;
     Integer maxItems = null;
+    String defaultValue = null;
 
     for (int i = start; i < end; i++) {
       final var line = lines.get(i);
@@ -2405,13 +2587,18 @@ public final class %s {
         case "pattern" -> pattern = unquote(value);
         case "minItems" -> minItems = Integer.parseInt(value);
         case "maxItems" -> maxItems = Integer.parseInt(value);
+        case "default" -> {
+          // Strip trailing YAML comments (e.g., "3600000 # 1 hour" → "3600000").
+          final var raw = value.contains(" #") ? value.substring(0, value.indexOf(" #")).trim() : value;
+          defaultValue = unquote(raw);
+        }
         default -> {
           // Ignore unsupported YAML keys for this generator.
         }
       }
     }
 
-    return new Node(type, format, nullable, ref, items, required, enumValues, allOfRefs, oneOfRefs, oneOfInlineType, oneOfInlineFormat, properties, uniqueItems, additionalProperties, minimum, maximum, minLength, maxLength, pattern, minItems, maxItems);
+    return new Node(type, format, nullable, ref, items, required, enumValues, allOfRefs, oneOfRefs, oneOfInlineType, oneOfInlineFormat, properties, uniqueItems, additionalProperties, minimum, maximum, minLength, maxLength, pattern, minItems, maxItems, defaultValue);
   }
 
   private static PropertiesParseResult parseProperties(
@@ -2776,6 +2963,40 @@ public final class %s {
     return trimmed;
   }
 
+  /**
+   * Converts a raw spec default value to a Java literal string suitable for code emission.
+   * Returns null if the default cannot be represented for the given Java type.
+   */
+  private static String toJavaDefaultLiteral(String defaultValue, String javaType) {
+    return switch (javaType) {
+      case "Boolean" -> "true".equals(defaultValue) || "false".equals(defaultValue) ? defaultValue
+          : null;
+      case "Integer" -> {
+        try {
+          Integer.parseInt(defaultValue);
+          yield defaultValue;
+        } catch (NumberFormatException e) {
+          yield null;
+        }
+      }
+      case "Long" -> {
+        try {
+          Long.parseLong(defaultValue);
+          yield defaultValue + "L";
+        } catch (NumberFormatException e) {
+          yield null;
+        }
+      }
+      case "String" -> "\"" + defaultValue.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+      default -> {
+        if (javaType.startsWith("java.util.List") && "[]".equals(defaultValue)) {
+          yield "java.util.List.of()";
+        }
+        yield null;
+      }
+    };
+  }
+
   /** Converts a space-separated tag name to PascalCase (e.g., "User Task" → "UserTask"). */
   private static String toPascalCase(String tagName) {
     var sb = new StringBuilder();
@@ -2863,7 +3084,8 @@ public final class %s {
       Integer maxLength,
       String pattern,
       Integer minItems,
-      Integer maxItems) {}
+      Integer maxItems,
+      String defaultValue) {}
 
   private record Constraints(
       Long minimum,
@@ -2940,6 +3162,32 @@ public final class %s {
     return resolveConstraints(target.node(), target.fileName(), allSchemas);
   }
 
+  /**
+   * Resolves the default value for a property node, following $ref and single-element allOf chains.
+   * Returns the raw default string from the spec, or null if no default is declared.
+   */
+  private static String resolveDefaultValue(
+      Node node, String currentFile, Map<SchemaKey, SchemaDef> allSchemas) {
+    if (node.defaultValue() != null) {
+      return node.defaultValue();
+    }
+    if (node.ref() != null) {
+      final var key = toSchemaKey(node.ref(), currentFile);
+      final var target = allSchemas.get(key);
+      if (target != null) {
+        return resolveDefaultValue(target.node(), target.fileName(), allSchemas);
+      }
+    }
+    if (!node.allOfRefs().isEmpty() && node.allOfRefs().size() == 1) {
+      final var key = toSchemaKey(node.allOfRefs().getFirst(), currentFile);
+      final var target = allSchemas.get(key);
+      if (target != null) {
+        return resolveDefaultValue(target.node(), target.fileName(), allSchemas);
+      }
+    }
+    return null;
+  }
+
   private record ContractField(
       String name,
       String identifier,
@@ -2953,7 +3201,8 @@ public final class %s {
       boolean hasMapperFieldIncompatibility,
       TypeInfo typeInfo,
       Constraints constraints,
-      List<String> inlineEnumValues) {
+      List<String> inlineEnumValues,
+      String defaultValue) {
 
     /** Returns the effective Java type, using the nested enum name if inline enum values exist. */
     String effectiveJavaType() {
@@ -3069,6 +3318,8 @@ public final class %s {
   private record PropertiesParseResult(Map<String, Node> properties, int lastIndex) {}
 
   private record PropertyWithContext(Node node, String fileName) {}
+
+  private record PolymorphicBranch(String dtoClass, List<String> uniqueFields) {}
 
   /**
    * Force specific schema fields to be nullable even when the spec declares them required.
@@ -3373,6 +3624,10 @@ public record %s(
   // -- Spec parsing --
 
   /** Reads keys.yaml and returns the set of schema names that derive from LongKey via allOf. */
+  // Compound keys that extend LongKey in the spec but use non-numeric values at runtime
+  // (e.g. "2251799813691760-1"). Must remain String in Java path parameters.
+  private static final Set<String> COMPOUND_KEY_EXCLUSIONS = Set.of("DecisionEvaluationInstanceKey");
+
   private static Set<String> loadLongKeySchemas(Path specDir) throws IOException {
     var keysFile = specDir.resolve("keys.yaml");
     if (!Files.exists(keysFile)) return Set.of();
@@ -3389,7 +3644,9 @@ public record %s(
       } else if (ind == 6 && t.equals("allOf:") && currentSchema != null) {
         inAllOf = true;
       } else if (inAllOf && t.contains("LongKey") && currentSchema != null) {
-        result.add(currentSchema);
+        if (!COMPOUND_KEY_EXCLUSIONS.contains(currentSchema)) {
+          result.add(currentSchema);
+        }
         currentSchema = null;
         inAllOf = false;
       } else if (ind <= 4 && !t.isEmpty()) {

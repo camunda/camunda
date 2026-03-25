@@ -41,6 +41,8 @@ public record GeneratedMessagePublicationRequestStrictContract(
       if (!tenantId.matches("^(<default>|[A-Za-z0-9_@.+-]+)$"))
         throw new IllegalArgumentException(
             "The provided tenantId contains illegal characters. It must match the pattern '^(<default>|[A-Za-z0-9_@.+-]+)$'.");
+    if (correlationKey == null) correlationKey = "";
+    if (timeToLive == null) timeToLive = 0L;
   }
 
   public static NameStep builder() {

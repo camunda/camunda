@@ -10,17 +10,10 @@
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.annotation.Generated;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
-@JsonSubTypes({
-  @JsonSubTypes.Type(
-      GeneratedProcessInstanceModificationTerminateByIdInstructionStrictContract.class),
-  @JsonSubTypes.Type(
-      GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract.class)
-})
+@JsonDeserialize(using = GeneratedProcessInstanceModificationTerminateInstructionDeserializer.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public sealed interface GeneratedProcessInstanceModificationTerminateInstructionStrictContract
     permits GeneratedProcessInstanceModificationTerminateByIdInstructionStrictContract,

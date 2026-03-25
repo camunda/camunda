@@ -32,6 +32,7 @@ public record GeneratedOffsetPaginationStrictContract(
       if (limit < 1)
         throw new IllegalArgumentException(
             "The value for limit is '" + limit + "' but must be > 0.");
+    if (limit == null) limit = 100;
   }
 
   public static OptionalStep builder() {

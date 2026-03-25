@@ -115,13 +115,17 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         super.createProblemDetail(
             ex, status, detail, detailMessageCode, detailMessageArguments, request);
 
-    // Strict contract constraint violations (null required fields, illegal arguments from DTO
-    // constructors) use INVALID_ARGUMENT title for backward compatibility with the hand-written
-    // controllers, which routed these validations through RequestValidator / GatewayErrorMapper
-    // with RejectionType.INVALID_ARGUMENT. Other parsing errors (unknown enums, type mismatches)
-    // keep the Spring default "Bad Request" title.
+    // Strict contract constraint violations from record compact constructors (null required
+    // fields, constraint checks) use INVALID_ARGUMENT title for backward compatibility with the
+    // hand-written controllers, which routed these validations through RequestValidator /
+    // GatewayErrorMapper with RejectionType.INVALID_ARGUMENT. Polymorphic deserializer errors
+    // (sealed interfaces) and other parsing errors keep the Spring default "Bad Request" title.
     if (isStrictContractConstraintViolation(ex)) {
-      problemDetail.setTitle("INVALID_ARGUMENT");
+      final var vie =
+          (ValueInstantiationException) ((HttpMessageNotReadableException) ex).getCause();
+      if (vie.getType().getRawClass().isRecord()) {
+        problemDetail.setTitle("INVALID_ARGUMENT");
+      }
     }
 
     return CamundaProblemDetail.wrap(problemDetail);
@@ -194,7 +198,14 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     final var rootCause = ((HttpMessageNotReadableException) ex).getRootCause();
     if (rootCause != null && rootCause.getMessage() != null) {
       final var message = rootCause.getMessage();
-      return message.endsWith(".") ? message : message + ".";
+      // Record compact constructor messages may omit trailing period; append it for consistency.
+      // Polymorphic deserializer messages are pre-formatted and should not be modified.
+      final var vie =
+          (ValueInstantiationException) ((HttpMessageNotReadableException) ex).getCause();
+      if (vie.getType().getRawClass().isRecord() && !message.endsWith(".")) {
+        return message + ".";
+      }
+      return message;
     }
     return "Invalid request.";
   }

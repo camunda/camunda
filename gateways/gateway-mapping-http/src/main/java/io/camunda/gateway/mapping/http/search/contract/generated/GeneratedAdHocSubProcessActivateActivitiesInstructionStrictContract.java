@@ -29,6 +29,7 @@ public record GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContrac
 
   public GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract {
     Objects.requireNonNull(elements, "No elements provided.");
+    if (cancelRemainingInstances == null) cancelRemainingInstances = false;
   }
 
   public static java.util.List<GeneratedAdHocSubProcessActivateActivityReferenceStrictContract>

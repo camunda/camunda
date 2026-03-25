@@ -29,6 +29,7 @@ public record GeneratedDeleteResourceRequestStrictContract(
       if (operationReference < 1L)
         throw new IllegalArgumentException(
             "The value for operationReference is '" + operationReference + "' but must be > 0.");
+    if (deleteHistory == null) deleteHistory = false;
   }
 
   public static OptionalStep builder() {

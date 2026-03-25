@@ -37,6 +37,7 @@ public record GeneratedCursorBackwardPaginationStrictContract(
       if (limit > 10000)
         throw new IllegalArgumentException(
             "The value for limit is '" + limit + "' but must be at most 10000.");
+    if (limit == null) limit = 100;
   }
 
   public static BeforeStep builder() {
