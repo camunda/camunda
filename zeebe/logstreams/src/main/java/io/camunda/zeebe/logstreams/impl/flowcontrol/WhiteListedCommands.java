@@ -22,6 +22,7 @@ public class WhiteListedCommands {
           JobIntent.COMPLETE,
           JobIntent.FAIL,
           JobIntent.YIELD,
+          JobIntent.TIME_OUT,
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,
