@@ -12,6 +12,7 @@
 import {defineConfig, type PluginOption} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
+import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 
 const plugins: PluginOption[] = [react(), svgr()];
@@ -61,6 +62,9 @@ export default defineConfig(({mode}) => ({
   },
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      src: path.resolve(__dirname, './src'),
+    },
   },
   optimizeDeps: {
     exclude: ['monaco-editor'],
