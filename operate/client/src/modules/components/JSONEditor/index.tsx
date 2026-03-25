@@ -10,7 +10,8 @@ import Editor from '@monaco-editor/react';
 import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {EditorStyles} from './styled';
-import {options} from 'modules/utils/editor/options';
+import {options as defaultOptions} from 'modules/utils/editor/options';
+import {type editor} from 'monaco-editor';
 
 type Props = {
   value: string;
@@ -23,6 +24,7 @@ type Props = {
   }) => void;
   height?: string;
   width?: string;
+  options?: editor.IStandaloneEditorConstructionOptions;
 };
 
 const JSONEditor: React.FC<Props> = observer(
@@ -34,12 +36,19 @@ const JSONEditor: React.FC<Props> = observer(
     onMount = () => {},
     height = '60vh',
     width = '100%',
+    options = {},
   }) => {
+    const editorOptions = {
+      ...defaultOptions,
+      ...options,
+      readOnly,
+    };
+
     return (
       <>
         <EditorStyles />
         <Editor
-          options={{...options, readOnly}}
+          options={editorOptions}
           language="json"
           value={value}
           height={height}

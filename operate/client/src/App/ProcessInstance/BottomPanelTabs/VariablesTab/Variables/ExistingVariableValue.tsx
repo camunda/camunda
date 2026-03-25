@@ -11,16 +11,15 @@ import {
   validateValueNotEmpty,
   validateValueValid,
 } from './validators';
-import {Field, useFormState} from 'react-final-form';
+import {Field} from 'react-final-form';
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {modificationsStore} from 'modules/stores/modifications';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {LoadingTextfield} from './LoadingTextField';
-import {Layer} from '@carbon/react';
+import {Layer, Loading} from '@carbon/react';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
+import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 
 type Props = {
   id?: string;
@@ -31,9 +30,6 @@ type Props = {
 
 const ExistingVariableValue: React.FC<Props> = observer(
   ({id, variableName, variableValue, isPreview}) => {
-    const {isModificationModeEnabled} = modificationsStore;
-    const formState = useFormState();
-
     const variableEditor = useExistingVariableEditor(
       variableName,
       variableValue,
@@ -76,39 +72,32 @@ const ExistingVariableValue: React.FC<Props> = observer(
           }
           parse={(value) => value}
         >
-          {({input, meta}) => (
-            <LoadingTextfield
-              {...input}
-              size="sm"
-              type="text"
-              id={variableEditor.fieldName}
-              hideLabel
-              disabled={formState.submitting}
-              labelText="Value"
-              placeholder="Value"
-              data-testid="edit-variable-value"
-              autoFocus={!isModificationModeEnabled || meta.active}
-              isLoading={isLoading}
-              onFocus={(event) => {
-                if (!meta.active) {
-                  input.onFocus(event);
-                }
-              }}
-              onBlur={(event) => {
-                variableEditor.createModification({
-                  scopeId: variableEditor.variableScopeKey,
-                  name: variableName,
-                  oldValue: variableEditor.getInitialValue(variable),
-                  newValue: input.value ?? '',
-                  isDirty:
-                    variableEditor.getInitialValue(variable) !== input.value,
-                  isValid: variableEditor.isValid ?? false,
-                  selectedElementName: variableEditor.selectedElementName,
-                });
+          {({input}) => (
+            <>
+              {isLoading && (
+                <Loading small data-testid="full-variable-loader" />
+              )}
+              <InlineJsonEditor
+                {...input}
+                id={variableEditor.fieldName}
+                data-testid="edit-variable-value"
+                beautifyOnMount
+                onBlur={() => {
+                  variableEditor.createModification({
+                    scopeId: variableEditor.variableScopeKey,
+                    name: variableName,
+                    oldValue: variableEditor.getInitialValue(variable),
+                    newValue: input.value ?? '',
+                    isDirty:
+                      variableEditor.getInitialValue(variable) !== input.value,
+                    isValid: variableEditor.isValid ?? false,
+                    selectedElementName: variableEditor.selectedElementName,
+                  });
 
-                input.onBlur(event);
-              }}
-            />
+                  input.onBlur();
+                }}
+              />
+            </>
           )}
         </Field>
       </Layer>

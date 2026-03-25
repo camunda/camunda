@@ -24,6 +24,7 @@ import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {MaximizeButton} from '../ViewFullVariableButton/MaximizeButton';
+import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();
@@ -65,17 +66,7 @@ const NewVariable: React.FC = () => {
           validate={mergeValidators(validateValueComplete, validateValueValid)}
           parse={(value) => value}
         >
-          {({input}) => (
-            <TextInputField
-              {...input}
-              size="sm"
-              type="text"
-              id="value"
-              hideLabel
-              labelText="Value"
-              placeholder="Value"
-            />
-          )}
+          {({input}) => <InlineJsonEditor {...input} id="value" />}
         </Field>
         <Operations>
           <MaximizeButton

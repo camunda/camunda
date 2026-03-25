@@ -41,6 +41,34 @@ vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
   default: MockDmnJsLiteralExpressionViewer,
 }));
 
+vi.mock('modules/components/InlineJsonEditor', () => ({
+  InlineJsonEditor: ({
+    value,
+    onChange,
+    'data-testid': dataTestId,
+    readOnly,
+    onBlur,
+    id,
+  }: {
+    value: string;
+    onChange?: (value: string) => void;
+    'data-testid'?: string;
+    readOnly?: boolean;
+    onBlur?: () => void;
+    id?: string;
+  }) => (
+    <input
+      type="text"
+      data-testid={dataTestId}
+      id={id}
+      value={value ?? ''}
+      readOnly={readOnly}
+      onChange={(event) => onChange?.(event.target.value)}
+      onBlur={onBlur}
+    />
+  ),
+}));
+
 vi.mock('modules/components/JSONEditor', () => {
   return {
     useMonaco: () => {},

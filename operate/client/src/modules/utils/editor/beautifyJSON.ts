@@ -6,13 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import untruncateJson from './untruncateJSON';
+
 function beautifyJSON(value: string) {
   try {
     const parsedValue = JSON.parse(value);
 
     return JSON.stringify(parsedValue, null, '\t');
   } catch {
-    return value;
+    const parsedValue = JSON.parse(untruncateJson(value));
+    return JSON.stringify(parsedValue, null, '\t');
   }
 }
 
