@@ -185,7 +185,7 @@ ifneq ($(filter $(secondary_storage),postgresql mysql mariadb),)
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
 # MSSQL and Oracle are deployed via plain Kubernetes manifests, so we need to delete them via kubectl
 else ifneq ($(filter $(secondary_storage),mssql oracle),)
-	@echo "Cleaning up MSSQL database for namespace $(namespace)..."
+	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
 	-kubectl delete --namespace $(namespace) -f databases/$(secondary_storage).yaml
 	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
 	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)

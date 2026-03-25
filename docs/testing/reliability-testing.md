@@ -102,7 +102,7 @@ Load tests can be configured with different secondary storage backends to valida
 * **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
 * **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
 * **MariaDB**: Deploys a MariaDB database for RDBMS-based secondary storage testing.
-* **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
+* **MSSQL**: Deploys an MSSQL database for RDBMS-based secondary storage testing.
 * **Oracle**: Deploys an Oracle database for RDBMS-based secondary storage testing.
 * **None**: Runs load tests without any secondary storage. This is useful for testing the core orchestration engine performance in isolation, without the overhead of exporting data to a secondary database. In this mode, Camunda exporters are disabled.
 

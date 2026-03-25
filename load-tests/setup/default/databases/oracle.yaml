@@ -25,7 +25,7 @@
 # Resources:
 #   image           : gvenzl/oracle-free:23-slim
 #   storage         : 128 Gi, storageClass ssd (ReadWriteOnce)
-#   requests/limits : 8 Gi / 12 Gi  ·  4 CPU
+#   requests/limits : 3 Gi / 6 Gi  ·  3000m CPU
 #   nodeSelector    : component=benchmark-n2-standard-4
 #   SYS password    : sys_user_password  ← load-test only, NOT for production
 #   APP user        : camunda / camunda  ← load-test only, NOT for production
