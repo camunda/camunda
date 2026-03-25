@@ -163,7 +163,25 @@
   <sql id="variableOperationCondition">
     <choose>
       <when test="operation.operator.name().equals('EQUALS')">
-        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
+        <!-- STRING equality: use hash-based index on Oracle and MSSQL, direct equality elsewhere.
+             Oracle: STANDARD_HASH matches the virtual column (VAR_VALUE_HASH) so the index is used.
+             MSSQL: VAR_VALUE_HASH is a persisted CHECKSUM column, directly referenced here. -->
+        <if test="operation.type.toString == 'STRING'">
+          <choose>
+            <when test="_databaseId == 'oracle'">
+              STANDARD_HASH(VAR_VALUE, 'SHA256') = STANDARD_HASH(#{operation.value}, 'SHA256')
+              AND VAR_VALUE = #{operation.value}
+            </when>
+            <when test="_databaseId == 'mssql'">
+              VAR_VALUE_HASH = CHECKSUM(#{operation.value})
+              AND VAR_VALUE = #{operation.value}
+            </when>
+            <otherwise>
+              VAR_VALUE = #{operation.value}
+            </otherwise>
+          </choose>
+        </if>
+        <if test="operation.type.toString == 'BOOLEAN'">
           VAR_VALUE = #{operation.value}
         </if>
         <if test="operation.type.toString == 'LONG'">
