@@ -66,7 +66,13 @@ Extensibility
 
 ### 1.4 Stakeholders
 
-Identity team
+* Product and architecture: Identity PM, Orchestration Cluster architects, Hub team.
+* Implementation teams:
+  * Orchestration Cluster engine / Zeebe
+  * Operate, Tasklist, REST API teams
+  * Identity team (cluster Identity and Management Identity)
+* Operations and SRE: SaaS operations, Self‑Managed platform teams.
+* Customers: platform owners, security/identity teams, application developers.
 
 ## 2. Constraints
 
@@ -212,8 +218,8 @@ flowchart TB
         ENGINE["Engine (engine)"] -.->|"check authorizations"| ENGINE_IDENTITY["Engine Identity"]
     end
 
-    SPRING_SECURITY -.-> AUTHENTICATION
-    SPRING_SECURITY -.-> SECURITY
+    SPRING_SECURITY --> AUTHENTICATION
+    SPRING_SECURITY --> SECURITY
     REST --> CAMUNDA_SERVICES -->|"query"| CAMUNDA_SEARCH_CLIENT -.-> SECURITY -.->|"query authorizations"| CAMUNDA_SEARCH_CLIENT
     CAMUNDA_SERVICES -->|"command"| ENGINE
   end
@@ -351,7 +357,7 @@ flowchart TB
 
 Key responsibilities:
 
-- Spring Security Configuration (`WebSecurityConfig.OidcConfiguration`): Spring `@Configuration` subclass of `WebSecurityConfig`, activated by `camunda.security.authentication.method=oidc`. It is responsible for configuring all OIDC-related Spring Security filter chains and registering the following beans:
+- Spring Security Configuration (`WebSecurityConfig.OidcConfiguration`): Activated by `camunda.security.authentication.method=oidc`. It is responsible for configuring all OIDC-related Spring Security filter chains and registering the following beans:
   - Client Registration Repository (`InMemoryClientRegistrationRepository`): holds the OAuth2 client registrations (one per configured OIDC provider), built from `OidcAuthenticationConfigurationRepository`.
   - OIDC Provider Repository (`OidcAuthenticationConfigurationRepository`): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from `SecurityConfiguration`.
   - OAuth2AuthorizedClientRepository (`HttpSessionOAuth2AuthorizedClientRepository`): stores authorized client state in the HTTP session.
