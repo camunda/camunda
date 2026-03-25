@@ -1,7 +1,26 @@
 const timelineUrl = "./timeline.json";
 
-const queryDate = new URLSearchParams(window.location.search).get("date");
-const today = queryDate ? new Date(`${queryDate}T12:00:00`) : new Date();
+const getValidatedQueryDate = () => {
+  const value = new URLSearchParams(window.location.search).get("date");
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day, 12));
+  if (
+    Number.isNaN(utcDate.getTime()) ||
+    utcDate.getUTCFullYear() !== year ||
+    utcDate.getUTCMonth() !== month - 1 ||
+    utcDate.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return new Date(`${value}T12:00:00`);
+};
+
+const today = getValidatedQueryDate() ?? new Date();
 const todayLabel = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
 }).format(today);
@@ -73,8 +92,18 @@ const buildBranchItem = (phase) => {
   return item;
 };
 
+const buildLabeledValue = (label, value) => {
+  const line = document.createElement("span");
+  const labelEl = document.createElement("strong");
+  labelEl.textContent = `${label}: `;
+  const valueEl = document.createElement("span");
+  valueEl.textContent = value;
+  line.append(labelEl, valueEl);
+  return line;
+};
+
 const renderMergeTargets = (phases) => {
-  mergeTargetsEl.innerHTML = "";
+  mergeTargetsEl.replaceChildren();
   mergeTargetsEl.appendChild(
     buildBranchItem({
       branch: "main",
@@ -94,7 +123,7 @@ const renderMergeTargets = (phases) => {
 };
 
 const renderTimeline = (timeline, activePhases) => {
-  timelineEl.innerHTML = "";
+  timelineEl.replaceChildren();
   timeline.forEach((phase, index) => {
     const item = document.createElement("li");
     item.className = "timeline-item fade-in";
@@ -130,21 +159,12 @@ const renderTimeline = (timeline, activePhases) => {
     const meta = document.createElement("div");
     meta.className = "timeline-meta";
 
-    const date = document.createElement("span");
-    date.innerHTML = `<strong>Dates:</strong> ${formatRange(
-      phase.start,
-      phase.end
-    )}`;
-
-    const branches = document.createElement("span");
-    branches.innerHTML = `<strong>Branch:</strong> ${phase.branch}`;
-
-    const note = document.createElement("span");
-    note.innerHTML = `<strong>Note:</strong> ${phase.note}`;
+    const date = buildLabeledValue("Dates", formatRange(phase.start, phase.end));
+    const branches = buildLabeledValue("Branch", phase.branch);
+    const note = buildLabeledValue("Note", phase.note);
 
     if (phase.description) {
-      const description = document.createElement("span");
-      description.innerHTML = `<strong>Details:</strong> ${phase.description}`;
+      const description = buildLabeledValue("Details", phase.description);
       meta.append(date, branches, note, description);
     } else {
       meta.append(date, branches, note);
@@ -195,7 +215,7 @@ const boot = async () => {
       isTodayInRange(phase.start, phase.end)
     );
 
-    currentPhaseEl.innerHTML = "";
+    currentPhaseEl.replaceChildren();
     if (activePhases.length) {
       activePhases.forEach((phase) => {
         const line = document.createElement("span");
@@ -226,7 +246,7 @@ const boot = async () => {
     }
   } catch (error) {
     currentPhaseEl.textContent = "Timeline unavailable";
-    mergeTargetsEl.innerHTML = "";
+    mergeTargetsEl.replaceChildren();
     mergeTargetsEl.appendChild(buildChip("Check timeline.json"));
   }
 };

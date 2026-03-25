@@ -46,7 +46,7 @@
       "end": "2026-03-24",
       "branch": "stable/8.9",
       "note": "No new features, scope extensions, or risky changes are allowed on this branch anymore without exemption.",
-      "description": "Lock the scope for the minor release. Allow only stabilization, fixes, testing improvements and late features with exemptions are allowed."
+      "description": "Lock the scope for the minor release. Allow only stabilization, fixes, testing improvements and late features with exemptions."
     },
     {
       "title": "Code freeze of 8.9.0-alpha5",
