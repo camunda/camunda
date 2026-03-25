@@ -9,8 +9,6 @@
 import { defineConfig, PluginOption, UserConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 import react from "@vitejs/plugin-react";
-import license from "rollup-plugin-license";
-import path from "node:path";
 import sbom from "rollup-plugin-sbom";
 
 const outDir = "dist";
@@ -48,14 +46,6 @@ export default defineConfig(
         output: {
           postBanner: "/*! licenses: /assets/vendor.LICENSE.txt */",
         },
-        plugins: license({
-          thirdParty: {
-            output: path.resolve(
-              __dirname,
-              `./${outDir}/assets/vendor.LICENSE.txt`,
-            ),
-          },
-        }) as PluginOption,
       },
     },
     server: {
