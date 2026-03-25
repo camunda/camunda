@@ -48,6 +48,7 @@ on:
           - latency
           - realistic
           - realisticLargePayload
+          - multiInstanceElements
           - typical
           - max
         default: custom
@@ -264,6 +265,10 @@ jobs:
               ;;
             realisticLargePayload)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml --set starter.payloadPath=bpmn/realistic/largeRealisticPayload.json --set starter.rate=1 --set workers.customer-notification.payloadPath=bpmn/typical_payload.json --set workers.extract-data-from-document.payloadPath=bpmn/typical_payload.json --set workers.dispute-process-request-proof-from-vendor.payloadPath=bpmn/typical_payload.json --set workers.dispute-process-request-get-vendor-info.payloadPath=bpmn/typical_payload.json --set workers.refunding.payloadPath=bpmn/typical_payload.json --set workers.inform-about-successful-claim.payloadPath=bpmn/typical_payload.json" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
+              ;;
+            multiInstanceElements)
+              echo "load-test-load=--set starter.rate=1 --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0" >> "$GITHUB_OUTPUT"
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)
