@@ -67,7 +67,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
-    this.judgeAssertj = new JudgeAssertj(judgeConfig);
+    judgeAssertj = new JudgeAssertj(judgeConfig);
     this.semanticSimilarityConfig = semanticSimilarityConfig;
   }
 
@@ -370,7 +370,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String expectation) {
 
     judgeAssertj.assertJudgeHasAllRequiredSettings();
-    JudgeAssertj.assertExpectationNotEmpty(expectation);
+    assertExpectationNotEmpty(expectation);
 
     final String rawValue =
         waitForVariable(
@@ -387,7 +387,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String expectation) {
 
     judgeAssertj.assertJudgeHasAllRequiredSettings();
-    JudgeAssertj.assertExpectationNotEmpty(expectation);
+    assertExpectationNotEmpty(expectation);
 
     final String rawValue =
         waitForLocalVariable(processInstanceKey, elementSelector, variableSelector);
