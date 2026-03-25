@@ -253,4 +253,57 @@ public class CamundaProcessTestExtensionIT {
       return new String(chars);
     }
   }
+
+  @Nested
+  class MessageEventTests {
+
+    @Test
+    public void shouldAssertMessageSubscription() {
+      // given
+      final BpmnModelInstance process =
+          Bpmn.createExecutableProcess("MoonExplorationProcess")
+              .startEvent("start")
+              .intermediateCatchEvent(
+                  "message",
+                  e ->
+                      e.message(
+                          m -> m.name("AstronautReady").zeebeCorrelationKeyExpression("astronaut")))
+              .endEvent("end")
+              .done();
+
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "MoonExplorationProcess.bpmn")
+          .send()
+          .join();
+
+      // when
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("MoonExplorationProcess")
+              .latestVersion()
+              .variable("astronaut", "Zee")
+              .send()
+              .join();
+
+      CamundaAssert.assertThatProcessInstance(processInstance)
+          .isWaitingForMessage("AstronautReady")
+          .isWaitingForMessage("AstronautReady", "Zee")
+          .isNotWaitingForMessage("AstronautReady", "Cam")
+          .isNotWaitingForMessage("ProximityAlarm");
+
+      client
+          .newCorrelateMessageCommand()
+          .messageName("AstronautReady")
+          .correlationKey("Zee")
+          .send()
+          .join();
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstance)
+          .hasCorrelatedMessage("AstronautReady")
+          .hasCorrelatedMessage("AstronautReady", "Zee");
+    }
+  }
 }
