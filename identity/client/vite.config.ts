@@ -43,7 +43,13 @@ export default defineConfig(
     },
     build: {
       outDir,
-      rollupOptions: {
+      license: {
+        fileName: "assets/vendor.LICENSE.txt",
+      },
+      rolldownOptions: {
+        output: {
+          postBanner: "/*! licenses: /assets/vendor.LICENSE.txt */",
+        },
         plugins: license({
           thirdParty: {
             output: path.resolve(
@@ -53,10 +59,6 @@ export default defineConfig(
           },
         }) as PluginOption,
       },
-    },
-    esbuild: {
-      banner: "/*! licenses: /assets/vendor.LICENSE.txt */",
-      legalComments: "none",
     },
     server: {
       proxy: {
