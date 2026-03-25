@@ -11,7 +11,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mssql, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
@@ -51,9 +51,9 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "mysql" && "$secondaryStorage" != "mssql" && "$secondaryStorage" != "none" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "mysql" && "$secondaryStorage" != "mssql" && "$secondaryStorage" != "oracle" && "$secondaryStorage" != "none" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, postgresql, mysql, mssql, none"
+  echo "Allowed values are: elasticsearch, opensearch, postgresql, mysql, mssql, oracle, none"
   exit 1
 fi
 
@@ -191,7 +191,6 @@ sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
 helm repo add camunda https://helm.camunda.io/ --force-update
 helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
-helm repo add xrow https://raw.githubusercontent.com/ElmCompany/helm-charts/gh-pages --force-update
 helm repo update
 
 # Clone Platform Helm so we can run the latest chart
