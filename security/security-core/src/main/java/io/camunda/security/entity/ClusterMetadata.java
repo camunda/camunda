@@ -96,7 +96,9 @@ public class ClusterMetadata implements Serializable {
     @JsonProperty("zeebe")
     ZEEBE,
     @JsonProperty("connectors")
-    CONNECTORS;
+    CONNECTORS,
+    @JsonProperty("identity")
+    IDENTITY;
 
     public String getValue() {
       return name().toLowerCase();
