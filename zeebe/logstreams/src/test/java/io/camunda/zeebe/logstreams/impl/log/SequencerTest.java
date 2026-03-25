@@ -17,12 +17,15 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
@@ -245,6 +248,85 @@ final class SequencerTest {
 
     // then -- VerifyingLogStorage did not throw
     Assertions.assertThat(testFailures).isEmpty();
+  }
+
+  @Test
+  void shouldRecordLockHoldTime() {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var logStorage = Mockito.mock(LogStorage.class);
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
+    final var sequencer =
+        new Sequencer(
+            logStorage,
+            1L,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(meterRegistry),
+            new FlowControl(logStreamMetrics));
+
+    // when
+    sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+
+    // then
+    final var timer =
+        meterRegistry.find("zeebe.sequencer.lock.hold.time").tag("writer", "internal").timer();
+    Assertions.assertThat(timer).isNotNull();
+    Assertions.assertThat(timer.count()).isEqualTo(1);
+    Assertions.assertThat(timer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
+  }
+
+  @Test
+  void shouldRecordLockWaitTimeByHolder() throws Exception {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var blockingLatch = new CountDownLatch(1);
+    final var enteredAppendLatch = new CountDownLatch(1);
+    final var logStorage = Mockito.mock(LogStorage.class);
+    Mockito.doAnswer(
+            invocation -> {
+              enteredAppendLatch.countDown();
+              blockingLatch.await();
+              return null;
+            })
+        .when(logStorage)
+        .append(Mockito.anyLong(), Mockito.anyLong(), any(BufferWriter.class), any());
+
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
+    final var sequencer =
+        new Sequencer(
+            logStorage,
+            1L,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(meterRegistry),
+            new FlowControl(logStreamMetrics));
+
+    // when — thread 1 holds lock via blocking append
+    final var holder =
+        new Thread(() -> sequencer.tryWrite(WriteContext.scheduled(), TestEntry.ofDefaults()));
+    holder.start();
+    enteredAppendLatch.await();
+
+    // thread 2 contends
+    final var waiter =
+        new Thread(
+            () ->
+                sequencer.tryWrite(
+                    WriteContext.processingResult(ProcessInstanceIntent.ACTIVATE_ELEMENT),
+                    TestEntry.ofDefaults()));
+    waiter.start();
+    Thread.sleep(50); // give thread 2 time to block on lock
+    blockingLatch.countDown(); // release thread 1
+    holder.join(5_000);
+    waiter.join(5_000);
+
+    // then — wait time is labeled by holder (who caused the wait)
+    final var waitTimer =
+        meterRegistry.find("zeebe.sequencer.lock.wait.time").tag("holder", "scheduled").timer();
+    Assertions.assertThat(waitTimer).isNotNull();
+    Assertions.assertThat(waitTimer.count()).isEqualTo(1);
+    Assertions.assertThat(waitTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
   }
 
   private Thread newWriterThread(
