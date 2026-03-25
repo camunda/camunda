@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -34,6 +35,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
+import io.camunda.process.test.utils.FakeChatModelAdapterProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.reflect.Field;
@@ -560,6 +562,71 @@ public class JunitExtensionTest {
       final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
       assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
       assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
+    }
+  }
+
+  @Nested
+  class JudgeConfigurationTest {
+
+    private @Mock JudgeConfig judgeConfig;
+
+    @AfterEach
+    void clearConfig() {
+      CamundaAssert.setJudgeConfig(null);
+    }
+
+    @Test
+    void shouldBootstrapJudgeConfigFromServiceLoader() throws Exception {
+      // given: the FakeChatModelAdapterProvider is registered in the file
+      // `META-INF/services/io.camunda.process.test.api.judge.ChatModelAdapterProvider`
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getJudgeConfig())
+          .as("JudgeConfig should be bootstrapped from Java ServiceLoader")
+          .isNotNull()
+          .satisfies(
+              judgeConfig ->
+                  assertThat(judgeConfig.getChatModel().generate("anything"))
+                      .isEqualTo(FakeChatModelAdapterProvider.FAKE_REASONING))
+          .satisfies(judgeConfig -> assertThat(judgeConfig.getThreshold()).isEqualTo(0.8));
+    }
+
+    @Test
+    void shouldSetJudgeConfigOnExtension() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+              .withJudgeConfig(judgeConfig);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getJudgeConfig()).isEqualTo(judgeConfig);
+    }
+
+    @Test
+    void shouldSetJudgeConfigOnAssertion() throws Exception {
+      // given
+      CamundaAssert.setJudgeConfig(judgeConfig);
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getJudgeConfig()).isEqualTo(judgeConfig);
     }
   }
 }
