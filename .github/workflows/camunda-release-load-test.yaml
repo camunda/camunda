@@ -1,6 +1,6 @@
 # description: Create a Camunda load test for a given release.
 #              Abstraction layer of the actual load test creation process, to define a clear API between release process and the load test workflows.
-#              Public API - accepting inputs for test name, tag and ref.
+#              Public API - accepting inputs for test name and tag.
 #              Called by: camunda-scheduled-release-load-tests.yml (daily schedule for all stable branches + main)
 # type: CI
 # owner @camunda/reliability-testing
@@ -16,11 +16,6 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
-      ref:
-        description: 'The git ref (branch name) to use for the load test infrastructure checkout. Defaults to main.'
-        type: string
-        required: false
-        default: 'main'
   workflow_call:
     inputs:
       name:
@@ -31,11 +26,6 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
-      ref:
-        description: 'The git ref (branch name) to use for the load test infrastructure checkout. Defaults to main.'
-        type: string
-        required: false
-        default: 'main'
 
 defaults:
   run:
@@ -69,7 +59,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
-      ref: ${{ inputs.ref }}
+      ref: main
       reuse-tag: ${{ inputs.tag }}
       ttl: 60
       use-official-docker-images: true
