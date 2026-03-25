@@ -86,6 +86,8 @@ public final class CompleteJobTest {
     // then
     // Variables are intentionally not included in the COMPLETED event to avoid
     // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
+    // Exporters can read variables from the JobIntent.COMPLETE command or the follow-up
+    // ProcessEvent.TRIGGERING event.
     ZeebeAssertHelper.assertJobCompleted(
         jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
@@ -154,6 +156,8 @@ public final class CompleteJobTest {
     // then
     // Variables are intentionally not included in the COMPLETED event to avoid
     // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
+    // Exporters can read variables from the JobIntent.COMPLETE command or the follow-up
+    // ProcessEvent.TRIGGERING event.
     ZeebeAssertHelper.assertJobCompleted(
         jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }

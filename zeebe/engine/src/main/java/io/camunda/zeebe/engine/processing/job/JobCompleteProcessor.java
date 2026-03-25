@@ -194,7 +194,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     // Emit the COMPLETED event without variables to avoid ExceededBatchRecordSizeException when
     // follow-up events (e.g. ProcessEvent.TRIGGERING) also carry the same variables in the same
     // batch. Variables are not needed in the COMPLETED event; exporters can read them from the
-    // Job.COMPLETE command or the follow-up ProcessEvent.TRIGGERING event.
+    // JobIntent.COMPLETE command or the follow-up ProcessEvent.TRIGGERING event.
     stateWriter.appendFollowUpEvent(command.getKey(), JobIntent.COMPLETED, job);
     responseWriter.writeEventOnCommand(command.getKey(), JobIntent.COMPLETED, job, command);
 
