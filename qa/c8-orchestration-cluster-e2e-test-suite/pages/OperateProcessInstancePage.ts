@@ -144,6 +144,9 @@ class OperateProcessInstancePage {
     this.incidentsTab = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Incidents$/i});
+    this.incidentsTab = page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Incidents$/i});
     this.incidentIconsInHistory = this.instanceHistory
       .getByRole('treeitem')
       .getByTestId('INCIDENT-icon');
@@ -255,6 +258,9 @@ class OperateProcessInstancePage {
       .getByRole('status')
       .getByText('Instance is scheduled for cancellation');
     this.endDateField = this.instanceHeader.getByTestId('end-date');
+    this.incidentsViewHeader = page.getByRole('heading', {
+      name: /\d+ results?/i,
+    });
     this.modificationModeText = page.getByText(
       'Process Instance Modification Mode',
     );

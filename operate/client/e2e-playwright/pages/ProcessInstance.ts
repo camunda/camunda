@@ -15,7 +15,7 @@ export class ProcessInstance {
   readonly instanceHistory: Locator;
   readonly variablesList: Locator;
   readonly incidentsTable: Locator;
-  readonly incidentsBanner: Locator;
+  readonly incidentsTab: Locator;
   readonly diagram: InstanceType<typeof Diagram>;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
@@ -43,7 +43,10 @@ export class ProcessInstance {
     this.instanceHistory = page.getByTestId('instance-history');
     this.variablesList = page.getByTestId('variables-list');
     this.incidentsTable = page.getByTestId('data-list');
-    this.incidentsBanner = page.getByTestId('incidents-banner');
+    this.incidentsTab = page
+      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByRole('link', {name: /^Incidents$/i});
+
     this.diagram = new Diagram(page);
     this.variablePanelEmptyText = page.getByText(
       /to view the variables, select a single element instance in the instance history./i,
