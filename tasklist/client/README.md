@@ -55,8 +55,6 @@ playwright environment to take snapshots. These are currently 1280x720 pixel ima
 To run the snapshot tests:
 
 ```
-npm run start-visual-regression-docker
-# in the docker environment
-npm run start:visual-regression &
+npm run build:visual-regression
 npm run test:docs --update-snapshots
 ```
