@@ -16,6 +16,11 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
@@ -585,8 +590,7 @@ public class ValueAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(model).withThreshold(0.5));
 
-      // when / then — locally lower threshold to 0.0; if global threshold (0.5) were accidentally
-      // used instead, the assertion would fail since score (0.0) < 0.5
+      // when / then — locally lower threshold to 0.0
       CamundaAssert.assertThatValue("actual")
           .withSemanticSimilarityConfig(c -> c.withThreshold(0.0))
           .isSimilarTo("expected");
@@ -599,8 +603,7 @@ public class ValueAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(model).withThreshold(0.5));
 
-      // when — locally lower the threshold so the score 0.0 passes; if the global threshold (0.5)
-      // were accidentally used instead, the assertion would fail, proving the override is needed
+      // when — locally lower the threshold so the score 0.0 passes
       CamundaAssert.assertThatValue("actual")
           .withSemanticSimilarityConfig(c -> c.withThreshold(0.0))
           .isSimilarTo("expected");
@@ -649,20 +652,11 @@ public class ValueAssertTest {
 
     @Test
     void shouldSwitchBetweenConfigsInSameChain() {
-      // given — two models, both return identical vectors
-      final AtomicBoolean modelACalled = new AtomicBoolean(false);
-      final AtomicBoolean modelBCalled = new AtomicBoolean(false);
-
-      final EmbeddingModelAdapter modelA =
-          text -> {
-            modelACalled.set(true);
-            return UNIT_VEC_X;
-          };
-      final EmbeddingModelAdapter modelB =
-          text -> {
-            modelBCalled.set(true);
-            return UNIT_VEC_X;
-          };
+      // given
+      final EmbeddingModelAdapter modelA = mock(EmbeddingModelAdapter.class);
+      final EmbeddingModelAdapter modelB = mock(EmbeddingModelAdapter.class);
+      when(modelA.embed(anyString())).thenReturn(UNIT_VEC_X);
+      when(modelB.embed(anyString())).thenReturn(UNIT_VEC_X);
 
       // when
       CamundaAssert.assertThatValue("Hello")
@@ -672,8 +666,8 @@ public class ValueAssertTest {
           .isSimilarTo("expectation B");
 
       // then
-      Assertions.assertThat(modelACalled).isTrue();
-      Assertions.assertThat(modelBCalled).isTrue();
+      verify(modelA, atLeastOnce()).embed(anyString());
+      verify(modelB, atLeastOnce()).embed(anyString());
     }
   }
 }
