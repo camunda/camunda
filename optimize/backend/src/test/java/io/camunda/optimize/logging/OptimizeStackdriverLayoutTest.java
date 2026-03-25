@@ -166,7 +166,7 @@ final class OptimizeStackdriverLayoutTest {
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},%s\
         "threadContext":{"id":%d,"name":"%s","priority":%d},\
-        "loggerName":"io.camunda.optimize.logging.StackdriverLayoutTest",\
+        "loggerName":"io.camunda.optimize.logging.OptimizeStackdriverLayoutTest",\
         "serviceContext":{"service":"","version":""}}""",
             message.getInstant().getEpochSecond(),
             message.getInstant().getNanoOfSecond(),
@@ -189,7 +189,7 @@ final class OptimizeStackdriverLayoutTest {
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},\
         "threadContext":{"id":%d,"name":"%s","priority":%d},\
-        "loggerName":"io.camunda.optimize.logging.StackdriverLayoutTest",\
+        "loggerName":"io.camunda.optimize.logging.OptimizeStackdriverLayoutTest",\
         "serviceContext":{"service":"","version":""},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "reportLocation":{"filePath":"Foo.java","functionName":"Bar","lineNumber":1}}""",
@@ -211,14 +211,14 @@ final class OptimizeStackdriverLayoutTest {
             Pattern.quote(
                     // language=json
                     """
-        {"timestampSeconds":%d,"timestampNanos":%d,"severity":"ERROR","message":"Hello World!",\
-        "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
-        "function":"Foo.Bar"},\
-        "threadContext":{"id":%d,"name":"%s","priority":%d},\
-        "loggerName":"io.camunda.optimize.logging.StackdriverLayoutTest",\
-        "serviceContext":{"service":"","version":""},\
-        "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
-        "exception":"""
+    {"timestampSeconds":%d,"timestampNanos":%d,"severity":"ERROR","message":"Hello World!",\
+    "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
+    "function":"Foo.Bar"},\
+    "threadContext":{"id":%d,"name":"%s","priority":%d},\
+    "loggerName":"io.camunda.optimize.logging.OptimizeStackdriverLayoutTest",\
+    "serviceContext":{"service":"","version":""},\
+    "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
+    "exception":"""
                         .formatted(
                             message.getInstant().getEpochSecond(),
                             message.getInstant().getNanoOfSecond(),
