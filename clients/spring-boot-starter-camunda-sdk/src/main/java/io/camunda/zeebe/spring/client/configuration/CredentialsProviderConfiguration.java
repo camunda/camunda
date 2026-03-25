@@ -46,6 +46,7 @@ public class CredentialsProviderConfiguration {
             .clientSecret(camundaClientProperties.getAuth().getClientSecret())
             .audience(camundaClientProperties.getZeebe().getAudience())
             .scope(camundaClientProperties.getZeebe().getScope())
+            .resource(camundaClientProperties.getAuth().getResource())
             .authorizationServerUrl(
                 ofNullable(camundaClientProperties.getAuth().getTokenUrl())
                     .map(URI::toString)

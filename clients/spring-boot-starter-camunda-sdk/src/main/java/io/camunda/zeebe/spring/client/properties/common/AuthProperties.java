@@ -31,6 +31,8 @@ public class AuthProperties {
   private URI tokenUrl;
 
   private String credentialsCachePath;
+  private String resource;
+
   private Duration connectTimeout;
   private Duration readTimeout;
 
@@ -44,6 +46,14 @@ public class AuthProperties {
 
   public void setClientAssertion(final CamundaClientAuthClientAssertionProperties clientAssertion) {
     this.clientAssertion = clientAssertion;
+  }
+
+  public String getResource() {
+    return resource;
+  }
+
+  public void setResource(final String resource) {
+    this.resource = resource;
   }
 
   public String getCredentialsCachePath() {
@@ -113,6 +123,9 @@ public class AuthProperties {
         + '\''
         + ", clientSecret='"
         + (clientSecret != null ? "***" : null)
+        + '\''
+        + ", resource='"
+        + resource
         + '\''
         + ", tokenUrl="
         + tokenUrl
