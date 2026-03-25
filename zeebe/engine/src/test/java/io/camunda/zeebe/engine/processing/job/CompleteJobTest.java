@@ -174,7 +174,9 @@ public final class CompleteJobTest {
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
+    // Variables are intentionally not included in the COMPLETED event to avoid
+    // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
+    assertThat(completedRecord.getValue().getVariables()).isEmpty();
   }
 
   @Test

@@ -84,8 +84,10 @@ public final class CompleteJobTest {
     getCommand(client, useRest, jobKey).variables("{\"foo\":\"bar\"}").send().join();
 
     // then
+    // Variables are intentionally not included in the COMPLETED event to avoid
+    // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
     ZeebeAssertHelper.assertJobCompleted(
-        jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
+        jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @ParameterizedTest
@@ -150,8 +152,10 @@ public final class CompleteJobTest {
     getCommand(client, useRest, jobKey).variable(key, value).send().join();
 
     // then
+    // Variables are intentionally not included in the COMPLETED event to avoid
+    // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
     ZeebeAssertHelper.assertJobCompleted(
-        jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry(key, value)));
+        jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @ParameterizedTest
