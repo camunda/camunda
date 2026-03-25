@@ -48,7 +48,14 @@ export default defineConfig(({mode}) => ({
   },
   build: {
     outDir,
-    rollupOptions: {
+    sourcemap: mode !== 'sbom',
+    license: {
+      fileName: 'assets/vendor.LICENSE.txt',
+    },
+    rolldownOptions: {
+      output: {
+        postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+      },
       input: {
         index:
           mode === 'visual-regression' ? './index.html' : './index.prod.html',
@@ -62,11 +69,6 @@ export default defineConfig(({mode}) => ({
         },
       }),
     },
-    sourcemap: mode !== 'sbom',
-  },
-  esbuild: {
-    banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
-    legalComments: 'none',
   },
   resolve: {
     alias: {
