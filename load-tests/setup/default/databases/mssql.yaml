@@ -1,6 +1,5 @@
 # mssql.yaml — Plain Kubernetes manifests for Microsoft SQL Server 2022.
 #
-# Replaces the xrow/mssql Helm chart, which relies on OpenShift-specific
 # Security Context Constraints (SCC) RoleBindings unavailable on standard
 # Kubernetes clusters.
 #

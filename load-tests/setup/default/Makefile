@@ -25,6 +25,8 @@ else ifeq ($(secondary_storage),mysql)
 platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mysql.yaml
 else ifeq ($(secondary_storage),mssql)
 platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-mssql.yaml
+else ifeq ($(secondary_storage),oracle)
+platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-oracle.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
@@ -41,6 +43,9 @@ ifeq ($(secondary_storage),mysql)
 platform_values += --set elasticsearch.enabled=false
 endif
 ifeq ($(secondary_storage),mssql)
+platform_values += --set elasticsearch.enabled=false
+endif
+ifeq ($(secondary_storage),oracle)
 platform_values += --set elasticsearch.enabled=false
 endif
 endif
@@ -76,6 +81,10 @@ else ifeq ($(secondary_storage),mssql)
 	@echo "Installing MSSQL database for namespace $(namespace)..."
 	# Deploy MSSQL via plain Kubernetes manifests (mssql.yaml) since no good public chart is available
 	kubectl apply --namespace $(namespace) -f databases/mssql.yaml
+else ifeq ($(secondary_storage),oracle)
+	@echo "Installing Oracle database for namespace $(namespace)..."
+	# Deploy Oracle Free 23c via plain Kubernetes manifests (oracle.yaml) since no maintained public chart is available
+	kubectl apply --namespace $(namespace) -f databases/oracle.yaml
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
@@ -190,6 +199,11 @@ else ifeq ($(secondary_storage),mssql)
 	-kubectl delete --namespace $(namespace) -f mssql.yaml
 	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
 	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=mssql
+else ifeq ($(secondary_storage),oracle)
+	@echo "Cleaning up Oracle database for namespace $(namespace)..."
+	-kubectl delete --namespace $(namespace) -f databases/oracle.yaml
+	# StatefulSet PVCs are not deleted automatically — remove them explicitly.
+	-kubectl delete --namespace $(namespace) pvc -l app.kubernetes.io/name=oracle
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch

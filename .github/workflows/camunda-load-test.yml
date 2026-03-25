@@ -77,7 +77,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql", "mysql", "mssql" or "none"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql", "mysql", "mssql", "oracle" or "none"'
         type: choice
         options:
         - elasticsearch
@@ -85,6 +85,7 @@ on:
         - postgresql
         - mysql
         - mssql
+        - oracle
         - none
         default: elasticsearch
       orchestration-tag:
@@ -168,7 +169,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql", "mysql", "mssql" or "none"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql", "mysql", "mssql", "oracle" or "none"'
         # type choice is invalid here
         type: string
         required: false
