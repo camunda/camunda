@@ -10,6 +10,8 @@ import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {Modal} from '@carbon/react';
+import {Toolbar} from './styled';
+import {CopyButton} from '../CopyButton';
 
 type EditorFirstParam = Parameters<
   NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
@@ -40,6 +42,7 @@ const JSONEditorModal: React.FC<Props> = observer(
     const [editedValue, setEditedValue] = useState(value);
     const [isValid, setIsValid] = useState(true);
     const editorRef = useRef<EditorFirstParam | null>(null);
+
     useEffect(() => {
       if (isVisible) {
         setEditedValue(beautifyJSON(value));
@@ -79,6 +82,9 @@ const JSONEditorModal: React.FC<Props> = observer(
         passiveModal={readOnly}
         preventCloseOnClickOutside
       >
+        <Toolbar>
+          <CopyButton value={editedValue} />
+        </Toolbar>
         <Suspense>
           <JSONEditor
             value={editedValue}
