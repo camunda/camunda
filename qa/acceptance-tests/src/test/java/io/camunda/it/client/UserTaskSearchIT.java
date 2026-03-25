@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -670,11 +671,17 @@ class UserTaskSearchIT {
 
   @Test
   void shouldGetUserTaskByKey() {
-    // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKeyTaskAssigned).send().join();
+    // given
+    final var searchResult =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
+    assertThat(searchResult.items()).hasSize(1);
+    final var expectedTask = searchResult.items().getFirst();
+
+    // when - retrieve the subprocess task which is in an active state
+    final var result = camundaClient.newUserTaskGetRequest(userTaskSubprocessKey).send().join();
 
     // then
-    assertThat(result.getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
+    assertThat(result).usingRecursiveComparison().isEqualTo(expectedTask);
   }
 
   @Test
@@ -730,6 +737,95 @@ class UserTaskSearchIT {
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .contains("User Task with key '%d' not found".formatted(userTaskKey));
+  }
+
+  @Test
+  void shouldReturnEmptyCollectionsNotNullForUserTaskWithoutCandidates() {
+    // given - find a task without candidate groups or users (process "simple.bpmn" has no
+    // candidates)
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .allSatisfy(
+            task -> {
+              assertThat(task.getBpmnProcessId()).isEqualTo("process");
+              assertThat(task.getCandidateGroups()).isEmpty();
+              assertThat(task.getCandidateUsers()).isEmpty();
+              assertThat(task.getCustomHeaders()).isEmpty();
+              assertThat(task.getTags()).isEmpty();
+            });
+  }
+
+  @Test
+  void shouldReturnEmptyCollectionsNotNullWhenGettingUserTaskByKey() {
+    // given - get task by key (process "simple.bpmn" has no candidates)
+    final var searchResult =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process"))
+            .send()
+            .join();
+    assertThat(searchResult.items()).hasSize(2);
+    final var taskKey = searchResult.items().getFirst().getUserTaskKey();
+
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(taskKey).send().join();
+
+    // then
+    assertThat(result.getUserTaskKey()).isEqualTo(taskKey);
+    assertThat(result.getCandidateGroups()).isEmpty();
+    assertThat(result.getCandidateUsers()).isEmpty();
+    assertThat(result.getCustomHeaders()).isEmpty();
+    assertThat(result.getTags()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnNullForOptionalTextFields() {
+    // given - find a task without assignee, formKey, externalFormReference
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process").state(UserTaskState.CREATED))
+            .send()
+            .join();
+
+    // then - assert optional text fields are null (not empty string)
+    assertThat(result.items()).hasSize(1);
+    final var task = result.items().getFirst();
+    assertThat(task.getAssignee()).isNull();
+    assertThat(task.getFormKey()).isNull();
+    assertThat(task.getExternalFormReference()).isNull();
+  }
+
+  @Test
+  void shouldReturnNullOrDefaultForOptionalDateFields() {
+    // given - find a task that hasn't been completed (no completion/due/followUp dates)
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process").state(UserTaskState.CREATED))
+            .send()
+            .join();
+
+    // then - assert optional date fields
+    assertThat(result.items()).hasSize(1);
+    final var task = result.items().getFirst();
+    assertThat(task.getCompletionDate()).isNull();
+    assertThat(task.getDueDate())
+        .isCloseTo(
+            OffsetDateTime.now().minusDays(1),
+            new TemporalUnitWithinOffset(5, java.time.temporal.ChronoUnit.SECONDS));
+    assertThat(task.getFollowUpDate())
+        .isCloseTo(
+            OffsetDateTime.now().minusDays(1),
+            new TemporalUnitWithinOffset(5, java.time.temporal.ChronoUnit.SECONDS));
   }
 
   @Test

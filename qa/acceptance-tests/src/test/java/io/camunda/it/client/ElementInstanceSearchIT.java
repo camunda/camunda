@@ -334,7 +334,7 @@ public class ElementInstanceSearchIT {
     final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then
-    assertThat(result).isNotNull().isEqualTo(elementInstance);
+    assertThat(result).isEqualTo(elementInstance);
   }
 
   @Test
@@ -738,7 +738,7 @@ public class ElementInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(3);
+    assertThat(result.items()).hasSize(3);
     assertThat(result.items().stream().map(ElementInstance::getElementId))
         .containsExactlyInAnyOrder("start_event", "sub_process", "end_event");
   }
@@ -767,7 +767,7 @@ public class ElementInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(3);
+    assertThat(result.items()).hasSize(3);
     assertThat(result.items().stream().map(ElementInstance::getElementId))
         .containsExactlyInAnyOrder("sub_start_event", "bar_mi_task", "sub_end_event");
   }
@@ -798,7 +798,7 @@ public class ElementInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(ElementInstance::getElementId))
         .containsExactlyInAnyOrder("bar_mi_task", "bar_mi_task");
   }

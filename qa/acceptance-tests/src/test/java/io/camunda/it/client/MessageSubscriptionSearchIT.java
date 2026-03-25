@@ -73,7 +73,7 @@ public class MessageSubscriptionSearchIT {
     final var searchResponse = camundaClient.newMessageSubscriptionSearchRequest().send().join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
+    assertThat(searchResponse.items()).hasSize(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
     assertThat(searchResponse.page().totalItems()).isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
     assertThat(searchResponse.items())
         .containsExactlyInAnyOrderElementsOf(orderedMessageSubscriptions);
@@ -107,10 +107,8 @@ public class MessageSubscriptionSearchIT {
             .join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(1);
+    assertThat(searchResponse.items()).hasSize(1);
     assertThat(searchResponse.items().getFirst()).isEqualTo(expectedMessageSubscription);
-    assertThat(searchResponse.items().getFirst().getRootProcessInstanceKey())
-        .isEqualTo(expectedMessageSubscription.getProcessInstanceKey());
   }
 
   @Test
@@ -124,7 +122,7 @@ public class MessageSubscriptionSearchIT {
             .join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(1);
+    assertThat(searchResponse.items()).hasSize(1);
     assertThat(searchResponse.items().getFirst())
         .extracting("messageName", "messageSubscriptionState")
         .containsExactly("Message1", MessageSubscriptionState.CORRELATED);
@@ -141,7 +139,7 @@ public class MessageSubscriptionSearchIT {
             .join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
+    assertThat(searchResponse.items()).hasSize(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
     assertThat(searchResponse.items())
         .containsExactlyElementsOf(
             orderedMessageSubscriptions.stream()

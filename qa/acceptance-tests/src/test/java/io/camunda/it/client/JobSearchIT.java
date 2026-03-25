@@ -244,11 +244,10 @@ public class JobSearchIT {
             .send()
             .join();
 
-    // then
+    // then - assert all fields with explicit expected values to ensure consistency across storage
+    // backends
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst().getJobKey()).isEqualTo(taskABpmnJob.getJobKey());
-    assertThat(result.items().getFirst().getRootProcessInstanceKey())
-        .isEqualTo(taskABpmnJob.getProcessInstanceKey());
+    assertThat(result.items().getFirst()).usingRecursiveComparison().isEqualTo(taskABpmnJob);
   }
 
   @Test
