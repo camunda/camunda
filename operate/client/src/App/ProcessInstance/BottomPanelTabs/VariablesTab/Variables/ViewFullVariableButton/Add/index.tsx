@@ -8,8 +8,6 @@
 
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {Button} from '@carbon/react';
-import {Maximize} from '@carbon/react/icons';
 import {useForm, useFormState} from 'react-final-form';
 import type {ViewFullVariableButtonAddProps} from '../types';
 import get from 'lodash/get';

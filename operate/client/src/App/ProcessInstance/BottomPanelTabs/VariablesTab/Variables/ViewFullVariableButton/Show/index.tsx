@@ -8,8 +8,6 @@
 
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {Button} from '@carbon/react';
-import {Maximize} from '@carbon/react/icons';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import type {ViewFullVariableButtonShowProps} from '../types';
 import {InlineLoading} from '../../Operations/styled';

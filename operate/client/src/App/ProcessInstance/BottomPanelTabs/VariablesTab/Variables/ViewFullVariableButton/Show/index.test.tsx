@@ -42,6 +42,7 @@ describe('<ViewFullVariableButton />', () => {
 
     const {user} = render(
       <ViewFullVariableButtonShow
+        mode="show"
         variableName={mockVariableName}
         variableKey={mockVariableKey}
         variableValue={mockVariableValue}
