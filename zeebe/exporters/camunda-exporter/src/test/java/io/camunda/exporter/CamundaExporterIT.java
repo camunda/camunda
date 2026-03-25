@@ -277,7 +277,6 @@ final class CamundaExporterIT {
     final var cacheProvider = mock(ExporterEntityCacheProvider.class);
     when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
-    when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
