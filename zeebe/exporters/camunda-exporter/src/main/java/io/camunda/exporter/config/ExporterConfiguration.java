@@ -24,6 +24,7 @@ public class ExporterConfiguration {
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
   private boolean createSchema = true;
+  private boolean skipVariableWriteWithoutUserTasks = false;
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -81,6 +82,15 @@ public class ExporterConfiguration {
     this.createSchema = createSchema;
   }
 
+  public boolean isSkipVariableWriteWithoutUserTasks() {
+    return skipVariableWriteWithoutUserTasks;
+  }
+
+  public void setSkipVariableWriteWithoutUserTasks(
+      final boolean skipVariableWriteWithoutUserTasks) {
+    this.skipVariableWriteWithoutUserTasks = skipVariableWriteWithoutUserTasks;
+  }
+
   public PostExportConfiguration getPostExport() {
     return postExport;
   }
@@ -136,6 +146,8 @@ public class ExporterConfiguration {
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", skipVariableWriteWithoutUserTasks="
+        + skipVariableWriteWithoutUserTasks
         + '}';
   }
 

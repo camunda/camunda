@@ -14,12 +14,14 @@ import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +84,16 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
       entity.setVersionTag(versionTag);
     }
 
-    extractProcessModelData(process, entity);
+    final var reader = getProcessModelReader(process);
+
+    final boolean hasUserTasks;
+    if (reader != null) {
+      final var flowNodes = reader.extractFlowNodes();
+      extractProcessModelData(reader, entity, flowNodes);
+      hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
+    } else {
+      hasUserTasks = true;
+    }
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler
@@ -92,7 +103,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getVersion(),
             entity.getVersionTag(),
             entity.getCallActivityIds(),
-            getFlowNodesMap(entity.getFlowNodes()));
+            getFlowNodesMap(entity.getFlowNodes()),
+            hasUserTasks);
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
@@ -106,27 +118,27 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     return indexName;
   }
 
-  private void extractProcessModelData(final Process process, final ProcessEntity entity) {
-    ProcessModelReader.of(process.getResource(), process.getBpmnProcessId())
+  private ProcessModelReader getProcessModelReader(final Process process) {
+    return ProcessModelReader.of(process.getResource(), process.getBpmnProcessId()).orElse(null);
+  }
+
+  private void extractProcessModelData(
+      final ProcessModelReader reader,
+      final ProcessEntity entity,
+      final Collection<FlowNode> flowNodes) {
+    entity.setName(reader.extractProcessName());
+    entity.setIsPublic(reader.extractIsPublicAccess());
+    entity.setFlowNodes(
+        flowNodes.stream().map(fn -> new ProcessFlowNodeEntity(fn.getId(), fn.getName())).toList());
+    entity.setCallActivityIds(
+        ProcessCacheUtil.sortedCallActivityIds(reader.extractCallActivities()));
+    reader
+        .extractStartFormLink()
         .ifPresent(
-            processModelReader -> {
-              entity.setName(processModelReader.extractProcessName());
-              entity.setIsPublic(processModelReader.extractIsPublicAccess());
-              entity.setFlowNodes(
-                  processModelReader.extractFlowNodes().stream()
-                      .map(fn -> new ProcessFlowNodeEntity(fn.getId(), fn.getName()))
-                      .toList());
-              entity.setCallActivityIds(
-                  ProcessCacheUtil.sortedCallActivityIds(
-                      processModelReader.extractCallActivities()));
-              processModelReader
-                  .extractStartFormLink()
-                  .ifPresent(
-                      formLink -> {
-                        entity.setFormId(formLink.formId());
-                        entity.setFormKey(formLink.formKey());
-                        entity.setIsFormEmbedded(!ExporterUtil.isEmpty(formLink.formKey()));
-                      });
+            formLink -> {
+              entity.setFormId(formLink.formId());
+              entity.setFormKey(formLink.formKey());
+              entity.setIsFormEmbedded(!ExporterUtil.isEmpty(formLink.formKey()));
             });
   }
 
