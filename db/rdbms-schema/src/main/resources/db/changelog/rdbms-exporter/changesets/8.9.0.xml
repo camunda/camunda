@@ -2180,4 +2180,99 @@
     </createIndex>
   </changeSet>
 
+  <!-- Index LONG_VALUE to speed up numeric comparison searches on VARIABLE -->
+  <changeSet id="create_variable_long_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_LONG_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_LONG_VALUE">
+      <column name="LONG_VALUE"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Index DOUBLE_VALUE to speed up numeric comparison searches on VARIABLE -->
+  <changeSet id="create_variable_double_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_DOUBLE_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_DOUBLE_VALUE">
+      <column name="DOUBLE_VALUE"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Index VAR_VALUE to speed up equality searches on VARIABLE.
+       - MySQL/MariaDB: prefix index on first 255 chars (reasonable index size, used for equality)
+       - PostgreSQL: hash index (supports equality only, no size limits)
+       - H2: regular index (test database, no production size concerns)
+       - Oracle/MSSQL: skipped — Oracle has byte-length risks for multi-byte charsets,
+         MSSQL enforces a 900-byte B-tree key limit that VARCHAR(8192) can exceed -->
+  <changeSet id="create_variable_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql,mariadb">
+      CREATE INDEX ${prefix}IDX_VARIABLE_VALUE ON ${prefix}VARIABLE (VAR_VALUE(255))
+    </sql>
+    <sql dbms="postgresql">
+      CREATE INDEX ${prefix}IDX_VARIABLE_VALUE ON ${prefix}VARIABLE USING HASH (VAR_VALUE)
+    </sql>
+    <sql dbms="h2">
+      CREATE INDEX ${prefix}IDX_VARIABLE_VALUE ON ${prefix}VARIABLE (VAR_VALUE)
+    </sql>
+  </changeSet>
+
+  <!-- Index LONG_VALUE to speed up numeric comparison searches on CLUSTER_VARIABLE -->
+  <changeSet id="create_cluster_variable_long_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_LONG_VALUE"
+          tableName="${prefix}CLUSTER_VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_LONG_VALUE">
+      <column name="LONG_VALUE"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Index DOUBLE_VALUE to speed up numeric comparison searches on CLUSTER_VARIABLE -->
+  <changeSet id="create_cluster_variable_double_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_DOUBLE_VALUE"
+          tableName="${prefix}CLUSTER_VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_DOUBLE_VALUE">
+      <column name="DOUBLE_VALUE"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Index VAR_VALUE to speed up equality searches on CLUSTER_VARIABLE.
+       Same vendor-specific rationale as for VARIABLE above. -->
+  <changeSet id="create_cluster_variable_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_VALUE"
+          tableName="${prefix}CLUSTER_VARIABLE"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql,mariadb">
+      CREATE INDEX ${prefix}IDX_CLUSTER_VARIABLE_VALUE ON ${prefix}CLUSTER_VARIABLE (VAR_VALUE(255))
+    </sql>
+    <sql dbms="postgresql">
+      CREATE INDEX ${prefix}IDX_CLUSTER_VARIABLE_VALUE ON ${prefix}CLUSTER_VARIABLE USING HASH (VAR_VALUE)
+    </sql>
+    <sql dbms="h2">
+      CREATE INDEX ${prefix}IDX_CLUSTER_VARIABLE_VALUE ON ${prefix}CLUSTER_VARIABLE (VAR_VALUE)
+    </sql>
+  </changeSet>
+
 </databaseChangeLog>
