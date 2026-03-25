@@ -52,7 +52,7 @@ const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
             setIsModalVisible(false);
             if (value !== undefined) {
               createModification({
-                scopeId: scopeId!,
+                scopeId: scopeId,
                 areFormFieldsValid:
                   (isNameFieldValid &&
                     form.getFieldState(valueFieldName)?.valid) ??

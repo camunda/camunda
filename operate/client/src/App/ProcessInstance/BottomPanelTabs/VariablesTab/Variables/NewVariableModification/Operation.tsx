@@ -15,6 +15,7 @@ import {TrashCan} from '@carbon/react/icons';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+
 type Props = {
   variableName: string;
   onRemove: () => void;
