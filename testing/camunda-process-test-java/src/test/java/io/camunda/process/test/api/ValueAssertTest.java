@@ -580,15 +580,16 @@ public class ValueAssertTest {
 
     @Test
     void shouldModifyThresholdViaOverride() {
-      // given — identical vectors → score 1.0; set high threshold globally, lower it locally
-      final EmbeddingModelAdapter model = text -> UNIT_VEC_X;
+      // given — orthogonal vectors → score 0.0; global threshold 0.5 would fail, local 0.0 passes
+      final EmbeddingModelAdapter model = text -> text.equals("expected") ? UNIT_VEC_X : UNIT_VEC_Y;
       CamundaAssert.setSemanticSimilarityConfig(
           SemanticSimilarityConfig.of(model).withThreshold(0.5));
 
-      // when / then — override lowers threshold; still passes because score is 1.0
-      CamundaAssert.assertThatValue("text")
-          .withSemanticSimilarityConfig(c -> c.withThreshold(0.1))
-          .isSimilarTo("text");
+      // when / then — locally lower threshold to 0.0; if global threshold (0.5) were accidentally
+      // used instead, the assertion would fail since score (0.0) < 0.5
+      CamundaAssert.assertThatValue("actual")
+          .withSemanticSimilarityConfig(c -> c.withThreshold(0.0))
+          .isSimilarTo("expected");
     }
 
     @Test
