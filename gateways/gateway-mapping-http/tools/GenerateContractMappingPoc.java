@@ -136,75 +136,18 @@ public class GenerateContractMappingPoc {
     Files.createDirectories(packagePath);
     cleanupPreviouslyGeneratedFiles(packagePath);
 
-    // Phase 1: compute fields for all schemas and determine which get mappers.
+    // Phase 1: compute fields for all schemas.
     record SchemaGenPlan(
         SchemaDef schema,
         String dtoClass,
-        String mapperClass,
-        List<ContractField> fields,
-        boolean generateMapper) {}
+        List<ContractField> fields) {}
 
-    final var mappableSchemaNames = new LinkedHashSet<String>();
     final var plans = new ArrayList<SchemaGenPlan>();
 
-    // First pass: identify schemas that are mapper candidates on name/protocol type alone.
     for (var schema : contractSchemas) {
       final var fields = toContractFields(schema, allSchemas);
       final var dtoClass = dtoClassName(schema.schemaName());
-      final var mapperClass = mapperClassName(schema.schemaName());
-      final boolean candidate = shouldGenerateMapper(schema.schemaName(), responseOnlySchemas);
-      plans.add(new SchemaGenPlan(schema, dtoClass, mapperClass, fields, candidate));
-      if (candidate) {
-        mappableSchemaNames.add(schema.schemaName());
-      }
-    }
-
-    // Build a lookup from schema name to its plan for expansion.
-    final var planByName = new LinkedHashMap<String, SchemaGenPlan>();
-    for (var plan : plans) {
-      planByName.put(plan.schema().schemaName(), plan);
-    }
-
-    // Expand mapper candidates: include nested types transitively referenced by candidates.
-    // This ensures schemas like BrokerInfo, StatusMetric, etc. also get mappers.
-    {
-      boolean expanded = true;
-      while (expanded) {
-        expanded = false;
-        for (var name : List.copyOf(mappableSchemaNames)) {
-          final var plan = planByName.get(name);
-          if (plan == null) {
-            continue;
-          }
-          for (var f : plan.fields()) {
-            final var nestedName = extractNestedSchemaName(f);
-            if (nestedName != null
-                && !mappableSchemaNames.contains(nestedName)
-                && AVAILABLE_PROTOCOL_TYPES.contains(nestedName)
-                && planByName.containsKey(nestedName)) {
-              mappableSchemaNames.add(nestedName);
-              expanded = true;
-            }
-          }
-        }
-      }
-    }
-
-    // Second pass: iteratively exclude schemas with type-incompatible fields.
-    // Repeat until convergence because removing a nested schema may invalidate its parent.
-    final var validMappableSchemas = new LinkedHashSet<>(mappableSchemaNames);
-    boolean changed = true;
-    while (changed) {
-      changed = false;
-      for (var plan : plans) {
-        if (!validMappableSchemas.contains(plan.schema().schemaName())) {
-          continue;
-        }
-        if (hasMapperIncompatibility(plan.fields(), validMappableSchemas)) {
-          validMappableSchemas.remove(plan.schema().schemaName());
-          changed = true;
-        }
-      }
+      plans.add(new SchemaGenPlan(schema, dtoClass, fields));
     }
 
     // Phase 1.5: Generate strict enum types.
@@ -379,9 +322,6 @@ public class GenerateContractMappingPoc {
           StandardCharsets.UTF_8);
       System.out.println("generated: " + ROOT.relativize(dtoFile));
       dtoCount++;
-
-      // toProtocol() result mappers are no longer generated — strict contracts are the
-      // serialization type. Adapters call GeneratedSearchQueryResponseMapper directly.
     }
     System.out.println(dtoCount + " strict contract DTOs generated.");
 
@@ -473,65 +413,12 @@ public class GenerateContractMappingPoc {
   }
 
   /**
-   * Detects fields whose strict contract types won't match the protocol model's setter types.
-   *
-   * <p>Known incompatibilities:
-   * <ul>
-   *   <li>Nested object/list/map fields referencing types without generated mappers
-   * </ul>
-   */
-  private static boolean hasMapperIncompatibility(
-      List<ContractField> fields, Set<String> mappableSchemas) {
-    for (final var f : fields) {
-      // Field-level type incompatibility (referenced enum, URI format, dotted enum name)
-      if (f.hasMapperFieldIncompatibility()) {
-        return true;
-      }
-      // Nested strict object type — check if nested mapper will exist
-      // Skip self-deserializing types (filter properties) — they don't need mappers.
-      if (f.hasStrictObjectType() && !f.typeInfo().selfDeserializing()) {
-        final var nestedSchemaName =
-            extractSchemaNameFromStrictClass(f.typeInfo().strictDtoClass());
-        if (!mappableSchemas.contains(nestedSchemaName)) {
-          return true;
-        }
-      }
-      // List of strict objects — check if element mapper will exist
-      if (f.hasStrictListType()) {
-        final var elemType = f.typeInfo().elementType();
-        if (elemType != null && elemType.strictDtoClass() != null) {
-          final var nestedSchemaName = extractSchemaNameFromStrictClass(elemType.strictDtoClass());
-          if (!mappableSchemas.contains(nestedSchemaName)) {
-            return true;
-          }
-        }
-      }
-      // Map with strict object values — check if value mapper will exist
-      if (f.hasStrictMapValueType()) {
-        final var valType = f.typeInfo().elementType();
-        final var nestedSchemaName = extractSchemaNameFromStrictClass(valType.strictDtoClass());
-        if (!mappableSchemas.contains(nestedSchemaName)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private static boolean shouldGenerateMapper(String schemaName, Set<String> responseOnlySchemas) {
-    if (!AVAILABLE_PROTOCOL_TYPES.contains(schemaName)) {
-      return false;
-    }
-    return responseOnlySchemas.contains(schemaName);
-  }
-
-  /**
    * Discovers schemas that appear only in response paths (not in request paths) by tracing $ref
    * chains from the {@code paths:} block in each OpenAPI YAML file.
    *
    * <p>Schemas referenced (directly or transitively) from {@code requestBody:} blocks are excluded.
-   * This ensures mappers are only generated for response-side schemas, preventing accidental mapper
-   * generation for shared schemas like enums, keys, and filter types.
+   * This is used to determine which DTOs are request schemas (needing strict validation) vs
+   * response-only schemas.
    */
   private static Set<String> discoverResponseOnlySchemas(
       Path specDir, Map<SchemaKey, SchemaDef> allSchemas) throws IOException {
@@ -1260,10 +1147,6 @@ public enum %s {
     return "Generated" + schemaName + "StrictContract";
   }
 
-  private static String mapperClassName(String schemaName) {
-    return "Generated" + schemaName + "Mapper";
-  }
-
   private static void cleanupPreviouslyGeneratedFiles(Path packagePath) throws IOException {
     try (var stream = Files.list(packagePath)) {
       for (var path : stream.filter(path -> path.getFileName().toString().endsWith(".java")).toList()) {
@@ -1306,12 +1189,6 @@ public enum %s {
                   || ("string".equals(node.type()) && !node.allOfRefs().isEmpty()));
       final var hasUniqueItems =
           isUniqueItemsArray(node, contextFile, allSchemas);
-      // Detect field-level mapper incompatibilities:
-      // 1. URI format: protocol generates java.net.URI, we have String
-      // 2. Dotted property names with inline enum: produces invalid enum class name
-      final var hasMapperFieldIncompatibility =
-          isUriFormat(node, contextFile, allSchemas)
-              || (hasInlineEnum && propertyName.contains("."));
       final var fieldConstraints = resolveConstraints(node, contextFile, allSchemas);
       final var fieldDefault = resolveDefaultValue(node, contextFile, allSchemas);
       final var identifier = uniqueIdentifier(toJavaIdentifier(propertyName), usedIdentifiers);
@@ -1332,7 +1209,6 @@ public enum %s {
               isLongKeyCoercion,
               hasInlineEnum,
               hasUniqueItems,
-              hasMapperFieldIncompatibility,
               typeInfo,
               fieldConstraints,
               useNestedEnum ? node.enumValues() : List.of(),
@@ -2195,121 +2071,6 @@ public record %s(
         + genericSuffix;
   }
 
-  private static String renderMapper(
-    String sourceFile,
-    String schemaName,
-    String dtoClass,
-    String mapperClass,
-    List<ContractField> fields) {
-  final String protocolClass = PROTOCOL_PACKAGE + "." + schemaName;
-  final String protocolSimpleName = schemaName;
-
-    // Collect all imports, sort them for Checkstyle compliance
-    final var allImports = new LinkedHashSet<String>();
-    allImports.add("jakarta.annotation.Generated");
-    allImports.add(protocolClass);
-    for (final var f : fields) {
-      if (f.hasStrictObjectType() && !f.typeInfo().selfDeserializing()) {
-        allImports.add(f.typeInfo().protocolJavaType());
-      } else if (f.hasStrictListType()) {
-        allImports.add("java.util.Collections");
-        final var elemType = f.typeInfo().elementType();
-        if (elemType != null && elemType.protocolJavaType() != null) {
-          allImports.add(elemType.protocolJavaType());
-        }
-      } else if (f.hasStrictMapValueType()) {
-        final var valType = f.typeInfo().elementType();
-        if (valType != null && valType.protocolJavaType() != null) {
-          allImports.add(valType.protocolJavaType());
-        }
-      }
-    }
-
-    final String mappingLines =
-    fields.stream()
-        .map(f -> renderMapperFieldLine(f, schemaName))
-            .collect(Collectors.joining("\n"));
-
-    final String importBlock = allImports.stream()
-        .sorted()
-        .map(imp -> "import " + imp + ";")
-        .collect(Collectors.joining("\n"))
-        + "\n";
-
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
-
-%s
-@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public final class %s {
-
-  private %s() {}
-
-  public static %s toProtocol(final %s source) {
-    return new %s()
-%s;
-  }
-}
-"""
-        .formatted(
-            sourceFile,
-            schemaName,
-            TARGET_PACKAGE,
-            importBlock,
-            mapperClass,
-            mapperClass,
-            protocolSimpleName,
-            dtoClass,
-            protocolSimpleName,
-            mappingLines);
-  }
-
-  private static String renderMapperFieldLine(ContractField f, String schemaName) {
-    final var accessor = "source." + f.identifier() + "()";
-    if (f.hasInlineEnum()) {
-      final var enumClass = schemaName + "." + capitalizeIdentifier(f.name()) + "Enum";
-      return "        ." + f.mapperMethod() + "(" + accessor + " == null ? null : " + enumClass + ".fromValue(" + accessor + "))";
-    }
-    if (f.hasStrictObjectType()) {
-      // Self-deserializing types (filter properties) pass through directly — no mapper available.
-      if (f.typeInfo().selfDeserializing()) {
-        return "        ." + f.mapperMethod() + "(" + accessor + ")";
-      }
-      final var nestedMapper = mapperClassName(extractSchemaNameFromStrictClass(f.typeInfo().strictDtoClass()));
-      if (f.nullable()) {
-        return "        ." + f.mapperMethod() + "(" + accessor + " == null ? null : " + nestedMapper + ".toProtocol(" + accessor + "))";
-      } else {
-        return "        ." + f.mapperMethod() + "(" + nestedMapper + ".toProtocol(" + accessor + "))";
-      }
-    } else if (f.hasStrictListType()) {
-      final var elemType = f.typeInfo().elementType();
-      if (elemType != null && elemType.strictDtoClass() != null) {
-        final var nestedMapper = mapperClassName(extractSchemaNameFromStrictClass(elemType.strictDtoClass()));
-        final var collector = f.javaType().startsWith("java.util.Set<")
-            ? ".collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new))"
-            : ".toList()";
-        return "        ." + f.mapperMethod() + "(" + accessor + " == null ? null : " + accessor + ".stream().map(" + nestedMapper + "::toProtocol)" + collector + ")";
-      }
-    } else if (f.hasStrictMapValueType()) {
-      final var valType = f.typeInfo().elementType();
-      final var nestedMapper = mapperClassName(extractSchemaNameFromStrictClass(valType.strictDtoClass()));
-      return "        ." + f.mapperMethod() + "(" + accessor + " == null ? null : "
-          + accessor + ".entrySet().stream().collect(java.util.stream.Collectors.toMap("
-          + "java.util.Map.Entry::getKey, e -> " + nestedMapper + ".toProtocol(e.getValue()))))";
-    }
-    return "        ." + f.mapperMethod() + "(" + accessor + ")";
-  }
-
   private static String extractSchemaNameFromStrictClass(String strictDtoClass) {
     // "GeneratedFooStrictContract" → "Foo"
     var name = strictDtoClass;
@@ -2327,22 +2088,6 @@ public final class %s {
       return name + "Result";
     }
     return name;
-  }
-
-  private static String extractNestedSchemaName(ContractField f) {
-    if (f.hasStrictObjectType()) {
-      return extractSchemaNameFromStrictClass(f.typeInfo().strictDtoClass());
-    }
-    if (f.hasStrictListType()) {
-      final var et = f.typeInfo().elementType();
-      if (et != null && et.strictDtoClass() != null) {
-        return extractSchemaNameFromStrictClass(et.strictDtoClass());
-      }
-    }
-    if (f.hasStrictMapValueType()) {
-      return extractSchemaNameFromStrictClass(f.typeInfo().elementType().strictDtoClass());
-    }
-    return null;
   }
 
   private static Map<SchemaKey, SchemaDef> loadSchemas(Path specDir) throws IOException {
@@ -2835,27 +2580,6 @@ public final class %s {
     return resolveRefTypeInfo(ref, currentFile, allSchemas, resolvingStack).javaType();
   }
 
-  /**
-   * Checks if a node (or its resolved $ref target) has format: uri or format: uri-reference. The
-   * protocol model generates java.net.URI for these, but the strict contract uses String.
-   */
-  private static boolean isUriFormat(
-      Node node, String currentFile, Map<SchemaKey, SchemaDef> allSchemas) {
-    final var format = node.format();
-    if ("uri".equals(format) || "uri-reference".equals(format)) {
-      return true;
-    }
-    if (node.ref() != null) {
-      final var key = toSchemaKey(node.ref(), currentFile);
-      final var target = allSchemas.get(key);
-      if (target != null) {
-        final var targetFormat = target.node().format();
-        return "uri".equals(targetFormat) || "uri-reference".equals(targetFormat);
-      }
-    }
-    return false;
-  }
-
   private static boolean isLongKeySemantic(
       Node node,
       String currentFile,
@@ -3198,7 +2922,6 @@ public final class %s {
       boolean longKeyCoercion,
       boolean hasInlineEnum,
       boolean hasUniqueItems,
-      boolean hasMapperFieldIncompatibility,
       TypeInfo typeInfo,
       Constraints constraints,
       List<String> inlineEnumValues,
