@@ -73,7 +73,7 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
           parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
-          docsLinkPath="/components/identity/mapping-rules/"
+          docsLinkPath="/components/admin/mapping-rules/"
         />
         {assignMappingRulesModal}
       </>

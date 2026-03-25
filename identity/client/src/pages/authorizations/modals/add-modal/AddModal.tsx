@@ -171,10 +171,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       <div>
         <Translate i18nKey="createAuthorizationIntroduction">
           Grant an owner access to a resource with specific permissions.{" "}
-          <DocumentationLink
-            path="/components/identity/authorization/"
-            withIcon
-          >
+          <DocumentationLink path="/components/admin/authorization/" withIcon>
             Learn more
           </DocumentationLink>{" "}
           .
