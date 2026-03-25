@@ -92,7 +92,8 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-          version: 17.2.2
+          proxy: camunda.teleport.sh:443
+          version: auto
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2
         with:
