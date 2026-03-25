@@ -12,8 +12,6 @@
 import {defineConfig, type PluginOption} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
-import license from 'rollup-plugin-license';
-import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 
 const plugins: PluginOption[] = [react(), svgr()];
@@ -59,14 +57,6 @@ export default defineConfig(({mode}) => ({
         index:
           mode === 'visual-regression' ? './index.html' : './index.prod.html',
       },
-      plugins: license({
-        thirdParty: {
-          output: path.resolve(
-            __dirname,
-            `./${outDir}/assets/vendor.LICENSE.txt`,
-          ),
-        },
-      }),
     },
   },
   resolve: {
