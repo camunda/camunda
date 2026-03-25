@@ -15,4 +15,5 @@ public record CachedProcessEntity(
     int version,
     String versionTag,
     List<String> callElementIds,
-    Map<String, String> flowNodesMap) {}
+    Map<String, String> flowNodesMap,
+    boolean hasUserTasks) {}
