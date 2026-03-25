@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, StrictMode } from "react";
+import { FC, StrictMode, useEffect } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { getBaseUrl } from "./configuration";
 import AppRoot from "./components/global/AppRoot";
@@ -16,28 +16,35 @@ import Forbidden from "src/pages/forbidden/index.tsx";
 import { NotificationProvider } from "src/components/notifications";
 import { Paths } from "src/components/global/routePaths";
 import { SetupPage } from "src/pages/setup/SetupPage";
+import { cleanServiceWorkers } from "src/utility/cleanServiceWorkers.ts";
 
-const App: FC = () => (
-  <BrowserRouter basename={getBaseUrl()}>
-    <StrictMode>
-      <NotificationProvider>
-        <Routes>
-          <Route key="setup" path={Paths.setup()} Component={SetupPage} />
-          <Route key="login" path={Paths.login()} Component={LoginPage} />
-          <Route path={Paths.forbidden()} element={<Forbidden />} />
-          <Route
-            key="identity-ui"
-            path="*"
-            element={
-              <AppRoot>
-                <GlobalRoutes />
-              </AppRoot>
-            }
-          />
-        </Routes>
-      </NotificationProvider>
-    </StrictMode>
-  </BrowserRouter>
-);
+const App: FC = () => {
+  useEffect(() => {
+    void cleanServiceWorkers();
+  });
+
+  return (
+    <BrowserRouter basename={getBaseUrl()}>
+      <StrictMode>
+        <NotificationProvider>
+          <Routes>
+            <Route key="setup" path={Paths.setup()} Component={SetupPage} />
+            <Route key="login" path={Paths.login()} Component={LoginPage} />
+            <Route path={Paths.forbidden()} element={<Forbidden />} />
+            <Route
+              key="identity-ui"
+              path="*"
+              element={
+                <AppRoot>
+                  <GlobalRoutes />
+                </AppRoot>
+              }
+            />
+          </Routes>
+        </NotificationProvider>
+      </StrictMode>
+    </BrowserRouter>
+  );
+};
 
 export default App;
