@@ -21,7 +21,7 @@ public class Metrics {
       Set.of("zeebe.broker.executionMetricsExporterEnabled");
 
   /** Controls whether to collect metrics about actor usage such as actor job execution latencies */
-  private boolean actor = true;
+  private boolean actor = false;
 
   /** Enable exporter execution metrics */
   private boolean enableExporterExecutionMetrics;

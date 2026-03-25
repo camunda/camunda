@@ -888,7 +888,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     jfr: null # Type: Boolean, Env: CAMUNDA_MONITORING_JFR
     metrics: # Type: io.camunda.configuration.Metrics
       # Controls whether to collect metrics about actor usage such as actor job execution latencies
-      actor: true # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ACTOR
+      actor: false # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ACTOR
       # Enable exporter execution metrics
       enable-exporter-execution-metrics: false # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ENABLEEXPORTEREXECUTIONMETRICS
       job-metrics: # Type: io.camunda.configuration.JobMetricsConfig
