@@ -535,17 +535,7 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert withSemanticSimilarityConfig(
       final UnaryOperator<SemanticSimilarityConfig> modifier) {
-    if (modifier == null) {
-      throw new IllegalArgumentException("modifier must not be null");
-    }
-    final SemanticSimilarityConfig currentConfig = variableAssertj.getSemanticSimilarityConfig();
-    final SemanticSimilarityConfig baseConfig =
-        currentConfig != null ? currentConfig : SemanticSimilarityConfig.defaults();
-    final SemanticSimilarityConfig modifiedConfig = modifier.apply(baseConfig);
-    if (modifiedConfig == null) {
-      throw new IllegalArgumentException("modifier must not return null");
-    }
-    variableAssertj.setSemanticSimilarityConfig(modifiedConfig);
+    variableAssertj.withSemanticSimilarityConfig(modifier);
     return this;
   }
 

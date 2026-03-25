@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
  * Reusable component that provides semantic similarity evaluation capabilities. Intended to be
  * composed into assertion classes that need embedding-based evaluation.
  */
-class SemanticSimilarityAssertj {
+public class SemanticSimilarityAssertj {
 
   private static final Logger LOG = LoggerFactory.getLogger(SemanticSimilarityAssertj.class);
 
   private SemanticSimilarityConfig config;
 
-  SemanticSimilarityAssertj(final SemanticSimilarityConfig config) {
+  public SemanticSimilarityAssertj(final SemanticSimilarityConfig config) {
     this.config = config;
   }
 
@@ -46,7 +46,7 @@ class SemanticSimilarityAssertj {
    *
    * @param modifier function that transforms the current config
    */
-  void withSemanticSimilarityConfig(final UnaryOperator<SemanticSimilarityConfig> modifier) {
+  public void withSemanticSimilarityConfig(final UnaryOperator<SemanticSimilarityConfig> modifier) {
     if (modifier == null) {
       throw new IllegalArgumentException("modifier must not be null");
     }
@@ -64,7 +64,7 @@ class SemanticSimilarityAssertj {
    *
    * @throws IllegalStateException if the config or its embedding model is null
    */
-  void assertSimilarityHasAllRequiredSettings() {
+  public void assertSimilarityHasAllRequiredSettings() {
     if (config == null) {
       throw new IllegalStateException(
           "SemanticSimilarityConfig is not set. Ensure to provide a SemanticSimilarityConfig instance to use similarity assertions.");
@@ -85,7 +85,7 @@ class SemanticSimilarityAssertj {
    *     "Value "} for standalone, or {@code "Process instance [1] variable 'myVar' "} for variable
    *     assertions), used to produce contextual failure messages
    */
-  void evaluateSimilarity(
+  public void evaluateSimilarity(
       final String expectedValue, final String actualValue, final String subject) {
     final SimilarityEvaluation evaluation =
         new SimilarityEvaluation(

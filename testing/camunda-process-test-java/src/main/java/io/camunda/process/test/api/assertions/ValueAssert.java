@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.assertions;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import java.util.function.UnaryOperator;
 
 /** The assertion object to evaluate raw string-based values. */
@@ -38,4 +39,24 @@ public interface ValueAssert {
    * @return this assertion object
    */
   ValueAssert satisfiesJudge(String expectation);
+
+  /**
+   * Modifies the {@link SemanticSimilarityConfig} for subsequent similarity assertions in this
+   * chain. The modifier receives the current config and returns a new one. Does not affect the
+   * global config.
+   *
+   * @param modifier a function to apply to the current similarity config; must not be null and must
+   *     not return null
+   * @return this assertion object
+   */
+  ValueAssert withSemanticSimilarityConfig(UnaryOperator<SemanticSimilarityConfig> modifier);
+
+  /**
+   * Verifies that the actual value is semantically similar to the given expected value using text
+   * embeddings. Fails if the similarity score is below the configured threshold.
+   *
+   * @param expectedValue the expected value to compare against
+   * @return this assertion object
+   */
+  ValueAssert isSimilarTo(String expectedValue);
 }

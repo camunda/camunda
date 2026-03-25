@@ -443,7 +443,7 @@ public class CamundaAssert {
    * @return the assertion object
    */
   public static ValueAssert assertThatValue(final String actual) {
-    return new ValueAssertj(actual, judgeConfig);
+    return new ValueAssertj(actual, judgeConfig, semanticSimilarityConfig);
   }
 
   // ======== Internal ========
