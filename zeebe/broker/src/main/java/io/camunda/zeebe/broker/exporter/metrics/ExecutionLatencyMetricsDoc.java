@@ -54,19 +54,21 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
   PROCESS_INSTANCE_EXECUTION {
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(50),
-      Duration.ofMillis(75),
       Duration.ofMillis(100),
       Duration.ofMillis(250),
       Duration.ofMillis(500),
-      Duration.ofMillis(750),
       Duration.ofSeconds(1),
-      Duration.ofMillis(2500),
+      Duration.ofSeconds(2),
       Duration.ofSeconds(5),
       Duration.ofSeconds(10),
-      Duration.ofSeconds(15),
       Duration.ofSeconds(30),
-      Duration.ofSeconds(45),
-      Duration.ofMinutes(1)
+      Duration.ofMinutes(1),
+      Duration.ofMinutes(5),
+      Duration.ofMinutes(10),
+      Duration.ofMinutes(30),
+      Duration.ofHours(1),
+      Duration.ofHours(6),
+      Duration.ofHours(24),
     };
 
     @Override
