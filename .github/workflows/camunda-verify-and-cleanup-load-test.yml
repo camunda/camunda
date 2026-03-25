@@ -20,7 +20,7 @@ jobs:
   verify-and-cleanup:
     name: Verify and cleanup
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: 'read'
       id-token: 'write'
