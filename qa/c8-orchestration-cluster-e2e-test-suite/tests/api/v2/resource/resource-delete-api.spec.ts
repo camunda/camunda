@@ -15,6 +15,7 @@ import {
   jsonHeaders,
   assertNotFoundRequest,
   assertBadRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {deployResourceAndGetMetadata} from '@requestHelpers';
 
@@ -37,7 +38,7 @@ test.describe.parallel('Resource Delete API', () => {
       },
     );
 
-    await assertStatusCode(res, 204);
+    await assertStatusCode(res, isForwardCompat ? 200 : 204);
   });
 
   test('Delete Resource - Not Found 404', async ({request}) => {

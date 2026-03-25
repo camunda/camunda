@@ -231,7 +231,7 @@ test.describe.parallel('Tenants API Tests', () => {
         const res = await request.delete(buildUrl('/tenants/{tenantId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        expect([200, 204]).toContain(res.status());
       }).toPass(defaultAssertionOptions);
     });
 

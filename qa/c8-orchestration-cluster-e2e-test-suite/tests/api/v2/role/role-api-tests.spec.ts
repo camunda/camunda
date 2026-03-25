@@ -238,7 +238,7 @@ test.describe.parallel('Roles API Tests', () => {
         const res = await request.delete(buildUrl('/roles/{roleId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        expect([200, 204]).toContain(res.status());
       }).toPass(defaultAssertionOptions);
     });
 

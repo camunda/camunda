@@ -16,6 +16,7 @@ import {
   assertNotFoundRequest,
   encode,
   assertForbiddenRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -856,7 +857,9 @@ test.describe.parallel('Update Authorization API', () => {
       );
       await assertBadRequest(
         authRes,
-        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, MAPPING_RULE, MESSAGE, BATCH, COMPONENT, SYSTEM, TENANT, RESOURCE, PROCESS_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DECISION_DEFINITION, GROUP, USER, ROLE, DOCUMENT]",
+        isForwardCompat
+          ? "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'"
+          : "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, MAPPING_RULE, MESSAGE, BATCH, COMPONENT, SYSTEM, TENANT, RESOURCE, PROCESS_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DECISION_DEFINITION, GROUP, USER, ROLE, DOCUMENT]",
       );
     });
   });

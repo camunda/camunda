@@ -14,6 +14,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
@@ -182,7 +183,9 @@ test.describe.parallel('Search Batch Operation Tests', () => {
 
     await assertBadRequest(
       res,
-      "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [batchOperationKey, operationType, state, startDate, endDate]",
+      isForwardCompat
+        ? "Unexpected value 'unknownField' for enum field 'field'"
+        : "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [batchOperationKey, operationType, state, startDate, endDate]",
     );
   });
 });
