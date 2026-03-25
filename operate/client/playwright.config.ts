@@ -15,7 +15,7 @@ import playwrightPkg from '@playwright/test/package.json' with {type: 'json'};
 
 const IS_CI = Boolean(process.env.CI);
 const IS_E2E = Boolean(process.env.IS_E2E);
-const BASE_URL = `http://localhost:${IS_E2E ? 8080 : 3003}/operate`;
+const BASE_URL = `http://localhost:${IS_E2E ? 8080 : 3003}/operate/`;
 const USE_CONTAINERIZED_BROWSER =
   !IS_CI && Boolean(process.env.CONTAINERIZED_BROWSER);
 
@@ -24,7 +24,7 @@ const webServer: PlaywrightTestConfig['webServer'] = [];
 if (!IS_E2E) {
   webServer.push({
     name: 'SPA Server',
-    command: 'npx vite preview --port 3003',
+    command: 'npx vite preview',
     stdout: 'pipe',
     stderr: 'pipe',
     url: BASE_URL,
