@@ -15,7 +15,7 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import {notificationsStore} from 'modules/stores/notifications';
 import {Paths} from 'modules/Routes';
 import {createProcessInstance, searchResult} from 'modules/testUtils';
-import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {

@@ -28,7 +28,7 @@ import type {
   ElementInstance,
   ProcessInstance,
   SequenceFlow,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';

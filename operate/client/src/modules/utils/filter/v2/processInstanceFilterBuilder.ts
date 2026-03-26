@@ -12,7 +12,7 @@ import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import type {RequestFilters} from 'modules/utils/filter';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
-import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {getElementInstanceStateFilter} from './getElementInstanceStateFilter';
 

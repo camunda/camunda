@@ -12,7 +12,7 @@ import {queryKeys} from '../queryKeys';
 import type {
   GetIncidentProcessInstanceStatisticsByErrorRequestBody,
   GetIncidentProcessInstanceStatisticsByErrorResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const PAGE_LIMIT = 50;
 const PAGES_LIMIT = 5;

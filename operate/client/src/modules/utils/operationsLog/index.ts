@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {
   AuditLog,
   AuditLogOperationType,
-} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Api, User} from '@carbon/react/icons';
 import {Paths} from 'modules/Routes';

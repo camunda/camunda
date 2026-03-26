@@ -21,7 +21,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {Paths} from 'modules/Routes';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const selectedElementInstance: ElementInstance = {
   elementInstanceKey: '2',

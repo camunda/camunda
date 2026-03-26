@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../../mockRequest';
-import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const mockSearchVariables = (contextPath = '') =>
   mockPostRequest<QueryVariablesResponseBody>(

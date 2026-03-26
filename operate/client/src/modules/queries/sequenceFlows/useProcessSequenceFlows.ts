@@ -8,7 +8,7 @@
 
 import {fetchProcessSequenceFlows} from 'modules/api/v2/processInstances/sequenceFlows';
 import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
-import type {GetProcessInstanceSequenceFlowsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {GetProcessInstanceSequenceFlowsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {RequestError} from 'modules/request';
 import {queryKeys} from '../queryKeys';
 

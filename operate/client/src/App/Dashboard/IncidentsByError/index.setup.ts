@@ -9,7 +9,7 @@
 import type {
   IncidentProcessInstanceStatisticsByDefinition,
   IncidentProcessInstanceStatisticsByError,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchResult} from 'modules/testUtils';
 
 const bigErrorMessage =

@@ -11,7 +11,7 @@ import {
   type DecisionInstanceState,
   type QueryDecisionDefinitionsRequestBody,
   type QueryDecisionInstancesRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import z from 'zod';
 import {formatToISO} from '../date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '.';

@@ -7,7 +7,7 @@
  */
 
 import {getDiagramNameByProcessDefinition} from './getDiagramNameByProcessDefinition';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 
 describe('getDiagramNameByProcessDefinition', () => {
   it('returns formatted name with version', () => {

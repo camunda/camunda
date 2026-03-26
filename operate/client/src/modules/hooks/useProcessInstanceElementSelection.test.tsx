@@ -14,7 +14,7 @@ import {Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const mockElementInstance: ElementInstance = {
   elementInstanceKey: '2251799813699889',

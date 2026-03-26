@@ -7,7 +7,7 @@
  */
 
 import type {Route} from '@playwright/test';
-import {type QueryAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type QueryAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function mockResponses({auditLogs}: {auditLogs?: QueryAuditLogsResponseBody}) {
   return (route: Route) => {

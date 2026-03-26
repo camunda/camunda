@@ -11,7 +11,7 @@ import {type CarbonIconType, Error, UnknownFilled} from '@carbon/react/icons';
 import type {
   DecisionInstanceState,
   ProcessInstanceState,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const stateIconsMap = {
   FAILED: WarningFilled,

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {modificationsStore} from 'modules/stores/modifications';

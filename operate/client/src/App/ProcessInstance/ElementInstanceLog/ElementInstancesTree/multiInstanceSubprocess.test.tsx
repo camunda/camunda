@@ -18,7 +18,7 @@ import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fe
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const diagramModel = await parseDiagramXML(multiInstanceProcess);
 const businessObjects = businessObjectsParser({diagramModel});

@@ -9,7 +9,7 @@
 import {
   endpoints,
   type UpdateJobRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from 'modules/request';
 
 const updateJob = (

@@ -11,7 +11,7 @@ import {useProcessInstancesPaginated} from 'modules/queries/processInstance/useP
 import type {
   ProcessInstance,
   QueryProcessInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {InstancesTable} from './index';

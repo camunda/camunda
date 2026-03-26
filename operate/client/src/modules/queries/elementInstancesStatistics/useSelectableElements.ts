@@ -7,7 +7,7 @@
  */
 
 import {useElementInstancesStatistics} from './useElementInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const selectableElementsParser = (
   response: GetProcessInstanceStatisticsResponseBody,

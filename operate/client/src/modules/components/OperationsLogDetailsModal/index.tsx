@@ -32,7 +32,7 @@ import {
   IconTextWithTopMargin,
   SecondColumn,
 } from './styled';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {

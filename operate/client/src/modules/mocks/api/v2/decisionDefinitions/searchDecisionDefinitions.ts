@@ -10,7 +10,7 @@ import {mockPostRequest} from '../../mockRequest';
 import {
   endpoints,
   type QueryDecisionDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const mockSearchDecisionDefinitions = (contextPath = '') =>
   mockPostRequest<QueryDecisionDefinitionsResponseBody>(

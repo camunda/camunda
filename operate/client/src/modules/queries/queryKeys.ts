@@ -23,7 +23,7 @@ import type {
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   Variable,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const queryKeys = {
   variables: {

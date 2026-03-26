@@ -7,7 +7,7 @@
  */
 
 import {Modal} from '@carbon/react';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Paths} from 'modules/Routes';
 import {Link} from 'modules/components/Link';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';

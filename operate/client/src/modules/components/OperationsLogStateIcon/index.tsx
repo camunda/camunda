@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {type AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import {type AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {CheckmarkOutline, ErrorOutline} from './styled';
 
 const stateIconsMap = {

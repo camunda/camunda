@@ -13,7 +13,7 @@ import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   PROCESS_DEFINITION_ID,
   PROCESS_DEFINITION_KEY,

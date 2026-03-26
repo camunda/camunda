@@ -11,7 +11,7 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {
   queryIncidentsRequestBodySchema,
   type Incident,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useSearchParams} from 'react-router-dom';
 import {parseSortParamsV2} from 'modules/utils/filter';

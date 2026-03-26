@@ -16,7 +16,7 @@ import {InstancesBar} from 'modules/components/InstancesBar';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionVersionStatistics';
 import {InlineLoading} from '@carbon/react';
-import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 

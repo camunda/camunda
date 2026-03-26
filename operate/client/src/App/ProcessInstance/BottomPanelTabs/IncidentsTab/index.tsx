@@ -10,7 +10,7 @@ import {observer} from 'mobx-react';
 import {
   type Incident,
   type QueryIncidentsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useEnhancedIncidents, useIncidentsSort} from 'modules/hooks/incidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';

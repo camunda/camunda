@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {OperationLogName} from '../styled';
 
