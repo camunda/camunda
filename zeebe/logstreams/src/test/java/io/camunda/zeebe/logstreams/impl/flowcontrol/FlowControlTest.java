@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -31,6 +32,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -119,6 +121,43 @@ public class FlowControlTest {
     assertThat(permits).first().satisfies(first -> EitherAssert.assertThat(first).isRight());
     assertThat(permits.subList(1, permits.size()))
         .allSatisfy(permit -> EitherAssert.assertThat(permit).isRight());
+  }
+
+  @Test
+  void shouldReduceRequestLimitWhenRingBufferWrapsAround() {
+    // given — small ring buffer so wraparound happens quickly
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var requestLimit =
+        StabilizingAIMDLimit.newBuilder().initialLimit(100).backoffRatio(0.9).build();
+    final var fc = new FlowControl(metrics, requestLimit, RateLimit.disabled(), /* capacity= */ 4);
+    final var intent = ProcessInstanceCreationIntent.CREATE;
+    final var context = new UserCommand(intent);
+
+    // when — acquire and register more entries than the ring buffer capacity
+    // without processing any, so wraparound displaces unprocessed entries
+    for (int i = 0; i < 8; i++) {
+      final var result =
+          fc.tryAcquire(
+              context,
+              List.of(
+                  LogAppendEntry.of(
+                      new RecordMetadata()
+                          .recordType(RecordType.COMMAND)
+                          .valueType(ValueType.PROCESS_INSTANCE_CREATION)
+                          .intent(intent),
+                      new UnifiedRecordValue(0))));
+      if (result.isRight()) {
+        fc.registerEntry(i + 1, result.get());
+      }
+    }
+
+    // then — displaced entries called onDropped, which should reduce the AIMD limit
+    // 4 entries are displaced, each calling onDropped which applies backoffRatio (0.9):
+    // 100 → 90 → 81 → 72 → 64
+    assertThat(requestLimit.getLimit())
+        .as("request limit should decrease due to displaced entries calling onDropped")
+        .isLessThanOrEqualTo(65);
   }
 
   private List<Either<FlowControl.Rejection, InFlightEntry>> acquireMultiplePermits(
