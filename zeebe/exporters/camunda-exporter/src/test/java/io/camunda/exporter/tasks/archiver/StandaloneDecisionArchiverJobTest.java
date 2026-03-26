@@ -13,7 +13,6 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
-import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -35,7 +34,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
   private final TestRepository repository = new TestRepository();
   private final DecisionInstanceTemplate decisionInstanceTemplate =
       new DecisionInstanceTemplate("", true);
-  private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
+  private final WeirdlyNamedDependant dependantTemplate = new WeirdlyNamedDependant();
 
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
@@ -47,7 +46,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
           metrics,
           LOGGER,
           executor,
-          List.of(auditLogTemplate));
+          List.of(dependantTemplate));
 
   @BeforeEach
   void setUp() {
@@ -114,9 +113,9 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     assertThat(repository.moves)
         .containsExactly(
             new DocumentMove(
-                auditLogTemplate.getFullQualifiedName(),
-                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
-                Map.of(auditLogTemplate.getDecisionDependantField(), List.of("1", "2", "3")),
+                dependantTemplate.getFullQualifiedName(),
+                dependantTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(dependantTemplate.getDecisionDependantField(), List.of("1", "2", "3")),
                 executor),
             new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
@@ -139,7 +138,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     assertThat(repository.moves)
         .map(DocumentMove::sourceIndexName)
         .containsExactly(
-            auditLogTemplate.getFullQualifiedName(),
+            dependantTemplate.getFullQualifiedName(),
             decisionInstanceTemplate.getFullQualifiedName());
   }
 
