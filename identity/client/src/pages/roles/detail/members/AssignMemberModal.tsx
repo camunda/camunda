@@ -15,7 +15,7 @@ import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
-import type { Role, User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Role, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<

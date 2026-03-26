@@ -11,7 +11,7 @@ import { usePaginatedApi } from "src/utility/api";
 import { searchTenant } from "src/utility/api/tenants";
 import { Dropdown } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export type TenantDropdownProps = {
   tenantId: string | undefined;

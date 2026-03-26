@@ -13,7 +13,7 @@ import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
-import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignGroupModal: FC<
   UseEntityModalCustomProps<

@@ -16,7 +16,7 @@ import TextField from "src/components/form/TextField";
 import { useNotifications } from "src/components/notifications";
 import { DocumentationLink } from "src/components/documentation";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
-import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<

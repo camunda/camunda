@@ -12,11 +12,11 @@ import type {
   ResourceType,
   QueryAuthorizationsRequestBody,
   QueryAuthorizationsResponseBody,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import {
   resourceTypeSchema,
   ownerTypeSchema,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
 
 export const AUTHORIZATIONS_ENDPOINT = "/authorizations";

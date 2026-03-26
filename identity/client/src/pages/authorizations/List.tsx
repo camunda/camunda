@@ -25,7 +25,7 @@ import {
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
 import { isTenantsApiEnabled } from "src/configuration";
-import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");

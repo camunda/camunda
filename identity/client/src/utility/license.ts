@@ -8,7 +8,7 @@
 
 import { checkLicense } from "src/utility/api/headers";
 import { useApi } from "src/utility/api";
-import type { License } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { License } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export function useLicense(): License | null {
   const { data } = useApi(checkLicense);

@@ -14,7 +14,7 @@ import { useNotifications } from "src/components/notifications";
 import { updateGroup } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { isValidId } from "src/utility/validate.ts";
-import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const EditModal: FC<UseEntityModalProps<Group>> = ({
   entity: group,

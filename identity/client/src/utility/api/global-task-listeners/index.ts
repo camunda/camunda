@@ -12,8 +12,8 @@ import type {
   QueryGlobalTaskListenersRequestBody,
   QueryGlobalTaskListenersResponseBody,
   CreateGlobalTaskListenerRequestBody,
-} from "@camunda/camunda-api-zod-schemas/8.9";
-import { globalTaskListenerEventTypeSchema } from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
+import { globalTaskListenerEventTypeSchema } from "@camunda/camunda-api-zod-schemas/8.10";
 import {
   ApiDefinition,
   apiDelete,

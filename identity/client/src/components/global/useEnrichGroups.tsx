@@ -15,7 +15,7 @@ import type {
   QueryGroupsResponseBody,
   QueryGroupsByRoleResponseBody,
   Group,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 type UseEnrichedGroupsResult = {
   groups: Group[];

@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export type PageSearchParams = {
   page: QueryPage;

@@ -14,7 +14,10 @@ import { assignGroupClient } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import type { Group, TenantClient } from "@camunda/camunda-api-zod-schemas/8.9";
+import type {
+  Group,
+  TenantClient,
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignClientsModal: FC<
   UseEntityModalProps<{ groupId: Group["groupId"] }>

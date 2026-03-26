@@ -18,7 +18,7 @@ import { useState } from "react";
 import { isSaaS } from "src/configuration";
 import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
-import type { License } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { License } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const LOGOUT_DELAY = 1000;
 
