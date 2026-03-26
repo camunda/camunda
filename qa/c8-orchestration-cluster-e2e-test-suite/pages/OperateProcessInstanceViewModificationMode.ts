@@ -98,9 +98,9 @@ export class OperateProcessInstanceViewModificationModePage {
     this.cancelAllButtonPopup = page.getByRole('button', {
       name: /Cancel all running (flow node|element) instances in this (flow node|element)/i,
     });
-    this.reviewModificationsButton = page.getByTestId(
-      'review-modifications-button',
-    );
+    this.reviewModificationsButton = page.getByRole('button', {
+      name: /Apply Modifications|Review Modifications/,
+    });
     this.discardAllModificationsButton = page.getByTestId('discard-all-button');
     this.cancelButtonModificationDialog = page
       .getByRole('dialog')
