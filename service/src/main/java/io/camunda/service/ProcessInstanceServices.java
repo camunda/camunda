@@ -326,18 +326,14 @@ public final class ProcessInstanceServices
       brokerRequest.setOperationReference(request.operationReference());
     }
 
-    if (request.businessId() != null) {
-      if (request.requestTimeout() != null && request.requestTimeout() > 0) {
-        return sendRequestWithRetryPartitions(
-            brokerRequest, authentication, Duration.ofMillis(request.requestTimeout()));
-      }
-      return sendRequestWithRetryPartitions(brokerRequest, authentication);
-    }
-
     final Duration timeout =
         request.requestTimeout() != null && request.requestTimeout() > 0
             ? Duration.ofMillis(request.requestTimeout())
             : null;
+    if (request.businessId() != null) {
+      return sendRequestWithRetryPartitions(brokerRequest, authentication, timeout);
+    }
+
     return sendWithPerProcessRoundRobin(
         brokerRequest, request.bpmnProcessId(), authentication, timeout);
   }
