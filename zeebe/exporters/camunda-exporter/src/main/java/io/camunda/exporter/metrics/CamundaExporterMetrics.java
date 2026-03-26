@@ -287,6 +287,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
         .register(meterRegistry);
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public CloseableSilently measureFlushDuration() {
     return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
   }

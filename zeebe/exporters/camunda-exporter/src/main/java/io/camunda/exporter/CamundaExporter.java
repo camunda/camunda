@@ -154,7 +154,7 @@ public class CamundaExporter implements Exporter {
 
     if (writer != null) {
       try {
-        flush();
+        flush("close");
         writer = null;
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
@@ -194,7 +194,7 @@ public class CamundaExporter implements Exporter {
     lastPosition = record.getPosition();
 
     if (shouldFlush()) {
-      flush();
+      flush("export");
     }
   }
 
@@ -321,10 +321,11 @@ public class CamundaExporter implements Exporter {
   }
 
   private void flushAndReschedule() {
+    metrics.getMeterRegistry().counter("camunda_exporter_flush_reschedule").increment();
     final var now = context.clock().millis();
     try {
       if (now - lastFlushTimestamp >= flushDelayMs) {
-        flush();
+        flush("scheduled");
       }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
@@ -332,7 +333,8 @@ public class CamundaExporter implements Exporter {
     scheduleDelayedFlush(now);
   }
 
-  private void flush() {
+  private void flush(final String reason) {
+    metrics.getMeterRegistry().counter("camunda_exporter_flush", "reason", reason).increment();
     if (writer.getBatchSize() > 0) {
       try (final var ignored = metrics.measureFlushDuration()) {
         metrics.recordBulkSize(writer.getBatchSize());
