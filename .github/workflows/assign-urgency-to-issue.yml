@@ -253,7 +253,7 @@ jobs:
           #   Likelihood →     low        mid        high
           #   Severity ↓
           #   low              someday    someday    someday
-          #   mid              someday    planned    planned
+          #   mid              someday    planned    next
           #   high             planned    next       next
           #   critical         immediate  immediate  immediate
           #
@@ -262,10 +262,10 @@ jobs:
             low_low|low_mid|low_high|mid_low)
               URGENCY="someday"
               ;;
-            mid_mid|mid_high|high_low)
+            mid_mid|high_low)
               URGENCY="planned"
               ;;
-            high_mid|high_high)
+            mid_high|high_mid|high_high)
               URGENCY="next"
               ;;
             critical_low|critical_mid|critical_high)
