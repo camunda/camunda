@@ -1,0 +1,229 @@
+# description: Runs release load tests daily on main and all active stable branches.
+#              Each stable branch has a hardcoded release tag that must be updated when new releases are published.
+#              Replaces the scheduled trigger previously in camunda-release-load-test.yaml.
+# type: CI
+# owner: @camunda/reliability-testing
+name: Scheduled Camunda Release Load Tests
+on:
+  schedule:
+    - cron: '0 4 * * *' # every day at 04:00 UTC
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+jobs:
+  # Stable branch load tests — one job per active branch.
+  # Patch releases (e.g., 8.8.17 -> 8.8.18) do NOT require updates — the existing tag remains valid.
+  #
+  # When to update:
+  # - A new minor version is released (e.g., 8.10): add a new job and update verify-and-cleanup/notify
+  # - A stable branch is deprecated: remove the corresponding job and update verify-and-cleanup/notify
+  release-load-test-8-6:
+    name: Release load test (stable/8.6)
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.6
+    secrets: inherit
+    with:
+      name: schedule-release-8-6-x
+      tag: '8.6.38'
+
+  release-load-test-8-7:
+    name: Release load test (stable/8.7)
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.7
+    secrets: inherit
+    with:
+      name: schedule-release-8-7-x
+      tag: '8.7.25'
+
+  release-load-test-8-8:
+    name: Release load test (stable/8.8)
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.8
+    secrets: inherit
+    with:
+      name: schedule-release-8-8-x
+      tag: '8.8.17'
+
+  release-load-test-8-9:
+    name: Release load test (stable/8.9)
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.9
+    secrets: inherit
+    with:
+      name: schedule-release-8-9-x
+      tag: '8.9.0-alpha5'
+
+  # Main branch load test — uses 8.9.0-alpha5 tag as optimize SNAPSHOT image does not exist
+  release-load-test-main:
+    name: Release load test (main)
+    uses: ./.github/workflows/camunda-release-load-test.yaml
+    secrets: inherit
+    with:
+      name: schedule-release-main
+      tag: '8.9.0-alpha5'
+
+  # Verify and cleanup jobs — one per branch, run in parallel.
+  # Each job waits for pods + gateway connectivity, then deletes the namespace.
+  verify-and-cleanup-8-6:
+    name: Verify and cleanup (stable/8.6)
+    needs: [release-load-test-8-6]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-schedule-release-8-6-x
+
+  verify-and-cleanup-8-7:
+    name: Verify and cleanup (stable/8.7)
+    needs: [release-load-test-8-7]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-schedule-release-8-7-x
+
+  verify-and-cleanup-8-8:
+    name: Verify and cleanup (stable/8.8)
+    needs: [release-load-test-8-8]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-schedule-release-8-8-x
+
+  verify-and-cleanup-8-9:
+    name: Verify and cleanup (stable/8.9)
+    needs: [release-load-test-8-9]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-schedule-release-8-9-x
+
+  verify-and-cleanup-main:
+    name: Verify and cleanup (main)
+    needs: [release-load-test-main]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-schedule-release-main
+
+  notify-on-success:
+    name: Notify on success
+    runs-on: ubuntu-latest
+    needs: [verify-and-cleanup-8-6, verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
+    if: >-
+      always() &&
+      needs.verify-and-cleanup-8-6.result == 'success' &&
+      needs.verify-and-cleanup-8-7.result == 'success' &&
+      needs.verify-and-cleanup-8-8.result == 'success' &&
+      needs.verify-and-cleanup-8-9.result == 'success' &&
+      needs.verify-and-cleanup-main.result == 'success'
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":white_check_mark: *Daily release load tests completed successfully.*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Tested versions:*\n- stable/8.6: `8.6.38` (${{ needs.verify-and-cleanup-8-6.result }})\n- stable/8.7: `8.7.25` (${{ needs.verify-and-cleanup-8-7.result }})\n- stable/8.8: `8.8.17` (${{ needs.verify-and-cleanup-8-8.result }})\n- stable/8.9: `8.9.0-alpha5` (${{ needs.verify-and-cleanup-8-9.result }})\n- main: `8.9.0-alpha5` (${{ needs.verify-and-cleanup-main.result }})"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "<https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|Workflow run>"
+                    }
+                  ]
+                }
+              ]
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify-on-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [verify-and-cleanup-8-6, verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
+    if: >-
+      always() &&
+      (needs.verify-and-cleanup-8-6.result == 'failure' ||
+      needs.verify-and-cleanup-8-7.result == 'failure' ||
+      needs.verify-and-cleanup-8-8.result == 'failure' ||
+      needs.verify-and-cleanup-8-9.result == 'failure' ||
+      needs.verify-and-cleanup-main.result == 'failure')
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Scheduled release load test verification failed:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Job results:*\n- stable/8.6: ${{ needs.verify-and-cleanup-8-6.result }}\n- stable/8.7: ${{ needs.verify-and-cleanup-8-7.result }}\n- stable/8.8: ${{ needs.verify-and-cleanup-8-8.result }}\n- stable/8.9: ${{ needs.verify-and-cleanup-8-9.result }}\n- main: ${{ needs.verify-and-cleanup-main.result }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@reliability-testing-team Please check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

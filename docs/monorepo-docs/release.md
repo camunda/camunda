@@ -40,6 +40,8 @@ Not in scope of this process are [SNAPSHOT releases](./ci.md#available-snapshot-
   * no code freeze and no release candidate build
   * source branch is `stable/${minor_version}`
 
+See [this self-updating release timeline page](pathname:///release-timeline/).
+
 ### Release Dependencies
 
 _Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers only Operate/Tasklist/Zeebe)._

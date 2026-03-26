@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN" monitorInterval="30">
+<Configuration xmlns="https://logging.apache.org/xml/ns"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://logging.apache.org/xml/ns https://logging.apache.org/xml/ns/log4j-config-2.xsd"
+  status="WARN" monitorInterval="30">
   <Properties>
-    <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
-    <Property name="log.stackdriver.serviceName">${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-optimize}</Property>
-    <Property name="log.stackdriver.serviceVersion">${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-}</Property>
+    <Property name="LOG_PATTERN" value="%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx" />
+    <Property name="log.stackdriver.serviceName" value="${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-optimize}" />
+    <Property name="log.stackdriver.serviceVersion" value="${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-}" />
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT" follow="true">
       <PatternLayout pattern="${LOG_PATTERN}"/>
     </Console>
     <Console name="Stackdriver" target="SYSTEM_OUT" follow="true">
-      <StackdriverLayout serviceName="${log.stackdriver.serviceName}"
-        serviceVersion="${log.stackdriver.serviceVersion}" />
+      <JsonTemplateLayout charset="UTF-8"
+        eventTemplateUri="classpath:logging/OptimizeStackdriverLayout.json"
+        locationInfoEnabled="true"
+        stackTraceEnabled="true"/>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-info}" />
-    <Logger name="io.camunda.optimize.upgrade" level="${env:UPGRADE_LOG_LEVEL:-info}" />
-    <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-warn}" />
+    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-INFO}" />
+    <Logger name="io.camunda.optimize.upgrade" level="${env:UPGRADE_LOG_LEVEL:-INFO}" />
+    <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-WARN}" />
 
-    <Root level="info">
+    <Root level="INFO">
       <AppenderRef ref="${env:OPTIMIZE_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>

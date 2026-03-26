@@ -37,21 +37,21 @@ jobs:
 
     - name: Get Issues for camunda/camunda@single-app (all tracked branches)
       # Tracked branches are defiened in FOSSA UI
-      uses: camunda/infra-global-github-actions/fossa/get-issues@f5807d2242ed5d143402f3ff092901ce920b01d0
+      uses: camunda/infra-global-github-actions/fossa/get-issues@3fb943d90a30daccfd2ca44e914be3ab2d7e5844
       id: single-app
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@single-app
 
     - name: Get Issues for camunda/camunda@optimize (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@f5807d2242ed5d143402f3ff092901ce920b01d0
+      uses: camunda/infra-global-github-actions/fossa/get-issues@3fb943d90a30daccfd2ca44e914be3ab2d7e5844
       id: optimize
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@optimize
 
     - name: Get Issues for camunda/camunda@c8run (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@f5807d2242ed5d143402f3ff092901ce920b01d0
+      uses: camunda/infra-global-github-actions/fossa/get-issues@3fb943d90a30daccfd2ca44e914be3ab2d7e5844
       id: c8run
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}

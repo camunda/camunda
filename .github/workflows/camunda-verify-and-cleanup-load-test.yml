@@ -1,0 +1,52 @@
+# description: Verifies a load test deployment is healthy and cleans up the namespace.
+#              Waits for all pods to be ready and checks gateway connectivity via gRPC Topology metric,
+#              then deletes the namespace regardless of verification outcome.
+# type: CI
+# owner: @camunda/reliability-testing
+name: Verify and cleanup load test
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Kubernetes namespace where the load test is deployed'
+        type: string
+        required: true
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+jobs:
+  verify-and-cleanup:
+    name: Verify and cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: teleport-actions/setup@v1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - uses: teleport-actions/auth-k8s@v2
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - uses: ./.github/actions/await-load-test
+        with:
+          namespace: ${{ inputs.namespace }}
+      - name: Delete namespace
+        if: always()
+        run: kubectl delete ns --wait=false ${{ inputs.namespace }} --ignore-not-found || true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
