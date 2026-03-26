@@ -44,6 +44,7 @@ on:
       - "tasklist/**"
       - "identity/**"
       - "optimize/**"
+      - "parent/pom.xml"
 
 # Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
 # Exception for main + stable/* branches: complete builds for every commit needed for confidence
