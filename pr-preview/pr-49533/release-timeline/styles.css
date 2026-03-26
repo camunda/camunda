@@ -1,14 +1,14 @@
 :root {
-  --ink: #111111;
-  --paper: #f7f3ea;
-  --mist: #f1ede4;
-  --accent: #d4962a;
-  --accent-dark: #8b5a17;
-  --accent-soft: rgba(212, 150, 42, 0.15);
-  --sage: #1f4e4a;
-  --plum: #3b2f2f;
+  --ink: #0c0c0c;
+  --paper: #fff8f4;
+  --mist: #fff2ea;
+  --accent: #fc5d0d;
+  --accent-dark: #c64605;
+  --accent-soft: rgba(252, 93, 13, 0.18);
+  --sage: #2a2a2a;
+  --plum: #111111;
   --line: rgba(17, 17, 17, 0.12);
-  --shadow: 0 28px 60px rgba(17, 17, 17, 0.18);
+  --shadow: 0 28px 60px rgba(12, 12, 12, 0.18);
   --radius: 20px;
 }
 
@@ -20,8 +20,8 @@ body {
   margin: 0;
   font-family: "Trebuchet MS", "Segoe UI", "DejaVu Sans", Arial, sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at 10% 10%, #fff4d4 0%, transparent 45%),
-    radial-gradient(circle at 90% 20%, #e4f0e5 0%, transparent 38%),
+  background: radial-gradient(circle at 12% 12%, #ffe7d9 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, #ffe2d2 0%, transparent 38%),
     linear-gradient(135deg, var(--paper), var(--mist));
   min-height: 100vh;
 }
@@ -60,7 +60,7 @@ body {
   font-size: 18px;
   max-width: 520px;
   margin: 0 0 28px;
-  color: #2d2d2d;
+  color: #2b1a12;
 }
 
 .hero-meta {
@@ -78,7 +78,7 @@ body {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #5b5b5b;
+  color: #5a3b2e;
 }
 
 .meta-value {
@@ -134,7 +134,7 @@ body {
 
 .card-note {
   margin: 0 0 20px;
-  color: #4a4a4a;
+  color: #4a2f23;
 }
 
 .chip-list {
@@ -149,7 +149,7 @@ body {
   background: var(--accent-soft);
   color: var(--accent-dark);
   font-weight: 600;
-  border: 1px solid rgba(212, 150, 42, 0.4);
+  border: 1px solid rgba(252, 93, 13, 0.4);
 }
 
 .branch-list {
@@ -166,7 +166,7 @@ body {
   gap: 6px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #fbf7ef;
+  background: #fff1e7;
   border: 1px solid rgba(17, 17, 17, 0.08);
 }
 
@@ -180,11 +180,11 @@ body {
   background: var(--accent-soft);
   color: var(--accent-dark);
   font-weight: 600;
-  border: 1px solid rgba(212, 150, 42, 0.4);
+  border: 1px solid rgba(252, 93, 13, 0.4);
 }
 
 .branch-note {
-  color: #4a4a4a;
+  color: #4a2f23;
   font-size: 14px;
   line-height: 1.4;
 }
@@ -210,7 +210,7 @@ body {
 
 .section-title p {
   margin: 0;
-  color: #4d4d4d;
+  color: #4a2f23;
 }
 
 .toggle-button {
@@ -218,7 +218,7 @@ body {
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid rgba(17, 17, 17, 0.12);
-  background: #fbf7ef;
+  background: #fff1e7;
   color: var(--plum);
   font-weight: 600;
   cursor: pointer;
@@ -227,7 +227,7 @@ body {
 
 .toggle-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(17, 17, 17, 0.12);
+  box-shadow: 0 10px 20px rgba(12, 12, 12, 0.12);
 }
 
 .toggle-button:focus-visible {
@@ -283,7 +283,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px 18px;
-  background: #fcfaf7;
+  background: #fff7f2;
   display: grid;
   gap: 6px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -291,7 +291,7 @@ body {
 
 .timeline-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.12);
+  box-shadow: 0 18px 40px rgba(12, 12, 12, 0.12);
 }
 
 .timeline-card h4 {
@@ -303,7 +303,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: #4b4b4b;
+  color: #4a2f23;
   font-size: 14px;
 }
 
@@ -317,14 +317,14 @@ body {
 }
 
 .timeline-item.active .timeline-card {
-  border-color: rgba(212, 150, 42, 0.5);
-  background: #fff5dc;
+  border-color: rgba(252, 93, 13, 0.45);
+  background: #ffe7d9;
 }
 
 .footer {
   text-align: center;
   font-size: 13px;
-  color: #585858;
+  color: #5a3b2e;
   margin-top: 40px;
 }
 
