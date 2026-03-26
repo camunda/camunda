@@ -166,7 +166,7 @@ public class JudgeConfigBootstrapTest {
     @Autowired private ApplicationContext applicationContext;
 
     @Test
-    void shouldBootstrapOpenAiWithDefaultSettings() {
+    void shouldBootstrapAnthropicWithDefaultSettings() {
       final JudgeConfiguration judgeConfiguration = configuration.getJudge();
 
       // verify properties binding
