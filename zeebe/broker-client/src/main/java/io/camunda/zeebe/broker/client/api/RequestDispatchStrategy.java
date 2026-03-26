@@ -14,6 +14,13 @@ import java.util.concurrent.ThreadLocalRandom;
 public interface RequestDispatchStrategy {
 
   /**
+   * Upper bound for the random initial offset. Chosen to be larger than any realistic partition
+   * count so that different gateway pods start at well-spread positions in the round-robin cycle,
+   * avoiding the thundering-herd problem on startup.
+   */
+  int MAX_RANDOM_OFFSET = 128;
+
+  /**
    * @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined
    */
   int determinePartition(final BrokerTopologyManager topologyManager);
@@ -23,6 +30,7 @@ public interface RequestDispatchStrategy {
    * starting from a random offset to avoid all gateway pods hitting the same partition first.
    */
   static RequestDispatchStrategy roundRobin() {
-    return new RoundRobinDispatchStrategy(ThreadLocalRandom.current().nextInt(128));
+    return new RoundRobinDispatchStrategy(
+        ThreadLocalRandom.current().nextInt(MAX_RANDOM_OFFSET));
   }
 }
