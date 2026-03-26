@@ -90,6 +90,7 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Context context;
   private long lastFlushTimestamp = 0L;
+  private long firstBufferedAtMs = -1L;
 
   private long flushDelayMs;
 
@@ -184,16 +185,20 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (writer.getBatchSize() == 0) {
-      metrics.startFlushLatencyMeasurement();
-    }
+    final long now = context.clock().millis();
+    final boolean wasEmpty = writer.getBatchSize() == 0;
 
     // adding record is idempotent
     writer.addRecord(record);
 
     lastPosition = record.getPosition();
 
-    if (shouldFlush()) {
+    if (wasEmpty && writer.getBatchSize() > 0) {
+      firstBufferedAtMs = now;
+      metrics.startFlushLatencyMeasurement();
+    }
+
+    if (shouldFlush(now)) {
       flush();
     }
   }
@@ -298,9 +303,17 @@ public class CamundaExporter implements Exporter {
     return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 
-  private boolean shouldFlush() {
-    return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit();
+  private boolean shouldFlush(final long now) {
+    if (writer.getBatchSize() == 0) {
+      return false;
+    }
+    if (writer.getBatchSize() >= configuration.getBulk().getSize()) {
+      return true;
+    }
+    if (writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()) {
+      return true;
+    }
+    return firstBufferedAtMs > 0 && (now - firstBufferedAtMs) >= flushDelayMs;
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -341,6 +354,7 @@ public class CamundaExporter implements Exporter {
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
         lastFlushTimestamp = context.clock().millis();
+        firstBufferedAtMs = -1L;
       } catch (final PersistenceException ex) {
         metrics.recordFailedFlush();
         throw new ExporterException(ex.getMessage(), ex);
