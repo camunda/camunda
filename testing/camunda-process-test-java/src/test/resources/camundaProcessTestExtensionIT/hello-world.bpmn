@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1lms7o5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.43.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="hello-world" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_060fnrr</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_060fnrr" sourceRef="StartEvent_1" targetRef="Activity_1i31co9" />
+    <bpmn:endEvent id="Event_1jtezno">
+      <bpmn:incoming>Flow_1lbqvjf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1lbqvjf" sourceRef="Activity_1i31co9" targetRef="Event_1jtezno" />
+    <bpmn:serviceTask id="Activity_1i31co9" name="Say hello">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="say-hello" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_060fnrr</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lbqvjf</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="hello-world">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="182" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1jtezno_di" bpmnElement="Event_1jtezno">
+        <dc:Bounds x="422" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nq09dd_di" bpmnElement="Activity_1i31co9">
+        <dc:Bounds x="270" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_060fnrr_di" bpmnElement="Flow_060fnrr">
+        <di:waypoint x="218" y="120" />
+        <di:waypoint x="270" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lbqvjf_di" bpmnElement="Flow_1lbqvjf">
+        <di:waypoint x="370" y="120" />
+        <di:waypoint x="422" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

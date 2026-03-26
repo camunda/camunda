@@ -15,19 +15,26 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.response.DecisionRequirements;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
@@ -63,50 +70,6 @@ public class CamundaProcessTestExtensionIT {
         .isActive()
         .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
-  }
-
-  @Test
-  void shouldTriggerTimerEvent() {
-    // given
-    final Duration timerDuration = Duration.ofHours(1);
-
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .name("start")
-            .userTask("A")
-            .name("A")
-            .endEvent()
-            // attach boundary timer event
-            .moveToActivity("A")
-            .boundaryEvent()
-            .timerWithDuration(timerDuration.toString())
-            .userTask()
-            .name("B")
-            .endEvent()
-            .done();
-
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
-
-    final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
-
-    // when
-    CamundaAssert.assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
-
-    final Instant timeBefore = processTestContext.getCurrentTime();
-
-    processTestContext.increaseTime(timerDuration);
-
-    final Instant timeAfter = processTestContext.getCurrentTime();
-
-    // then
-    CamundaAssert.assertThatProcessInstance(processInstance)
-        .hasTerminatedElements(byName("A"))
-        .hasActiveElements(byName("B"));
-
-    assertThat(Duration.between(timeBefore, timeAfter))
-        .isCloseTo(timerDuration, Duration.ofSeconds(10));
   }
 
   @Test
@@ -196,5 +159,180 @@ public class CamundaProcessTestExtensionIT {
     CamundaAssert.assertThatProcessInstance(processInstance)
         .hasCompletedElements(byName("task"))
         .isCompleted();
+  }
+
+  @Nested
+  class TimerEventTests {
+
+    private final Duration timerDuration = Duration.ofHours(1);
+
+    @BeforeEach
+    void deployProcess() {
+      final BpmnModelInstance process =
+          Bpmn.createExecutableProcess("process")
+              .startEvent("start")
+              .intermediateCatchEvent("timer", e -> e.timerWithDuration(timerDuration.toString()))
+              .endEvent("end")
+              .done();
+
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    }
+
+    @Test
+    void shouldIncreaseTimeAndTriggerTimerEvent() {
+      // given
+      final ProcessInstanceEvent processInstance =
+          client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+
+      // when
+      CamundaAssert.assertThatProcessInstance(processInstance).hasActiveElements(byId("timer"));
+
+      processTestContext.increaseTime(timerDuration);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstance)
+          .isCompleted()
+          .hasCompletedElements(byId("timer"));
+    }
+
+    @Test
+    void shouldSetTimeAndTriggerTimerEvent() {
+      // given
+      final ProcessInstanceEvent processInstance =
+          client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+
+      // when
+      CamundaAssert.assertThatProcessInstance(processInstance).hasActiveElements(byId("timer"));
+
+      final Instant currentTime = processTestContext.getCurrentTime();
+      processTestContext.setTime(currentTime.plus(timerDuration));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstance)
+          .isCompleted()
+          .hasCompletedElements(byId("timer"));
+    }
+  }
+
+  @Nested
+  class VariableTests {
+
+    @Test
+    void shouldAssertTruncatedVariable() {
+      // given
+      final BpmnModelInstance process =
+          Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final Map<String, Object> variables = new HashMap<>();
+      variables.put("small", "smallValue");
+      variables.put("large", createLargeStringValue());
+
+      // when
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variables(variables)
+              .send()
+              .join();
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstance).hasVariables(variables);
+
+      assertThat(
+              client.newVariableSearchRequest().filter(f -> f.name("large")).execute().singleItem())
+          .describedAs("Ensure that the variable is large enough to be truncated")
+          .satisfies(variable -> assertThat(variable.isTruncated()).isTrue());
+    }
+
+    private String createLargeStringValue() {
+      final int sizeBytes = 100 * 1024; // 100 KB
+      final char[] chars = new char[sizeBytes];
+      java.util.Arrays.fill(chars, 'x');
+      return new String(chars);
+    }
+  }
+
+  @Nested
+  class MessageEventTests {
+
+    @Test
+    public void shouldAssertMessageSubscription() {
+      // given
+      final BpmnModelInstance process =
+          Bpmn.createExecutableProcess("MoonExplorationProcess")
+              .startEvent("start")
+              .intermediateCatchEvent(
+                  "message",
+                  e ->
+                      e.message(
+                          m -> m.name("AstronautReady").zeebeCorrelationKeyExpression("astronaut")))
+              .endEvent("end")
+              .done();
+
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "MoonExplorationProcess.bpmn")
+          .send()
+          .join();
+
+      // when
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("MoonExplorationProcess")
+              .latestVersion()
+              .variable("astronaut", "Zee")
+              .send()
+              .join();
+
+      CamundaAssert.assertThatProcessInstance(processInstance)
+          .isWaitingForMessage("AstronautReady")
+          .isWaitingForMessage("AstronautReady", "Zee")
+          .isNotWaitingForMessage("AstronautReady", "Cam")
+          .isNotWaitingForMessage("ProximityAlarm");
+
+      client
+          .newCorrelateMessageCommand()
+          .messageName("AstronautReady")
+          .correlationKey("Zee")
+          .send()
+          .join();
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstance)
+          .hasCorrelatedMessage("AstronautReady")
+          .hasCorrelatedMessage("AstronautReady", "Zee");
+    }
+  }
+
+  @Nested
+  class DeploymentAnnotationTests {
+
+    @TestDeployment(
+        resources = {
+          "camundaProcessTestExtensionIT/hello-world.bpmn",
+          "camundaProcessTestExtensionIT/greeting.dmn"
+        })
+    @Test
+    void shouldDeployResources() {
+      // then
+      Awaitility.await("Wait until deployment resources are available (eventually)")
+          .untilAsserted(
+              () -> {
+                assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
+                    .extracting(ProcessDefinition::getResourceName)
+                    .describedAs("Expect the BPMN process to be deployed")
+                    .contains("camundaProcessTestExtensionIT/hello-world.bpmn");
+
+                assertThat(client.newDecisionRequirementsSearchRequest().send().join().items())
+                    .extracting(DecisionRequirements::getResourceName)
+                    .describedAs("Expect the DMN decision to be deployed")
+                    .contains("camundaProcessTestExtensionIT/greeting.dmn");
+              });
+    }
   }
 }
