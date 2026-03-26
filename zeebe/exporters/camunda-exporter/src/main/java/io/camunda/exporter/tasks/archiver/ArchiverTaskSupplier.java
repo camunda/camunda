@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.slf4j.Logger;
 
 public class ArchiverTaskSupplier<SortFieldType> {
 
@@ -29,6 +30,7 @@ public class ArchiverTaskSupplier<SortFieldType> {
   final BiFunction<String, List<String>, CompletableFuture<Long>> deleter;
 
   final Executor executor;
+  final Logger logger;
 
   final AtomicBoolean finished = new AtomicBoolean(false);
   final AtomicReference<DocIdsSearchResponse<SortFieldType>> lastSearchResponse =
@@ -44,13 +46,15 @@ public class ArchiverTaskSupplier<SortFieldType> {
           idsSupplier,
       final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer,
       final BiFunction<String, List<String>, CompletableFuture<Long>> deleter,
-      final Executor executor) {
+      final Executor executor,
+      final Logger logger) {
     this.sourceIdx = sourceIdx;
     this.destinationIdx = destinationIdx;
     this.idsSupplier = idsSupplier;
     this.reindexer = reindexer;
     this.deleter = deleter;
     this.executor = executor;
+    this.logger = logger;
   }
 
   public boolean isComplete() {
@@ -92,8 +96,8 @@ public class ArchiverTaskSupplier<SortFieldType> {
   }
 
   public void printStatus() {
-    System.out.println(
-        ">>> The archiver task supplier for "
+    logger.info(
+        "REINDEX_BY_ID >>> The archiver task supplier for "
             + sourceIdx
             + " to "
             + destinationIdx

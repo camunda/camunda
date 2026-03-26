@@ -375,15 +375,20 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             searchAfter -> searchForDocIdsBatch(sourceIndexName, keysByField, filters, searchAfter),
             this::reindexDocumentsById,
             this::deleteDocumentsById,
-            executor);
+            executor,
+            logger);
 
     final var timer = Timer.start();
     return AsyncRepeatUntil.repeatUntil(taskSupplier::getNextBatch, x -> taskSupplier.isComplete())
         .thenComposeAsync(docIds -> setIndexLifeCycle(destinationIndexName), executor)
         .thenApply(
             ignored -> {
-              System.out.println(
-                  "REINDEX COMPLETED for " + sourceIndexName + " to " + destinationIndexName);
+              logger.info(
+                  "REINDEX_BY_ID >>> REINDEX COMPLETED for "
+                      + sourceIndexName
+                      + " to "
+                      + destinationIndexName);
+
               taskSupplier.printStatus();
 
               metrics.measureArchiveIndexDuration(
