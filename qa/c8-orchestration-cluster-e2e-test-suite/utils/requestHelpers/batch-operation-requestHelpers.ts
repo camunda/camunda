@@ -64,8 +64,11 @@ export async function resumeBatchOperation(
 
 export async function createCompletedBatchOperation(
   request: APIRequestContext,
+  processDefinitionId?: string,
 ) {
-  const key = await createCancellationBatch(request);
+  const key = processDefinitionId
+    ? await createCancellationBatch(request, 3, processDefinitionId)
+    : await createCancellationBatch(request);
 
   await expect(async () => {
     const res = await request.get(buildUrl(`/batch-operations/${key}`), {
