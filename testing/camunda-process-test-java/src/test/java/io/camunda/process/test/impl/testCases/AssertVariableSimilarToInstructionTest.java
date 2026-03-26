@@ -16,11 +16,11 @@
 package io.camunda.process.test.impl.testCases;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -31,9 +31,9 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableSimilarToInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableSimilarToInstruction;
 import io.camunda.process.test.impl.testCases.instructions.AssertVariableSimilarToInstructionHandler;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,12 +48,16 @@ public class AssertVariableSimilarToInstructionTest {
 
   @Mock private CamundaProcessTestContext processTestContext;
   @Mock private CamundaClient camundaClient;
-
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private AssertionFacade assertionFacade;
+  @Mock private AssertionFacade assertionFacade;
+  @Mock private ProcessInstanceAssert processInstanceAssert;
 
   private final AssertVariableSimilarToInstructionHandler instructionHandler =
       new AssertVariableSimilarToInstructionHandler();
+
+  @BeforeEach
+  void setUp() {
+    when(assertionFacade.assertThatProcessInstance(any())).thenReturn(processInstanceAssert);
+  }
 
   @Test
   void shouldAssertGlobalVariable() {
@@ -73,9 +77,6 @@ public class AssertVariableSimilarToInstructionTest {
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert, never()).withSemanticSimilarityConfig(any());
     verify(processInstanceAssert).hasVariableSimilarTo(VARIABLE_NAME, EXPECTED_VALUE);
 
@@ -85,6 +86,8 @@ public class AssertVariableSimilarToInstructionTest {
   @Test
   void shouldAssertGlobalVariableWithThreshold() {
     // given
+    when(processInstanceAssert.withSemanticSimilarityConfig(any())).thenReturn(processInstanceAssert);
+
     final AssertVariableSimilarToInstruction instruction =
         ImmutableAssertVariableSimilarToInstruction.builder()
             .processInstanceSelector(
@@ -101,11 +104,8 @@ public class AssertVariableSimilarToInstructionTest {
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert).withSemanticSimilarityConfig(any());
-    verify(processInstanceAssert, never()).hasVariableSimilarTo(anyString(), any());
+    verify(processInstanceAssert).hasVariableSimilarTo(VARIABLE_NAME, EXPECTED_VALUE);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
@@ -129,9 +129,6 @@ public class AssertVariableSimilarToInstructionTest {
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert, never()).withSemanticSimilarityConfig(any());
     verify(processInstanceAssert)
         .hasLocalVariableSimilarTo(
@@ -143,6 +140,8 @@ public class AssertVariableSimilarToInstructionTest {
   @Test
   void shouldAssertLocalVariableWithThreshold() {
     // given
+    when(processInstanceAssert.withSemanticSimilarityConfig(any())).thenReturn(processInstanceAssert);
+
     final AssertVariableSimilarToInstruction instruction =
         ImmutableAssertVariableSimilarToInstruction.builder()
             .processInstanceSelector(
@@ -160,12 +159,10 @@ public class AssertVariableSimilarToInstructionTest {
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert).withSemanticSimilarityConfig(any());
-    verify(processInstanceAssert, never())
-        .hasLocalVariableSimilarTo(any(ElementSelector.class), anyString(), anyString());
+    verify(processInstanceAssert)
+        .hasLocalVariableSimilarTo(
+            any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTED_VALUE));
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
