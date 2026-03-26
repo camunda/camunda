@@ -12,12 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -318,11 +320,12 @@ final class CamundaExporterTest {
   @Nested
   final class CloseTest {
     @Test
-    void shouldShutdownFlushExecutorBeforeClosing() {
+    void shouldShutdownFlushExecutorBeforeClosing() throws Exception {
       // given
       final Supplier<ExecutorService> executorServiceSupplier = mock(Supplier.class);
-      final ExecutorService executorService = mock(ExecutorService.class);
-      when(executorServiceSupplier.get()).thenReturn(executorService);
+      final ExecutorService configureExecutorService = mock(ExecutorService.class);
+      final ExecutorService openExecutorService = spy(new RunImmediately());
+      when(executorServiceSupplier.get()).thenReturn(configureExecutorService, openExecutorService);
 
       exporter =
           new CamundaExporter(
@@ -339,8 +342,19 @@ final class CamundaExporterTest {
 
       // NB called twice because configure creates and closes things to verify config
       verify(executorServiceSupplier, times(2)).get();
-      verify(executorService, times(2)).shutdown();
-      verify(executorService, times(2)).close();
+
+      final var inOrder = Mockito.inOrder(configureExecutorService, openExecutorService);
+
+      inOrder.verify(configureExecutorService).shutdown();
+      inOrder.verify(configureExecutorService).awaitTermination(anyLong(), any());
+      verifyNoMoreInteractions(configureExecutorService);
+
+      // pending flush will have been triggered when closing
+      // so we'll verify that has happened
+      inOrder.verify(openExecutorService).execute(any(Runnable.class));
+      inOrder.verify(openExecutorService).shutdown();
+      inOrder.verify(openExecutorService).awaitTermination(anyLong(), any());
+      verifyNoMoreInteractions(openExecutorService);
     }
   }
 
