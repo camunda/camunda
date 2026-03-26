@@ -17,7 +17,7 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/tenants/detail/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layout/TabEmptyState";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type ClientsProps = {
   tenantId: Tenant["tenantId"];

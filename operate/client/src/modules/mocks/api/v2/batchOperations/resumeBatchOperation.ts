@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from 'modules/mocks/api/mockRequest';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const mockResumeBatchOperation = (batchOperationKey = ':batchOperationKey') =>
   mockPostRequest<null>(

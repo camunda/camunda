@@ -11,7 +11,7 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {Loading} from '@carbon/react';
 import {lazy, Suspense} from 'react';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 
 const JSONViewer = lazy(async () => {

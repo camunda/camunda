@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 import { unassignGroupMember } from "src/utility/api/membership";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveGroupMemberModalProps = UseEntityModalCustomProps<
   User,

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { CreateUserRequestBody } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { CreateUserRequestBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { ApiDefinition, apiPost } from "src/utility/api/request";
 
 export const SETUP_ENDPOINT = "/setup/user";

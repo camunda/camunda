@@ -9,7 +9,7 @@
 import type {
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstanceIncidentsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import {searchIncidentsByElementInstance} from 'modules/api/v2/incidents/searchIncidentsByElementInstance';
 import {queryKeys} from '../queryKeys';

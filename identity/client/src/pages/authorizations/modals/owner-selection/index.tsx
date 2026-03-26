@@ -18,7 +18,7 @@ import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
-import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type SelectionProps = {
   type: Authorization["ownerType"];

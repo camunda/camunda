@@ -7,7 +7,7 @@
  */
 
 import {modificationsStore} from 'modules/stores/modifications';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 import {useField, useFormState} from 'react-final-form';
 import {createVariableFieldName} from '../../App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/createVariableFieldName';

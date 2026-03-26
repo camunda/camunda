@@ -18,7 +18,7 @@ import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignGroupMappingRule } from "src/utility/api/groups";
 import { useNotifications } from "src/components/notifications";
-import type { Group, MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group, MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedMappingRules = styled.div`
   margin-top: 0;

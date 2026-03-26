@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { deleteGlobalTaskListener } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
-import type { GlobalTaskListener } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { GlobalTaskListener } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   open,

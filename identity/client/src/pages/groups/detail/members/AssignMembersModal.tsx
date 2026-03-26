@@ -18,7 +18,7 @@ import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { useNotifications } from "src/components/notifications";
-import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedUsers = styled.div`
   margin-top: 0;

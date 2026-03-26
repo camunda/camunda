@@ -12,7 +12,7 @@ import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/elements';
 import type {DiagramModel} from 'bpmn-moddle';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {queryKeys} from '../queryKeys';

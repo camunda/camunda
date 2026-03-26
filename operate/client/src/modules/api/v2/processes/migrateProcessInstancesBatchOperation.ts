@@ -11,7 +11,7 @@ import {
   endpoints,
   type CreateMigrationBatchOperationRequestBody,
   type CreateMigrationBatchOperationResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const migrateProcessInstancesBatchOperation = async (
   payload: CreateMigrationBatchOperationRequestBody,

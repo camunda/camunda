@@ -9,7 +9,7 @@
 import {CopyVariablesButton} from './CopyVariablesButton';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {createVariable, createProcessInstance} from 'modules/testUtils';
-import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';

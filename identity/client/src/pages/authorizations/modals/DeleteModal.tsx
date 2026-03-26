@@ -17,7 +17,7 @@ import {
 } from "src/components/modal";
 import { deleteAuthorization } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
-import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
   open,

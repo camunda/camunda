@@ -16,7 +16,7 @@ import type {
   QueryProcessInstanceIncidentsResponseBody,
   QueryElementInstancesResponseBody,
   QueryAuditLogsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type InstanceMock = {
   xml: string;

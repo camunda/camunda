@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { GlobalTaskListener } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { GlobalTaskListener } from "@camunda/camunda-api-zod-schemas/8.10";
 import type { TFunction } from "i18next";
 
 export const LISTENER_TYPE_PATTERN = /^[a-zA-Z0-9._-]+$/;

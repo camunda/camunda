@@ -12,7 +12,7 @@ import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOpe
 import type {
   QueryBatchOperationsRequestBody,
   QueryBatchOperationsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queryKeys} from '../queryKeys';
 
 type PaginationArgs = {page: number; pageSize: number};

@@ -13,7 +13,7 @@ import type {
   User,
   QueryUsersResponseBody,
   QueryUsersByGroupResponseBody,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchUser } from "src/utility/api/users";
 

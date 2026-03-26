@@ -13,7 +13,7 @@ import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {formatDate} from 'modules/utils/date';
 import {Paths} from 'modules/Routes';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ItemKeyCell} from './ItemKeyCell';
 import {TableContainer} from './BatchItemsTable.styled';
 

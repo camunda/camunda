@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { deleteRole } from "src/utility/api/roles";
 import { useNotifications } from "src/components/notifications";
-import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<UseEntityModalProps<Role>> = ({
   open,

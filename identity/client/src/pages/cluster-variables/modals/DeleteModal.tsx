@@ -15,7 +15,7 @@ import {
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import { deleteClusterVariable } from "src/utility/api/cluster-variables";
-import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<
   UseEntityModalProps<Pick<ClusterVariable, "scope" | "tenantId" | "name">>

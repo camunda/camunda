@@ -10,7 +10,7 @@ import {createContext, useContext, useEffect, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';

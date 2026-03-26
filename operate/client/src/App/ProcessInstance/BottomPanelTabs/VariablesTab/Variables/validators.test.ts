@@ -17,7 +17,7 @@ import {
   validateValueComplete,
   validateValueValid,
 } from './validators';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createVariable} from 'modules/testUtils';
 
 const MOCK_FIELD_META_STATE = {

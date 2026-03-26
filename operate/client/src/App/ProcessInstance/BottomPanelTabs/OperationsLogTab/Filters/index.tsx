@@ -20,7 +20,7 @@ import {FilterMultiselect} from 'modules/components/FilterMultiSelect';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {FiltersForm} from './styled';
 

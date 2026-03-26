@@ -15,7 +15,7 @@ import {useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import * as clientConfig from 'modules/utils/getClientConfig';
 

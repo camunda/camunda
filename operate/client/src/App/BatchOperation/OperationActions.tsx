@@ -11,7 +11,7 @@ import {Pause, Play} from '@carbon/react/icons';
 import type {
   BatchOperationState,
   BatchOperationType,
-} from '@camunda/camunda-api-zod-schemas/8.9/batch-operation';
+} from '@camunda/camunda-api-zod-schemas/8.10/batch-operation';
 import {useSuspendBatchOperation} from 'modules/mutations/batchOperations/useSuspendBatchOperation';
 import {useResumeBatchOperation} from 'modules/mutations/batchOperations/useResumeBatchOperation';
 import {useCancelBatchOperation} from 'modules/mutations/batchOperations/useCancelBatchOperation';

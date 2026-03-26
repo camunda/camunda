@@ -14,7 +14,7 @@ import {http, HttpResponse} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import type {ReactNode} from 'react';
 import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
-import type {DeleteResourceRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DeleteResourceRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const resourceKey = '2251799813685249';
 const requestBody: DeleteResourceRequestBody = {

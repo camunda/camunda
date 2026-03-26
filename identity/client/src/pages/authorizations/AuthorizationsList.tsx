@@ -19,7 +19,7 @@ import { DataTableHeader } from "src/components/entityList/EntityList";
 import type {
   Authorization,
   ResourceType,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 type AuthorizationListProps = {
   tab: ResourceType;

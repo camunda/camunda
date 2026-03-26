@@ -15,7 +15,7 @@ import Divider from "src/components/form/Divider";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import { updateUser } from "src/utility/api/users";
 import { isValidEmail } from "src/utility/validate";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type FormData = Pick<User, "name" | "email"> & {
   password: string;

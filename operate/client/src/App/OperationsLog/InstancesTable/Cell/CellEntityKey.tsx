@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {Link} from 'modules/components/Link';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mapToCellEntityKeyData} from 'modules/utils/operationsLog';

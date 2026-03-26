@@ -34,7 +34,7 @@ import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
   auditLogResultSchema,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {useState} from 'react';

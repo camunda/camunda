@@ -26,7 +26,7 @@ import {
 import type {
   CreateGlobalTaskListenerRequestBody,
   GlobalTaskListenerEventType,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");

@@ -28,7 +28,7 @@ import {http, HttpResponse} from 'msw';
 import {
   endpoints,
   queryElementInstancesRequestBodySchema,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const diagramModel = await parseDiagramXML(adHocSubProcessInnerInstance);
 const businessObjects = businessObjectsParser({diagramModel});

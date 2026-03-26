@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { deleteUser } from "src/utility/api/users";
 import { useNotifications } from "src/components/notifications";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<UseEntityModalProps<User>> = ({
   open,

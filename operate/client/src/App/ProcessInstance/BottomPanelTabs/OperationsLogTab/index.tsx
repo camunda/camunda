@@ -14,7 +14,7 @@ import {
   type AuditLog,
   type QueryAuditLogsRequestBody,
   auditLogSortFieldEnum,
-} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {Container, EmptyMessageContainer} from './styled';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {getSortParams} from 'modules/utils/filter';
@@ -39,7 +39,7 @@ import {Filters} from './Filters';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {
   PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS,

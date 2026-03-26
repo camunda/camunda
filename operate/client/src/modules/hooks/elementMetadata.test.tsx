@@ -26,7 +26,7 @@ import {Paths} from 'modules/Routes';
 import type {
   ElementInstance,
   GetProcessInstanceStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const PROCESS_INSTANCE_ID = '123';
 
