@@ -24,7 +24,7 @@ import {
   type ElementInstance,
   type Job,
   type ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function mockValidatedSearchJobs(
   schema: z.ZodType,
