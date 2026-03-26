@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ActionableNotification} from './styled';
+import {useId} from 'react';
+import {Callout} from './styled';
 import {storeStateLocally} from 'modules/utils/localStorage';
 
 type Props = {
@@ -22,21 +23,31 @@ const IOMappingInfoBanner: React.FC<Props> = ({
   subtitle,
   onClose,
 }) => {
+  const titleId = useId();
+
   return (
-    <ActionableNotification
+    <Callout
       kind="info"
-      inline
       lowContrast
       title={title}
-      subtitle={subtitle}
-      actionButtonLabel="Learn more"
+      titleId={titleId}
+      subtitle={
+        <>
+          {subtitle}
+          <br />
+          <br />
+          <a
+            aria-describedby={titleId}
+            href="https://docs.camunda.io/docs/components/concepts/variables/#inputoutput-variable-mappings"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Learn more
+          </a>
+        </>
+      }
+      actionButtonLabel="Close"
       onActionButtonClick={() => {
-        window.open(
-          'https://docs.camunda.io/docs/components/concepts/variables/#inputoutput-variable-mappings',
-          '_blank',
-        );
-      }}
-      onClose={() => {
         onClose();
         storeStateLocally({[`hide${type}MappingsHelperBanner`]: true});
       }}

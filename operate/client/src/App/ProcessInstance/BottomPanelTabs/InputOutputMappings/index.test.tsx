@@ -94,10 +94,15 @@ describe('Input Mappings', () => {
           wrapper: Wrapper,
         },
       );
+
       expect(screen.getByText(title)).toBeInTheDocument();
       expect(screen.getByText(subtitle)).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', {name: /close/}));
+      expect(
+        screen.getByRole('link', {name: 'Learn more'}),
+      ).toHaveAccessibleDescription(title);
+
+      await user.click(screen.getByRole('button', {name: /close/i}));
 
       expect(screen.queryByText(title)).not.toBeInTheDocument();
       expect(screen.queryByText(subtitle)).not.toBeInTheDocument();
