@@ -28,6 +28,14 @@ make env-up
 
 The Operate webapp will be running at `localhost:8080/operate`.
 
+Alternative: To run Camunda 8 and skip the frontend build:
+
+```
+make env-up skip-fe-build=true
+```
+
+This speeds up the startup process in case the frontend is already built (e.g. by a separate frontend development environment like vite).
+
 #### Zeebe + Operate + Identity + Elasticsearch
 
 To run Camunda 8 with Zeebe, Operate and Identity profiles, run this command in the operate folder:
