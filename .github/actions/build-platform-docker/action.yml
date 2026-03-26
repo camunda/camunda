@@ -69,7 +69,7 @@ runs:
       id: is-fork
 
     - name: Set up multi-platform support
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
       with:
         # only cache on persistent branches where reuse is likely
         cache-image: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
