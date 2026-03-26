@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
@@ -45,8 +46,10 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.entity.ClusterMetadata.AppName;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryResponseMapperTest {
@@ -701,5 +704,79 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldMapIdentityC8LinkKeyToAdmin() {
+    // given
+    final var dto =
+        new CamundaUserDTO(
+            "displayName",
+            "username",
+            "email",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            Map.of(AppName.IDENTITY, "https://identity.example.com"),
+            true);
+
+    // when
+    final var result = SearchQueryResponseMapper.toCamundaUser(dto);
+
+    // then
+    assertThat(result.getC8Links()).containsEntry("admin", "https://identity.example.com");
+    assertThat(result.getC8Links()).doesNotContainKey("identity");
+  }
+
+  @Test
+  void shouldMapAdminC8LinkKeyDirectly() {
+    // given
+    final var dto =
+        new CamundaUserDTO(
+            "displayName",
+            "username",
+            "email",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            Map.of(AppName.ADMIN, "https://admin.example.com"),
+            true);
+
+    // when
+    final var result = SearchQueryResponseMapper.toCamundaUser(dto);
+
+    // then
+    assertThat(result.getC8Links()).containsEntry("admin", "https://admin.example.com");
+  }
+
+  @Test
+  void shouldNotAffectOtherC8LinkKeys() {
+    // given
+    final var dto =
+        new CamundaUserDTO(
+            "displayName",
+            "username",
+            "email",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            Map.of(
+                AppName.OPERATE, "https://operate.example.com",
+                AppName.TASKLIST, "https://tasklist.example.com"),
+            true);
+
+    // when
+    final var result = SearchQueryResponseMapper.toCamundaUser(dto);
+
+    // then
+    assertThat(result.getC8Links())
+        .containsEntry("operate", "https://operate.example.com")
+        .containsEntry("tasklist", "https://tasklist.example.com");
   }
 }

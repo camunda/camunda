@@ -131,6 +131,21 @@ public class BasicCamundaUserServiceTest {
   }
 
   @Test
+  void shouldNormalizeIdentityComponentToAdmin() {
+    // given
+    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "identity");
+    when(resourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.allowed(allowedAuthorization));
+
+    // when
+    final var currentUser = basicCamundaUserService.getCurrentUser();
+
+    // then
+    assertThat(currentUser.authorizedComponents()).containsExactlyInAnyOrder("admin");
+  }
+
+  @Test
   void shouldContainWildcardInAuthorizedComponents() {
     // given
     final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");
