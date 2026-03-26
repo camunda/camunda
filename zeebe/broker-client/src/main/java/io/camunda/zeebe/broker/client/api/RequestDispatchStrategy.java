@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** Implementations must be thread-safe. */
 public interface RequestDispatchStrategy {
@@ -18,9 +19,10 @@ public interface RequestDispatchStrategy {
   int determinePartition(final BrokerTopologyManager topologyManager);
 
   /**
-   * Returns a dispatch strategy which will perform a stateful round robin between the partitions.
+   * Returns a dispatch strategy which will perform a stateful round robin between the partitions,
+   * starting from a random offset to avoid all gateway pods hitting the same partition first.
    */
   static RequestDispatchStrategy roundRobin() {
-    return new RoundRobinDispatchStrategy();
+    return new RoundRobinDispatchStrategy(ThreadLocalRandom.current().nextInt(128));
   }
 }
