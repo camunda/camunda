@@ -425,16 +425,16 @@ public class AuditLogEntry {
 
   private static <R extends RecordValue> Long getProcessInstanceKey(final Record<R> record) {
     final var value = record.getValue();
-    if (value instanceof ProcessInstanceRelated) {
-      return ((ProcessInstanceRelated) value).getProcessInstanceKey();
+    if (value instanceof final ProcessInstanceRelated processInstanceRelated) {
+      return nullIfNonPositive(processInstanceRelated.getProcessInstanceKey());
     }
     return null;
   }
 
   private static <R extends RecordValue> Long getProcessDefinitionKey(final Record<R> record) {
     final var value = record.getValue();
-    if (value instanceof ProcessInstanceRelated) {
-      return ((ProcessInstanceRelated) value).getProcessDefinitionKey();
+    if (value instanceof final ProcessInstanceRelated processInstanceRelated) {
+      return nullIfNonPositive(processInstanceRelated.getProcessDefinitionKey());
     }
     return null;
   }
@@ -449,26 +449,33 @@ public class AuditLogEntry {
 
   private static <R extends RecordValue> Long getElementInstanceKey(final Record<R> record) {
     final var value = record.getValue();
-    if (value instanceof AuditLogProcessInstanceRelated) {
-      return ((AuditLogProcessInstanceRelated) value).getElementInstanceKey();
+    if (value instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
+      return nullIfNonPositive(processInstanceRelated.getElementInstanceKey());
     }
     return null;
   }
 
   private static <R extends RecordValue> Long getRootProcessInstanceKey(final Record<R> record) {
     final var value = record.getValue();
-    if (value instanceof AuditLogProcessInstanceRelated
-        && ((AuditLogProcessInstanceRelated) value).getRootProcessInstanceKey() > 0) {
-      return ((AuditLogProcessInstanceRelated) value).getRootProcessInstanceKey();
+    if (value instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
+      return nullIfNonPositive(processInstanceRelated.getRootProcessInstanceKey());
     }
     return null;
   }
 
   private static <R extends RecordValue> String getProcessDefinitionId(final Record<R> record) {
     final var value = record.getValue();
-    if (value instanceof AuditLogProcessInstanceRelated) {
-      return ((AuditLogProcessInstanceRelated) value).getBpmnProcessId();
+    if (value instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
+      return nullIfEmpty(processInstanceRelated.getBpmnProcessId());
     }
     return null;
+  }
+
+  private static Long nullIfNonPositive(final long value) {
+    return value <= 0 ? null : value;
+  }
+
+  private static String nullIfEmpty(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

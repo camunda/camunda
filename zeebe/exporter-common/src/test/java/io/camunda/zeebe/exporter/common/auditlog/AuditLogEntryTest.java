@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
@@ -78,9 +79,9 @@ class AuditLogEntryTest {
     assertThat(entry.getTimestamp())
         .isEqualTo(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
-    assertThat(entry.getElementInstanceKey()).isEqualTo(-1L);
 
     // Verify fields that are NOT set by AuditLogEntry.of() are null/empty
+    assertThat(entry.getElementInstanceKey()).isNull();
     assertThat(entry.getBatchOperationType()).isNull();
     assertThat(entry.getResult()).isNull();
     assertThat(entry.getJobKey()).isNull();
@@ -127,5 +128,37 @@ class AuditLogEntryTest {
     final var entry = AuditLogEntry.of(record);
 
     assertThat(entry.getBatchOperationKey()).isNull();
+  }
+
+  @Test
+  void shouldMapNullableFieldsAsNull() {
+    // given
+    final var negativeValue =
+        ImmutableJobRecordValue.builder()
+            .withProcessInstanceKey(-1L)
+            .withElementInstanceKey(-1L)
+            .withRootProcessInstanceKey(-1L)
+            .withBpmnProcessId("")
+            .build();
+    final var record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_MODIFICATION,
+            r ->
+                r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                    .withValue(negativeValue)
+                    .withBatchOperationReference(-1L)
+                    .withKey(-1L));
+
+    // when
+    final var entry = AuditLogEntry.of(record);
+
+    // then
+    assertThat(entry.getProcessInstanceKey()).isNull();
+    assertThat(entry.getProcessDefinitionKey()).isNull();
+    assertThat(entry.getElementInstanceKey()).isNull();
+    assertThat(entry.getRootProcessInstanceKey()).isNull();
+    assertThat(entry.getProcessDefinitionId()).isNull();
+    assertThat(entry.getBatchOperationKey()).isNull();
+    assertThat(entry.getJobKey()).isNull();
   }
 }
