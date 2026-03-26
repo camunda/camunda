@@ -20,7 +20,7 @@
 		"prepublishOnly": "node scripts/prepublishOnly.js",
 		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"
 	},
-	"packageManager": "npm@11.11.1",
+	"packageManager": "npm@11.12.0",
 	"devDependencies": {
 		"@eslint/js": "9.39.4",
 		"eslint": "9.39.4",
