@@ -170,7 +170,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, maxMessageSize);
 
             logResponseNotSent(jobType, jobKeys, reason);
-            reactivateJobs(jobsToDefer, reason);
+            yieldJobs(jobsToDefer, reason);
           }
 
           final T activateJobsResponse = jobActivationResult.getActivateJobsResponse();
@@ -187,7 +187,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
               final var reason = createReasonMessage(result);
 
               logResponseNotSent(jobType, jobKeys, reason);
-              reactivateJobs(activatedJobsToReactivate, reason);
+              yieldJobs(activatedJobsToReactivate, reason);
               cancelActivateJobsRequest(reason, delegate);
               return;
             }
@@ -213,13 +213,20 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     return errorMessage;
   }
 
-  private void reactivateJobs(final List<ActivatedJob> activateJobs, final String message) {
+  @Override
+  public void yieldJobs(final List<ActivatedJob> activateJobs, final String message) {
     if (activateJobs != null) {
-      activateJobs.forEach(j -> tryToReactivateJob(j, message));
+      Loggers.GATEWAY_LOGGER.debug(
+          "yieldJobs: yielding {} jobs, reason: {}", activateJobs.size(), message);
+      activateJobs.forEach(j -> tryToYieldJob(j, message));
     }
   }
 
-  private void tryToReactivateJob(final ActivatedJob job, final String message) {
+  void tryToYieldJob(final ActivatedJob job, final String message) {
+    Loggers.GATEWAY_LOGGER.debug(
+        "tryToYieldJob: failing job {} (retries={}) to make it available again",
+        job.key(),
+        job.retries());
     final var request = toFailJobRequest(job, message);
     brokerClient
         .sendRequestWithRetry(request)
@@ -227,13 +234,15 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             (response, error) -> {
               if (error != null) {
                 Loggers.GATEWAY_LOGGER.info(
-                    "Failed to reactivate job {} due to {}", job.key(), error.getMessage());
+                    "Failed to yield job {} due to {}", job.key(), error.getMessage());
+              } else {
+                Loggers.GATEWAY_LOGGER.debug("Successfully yielded job {}", job.key());
               }
             },
             actor);
   }
 
-  private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {
+  BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {
     return new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
   }
 

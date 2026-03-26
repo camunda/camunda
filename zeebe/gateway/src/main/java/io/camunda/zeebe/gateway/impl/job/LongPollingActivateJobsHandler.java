@@ -16,10 +16,12 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.job.JobActivationResult.ActivatedJob;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,6 +81,11 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     this.actor = actor;
     activateJobsHandler.accept(actor);
     onActorStarted();
+  }
+
+  @Override
+  public void yieldJobs(final List<ActivatedJob> jobs, final String reason) {
+    activateJobsHandler.yieldJobs(jobs, reason);
   }
 
   void onActorStarted() {

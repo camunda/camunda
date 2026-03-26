@@ -8,7 +8,9 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.job.JobActivationResult.ActivatedJob;
 import io.camunda.zeebe.scheduler.ActorControl;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -27,4 +29,15 @@ public interface ActivateJobsHandler<T> extends Consumer<ActorControl> {
       final ResponseObserver<T> responseObserver,
       final Consumer<Runnable> setCancelHandler,
       final long requestTimeout);
+
+  /**
+   * Reactivate jobs that were activated but could not be delivered to the client. This allows the
+   * jobs to be picked up by other workers.
+   *
+   * @param jobs the jobs to yield
+   * @param reason the reason for yielding
+   */
+  default void yieldJobs(final List<ActivatedJob> jobs, final String reason) {
+    // no-op by default
+  }
 }
