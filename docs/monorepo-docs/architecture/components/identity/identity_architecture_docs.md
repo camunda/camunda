@@ -19,7 +19,7 @@ It provides:
 - Flexible authentication:
   - OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito, and other OIDC providers).
   - Basic authentication.
-  - Optional no‑auth for local and simple Self‑Managed setups.
+  - Optional unauthenticated API access for local and simple Self‑Managed setups.
 - Fine‑grained, resource‑based authorizations across runtime resources (for example, PROCESS_DEFINITION, PROCESS_INSTANCE, USER_TASK).
 - Tenant management is handled directly in Orchestration Cluster Identity (Self‑Managed), allowing tenants per cluster for runtime data and access isolation.
 - No dedicated identity database; Identity entities reuse Zeebe primary and secondary storage.
@@ -100,7 +100,7 @@ Extensibility
 
 ```mermaid
 ---
-title: Identity (SaaS / Self-Managed) - Business Context
+title: Identity - Business Context
 ---
 flowchart TB
   USER(["User"])
@@ -115,6 +115,7 @@ flowchart TB
   USER --> WEB_UI --> SAAS_OR_SM
   USER --> CLIENT_APP --> SAAS_OR_SM
   SAAS_OR_SM --> IDP
+  USER --> IDP
 ```
 
 Entities:
@@ -130,7 +131,7 @@ Entities:
 
 ```mermaid
 ---
-title: Identity (SaaS / Self-Managed) - Technical Context
+title: Identity - Technical Context
 ---
 flowchart TB
   WEB_UI("Camunda Web UI (Browser)")
@@ -154,9 +155,9 @@ flowchart TB
 
 Entities:
 - Clients: Web applications, Camunda clients, and other services interacting with the Orchestration Cluster
-- Camunda 8 OC (Orchestration Cluster): runtime deployment containing Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.
+- Camunda 8 OC (Orchestration Cluster): runtime deployment containing the Zeebe Processing engine, Zeebe gRPC API, Orchestration Cluster API  as well ad the Operate, Tasklist, Identity Web Applications along with their deprecated V1 APIs.
 - Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).
-- Primary Database: RocksDB used for Zeebe Engine state.
+- Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.
 - Secondary Database: Elasticsearch, OpenSearch, or RDBMS are used for search queries. Contains Runtime, History, and Identity data.
 
 External interfaces (technical):
@@ -201,7 +202,6 @@ title: Identity - Technical Context
 ---
 flowchart TB
   CLIENTS("Clients (Webapp, Camunda Client, ...)")
-  CAMUNDA_CLIENT("Camunda Client")
   IDP[("OIDC IDP")]
   PRIMARY_DB[("Primary Database (RocksDB)")]
   SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
@@ -241,7 +241,7 @@ Main building blocks:
 - Zeebe: Is responsible for processing commands and storing state.
 - Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.
 - Engine Identity: Shared RBAC engine used for authorization checks in the engine, there is no own module for it, it lives directly in the engine in "identity".
-- Primary Database: RocksDB used for Zeebe Engine state.
+- Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.
 - Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
 
 ### 5.2 Building Blocks

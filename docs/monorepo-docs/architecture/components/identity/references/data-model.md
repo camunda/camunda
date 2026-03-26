@@ -27,9 +27,9 @@ This diagram shows the high-level data path across layers:
 
 ```mermaid
 flowchart LR
-  R[Record model\nlog payloads]
-  P[Primary model\nRocksDB state]
-  S[Secondary model\nquery projection]
+  R[Record model</br>log payloads]
+  P[Primary model</br>RocksDB state]
+  S[Secondary model</br>query projection]
 
   R -->|apply| P -->|export| S
 ```
@@ -40,7 +40,7 @@ This diagram shows the shared business vocabulary and its main relationships:
 
 - `Tenant` is the top-level scope boundary.
 - `User` and `Client` are principals that can be grouped and assigned roles.
-- `MappingRule` maps IdP claims to groups/roles.
+- `MappingRule` represents a claim name and value pair from a JWT Authentication Token
 - `Authorization` represents grants owned by principals, groups, roles, or mapping rules.
 - The view is intentionally simplified (no storage-specific cardinalities or index details).
 

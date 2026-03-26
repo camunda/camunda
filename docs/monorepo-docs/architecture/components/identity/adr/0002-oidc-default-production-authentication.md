@@ -14,7 +14,7 @@ capabilities are important for production and enterprise deployments of Camunda 
 
 Recommend OIDC as the default authentication method for production deployments (both SaaS and
 Self-Managed). Basic authentication remains supported for simple Self-Managed setups and local
-development scenarios. An optional no-auth mode is also available for local or demo scenarios.
+development scenarios. An optional unauthenticated API mode is also available for local or demo scenarios, Web Applications will always require a login as the UI is user-centric.
 
 ## Consequences
 
