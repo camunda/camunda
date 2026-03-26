@@ -149,43 +149,21 @@ export class OperateProcessInstanceViewModificationModePage {
         .locator(`[id="newVariables[${index}].value"]`),
       jsonEditorButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('cell')
-        .nth(2)
-        .getByRole('button')
-        .nth(0),
+        .getByRole('button', {name: 'Open JSON editor'}),
       deleteButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('cell')
-        .nth(2)
-        .getByRole('button')
-        .nth(1),
+        .getByRole('button', {name: 'Delete Variable'}),
       jsonEditorModal: {
         header: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByText('Edit a new Variable'),
         cancelButton: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
         applyButton: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Apply'}),
         inputField: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
           .getByRole('textbox', {name: 'Editor content'}),
@@ -209,36 +187,18 @@ export class OperateProcessInstanceViewModificationModePage {
         .getByTestId('edit-variable-value'),
       jsonEditorButton: this.page
         .getByTestId(`variable-${name}`)
-        .getByRole('cell')
-        .nth(2)
-        .getByRole('button'),
+        .getByRole('button', {name: 'Open JSON editor'}),
       jsonEditorModal: {
         header: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByText(`Edit Variable "${name}"`),
         cancelButton: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
         applyButton: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Apply'}),
         inputField: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(2)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
           .getByRole('textbox', {name: 'Editor content'}),
@@ -347,7 +307,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickMoveAllButtononPopup(): Promise<void> {
-    await this.moveAllButtononPopup.click();
+    await this.moveAllButtononPopup.click({force: true});
   }
 
   async clickMoveInstanceButtononPopup(): Promise<void> {
