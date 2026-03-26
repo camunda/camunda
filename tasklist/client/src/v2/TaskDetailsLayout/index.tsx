@@ -128,6 +128,7 @@ const TaskDetailsLayout: React.FC = () => {
       selected: useMatch(pages.taskDetailsHistory()) !== null,
       to: {
         pathname: pages.taskDetailsHistory(id),
+        search: removeSortParam(searchParams.toString()),
       },
     },
   ];
