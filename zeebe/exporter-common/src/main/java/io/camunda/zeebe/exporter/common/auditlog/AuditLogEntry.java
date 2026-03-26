@@ -141,7 +141,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setEntityDescription(final String entityDescription) {
-    this.entityDescription = entityDescription;
+    this.entityDescription = nullIfEmpty(entityDescription);
     return this;
   }
 
@@ -186,7 +186,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setBatchOperationKey(final Long batchOperationKey) {
-    this.batchOperationKey = batchOperationKey;
+    this.batchOperationKey = nullIfNonPositive(batchOperationKey);
     return this;
   }
 
@@ -249,7 +249,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setDeploymentKey(final Long deploymentKey) {
-    this.deploymentKey = deploymentKey;
+    this.deploymentKey = nullIfNonPositive(deploymentKey);
     return this;
   }
 
@@ -258,7 +258,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setFormKey(final Long formKey) {
-    this.formKey = formKey;
+    this.formKey = nullIfNonPositive(formKey);
     return this;
   }
 
@@ -267,7 +267,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setResourceKey(final Long resourceKey) {
-    this.resourceKey = resourceKey;
+    this.resourceKey = nullIfNonPositive(resourceKey);
     return this;
   }
 
@@ -276,7 +276,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setProcessDefinitionKey(final Long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionKey = nullIfNonPositive(processDefinitionKey);
     return this;
   }
 
@@ -285,7 +285,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setProcessInstanceKey(final Long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
+    this.processInstanceKey = nullIfNonPositive(processInstanceKey);
     return this;
   }
 
@@ -294,7 +294,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setElementInstanceKey(final Long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
+    this.elementInstanceKey = nullIfNonPositive(elementInstanceKey);
     return this;
   }
 
@@ -303,7 +303,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setJobKey(final Long jobKey) {
-    this.jobKey = jobKey;
+    this.jobKey = nullIfNonPositive(jobKey);
     return this;
   }
 
@@ -312,7 +312,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setUserTaskKey(final Long userTaskKey) {
-    this.userTaskKey = userTaskKey;
+    this.userTaskKey = nullIfNonPositive(userTaskKey);
     return this;
   }
 
@@ -321,7 +321,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setDecisionRequirementsKey(final Long decisionRequirementsKey) {
-    this.decisionRequirementsKey = decisionRequirementsKey;
+    this.decisionRequirementsKey = nullIfNonPositive(decisionRequirementsKey);
     return this;
   }
 
@@ -330,7 +330,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setDecisionDefinitionKey(final Long decisionDefinitionKey) {
-    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionDefinitionKey = nullIfNonPositive(decisionDefinitionKey);
     return this;
   }
 
@@ -339,7 +339,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setProcessDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
+    this.processDefinitionId = nullIfEmpty(processDefinitionId);
     return this;
   }
 
@@ -348,7 +348,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setDecisionRequirementsId(final String decisionRequirementsId) {
-    this.decisionRequirementsId = decisionRequirementsId;
+    this.decisionRequirementsId = nullIfEmpty(decisionRequirementsId);
     return this;
   }
 
@@ -357,7 +357,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setDecisionDefinitionId(final String decisionDefinitionId) {
-    this.decisionDefinitionId = decisionDefinitionId;
+    this.decisionDefinitionId = nullIfEmpty(decisionDefinitionId);
     return this;
   }
 
@@ -366,7 +366,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setDecisionEvaluationKey(final Long decisionEvaluationKey) {
-    this.decisionEvaluationKey = decisionEvaluationKey;
+    this.decisionEvaluationKey = nullIfNonPositive(decisionEvaluationKey);
     return this;
   }
 
@@ -375,7 +375,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    this.rootProcessInstanceKey = nullIfNonPositive(rootProcessInstanceKey);
     return this;
   }
 
@@ -384,7 +384,7 @@ public class AuditLogEntry {
   }
 
   public AuditLogEntry setRelatedEntityKey(final String relatedEntityKey) {
-    this.relatedEntityKey = relatedEntityKey;
+    this.relatedEntityKey = nullIfEmpty(relatedEntityKey);
     return this;
   }
 
@@ -426,7 +426,7 @@ public class AuditLogEntry {
   private static <R extends RecordValue> Long getProcessInstanceKey(final Record<R> record) {
     final var value = record.getValue();
     if (value instanceof final ProcessInstanceRelated processInstanceRelated) {
-      return nullIfNonPositive(processInstanceRelated.getProcessInstanceKey());
+      return processInstanceRelated.getProcessInstanceKey();
     }
     return null;
   }
@@ -450,7 +450,7 @@ public class AuditLogEntry {
   private static <R extends RecordValue> Long getElementInstanceKey(final Record<R> record) {
     final var value = record.getValue();
     if (value instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
-      return nullIfNonPositive(processInstanceRelated.getElementInstanceKey());
+      return processInstanceRelated.getElementInstanceKey();
     }
     return null;
   }
@@ -458,7 +458,7 @@ public class AuditLogEntry {
   private static <R extends RecordValue> Long getRootProcessInstanceKey(final Record<R> record) {
     final var value = record.getValue();
     if (value instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
-      return nullIfNonPositive(processInstanceRelated.getRootProcessInstanceKey());
+      return processInstanceRelated.getRootProcessInstanceKey();
     }
     return null;
   }
@@ -466,13 +466,13 @@ public class AuditLogEntry {
   private static <R extends RecordValue> String getProcessDefinitionId(final Record<R> record) {
     final var value = record.getValue();
     if (value instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
-      return nullIfEmpty(processInstanceRelated.getBpmnProcessId());
+      return processInstanceRelated.getBpmnProcessId();
     }
     return null;
   }
 
-  private static Long nullIfNonPositive(final long value) {
-    return value <= 0 ? null : value;
+  private static Long nullIfNonPositive(final Long value) {
+    return value == null || value <= 0 ? null : value;
   }
 
   private static String nullIfEmpty(final String value) {
