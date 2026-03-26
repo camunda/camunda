@@ -7,14 +7,38 @@
  */
 
 import {devices, PlaywrightTestConfig} from '@playwright/test';
+import playwrightPkg from '@playwright/test/package.json' with {type: 'json'};
 
+const BASE_URL = 'http://localhost:3003/tasklist/';
 const IS_CI = Boolean(process.env.CI);
-const IS_E2E = Boolean(process.env.IS_E2E);
+const USE_CONTAINERIZED_BROWSER =
+  !IS_CI && Boolean(process.env.CONTAINERIZED_BROWSER);
+
+const webServer: PlaywrightTestConfig['webServer'] = [
+  {
+    name: 'SPA Server',
+    command: 'npx vite preview',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    url: BASE_URL,
+  },
+];
+
+if (USE_CONTAINERIZED_BROWSER) {
+  const version = playwrightPkg.version;
+  webServer.push({
+    name: 'Playwright Server',
+    command: `docker run --rm --init --network host mcr.microsoft.com/playwright:v${version} /bin/sh -c "npx -y playwright@${version} run-server --port 7777 --host 0.0.0.0"`,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    port: 7777,
+    timeout: 180_000, // 3min timeout in case the image has to be pulled first.
+    gracefulShutdown: {signal: 'SIGTERM', timeout: 5000},
+  });
+}
 
 /**
  * See https://playwright.dev/docs/test-configuration.
- * when using the base path '/tasklist' to the baseURL, we need to add a slash '/' at the end as expected by playwright https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
- *
  */
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
@@ -22,9 +46,10 @@ const config: PlaywrightTestConfig = {
     timeout: 10000,
     toHaveScreenshot: {threshold: 0.1},
   },
-  fullyParallel: !IS_E2E,
+  fullyParallel: true,
   forbidOnly: IS_CI,
   retries: IS_CI ? 2 : 0,
+  webServer,
   reporter: IS_CI
     ? [
         ['github'],
@@ -37,6 +62,8 @@ const config: PlaywrightTestConfig = {
         ],
       ]
     : 'html',
+  snapshotPathTemplate:
+    '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}-linux{ext}',
   projects: [
     {
       name: 'visual',
@@ -62,10 +89,14 @@ const config: PlaywrightTestConfig = {
   ],
   outputDir: 'test-results/',
   use: {
-    actionTimeout: 0,
-    baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}/tasklist/`,
+    baseURL: BASE_URL,
     trace: 'retain-on-failure',
     video: 'retain-on-failure',
+    ...(USE_CONTAINERIZED_BROWSER && {
+      connectOptions: {
+        wsEndpoint: `ws://127.0.0.1:7777/`,
+      },
+    }),
   },
 };
 
