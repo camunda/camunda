@@ -16,6 +16,7 @@
 package io.camunda.zeebe.config;
 
 import java.time.Duration;
+import java.util.List;
 
 public class WorkerCfg {
 
@@ -31,6 +32,7 @@ public class WorkerCfg {
   private boolean sendMessage = false;
   private String messageName = "defaultMessage";
   private String correlationKeyVariableName = "correlationKey-var";
+  private List<String> fetchVariables;
 
   public String getJobType() {
     return jobType;
@@ -126,5 +128,13 @@ public class WorkerCfg {
 
   public void setCorrelationKeyVariableName(final String correlationKeyVariableName) {
     this.correlationKeyVariableName = correlationKeyVariableName;
+  }
+
+  public List<String> getFetchVariables() {
+    return fetchVariables;
+  }
+
+  public void setFetchVariables(final List<String> fetchVariables) {
+    this.fetchVariables = fetchVariables;
   }
 }

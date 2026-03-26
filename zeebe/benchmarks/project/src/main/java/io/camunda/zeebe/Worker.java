@@ -57,14 +57,20 @@ public class Worker extends App {
             .build();
     printTopology(client);
 
-    final JobWorker worker =
+    final var workerBuilder =
         client
             .newWorker()
             .jobType(jobType)
             .handler(handleJob(client, variables, completionDelay, requestFutures))
             .streamEnabled(isStreamEnabled)
-            .metrics(metrics)
-            .open();
+            .metrics(metrics);
+
+    final var fetchVariables = workerCfg.getFetchVariables();
+    if (fetchVariables != null) {
+      workerBuilder.fetchVariables(fetchVariables);
+    }
+
+    final JobWorker worker = workerBuilder.open();
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
