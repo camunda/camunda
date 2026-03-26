@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -47,6 +46,7 @@ class UserTaskSearchIT {
   private static Long parentProcessInstanceKey;
   private static Long childProcessInstanceKey;
   private static Long userTaskOverlapKey;
+  private static OffsetDateTime defaultProcessTaskDate;
   private static final String LARGE_VAR_NAME = "largeVariable";
   private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
 
@@ -55,7 +55,7 @@ class UserTaskSearchIT {
   @BeforeAll
   static void beforeAll() {
 
-    deployProcess("process", "simple.bpmn", "test", "", "");
+    defaultProcessTaskDate = deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
     deployProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
@@ -806,7 +806,7 @@ class UserTaskSearchIT {
 
   @Test
   void shouldReturnNullOrDefaultForOptionalDateFields() {
-    // given - find a task that hasn't been completed (no completion/due/followUp dates)
+    // given
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
@@ -814,18 +814,16 @@ class UserTaskSearchIT {
             .send()
             .join();
 
-    // then - assert optional date fields
-    assertThat(result.items()).hasSize(1);
-    final var task = result.items().getFirst();
-    assertThat(task.getCompletionDate()).isNull();
-    assertThat(task.getDueDate())
-        .isCloseTo(
-            OffsetDateTime.now().minusDays(1),
-            new TemporalUnitWithinOffset(5, java.time.temporal.ChronoUnit.SECONDS));
-    assertThat(task.getFollowUpDate())
-        .isCloseTo(
-            OffsetDateTime.now().minusDays(1),
-            new TemporalUnitWithinOffset(5, java.time.temporal.ChronoUnit.SECONDS));
+    // then
+    assertThat(result.items()).isNotEmpty();
+    result
+        .items()
+        .forEach(
+            task -> {
+              assertThat(task.getCompletionDate()).isNull();
+              assertThat(task.getDueDate()).isEqualTo(defaultProcessTaskDate);
+              assertThat(task.getFollowUpDate()).isEqualTo(defaultProcessTaskDate);
+            });
   }
 
   @Test
@@ -1547,7 +1545,7 @@ class UserTaskSearchIT {
             });
   }
 
-  private static void deployProcess(
+  private static OffsetDateTime deployProcess(
       final String processId,
       final String resourceName,
       final String userTaskName,
@@ -1559,6 +1557,7 @@ class UserTaskSearchIT {
 
     final LocalDateTime now = LocalDateTime.now(utcZoneId);
     final LocalDateTime dayBefore = now.minusDays(1);
+    final String taskDate = dayBefore.format(dateFormat);
 
     camundaClient
         .newDeployResourceCommand()
@@ -1567,8 +1566,8 @@ class UserTaskSearchIT {
                 .startEvent()
                 .userTask(userTaskName)
                 .zeebeUserTask()
-                .zeebeDueDate(dayBefore.format(dateFormat))
-                .zeebeFollowUpDate(dayBefore.format(dateFormat))
+                .zeebeDueDate(taskDate)
+                .zeebeFollowUpDate(taskDate)
                 .zeebeCandidateGroups(candidateGroup)
                 .zeebeCandidateUsers(candidateUser)
                 .endEvent()
@@ -1576,9 +1575,11 @@ class UserTaskSearchIT {
             resourceName)
         .send()
         .join();
+
+    return OffsetDateTime.parse(taskDate);
   }
 
-  private static void deployProcess(
+  private static OffsetDateTime deployProcess(
       final String processId,
       final String resourceName,
       final String userTaskName,
@@ -1591,6 +1592,7 @@ class UserTaskSearchIT {
 
     final LocalDateTime now = LocalDateTime.now(utcZoneId);
     final LocalDateTime dayBefore = now.minusDays(1);
+    final String taskDate = dayBefore.format(dateFormat);
 
     camundaClient
         .newDeployResourceCommand()
@@ -1600,8 +1602,8 @@ class UserTaskSearchIT {
                 .userTask(userTaskName)
                 .zeebeTaskPriority(priority)
                 .zeebeUserTask()
-                .zeebeDueDate(dayBefore.format(dateFormat))
-                .zeebeFollowUpDate(dayBefore.format(dateFormat))
+                .zeebeDueDate(taskDate)
+                .zeebeFollowUpDate(taskDate)
                 .zeebeCandidateGroups(candidateGroup)
                 .zeebeCandidateUsers(candidateUser)
                 .endEvent()
@@ -1609,6 +1611,8 @@ class UserTaskSearchIT {
             resourceName)
         .send()
         .join();
+
+    return OffsetDateTime.parse(taskDate);
   }
 
   private static void deployProcessFromResourcePath(
