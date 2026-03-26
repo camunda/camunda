@@ -18,16 +18,53 @@ package io.camunda.client.util;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.client.CamundaClient;
+import java.io.IOException;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 @WireMockTest
 public abstract class ClientRestTest {
 
+  private static ProxySelector originalProxySelector;
+
   public CamundaClient client;
   public RestGatewayService gatewayService;
+
+  /**
+   * Override the default proxy selector to prevent the Apache HttpClient from routing requests
+   * through a system-configured proxy. The HttpAsyncClientBuilder always uses
+   * ProxySelector.getDefault() for route planning, which on some CI environments or developer
+   * machines may resolve to an external proxy (e.g. nginx), causing intermittent HTML 404 responses
+   * instead of the expected WireMock JSON responses.
+   */
+  @BeforeAll
+  static void disableSystemProxy() {
+    originalProxySelector = ProxySelector.getDefault();
+    ProxySelector.setDefault(
+        new ProxySelector() {
+          @Override
+          public List<Proxy> select(final URI uri) {
+            return Collections.singletonList(Proxy.NO_PROXY);
+          }
+
+          @Override
+          public void connectFailed(final URI uri, final SocketAddress sa, final IOException ioe) {}
+        });
+  }
+
+  @AfterAll
+  static void restoreSystemProxy() {
+    ProxySelector.setDefault(originalProxySelector);
+  }
 
   @BeforeEach
   void beforeEach(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
