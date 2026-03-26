@@ -15,7 +15,7 @@ import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {
   type QueryUserTasksRequestBody,
   type QueryUserTasksResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const POLLING_INTERVAL = 5000;
 const MAX_TASKS_PER_REQUEST = 50;

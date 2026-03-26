@@ -14,7 +14,7 @@ import {
 } from 'react-router-dom';
 import {useSuspenseQuery, type InfiniteData} from '@tanstack/react-query';
 import {t} from 'i18next';
-import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
 import {pages, useHistoryItemDetailsParams} from 'common/routing';
 import {notificationsStore} from 'common/notifications/notifications.store';

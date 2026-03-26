@@ -7,7 +7,7 @@
  */
 
 import {t} from 'i18next';
-import {problemDetailResponseSchema} from '@camunda/camunda-api-zod-schemas/8.9';
+import {problemDetailResponseSchema} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const parseDenialReason = (
   errorPayload: unknown,
