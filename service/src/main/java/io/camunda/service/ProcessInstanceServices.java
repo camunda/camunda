@@ -36,7 +36,6 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -302,15 +301,8 @@ public final class ProcessInstanceServices
     if (request.businessId() != null) {
       return sendRequestWithRetryPartitions(brokerRequest, authentication);
     }
-    final var handler = getOrCreateRetryHandler(request.bpmnProcessId());
-    return sendRequestWithRetryPartitions(brokerRequest, authentication, null, handler)
-        .whenComplete(
-            (response, error) -> {
-              if (error == null && request.bpmnProcessId() != null) {
-                processIdToRetryHandler.computeIfAbsent(
-                    request.bpmnProcessId(), this::createRetryHandler);
-              }
-            });
+    return sendWithPerProcessRoundRobin(
+        brokerRequest, request.bpmnProcessId(), authentication, null);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -342,19 +334,12 @@ public final class ProcessInstanceServices
       return sendRequestWithRetryPartitions(brokerRequest, authentication);
     }
 
-    final var handler = getOrCreateRetryHandler(request.bpmnProcessId());
     final Duration timeout =
         request.requestTimeout() != null && request.requestTimeout() > 0
             ? Duration.ofMillis(request.requestTimeout())
             : null;
-    return sendRequestWithRetryPartitions(brokerRequest, authentication, timeout, handler)
-        .whenComplete(
-            (response, error) -> {
-              if (error == null && request.bpmnProcessId() != null) {
-                processIdToRetryHandler.computeIfAbsent(
-                    request.bpmnProcessId(), this::createRetryHandler);
-              }
-            });
+    return sendWithPerProcessRoundRobin(
+        brokerRequest, request.bpmnProcessId(), authentication, timeout);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
@@ -537,7 +522,23 @@ public final class ProcessInstanceServices
         authentication);
   }
 
-  private RequestRetryHandler getOrCreateRetryHandler(final String bpmnProcessId) {
+  private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
+      final BrokerRequest<R> brokerRequest,
+      final String bpmnProcessId,
+      final CamundaAuthentication authentication,
+      final Duration requestTimeout) {
+    final var handler = getRetryHandler(bpmnProcessId);
+    return sendRequestWithRetryPartitions(brokerRequest, authentication, requestTimeout, handler)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null && bpmnProcessId != null) {
+                processIdToRetryHandler.computeIfAbsent(
+                    bpmnProcessId, ignored -> createRetryHandler());
+              }
+            });
+  }
+
+  private RequestRetryHandler getRetryHandler(final String bpmnProcessId) {
     if (bpmnProcessId == null) {
       return requestRetryHandler;
     }
@@ -545,10 +546,8 @@ public final class ProcessInstanceServices
     return handler != null ? handler : requestRetryHandler;
   }
 
-  private RequestRetryHandler createRetryHandler(final String bpmnProcessId) {
-    final var topologyManager = brokerClient.getTopologyManager();
-    return new RequestRetryHandler(
-        brokerClient, topologyManager, RequestDispatchStrategy.roundRobin());
+  private RequestRetryHandler createRetryHandler() {
+    return new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
   }
 
   private <R> CompletableFuture<R> sendRequestWithRetryPartitions(

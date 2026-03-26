@@ -95,10 +95,10 @@ final class ProcessInstanceRoundRobinDispatchTest {
     }
     final var partitionsB = List.copyOf(partitions);
 
-    // then — both process definitions cycle through the same partition sequence independently
+    // then — both process definitions independently cover all partitions
     assertThat(partitionsA).hasSize(PARTITION_COUNT).doesNotHaveDuplicates();
     assertThat(partitionsB).hasSize(PARTITION_COUNT).doesNotHaveDuplicates();
-    assertThat(partitionsA).isEqualTo(partitionsB);
+    assertThat(partitionsA).containsExactlyInAnyOrderElementsOf(partitionsB);
   }
 
   @Test
