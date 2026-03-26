@@ -74,6 +74,7 @@ const normalProjects = [
     testIgnore: [
       'tests/api/v2/clock/*.spec.ts',
       'tests/api/v2/usage-metrics/*.spec.ts',
+      'tests/api/v2/audit-log/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     teardown: 'api-tests-subset',
@@ -83,6 +84,7 @@ const normalProjects = [
     testMatch: [
       'tests/api/v2/clock/*.spec.ts',
       'tests/api/v2/usage-metrics/*.spec.ts',
+      'tests/api/v2/audit-log/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,
