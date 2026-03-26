@@ -19,12 +19,12 @@ const INFORMATION_TEXT = {
   Input: {
     title: 'Input mappings are defined while modelling the diagram.',
     subtitle:
-      'They are used to create new local variables inside the element scope with the specified assignment.',
+      'Input mappings are used to create new local variables inside the element scope with the specified assignment.',
   },
   Output: {
     title: 'Output mappings are defined while modelling the diagram.',
     subtitle:
-      'They are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
+      'Output mappings are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
   },
 };
 
