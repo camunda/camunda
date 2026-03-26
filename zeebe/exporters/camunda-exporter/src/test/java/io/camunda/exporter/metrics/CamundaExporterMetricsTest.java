@@ -53,6 +53,11 @@ final class CamundaExporterMetricsTest {
   void shouldRemoveAllRegisteredMetersOnClose() {
     // given
     final var metrics = new CamundaExporterMetrics(registry, Instant::now);
+
+    // this will dynamically create meters
+    metrics.recordFlushFailureType("failure1");
+    metrics.recordFlushFailureType("failure2");
+
     assertThat(registry.getMeters()).isNotEmpty();
 
     // when
