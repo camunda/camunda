@@ -41,6 +41,7 @@ on:
       - "tasklist/**"
       - "identity/**"
       - "optimize/**"
+      - "parent/pom.xml"
 
 # Cancel in-progress runs when a new commit is pushed to the same PR
 concurrency:
