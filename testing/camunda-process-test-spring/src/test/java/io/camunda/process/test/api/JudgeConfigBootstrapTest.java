@@ -37,13 +37,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.NestedTestConfiguration;
-import org.springframework.test.context.NestedTestConfiguration.EnclosingConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -51,46 +48,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
   CamundaProcessTestRuntimeConfiguration.class,
   LegacyCamundaProcessTestRuntimeConfiguration.class
 })
-@NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
 public class JudgeConfigBootstrapTest {
 
   static final ChatModelAdapter ADAPTER_A = prompt -> "response from A";
   static final ChatModelAdapter ADAPTER_B = prompt -> "response from B";
 
-  @Configuration
-  static class ChatModelAdapterConfig {
-
-    @Bean
-    ChatModelAdapter chatModelAdapter() {
-      return ADAPTER_A;
-    }
-  }
-
-  @Configuration
-  static class GenericChatModelAdapterConfig {
-
-    @Bean("judge.my-generic")
-    ChatModelAdapter genericChatModelAdapter() {
-      return ADAPTER_A;
-    }
-  }
-
-  @Configuration
-  static class MultipleChatModelAdapterConfig {
-
-    @Bean("judge.my-custom")
-    ChatModelAdapter customChatModelAdapter() {
-      return ADAPTER_A;
-    }
-
-    @Bean("judge.another-provider")
-    ChatModelAdapter anotherChatModelAdapter() {
-      return ADAPTER_B;
-    }
-  }
-
   @Nested
-  @SpringBootTest(classes = JudgeConfigBootstrapTest.class)
   class NotConfigured {
 
     @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
@@ -108,8 +71,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
@@ -153,8 +115,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=anthropic",
         "camunda.process-test.judge.chatModel.model=claude-sonnet-4-20250514",
@@ -198,8 +159,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=amazon-bedrock",
         "camunda.process-test.judge.chatModel.model=anthropic.claude-v2",
@@ -249,8 +209,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai-compatible",
         "camunda.process-test.judge.chatModel.model=llama3",
@@ -297,8 +256,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai-compatible",
         "camunda.process-test.judge.chatModel.model=llama3",
@@ -348,8 +306,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
@@ -384,8 +341,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=azure-openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
@@ -433,8 +389,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=azure-openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
@@ -481,8 +436,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
@@ -513,8 +467,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
@@ -543,8 +496,7 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai-compatible",
         "camunda.process-test.judge.chatModel.model=llama3",
@@ -589,13 +541,11 @@ public class JudgeConfigBootstrapTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.threshold=0.145",
         "camunda.process-test.judge.customPrompt=Custom prompt",
       })
-  @Import(JudgeConfigBootstrapTest.ChatModelAdapterConfig.class)
   class WithSingleChatModelAdapterBean {
 
     @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
@@ -621,16 +571,23 @@ public class JudgeConfigBootstrapTest {
                 assertThat(config.getCustomPrompt()).hasValue("Custom prompt");
               });
     }
+
+    @Configuration
+    static class ChatModelAdapterConfig {
+
+      @Bean
+      ChatModelAdapter chatModelAdapter() {
+        return ADAPTER_A;
+      }
+    }
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=my-custom",
         "camunda.process-test.judge.threshold=0.7",
       })
-  @Import(JudgeConfigBootstrapTest.MultipleChatModelAdapterConfig.class)
   class WithMultipleBeansAndMatchingProvider {
 
     @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
@@ -657,17 +614,29 @@ public class JudgeConfigBootstrapTest {
                 assertThat(config.getCustomPrompt()).isEmpty();
               });
     }
+
+    @Configuration
+    static class MultipleChatModelAdapterConfig {
+
+      @Bean("judge.my-custom")
+      ChatModelAdapter customChatModelAdapter() {
+        return ADAPTER_A;
+      }
+
+      @Bean("judge.another-provider")
+      ChatModelAdapter anotherChatModelAdapter() {
+        return ADAPTER_B;
+      }
+    }
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
         "camunda.process-test.judge.chatModel.apiKey=test-key",
       })
-  @Import(JudgeConfigBootstrapTest.MultipleChatModelAdapterConfig.class)
   class WithMultipleBeansAndNoMatch {
 
     @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
@@ -694,11 +663,23 @@ public class JudgeConfigBootstrapTest {
                     .isNotSameAs(ADAPTER_B);
               });
     }
+
+    @Configuration
+    static class MultipleChatModelAdapterConfig {
+
+      @Bean("judge.my-custom")
+      ChatModelAdapter customChatModelAdapter() {
+        return ADAPTER_A;
+      }
+
+      @Bean("judge.another-provider")
+      ChatModelAdapter anotherChatModelAdapter() {
+        return ADAPTER_B;
+      }
+    }
   }
 
   @Nested
-  @SpringBootTest(classes = JudgeConfigBootstrapTest.class)
-  @Import(JudgeConfigBootstrapTest.MultipleChatModelAdapterConfig.class)
   class WithMultipleBeansAndNoProviderProperty {
 
     @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
@@ -713,11 +694,24 @@ public class JudgeConfigBootstrapTest {
 
       assertThat(JudgeConfigResolver.resolve(applicationContext, judgeConfiguration)).isEmpty();
     }
+
+    @Configuration
+    static class MultipleChatModelAdapterConfig {
+
+      @Bean("judge.my-custom")
+      ChatModelAdapter customChatModelAdapter() {
+        return ADAPTER_A;
+      }
+
+      @Bean("judge.another-provider")
+      ChatModelAdapter anotherChatModelAdapter() {
+        return ADAPTER_B;
+      }
+    }
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=my-generic",
         "camunda.process-test.judge.chatModel.model=custom-model",
@@ -725,7 +719,6 @@ public class JudgeConfigBootstrapTest {
         "camunda.process-test.judge.chatModel.customProperties.temperature=0.7",
         "camunda.process-test.judge.threshold=0.6",
       })
-  @Import(JudgeConfigBootstrapTest.GenericChatModelAdapterConfig.class)
   class GenericProviderWithCustomProperties {
 
     @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
@@ -774,11 +767,19 @@ public class JudgeConfigBootstrapTest {
                 assertThat(config.getThreshold()).isEqualTo(0.6);
               });
     }
+
+    @Configuration
+    static class GenericChatModelAdapterConfig {
+
+      @Bean("judge.my-generic")
+      ChatModelAdapter genericChatModelAdapter() {
+        return ADAPTER_A;
+      }
+    }
   }
 
   @Nested
-  @SpringBootTest(
-      classes = JudgeConfigBootstrapTest.class,
+  @TestPropertySource(
       properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         // no model configured, which is required for openai provider
