@@ -167,7 +167,7 @@
     <dependency>
       <groupId>com.ibm.icu</groupId>
       <artifactId>icu4j</artifactId>
-      <version>78.2</version>
+      <version>78.3</version>
       <scope>test</scope>
     </dependency>
 
