@@ -9,15 +9,13 @@
 import {IncidentsTable} from '..';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
+import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {
-  Wrapper,
-  incidentsMock,
-  firstIncident,
-  secondIncident,
-} from './mocks';
-import {createEnhancedIncident} from 'modules/testUtils';
+  createEnhancedIncident,
+  createProcessInstance,
+  createUser,
+} from 'modules/testUtils';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {createProcessInstance, createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
