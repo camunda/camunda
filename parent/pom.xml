@@ -705,69 +705,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-110</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-120</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-130</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-800</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-810</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-820</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-830</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-840</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-850</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>microbenchmarks</artifactId>
         <version>${project.version}</version>
       </dependency>
