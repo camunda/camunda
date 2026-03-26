@@ -15,6 +15,7 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,15 +115,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
   }
 
   public JobDbModel truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
-    if (errorMessage == null) {
+    final var truncatedValue = doTruncateErrorMessage(jobKey, errorMessage, sizeLimit, byteLimit);
+    if (Objects.equals(truncatedValue, errorMessage)) {
       return this;
-    }
-
-    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
-
-    if (truncatedValue.length() < errorMessage.length()) {
-      LOG.warn(
-          "Truncated error message for job {}, original message was: {}", jobKey, errorMessage);
     }
 
     return new JobDbModel(
@@ -151,6 +146,19 @@ public class JobDbModel implements Copyable<JobDbModel> {
         partitionId,
         creationTime,
         lastUpdateTime);
+  }
+
+  private static String doTruncateErrorMessage(
+      final Long jobKey, final String errorMessage, final int sizeLimit, final Integer byteLimit) {
+    if (errorMessage == null) {
+      return null;
+    }
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+    if (truncatedValue.length() < errorMessage.length()) {
+      LOG.warn(
+          "Truncated error message for job {}, original message was: {}", jobKey, errorMessage);
+    }
+    return truncatedValue;
   }
 
   public Long jobKey() {
@@ -472,6 +480,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
     public Builder errorMessage(final String errorMessage) {
       this.errorMessage = errorMessage;
+      return this;
+    }
+
+    public Builder truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
+      errorMessage = doTruncateErrorMessage(jobKey, errorMessage, sizeLimit, byteLimit);
       return this;
     }
 

@@ -855,6 +855,165 @@ public final class TimerStartEventTest {
   }
 
   @Test
+  public void shouldTriggerImmediatelyAndSpaceCyclesCorrectlyWhenStartDateIsInThePast() {
+    // given — R3 cycle whose start date is far in the past
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .timerWithCycle("R3/2022-04-27T17:20:00Z/PT10M")
+            .endEvent("end")
+            .done();
+
+    // when
+    final long now = engine.getClock().getCurrentTimeInMillis();
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(model)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
+
+    // then — 1st timer is due immediately (due date <= now at deployment time)
+    final TimerRecordValue createdTimer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(createdTimer.getDueDate())
+        .describedAs(
+            "Expect timer with start date in the past to be scheduled 'now' (or shortly after)")
+        .isBetween(now, now + Duration.ofMinutes(1).toMillis());
+
+    // and — 1st process instance is triggered without advancing the clock
+    final var firstTriggeredRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    final var firstTriggeredTimer = firstTriggeredRecord.getValue();
+    final long firstDueDate = firstTriggeredTimer.getDueDate();
+
+    assertThat(firstDueDate)
+        .describedAs("Expect triggered timer to still reflect the initial due date")
+        .isEqualTo(createdTimer.getDueDate());
+
+    assertThat(firstTriggeredRecord.getTimestamp())
+        .describedAs("Expect the triggered record timestamp to be 'now' (or shortly after)")
+        .isBetween(now, now + Duration.ofMinutes(1).toMillis());
+
+    // when — advance enough for the 2nd firing
+    engine.increaseTime(Duration.ofMinutes(11));
+
+    // then — 2nd timer is spaced PT10M from the 1st due date, not from 2022
+    final long secondDueDate =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .skip(1)
+            .getFirst()
+            .getValue()
+            .getDueDate();
+
+    assertThat(secondDueDate).isEqualTo(firstDueDate + Duration.ofMinutes(10).toMillis());
+
+    // when — advance for the 3rd (and final) firing
+    engine.increaseTime(Duration.ofMinutes(11));
+
+    // then — 3rd timer is spaced PT10M from the 2nd; no 4th timer created (R3 exhausted)
+    final long thirdDueDate =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .skip(2)
+            .getFirst()
+            .getValue()
+            .getDueDate();
+
+    assertThat(thirdDueDate).isEqualTo(secondDueDate + Duration.ofMinutes(10).toMillis());
+
+    // when — advance past 3rd interval to check that no more timers are created
+    engine.increaseTime(Duration.ofMinutes(11));
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.timerRecords(TimerIntent.CREATED)
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .skip(3)
+                        .exists()))
+        .describedAs("Expect no more timer events to be created after R3 cycle is exhausted")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldTriggerInfiniteCycleImmediatelyWhenStartDateIsInThePast() {
+    // given — infinite cycle (R/) whose start date is in the past
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .timerWithCycle("R/2022-04-27T17:20:00Z/PT5M")
+            .endEvent("end")
+            .done();
+
+    // when
+    final long now = engine.getClock().getCurrentTimeInMillis();
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(model)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
+
+    // then - the 1st timer is due immediately (at deployment time)
+    final var createdTimer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(createdTimer.getDueDate())
+        .describedAs(
+            "Expect timer with start date in the past to be scheduled 'now' (or shortly after)")
+        .isBetween(now, now + Duration.ofMinutes(1).toMillis());
+
+    // and — 1st firing is immediate, without advancing the clock
+    final var firstTriggeredRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    final long firstDueDate = firstTriggeredRecord.getValue().getDueDate();
+
+    assertThat(firstDueDate)
+        .describedAs("Expect triggered timer to still reflect the initial due date")
+        .isEqualTo(createdTimer.getDueDate());
+
+    assertThat(firstTriggeredRecord.getTimestamp())
+        .describedAs("Expect the triggered record timestamp to be 'now' (or shortly after)")
+        .isBetween(now, now + Duration.ofMinutes(1).toMillis());
+
+    // when — advance past 2nd interval
+    engine.increaseTime(Duration.ofMinutes(6));
+
+    // then — 2nd firing is spaced PT5S from the 1st due date
+    final long secondDueDate =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .skip(1)
+            .getFirst()
+            .getValue()
+            .getDueDate();
+
+    assertThat(secondDueDate)
+        .as("Expect the 2nd firing to be spaced 5M from the 1st due date")
+        .isEqualTo(firstDueDate + Duration.ofMinutes(5).toMillis());
+  }
+
+  @Test
   public void shouldTriggerOnlyTimerStartEvent() {
     // given
     final var deployedProcess =

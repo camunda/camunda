@@ -21,12 +21,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
 import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,7 +59,9 @@ public final class ContainerRuntimePropertiesUtil {
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
   private final JudgeProperties judgeProperties;
+  private final SemanticSimilarityProperties semanticSimilarityProperties;
   private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
+  private final AssertionProperties assertionProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -82,7 +86,9 @@ public final class ContainerRuntimePropertiesUtil {
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
     judgeProperties = new JudgeProperties(properties);
+    semanticSimilarityProperties = new SemanticSimilarityProperties(properties);
     camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
+    assertionProperties = new AssertionProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -262,5 +268,13 @@ public final class ContainerRuntimePropertiesUtil {
 
   public JudgeProperties getJudgeProperties() {
     return judgeProperties;
+  }
+
+  public AssertionProperties getAssertionProperties() {
+    return assertionProperties;
+  }
+
+  public SemanticSimilarityProperties getSemanticSimilarityProperties() {
+    return semanticSimilarityProperties;
   }
 }

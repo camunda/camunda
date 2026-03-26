@@ -661,6 +661,12 @@ export function GROUPS_EXPECTED_BODY(groupId: string) {
   };
 }
 
+export function ROLES_EXPECTED_BODY(roleId: string) {
+  return {
+    roleId: roleId,
+  };
+}
+
 export function CREATE_COMPONENT_AUTHORIZATION(
   ownerType: 'ROLE' | 'USER' | 'GROUP',
   ownerId: string,

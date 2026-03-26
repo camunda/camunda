@@ -62,6 +62,12 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   @NestedConfigurationProperty private JudgeConfiguration judge = new JudgeConfiguration();
 
+  @NestedConfigurationProperty
+  private AssertionConfiguration assertion = new AssertionConfiguration();
+
+  @NestedConfigurationProperty
+  private SemanticSimilarityConfiguration similarity = new SemanticSimilarityConfiguration();
+
   @Bean
   @Primary
   public CamundaProcessTestRuntimeConfiguration runtimeConfiguration(
@@ -242,5 +248,21 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setJudge(final JudgeConfiguration judge) {
     this.judge = judge;
+  }
+
+  public AssertionConfiguration getAssertion() {
+    return assertion;
+  }
+
+  public void setAssertion(final AssertionConfiguration assertion) {
+    this.assertion = assertion;
+  }
+
+  public SemanticSimilarityConfiguration getSimilarity() {
+    return similarity;
+  }
+
+  public void setSimilarity(final SemanticSimilarityConfiguration similarity) {
+    this.similarity = similarity;
   }
 }

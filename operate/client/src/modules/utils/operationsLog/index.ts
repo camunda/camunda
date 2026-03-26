@@ -15,6 +15,8 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Api, User} from '@carbon/react/icons';
 import {Paths} from 'modules/Routes';
 
+const INVALID_PROCESS_INSTANCE_KEY = '-1';
+
 const formatBatchTitle = (batchOperationType?: BatchOperationType) => {
   switch (batchOperationType) {
     case 'DELETE_PROCESS_INSTANCE':
@@ -51,6 +53,15 @@ const getActorIcon = (auditLog: AuditLog) => {
     default:
       return null;
   }
+};
+
+const isValidProcessInstanceKey = (
+  processInstanceKey?: string | null,
+): processInstanceKey is string => {
+  return (
+    Boolean(processInstanceKey) &&
+    processInstanceKey !== INVALID_PROCESS_INSTANCE_KEY
+  );
 };
 
 const mapToCellEntityKeyData = (
@@ -137,6 +148,7 @@ export {
   formatBatchTitle,
   formatModalHeading,
   getActorIcon,
+  isValidProcessInstanceKey,
   mapToCellEntityKeyData,
   mapToCellDetailsData,
 };

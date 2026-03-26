@@ -66,12 +66,13 @@ components:
       description: |
         System-generated key for a scope. A scope can hold variables and represents either an
         element instance in a BPMN process or the process instance itself.
+      type: string
       format: ScopeKey
       x-semantic-type: ScopeKey
       example: "2251799813683890"
-      type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
+      oneOf:
+        - $ref: '#/components/schemas/ProcessInstanceKey'
+        - $ref: '#/components/schemas/ElementInstanceKey'
 
     IncidentKey:
       description: System-generated key for a incident.

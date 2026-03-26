@@ -1,6 +1,22 @@
 {
   "groups": [
     {
+      "name": "camunda.process-test.similarity",
+      "description": "Configuration for semantic similarity assertions in agentic process tests."
+    },
+    {
+      "name": "camunda.process-test.similarity.embedding-model",
+      "description": "Configuration for the embedding model used for semantic similarity."
+    },
+    {
+      "name": "camunda.process-test.similarity.embedding-model.credentials",
+      "description": "AWS credentials for the Amazon Bedrock embedding model provider."
+    },
+    {
+      "name": "camunda.process-test.similarity.preprocessors",
+      "description": "Configuration for the text pre-processing pipeline applied before computing embedding vectors."
+    },
+    {
       "name": "camunda.process-test.judge",
       "description": "Configuration for the AI judge used in agentic process test assertions."
     },
@@ -14,6 +30,27 @@
     }
   ],
   "hints": [
+    {
+      "name": "camunda.process-test.similarity.embedding-model.provider",
+      "values": [
+        {
+          "value": "openai",
+          "description": "Use OpenAI embedding models (requires api-key and model)."
+        },
+        {
+          "value": "amazon-bedrock",
+          "description": "Use Amazon Bedrock embedding models (requires model; optionally credentials)."
+        },
+        {
+          "value": "azure-openai",
+          "description": "Use Azure OpenAI embedding models (requires endpoint, api-key, and model)."
+        },
+        {
+          "value": "openai-compatible",
+          "description": "Use an OpenAI-compatible embedding API (requires base-url and model)."
+        }
+      ]
+    },
     {
       "name": "camunda.process-test.judge.chat-model.provider",
       "values": [
@@ -32,6 +69,10 @@
         {
           "value": "openai-compatible",
           "description": "Use an OpenAI-compatible API (requires base-url and model)."
+        },
+        {
+          "value": "azure-openai",
+          "description": "Use Azure OpenAI models (requires model and endpoint, and optionally api-key)."
         }
       ],
       "providers": [

@@ -45,7 +45,7 @@ final class BackupUploadIT {
 
   @Container
   private static final LocalStackContainer S3 =
-      new LocalStackContainer(DockerImageName.parse("localstack/localstack"))
+      new LocalStackContainer(DockerImageName.parse("localstack/localstack:4.10"))
           .withServices(Service.S3)
           .withEnv("LS_LOG", "trace");
 

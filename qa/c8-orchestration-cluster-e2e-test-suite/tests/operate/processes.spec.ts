@@ -77,6 +77,7 @@ test.describe('Processes', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
+
   const baseUrl = process.env.CORE_APPLICATION_URL || 'http://localhost:8080';
 
   test('Processes Page Initial Load', async ({

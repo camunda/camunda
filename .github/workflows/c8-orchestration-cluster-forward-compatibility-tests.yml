@@ -231,11 +231,11 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
-          INCLUDE_SLACK_REPORTER: "true"
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          INCLUDE_SLACK_REPORTER: "false"
           VERSION: "Forward Compat - Server: ${{ matrix.server_branch }} / Tests: ${{ matrix.test_branch }}"
           API_TESTS_ONLY: "true"
           DATABASE: "Elasticsearch"
+          AJB_ALLOW_EXTRA_FIELDS: "true"
         run: |
           echo "Running forward compatibility API tests"
           echo "Server built from: ${{ matrix.server_branch }}"

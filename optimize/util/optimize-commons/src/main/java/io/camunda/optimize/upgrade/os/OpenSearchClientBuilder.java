@@ -395,6 +395,7 @@ public class OpenSearchClientBuilder {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConfigurationService configurationService,
       final HttpRequestInterceptor... requestInterceptors) {
+    httpAsyncClientBuilder.disableContentCompression();
     setupAuthentication(httpAsyncClientBuilder, configurationService);
 
     for (final HttpRequestInterceptor interceptor : requestInterceptors) {

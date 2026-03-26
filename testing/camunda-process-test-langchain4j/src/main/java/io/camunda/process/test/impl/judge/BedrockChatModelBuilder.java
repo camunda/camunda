@@ -15,10 +15,11 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
+import dev.langchain4j.model.bedrock.BedrockChatRequestParameters;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
 import java.util.Map;
@@ -90,8 +91,21 @@ final class BedrockChatModelBuilder {
       LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
     }
 
-    final ChatModel chatModel =
-        BedrockChatModel.builder().client(clientBuilder.build()).modelId(model).build();
+    final BedrockChatModel.Builder bedrockBuilder =
+        BedrockChatModel.builder().client(clientBuilder.build()).modelId(model);
+
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      bedrockBuilder.timeout(config.getTimeout());
+    }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      final BedrockChatRequestParameters requestParameters =
+          BedrockChatRequestParameters.builder().temperature(config.getTemperature()).build();
+      bedrockBuilder.defaultRequestParameters(requestParameters);
+    }
+
+    final ChatModel chatModel = bedrockBuilder.build();
     LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", model);
     return chatModel;
   }

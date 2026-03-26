@@ -19,10 +19,11 @@ jobs:
   released-versions:
     name: Released Versions
     runs-on: ubuntu-latest
+    timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
-        shards: [ 1, 2, 3] # Values are not used, we just need an array of the right length
+        shards: [ 1, 2, 3, 4, 5, 6] # Values are not used, we just need an array of the right length
     steps:
       - uses: actions/checkout@v6
       - name: Generate cache key with current hour
@@ -38,7 +39,7 @@ jobs:
       - name: Find previous report
         id: get-last-run-id
         run: |
-          runs=$(gh api /repos/camunda/zeebe/actions/workflows/zeebe-version-compatibility.yml/runs)
+          runs=$(gh api /repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs)
           last_run_id=$(echo "$runs" | jq 'first(.workflow_runs[] | select(.status=="completed").id)')
           echo "last_run_id=$last_run_id" >> "$GITHUB_OUTPUT"
         env:
@@ -60,6 +61,7 @@ jobs:
         with:
           maven-extra-args: -PskipFrontendBuild
       - name: Test rolling update
+        timeout-minutes: 300
         run: >
           ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
           -D it.test=io.camunda.zeebe.test.RollingUpdateTest
@@ -111,6 +113,7 @@ jobs:
         with:
           version: current-test
       - name: Test snapshot
+        timeout-minutes: 300
         run: >
           ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
           -D it.test=io.camunda.zeebe.test.RollingUpdateTest

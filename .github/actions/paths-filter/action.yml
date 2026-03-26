@@ -40,6 +40,16 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
       }}
+  validate-pom-metadata:
+    description: Output whether flattened POM metadata validation should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.validate-pom-metadata-extra-change == 'true'
+      }}
   java-code-changes:
     description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
     value: >-
@@ -247,6 +257,11 @@ runs:
           - 'parent/**'
           - '**/pom.xml'
           - '.mvn/**'
+
+        validate-pom-metadata-extra-change:
+          - 'mvnw'
+          - 'mvnw.cmd'
+          - '.github/scripts/validate-flattened-poms.sh'
 
         dockerfile-change:
           - 'Dockerfile'

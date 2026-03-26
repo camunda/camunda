@@ -27,6 +27,7 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
 
   test('Get Process Instance Call Hierarchy - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -36,6 +37,14 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -51,6 +60,14 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
           },
         });
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         expect(json.page.totalItems).toBe(1);
         localState['childProcessInstanceKey'] =
@@ -78,14 +95,6 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
           res,
         );
         const json = await res.json();
-        await validateResponse(
-          {
-            path: '/process-instances/{processInstanceKey}/call-hierarchy',
-            method: 'GET',
-            status: '200',
-          },
-          res,
-        );
         expect(json.length).toBe(2);
         expect(json[0].processInstanceKey).toBe(
           localState['processInstanceKey'],

@@ -180,6 +180,17 @@ public class BatchOperationSearchIT {
   }
 
   @Test
+  void shouldReturnEmptyErrorsNotNullForSuccessfulBatchOperation(
+      @Authenticated final CamundaClient camundaClient) {
+    // when - get a successful batch operation with no errors
+    final var batch = camundaClient.newBatchOperationGetRequest(batchOperationKey1).send().join();
+
+    // then
+    assertThat(batch.getErrors()).isEmpty();
+    assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
+  }
+
+  @Test
   void shouldSearchBatchOperationWithIn(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
@@ -458,12 +469,14 @@ public class BatchOperationSearchIT {
   private static void assertCancelBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
     assertThat(batch.getStartDate()).isNotNull();
+    assertThat(batch.getEndDate()).isAfterOrEqualTo(batch.getStartDate());
     assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey1);
     assertThat(batch.getType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
     assertThat(batch.getOperationsCompletedCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
+    assertThat(batch.getErrors()).isEmpty();
     assertThat(batch.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
@@ -471,12 +484,14 @@ public class BatchOperationSearchIT {
   private static void assertMigrateBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
     assertThat(batch.getStartDate()).isNotNull();
+    assertThat(batch.getEndDate()).isAfterOrEqualTo(batch.getStartDate());
     assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey2);
     assertThat(batch.getType()).isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
     assertThat(batch.getOperationsCompletedCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
+    assertThat(batch.getErrors()).isEmpty();
     assertThat(batch.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }

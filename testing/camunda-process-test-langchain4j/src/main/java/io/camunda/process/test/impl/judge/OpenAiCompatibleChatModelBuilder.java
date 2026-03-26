@@ -15,11 +15,12 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +39,29 @@ final class OpenAiCompatibleChatModelBuilder {
     final OpenAiChatModel.OpenAiChatModelBuilder builder =
         OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
 
+    final Map<String, String> headers = config.getHeaders();
+    final boolean hasAuthorizationHeader =
+        headers != null && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase);
     if (hasText(config.getApiKey())) {
-      LOG.debug("Using configured API key");
-      builder.apiKey(config.getApiKey().trim());
-    } else {
-      LOG.debug("No API key configured, building without authentication");
+      if (hasAuthorizationHeader) {
+        LOG.warn("Both API key and Authorization header are set. The API key will be ignored.");
+      } else {
+        LOG.debug("Using configured API key");
+        builder.apiKey(config.getApiKey().trim());
+      }
+    }
+
+    if (headers != null && !headers.isEmpty()) {
+      builder.customHeaders(headers);
+    }
+
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      builder.temperature(config.getTemperature());
     }
 
     final ChatModel chatModel = builder.build();

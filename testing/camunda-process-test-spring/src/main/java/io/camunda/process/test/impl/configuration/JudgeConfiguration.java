@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.configuration;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.judge.BaseProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -67,32 +68,57 @@ public class JudgeConfiguration {
   public ProviderConfig toProviderConfig() {
     final AwsCredentialsConfiguration credentials = chatModel.getCredentials();
     final String provider = chatModel.getProvider().trim().toLowerCase();
+    final BaseProviderConfig config;
     switch (provider) {
       case BaseProviderConfig.PROVIDER_OPENAI:
-        return new BaseProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
+        config = new BaseProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
+        break;
       case BaseProviderConfig.PROVIDER_ANTHROPIC:
-        return new BaseProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
+        config =
+            new BaseProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
+        break;
       case BaseProviderConfig.PROVIDER_AMAZON_BEDROCK:
-        return new BaseProviderConfig.AmazonBedrockConfig(
-            chatModel.getModel(),
-            chatModel.getRegion(),
-            chatModel.getApiKey(),
-            credentials != null ? credentials.getAccessKey() : null,
-            credentials != null ? credentials.getSecretKey() : null);
+        config =
+            new BaseProviderConfig.AmazonBedrockConfig(
+                chatModel.getModel(),
+                chatModel.getRegion(),
+                chatModel.getApiKey(),
+                credentials != null ? credentials.getAccessKey() : null,
+                credentials != null ? credentials.getSecretKey() : null);
+        break;
       case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
-        return new BaseProviderConfig.OpenAiCompatibleConfig(
-            chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
+        config =
+            new BaseProviderConfig.OpenAiCompatibleConfig(
+                chatModel.getModel(),
+                chatModel.getBaseUrl(),
+                chatModel.getApiKey(),
+                chatModel.getHeaders());
+        break;
+      case BaseProviderConfig.PROVIDER_AZURE_OPENAI:
+        config =
+            new BaseProviderConfig.AzureOpenAiConfig(
+                chatModel.getModel(), chatModel.getEndpoint(), chatModel.getApiKey());
+        break;
       default:
-        return new BaseProviderConfig.GenericConfig(
-            provider, chatModel.getModel(), chatModel.getCustomProperties());
+        config =
+            new BaseProviderConfig.GenericConfig(
+                provider, chatModel.getModel(), chatModel.getCustomProperties());
+        break;
     }
+    if (chatModel.getTimeout() != null) {
+      config.setTimeout(chatModel.getTimeout());
+    }
+    if (chatModel.getTemperature() != null) {
+      config.setTemperature(chatModel.getTemperature());
+    }
+    return config;
   }
 
   public static class ChatModelConfiguration {
 
     /**
      * The LLM provider to use for the AI judge. Supported providers: openai, anthropic,
-     * amazon-bedrock, openai-compatible.
+     * amazon-bedrock, openai-compatible, azure-openai.
      */
     private String provider;
 
@@ -108,8 +134,23 @@ public class JudgeConfiguration {
     /** The base URL for the chat model API. Required for the 'openai-compatible' provider. */
     private String baseUrl;
 
+    /**
+     * The Azure OpenAI resource endpoint URL. Required for the 'azure-openai' provider (e.g.
+     * 'https://my-resource.openai.azure.com/').
+     */
+    private String endpoint;
+
     /** The AWS region for the Amazon Bedrock provider (e.g. 'us-east-1'). */
     private String region;
+
+    /** Optional custom HTTP headers to include in chat model requests. */
+    private Map<String, String> headers;
+
+    /** The timeout for LLM API calls as an ISO-8601 duration (e.g. 'PT30S', 'PT2M'). */
+    private Duration timeout;
+
+    /** The temperature for LLM API calls (e.g. 0.7). */
+    private Double temperature;
 
     @NestedConfigurationProperty
     private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
@@ -149,12 +190,44 @@ public class JudgeConfiguration {
       this.baseUrl = baseUrl;
     }
 
+    public String getEndpoint() {
+      return endpoint;
+    }
+
+    public void setEndpoint(final String endpoint) {
+      this.endpoint = endpoint;
+    }
+
+    public Duration getTimeout() {
+      return timeout;
+    }
+
+    public void setTimeout(final Duration timeout) {
+      this.timeout = timeout;
+    }
+
+    public Double getTemperature() {
+      return temperature;
+    }
+
+    public void setTemperature(final Double temperature) {
+      this.temperature = temperature;
+    }
+
     public String getRegion() {
       return region;
     }
 
     public void setRegion(final String region) {
       this.region = region;
+    }
+
+    public Map<String, String> getHeaders() {
+      return headers;
+    }
+
+    public void setHeaders(final Map<String, String> headers) {
+      this.headers = headers;
     }
 
     public AwsCredentialsConfiguration getCredentials() {

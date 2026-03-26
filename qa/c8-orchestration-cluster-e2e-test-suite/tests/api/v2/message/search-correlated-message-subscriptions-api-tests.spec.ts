@@ -10,9 +10,7 @@ import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertEqualsForKeys,
-  paginatedResponseFields,
   assertStatusCode,
   assertBadRequest,
   assertUnauthorizedRequest,
@@ -24,8 +22,6 @@ import {
   CORRELATE_MESSAGE2,
   CORRELATE_MESSAGE_DOUBLE_1,
   CORRELATE_MESSAGE_DOUBLE_2,
-  correlateMessageRequiredFields,
-  correlatedMessageSubscriptionRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -100,7 +96,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           headers: jsonHeaders(),
           data: payload.body,
         });
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/messages/correlation',
@@ -110,7 +106,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, correlateMessageRequiredFields);
         state[payload.stateKey] = json.messageKey;
         messageKeys.push(json.messageKey);
       }
@@ -147,7 +142,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
@@ -158,13 +153,8 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       );
 
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
       const subscription = json.items[0] as CorrelatedMessageSubscription;
-      assertRequiredFields(
-        subscription,
-        correlatedMessageSubscriptionRequiredFields,
-      );
       expect(subscription.messageKey).toBe(state.messageKeyPrimary);
       expect(subscription.tenantId).toBe('<default>');
       assertEqualsForKeys(
@@ -202,7 +192,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
@@ -213,17 +203,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       );
 
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(3);
 
       const subscriptions = json.items as CorrelatedMessageSubscription[];
-      for (const subscription of subscriptions) {
-        assertRequiredFields(
-          subscription,
-          correlatedMessageSubscriptionRequiredFields,
-        );
-      }
-
       const resultMessageKeys = subscriptions.map((s) => s.messageKey);
       expect(resultMessageKeys).toEqual(expect.arrayContaining(messageKeys));
     }).toPass(defaultAssertionOptions);
@@ -245,7 +227,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
@@ -256,7 +238,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       );
 
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(0);
     }).toPass(defaultAssertionOptions);
   });
@@ -265,6 +246,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     request,
   }) => {
     const processInstanceKeyToSearch = state.processInstance4;
+
     await test.step('Search by process instance key and tenant id', async () => {
       await expect(async () => {
         const res = await request.post(
@@ -289,14 +271,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(2);
         const subscriptions = json.items as CorrelatedMessageSubscription[];
         for (const subscription of subscriptions) {
-          assertRequiredFields(
-            subscription,
-            correlatedMessageSubscriptionRequiredFields,
-          );
           expect(subscription.processInstanceKey).toBe(
             processInstanceKeyToSearch,
           );
@@ -329,14 +306,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(1);
 
         const subscription = json.items[0] as CorrelatedMessageSubscription;
-        assertRequiredFields(
-          subscription,
-          correlatedMessageSubscriptionRequiredFields,
-        );
         expect(subscription.processInstanceKey).toBe(
           processInstanceKeyToSearch,
         );
@@ -451,6 +423,14 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
@@ -490,10 +470,17 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/correlated-message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.items).toHaveLength(0);
+      expect(json.items.length).toBe(0);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
     }).toPass(defaultAssertionOptions);
   });

@@ -14,6 +14,8 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -33,10 +35,18 @@ public class UserTaskVariableHandler
   private static final String ID_PATTERN = "%s-%s";
   protected final int variableSizeThreshold;
   private final String indexName;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final boolean skipVariableWriteWithoutUserTasks;
 
-  public UserTaskVariableHandler(final String indexName, final int variableSizeThreshold) {
+  public UserTaskVariableHandler(
+      final String indexName,
+      final int variableSizeThreshold,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final boolean skipVariableWriteWithoutUserTasks) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
+    this.processCache = processCache;
+    this.skipVariableWriteWithoutUserTasks = skipVariableWriteWithoutUserTasks;
   }
 
   @Override
@@ -51,7 +61,24 @@ public class UserTaskVariableHandler
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return !VariableIntent.MIGRATED.equals(record.getIntent());
+    if (VariableIntent.MIGRATED.equals(record.getIntent())) {
+      return false;
+    }
+
+    if (!skipVariableWriteWithoutUserTasks) {
+      return true;
+    }
+
+    final long processDefinitionKey = record.getValue().getProcessDefinitionKey();
+    final var cachedProcess = processCache.get(processDefinitionKey);
+    if (cachedProcess.isPresent()) {
+      return cachedProcess.get().hasUserTasks();
+    }
+
+    LOG.warn(
+        "Process definition key '{}' not found in cache or database, exporting variable to tasklist-task index as a safety measure",
+        processDefinitionKey);
+    return true;
   }
 
   @Override
@@ -101,7 +128,6 @@ public class UserTaskVariableHandler
             v -> {
               final Map<String, Object> updateFields = new HashMap<>();
               updateFields.put(TaskTemplate.VARIABLE_VALUE, v.getValue());
-              updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, v.getFullValue());
               updateFields.put(TaskTemplate.IS_TRUNCATED, v.getIsTruncated());
               batchRequest.upsertWithRouting(
                   indexName, v.getId(), v, updateFields, String.valueOf(v.getProcessInstanceId()));
@@ -136,7 +162,7 @@ public class UserTaskVariableHandler
       final Record<VariableRecordValue> record, final TaskVariableEntity taskVariable) {
     if (record.getValue().getValue().length() > variableSizeThreshold) {
       taskVariable.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
-      taskVariable.setFullValue(record.getValue().getValue());
+      taskVariable.setFullValue(null);
       taskVariable.setIsTruncated(true);
     } else {
       taskVariable.setValue(record.getValue().getValue());

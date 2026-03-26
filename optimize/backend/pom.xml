@@ -271,19 +271,6 @@
       <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
 
-    <!--Lucene dependencies-->
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>${version.lucene}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
     <!--Test dependencies-->
     <dependency>
       <groupId>com.tdunning</groupId>

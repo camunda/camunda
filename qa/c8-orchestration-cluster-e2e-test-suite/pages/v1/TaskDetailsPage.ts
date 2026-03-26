@@ -321,7 +321,6 @@ class TaskDetailsPageV1 {
     );
   }
 
-
   async getDynamicListValues(label: string): Promise<string[]> {
     const locator = this.page.getByLabel(label);
     const elements = await locator.all();

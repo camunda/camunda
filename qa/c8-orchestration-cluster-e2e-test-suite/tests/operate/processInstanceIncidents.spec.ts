@@ -68,7 +68,7 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test.skip('Resolve an incident', async ({page, operateProcessInstancePage}) => {
+  test('Resolve an incident', async ({page, operateProcessInstancePage}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
@@ -76,18 +76,18 @@ test.describe('Process Instance', () => {
       await sleep(1000);
     });
 
-    await test.step('Verify incident banner is visible', async () => {
-      await expect(
-        operateProcessInstancePage.incidentBannerButton(2),
-      ).toBeVisible();
+    await test.step('Verify incidents tab is visible', async () => {
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
     });
 
-    await test.step('Click and expand incident bar', async () => {
-      await operateProcessInstancePage.clickIncidentBanner(2);
+    await test.step('Open incidents tab', async () => {
+      await operateProcessInstancePage.clickIncidentsTab();
       await expect(operateProcessInstancePage.incidentTypeFilter).toBeVisible();
+      await operateProcessInstancePage.verifyIncidentCount(2);
     });
 
     await test.step('Edit goUp variable', async () => {
+      await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.editVariableButtonInList.click();
 
       await operateProcessInstancePage.editVariableValueField.clear();
@@ -101,12 +101,18 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Retry one incident to resolve it', async () => {
-      await operateProcessInstancePage.retryIncident(/Condition error/i);
+      await operateProcessInstancePage.clickIncidentsTab();
+      const firstErrorType = 'Condition error.';
+      const remainingErrorType = 'Extract value error.';
+
+      await operateProcessInstancePage.retryIncidentByErrorType(firstErrorType);
 
       await expect(
-        operateProcessInstancePage.getIncidentRowOperationSpinner(
-          /Condition error/i,
-        ),
+        (
+          await operateProcessInstancePage.getIncidentRowByErrorType(
+            firstErrorType,
+          )
+        ).getByTestId('operation-spinner'),
       ).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
@@ -124,18 +130,23 @@ test.describe('Process Instance', () => {
       });
 
       await expect
-        .poll(() => operateProcessInstancePage.incidentsTableRows.count())
+        .poll(async () => await operateProcessInstancePage.getIncidentCount())
         .toBe(1);
 
       await expect(
-        operateProcessInstancePage.incidentsTable.getByText(/is cool\?/i),
-      ).toBeVisible();
+        await operateProcessInstancePage.getIncidentRowByErrorType(
+          firstErrorType,
+        ),
+      ).toHaveCount(0);
       await expect(
-        operateProcessInstancePage.incidentsTable.getByText(/where to go\?/i),
-      ).toBeHidden();
+        await operateProcessInstancePage.getIncidentRowByErrorType(
+          remainingErrorType,
+        ),
+      ).toBeVisible();
     });
 
     await test.step('Add variable isCool', async () => {
+      await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.addVariableButton.click();
 
       await operateProcessInstancePage.newVariableNameField.type('isCool');
@@ -149,19 +160,25 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Retry second incident to resolve it', async () => {
-      await operateProcessInstancePage.retryIncident(/Extract value error/i);
+      await operateProcessInstancePage.clickIncidentsTab();
+      const secondErrorType = 'Extract value error.';
+      await operateProcessInstancePage.retryIncidentByErrorType(
+        secondErrorType,
+      );
 
       await expect(
-        operateProcessInstancePage.getIncidentRowOperationSpinner(
-          /Extract value error/i,
-        ),
+        (
+          await operateProcessInstancePage.getIncidentRowByErrorType(
+            secondErrorType,
+          )
+        ).getByTestId('operation-spinner'),
       ).toBeVisible();
     });
 
     await test.step('Expect all incidents resolved', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+          await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
         },
         onFailure: async () => {
           await page.reload();
@@ -173,7 +190,7 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test.skip('Cancel an instance', async ({operateProcessInstancePage, page}) => {
+  test('Cancel an instance', async ({operateProcessInstancePage, page}) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -183,25 +200,25 @@ test.describe('Process Instance', () => {
       await sleep(1000);
     });
 
-    await test.step('Verify incident banner is visible', async () => {
-      await expect(
-        operateProcessInstancePage.incidentBannerButton(3),
-      ).toBeVisible();
+    await test.step('Verify incidents tab is visible', async () => {
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+      await operateProcessInstancePage.clickIncidentsTab();
+      await expect(operateProcessInstancePage.incidentTypeFilter).toBeVisible();
+      await operateProcessInstancePage.verifyIncidentCount(3);
     });
 
     await test.step('Cancel the instance', async () => {
       await operateProcessInstancePage.cancelInstance(instanceId);
 
-      await expect(operateProcessInstancePage.operationSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.operationSpinner).toBeHidden();
+      await expect(
+        operateProcessInstancePage.cancellationScheduledToast,
+      ).toBeVisible();
     });
 
     await test.step('Verify instance is canceled', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(
-            operateProcessInstancePage.incidentBannerButton(3),
-          ).toBeHidden();
+          await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
         },
         onFailure: async () => {
           await page.reload();
@@ -217,10 +234,9 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test.skip('Should render collapsed sub process and navigate between planes', async ({
+  test('Should render collapsed sub process and navigate between planes', async ({
     page,
     operateProcessInstancePage,
-    operateDiagramPage,
   }) => {
     const {diagramHelper} = operateProcessInstancePage;
 
@@ -233,6 +249,7 @@ test.describe('Process Instance', () => {
 
     await test.step('Click on startEvent in instance history', async () => {
       await operateProcessInstancePage.clickTreeItem('startEvent');
+      await operateProcessInstancePage.clickDetailsTab();
       await expect(page.getByText(/execution duration/i)).toBeVisible();
     });
 
@@ -247,23 +264,7 @@ test.describe('Process Instance', () => {
     await test.step('Navigate to fill form flow node', async () => {
       await page.keyboard.press('ArrowRight');
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
-      await expect(
-        diagramHelper.getFlowNode('fill form'),
-      ).toBeVisible();
-      await operateProcessInstancePage.clickTreeItem(/fill form/i);
-
-      await waitForAssertion({
-        assertion: async () => {
-          await operateDiagramPage.popover.waitFor({
-            state: 'visible',
-          });
-        },
-        onFailure: async () => {
-          await operateProcessInstancePage.clickTreeItem(/fill form/i);
-        },
-      });
-
-      await expect(page.getByText(/retries left/i)).toBeVisible();
+      await expect(diagramHelper.getFlowNode('fill form')).toBeVisible();
     });
 
     await test.step('Click on collapsed sub process', async () => {
@@ -288,9 +289,7 @@ test.describe('Process Instance', () => {
     await test.step('Drill down into sub process', async () => {
       await operateProcessInstancePage.drilldownButton.click();
 
-      await expect(
-        diagramHelper.getFlowNode('fill form'),
-      ).toBeVisible();
+      await expect(diagramHelper.getFlowNode('fill form')).toBeVisible();
     });
   });
 
@@ -366,7 +365,7 @@ test.describe('Process Instance Incident', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test.skip('Verify Incident root cause instance', async ({
+  test('Verify Incident root cause instance', async ({
     operateProcessInstancePage,
     operateHomePage,
     operateProcessesPage,
@@ -385,20 +384,12 @@ test.describe('Process Instance Incident', () => {
         timeout: 30000,
       });
 
-      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
-      await operateProcessInstancePage.clickIncidentsBanner();
-
-      await expect(
-        operateProcessInstancePage.incidentsViewHeader,
-      ).toBeVisible();
-
-      const incidentCount = await operateProcessInstancePage.getIncidentCount();
-      expect(incidentCount).toBeGreaterThan(0);
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+      await operateProcessInstancePage.clickIncidentsTab();
 
       await operateProcessInstancePage.verifyIncidentCount(4);
 
-      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
-      await operateProcessInstancePage.closeIncidentsPanel();
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
     });
 
     await test.step('Click IO mapping Error and verify Error Type', async () => {
@@ -406,18 +397,11 @@ test.describe('Process Instance Incident', () => {
         'Task_IOMapping',
       );
 
-      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
-
-      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
       await expect(
-        operateProcessInstancePage.getIncidentErrorMessageByText(
-          'IO mapping error.',
+        operateProcessInstancePage.getSelectedIncidentRow(
+          /IO mapping error\./i,
         ),
       ).toBeVisible();
-      await operateProcessInstancePage.clickOnElementInDiagram(
-        'Task_IOMapping',
-      );
-      await expect(operateProcessInstancePage.metadataPopover).toBeHidden();
     });
 
     await test.step('Click ExclusiveGatewayError and verify Error Type', async () => {
@@ -425,42 +409,21 @@ test.describe('Process Instance Incident', () => {
         'Gateway_Expression',
       );
 
-      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
-
-      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
       await expect(
-        operateProcessInstancePage.getIncidentErrorMessageByText(
-          'Extract value error.',
+        operateProcessInstancePage.getSelectedIncidentRow(
+          /Extract value error\./i,
         ),
       ).toBeVisible();
     });
 
-    await operateProcessInstancePage.clickOnElementInDiagram(
-      'Gateway_Expression',
-    );
-
-    await expect(operateProcessInstancePage.metadataPopover).toBeHidden();
-
     await test.step('Click Call Activity and verify the error type', async () => {
-      await operateProcessInstancePage.clickOnElementInDiagram(
-        'Task_CallActivity',
-      );
-
-      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
-
-      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+      await operateProcessInstancePage
+        .getDiagramElement('Task_CallActivity')
+        .dblclick();
 
       await expect(
-        operateProcessInstancePage.getIncidentErrorMessageByText(
-          'Called element error.',
-        ),
+        operateProcessInstancePage.getIncidentRow(/Called element error\./i),
       ).toBeVisible();
-
-      await operateProcessInstancePage.clickCalledProcessLink(
-        'call-level-1-process',
-      );
-      await operateProcessInstancePage.viewParentInstanceLink.click();
-      await expect(operateProcessInstancePage.metadataPopover).toBeHidden();
     });
   });
 });

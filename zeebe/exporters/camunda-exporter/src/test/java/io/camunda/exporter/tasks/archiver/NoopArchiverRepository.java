@@ -15,7 +15,8 @@ import java.util.concurrent.CompletableFuture;
 public class NoopArchiverRepository implements ArchiverRepository {
 
   @Override
-  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final int size) {
     return CompletableFuture.completedFuture(
         new ArchiveBatch.ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
   }

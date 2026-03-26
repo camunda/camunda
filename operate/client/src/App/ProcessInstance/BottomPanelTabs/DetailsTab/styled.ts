@@ -19,6 +19,7 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-05);
+  padding-inline: var(--cds-spacing-05);
 `;
 
 export {EmptyMessageContainer, Container};

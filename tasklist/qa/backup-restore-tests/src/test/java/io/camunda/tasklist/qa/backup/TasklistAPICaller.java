@@ -43,7 +43,6 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.resilience.annotation.EnableResilientMethods;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
@@ -153,14 +152,14 @@ public class TasklistAPICaller {
 
   @Bean
   public ObjectMapper objectMapper() {
-    return Jackson2ObjectMapperBuilder.json()
-        .featuresToDisable(
-            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-        .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
-        .build();
+    final ObjectMapper mapper = new ObjectMapper();
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    mapper.disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
+    mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    mapper.disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+    mapper.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+    mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+    return mapper;
   }
 
   @Retryable(

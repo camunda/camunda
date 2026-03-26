@@ -16,6 +16,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
@@ -29,6 +30,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
 
   test('Modify process instance - success', async ({request}) => {
     const localStorage: Record<string, unknown> = {};
+
     await test.step('Create process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -37,6 +39,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body).toHaveProperty('processInstanceKey');
       localStorage['processInstanceKey'] = body.processInstanceKey;
@@ -53,6 +63,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
           },
         });
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const body = await res.json();
         expect(body).toHaveProperty('items');
         expect(body.items.length).toBe(1);
@@ -84,6 +102,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
       );
       await assertStatusCode(res, 204);
     });
+
     await test.step('Verify second task is active and first task canceled', async () => {
       await expect(async () => {
         const res = await request.post(buildUrl('/user-tasks/search'), {
@@ -95,6 +114,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
           },
         });
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const body = await res.json();
         expect(body).toHaveProperty('items');
         expect(body.items.length).toBe(2);
@@ -121,6 +148,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body).toHaveProperty('processInstanceKey');
       localStorage['processInstanceKey'] = body.processInstanceKey;

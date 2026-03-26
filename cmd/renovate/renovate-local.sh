@@ -8,6 +8,12 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
+# Ensure jq is installed (used for safe JSON construction of secrets)
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is not installed. Please install it (e.g. 'brew install jq' or 'apt install jq')."
+  exit 1
+fi
+
 # Login to GitHub CLI if not already authenticated
 if [ ! "$(gh auth status)" ]; then
   gh auth login -p https -h github.com -w
@@ -43,6 +49,54 @@ fi
 mkdir -p "${LOCAL_CACHE_DIR}"
 mkdir -p "${LOCAL_BASE_DIR}"
 
+# Vault path and field mapping for Renovate secrets.
+# Add entries to vault_field_for_secret() when new {{ secrets.XYZ }} refs are
+# added to the Renovate config.
+VAULT_MOUNT="secret"
+VAULT_SECRET_PATH="products/camunda/ci/github-actions"
+
+vault_field_for_secret() {
+  case "$1" in
+    INFRA_MINIMUS_REGISTRY_TOKEN) echo "REGISTRY_MINIMUS_PSW" ;;
+    *) echo "" ;;
+  esac
+}
+
+# Resolve secrets referenced in the config: fetch from Vault when authenticated,
+# otherwise fall back to dummy values so the dry-run can still proceed.
+RENOVATE_SECRETS="{}"
+secret_names=$(grep -oE '\{\{\s*secrets\.[A-Z_a-z0-9]+\s*\}\}' "$LOCAL_RENOVATE_CONFIG" \
+  | sed 's/.*secrets\.\([A-Za-z0-9_]*\).*/\1/' | sort -u || true)
+if [ -n "$secret_names" ]; then
+  vault_ok=false
+  if command -v vault >/dev/null 2>&1 && vault token lookup >/dev/null 2>&1; then
+    vault_ok=true
+    echo "Vault authenticated — will fetch real secret values"
+  else
+    echo "Vault not available — using dummy secret values (run 'vault login -method=oidc' for real values)"
+  fi
+
+  RENOVATE_SECRETS="{}"
+  for name in $secret_names; do
+    value="dummy-local-value"
+    vault_field=$(vault_field_for_secret "$name")
+
+    if [ "$vault_ok" = true ] && [ -n "$vault_field" ]; then
+      fetched=$(vault kv get -mount="$VAULT_MOUNT" -field="$vault_field" "$VAULT_SECRET_PATH" 2>/dev/null) || true
+      if [ -n "$fetched" ]; then
+        value="$fetched"
+        echo "  ✓ $name (Vault field: $vault_field)"
+      else
+        echo "  ✗ $name: Vault fetch failed for field '$vault_field', using dummy value"
+      fi
+    elif [ "$vault_ok" = true ]; then
+      echo "  ? $name: no Vault mapping defined, using dummy value"
+    fi
+
+    RENOVATE_SECRETS=$(echo "$RENOVATE_SECRETS" | jq --arg k "$name" --arg v "$value" '. + {($k): $v}')
+  done
+fi
+
 echo "Processing repository: ${REPO_NAME}"
 echo "Using local renovate configuration from: ${LOCAL_RENOVATE_CONFIG}"
 echo "Using local Renovate cache at: ${LOCAL_CACHE_DIR}"
@@ -60,6 +114,8 @@ docker run --rm \
   -e RENOVATE_TOKEN="${GITHUB_TOKEN}" \
   -e RENOVATE_REPOSITORIES="${REPO_NAME}" \
   -e RENOVATE_REQUIRE_CONFIG="ignored" \
+  -e RENOVATE_SECRETS="${RENOVATE_SECRETS}" \
+  ${RENOVATE_ENABLED_MANAGERS:+-e RENOVATE_ENABLED_MANAGERS="${RENOVATE_ENABLED_MANAGERS}"} \
   -e RENOVATE_CONFIG_FILE="/usr/src/app/mounted-renovate-config.json" \
   -v "${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
   -e RENOVATE_BASE_DIR="/tmp/renovate" \

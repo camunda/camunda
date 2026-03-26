@@ -162,7 +162,7 @@ on:
 env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
-  HELM_CHART: camunda-platform-8.9
+  HELM_CHART: camunda-platform-8.10
   # Namespaces MUST start with c8 due to access policy
   NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
@@ -243,6 +243,9 @@ jobs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
       platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
       - name: Calculate configuration based on scenario
         id: config
         run: |
@@ -442,7 +445,8 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-            version: 17.2.2
+            proxy: camunda.teleport.sh:443
+            version: auto
 
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2

@@ -22,6 +22,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {validateResponse} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Test process instance migrate API', () => {
@@ -47,6 +48,7 @@ test.describe.serial('Test process instance migrate API', () => {
       processInstanceKey: '',
       processDefinitionKey: '',
     };
+
     await test.step('Create process instance of version 1', async () => {
       await createInstances('test_migration_process', 1, 1).then((instance) => {
         localState.processInstanceKey = instance[0].processInstanceKey;
@@ -96,6 +98,14 @@ test.describe.serial('Test process instance migrate API', () => {
           },
         });
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const body = await res.json();
         expect(body).toHaveProperty('items');
         expect(body.items.length).toBe(1);
@@ -109,6 +119,7 @@ test.describe.serial('Test process instance migrate API', () => {
       processInstanceKey: '',
       processDefinitionKey: '',
     };
+
     await test.step('Create process-instance of version 1', async () => {
       await createInstances('test_migration_process', 1, 1).then((instance) => {
         localState.processInstanceKey = instance[0].processInstanceKey;

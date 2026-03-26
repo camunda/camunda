@@ -253,6 +253,12 @@ jobs:
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
 
+      - name: Validate flattened POM metadata
+        if: ${{ inputs.dryRun }}
+        uses: ./.github/actions/validate-pom-metadata
+        with:
+          search-root: target/checkout
+
       - name: Debug Optimize Versions
         if: ${{ inputs.includeOptimize && inputs.dryRun }}
         run: |

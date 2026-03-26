@@ -850,7 +850,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithTruncation() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -876,8 +877,6 @@ class UserTaskToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
       assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
       assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("start");
-      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("end");
       assertThat(searchResult.getItems())
           .hasSize(1)
           .first()
@@ -889,7 +888,7 @@ class UserTaskToolsTest extends ToolsTest {
               });
 
       verify(userTaskServices)
-          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
+          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
 
       assertTextContentFallback(result);
     }
@@ -897,7 +896,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithoutTruncation() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -925,7 +925,7 @@ class UserTaskToolsTest extends ToolsTest {
               });
 
       verify(userTaskServices)
-          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
+          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
 
       assertTextContentFallback(result);
     }
@@ -933,7 +933,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithFilterSortAndPaging() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -950,14 +951,14 @@ class UserTaskToolsTest extends ToolsTest {
                           "sort",
                           List.of(Map.of("field", "name", "order", "ASC")),
                           "page",
-                          Map.of("limit", 10, "after", "abc")))
+                          Map.of("limit", 10, "from", 5)))
                   .build());
 
       // then
       assertThat(result.isError()).isFalse();
 
       verify(userTaskServices)
-          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
+          .searchUserTaskEffectiveVariables(eq(5L), variableQueryCaptor.capture(), any());
       final VariableQuery capturedQuery = variableQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().nameOperations())
@@ -969,13 +970,14 @@ class UserTaskToolsTest extends ToolsTest {
           .containsExactly(tuple("name", SortOrder.ASC));
 
       assertThat(capturedQuery.page().size()).isEqualTo(10);
-      assertThat(capturedQuery.page().after()).isEqualTo("abc");
+      assertThat(capturedQuery.page().from()).isEqualTo(5);
     }
 
     @Test
     void shouldFailSearchUserTaskVariablesOnException() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
+      when(userTaskServices.searchUserTaskEffectiveVariables(
+              anyLong(), any(VariableQuery.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when

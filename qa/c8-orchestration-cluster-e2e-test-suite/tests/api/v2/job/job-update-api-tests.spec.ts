@@ -25,8 +25,11 @@ test.describe('Job Update API Tests', () => {
     'job_api_process',
     'jobApiProcess',
   );
+
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Update Job - success', async ({request}) => {

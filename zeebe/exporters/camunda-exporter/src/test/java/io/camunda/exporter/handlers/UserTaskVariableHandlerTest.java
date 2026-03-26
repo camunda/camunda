@@ -13,11 +13,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -37,7 +39,9 @@ public class UserTaskVariableHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
-  private final UserTaskVariableHandler underTest = new UserTaskVariableHandler(indexName, 100);
+  private final TestProcessCache processCache = new TestProcessCache();
+  private final UserTaskVariableHandler underTest =
+      new UserTaskVariableHandler(indexName, 100, processCache, true);
 
   @Test
   void testGetHandledValueType() {
@@ -70,6 +74,75 @@ public class UserTaskVariableHandlerTest {
         factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(VariableIntent.MIGRATED));
     // when - then
     assertThat(underTest.handlesRecord(variableRecord)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleRecordWhenProcessHasNoUserTasks() {
+    // given
+    final long processDefinitionKey = 789L;
+    processCache.put(
+        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withProcessDefinitionKey(processDefinitionKey)
+                            .build()));
+
+    // when - then
+    assertThat(underTest.handlesRecord(variableRecord)).isFalse();
+  }
+
+  @Test
+  void shouldHandleRecordWhenProcessHasUserTask() {
+    // given
+    final long processDefKey = 123L;
+    processCache.put(
+        processDefKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), true));
+
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withProcessDefinitionKey(processDefKey)
+                            .build()));
+
+    // when - then
+    assertThat(underTest.handlesRecord(variableRecord)).isTrue();
+  }
+
+  @Test
+  void shouldHandleRecordWhenSkipVariableWriteIsDisabled() {
+    // given
+    final var handlerWithSkipDisabled =
+        new UserTaskVariableHandler(indexName, 100, processCache, false);
+
+    final long processDefinitionKey = 789L;
+    processCache.put(
+        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withProcessDefinitionKey(processDefinitionKey)
+                            .build()));
+
+    // when - then
+    assertThat(handlerWithSkipDisabled.handlesRecord(variableRecord)).isTrue();
   }
 
   @Test
@@ -159,7 +232,6 @@ public class UserTaskVariableHandlerTest {
     final List<String> capturedRoutings = routingCaptor.getAllValues();
 
     final Map<String, Object> updateFieldsMap = new HashMap<>();
-    updateFieldsMap.put(TaskTemplate.VARIABLE_FULL_VALUE, null);
     updateFieldsMap.put(TaskTemplate.VARIABLE_VALUE, "value");
     updateFieldsMap.put(TaskTemplate.IS_TRUNCATED, false);
 
@@ -332,8 +404,7 @@ public class UserTaskVariableHandlerTest {
     assertThat(batch.getVariables()).hasSize(1);
     final var variableEntity = batch.getVariables().get(0);
     assertThat(variableEntity.getValue()).isEqualTo("v".repeat(underTest.variableSizeThreshold));
-    assertThat(variableEntity.getFullValue())
-        .isEqualTo("v".repeat(underTest.variableSizeThreshold + 1));
+    assertThat(variableEntity.getFullValue()).isNull();
     assertThat(variableEntity.getIsTruncated()).isTrue();
   }
 

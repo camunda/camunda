@@ -34,6 +34,12 @@ global:
       - name: harbor-registry
   # Identity authentication is enabled for Optimize
   identity:
+    keycloak:
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-keycloak-admin-password
     auth:
       enabled: true
       optimize:
@@ -51,6 +57,13 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 optimize:
   enabled: true
@@ -60,9 +73,23 @@ optimize:
         historyCleanup:
           cronTrigger: '0 1 * * *'
           ttl: 'P1D'
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 identityKeycloak:
   enabled: true
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 connectors:
   enabled: true

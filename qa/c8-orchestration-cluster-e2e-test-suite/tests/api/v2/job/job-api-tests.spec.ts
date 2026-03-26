@@ -16,19 +16,18 @@ import {
   assertBadRequest,
   assertEqualsForKeys,
   assertPaginatedRequest,
-  assertRequiredFields,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
   paginatedResponseFields,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
-  jobResponseFields,
-  jobSearchItemResponseFields,
-  jobSearchPageResponseRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+  validateResponse,
+  validateResponseShape,
+} from '../../../../json-body-assertions';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {jobResponseFields} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Job API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -79,9 +78,16 @@ test.describe.parallel('Job API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/jobs/activation',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.jobs.length).toBe(1);
-    assertRequiredFields(json.jobs[0], jobResponseFields);
     const filteredFields = filterOutDynamicFields(jobResponseFields);
     assertEqualsForKeys(json.jobs[0], expectedJobFields, filteredFields);
   });
@@ -153,16 +159,21 @@ test.describe.parallel('Job API Tests', () => {
           data: {},
         });
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await assertPaginatedRequest(res, {
           itemLengthGreaterThan: 3,
           totalItemGreaterThan: 3,
         });
 
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
-        assertRequiredFields(json.page, jobSearchPageResponseRequiredFields);
-        assertRequiredFields(json.items[0], jobSearchItemResponseFields);
+        validateResponseShape(
+          {
+            path: '/jobs/search',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
       }).toPass(defaultAssertionOptions);
     });
 
@@ -185,15 +196,20 @@ test.describe.parallel('Job API Tests', () => {
         });
 
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/jobs/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
-        assertRequiredFields(json.page, jobSearchPageResponseRequiredFields);
         const actualTypeList = json.items.map(
           (item: {type: string}) => item.type,
         );
         const expectedTypeList = [...actualTypeList].sort();
         expect(actualTypeList).toEqual(expectedTypeList);
-        assertRequiredFields(json.items[0], jobSearchItemResponseFields);
       }).toPass(defaultAssertionOptions);
     });
 

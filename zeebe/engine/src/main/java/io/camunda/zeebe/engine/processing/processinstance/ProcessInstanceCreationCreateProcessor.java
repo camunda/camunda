@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ProcessInstanceCreationCreateProcessor
     implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
@@ -114,8 +116,18 @@ public final class ProcessInstanceCreationCreateProcessor
 
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
+    // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
+    // space.
+    // Prevent buffer cloning overhead if response will not be returned.
+    final var variablesBuffer =
+        command.hasRequestMetadata() ? BufferUtil.cloneBuffer(record.getVariablesBuffer()) : null;
+    record.setVariables(DocumentValue.EMPTY_DOCUMENT);
+
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
+
     if (command.hasRequestMetadata()) {
+      // set variables back to return them in the response
+      record.setVariables(variablesBuffer);
       responseWriter.writeEventOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }

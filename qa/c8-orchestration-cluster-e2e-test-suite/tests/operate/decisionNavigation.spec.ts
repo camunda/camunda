@@ -44,6 +44,7 @@ test.describe('Decision Navigation', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  // skipped due to bug 49425: https://github.com/camunda/camunda/issues/49425
   test.skip('Navigation between process and decision', async ({
     operateProcessInstancePage,
     operateDecisionInstancePage,
@@ -71,7 +72,7 @@ test.describe('Decision Navigation', () => {
       await expect
         .poll(
           async () => {
-            return await operateProcessInstancePage.incidentsBanner.isVisible();
+            return await operateProcessInstancePage.incidentsTab.isVisible();
           },
           {timeout: 30000},
         )

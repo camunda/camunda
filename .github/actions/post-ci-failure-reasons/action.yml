@@ -57,9 +57,11 @@ runs:
 
         # Get all jobs from the current workflow run
         JOBS_JSON=$(gh api \
+          --paginate \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100")
+          "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100" \
+          | jq -s '{jobs: map(.jobs) | add}')
 
         # Filter unsuccessful jobs (failure, cancelled)
         UNSUCCESSFUL_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | .id')
@@ -89,9 +91,11 @@ runs:
 
           # Get annotations for this job
           ANNOTATIONS=$(gh api \
+            --paginate \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${{ github.repository }}/check-runs/$JOB_ID/annotations?per_page=100")
+            "/repos/${{ github.repository }}/check-runs/$JOB_ID/annotations?per_page=100" \
+            | jq -s 'add')
 
           HAS_PRIORITY_CANCELLATION=$(echo "$ANNOTATIONS" | jq -sR '
             try (

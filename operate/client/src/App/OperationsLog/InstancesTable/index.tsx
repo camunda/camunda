@@ -128,6 +128,12 @@ const InstancesTable: React.FC = observer(() => {
       filter: {
         category: {$neq: 'ADMIN'},
         processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
+        processDefinitionId:
+          filterValues.processDefinitionId &&
+          (!filterValues.processDefinitionVersion ||
+            filterValues.processDefinitionVersion === 'all')
+            ? filterValues.processDefinitionId
+            : undefined,
         processInstanceKey: filterValues.processInstanceKey,
         tenantId: selectedTenantId,
         operationType: filterValues.operationType

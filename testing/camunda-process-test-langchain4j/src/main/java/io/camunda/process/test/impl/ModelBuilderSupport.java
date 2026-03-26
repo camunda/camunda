@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.judge;
+package io.camunda.process.test.impl;
 
-final class ModelBuilderSupport {
+public final class ModelBuilderSupport {
 
   private ModelBuilderSupport() {}
 
-  static boolean hasText(final String value) {
+  public static boolean hasText(final String value) {
     return value != null && !value.trim().isEmpty();
   }
 
-  static String require(final String value, final String fieldName, final String provider) {
+  public static String require(final String value, final String fieldName, final String provider) {
     if (value == null || value.trim().isEmpty()) {
       throw new IllegalStateException(
           "Field '"

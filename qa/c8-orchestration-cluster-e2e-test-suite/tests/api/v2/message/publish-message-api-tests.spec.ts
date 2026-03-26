@@ -12,7 +12,10 @@ import {
   jsonHeaders,
   assertRequiredFields,
   assertEqualsForKeys,
+  assertUnauthorizedRequest,
+  assertInvalidArgument,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Publish Message API Tests', () => {
@@ -22,9 +25,16 @@ test.describe.parallel('Publish Message API Tests', () => {
       headers: jsonHeaders(),
       data: requestBody,
     });
-    expect(res.status()).toBe(200);
+
+    await validateResponse(
+      {
+        path: '/messages/publication',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, ['tenantId', 'messageKey']);
     assertEqualsForKeys(json, {tenantId: '<default>'}, ['tenantId']);
   });
 
@@ -35,7 +45,7 @@ test.describe.parallel('Publish Message API Tests', () => {
       headers: {},
       data: requestBody,
     });
-    expect(res.status()).toBe(401);
+    await assertUnauthorizedRequest(res);
   });
 
   test('Publish Message Bad Request', async ({request}) => {
@@ -43,11 +53,7 @@ test.describe.parallel('Publish Message API Tests', () => {
       headers: jsonHeaders(),
       data: {correlationKey: 'correlationKey'},
     });
-    expect(res.status()).toBe(400);
-    const json = await res.json();
-    assertRequiredFields(json, ['detail', 'title']);
-    expect(json.title).toBe('INVALID_ARGUMENT');
-    expect(json.detail).toBe('No name provided.');
+    await assertInvalidArgument(res, 400, 'No name provided.');
   });
 
   test('Publish Message Invalid Tenant', async ({request}) => {
@@ -59,11 +65,9 @@ test.describe.parallel('Publish Message API Tests', () => {
       headers: jsonHeaders(),
       data: updatedBody,
     });
-    expect(res.status()).toBe(400);
-    const json = await res.json();
-    assertRequiredFields(json, ['detail', 'title']);
-    expect(json.title).toBe('INVALID_ARGUMENT');
-    expect(json.detail).toContain(
+    await assertInvalidArgument(
+      res,
+      400,
       'Expected to handle request Publish Message with tenant identifier',
     );
   });

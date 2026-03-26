@@ -304,7 +304,42 @@ public class ProcessHandlerTest {
     assertThat(processCache.get(processRecord.getValue().getProcessDefinitionKey()))
         .isPresent()
         .get()
-        .extracting(CachedProcessEntity::name, CachedProcessEntity::versionTag)
-        .containsExactly("testProcessName", "processTag");
+        .extracting(
+            CachedProcessEntity::name,
+            CachedProcessEntity::versionTag,
+            CachedProcessEntity::hasUserTasks)
+        .containsExactly("testProcessName", "processTag", false);
+  }
+
+  @Test
+  void shouldUpdateProcessCacheWithHasUserTasks() throws IOException {
+    // given
+    final long expectedId = 456;
+    final var resource =
+        getClass().getClassLoader().getResource("process/two-process-with-embedded-form.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessIdOne")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processCache.get(processRecord.getValue().getProcessDefinitionKey()))
+        .isPresent()
+        .get()
+        .extracting(CachedProcessEntity::hasUserTasks)
+        .isEqualTo(true);
   }
 }

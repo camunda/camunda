@@ -115,6 +115,7 @@ const auditLogFilterSchema = z
 	.object({
 		auditLogKey: advancedStringFilterSchema.optional(),
 		processDefinitionKey: advancedStringFilterSchema.optional(),
+		processDefinitionId: advancedStringFilterSchema.optional(),
 		processInstanceKey: advancedStringFilterSchema.optional(),
 		elementInstanceKey: advancedStringFilterSchema.optional(),
 		operationType: getEnumFilterSchema(auditLogOperationTypeSchema).optional(),

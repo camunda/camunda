@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AbstractAssert;
@@ -35,11 +36,11 @@ import org.assertj.core.api.AbstractAssert;
 public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
   private final CamundaDataSource dataSource;
-  private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
 
   protected ElementAssertj(
       final CamundaDataSource dataSource,
-      final CamundaAssertAwaitBehavior awaitBehavior,
+      final Supplier<CamundaAssertAwaitBehavior> awaitBehavior,
       final String failureMessagePrefix) {
     super(failureMessagePrefix, ElementAssertj.class);
     this.dataSource = dataSource;
@@ -282,7 +283,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       final Consumer<ElementInstanceFilter> filter,
       final Consumer<List<ElementInstance>> assertion) {
 
-    awaitBehavior.untilAsserted(() -> dataSource.findElementInstances(filter), assertion);
+    awaitBehavior.get().untilAsserted(() -> dataSource.findElementInstances(filter), assertion);
   }
 
   private static List<ElementInstance> getInstancesInState(

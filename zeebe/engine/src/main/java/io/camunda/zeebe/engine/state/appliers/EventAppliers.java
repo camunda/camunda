@@ -391,6 +391,7 @@ public final class EventAppliers implements EventApplier {
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {
     register(JobIntent.CANCELED, 1, new JobCanceledV1Applier(state));
     register(JobIntent.CANCELED, 2, new JobCanceledV2Applier(state));
+    register(JobIntent.CANCELED, 3, new JobCanceledV3Applier(state));
     register(JobIntent.COMPLETED, 1, new JobCompletedV1Applier(state));
     register(JobIntent.COMPLETED, 2, new JobCompletedV2Applier(state));
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));

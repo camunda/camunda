@@ -32,6 +32,12 @@ public class TaskVariableEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String value;
 
+  /**
+   * @deprecated fullValue is no longer written by the exporter. The field is kept in the index
+   *     mapping for backward compatibility with existing documents but will always be null for new
+   *     documents.
+   */
+  @Deprecated
   @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String fullValue;
@@ -121,10 +127,18 @@ public class TaskVariableEntity
     return this;
   }
 
+  /**
+   * @deprecated fullValue is no longer written by the exporter. Kept for backward compatibility.
+   */
+  @Deprecated
   public String getFullValue() {
     return fullValue;
   }
 
+  /**
+   * @deprecated fullValue is no longer written by the exporter. Kept for backward compatibility.
+   */
+  @Deprecated
   public TaskVariableEntity setFullValue(final String fullValue) {
     this.fullValue = fullValue;
     return this;

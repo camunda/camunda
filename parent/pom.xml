@@ -54,7 +54,7 @@
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.0</version.docker-java-api>
-    <version.elasticsearch>8.16.6</version.elasticsearch>
+    <version.elasticsearch>8.19.12</version.elasticsearch>
     <version.elasticsearch-java-client>8.19.12</version.elasticsearch-java-client>
     <version.error-prone>2.48.0</version.error-prone>
     <version.grpc>1.79.0</version.grpc>
@@ -63,7 +63,7 @@
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpclient5>5.5.2</version.httpclient5>
+    <version.httpclient5>5.6</version.httpclient5>
     <version.httpcore5>5.4.2</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.9.0-alpha4</version.identity>
@@ -165,7 +165,7 @@
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.18.1</version.jna-platform>
-    <version.liquibase>5.0.1</version.liquibase>
+    <version.liquibase>5.0.2</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.3</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
@@ -184,10 +184,7 @@
 
     <version.elasticsearch-test-container>2.0.3</version.elasticsearch-test-container>
     <version.postgres-test-container>2.0.3</version.postgres-test-container>
-    <version.elasticsearch7>7.17.29</version.elasticsearch7>
     <version.lz4>1.10.4</version.lz4>
-    <!-- the lucene version must be coupled with version.elasticsearch7 -->
-    <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.14.1</version.joda-time>
     <version.commons-collections4>4.5.0</version.commons-collections4>
@@ -2090,62 +2087,6 @@
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna-platform</artifactId>
         <version>${version.jna-platform}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-x-content</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.elasticsearch7}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <!-- Override the transitive dependency from org.elasticsearch:elasticsearch,
-      replacing the discontinued org.lz4:lz4-java with the maintained fork at.yawk.lz4:lz4-java.
-      This override will remain necessary unless Elasticsearch itself adopts the maintained fork. -->
-      <dependency>
-        <groupId>at.yawk.lz4</groupId>
-        <artifactId>lz4-java</artifactId>
-        <version>${version.lz4}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-core</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.plugin</groupId>
-        <artifactId>parent-join-client</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-core</artifactId>
-        <version>${version.lucene}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-join</artifactId>
-        <version>${version.lucene}</version>
       </dependency>
 
       <dependency>

@@ -17,7 +17,9 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -97,5 +99,10 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
 
+  public static final AssertionProperties ASSERTION_PROPERTIES =
+      PROPERTIES_UTIL.getAssertionProperties();
+
   public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
+  public static final SemanticSimilarityProperties SEMANTIC_SIMILARITY_PROPERTIES =
+      PROPERTIES_UTIL.getSemanticSimilarityProperties();
 }

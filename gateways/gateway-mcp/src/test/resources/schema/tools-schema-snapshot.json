@@ -747,7 +747,7 @@
     {
       "name": "searchUserTaskVariables",
       "title": "searchUserTaskVariables",
-      "description": "Search user task variables based on given criteria. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "description": "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -803,16 +803,6 @@
           "page": {
             "type": "object",
             "properties": {
-              "after": {
-                "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
-                "default": "##default"
-              },
-              "before": {
-                "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
-                "default": "##default"
-              },
               "from": {
                 "type": "integer",
                 "format": "int32",

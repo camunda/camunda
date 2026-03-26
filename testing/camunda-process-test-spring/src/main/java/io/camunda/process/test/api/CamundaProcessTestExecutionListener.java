@@ -24,6 +24,7 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
@@ -41,6 +42,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.similarity.SemanticSimilarityConfigResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
@@ -156,11 +158,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .build();
 
-    // initialize json mapper
+    // initializations
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
-
-    // initialize judge config
     initializeJudgeConfig(testContext, runtimeConfiguration);
+    initializeAssertions(runtimeConfiguration.getAssertion());
+    initializeSemanticSimilarityConfig(testContext, runtimeConfiguration);
   }
 
   @Override
@@ -268,6 +270,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime.close();
 
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
   }
 
   private void initializeJsonMapper(
@@ -286,6 +289,19 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     JudgeConfigResolver.resolve(
             testContext.getApplicationContext(), runtimeConfiguration.getJudge())
         .ifPresent(CamundaAssert::setJudgeConfig);
+  }
+
+  private void initializeAssertions(final AssertionConfiguration assertionConfiguration) {
+    assertionConfiguration.getTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
+    assertionConfiguration.getInterval().ifPresent(CamundaAssert::setAssertionInterval);
+  }
+
+  private void initializeSemanticSimilarityConfig(
+      final TestContext testContext,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+    SemanticSimilarityConfigResolver.resolve(
+            testContext.getApplicationContext(), runtimeConfiguration.getSimilarity())
+        .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
   }
 
   private CamundaManagementClient createManagementClient(

@@ -520,13 +520,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hdrhistogram</groupId>
-          <!-- Conflicts with histogram in elasticsearch exporter dependency -->
-          <artifactId>HdrHistogram</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -543,6 +536,17 @@
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- Used by TomcatEncodedSlashConfig for encoded slash passthrough (#45215) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-tomcat</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-web-server</artifactId>
     </dependency>
 
     <dependency>

@@ -292,7 +292,6 @@ const DetailsTab: React.FC = () => {
         )}
       <StructuredList
         label="Element Instance Details"
-        isFlush={false}
         headerSize="sm"
         headerColumns={[
           {cellContent: 'Property', width: '30%'},

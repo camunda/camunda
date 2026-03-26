@@ -10,20 +10,18 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
-import {
-  CREATE_CLUSTER_VARIABLE,
-  clusterVariableRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CLUSTER_VARIABLE} from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createGlobalClusterVariable,
   deleteGlobalClusterVariable,
 } from '@requestHelpers';
+import {validateResponseShape} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
@@ -53,9 +51,16 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
         data: variable,
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, clusterVariableRequiredFields);
+      validateResponseShape(
+        {
+          path: '/cluster-variables/global',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.name).toBe(variable.name);
       expect(json.scope).toBe('GLOBAL');
       createdVariableNames.push(json.name);
@@ -104,9 +109,16 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, clusterVariableRequiredFields);
+      validateResponseShape(
+        {
+          path: '/cluster-variables/global/{name}',
+          method: 'GET',
+          status: '200',
+        },
+        json,
+      );
       expect(json.name).toBe(variableName);
       expect(json.scope).toBe('GLOBAL');
     }).toPass(defaultAssertionOptions);

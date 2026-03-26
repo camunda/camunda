@@ -54,7 +54,7 @@ test.beforeAll(async () => {
   await sleep(3000);
 });
 
-test.describe.skip('Process Instance Listeners', () => {
+test.describe('Process Instance Listeners', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -221,10 +221,20 @@ test.describe.skip('Process Instance Listeners', () => {
       const completeRes = await completeUserTask(request, userTaskKey);
       expect(completeRes.status()).toBe(204);
 
-      await expect(operateProcessInstancePage.stateOverlayActive).toBeHidden();
-      await expect(
-        operateProcessInstancePage.stateOverlayCompletedEndEvents,
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.stateOverlayActive,
+          ).toBeHidden();
+          await expect(
+            operateProcessInstancePage.stateOverlayCompletedEndEvents,
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
       await sleep(1000);
       await operateProcessInstancePage.clickInstanceHistoryElement(
         'Service Task B',

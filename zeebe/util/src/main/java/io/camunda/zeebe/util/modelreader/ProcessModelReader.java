@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
@@ -83,6 +84,10 @@ public final class ProcessModelReader {
         .getChildElementsByType(FlowNode.class)
         .forEach(fn -> extractCallActivities(callActivities, fn));
     return callActivities;
+  }
+
+  public static boolean hasUserTasks(final Collection<FlowNode> flowNodes) {
+    return flowNodes.stream().anyMatch(UserTask.class::isInstance);
   }
 
   private boolean isPublic(final ZeebeProperties properties) {

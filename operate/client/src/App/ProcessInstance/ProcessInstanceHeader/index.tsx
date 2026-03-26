@@ -107,7 +107,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     <InstanceHeader
       state={processInstanceState}
       instanceName={getProcessDefinitionName(processInstance)}
-      incidentsCount={incidentsCount}
+      incidentsCount={hasIncident ? incidentsCount : 0}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;

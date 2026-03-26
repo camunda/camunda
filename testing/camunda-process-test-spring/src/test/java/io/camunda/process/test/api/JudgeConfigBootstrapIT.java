@@ -24,7 +24,9 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.judge.BaseProviderConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig.OpenAiCompatibleConfig;
 import io.camunda.process.test.impl.judge.OpenAiChatModelAdapterProvider;
+import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,8 +55,8 @@ public class JudgeConfigBootstrapIT {
   @Configuration
   static class GenericChatModelAdapterConfig {
 
-    @Bean("my-generic")
-    ChatModelAdapter genericAdapter() {
+    @Bean("judge.my-generic")
+    ChatModelAdapter genericChatModelAdapter() {
       return ADAPTER_A;
     }
   }
@@ -62,13 +64,13 @@ public class JudgeConfigBootstrapIT {
   @Configuration
   static class MultipleChatModelAdapterConfig {
 
-    @Bean("my-custom")
-    ChatModelAdapter customAdapter() {
+    @Bean("judge.my-custom")
+    ChatModelAdapter customChatModelAdapter() {
       return ADAPTER_A;
     }
 
-    @Bean("another-adapter")
-    ChatModelAdapter anotherAdapter() {
+    @Bean("judge.another-provider")
+    ChatModelAdapter anotherChatModelAdapter() {
       return ADAPTER_B;
     }
   }
@@ -169,6 +171,34 @@ public class JudgeConfigBootstrapIT {
   @SpringBootTest(
       classes = JudgeConfigBootstrapIT.class,
       properties = {
+        "camunda.process-test.judge.chatModel.provider=openai-compatible",
+        "camunda.process-test.judge.chatModel.model=llama3",
+        "camunda.process-test.judge.chatModel.baseUrl=http://localhost:11434/v1",
+        "camunda.process-test.judge.chatModel.headers.X-Test-Header=test-header-value"
+      })
+  @CamundaSpringProcessTest
+  class OpenAiCompatibleProviderWithHeaders {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBootstrapOpenAiCompatibleProvider() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isNotNull();
+
+      final ProviderConfig providerConfig = runtimeConfig.getJudge().toProviderConfig();
+      assertThat(providerConfig).isInstanceOf(OpenAiCompatibleConfig.class);
+      final Map<String, String> headers = ((OpenAiCompatibleConfig) providerConfig).getHeaders();
+      assertThat(headers).isNotNull();
+      assertThat(headers).containsEntry("X-Test-Header", "test-header-value");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
         "camunda.process-test.judge.chatModel.provider=openai",
         "camunda.process-test.judge.chatModel.model=gpt-4o",
         "camunda.process-test.judge.chatModel.apiKey=test-key",
@@ -185,6 +215,97 @@ public class JudgeConfigBootstrapIT {
       assertThat(config.getChatModel()).isNotNull();
       assertThat(config.getThreshold()).isEqualTo(0.8);
       assertThat(config.getCustomPrompt()).hasValue("Custom evaluation criteria");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=azure-openai",
+        "camunda.process-test.judge.chatModel.model=gpt-4o",
+        "camunda.process-test.judge.chatModel.endpoint=https://my-resource.openai.azure.com/",
+        "camunda.process-test.judge.chatModel.apiKey=test-key"
+      })
+  @CamundaSpringProcessTest
+  class AzureOpenAiProvider {
+
+    @Test
+    void shouldBootstrapAzureOpenAiProvider() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isNotNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=azure-openai",
+        "camunda.process-test.judge.chatModel.model=gpt-4o",
+        "camunda.process-test.judge.chatModel.endpoint=https://my-resource.openai.azure.com/"
+      })
+  @CamundaSpringProcessTest
+  class AzureOpenAiProviderWithoutApiKey {
+
+    @Test
+    void shouldBootstrapAzureOpenAiWithDefaultCredentials() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isNotNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=openai",
+        "camunda.process-test.judge.chatModel.model=gpt-4o",
+        "camunda.process-test.judge.chatModel.apiKey=test-key",
+        "camunda.process-test.judge.chatModel.timeout=PT45S"
+      })
+  @CamundaSpringProcessTest
+  class WithTimeout {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBindTimeoutProperty() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isNotNull();
+
+      final BaseProviderConfig providerConfig =
+          (BaseProviderConfig) runtimeConfig.getJudge().toProviderConfig();
+      assertThat(providerConfig.getTimeout()).isEqualTo(java.time.Duration.ofSeconds(45));
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=openai",
+        "camunda.process-test.judge.chatModel.model=gpt-4o",
+        "camunda.process-test.judge.chatModel.apiKey=test-key",
+        "camunda.process-test.judge.chatModel.temperature=0.7"
+      })
+  @CamundaSpringProcessTest
+  class WithTemperature {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBindTemperatureProperty() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isNotNull();
+
+      final BaseProviderConfig providerConfig =
+          (BaseProviderConfig) runtimeConfig.getJudge().toProviderConfig();
+      assertThat(providerConfig.getTemperature()).isEqualTo(0.7);
     }
   }
 

@@ -75,7 +75,7 @@ public class CorrelatedMessageSubscriptionSearchIT {
         camundaClient.newCorrelatedMessageSubscriptionSearchRequest().send().join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_CORRELATED_MESSAGES);
+    assertThat(searchResponse.items()).hasSize(NUMBER_OF_CORRELATED_MESSAGES);
     assertThat(searchResponse.page().totalItems()).isEqualTo(NUMBER_OF_CORRELATED_MESSAGES);
     assertThat(searchResponse.items())
         .containsExactlyInAnyOrderElementsOf(orderedCorrelatedMessageSubscriptions);
@@ -111,7 +111,7 @@ public class CorrelatedMessageSubscriptionSearchIT {
             .join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(1);
+    assertThat(searchResponse.items()).hasSize(1);
     assertThat(searchResponse.items().getFirst()).isEqualTo(expectedCorrelatedMessageSubscription);
   }
 
@@ -145,7 +145,7 @@ public class CorrelatedMessageSubscriptionSearchIT {
             .join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(1);
+    assertThat(searchResponse.items()).hasSize(1);
     assertThat(searchResponse.items().getFirst()).isEqualTo(expectedCorrelatedMessageSubscription);
   }
 
@@ -160,7 +160,7 @@ public class CorrelatedMessageSubscriptionSearchIT {
             .join();
 
     // Then
-    assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_CORRELATED_MESSAGES);
+    assertThat(searchResponse.items()).hasSize(NUMBER_OF_CORRELATED_MESSAGES);
     assertThat(searchResponse.items())
         .containsExactlyElementsOf(
             orderedCorrelatedMessageSubscriptions.stream()

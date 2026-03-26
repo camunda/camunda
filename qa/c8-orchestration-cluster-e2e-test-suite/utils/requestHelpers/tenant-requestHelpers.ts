@@ -7,7 +7,10 @@
  */
 
 import type {APIRequestContext} from 'playwright-core';
-import {groupIdFromState} from './get-value-from-state-requestHelpers';
+import {
+  groupIdFromState,
+  roleIdValueUsingKey,
+} from './get-value-from-state-requestHelpers';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
@@ -17,10 +20,16 @@ import {
 } from '../http';
 import {expect} from '@playwright/test';
 import {generateUniqueId} from '../constants';
-import {CREATE_NEW_TENANT, tenantRequiredFields} from '../beans/requestBeans';
+import {
+  CREATE_NEW_TENANT,
+  roleRequiredFields,
+  tenantRequiredFields,
+} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {createGroupAndStoreResponseFields} from './group-requestHelpers';
 import {createUser} from './user-requestHelpers';
+import {validateResponse} from 'json-body-assertions';
+import {createRole} from './role-requestHelpers';
 
 export async function assignUsersToTenant(
   request: APIRequestContext,
@@ -77,6 +86,14 @@ export async function createTenant(
   });
 
   await assertStatusCode(res, 201);
+  await validateResponse(
+    {
+      path: '/tenants',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, tenantRequiredFields);
   if (state && key) {
@@ -123,6 +140,42 @@ export async function assignGroupsToTenant(
     await assertStatusCode(res, 204);
   }
 }
+export async function assignRolesToTenant(
+  request: APIRequestContext,
+  numberOfRoles: number,
+  tenantIdKey: string,
+  state: Record<string, unknown>,
+) {
+  const tenantId = state[tenantIdKey] as string;
+  for (let i = 1; i <= numberOfRoles; i++) {
+    await createRole(request, state, `${tenantId}${i}`);
+    const p = {
+      roleId: roleIdValueUsingKey(tenantIdKey, state, i) as string,
+      tenantId: tenantId as string,
+    };
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(res, 204);
+  }
+}
+
+export function assertRolesInResponse(
+  json: Serializable,
+  expectedBody: Serializable,
+  roleId: string,
+) {
+  const matchingItem = json.items.find(
+    (it: {roleId: string}) => it.roleId === roleId,
+  );
+  expect(matchingItem).toBeDefined();
+  assertRequiredFields(matchingItem, roleRequiredFields);
+  assertEqualsForKeys(matchingItem, expectedBody, ['roleId']);
+}
+
 export function assertTenantInResponse(
   json: Serializable,
   expectedBody: Serializable,
