@@ -83,7 +83,10 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         //    A long-polling request still held by the gateway can activate jobs meant for
         //    the new test and deliver them to the now-defunct connection, causing the new
         //    test's workers to miss those jobs and time out.
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_LONGPOLLING_ENABLED, "false")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_LONGPOLLING_ENABLED, "true")
+        // Debug logging for job activation and long-poll disconnect detection
+        .withEnv("LOGGING_LEVEL_IO_CAMUNDA_ZEEBE_GATEWAY_IMPL_JOB", "DEBUG")
+        .withEnv("LOGGING_LEVEL_IO_CAMUNDA_ZEEBE_GATEWAY_REST_CONTROLLER", "DEBUG")
         .withH2()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,

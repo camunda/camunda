@@ -205,7 +205,10 @@ public class CamundaProcessTestContainerRuntime
 
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
-    LOGGER.info("Camunda container runtime started in {}", startupTime);
+    LOGGER.info(
+        "Camunda container runtime started in {} — REST API: {}",
+        startupTime,
+        getCamundaContainer().getRestApiAddress());
 
     isStarted = true;
   }

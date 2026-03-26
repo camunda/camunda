@@ -18,6 +18,8 @@
     <!-- Hide default logging from Testcontainers -->
     <Logger name="org.testcontainers" level="warn"/>
     <Logger name="tc" level="error"/>
+    <!-- Show Camunda container logs for debugging -->
+    <Logger name="tc.camunda" level="debug"/>
     
   </Loggers>
 
