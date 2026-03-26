@@ -196,8 +196,7 @@ public final class RequestRetryHandler {
    * concurrent retries scatter across partitions instead of all cascading to the same next
    * partition.
    */
-  private int determineNextPartition(
-      final Set<Integer> triedPartitions, final int partitionCount) {
+  private int determineNextPartition(final Set<Integer> triedPartitions, final int partitionCount) {
     final var seen = new HashSet<Integer>();
     for (int i = 0; i < partitionCount; i++) {
       final int partition = dispatchStrategy.determinePartition(topologyManager);
