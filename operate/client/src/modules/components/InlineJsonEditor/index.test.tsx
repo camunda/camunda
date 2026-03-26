@@ -10,14 +10,13 @@ import {useState} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {InlineJsonEditor} from './index';
 
-// Unmock so we test the real implementation (JSONEditor is still mocked as a textarea)
 vi.unmock('modules/components/InlineJsonEditor');
 
 describe('<InlineJsonEditor />', () => {
   it('should render read-only value pretty-printed', async () => {
     const compactJson = '{"key":"value","nested":{"a":1}}';
 
-    render(<InlineJsonEditor value={compactJson} readOnly beautifyOnMount />);
+    render(<InlineJsonEditor value={compactJson} readOnly />);
 
     const editor = await screen.findByTestId('monaco-editor');
     expect(editor).toHaveValue(
@@ -46,7 +45,7 @@ describe('<InlineJsonEditor />', () => {
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
-    await user.type(editor, '"updated"');
+    await user.type(editor, '"{arrowLeft}updated');
 
     expect(mockOnChange).toHaveBeenCalledWith('"updated"');
   });
@@ -94,7 +93,7 @@ describe('<InlineJsonEditor />', () => {
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
-    await user.type(editor, '"valid"');
+    await user.type(editor, '"{arrowLeft}valid');
 
     expect(mockOnValidate).toHaveBeenCalledWith(true);
   });

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useEffect, useState} from 'react';
+import {lazy, Suspense} from 'react';
 import {observer} from 'mobx-react-lite';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {EditorLoader, EditorWrapper} from './styled';
@@ -32,11 +32,10 @@ type Props = {
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
   onBlur?: () => void;
+  onFocus?: () => void;
   readOnly?: boolean;
   /** Max number of lines before a scrollbar appears. Default: 5 */
   maxLines?: number;
-  /** Whether to pretty-print the value on mount (view mode should pass true). Default: false */
-  beautifyOnMount?: boolean;
   id?: string;
   'data-testid'?: string;
 };
@@ -46,38 +45,27 @@ function computeHeight(text: string, maxLines: number): number {
   return Math.min(lineCount, maxLines) * LINE_HEIGHT;
 }
 
-const InlineJsonEditor: React.FC<Props> = observer(
+type InnerProps = Props & {fieldError?: string};
+
+const InlineJsonEditorInner: React.FC<InnerProps> = observer(
   ({
-    name,
     value,
     onChange,
     onValidate,
     onBlur,
+    onFocus,
     readOnly,
     maxLines = MAX_LINES,
-    beautifyOnMount = false,
     id,
     'data-testid': dataTestId,
+    fieldError,
   }) => {
     const isReadOnly = readOnly === true || onChange === undefined;
-    const valueError = useFieldError(name ?? '');
-    const [displayValue, setDisplayValue] = useState(
-      isReadOnly ? beautifyJSON(value) : value,
-    );
+    const displayValue = beautifyJSON(value);
     const height = computeHeight(displayValue, maxLines);
-
-    useEffect(() => {
-      if (beautifyOnMount && !isReadOnly) {
-        const beautified = beautifyJSON(value);
-        setDisplayValue(beautified);
-      }
-      // intentionally run only on mount to set the initial display value
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     const handleChange = (newValue: string) => {
       onChange?.(newValue);
-      setDisplayValue(newValue);
 
       if (onValidate) {
         try {
@@ -94,9 +82,10 @@ const InlineJsonEditor: React.FC<Props> = observer(
         id={id}
         data-testid={dataTestId}
         onBlur={onBlur}
+        onFocus={onFocus}
         height={height}
         $readOnly={isReadOnly}
-        $invalid={!!valueError}
+        $invalid={!!fieldError}
       >
         <Suspense fallback={<EditorLoader height={height} />}>
           <label htmlFor="value" className="cds--visually-hidden">
@@ -111,6 +100,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
             options={{
               lineNumbers: 'off',
               lineDecorationsWidth: 0,
+              renderLineHighlight: 'none',
               stickyScroll: {enabled: false},
               glyphMargin: false,
               folding: false,
@@ -119,13 +109,31 @@ const InlineJsonEditor: React.FC<Props> = observer(
               },
             }}
           />
-          {valueError && (
-            <div className="cds--form-requirement">{valueError}</div>
+          {fieldError && (
+            <div className="cds--form-requirement">{fieldError}</div>
           )}
         </Suspense>
       </EditorWrapper>
     );
   },
 );
+
+/**
+ * Form-aware wrapper: reads the field error from react-final-form context.
+ * Only rendered when `name` is provided, so the hook is never called outside a Form.
+ */
+const InlineJsonEditorWithFormField: React.FC<Props & {name: string}> = (
+  props,
+) => {
+  const fieldError = useFieldError(props.name);
+  return <InlineJsonEditorInner {...props} fieldError={fieldError} />;
+};
+
+const InlineJsonEditor: React.FC<Props> = (props) => {
+  if (props.name) {
+    return <InlineJsonEditorWithFormField {...props} name={props.name} />;
+  }
+  return <InlineJsonEditorInner {...props} />;
+};
 
 export {InlineJsonEditor};

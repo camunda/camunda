@@ -14,8 +14,12 @@ function beautifyJSON(value: string) {
 
     return JSON.stringify(parsedValue, null, '\t');
   } catch {
-    const parsedValue = JSON.parse(untruncateJson(value));
-    return JSON.stringify(parsedValue, null, '\t');
+    try {
+      const parsedValue = JSON.parse(untruncateJson(value));
+      return JSON.stringify(parsedValue, null, '\t');
+    } catch {
+      return value;
+    }
   }
 }
 
