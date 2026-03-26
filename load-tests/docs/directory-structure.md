@@ -20,9 +20,8 @@ Understanding the directory layout per version is important when backporting cha
 | Docker image build job name in CI | `build-zeebe-image` | `build-camunda-image` | `build-camunda-image` |
 | Identity, Optimize, Keycloak in base values | disabled | disabled | enabled |
 | Number of Helm values file variants | 2-3 | 4 | 6+ |
-| `camunda-pr-load-test.yaml` workflow | not available | not available | available |
-| `zeebe-benchmark.yml` workflow | available | available | removed |
-| `zeebe-pr-benchmark.yaml` workflow | available | available | removed |
+| Ad-hoc load test workflow | `zeebe-benchmark.yml` | `zeebe-benchmark.yml` | `camunda-load-test.yml` (renamed) |
+| PR-triggered load test workflow | `zeebe-pr-benchmark.yaml` | `zeebe-pr-benchmark.yaml` | `camunda-pr-load-test.yaml` (renamed) |
 | Cloud load test support in setup scripts | not available | not available | available |
 
 ## Backporting
