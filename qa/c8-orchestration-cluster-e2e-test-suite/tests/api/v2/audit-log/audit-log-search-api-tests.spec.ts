@@ -229,6 +229,36 @@ for (const {description, filter} of filterTestCases) {
 }
 
 test.describe.parallel('Search Audit Logs API Tests', () => {
+  let userWithResourcesAuthorizationToSendRequest: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    } = {} as {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+
+    test.beforeAll(async ({request}) => {
+      await test.step('Setup - Create test user with Resource Authorization', async () => {
+        userWithResourcesAuthorizationToSendRequest = await createUser(request);
+        await grantUserResourceAuthorization(
+          request,
+          userWithResourcesAuthorizationToSendRequest,
+        );
+      });
+    });
+      
+    test.afterAll(async ({request}) => {
+      await test.step('Cleanup', async () => {
+        await cleanupUsers(request, [
+          userWithResourcesAuthorizationToSendRequest.username,
+        ]);
+      });
+    });
+    
   test('Search Audit Logs Success', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUDIT_LOG_SEARCH_ENDPOINT), {
@@ -473,26 +503,6 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
   });
 
   test('Search Audit Logs - No granted permissions', async ({request}) => {
-    let userWithResourcesAuthorizationToSendRequest: {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    } = {} as {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    };
-
-    await test.step('Setup - Create test user with Resource Authorization', async () => {
-      userWithResourcesAuthorizationToSendRequest = await createUser(request);
-      await grantUserResourceAuthorization(
-        request,
-        userWithResourcesAuthorizationToSendRequest,
-      );
-    });
-
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
@@ -515,12 +525,6 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
         expect(body.page.totalItems).toEqual(0);
         expect(body.items.length).toEqual(0);
       }).toPass(defaultAssertionOptions);
-    });
-
-    await test.step('Cleanup', async () => {
-      await cleanupUsers(request, [
-        userWithResourcesAuthorizationToSendRequest.username,
-      ]);
     });
   });
 });
