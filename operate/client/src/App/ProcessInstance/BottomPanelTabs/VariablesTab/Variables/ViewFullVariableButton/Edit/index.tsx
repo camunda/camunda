@@ -10,7 +10,7 @@ import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {tracking} from 'modules/tracking';
-import {useExistingVariableEditor} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/useExistingVariableEditor';
+import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
 import {useForm} from 'react-final-form';
 import type {ViewFullVariableButtonEditProps} from '../types';
 import {MaximizeButton} from '../MaximizeButton';

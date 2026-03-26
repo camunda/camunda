@@ -20,7 +20,7 @@ import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useExistingVariableEditor} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/useExistingVariableEditor';
+import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
 
 type Props = {
   id?: string;
