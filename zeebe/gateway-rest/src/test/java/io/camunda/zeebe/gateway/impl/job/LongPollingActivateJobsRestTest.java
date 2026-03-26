@@ -1039,7 +1039,11 @@ public class LongPollingActivateJobsRestTest {
         new InflightActivateJobsRequest<>(
             getNextRequestId(),
             brokerRequest,
-            spy(new JobActivationRequestResponseObserver(new CompletableFuture<>())),
+            spy(
+                new JobActivationRequestResponseObserver(
+                    new CompletableFuture<>(),
+                    new com.fasterxml.jackson.databind.ObjectMapper(),
+                    (jobs, msg) -> {})),
             activateJobsRequest.requestTimeout()) {
 
           @Override
@@ -1158,7 +1162,7 @@ public class LongPollingActivateJobsRestTest {
 
     public InspectableJobActivationRequestResponseObserver(
         final CompletableFuture<ResponseEntity<Object>> result) {
-      super(result);
+      super(result, new com.fasterxml.jackson.databind.ObjectMapper(), (jobs, msg) -> {});
     }
 
     public JobActivationResult getResponse() {

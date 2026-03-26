@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.job;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
@@ -51,8 +52,12 @@ public class JobHandlerConfiguration {
   }
 
   @Bean
-  public ResponseObserverProvider responseObserverProvider() {
-    return JobActivationRequestResponseObserver::new;
+  public ResponseObserverProvider responseObserverProvider(
+      final ObjectMapper objectMapper,
+      final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
+    return result ->
+        new JobActivationRequestResponseObserver(
+            result, objectMapper, activateJobsHandler::yieldJobs);
   }
 
   @Bean

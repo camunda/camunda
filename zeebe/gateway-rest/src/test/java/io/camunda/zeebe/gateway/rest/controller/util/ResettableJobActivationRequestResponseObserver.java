@@ -7,17 +7,23 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.zeebe.gateway.impl.job.JobActivationResult.ActivatedJob;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import org.springframework.http.ResponseEntity;
 
 public class ResettableJobActivationRequestResponseObserver
     extends JobActivationRequestResponseObserver {
 
   public ResettableJobActivationRequestResponseObserver(
-      final CompletableFuture<ResponseEntity<Object>> result) {
-    super(result);
+      final CompletableFuture<ResponseEntity<Object>> result,
+      final ObjectMapper objectMapper,
+      final BiConsumer<List<ActivatedJob>, String> yieldCallback) {
+    super(result, objectMapper, yieldCallback);
   }
 
   public void reset() {

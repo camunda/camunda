@@ -393,7 +393,10 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
 
     @Bean
     public ResettableJobActivationRequestResponseObserver responseObserver() {
-      return new ResettableJobActivationRequestResponseObserver(new CompletableFuture<>());
+      return new ResettableJobActivationRequestResponseObserver(
+          new CompletableFuture<>(),
+          new com.fasterxml.jackson.databind.ObjectMapper(),
+          (jobs, msg) -> {});
     }
 
     @Bean
