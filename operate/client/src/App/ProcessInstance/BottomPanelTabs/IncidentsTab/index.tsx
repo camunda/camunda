@@ -26,6 +26,11 @@ import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+<<<<<<< HEAD
+=======
+import {Navigate, useLocation} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+>>>>>>> f2ba9fed (fix: display root cause decision in incidents table)
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {useMemo} from 'react';
 
@@ -123,6 +128,21 @@ const IncidentsTab: React.FC = observer(() => {
       }, {}),
     [decisionInstancesResult],
   );
+<<<<<<< HEAD
+=======
+
+  if (processInstance?.hasIncident === false) {
+    return (
+      <Navigate
+        to={{
+          ...location,
+          pathname: Paths.processInstanceVariables({processInstanceId}),
+        }}
+        replace
+      />
+    );
+  }
+>>>>>>> f2ba9fed (fix: display root cause decision in incidents table)
 
   return (
     <Container>

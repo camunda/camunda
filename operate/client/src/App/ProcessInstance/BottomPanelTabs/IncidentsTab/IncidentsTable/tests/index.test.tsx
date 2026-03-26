@@ -9,12 +9,22 @@
 import {IncidentsTable} from '..';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
+<<<<<<< HEAD
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {
   createEnhancedIncident,
   createProcessInstance,
   createUser,
 } from 'modules/testUtils';
+=======
+import {
+  Wrapper,
+  incidentsMock,
+  firstIncident,
+  secondIncident,
+} from './mocks';
+import {createEnhancedIncident} from 'modules/testUtils';
+>>>>>>> f2ba9fed (fix: display root cause decision in incidents table)
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {getIncidentErrorName} from 'modules/utils/incidents';
