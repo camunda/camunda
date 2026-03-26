@@ -97,18 +97,27 @@ To set this value permanently, update the `vm.max_map_count` setting in /etc/sys
 
 On Operate we use Playwright for visual regression testing. These tests run on every push on every branch through Github Actions.
 
-To run these locally you can follow the steps below:
+On local machines, visual tests use a [Playwright Server in Docker](https://playwright.dev/docs/docker#remote-connection) to ensure consistent rendering across all environments. In CI, the tests run directly inside the Playwright Docker image without using the remote server connection. The Docker container is started and stopped automatically by Playwright.
 
-1. Inside the client folder run `npm run build:visual-regression`
-2. After the build is finished start the Docker container with `npm run start-visual-regression-docker`
-3. Inside the container, run `npm run start:visual-regression &`
-4. After that, run `npm run test:visual`
+### Prerequisites
 
-After the tests run, test report is saved locally in operate/client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
+- Docker or Docker Desktop with host networking enabled (`Settings` → `Resources` → `Network` → `Enable host networking`)
+- Required Playwright image will be automatically pulled by tests. In case of a timeout after 3 minutes, you can run `docker pull mcr.microsoft.com/playwright:v{version in package.json}`.
+
+### Running the tests
+
+Inside the client folder:
+
+1. Build the application: `npm run build:visual-regression`
+2. Run the tests: `npm run test:visual`
+
+Alternatively, you can start Playwright in UI mode by running `npm run test:visual -- --ui`.
 
 #### Updating screenshots
 
-If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `npm run test:visual -- --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and intentionally want to update the UI baseline, run `npm run test:visual -- --update-snapshots`. Be aware that this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+
+Alternatively, you can configure Playwright's UI mode to update snapshots under "Testing Options" after running `npm run test:visual -- --ui`.
 
 #### Inspecting failures in the CI
 

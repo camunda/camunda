@@ -237,8 +237,6 @@ jobs:
         run: npm ci
       - name: Build frontend
         run: npm run build
-      - name: Start server
-        run: npm run start:visual-regression &
       - name: Run A11y tests
         run: npm run test:a11y
       - uses: actions/upload-artifact@v4
@@ -286,8 +284,6 @@ jobs:
         run: npm ci
       - name: Build frontend
         run: npm run build:visual-regression
-      - name: Start server
-        run: npm run start:visual-regression &
       - name: Run Visual regression tests
         run: npm run test:visual
       - uses: actions/upload-artifact@v4
@@ -333,8 +329,6 @@ jobs:
         name: Install dependencies
       - name: Build frontend
         run: npm run build
-      - name: Start server
-        run: npm run start:visual-regression &
       - name: Run Playwright
         working-directory: ./operate/client
         run: npm run generate-screenshots
