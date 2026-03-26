@@ -23,8 +23,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
@@ -54,6 +59,7 @@ public final class HttpClient implements AutoCloseable {
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
   private final CloseableHttpAsyncClient client;
+  private final AutoCloseable connectionManager;
   private final ObjectMapper jsonMapper;
   private final URI address;
   private final RequestConfig defaultRequestConfig;
@@ -61,8 +67,17 @@ public final class HttpClient implements AutoCloseable {
   private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
 
+  // Tracks all in-flight request futures so they can be cancelled on close().
+  // With hardCancellationEnabled=true (set in HttpClientFactory), cancelling a future
+  // triggers IOSessionImpl.close(IMMEDIATE) which sets SO_LINGER=0 and closes the socket,
+  // sending TCP RST. This allows the server to detect the disconnect and reactivate
+  // any jobs that were activated for the now-dead connection.
+  private final Set<HttpCamundaFuture<?>> pendingFutures = ConcurrentHashMap.newKeySet();
+  private final AtomicBoolean closed = new AtomicBoolean(false);
+
   public HttpClient(
       final CloseableHttpAsyncClient client,
+      final AutoCloseable connectionManager,
       final ObjectMapper jsonMapper,
       final URI address,
       final RequestConfig defaultRequestConfig,
@@ -70,6 +85,7 @@ public final class HttpClient implements AutoCloseable {
       final TimeValue shutdownTimeout,
       final CredentialsProvider credentialsProvider) {
     this.client = client;
+    this.connectionManager = connectionManager;
     this.jsonMapper = jsonMapper;
     this.address = address;
     this.defaultRequestConfig = defaultRequestConfig;
@@ -84,6 +100,47 @@ public final class HttpClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    if (!closed.compareAndSet(false, true)) {
+      return;
+    }
+    // Cancel all pending request futures before closing the client. With
+    // hardCancellationEnabled=true, this triggers per-connection IOSessionImpl.close(IMMEDIATE)
+    // which sets SO_LINGER=0 and closes each socket, sending TCP RST to the server.
+    // This is critical for long-polling: without cancellation, the server doesn't know the
+    // client is gone and may activate jobs for a dead connection.
+    if (!pendingFutures.isEmpty()) {
+      LOGGER.debug("Cancelling {} pending HTTP request(s) before close", pendingFutures.size());
+      final List<HttpCamundaFuture<?>> snapshot = new ArrayList<>(pendingFutures);
+      for (final HttpCamundaFuture<?> future : snapshot) {
+        future.cancel(true, null);
+      }
+      // Wait for each future to settle so the NIO reactor has processed the cancellation
+      // and closed the socket (sending RST) before we return.
+      for (final HttpCamundaFuture<?> future : snapshot) {
+        try {
+          future.get(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (final Exception ignored) {
+          // Expected — cancelled futures throw CancellationException or ExecutionException
+        }
+      }
+      pendingFutures.clear();
+    }
+
+    // Force-close the connection pool with IMMEDIATE mode to RST all connections,
+    // including idle pooled connections that have no active future. IMMEDIATE sets
+    // SO_LINGER=0 on each socket, causing TCP RST instead of FIN. With FIN (graceful),
+    // the server's half of the connection stays open and can still write data — the
+    // long-poll handler would successfully deliver jobs to the half-closed connection.
+    if (connectionManager instanceof org.apache.hc.core5.io.ModalCloseable) {
+      ((org.apache.hc.core5.io.ModalCloseable) connectionManager).close(CloseMode.IMMEDIATE);
+    } else {
+      try {
+        connectionManager.close();
+      } catch (final Exception e) {
+        LOGGER.debug("Failed to close connection manager", e);
+      }
+    }
+
     client.close(CloseMode.GRACEFUL);
     try {
       client.awaitShutdown(shutdownTimeout);
@@ -382,6 +439,10 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
+    if (closed.get()) {
+      result.completeExceptionally(new ClientException("Client is closed"));
+      return;
+    }
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -423,6 +484,14 @@ public final class HttpClient implements AutoCloseable {
               maxRetries));
     }
 
+    pendingFutures.add(result);
+    result.whenComplete((r, ex) -> pendingFutures.remove(result));
+    // Re-check after registering: if close() ran between the first check and here,
+    // cancel the future that close() missed
+    if (closed.get()) {
+      result.cancel(true, null);
+      return;
+    }
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
