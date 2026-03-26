@@ -1155,8 +1155,8 @@ public final class SearchQueryResponseMapper {
         .collect(
             toMap(
                 e -> {
-                  final String key = e.getKey().getValue();
-                  return "identity".equals(key) ? "admin" : key;
+                  final AppName appName = e.getKey();
+                  return appName == AppName.IDENTITY ? "admin" : appName.getValue();
                 },
                 Map.Entry::getValue,
                 (v1, v2) -> v1));
