@@ -68,7 +68,7 @@ public class ArchiverTaskSupplier<SortFieldType> {
   public CompletableFuture<Long> getNextBatch() {
     counters.request();
     return idsSupplier
-        .apply(List.of())
+        .apply(getLastSearchPosition())
         .thenCompose(
             response -> {
               // we can set this in another stage (like after reindex/delete if we want retries)
@@ -90,6 +90,7 @@ public class ArchiverTaskSupplier<SortFieldType> {
                   .thenApply(
                       count -> {
                         counters.delete(count);
+                        totalArchived.accumulateAndGet(count, Long::sum);
                         return count;
                       });
             });
@@ -97,12 +98,15 @@ public class ArchiverTaskSupplier<SortFieldType> {
 
   public void printStatus() {
     logger.info(
-        "REINDEX_BY_ID >>> The archiver task supplier for "
-            + sourceIdx
-            + " to "
-            + destinationIdx
-            + " produced "
-            + counters.status());
+        "REINDEX_BY_ID >>> The archiver task supplier to move data from {} to {} produced {}",
+        sourceIdx,
+        destinationIdx,
+        counters.status());
+  }
+
+  private List<SortFieldType> getLastSearchPosition() {
+    final DocIdsSearchResponse<SortFieldType> lstResponse = lastSearchResponse.get();
+    return lstResponse == null ? List.of() : lstResponse.searchAfter();
   }
 
   public record DocIdsSearchResponse<T>(List<String> ids, List<T> searchAfter) {

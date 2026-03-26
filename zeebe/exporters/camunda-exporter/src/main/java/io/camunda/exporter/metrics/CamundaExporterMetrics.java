@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,6 +104,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Timer flushDuration;
   private final Counter failedFlush;
   private final Timer recordExportDuration;
+
+  private final Map<String, Timer> timersBySource = new ConcurrentHashMap<>();
+  private final Map<String, Counter> docCountersBySource = new ConcurrentHashMap<>();
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
@@ -457,18 +462,36 @@ public class CamundaExporterMetrics implements AutoCloseable {
   public void measureArchiveIndexDuration(
       final String sourceIndex, final Sample sample, final Long count) {
     final Timer timer =
-        Timer.builder(meterName("archiver.index.duration"))
-            .description("Duration of how long it takes to archive.")
-            .tag("source", sourceIndex)
-            .publishPercentileHistogram()
-            .register(meterRegistry);
+        timersBySource.compute(
+            sourceIndex,
+            (key, existingTimer) -> {
+              if (existingTimer == null) {
+                return Timer.builder(meterName("archiver.index.duration"))
+                    .description(
+                        "Duration of how long it takes to archive docs from " + sourceIndex)
+                    .tag("source", sourceIndex)
+                    .publishPercentileHistogram()
+                    .register(meterRegistry);
+              } else {
+                return existingTimer;
+              }
+            });
     sample.stop(timer);
 
-    Counter.builder(meterName("archiver.index.docs"))
-        .tag("source", sourceIndex)
-        .description("Count of how many documents archived.")
-        .register(meterRegistry)
-        .increment(count);
+    docCountersBySource
+        .compute(
+            sourceIndex,
+            (key, existingCounter) -> {
+              if (existingCounter == null) {
+                return Counter.builder(meterName("archiver.index.docs"))
+                    .tag("source", sourceIndex)
+                    .description("Count of how many " + sourceIndex + " documents archived.")
+                    .register(meterRegistry);
+              } else {
+                return existingCounter;
+              }
+            })
+        .increment(count == null ? 0 : count);
   }
 
   @Override
@@ -505,6 +528,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(auditLogsArchived);
 
     meterRegistry.find(FLUSH_FAILURE_TYPE_METER_NAME).meters().forEach(meterRegistry::remove);
+
+    timersBySource.values().forEach(meterRegistry::remove);
+    docCountersBySource.values().forEach(meterRegistry::remove);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(SINCE_LAST_FLUSH_SECONDS_METER_NAME);

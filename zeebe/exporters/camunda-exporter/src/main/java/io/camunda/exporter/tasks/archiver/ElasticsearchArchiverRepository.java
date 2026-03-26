@@ -384,16 +384,27 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenApply(
             ignored -> {
               logger.info(
-                  "REINDEX_BY_ID >>> REINDEX COMPLETED for "
-                      + sourceIndexName
-                      + " to "
-                      + destinationIndexName);
+                  "REINDEX_BY_ID >>> REINDEX COMPLETED from {} to {}",
+                  sourceIndexName,
+                  destinationIndexName);
 
               taskSupplier.printStatus();
 
               metrics.measureArchiveIndexDuration(
                   sourceIndexName, timer, taskSupplier.getTotalArchived());
               return ignored;
+            })
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                logger.error(
+                    "REINDEX_BY_ID >>> REINDEX ERROR ERRROR FAILED with: {}", err.getMessage());
+                logger.error(
+                    "REINDEX_BY_ID >>> REINDEX ERROR ERRROR FAILED for {} with error {}",
+                    sourceIndexName,
+                    err.getMessage(),
+                    err);
+              }
             });
   }
 

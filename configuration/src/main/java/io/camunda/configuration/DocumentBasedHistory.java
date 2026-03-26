@@ -24,7 +24,7 @@ public class DocumentBasedHistory {
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
-  private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 100;
+  private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 1000;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
