@@ -30,7 +30,6 @@ public interface RequestDispatchStrategy {
    * starting from a random offset to avoid all gateway pods hitting the same partition first.
    */
   static RequestDispatchStrategy roundRobin() {
-    return new RoundRobinDispatchStrategy(
-        ThreadLocalRandom.current().nextInt(MAX_RANDOM_OFFSET));
+    return new RoundRobinDispatchStrategy(ThreadLocalRandom.current().nextInt(MAX_RANDOM_OFFSET));
   }
 }
