@@ -177,14 +177,14 @@ final class InFlightEntryTest {
   class Cleanup {
 
     @Test
-    void callsOnIgnore() {
+    void callsOnDropped() {
       final var listener = new CountingListener();
       final var entry = new InFlightEntry(metrics, null, listener);
       entry.onAppend();
 
       entry.cleanup();
 
-      assertThat(listener.ignoreCount.get()).isEqualTo(1);
+      assertThat(listener.droppedCount.get()).isEqualTo(1);
     }
 
     @Test
@@ -209,7 +209,7 @@ final class InFlightEntryTest {
       entry.cleanup();
       entry.cleanup();
 
-      assertThat(listener.ignoreCount.get()).isEqualTo(1);
+      assertThat(listener.droppedCount.get()).isEqualTo(1);
     }
 
     @Test
