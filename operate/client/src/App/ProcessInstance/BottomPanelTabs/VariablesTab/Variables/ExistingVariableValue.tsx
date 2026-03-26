@@ -11,22 +11,16 @@ import {
   validateValueNotEmpty,
   validateValueValid,
 } from './validators';
-import {Field, useField, useForm, useFormState} from 'react-final-form';
-import {useEffect, useState} from 'react';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {tracking} from 'modules/tracking';
+import {Field, useFormState} from 'react-final-form';
+import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
-import {createVariableFieldName} from './createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {Maximize} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
-import {useSelectedElementName} from 'modules/hooks/elementSelection';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useVariableScopeKey} from 'modules/hooks/variables';
+import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
 
 type Props = {
   id?: string;
@@ -35,66 +29,16 @@ type Props = {
   isPreview?: boolean;
 };
 
-const createModification = ({
-  scopeId,
-  isValid,
-  isDirty,
-  name,
-  oldValue,
-  newValue,
-  selectedElementName,
-}: {
-  scopeId: string | null;
-  isValid: boolean;
-  isDirty: boolean;
-  name: string;
-  oldValue: string;
-  newValue: string;
-  selectedElementName: string;
-}) => {
-  if (
-    !modificationsStore.isModificationModeEnabled ||
-    scopeId === null ||
-    !isValid ||
-    newValue === ''
-  ) {
-    return;
-  }
-
-  const lastEditModification = modificationsStore.getLastVariableModification(
-    scopeId,
-    name,
-    'EDIT_VARIABLE',
-  );
-
-  if (
-    lastEditModification?.newValue !== newValue &&
-    (isDirty ||
-      (lastEditModification !== undefined &&
-        lastEditModification.newValue !== newValue))
-  ) {
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'EDIT_VARIABLE',
-        id: name,
-        scopeId,
-        elementName: selectedElementName,
-        name,
-        oldValue,
-        newValue,
-      },
-    });
-  }
-};
-
 const ExistingVariableValue: React.FC<Props> = observer(
   ({id, variableName, variableValue, isPreview}) => {
     const {isModificationModeEnabled} = modificationsStore;
     const formState = useFormState();
-    const selectedElementName = useSelectedElementName() || '';
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const form = useForm();
+
+    const variableEditor = useExistingVariableEditor(
+      variableName,
+      variableValue,
+    );
+
     const {
       data: variable,
       isLoading,
@@ -102,7 +46,6 @@ const ExistingVariableValue: React.FC<Props> = observer(
     } = useVariable(id!, {
       enabled: isPreview && id !== undefined,
     });
-    const variableScopeKey = useVariableScopeKey();
 
     useEffect(() => {
       if (error) {
@@ -114,40 +57,14 @@ const ExistingVariableValue: React.FC<Props> = observer(
       }
     }, [error]);
 
-    const fieldName = isModificationModeEnabled
-      ? createVariableFieldName(variableName)
-      : 'value';
-
-    const {
-      meta: {validating, valid},
-    } = useField(fieldName);
-
-    const isValid = !validating && valid;
-
-    const pendingEditModification =
-      isModificationModeEnabled && variableScopeKey !== null
-        ? modificationsStore.getLastVariableModification(
-            variableScopeKey,
-            variableName,
-            'EDIT_VARIABLE',
-          )
-        : undefined;
-
-    const getInitialValue = (variable?: Variable) => {
-      if (pendingEditModification !== undefined) {
-        return pendingEditModification.newValue;
-      }
-      return variable?.value ?? variableValue;
-    };
-
     const isVariableValueUndefined = variable?.value === undefined;
     const pauseValidation = isPreview && isVariableValueUndefined;
 
     return (
       <Layer>
         <Field
-          name={fieldName}
-          initialValue={getInitialValue(variable)}
+          name={variableEditor.fieldName}
+          initialValue={variableEditor.getInitialValue(variable)}
           validate={
             pauseValidation
               ? () => undefined
@@ -164,26 +81,12 @@ const ExistingVariableValue: React.FC<Props> = observer(
               {...input}
               size="sm"
               type="text"
-              id={fieldName}
+              id={variableEditor.fieldName}
               hideLabel
               disabled={formState.submitting}
               labelText="Value"
               placeholder="Value"
               data-testid="edit-variable-value"
-              buttonLabel="Open JSON editor"
-              tooltipPosition="left"
-              onIconClick={() => {
-                if (formState.submitting) {
-                  return;
-                }
-
-                setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'json-editor-opened',
-                  variant: 'edit-variable',
-                });
-              }}
-              Icon={Maximize}
               autoFocus={!isModificationModeEnabled || meta.active}
               isLoading={isLoading}
               onFocus={(event) => {
@@ -192,14 +95,15 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 }
               }}
               onBlur={(event) => {
-                createModification({
-                  scopeId: variableScopeKey,
+                variableEditor.createModification({
+                  scopeId: variableEditor.variableScopeKey,
                   name: variableName,
-                  oldValue: getInitialValue(variable),
+                  oldValue: variableEditor.getInitialValue(variable),
                   newValue: input.value ?? '',
-                  isDirty: getInitialValue(variable) !== input.value,
-                  isValid: isValid ?? false,
-                  selectedElementName,
+                  isDirty:
+                    variableEditor.getInitialValue(variable) !== input.value,
+                  isValid: variableEditor.isValid ?? false,
+                  selectedElementName: variableEditor.selectedElementName,
                 });
 
                 input.onBlur(event);
@@ -207,38 +111,6 @@ const ExistingVariableValue: React.FC<Props> = observer(
             />
           )}
         </Field>
-        {isModalVisible && (
-          <JSONEditorModal
-            isVisible={isModalVisible}
-            title={`Edit Variable "${variableName}"`}
-            value={formState.values?.[fieldName]}
-            onClose={() => {
-              setIsModalVisible(false);
-              tracking.track({
-                eventName: 'json-editor-closed',
-                variant: 'edit-variable',
-              });
-            }}
-            onApply={(value) => {
-              form.change(fieldName, value);
-              setIsModalVisible(false);
-              tracking.track({
-                eventName: 'json-editor-saved',
-                variant: 'edit-variable',
-              });
-
-              createModification({
-                scopeId: variableScopeKey,
-                name: variableName,
-                oldValue: getInitialValue(variable),
-                newValue: value ?? '',
-                isDirty: getInitialValue(variable) !== value,
-                isValid: isValid ?? false,
-                selectedElementName,
-              });
-            }}
-          />
-        )}
       </Layer>
     );
   },

@@ -7,10 +7,10 @@
  */
 
 import {LoadingStateContainer} from './styled';
-import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Loading} from '@carbon/react';
+import {TextInputField} from 'modules/components/TextInputField';
 
-type Props = React.ComponentProps<typeof IconTextInputField> & {
+type Props = React.ComponentProps<typeof TextInputField> & {
   isLoading: boolean;
 };
 
@@ -19,12 +19,12 @@ const LoadingTextfield: React.FC<Props> = ({isLoading, ...props}) => {
     return (
       <LoadingStateContainer>
         <Loading small data-testid="full-variable-loader" />
-        <IconTextInputField {...props} />
+        <TextInputField {...props} />
       </LoadingStateContainer>
     );
   }
 
-  return <IconTextInputField {...props} />;
+  return <TextInputField {...props} />;
 };
 
 export {LoadingTextfield};
