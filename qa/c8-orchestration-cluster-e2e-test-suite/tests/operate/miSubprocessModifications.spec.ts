@@ -8,7 +8,11 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance, cancelProcessInstance} from 'utils/zeebeClient';
+import {
+  deploy,
+  createSingleInstance,
+  cancelProcessInstance,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -26,6 +30,7 @@ let outwardMoveInstance: ProcessInstance;
 let moveAllInstance: ProcessInstance;
 let cancelTokenInstance: ProcessInstance;
 let addTokenInstance: ProcessInstance;
+let completedMiTaskInstance: ProcessInstance;
 
 test.beforeAll(async () => {
   await deploy([
@@ -75,6 +80,14 @@ test.beforeAll(async () => {
     items: ['itemA'],
   });
 
+  completedMiTaskInstance = await createSingleInstance(
+    'miSubprocessRestriction',
+    1,
+    {
+      items: ['itemA'],
+    },
+  );
+
   await sleep(3000);
 });
 
@@ -88,6 +101,7 @@ test.afterAll(async () => {
     moveAllInstance,
     cancelTokenInstance,
     addTokenInstance,
+    completedMiTaskInstance,
   ]) {
     await cancelProcessInstance(instance.processInstanceKey);
   }
@@ -750,7 +764,7 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
       await operateProcessInstanceViewModificationModePage.applyChanges();
     });
 
-    await test.step('Verify only one Task A instance remains in the instance history', async () => {
+    await test.step('Verify only one Task A instance remains active in the instance history', async () => {
       await waitForAssertion({
         assertion: async () => {
           await operateProcessInstancePage.expandTreeItemInHistory(
@@ -768,8 +782,13 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
                 .click();
             }
           }
+          // History shows both active and terminated instances; filter by the
+          // ACTIVE-icon state indicator rendered in the Bar component to count
+          // only the remaining running Task A token.
           await expect(
-            operateProcessInstancePage.findTreeItemInHistory(/^task a$/i),
+            operateProcessInstancePage
+              .findTreeItemInHistory(/^task a$/i)
+              .filter({has: page.getByTestId('ACTIVE-icon')}),
           ).toHaveCount(1);
         },
         onFailure: async () => {
@@ -859,6 +878,118 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
           await hideHelperModals(page);
         },
       });
+    });
+  });
+
+  test('Should prevent move and cancel actions on a terminated MI body task', async ({
+    page,
+    operateProcessInstancePage,
+    operateProcessInstanceViewModificationModePage,
+  }) => {
+    await test.step('Navigate to the single-item MI subprocess process instance', async () => {
+      await operateProcessInstancePage.gotoProcessInstancePage({
+        id: completedMiTaskInstance.processInstanceKey,
+      });
+    });
+
+    await test.step('Wait for Outer Task and Inner Task to be simultaneously active', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.expandTreeItemInHistory(
+            /mi subprocess \(multi instance\)/i,
+          );
+          await operateProcessInstancePage.expandTreeItemInHistory(
+            /^mi subprocess$/i,
+          );
+          await expect(
+            operateProcessInstancePage.findTreeItemInHistory(/outer task/i),
+          ).toBeVisible();
+          await expect(
+            operateProcessInstancePage.findTreeItemInHistory(/inner task/i),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await hideHelperModals(page);
+        },
+      });
+    });
+
+    await test.step('Enter modification mode and cancel the single Inner Task token', async () => {
+      await operateProcessInstancePage.enterModificationMode();
+      await expect(
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
+      ).toBeVisible();
+      await operateProcessInstanceViewModificationModePage.clickFlowNode(
+        'SubTaskA_restriction',
+      );
+      await operateProcessInstanceViewModificationModePage.cancelButtonPopup.click();
+    });
+
+    await test.step('Verify -1 cancel overlay on Inner Task', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
+            'SubTaskA_restriction',
+            -1,
+          );
+        },
+        onFailure: async () => {},
+      });
+    });
+
+    await test.step('Apply the modification', async () => {
+      await operateProcessInstanceViewModificationModePage.applyChanges();
+    });
+
+    await test.step('Wait until Inner Task shows as terminated in the instance history', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.expandTreeItemInHistory(
+            /mi subprocess \(multi instance\)/i,
+          );
+          await operateProcessInstancePage.expandTreeItemInHistory(
+            /^mi subprocess$/i,
+          );
+          await expect(
+            operateProcessInstancePage
+              .findTreeItemInHistory(/inner task/i)
+              .filter({has: page.getByTestId('TERMINATED-icon')}),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await hideHelperModals(page);
+        },
+      });
+    });
+
+    await test.step('Re-enter modification mode', async () => {
+      await operateProcessInstancePage.enterModificationMode();
+      await expect(
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
+      ).toBeVisible();
+    });
+
+    await test.step('Click the terminated Inner Task node in the diagram', async () => {
+      await operateProcessInstanceViewModificationModePage.clickFlowNode(
+        'SubTaskA_restriction',
+      );
+    });
+
+    await test.step('Verify no cancel or move actions are available for the terminated flow node', async () => {
+      await expect(
+        operateProcessInstanceViewModificationModePage.cancelButtonPopup,
+      ).not.toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.moveSelectedInstanceButton,
+      ).not.toBeVisible();
+    });
+
+    await test.step('Verify Add is also not available for the terminated flow node', async () => {
+      await expect(
+        operateProcessInstanceViewModificationModePage.addModificationButtononPopup,
+      ).not.toBeVisible();
     });
   });
 });
