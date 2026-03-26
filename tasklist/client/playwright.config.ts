@@ -28,12 +28,10 @@ if (USE_CONTAINERIZED_BROWSER) {
   const version = playwrightPkg.version;
   webServer.push({
     name: 'Playwright Server',
-    command: `docker run --rm --init --network host mcr.microsoft.com/playwright:v${version} /bin/sh -c "npx -y playwright@${version} run-server --host 0.0.0.0"`,
+    command: `docker run --rm --init --network host mcr.microsoft.com/playwright:v${version} /bin/sh -c "npx -y playwright@${version} run-server --port 7777 --host 0.0.0.0"`,
     stdout: 'pipe',
     stderr: 'pipe',
-    wait: {
-      stdout: /Listening on ws:\/\/0\.0\.0\.0:(?<PLAYWRIGHT_SERVER_PORT>\d+)\//,
-    },
+    port: 7777,
     timeout: 180_000, // 3min timeout in case the image has to be pulled first.
     gracefulShutdown: {signal: 'SIGTERM', timeout: 5000},
   });
@@ -96,7 +94,7 @@ const config: PlaywrightTestConfig = {
     video: 'retain-on-failure',
     ...(USE_CONTAINERIZED_BROWSER && {
       connectOptions: {
-        wsEndpoint: `ws://127.0.0.1:${process.env.PLAYWRIGHT_SERVER_PORT}/`,
+        wsEndpoint: `ws://127.0.0.1:7777/`,
       },
     }),
   },
