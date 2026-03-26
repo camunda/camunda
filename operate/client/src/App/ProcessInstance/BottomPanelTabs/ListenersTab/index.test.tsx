@@ -393,4 +393,138 @@ describe('<ListenersTab />', () => {
       screen.queryByTestId('listener-type-filter'),
     ).not.toBeInTheDocument();
   });
+
+  it('should filter by execution listeners when selected from dropdown', async () => {
+    const allListenersPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
+    mockFetchElementInstance('123456789').withSuccess(
+      mockUserTaskElementInstance,
+    );
+    mockValidatedSearchJobs(
+      allListenersPayload,
+      searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
+    );
+
+    const {user} = render(<ListenersTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+    expect(screen.getByText('Task listener')).toBeInTheDocument();
+
+    const executionListenerPayload = buildExpectedPayload(
+      z.literal('EXECUTION_LISTENER'),
+    );
+
+    mockValidatedSearchJobs(
+      executionListenerPayload,
+      searchResult([mockExecutionListenerJob]),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Listener type'}));
+    await user.click(screen.getByRole('option', {name: 'Execution listeners'}));
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+    expect(screen.queryByText('Task listener')).not.toBeInTheDocument();
+  });
+
+  it('should filter by user task listeners when selected from dropdown', async () => {
+    const allListenersPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
+    mockFetchElementInstance('123456789').withSuccess(
+      mockUserTaskElementInstance,
+    );
+    mockValidatedSearchJobs(
+      allListenersPayload,
+      searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
+    );
+
+    const {user} = render(<ListenersTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+    expect(screen.getByText('Task listener')).toBeInTheDocument();
+
+    const taskListenerPayload = buildExpectedPayload(
+      z.literal('TASK_LISTENER'),
+    );
+
+    mockValidatedSearchJobs(
+      taskListenerPayload,
+      searchResult([mockTaskListenerJob]),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Listener type'}));
+    await user.click(screen.getByRole('option', {name: 'User task listeners'}));
+
+    expect(await screen.findByText('Task listener')).toBeInTheDocument();
+    expect(screen.queryByText('Execution listener')).not.toBeInTheDocument();
+  });
+
+  it('should show all listeners when switching back from a filtered selection', async () => {
+    const allListenersPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
+    mockFetchElementInstance('123456789').withSuccess(
+      mockUserTaskElementInstance,
+    );
+    mockValidatedSearchJobs(
+      allListenersPayload,
+      searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
+    );
+
+    const {user} = render(<ListenersTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+    expect(screen.getByText('Task listener')).toBeInTheDocument();
+
+    const executionListenerPayload = buildExpectedPayload(
+      z.literal('EXECUTION_LISTENER'),
+    );
+
+    mockValidatedSearchJobs(
+      executionListenerPayload,
+      searchResult([mockExecutionListenerJob]),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Listener type'}));
+    await user.click(screen.getByRole('option', {name: 'Execution listeners'}));
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+    expect(screen.queryByText('Task listener')).not.toBeInTheDocument();
+
+    mockValidatedSearchJobs(
+      allListenersPayload,
+      searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Listener type'}));
+    await user.click(screen.getByRole('option', {name: 'All listeners'}));
+
+    expect(await screen.findByText('Task listener')).toBeInTheDocument();
+    expect(screen.getByText('Execution listener')).toBeInTheDocument();
+  });
 });
