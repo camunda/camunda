@@ -23,6 +23,8 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -46,6 +48,29 @@ public final class RequireKebabCaseInValueArchTest {
    * rejects camelCase, snake_case, and UPPER_SNAKE_CASE, while allowing only kebab-case.
    */
   static final Pattern FORBIDDEN_CHARS = Pattern.compile(".*[A-Z_].*");
+
+  /**
+   * Property keys exempted from kebab-case enforcement.
+   *
+   * <p>Use this whitelist only for genuine edge cases where renaming would introduce a
+   * backward-incompatible change to a public-facing interface. The most common valid case is CLI
+   * argument names: Spring resolves command-line arguments by exact match, so kebab-case provides
+   * no cross-source binding benefit and renaming breaks existing callers.
+   *
+   * <p>Each entry must have a comment explaining the context and the risk of renaming.
+   */
+  static final Set<String> WHITELISTED_PROPERTY_KEYS =
+      Set.of(
+          // CLI arg of the Zeebe restore tool (dist/~/zeebe/restore/RestoreApp.java).
+          // Passed as "--backupId=<id>" by the Docker entrypoint (zeebe/docker/utils/startup.sh)
+          // and the Helm chart startup script (camunda-platform-helm):
+          // -> charts/camunda-platform-8.X/templates/orchestration/configmap.yaml.
+          // Renaming to "--backup-id" would introduce a backward compatibility risk:
+          // operators using custom scripts invoking the restore tool directly with --backupId=<id>,
+          // or users pinning to a specific image version while running a newer restore binary,
+          // would silently get backupId=null — no error is thrown, restore runs without a target
+          // backup ID.
+          "backupId");
 
   @ArchTest
   static final ArchRule REQUIRE_KEBAB_CASE_IN_VALUE_ON_FIELDS =
@@ -115,6 +140,7 @@ public final class RequireKebabCaseInValueArchTest {
     }
 
     extractPropertyKey(valueAnnotation.value())
+        .filter(Predicate.not(WHITELISTED_PROPERTY_KEYS::contains))
         .filter(RequireKebabCaseInValueArchTest::valueContainsForbiddenCharacters)
         .ifPresent(propertyKey -> events.add(addViolation(owner, propertyKey)));
   }
