@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
@@ -172,7 +173,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-
     if (writer != null) {
       try {
         flush();
@@ -180,6 +180,35 @@ public class CamundaExporter implements Exporter {
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
+    }
+
+    if (taskManager != null) {
+      CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
+      taskManager = null;
+    }
+
+    if (pendingFlush != null) {
+      try {
+        pendingFlush.waitForCompletion();
+      } catch (final Exception e) {
+        LOG.warn("Pending flush failed when closing exporter.", e);
+      }
+      pendingFlush = null;
+    }
+
+    if (flushExecutor != null) {
+      flushExecutor.shutdown();
+      try {
+        if (!flushExecutor.awaitTermination(10L, TimeUnit.SECONDS)) {
+          LOG.warn("Flush executor failed to terminate within timeout");
+        }
+      } catch (final Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        LOG.warn("Erroring terminating flush executor", e);
+      }
+      flushExecutor = null;
     }
 
     if (clientAdapter != null) {
@@ -195,17 +224,6 @@ public class CamundaExporter implements Exporter {
     }
 
     provider.reset();
-
-    if (taskManager != null) {
-      CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
-      taskManager = null;
-    }
-
-    if (flushExecutor != null) {
-      flushExecutor.shutdown();
-      CloseHelper.close(error -> LOG.warn("Failed to close flush executor", error), flushExecutor);
-      flushExecutor = null;
-    }
 
     LOG.info("Exporter resources closed");
   }
