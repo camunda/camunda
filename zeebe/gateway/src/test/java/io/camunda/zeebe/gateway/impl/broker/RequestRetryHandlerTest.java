@@ -10,19 +10,25 @@ package io.camunda.zeebe.gateway.impl.broker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,12 +44,15 @@ final class RequestRetryHandlerTest {
 
   private TestBrokerClient brokerClient;
   private RequestRetryHandler retryHandler;
+  private StubbedTopologyManager topologyManager;
 
   @BeforeEach
   void setUp() {
-    final var topologyManager = new StubbedTopologyManager(PARTITION_COUNT);
+    topologyManager = new StubbedTopologyManager(PARTITION_COUNT);
     brokerClient = new TestBrokerClient();
-    retryHandler = new RequestRetryHandler(brokerClient, topologyManager);
+    // Use a deterministic round-robin starting at offset 0 → partitions 1, 2, 3, 1, ...
+    final var dispatchStrategy = new RoundRobinDispatchStrategy(0);
+    retryHandler = new RequestRetryHandler(brokerClient, topologyManager, dispatchStrategy);
   }
 
   @Test
@@ -93,6 +102,25 @@ final class RequestRetryHandlerTest {
   }
 
   @Test
+  void shouldRetryOnNextRoundRobinPartitionOnResourceExhausted() {
+    // given - a broker client that fails with RESOURCE_EXHAUSTED on the first attempt
+    final var request = new TestBrokerRequest(Optional.empty());
+    final var exhaustedError =
+        new BrokerErrorException(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
+    brokerClient.failOnPartitionThenSucceed(exhaustedError);
+
+    // when
+    final var result = new AtomicReference<String>();
+    final var error = new AtomicReference<Throwable>();
+    retryHandler.sendRequest(request, (key, response) -> result.set(response), error::set);
+
+    // then - first attempt hit partition 1, retry hit partition 2 (round-robin from offset 0)
+    assertThat(error.get()).isNull();
+    assertThat(result.get()).isEqualTo("result");
+    assertThat(brokerClient.partitionsHit).containsExactly(1, 2);
+  }
+
+  @Test
   void shouldPropagateStrategyExceptionWhenDispatchStrategyFails() {
     // given - a request whose dispatch strategy throws
     final var request =
@@ -113,8 +141,10 @@ final class RequestRetryHandlerTest {
 
   private static final class TestBrokerClient implements BrokerClient {
     final AtomicInteger sendCount = new AtomicInteger(0);
+    final List<Integer> partitionsHit = new ArrayList<>();
     private BrokerResponse<String> response;
     private Throwable error;
+    private Throwable failFirstError;
 
     void setResponse(final BrokerResponse<String> response) {
       this.response = response;
@@ -124,6 +154,12 @@ final class RequestRetryHandlerTest {
     void setError(final Throwable error) {
       this.error = error;
       response = null;
+    }
+
+    void failOnPartitionThenSucceed(final Throwable firstError) {
+      failFirstError = firstError;
+      response = new BrokerResponse<>("result", 1, 1);
+      error = null;
     }
 
     @Override
@@ -137,9 +173,13 @@ final class RequestRetryHandlerTest {
     @Override
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
-      sendCount.incrementAndGet();
+      final int count = sendCount.incrementAndGet();
+      partitionsHit.add(request.getPartitionId());
       if (error != null) {
         return CompletableFuture.failedFuture(error);
+      }
+      if (failFirstError != null && count == 1) {
+        return CompletableFuture.failedFuture(failFirstError);
       }
       return CompletableFuture.completedFuture((BrokerResponse<T>) response);
     }

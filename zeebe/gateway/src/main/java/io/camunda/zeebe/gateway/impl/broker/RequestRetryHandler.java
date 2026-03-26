@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -16,12 +17,13 @@ import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -105,7 +107,8 @@ public final class RequestRetryHandler {
     sendRequestWithRetry(
         request,
         requestSender,
-        partitionIdIteratorForType(topology.getPartitionsCount()),
+        topology.getPartitionsCount(),
+        new HashSet<>(),
         responseConsumer,
         throwableConsumer,
         new ArrayList<>());
@@ -148,45 +151,65 @@ public final class RequestRetryHandler {
       final Function<
               BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
           requestSender,
-      final PartitionIdIterator partitionIdIterator,
+      final int partitionCount,
+      final Set<Integer> triedPartitions,
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer,
       final Collection<Throwable> errors) {
 
-    if (partitionIdIterator.hasNext()) {
-      final int partitionId = partitionIdIterator.next();
-
-      // partitions to check
-      request.setPartitionId(partitionId);
-      requestSender
-          .apply(request)
-          .whenComplete(
-              (response, error) -> {
-                if (error == null) {
-                  responseConsumer.accept(response.getKey(), response.getResponse());
-                } else if (shouldRetryWithNextPartition(error)) {
-                  LOGGER.trace(
-                      "Failed to create process on partition {}",
-                      partitionIdIterator.getCurrentPartitionId(),
-                      error);
-                  errors.add(error);
-                  sendRequestWithRetry(
-                      request,
-                      requestSender,
-                      partitionIdIterator,
-                      responseConsumer,
-                      throwableConsumer,
-                      errors);
-                } else {
-                  throwableConsumer.accept(error);
-                }
-              });
-    } else {
-      // no partition left to check
+    final int partitionId = determineNextPartition(triedPartitions, partitionCount);
+    if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
       final var exception = new RequestRetriesExhaustedException();
       errors.forEach(exception::addSuppressed);
       throwableConsumer.accept(exception);
+      return;
     }
+
+    triedPartitions.add(partitionId);
+    request.setPartitionId(partitionId);
+    requestSender
+        .apply(request)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null) {
+                responseConsumer.accept(response.getKey(), response.getResponse());
+              } else if (shouldRetryWithNextPartition(error)) {
+                LOGGER.trace("Failed to create process on partition {}", partitionId, error);
+                errors.add(error);
+                sendRequestWithRetry(
+                    request,
+                    requestSender,
+                    partitionCount,
+                    triedPartitions,
+                    responseConsumer,
+                    throwableConsumer,
+                    errors);
+              } else {
+                throwableConsumer.accept(error);
+              }
+            });
+  }
+
+  /**
+   * Determines the next partition to try using the dispatch strategy, skipping partitions that have
+   * already been tried. Uses the dispatch strategy (round-robin) for each attempt so that
+   * concurrent retries scatter across partitions instead of all cascading to the same next
+   * partition.
+   */
+  private int determineNextPartition(
+      final Set<Integer> triedPartitions, final int partitionsCount) {
+    final var seen = new HashSet<Integer>();
+    while (seen.size() < partitionsCount) {
+      final int partition = dispatchStrategy.determinePartition(topologyManager);
+      if (partition == BrokerClusterState.PARTITION_ID_NULL) {
+        return BrokerClusterState.PARTITION_ID_NULL;
+      }
+      if (!triedPartitions.contains(partition)) {
+        return partition;
+      }
+      seen.add(partition);
+    }
+    return BrokerClusterState.PARTITION_ID_NULL;
   }
 
   private boolean shouldRetryWithNextPartition(final Throwable error) {
@@ -197,10 +220,5 @@ public final class RequestRetryHandler {
       return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
     }
     return false;
-  }
-
-  private PartitionIdIterator partitionIdIteratorForType(final int partitionsCount) {
-    final int nextPartitionId = dispatchStrategy.determinePartition(topologyManager);
-    return new PartitionIdIterator(nextPartitionId, partitionsCount, topologyManager);
   }
 }
