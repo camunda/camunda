@@ -10,6 +10,7 @@ import type {APIRequestContext} from 'playwright-core';
 import {
   groupIdFromState,
   roleIdValueUsingKey,
+  mappingRuleIdFromState,
 } from './get-value-from-state-requestHelpers';
 import {
   assertEqualsForKeys,
@@ -24,12 +25,14 @@ import {
   CREATE_NEW_TENANT,
   roleRequiredFields,
   tenantRequiredFields,
+  mappingRuleRequiredFields,
 } from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {
   createRole,
   createUser,
-  createGroupAndStoreResponseFields
+  createGroupAndStoreResponseFields,
+  createMappingRule,
 } from '@requestHelpers';
 
 export async function assignUsersToTenant(
@@ -156,6 +159,29 @@ export async function assignRolesToTenant(
   }
 }
 
+export async function assignMappingRulesToTenant(
+  request: APIRequestContext,
+  numberOfMappingRules: number,
+  tenantIdKey: string,
+  state: Record<string, unknown>,
+) {
+  const tenantId = state[tenantIdKey] as string;
+  for (let i = 1; i <= numberOfMappingRules; i++) {
+    await createMappingRule(request, state, `${tenantId}${i}`);
+    const p = {
+      mappingRuleId: mappingRuleIdFromState(tenantIdKey, state, i) as string,
+      tenantId: tenantId as string,
+    };
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(res, 204);
+  }
+}
+
 export function assertRolesInResponse(
   json: Serializable,
   expectedBody: Serializable,
@@ -167,6 +193,19 @@ export function assertRolesInResponse(
   expect(matchingItem).toBeDefined();
   assertRequiredFields(matchingItem, roleRequiredFields);
   assertEqualsForKeys(matchingItem, expectedBody, ['roleId']);
+}
+
+export function assertMappingRulesInResponse(
+  json: Serializable,
+  expectedBody: Serializable,
+  mappingRuleId: string,
+) {
+  const matchingItem = json.items.find(
+    (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRuleId,
+  );
+  expect(matchingItem).toBeDefined();
+  assertRequiredFields(matchingItem, mappingRuleRequiredFields);
+  assertEqualsForKeys(matchingItem, expectedBody, ['mappingRuleId']);
 }
 
 export function assertTenantInResponse(
