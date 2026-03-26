@@ -67,7 +67,7 @@ export async function createCompletedBatchOperation(
   processDefinitionId?: string,
 ) {
   const key = processDefinitionId
-    ? await createCancellationBatch(request, 3, processDefinitionId)
+    ? await createCancellationBatch(request, undefined, processDefinitionId)
     : await createCancellationBatch(request);
 
   await expect(async () => {
