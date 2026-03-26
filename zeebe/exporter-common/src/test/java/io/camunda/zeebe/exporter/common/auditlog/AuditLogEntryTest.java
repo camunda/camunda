@@ -78,9 +78,9 @@ class AuditLogEntryTest {
     assertThat(entry.getTimestamp())
         .isEqualTo(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
-    assertThat(entry.getElementInstanceKey()).isEqualTo(-1L);
 
     // Verify fields that are NOT set by AuditLogEntry.of() are null/empty
+    assertThat(entry.getElementInstanceKey()).isNull();
     assertThat(entry.getBatchOperationType()).isNull();
     assertThat(entry.getResult()).isNull();
     assertThat(entry.getJobKey()).isNull();
@@ -127,5 +127,55 @@ class AuditLogEntryTest {
     final var entry = AuditLogEntry.of(record);
 
     assertThat(entry.getBatchOperationKey()).isNull();
+  }
+
+  @Test
+  void shouldMapNullableFieldsWithSentinelValuesAsNull() {
+    // when
+    final var entry =
+        AuditLogEntry.of(factory.generateRecord(ValueType.PROCESS_INSTANCE_MODIFICATION));
+    entry
+        .setBatchOperationKey(-1L)
+        .setBatchOperationType(null)
+        .setDecisionDefinitionId("")
+        .setDecisionDefinitionKey(-1L)
+        .setDecisionEvaluationKey(-1L)
+        .setDecisionRequirementsId("")
+        .setDecisionRequirementsKey(-1L)
+        .setDeploymentKey(-1L)
+        .setElementInstanceKey(-1L)
+        .setEntityDescription("")
+        .setFormKey(-1L)
+        .setJobKey(-1L)
+        .setProcessDefinitionId("")
+        .setProcessDefinitionKey(-1L)
+        .setProcessInstanceKey(-1L)
+        .setRelatedEntityKey("")
+        .setRelatedEntityType(null)
+        .setResourceKey(-1L)
+        .setRootProcessInstanceKey(-1L)
+        .setUserTaskKey(-1L);
+
+    // then
+    assertThat(entry.getBatchOperationKey()).isNull();
+    assertThat(entry.getBatchOperationType()).isNull();
+    assertThat(entry.getDecisionDefinitionId()).isNull();
+    assertThat(entry.getDecisionDefinitionKey()).isNull();
+    assertThat(entry.getDecisionEvaluationKey()).isNull();
+    assertThat(entry.getDecisionRequirementsId()).isNull();
+    assertThat(entry.getDecisionRequirementsKey()).isNull();
+    assertThat(entry.getDeploymentKey()).isNull();
+    assertThat(entry.getElementInstanceKey()).isNull();
+    assertThat(entry.getEntityDescription()).isNull();
+    assertThat(entry.getFormKey()).isNull();
+    assertThat(entry.getJobKey()).isNull();
+    assertThat(entry.getProcessDefinitionId()).isNull();
+    assertThat(entry.getProcessDefinitionKey()).isNull();
+    assertThat(entry.getProcessInstanceKey()).isNull();
+    assertThat(entry.getRelatedEntityKey()).isNull();
+    assertThat(entry.getRelatedEntityType()).isNull();
+    assertThat(entry.getResourceKey()).isNull();
+    assertThat(entry.getRootProcessInstanceKey()).isNull();
+    assertThat(entry.getUserTaskKey()).isNull();
   }
 }

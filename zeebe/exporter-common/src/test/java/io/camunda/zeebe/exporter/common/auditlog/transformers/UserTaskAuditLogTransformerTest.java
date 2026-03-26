@@ -125,7 +125,7 @@ class UserTaskAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("123");
     assertThat(entity.getProcessInstanceKey()).isEqualTo(456L);
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(789L);
-    assertThat(entity.getRelatedEntityKey()).isEqualTo("");
+    assertThat(entity.getRelatedEntityKey()).isNull();
     assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
   }
 }
