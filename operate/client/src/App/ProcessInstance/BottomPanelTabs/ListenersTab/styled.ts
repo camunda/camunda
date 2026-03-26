@@ -10,9 +10,13 @@ import {StructuredList as BaseStructuredList} from 'modules/components/Structure
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 import {supportError, spacing01, spacing03} from '@carbon/elements';
 import styled from 'styled-components';
-import {Stack as BaseStack, Dropdown as BaseDropdown} from '@carbon/react';
+import {
+  Stack as BaseStack,
+  Dropdown as BaseDropdown,
+  Layer,
+} from '@carbon/react';
 
-const Content = styled.div`
+const Content = styled(Layer)`
   position: relative;
   height: 100%;
   display: flex;
