@@ -250,7 +250,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook

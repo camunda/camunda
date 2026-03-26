@@ -113,7 +113,7 @@ jobs:
 
     - name: Send Slack notification
       if: steps.check-issues.outputs.active-issues-found != '0' && github.event_name != 'pull_request'
-      uses: slackapi/slack-github-action@v2
+      uses: slackapi/slack-github-action@v3
       with:
         payload: |
           {

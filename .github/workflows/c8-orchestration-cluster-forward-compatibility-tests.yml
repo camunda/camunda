@@ -295,7 +295,7 @@ jobs:
        - uses: actions/checkout@v6
 
        - name: Notify failure
-         uses: slackapi/slack-github-action@v2.1.1
+         uses: slackapi/slack-github-action@v3.0.1
          if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
          env:
            SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
