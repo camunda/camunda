@@ -112,7 +112,7 @@
     <!--  Adding spring-security.version to ensure Spring Boot's BOM honors the override regardless of import order.  -->
     <spring-security.version>${version.spring-security}</spring-security.version>
     <version.spring-boot>4.0.5</version.spring-boot>
-    <version.spring-ai>2.0.0-M3</version.spring-ai>
+    <version.spring-ai>2.0.0-M4</version.spring-ai>
     <version.mcp-sdk>1.1.0</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
     <version.tomcat>11.0.20</version.tomcat>
