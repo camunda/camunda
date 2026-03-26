@@ -238,7 +238,7 @@ runs:
         inputs.dockerhub == 'true' ||
         inputs.dockerhub-readonly == 'true'
       )
-    uses: docker/login-action@v3
+    uses: docker/login-action@v4
     with:
       username: ${{ steps.secrets.outputs.dockerhub-username }}
       password: ${{ steps.secrets.outputs.dockerhub-token }}
@@ -247,7 +247,7 @@ runs:
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
       inputs.harbor == 'true'
-    uses: docker/login-action@v3
+    uses: docker/login-action@v4
     with:
       registry: registry.camunda.cloud
       username: ${{ steps.secrets.outputs.ci-account-username }}
@@ -257,7 +257,7 @@ runs:
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
       inputs.minimus == 'true'
-    uses: docker/login-action@v3
+    uses: docker/login-action@v4
     with:
       registry: reg.mini.dev
       username: minimus
