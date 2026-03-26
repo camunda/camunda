@@ -631,16 +631,13 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
       ).toBeVisible();
     });
 
-    await test.step('Click Inner Task and verify multiple instances alert', async () => {
+    await test.step('Click Inner Task, verify multiple instances alert, and move all to Outer Task', async () => {
       await operateProcessInstanceViewModificationModePage.clickFlowNode(
         'SubTaskA_restriction',
       );
       await expect(
         operateProcessInstanceViewModificationModePage.multipleInstancesAlert,
       ).toBeVisible();
-    });
-
-    await test.step('Move all Inner Task instances to Outer Task (parent scope)', async () => {
       await operateProcessInstanceViewModificationModePage.clickMoveAllButtononPopup();
       await expect(
         operateProcessInstanceViewModificationModePage.moveTokensMessage,
