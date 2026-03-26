@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.e6c94558.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.98b73fe9.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.d23729c8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.d7d62c2d.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -23,7 +23,7 @@
 <ul>
 <li class="">OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito, and other OIDC providers).</li>
 <li class="">Basic authentication.</li>
-<li class="">Optional no‑auth for local and simple Self‑Managed setups.</li>
+<li class="">Optional unauthenticated API access for local and simple Self‑Managed setups.</li>
 </ul>
 </li>
 <li class="">Fine‑grained, resource‑based authorizations across runtime resources (for example, PROCESS_DEFINITION, PROCESS_INSTANCE, USER_TASK).</li>
@@ -115,9 +115,9 @@ No separate identity database; Identity entities reuse Zeebe primary and seconda
 <p>Entities:</p>
 <ul>
 <li class="">Clients: Web applications, Camunda clients, and other services interacting with the Orchestration Cluster</li>
-<li class="">Camunda 8 OC (Orchestration Cluster): runtime deployment containing Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.</li>
+<li class="">Camunda 8 OC (Orchestration Cluster): runtime deployment containing the Zeebe Processing engine, Zeebe gRPC API, Orchestration Cluster API  as well ad the Operate, Tasklist, Identity Web Applications along with their deprecated V1 APIs.</li>
 <li class="">Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).</li>
-<li class="">Primary Database: RocksDB used for Zeebe Engine state.</li>
+<li class="">Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.</li>
 <li class="">Secondary Database: Elasticsearch, OpenSearch, or RDBMS are used for search queries. Contains Runtime, History, and Identity data.</li>
 </ul>
 <p>External interfaces (technical):</p>
@@ -167,7 +167,7 @@ No separate identity database; Identity entities reuse Zeebe primary and seconda
 <li class="">Zeebe: Is responsible for processing commands and storing state.</li>
 <li class="">Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.</li>
 <li class="">Engine Identity: Shared RBAC engine used for authorization checks in the engine, there is no own module for it, it lives directly in the engine in &quot;identity&quot;.</li>
-<li class="">Primary Database: RocksDB used for Zeebe Engine state.</li>
+<li class="">Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.</li>
 <li class="">Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="52-building-blocks">5.2 Building Blocks<a href="#52-building-blocks" class="hash-link" aria-label="Direct link to 5.2 Building Blocks" title="Direct link to 5.2 Building Blocks" translate="no">​</a></h3>
