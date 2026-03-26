@@ -6,10 +6,10 @@ Accepted
 
 ## Context
 
-Before Camunda 8.8, runtime components (Zeebe, Operate, Tasklist) depended on Management Identity
-plus Keycloak and a dedicated Postgres database for authentication and authorization. This increased
+Before Camunda 8.8, runtime components (Zeebe, Operate, Tasklist) depended on [Management Identity
+coupled with Keycloak and a dedicated Postgres database or an external OIDC Provider](https://docs.camunda.io/docs/8.7/self-managed/identity/configuration/identity-configuration-overview/) for authentication and authorization. This increased
 operational overhead, introduced additional infrastructure dependencies, and created tight coupling
-between the runtime cluster and the Management Identity service.
+between the runtime cluster and the Management Identity service, making Management Identity part of the hot path for processing impacting latency, throughput and availability.
 
 ## Decision
 
