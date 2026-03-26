@@ -104,7 +104,7 @@ runs:
 
     - name: Build image names from params and/or project version
       id: get-image
-      uses: docker/metadata-action@v5
+      uses: docker/metadata-action@v6
       with:
         images: ${{ inputs.repository }}
         tags: ${{ inputs.version || steps.get-version.outputs.result }}
