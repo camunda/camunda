@@ -86,4 +86,8 @@ export {
   searchCorrelatedMessageSubscriptions,
   CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
 } from './message-requestHelpers';
+export {
+  createGlobalTaskListener,
+  type GlobalTaskListenerBody,
+} from './global-task-listener-requestHelpers';
 export {type AuditLog} from './audit-log-requestHelpers';
