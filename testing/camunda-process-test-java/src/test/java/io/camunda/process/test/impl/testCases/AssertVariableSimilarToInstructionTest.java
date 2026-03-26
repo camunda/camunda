@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testCases;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -26,14 +27,18 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableSimilarToInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableSimilarToInstruction;
 import io.camunda.process.test.impl.testCases.instructions.AssertVariableSimilarToInstructionHandler;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -50,6 +55,8 @@ public class AssertVariableSimilarToInstructionTest {
   @Mock private CamundaClient camundaClient;
   @Mock private AssertionFacade assertionFacade;
   @Mock private ProcessInstanceAssert processInstanceAssert;
+
+  @Captor private ArgumentCaptor<UnaryOperator<SemanticSimilarityConfig>> configModifierCaptor;
 
   private final AssertVariableSimilarToInstructionHandler instructionHandler =
       new AssertVariableSimilarToInstructionHandler();
@@ -86,7 +93,8 @@ public class AssertVariableSimilarToInstructionTest {
   @Test
   void shouldAssertGlobalVariableWithThreshold() {
     // given
-    when(processInstanceAssert.withSemanticSimilarityConfig(any())).thenReturn(processInstanceAssert);
+    when(processInstanceAssert.withSemanticSimilarityConfig(any()))
+        .thenReturn(processInstanceAssert);
 
     final AssertVariableSimilarToInstruction instruction =
         ImmutableAssertVariableSimilarToInstruction.builder()
@@ -104,7 +112,13 @@ public class AssertVariableSimilarToInstructionTest {
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-    verify(processInstanceAssert).withSemanticSimilarityConfig(any());
+    verify(processInstanceAssert).withSemanticSimilarityConfig(configModifierCaptor.capture());
+    assertThat(
+            configModifierCaptor
+                .getValue()
+                .apply(SemanticSimilarityConfig.defaults())
+                .getThreshold())
+        .isEqualTo(THRESHOLD);
     verify(processInstanceAssert).hasVariableSimilarTo(VARIABLE_NAME, EXPECTED_VALUE);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
@@ -140,7 +154,8 @@ public class AssertVariableSimilarToInstructionTest {
   @Test
   void shouldAssertLocalVariableWithThreshold() {
     // given
-    when(processInstanceAssert.withSemanticSimilarityConfig(any())).thenReturn(processInstanceAssert);
+    when(processInstanceAssert.withSemanticSimilarityConfig(any()))
+        .thenReturn(processInstanceAssert);
 
     final AssertVariableSimilarToInstruction instruction =
         ImmutableAssertVariableSimilarToInstruction.builder()
@@ -159,7 +174,13 @@ public class AssertVariableSimilarToInstructionTest {
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-    verify(processInstanceAssert).withSemanticSimilarityConfig(any());
+    verify(processInstanceAssert).withSemanticSimilarityConfig(configModifierCaptor.capture());
+    assertThat(
+            configModifierCaptor
+                .getValue()
+                .apply(SemanticSimilarityConfig.defaults())
+                .getThreshold())
+        .isEqualTo(THRESHOLD);
     verify(processInstanceAssert)
         .hasLocalVariableSimilarTo(
             any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTED_VALUE));
