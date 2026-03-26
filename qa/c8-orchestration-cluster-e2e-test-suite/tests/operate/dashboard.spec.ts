@@ -137,7 +137,7 @@ test.describe('Dashboard', () => {
     });
   });
 
-  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
+  //Skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
   test.skip('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,

@@ -760,7 +760,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-// skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
+//Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
   test.skip('Migrated gateways', async ({
     operateFiltersPanelPage,
     operateProcessesPage,

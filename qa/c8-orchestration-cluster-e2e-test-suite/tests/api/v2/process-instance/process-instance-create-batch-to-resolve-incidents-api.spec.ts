@@ -52,7 +52,7 @@ test.describe
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  //Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
   test.skip('Create a Batch Operation to Resolve Incidents - Success', async ({
     request,
   }) => {
@@ -153,7 +153,7 @@ test.describe
     );
   });
 
-  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  //Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
   test.skip('Create a Batch Operation to Resolve Incidents - With Multiple Filters', async ({
     request,
   }) => {
@@ -255,7 +255,7 @@ test.describe
     await cancelProcessInstance(localState.processInstanceKey2);
   });
 
-  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  //Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
   test.skip('Create a Batch Operation to Resolve Incidents - With Or Filters', async ({
     request,
   }) => {

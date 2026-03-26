@@ -80,7 +80,7 @@ test.describe('Process Instances Filters', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // skipped due to bug 45156: https://github.com/camunda/camunda/issues/45156
+  //Skipped due to bug 45156: https://github.com/camunda/camunda/issues/45156
   test.skip('Interaction between diagram and filters', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
