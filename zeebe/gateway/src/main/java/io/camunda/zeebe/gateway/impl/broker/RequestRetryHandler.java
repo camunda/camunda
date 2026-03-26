@@ -197,9 +197,9 @@ public final class RequestRetryHandler {
    * partition.
    */
   private int determineNextPartition(
-      final Set<Integer> triedPartitions, final int partitionsCount) {
+      final Set<Integer> triedPartitions, final int partitionCount) {
     final var seen = new HashSet<Integer>();
-    while (seen.size() < partitionsCount) {
+    for (int i = 0; i < partitionCount; i++) {
       final int partition = dispatchStrategy.determinePartition(topologyManager);
       if (partition == BrokerClusterState.PARTITION_ID_NULL) {
         return BrokerClusterState.PARTITION_ID_NULL;
@@ -207,7 +207,10 @@ public final class RequestRetryHandler {
       if (!triedPartitions.contains(partition)) {
         return partition;
       }
-      seen.add(partition);
+      if (!seen.add(partition)) {
+        // The strategy is cycling over partitions we've already tried; stop early.
+        return BrokerClusterState.PARTITION_ID_NULL;
+      }
     }
     return BrokerClusterState.PARTITION_ID_NULL;
   }

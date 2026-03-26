@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -118,6 +119,24 @@ final class RequestRetryHandlerTest {
     assertThat(error.get()).isNull();
     assertThat(result.get()).isEqualTo("result");
     assertThat(brokerClient.partitionsHit).containsExactly(1, 2);
+  }
+
+  @Test
+  void shouldNotSpinWhenActivePartitionsFewerThanTopologyCount() {
+    // given - topology reports 3 partitions, but the strategy always returns partition 1
+    // (e.g. only one active partition in routing state)
+    final RequestDispatchStrategy fixedStrategy = ignored -> 1;
+    final var handler = new RequestRetryHandler(brokerClient, topologyManager, fixedStrategy);
+    final var request = new TestBrokerRequest(Optional.empty());
+    brokerClient.setError(new ConnectException("connection refused"));
+
+    // when
+    final var error = new AtomicReference<Throwable>();
+    handler.sendRequest(request, (key, response) -> {}, error::set);
+
+    // then - tried partition 1 once, detected the strategy is cycling, gave up
+    assertThat(brokerClient.sendCount.get()).isEqualTo(1);
+    assertThat(error.get()).isInstanceOf(RequestRetriesExhaustedException.class);
   }
 
   @Test
