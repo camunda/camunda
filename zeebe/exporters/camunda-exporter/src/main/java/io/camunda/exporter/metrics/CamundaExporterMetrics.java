@@ -461,6 +461,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(incidentUpdatesDocumentsUpdated);
     meterRegistry.remove(jobBatchMetricsArchiving);
     meterRegistry.remove(jobBatchMetricsArchived);
+    meterRegistry.remove(usageMetricsArchived);
+    meterRegistry.remove(usageMetricsArchiving);
+    meterRegistry.remove(usageMetricsTUArchived);
+    meterRegistry.remove(usageMetricsTUArchiving);
+    meterRegistry.remove(standaloneDecisionsArchiving);
+    meterRegistry.remove(standaloneDecisionsArchived);
+    meterRegistry.remove(auditLogsArchiving);
+    meterRegistry.remove(auditLogsArchived);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));
