@@ -264,11 +264,11 @@ An example payload looks like this:
 
 When we look at an example release process instance from the past, we can find the following example values:
 
-|      Variable       |  Example Value  |              Description               |
-|---------------------|-----------------|----------------------------------------|
-| `workflow_ref_name` | `stable/8.7`    | The stable branch to trigger on        |
-| `release_tag`       | `8.7.17`        | The release tag to use for the test    |
-| `benchmark_name`    | `release-8-7-x` | The name of the load test              |
+|      Variable       |  Example Value  |             Description             |
+|---------------------|-----------------|-------------------------------------|
+| `workflow_ref_name` | `stable/8.7`    | The stable branch to trigger on     |
+| `release_tag`       | `8.7.17`        | The release tag to use for the test |
+| `benchmark_name`    | `release-8-7-x` | The name of the load test           |
 
 ##### Scheduled smoke tests
 
