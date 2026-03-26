@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -37,7 +38,7 @@ public final class ExecutionListenerTransformer {
       return;
     }
 
-    final var taskHeaders = transformTaskHeaders(element);
+    final var taskHeaders = transformTaskHeaders(element.getSingleExtensionElement(ZeebeTaskHeaders.class));
 
     executionListeners.forEach(
         listener -> {
@@ -57,14 +58,30 @@ public final class ExecutionListenerTransformer {
         });
   }
 
-  private Map<String, String> transformTaskHeaders(final BaseElement element) {
-    final var zeebeTaskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+  private Map<String, String> transformTaskHeaders(final ZeebeTaskHeaders zeebeTaskHeaders) {
     if (zeebeTaskHeaders == null) {
       return Map.of();
     }
+
     return zeebeTaskHeaders.getHeaders().stream()
         .filter(this::isValidHeader)
         .collect(Collectors.toMap(ZeebeHeader::getKey, ZeebeHeader::getValue));
+  }
+
+  private Map<String, String> mergeTaskHeaders(
+      final Map<String, String> elementTaskHeaders,
+      final Map<String, String> listenerTaskHeaders) {
+    if (elementTaskHeaders.isEmpty()) {
+      return listenerTaskHeaders;
+    }
+
+    if (listenerTaskHeaders.isEmpty()) {
+      return elementTaskHeaders;
+    }
+
+    final Map<String, String> mergedTaskHeaders = new HashMap<>(elementTaskHeaders);
+    mergedTaskHeaders.putAll(listenerTaskHeaders);
+    return Map.copyOf(mergedTaskHeaders);
   }
 
   private void addListenerToFlowNode(
@@ -72,6 +89,9 @@ public final class ExecutionListenerTransformer {
       final ExecutableFlowNode flowNode,
       final ExpressionLanguage expressionLanguage,
       final Map<String, String> taskHeaders) {
+    final Map<String, String> mergedTaskHeaders =
+        mergeTaskHeaders(taskHeaders, transformTaskHeaders(listener == null ? null : listener.getTaskHeaders()));
+
     Either.<Error, ZeebeExecutionListener>right(listener)
         .flatMap(l -> requireNotNull(l, () -> l, "listener"))
         .flatMap(l -> requireNotNull(l, l::getEventType, "eventType"))
@@ -80,10 +100,10 @@ public final class ExecutionListenerTransformer {
         .ifRightOrLeft(
             ok ->
                 flowNode.addListener(
-                    listener.getEventType(),
-                    expressionLanguage.parseExpression(listener.getType()),
-                    expressionLanguage.parseExpression(listener.getRetries()),
-                    taskHeaders),
+                    ok.getEventType(),
+                    expressionLanguage.parseExpression(ok.getType()),
+                    expressionLanguage.parseExpression(ok.getRetries()),
+                    mergedTaskHeaders),
             error ->
                 LOGGER.debug(
                     """

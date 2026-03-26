@@ -12,7 +12,12 @@
     <bpmn:serviceTask id="service_task">
       <bpmn:extensionElements>
         <zeebe:executionListeners>
-          <zeebe:executionListener eventType="start" type="task_start_el_1" retries="4" />
+          <zeebe:executionListener eventType="start" type="task_start_el_1" retries="4">
+            <zeebe:taskHeaders>
+              <zeebe:header key="aKey" value="aValue" />
+              <zeebe:header key="bKey" value="bValue" />
+            </zeebe:taskHeaders>
+          </zeebe:executionListener>
           <zeebe:executionListener eventType="start" type="task_start_el_2" retries="8" />
           <zeebe:executionListener eventType="end" type="task_end_el_1" retries="5" />
           <zeebe:executionListener eventType="end" type="task_end_el_2" />

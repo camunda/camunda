@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -126,6 +127,48 @@ public class ExecutionListenerJobTest {
               assertThat(job.getType()).isEqualTo(secondStartElJobType);
               assertThat(job.getVariablesAsMap()).containsOnly(entry("el1_var_a", "value_a"));
             });
+  }
+
+  @Test
+  public void shouldCreateExecutionListenerJobWithTaskHeaders() {
+    // given
+    final String startElJobType = helper.getStartExecutionListenerType();
+    final String serviceTaskJobType = helper.getJobType();
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType(serviceTaskJobType)
+                        .zeebeExecutionListener(
+                            listener ->
+                                listener
+                                    .start()
+                                    .type(startElJobType)
+                                    .retries("3")
+                                    .zeebeTaskHeader("listenerKey", "listenerValue")))
+            .done();
+    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
+    CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+
+    final RecordingJobHandler elJobHandler = new RecordingJobHandler();
+    CLIENT_RULE.getClient().newWorker().jobType(startElJobType).handler(elJobHandler).open();
+
+    // when
+    waitUntil(() -> !elJobHandler.getHandledJobs().isEmpty());
+
+    // then
+    ZeebeAssertHelper.assertJobCreated(
+        startElJobType,
+        job -> assertThat(job.getCustomHeaders()).isEqualTo(Map.of("listenerKey", "listenerValue")));
+    assertThat(elJobHandler.getHandledJobs())
+        .singleElement()
+        .satisfies(
+            job ->
+                assertThat(job.getCustomHeaders())
+                    .isEqualTo(Map.of("listenerKey", "listenerValue")));
   }
 
   @Test

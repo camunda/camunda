@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +38,7 @@ public class ZeebeExecutionListenersTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
+    return Collections.singletonList(
         new ChildElementAssumption(BpmnModelConstants.ZEEBE_NS, ZeebeExecutionListener.class));
   }
 
@@ -59,6 +60,7 @@ public class ZeebeExecutionListenersTest extends BpmnModelElementInstanceTest {
     // when
     final Collection<ZeebeExecutionListener> executionListeners =
         getExecutionListeners(serviceTask);
+    final ZeebeExecutionListener firstListener = new ArrayList<>(executionListeners).iterator().next();
 
     // then
     assertThat(executionListeners)
@@ -71,6 +73,10 @@ public class ZeebeExecutionListenersTest extends BpmnModelElementInstanceTest {
                 ZeebeExecutionListenerEventType.end,
                 "task_end_el_2",
                 ZeebeExecutionListener.DEFAULT_RETRIES));
+    assertThat(firstListener.getTaskHeaders()).isNotNull();
+    assertThat(firstListener.getTaskHeaders().getHeaders())
+        .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
+        .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue"));
   }
 
   private Collection<ZeebeExecutionListener> getExecutionListeners(

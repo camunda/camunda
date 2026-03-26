@@ -7,14 +7,20 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.util.FakeExpressionLanguage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,6 +55,43 @@ class ExecutionListenerTransformerTest {
 
     // then
     Assertions.assertThat(process.hasExecutionListeners()).isTrue();
+  }
+
+  @Test
+  void shouldTransformExecutionListenerTaskHeaders() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeTaskHeader("shared", "task")
+                        .zeebeExecutionListener(
+                            listener ->
+                                listener
+                                    .start()
+                                    .type("listener")
+                                    .retries("3")
+                                    .zeebeTaskHeader("listener", "value")
+                                    .zeebeTaskHeader("shared", "listener")))
+            .done();
+    final BaseElement task = modelInstance.getModelElementById("task");
+    final Collection<ZeebeExecutionListener> listeners =
+        task.getSingleExtensionElement(ZeebeExecutionListeners.class).getExecutionListeners();
+    final var executableFlowNode = new ExecutableFlowNode("task");
+
+    // when
+    new ExecutionListenerTransformer()
+        .transform(task, executableFlowNode, listeners, new FakeExpressionLanguage());
+
+    // then
+    assertThat(executableFlowNode.getStartExecutionListeners())
+        .singleElement()
+        .satisfies(
+            transformedListener ->
+                assertThat(transformedListener.getJobWorkerProperties().getTaskHeaders())
+                    .isEqualTo(Map.of("listener", "value", "shared", "listener")));
   }
 
   @Nested
