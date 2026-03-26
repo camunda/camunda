@@ -193,28 +193,6 @@ describe('<ListenersTab />', () => {
     mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
   });
 
-  it('should filter job searches by listener kind', async () => {
-    mockValidatedSearchJobs(
-      buildExpectedPayload(
-        z.strictObject({
-          $in: z.tuple([
-            z.literal('EXECUTION_LISTENER'),
-            z.literal('TASK_LISTENER'),
-          ]),
-        }),
-      ),
-      searchResult([]),
-    );
-
-    render(<ListenersTab />, {
-      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
-    });
-
-    expect(
-      await screen.findByText('This element has no execution listeners'),
-    ).toBeInTheDocument();
-  });
-
   it('should show empty message when no listeners exist', async () => {
     mockValidatedSearchJobs(
       buildExpectedPayload(
