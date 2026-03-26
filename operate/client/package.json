@@ -29,7 +29,7 @@
     "final-form": "5.0.0",
     "final-form-arrays": "4.0.0",
     "lodash": "4.17.23",
-    "mixpanel-browser": "2.75.0",
+    "mixpanel-browser": "2.77.0",
     "mobx": "6.15.0",
     "mobx-react": "9.2.1",
     "mobx-react-lite": "4.1.1",
