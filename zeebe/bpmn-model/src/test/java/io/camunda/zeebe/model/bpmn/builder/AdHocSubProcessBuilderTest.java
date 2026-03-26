@@ -25,9 +25,12 @@ import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -254,6 +257,35 @@ class AdHocSubProcessBuilderTest {
   }
 
   @Test
+  void shouldSetExecutionListenerTaskHeaders() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess.zeebeExecutionListener(
+                        listener ->
+                            listener
+                                .start()
+                                .type("el_start_type")
+                                .zeebeTaskHeader("aKey", "aValue")
+                                .zeebeTaskHeader("bKey", "bValue")))
+            .endEvent()
+            .done();
+
+    // when/then
+    assertThat(getExecutionListeners(process.getModelElementById("ad-hoc")))
+        .singleElement()
+        .satisfies(
+            listener ->
+                assertThat(listener.getTaskHeaders().getHeaders())
+                    .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
+                    .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue")));
+  }
+
+  @Test
   void shouldSetOutputCollectionAndElement() {
     // given
     final String outputElementExpression = "result";
@@ -280,5 +312,13 @@ class AdHocSubProcessBuilderTest {
         .first()
         .extracting(ZeebeAdHoc::getOutputElement, ZeebeAdHoc::getOutputCollection)
         .containsExactly("=" + outputElementExpression, outputCollection);
+  }
+
+  private Collection<ZeebeExecutionListener> getExecutionListeners(
+      final ModelElementInstance elementInstance) {
+    return elementInstance
+        .getUniqueChildElementByType(ExtensionElements.class)
+        .getUniqueChildElementByType(ZeebeExecutionListeners.class)
+        .getChildElementsByType(ZeebeExecutionListener.class);
   }
 }
