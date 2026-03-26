@@ -11,16 +11,57 @@ import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
+import {z} from 'zod';
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
 import {ListenersTab} from './index';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
-import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {searchResult} from 'modules/testUtils';
-import type {
-  ElementInstance,
-  Job,
-  ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+import {
+  endpoints,
+  type QueryJobsResponseBody,
+  type ElementInstance,
+  type Job,
+  type ProcessInstance,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+
+function mockValidatedSearchJobs(
+  schema: z.ZodType,
+  data: QueryJobsResponseBody,
+) {
+  mockServer.use(
+    http.post(
+      endpoints.queryJobs.getUrl(),
+      async ({request}) => {
+        const body = await request.json();
+        const result = schema.safeParse(body);
+
+        if (!result.success) {
+          return HttpResponse.error();
+        }
+
+        return HttpResponse.json(data);
+      },
+      {once: true},
+    ),
+  );
+}
+
+function buildExpectedPayload(kind: z.ZodType) {
+  return z.strictObject({
+    filter: z.strictObject({
+      processInstanceKey: z.literal(PROCESS_INSTANCE_ID),
+      elementId: z.literal('Task_1'),
+      elementInstanceKey: z.literal('123456789'),
+      kind,
+    }),
+    page: z.strictObject({
+      limit: z.literal(50),
+      from: z.literal(0),
+    }),
+  });
+}
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
@@ -150,10 +191,41 @@ describe('<ListenersTab />', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
-    mockSearchJobs().withSuccess(searchResult([]));
+  });
+
+  it('should filter job searches by listener kind', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
+    mockValidatedSearchJobs(expectedPayload, searchResult([]));
+
+    render(<ListenersTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(
+      await screen.findByText('This element has no execution listeners'),
+    ).toBeInTheDocument();
   });
 
   it('should show empty message when no listeners exist', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
+    mockValidatedSearchJobs(expectedPayload, searchResult([]));
+
     render(<ListenersTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
     });
@@ -164,8 +236,20 @@ describe('<ListenersTab />', () => {
   });
 
   it('should display execution listener jobs', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
     mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
-    mockSearchJobs().withSuccess(searchResult([mockExecutionListenerJob]));
+    mockValidatedSearchJobs(
+      expectedPayload,
+      searchResult([mockExecutionListenerJob]),
+    );
 
     render(<ListenersTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
@@ -179,10 +263,22 @@ describe('<ListenersTab />', () => {
   });
 
   it('should display task listener jobs', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
     mockFetchElementInstance('123456789').withSuccess(
       mockUserTaskElementInstance,
     );
-    mockSearchJobs().withSuccess(searchResult([mockTaskListenerJob]));
+    mockValidatedSearchJobs(
+      expectedPayload,
+      searchResult([mockTaskListenerJob]),
+    );
 
     render(<ListenersTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
@@ -194,10 +290,20 @@ describe('<ListenersTab />', () => {
   });
 
   it('should display both listener types', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
     mockFetchElementInstance('123456789').withSuccess(
       mockUserTaskElementInstance,
     );
-    mockSearchJobs().withSuccess(
+    mockValidatedSearchJobs(
+      expectedPayload,
       searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
     );
 
@@ -210,9 +316,19 @@ describe('<ListenersTab />', () => {
   });
 
   it('should show empty message for user task with no listeners', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
     mockFetchElementInstance('123456789').withSuccess(
       mockUserTaskElementInstance,
     );
+    mockValidatedSearchJobs(expectedPayload, searchResult([]));
 
     render(<ListenersTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
@@ -226,10 +342,20 @@ describe('<ListenersTab />', () => {
   });
 
   it('should show listener type dropdown for user tasks', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
     mockFetchElementInstance('123456789').withSuccess(
       mockUserTaskElementInstance,
     );
-    mockSearchJobs().withSuccess(
+    mockValidatedSearchJobs(
+      expectedPayload,
       searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
     );
 
@@ -243,8 +369,20 @@ describe('<ListenersTab />', () => {
   });
 
   it('should not show listener type dropdown for non-user-task elements', async () => {
+    const expectedPayload = buildExpectedPayload(
+      z.strictObject({
+        $in: z.tuple([
+          z.literal('EXECUTION_LISTENER'),
+          z.literal('TASK_LISTENER'),
+        ]),
+      }),
+    );
+
     mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
-    mockSearchJobs().withSuccess(searchResult([mockExecutionListenerJob]));
+    mockValidatedSearchJobs(
+      expectedPayload,
+      searchResult([mockExecutionListenerJob]),
+    );
 
     render(<ListenersTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
