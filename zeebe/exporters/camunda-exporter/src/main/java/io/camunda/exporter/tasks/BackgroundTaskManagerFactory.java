@@ -265,7 +265,7 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildUsageMetricsTUArchiverJob());
     tasks.add(buildJobBatchMetricsArchiverJob());
-    tasks.add(buildStandaloneDecisionArchiverJob());
+    //    tasks.add(buildStandaloneDecisionArchiverJob());
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(buildBatchOperationUpdateTask());
