@@ -21,7 +21,7 @@
     "event-source-polyfill": "1.0.31",
     "final-form": "5.0.0",
     "final-form-arrays": "4.0.0",
-    "i18next": "25.10.9",
+    "i18next": "25.10.10",
     "i18next-browser-languagedetector": "8.2.1",
     "lodash": "4.17.23",
     "mixpanel-browser": "2.77.0",
@@ -82,9 +82,9 @@
     "@typescript-eslint/eslint-plugin": "8.57.2",
     "@typescript-eslint/parser": "8.57.2",
     "@vitejs/plugin-react": "5.2.0",
-    "@vitest/coverage-istanbul": "4.1.1",
+    "@vitest/coverage-istanbul": "4.1.2",
     "@vitest/eslint-plugin": "1.6.13",
-    "@vitest/ui": "4.1.1",
+    "@vitest/ui": "4.1.2",
     "axe-core": "4.11.1",
     "browserslist": "4.28.1",
     "browserslist-to-esbuild": "2.1.1",
@@ -113,7 +113,7 @@
     "vite": "7.3.1",
     "vite-plugin-svgr": "4.5.0",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.1"
+    "vitest": "4.1.2"
   },
   "scarfSettings": {
     "enabled": false
@@ -121,5 +121,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.12.0"
+  "packageManager": "npm@11.12.1"
 }
