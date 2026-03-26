@@ -76,22 +76,6 @@ class BedrockChatModelBuilderTest {
   }
 
   @Test
-  void shouldApplyTimeoutToBuilder() {
-    // given
-    final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY);
-    config.setTimeout(Duration.ofSeconds(60));
-    final BedrockChatModel.Builder mockBuilder = mock(BedrockChatModel.Builder.class);
-
-    // when
-    BedrockChatModelBuilder.build(config, mockBuilder);
-
-    // then
-    verify(mockBuilder).timeout(Duration.ofSeconds(60));
-    verify(mockBuilder, never()).defaultRequestParameters(any());
-  }
-
-  @Test
   void shouldApplyTemperatureToBuilder() {
     // given
     final AmazonBedrockConfig config =
@@ -115,12 +99,13 @@ class BedrockChatModelBuilderTest {
     // given
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(MODEL, REGION, API_KEY, ACCESS_KEY, SECRET_KEY);
+    config.setTimeout(Duration.ofSeconds(60));
     final BedrockChatModel.Builder mockBuilder = mock(BedrockChatModel.Builder.class);
 
     try (final MockedStatic<BedrockRuntimeClientFactory> mockFactory =
         mockStatic(BedrockRuntimeClientFactory.class)) {
       mockFactory
-          .when(() -> BedrockRuntimeClientFactory.build(any(), any(), any(), any()))
+          .when(() -> BedrockRuntimeClientFactory.build(any(), any(), any(), any(), any()))
           .thenReturn(mock(BedrockRuntimeClient.class));
 
       // when
@@ -130,7 +115,11 @@ class BedrockChatModelBuilderTest {
       mockFactory.verify(
           () ->
               BedrockRuntimeClientFactory.build(
-                  eq(REGION), eq(API_KEY), eq(ACCESS_KEY), eq(SECRET_KEY)));
+                  eq(REGION),
+                  eq(API_KEY),
+                  eq(ACCESS_KEY),
+                  eq(SECRET_KEY),
+                  eq(Duration.ofSeconds(60))));
     }
   }
 

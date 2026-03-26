@@ -48,13 +48,10 @@ final class BedrockChatModelBuilder {
             config.getRegion(),
             config.getApiKey(),
             config.getCredentialsAccessKey(),
-            config.getCredentialsSecretKey());
+            config.getCredentialsSecretKey(),
+            config.getTimeout());
     builder.client(client);
     builder.modelId(model);
-    if (config.getTimeout() != null) {
-      LOG.debug("Setting timeout to {}", config.getTimeout());
-      builder.timeout(config.getTimeout());
-    }
     if (config.getTemperature() != null) {
       LOG.debug("Setting temperature to {}", config.getTemperature());
       final BedrockChatRequestParameters requestParameters =

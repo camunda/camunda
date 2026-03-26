@@ -17,6 +17,7 @@ package io.camunda.process.test.impl;
 
 import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -32,6 +33,9 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClientBuilde
 /** Factory for creating a configured {@link BedrockRuntimeClient} from Amazon Bedrock config. */
 public final class BedrockRuntimeClientFactory {
 
+  // reflects the default timeout used by BedrockChatModel
+  public static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(1);
+
   private static final Logger LOG = LoggerFactory.getLogger(BedrockRuntimeClientFactory.class);
 
   private BedrockRuntimeClientFactory() {}
@@ -40,12 +44,14 @@ public final class BedrockRuntimeClientFactory {
       final String region,
       final String apiKey,
       final String credentialsAccessKey,
-      final String credentialsSecretKey) {
+      final String credentialsSecretKey,
+      final Duration timeout) {
     final boolean hasAccessKey = hasText(credentialsAccessKey);
     final boolean hasSecretKey = hasText(credentialsSecretKey);
     final boolean hasKeyPairAuth = hasAccessKey && hasSecretKey;
     final boolean hasPartialKeyPair = hasAccessKey != hasSecretKey;
     final boolean hasApiKeyAuth = hasText(apiKey);
+    final Duration effectiveTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 
     if (hasPartialKeyPair) {
       throw new IllegalStateException(
@@ -79,11 +85,16 @@ public final class BedrockRuntimeClientFactory {
       clientBuilder
           .credentialsProvider(AnonymousCredentialsProvider.create())
           .putAuthScheme(NoAuthAuthScheme.create());
-      clientBuilder.overrideConfiguration(
-          cfg -> cfg.headers(Map.of("Authorization", List.of("Bearer " + apiKey.trim()))));
-    } else {
-      LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
     }
+
+    LOG.debug("Setting timeout to {}", effectiveTimeout);
+    clientBuilder.overrideConfiguration(
+        cfg -> {
+          if (hasApiKeyAuth) {
+            cfg.headers(Map.of("Authorization", List.of("Bearer " + apiKey.trim())));
+          }
+          cfg.apiCallTimeout(effectiveTimeout);
+        });
 
     return clientBuilder.build();
   }

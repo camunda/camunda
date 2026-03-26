@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
@@ -70,7 +71,7 @@ class BedrockRuntimeClientFactoryTest {
   @Test
   void shouldConfigureRegionOnClientBuilder() {
     // when
-    BedrockRuntimeClientFactory.build(REGION, null, null, null);
+    BedrockRuntimeClientFactory.build(REGION, null, null, null, null);
 
     // then
     verify(mockClientBuilder).region(Region.of(REGION));
@@ -81,7 +82,7 @@ class BedrockRuntimeClientFactoryTest {
   @ValueSource(strings = {"  "})
   void shouldNotConfigureRegionWhenAbsent(final String region) {
     // when
-    BedrockRuntimeClientFactory.build(region, null, null, null);
+    BedrockRuntimeClientFactory.build(region, null, null, null, null);
 
     // then
     verify(mockClientBuilder, never()).region(any());
@@ -92,7 +93,7 @@ class BedrockRuntimeClientFactoryTest {
   @Test
   void shouldConfigureAccessKeyCredentialsOnClientBuilder() {
     // when
-    BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, SECRET_KEY);
+    BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, SECRET_KEY, null);
 
     // then
     final ArgumentCaptor<AwsCredentialsProvider> credentialsCaptor =
@@ -109,7 +110,7 @@ class BedrockRuntimeClientFactoryTest {
   @Test
   void shouldConfigureApiKeyAuthOnClientBuilder() {
     // when
-    BedrockRuntimeClientFactory.build(REGION, API_KEY, null, null);
+    BedrockRuntimeClientFactory.build(REGION, API_KEY, null, null, null);
 
     // then
     verify(mockClientBuilder).credentialsProvider(any(AnonymousCredentialsProvider.class));
@@ -130,7 +131,7 @@ class BedrockRuntimeClientFactoryTest {
   @Test
   void shouldTrimApiKeyInAuthorizationHeader() {
     // when
-    BedrockRuntimeClientFactory.build(REGION, "  " + API_KEY + "  ", null, null);
+    BedrockRuntimeClientFactory.build(REGION, "  " + API_KEY + "  ", null, null, null);
 
     // then
     @SuppressWarnings("unchecked")
@@ -145,17 +146,53 @@ class BedrockRuntimeClientFactoryTest {
         .containsEntry("Authorization", List.of("Bearer " + API_KEY));
   }
 
+  // -- Timeout configuration --
+
+  @Test
+  void shouldConfigureTimeoutWhenSet() {
+    // when
+    BedrockRuntimeClientFactory.build(REGION, null, null, null, Duration.ofSeconds(30));
+
+    // then
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<Consumer<ClientOverrideConfiguration.Builder>> overrideCaptor =
+        ArgumentCaptor.forClass(Consumer.class);
+    verify(mockClientBuilder).overrideConfiguration(overrideCaptor.capture());
+
+    final ClientOverrideConfiguration.Builder overrideBuilder =
+        ClientOverrideConfiguration.builder();
+    overrideCaptor.getValue().accept(overrideBuilder);
+    assertThat(overrideBuilder.build().apiCallTimeout()).hasValue(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldUseDefaultTimeoutWhenNull() {
+    // when
+    BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, SECRET_KEY, null);
+
+    // then
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<Consumer<ClientOverrideConfiguration.Builder>> overrideCaptor =
+        ArgumentCaptor.forClass(Consumer.class);
+    verify(mockClientBuilder).overrideConfiguration(overrideCaptor.capture());
+
+    final ClientOverrideConfiguration.Builder overrideBuilder =
+        ClientOverrideConfiguration.builder();
+    overrideCaptor.getValue().accept(overrideBuilder);
+    assertThat(overrideBuilder.build().apiCallTimeout())
+        .hasValue(BedrockRuntimeClientFactory.DEFAULT_TIMEOUT);
+  }
+
   // -- Default credential chain --
 
   @Test
   void shouldNotConfigureCredentialsWhenNoneProvided() {
     // when
-    BedrockRuntimeClientFactory.build(null, null, null, null);
+    BedrockRuntimeClientFactory.build(null, null, null, null, null);
 
     // then
     verify(mockClientBuilder, never()).credentialsProvider(any());
     verify(mockClientBuilder, never()).putAuthScheme(any());
-    verify(mockClientBuilder, never()).overrideConfiguration(any(Consumer.class));
   }
 
   // -- Error cases --
@@ -164,7 +201,8 @@ class BedrockRuntimeClientFactoryTest {
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
   void shouldThrowWhenOnlyAccessKeyProvided(final String secretKey) {
-    assertThatThrownBy(() -> BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, secretKey))
+    assertThatThrownBy(
+            () -> BedrockRuntimeClientFactory.build(REGION, null, ACCESS_KEY, secretKey, null))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
@@ -174,7 +212,8 @@ class BedrockRuntimeClientFactoryTest {
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
   void shouldThrowWhenOnlySecretKeyProvided(final String accessKey) {
-    assertThatThrownBy(() -> BedrockRuntimeClientFactory.build(REGION, null, accessKey, SECRET_KEY))
+    assertThatThrownBy(
+            () -> BedrockRuntimeClientFactory.build(REGION, null, accessKey, SECRET_KEY, null))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
@@ -183,7 +222,7 @@ class BedrockRuntimeClientFactoryTest {
   @Test
   void shouldThrowWhenBothAuthMethodsProvided() {
     assertThatThrownBy(
-            () -> BedrockRuntimeClientFactory.build(REGION, API_KEY, ACCESS_KEY, SECRET_KEY))
+            () -> BedrockRuntimeClientFactory.build(REGION, API_KEY, ACCESS_KEY, SECRET_KEY, null))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("amazon-bedrock");
   }

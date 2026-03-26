@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.similarity;
 
 import io.camunda.process.test.api.similarity.ProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
   private final String provider;
   private final String model;
+  private Duration timeout;
 
   protected BaseProviderConfig(final String provider, final String model) {
     this.provider = provider;
@@ -43,6 +45,14 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   @Override
   public String getModel() {
     return model;
+  }
+
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(final Duration timeout) {
+    this.timeout = timeout;
   }
 
   /** Generic provider configuration for unknown or custom providers. */

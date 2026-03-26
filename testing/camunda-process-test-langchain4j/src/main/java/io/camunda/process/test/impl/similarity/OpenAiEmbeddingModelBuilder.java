@@ -42,7 +42,12 @@ final class OpenAiEmbeddingModelBuilder {
       final OpenAiConfig config, final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {
     builder.apiKey(require(config.getApiKey(), "apiKey", OPENAI));
     builder.modelName(require(config.getModel(), "model", OPENAI));
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
     if (config.getDimensions() != null) {
+      LOG.debug("Setting dimensions to {}", config.getDimensions());
       builder.dimensions(config.getDimensions());
     }
     return builder.build();

@@ -36,7 +36,8 @@ final class AzureOpenAiEmbeddingModelBuilder {
     LOG.debug("Building Azure OpenAI embedding model");
     final EmbeddingModel embeddingModel = build(config, AzureOpenAiEmbeddingModel.builder());
     LOG.debug(
-        "Successfully built Azure OpenAI embedding model with deploymentName '{}'",
+        "Successfully built Azure OpenAI embedding model with endpoint '{}' and deployment '{}'",
+        config.getEndpoint(),
         config.getModel());
     return embeddingModel;
   }
@@ -55,7 +56,12 @@ final class AzureOpenAiEmbeddingModelBuilder {
               + "(environment, workload identity, managed identity, Azure CLI)");
       builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
     }
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
     if (config.getDimensions() != null) {
+      LOG.debug("Setting dimensions to {}", config.getDimensions());
       builder.dimensions(config.getDimensions());
     }
     return builder.build();

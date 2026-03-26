@@ -346,6 +346,32 @@ public class SemanticSimilarityConfigBootstrapIT {
   }
 
   @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.embeddingModel.provider=openai",
+        "camunda.process-test.similarity.embeddingModel.model=text-embedding-3-small",
+        "camunda.process-test.similarity.embeddingModel.apiKey=test-key",
+        "camunda.process-test.similarity.embeddingModel.timeout=PT30S"
+      })
+  @CamundaSpringProcessTest
+  class WithTimeout {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBindTimeoutProperty() {
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getEmbeddingModel()).isNotNull();
+
+      final BaseProviderConfig providerConfig =
+          (BaseProviderConfig) runtimeConfig.getSimilarity().toProviderConfig();
+      assertThat(providerConfig.getTimeout()).isEqualTo(java.time.Duration.ofSeconds(30));
+    }
+  }
+
+  @Nested
   class InvalidConfiguration {
 
     @Test

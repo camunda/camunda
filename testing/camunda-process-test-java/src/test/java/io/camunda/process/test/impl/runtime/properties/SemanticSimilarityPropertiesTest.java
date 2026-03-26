@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.similarity.ProviderConfig;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
@@ -100,6 +102,7 @@ public class SemanticSimilarityPropertiesTest {
     properties.setProperty("similarity.embeddingModel.model", "text-embedding-3-small");
     properties.setProperty("similarity.embeddingModel.apiKey", "sk-test");
     properties.setProperty("similarity.embeddingModel.dimensions", "512");
+    properties.setProperty("similarity.embeddingModel.timeout", "PT30S");
 
     // when
     final ProviderConfig config = new SemanticSimilarityProperties(properties).toProviderConfig();
@@ -111,6 +114,7 @@ public class SemanticSimilarityPropertiesTest {
     assertThat(openAiConfig.getModel()).isEqualTo("text-embedding-3-small");
     assertThat(openAiConfig.getApiKey()).isEqualTo("sk-test");
     assertThat(openAiConfig.getDimensions()).isEqualTo(512);
+    assertThat(openAiConfig.getTimeout()).isEqualTo(Duration.ofSeconds(30));
   }
 
   @Test
@@ -122,6 +126,7 @@ public class SemanticSimilarityPropertiesTest {
     properties.setProperty("similarity.embeddingModel.baseUrl", "http://localhost:11434/v1");
     properties.setProperty("similarity.embeddingModel.apiKey", "ollama");
     properties.setProperty("similarity.embeddingModel.dimensions", "768");
+    properties.setProperty("similarity.embeddingModel.timeout", "PT1M");
 
     // when
     final ProviderConfig config = new SemanticSimilarityProperties(properties).toProviderConfig();
@@ -135,6 +140,7 @@ public class SemanticSimilarityPropertiesTest {
     assertThat(compatConfig.getBaseUrl()).isEqualTo("http://localhost:11434/v1");
     assertThat(compatConfig.getApiKey()).isEqualTo("ollama");
     assertThat(compatConfig.getDimensions()).isEqualTo(768);
+    assertThat(compatConfig.getTimeout()).isEqualTo(Duration.ofMinutes(1));
   }
 
   @Test
@@ -147,6 +153,7 @@ public class SemanticSimilarityPropertiesTest {
         "similarity.embeddingModel.endpoint", "https://my-resource.openai.azure.com/");
     properties.setProperty("similarity.embeddingModel.apiKey", "azure-key");
     properties.setProperty("similarity.embeddingModel.dimensions", "1024");
+    properties.setProperty("similarity.embeddingModel.timeout", "PT30S");
 
     // when
     final ProviderConfig config = new SemanticSimilarityProperties(properties).toProviderConfig();
@@ -160,6 +167,7 @@ public class SemanticSimilarityPropertiesTest {
     assertThat(azureConfig.getEndpoint()).isEqualTo("https://my-resource.openai.azure.com/");
     assertThat(azureConfig.getApiKey()).isEqualTo("azure-key");
     assertThat(azureConfig.getDimensions()).isEqualTo(1024);
+    assertThat(azureConfig.getTimeout()).isEqualTo(Duration.ofSeconds(30));
   }
 
   @Test
@@ -211,6 +219,7 @@ public class SemanticSimilarityPropertiesTest {
     properties.setProperty("similarity.embeddingModel.region", "eu-west-1");
     properties.setProperty("similarity.embeddingModel.credentials.accessKey", "ak");
     properties.setProperty("similarity.embeddingModel.credentials.secretKey", "sk");
+    properties.setProperty("similarity.embeddingModel.timeout", "PT30S");
 
     // when
     final SemanticSimilarityProperties similarityProperties =
@@ -225,6 +234,7 @@ public class SemanticSimilarityPropertiesTest {
     assertThat(bedrockConfig.getRegion()).isEqualTo("eu-west-1");
     assertThat(bedrockConfig.getCredentialsAccessKey()).isEqualTo("ak");
     assertThat(bedrockConfig.getCredentialsSecretKey()).isEqualTo("sk");
+    assertThat(bedrockConfig.getTimeout()).isEqualTo(Duration.ofSeconds(30));
     assertThat(similarityProperties.getThreshold()).isEqualTo(0.7);
   }
 
@@ -254,5 +264,16 @@ public class SemanticSimilarityPropertiesTest {
     // then
     assertThat(similarityProperties.getThreshold()).isEqualTo(0.5);
     assertThat(similarityProperties.hasProviderConfigured()).isFalse();
+  }
+
+  @Test
+  void shouldRejectInvalidTimeout() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("similarity.embeddingModel.timeout", "1ms");
+
+    // when/then
+    assertThatThrownBy(() -> new SemanticSimilarityProperties(properties))
+        .isInstanceOf(DateTimeParseException.class);
   }
 }

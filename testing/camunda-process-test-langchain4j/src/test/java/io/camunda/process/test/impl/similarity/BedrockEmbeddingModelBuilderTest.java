@@ -28,6 +28,7 @@ import dev.langchain4j.model.bedrock.BedrockTitanEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.BedrockRuntimeClientFactory;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AmazonBedrockConfig;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -77,13 +78,14 @@ class BedrockEmbeddingModelBuilderTest {
     // given
     final AmazonBedrockConfig config =
         new AmazonBedrockConfig(MODEL, REGION, API_KEY, ACCESS_KEY, SECRET_KEY, null, null);
+    config.setTimeout(Duration.ofSeconds(60));
     final BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder mockBuilder =
         mock(BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder.class);
 
     try (final MockedStatic<BedrockRuntimeClientFactory> mockFactory =
         mockStatic(BedrockRuntimeClientFactory.class)) {
       mockFactory
-          .when(() -> BedrockRuntimeClientFactory.build(any(), any(), any(), any()))
+          .when(() -> BedrockRuntimeClientFactory.build(any(), any(), any(), any(), any()))
           .thenReturn(mock(BedrockRuntimeClient.class));
 
       // when
@@ -93,7 +95,11 @@ class BedrockEmbeddingModelBuilderTest {
       mockFactory.verify(
           () ->
               BedrockRuntimeClientFactory.build(
-                  eq(REGION), eq(API_KEY), eq(ACCESS_KEY), eq(SECRET_KEY)));
+                  eq(REGION),
+                  eq(API_KEY),
+                  eq(ACCESS_KEY),
+                  eq(SECRET_KEY),
+                  eq(Duration.ofSeconds(60))));
     }
   }
 

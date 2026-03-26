@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiConfig;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -61,6 +62,22 @@ class OpenAiEmbeddingModelBuilderTest {
     verify(mockBuilder).apiKey(API_KEY);
     verify(mockBuilder).modelName(MODEL);
     verify(mockBuilder, never()).dimensions(any());
+    verify(mockBuilder, never()).timeout(any());
+  }
+
+  @Test
+  void shouldApplyTimeoutToBuilder() {
+    // given
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, null);
+    config.setTimeout(Duration.ofSeconds(30));
+    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
+        mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
+
+    // when
+    OpenAiEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).timeout(Duration.ofSeconds(30));
   }
 
   @Test

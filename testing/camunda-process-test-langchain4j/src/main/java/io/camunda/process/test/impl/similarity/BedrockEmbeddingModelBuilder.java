@@ -50,13 +50,16 @@ final class BedrockEmbeddingModelBuilder {
             config.getRegion(),
             config.getApiKey(),
             config.getCredentialsAccessKey(),
-            config.getCredentialsSecretKey());
+            config.getCredentialsSecretKey(),
+            config.getTimeout());
     builder.client(client);
     builder.model(model);
     if (config.getDimensions() != null) {
+      LOG.debug("Setting dimensions to {}", config.getDimensions());
       builder.dimensions(config.getDimensions());
     }
     if (config.getNormalize() != null) {
+      LOG.debug("Setting normalize to {}", config.getNormalize());
       builder.normalize(config.getNormalize());
     }
     return builder.build();

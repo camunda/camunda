@@ -26,6 +26,7 @@ import com.azure.core.credential.TokenCredential;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AzureOpenAiConfig;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -63,6 +64,22 @@ class AzureOpenAiEmbeddingModelBuilderTest {
     verify(mockBuilder).endpoint(ENDPOINT);
     verify(mockBuilder).deploymentName(MODEL);
     verify(mockBuilder, never()).dimensions(any());
+    verify(mockBuilder, never()).timeout(any());
+  }
+
+  @Test
+  void shouldApplyTimeoutToBuilder() {
+    // given
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY, null);
+    config.setTimeout(Duration.ofSeconds(45));
+    final AzureOpenAiEmbeddingModel.Builder mockBuilder =
+        mock(AzureOpenAiEmbeddingModel.Builder.class);
+
+    // when
+    AzureOpenAiEmbeddingModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).timeout(Duration.ofSeconds(45));
   }
 
   @Test
