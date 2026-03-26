@@ -25,6 +25,9 @@ public enum RequestType {
   BACKUP("backup"),
   SNAPSHOT("snapshot"),
 
+  COORDINATE("coordinate"),
+  PUBLISH("publish"),
+
   // All other request types are considered unknown
   // This value exists mainly for testing purposes
   UNKNOWN("unknown");

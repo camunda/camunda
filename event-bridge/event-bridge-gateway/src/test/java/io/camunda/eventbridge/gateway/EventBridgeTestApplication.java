@@ -15,6 +15,7 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import io.camunda.eventbridge.EventBridgeGatewayConfiguration;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;

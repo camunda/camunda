@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Java client for the Event Bridge gateway HTTP API.
@@ -38,6 +40,7 @@ public final class EventBridgeClient {
 
   static final int POLL_TIMEOUT_SLACK_MS = 5_000;
 
+  private final ScheduledExecutorService executor;
   private final String gatewayUrl;
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
@@ -48,6 +51,7 @@ public final class EventBridgeClient {
         gatewayUrl.endsWith("/") ? gatewayUrl.substring(0, gatewayUrl.length() - 1) : gatewayUrl;
     this.httpClient = httpClient;
     this.objectMapper = objectMapper;
+    executor = Executors.newScheduledThreadPool(4);
   }
 
   /**
@@ -127,7 +131,8 @@ public final class EventBridgeClient {
    * @return a future resolving to a {@link Consumer} handle
    */
   public CompletableFuture<Consumer> subscribe(final String groupId, final String consumerId) {
-    return CompletableFuture.completedFuture(new Consumer(groupId, consumerId, this));
+    final var consumer = new Consumer(groupId, consumerId, this);
+    return consumer.joinGroup().handle((ignore, error) -> consumer);
   }
 
   /**
@@ -177,5 +182,9 @@ public final class EventBridgeClient {
 
   ObjectMapper getObjectMapper() {
     return objectMapper;
+  }
+
+  ScheduledExecutorService getExecutor() {
+    return executor;
   }
 }

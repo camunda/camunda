@@ -27,23 +27,37 @@ public record EventBridgeProperties(
     ClusterProperties cluster) {
 
   public EventBridgeProperties {
-    if (data == null) data = new DataProperties("data");
-    if (broker == null)
+    if (data == null) {
+      data = new DataProperties("data");
+    }
+    if (broker == null) {
       broker =
           new BrokerProperties(
               1,
               new SnapshotProperties(1000),
               new LongPollProperties(30_000),
               new TruncationProperties(60_000));
-    if (coordinator == null) coordinator = new CoordinatorProperties("broker-0", 30_000);
-    if (consumer == null) consumer = new ConsumerProperties(10_000, 2_000, 5_000, 100, 1_000, 1);
-    if (publish == null) publish = new PublishProperties(1_000, 1_048_576, 10_485_760);
-    if (retention == null) retention = new RetentionProperties(1_000_000);
-    if (raft == null) raft = new RaftProperties(1);
-    if (cluster == null)
+    }
+    if (coordinator == null) {
+      coordinator = new CoordinatorProperties("broker-0", 30_000);
+    }
+    if (consumer == null) {
+      consumer = new ConsumerProperties(10_000, 2_000, 5_000, 100, 1_000, 1);
+    }
+    if (publish == null) {
+      publish = new PublishProperties(1_000, 1_048_576, 10_485_760);
+    }
+    if (retention == null) {
+      retention = new RetentionProperties(1_000_000);
+    }
+    if (raft == null) {
+      raft = new RaftProperties(1);
+    }
+    if (cluster == null) {
       cluster =
           new ClusterProperties(
-              "event-bridge", "broker-0", "0.0.0.0", 26502, null, null, List.of());
+              "event-bridge", "broker-0", "0.0.0.0", 26502, 1, null, null, List.of());
+    }
   }
 
   /**
@@ -62,15 +76,21 @@ public record EventBridgeProperties(
    * @param truncation log truncation timer configuration
    */
   public record BrokerProperties(
-      @DefaultValue("1") int partitionCount,
+      @DefaultValue("3") int partitionCount,
       SnapshotProperties snapshot,
       LongPollProperties longPoll,
       TruncationProperties truncation) {
 
     public BrokerProperties {
-      if (snapshot == null) snapshot = new SnapshotProperties(1000);
-      if (longPoll == null) longPoll = new LongPollProperties(30_000);
-      if (truncation == null) truncation = new TruncationProperties(60_000);
+      if (snapshot == null) {
+        snapshot = new SnapshotProperties(1000);
+      }
+      if (longPoll == null) {
+        longPoll = new LongPollProperties(30_000);
+      }
+      if (truncation == null) {
+        truncation = new TruncationProperties(60_000);
+      }
     }
   }
 
@@ -184,18 +204,23 @@ public record EventBridgeProperties(
       @DefaultValue("broker-0") String nodeId,
       @DefaultValue("0.0.0.0") String bindHost,
       @DefaultValue("26502") int bindPort,
+      @DefaultValue("1") int clusterSize,
       String advertisedHost,
       Integer advertisedPort,
       List<String> initialContactPoints) {
 
     public ClusterProperties {
-      if (initialContactPoints == null) initialContactPoints = List.of();
+      if (initialContactPoints == null) {
+        initialContactPoints = List.of();
+      }
     }
 
     /** Returns the effective advertised host (resolves "0.0.0.0" to "localhost"). */
     public String effectiveAdvertisedHost() {
-      if (advertisedHost != null) return advertisedHost;
-      return bindHost.equals("0.0.0.0") ? "localhost" : bindHost;
+      if (advertisedHost != null) {
+        return advertisedHost;
+      }
+      return "0.0.0.0".equals(bindHost) ? "localhost" : bindHost;
     }
 
     /** Returns the effective advertised port (defaults to {@code bindPort}). */

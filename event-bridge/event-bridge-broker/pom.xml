@@ -27,6 +27,11 @@
       <artifactId>event-bridge-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-protocol</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- RAFT consensus and SWIM cluster membership -->
     <dependency>
@@ -120,6 +125,14 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-transport</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
     </dependency>
   </dependencies>
 

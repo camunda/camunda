@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import io.camunda.eventbridge.gateway.EventBridgeGatewayConfiguration;
+import io.camunda.eventbridge.EventBridgeGatewayConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
 /**
@@ -15,8 +15,8 @@ import org.springframework.boot.SpringBootConfiguration;
  *
  * <p>Starts a single JVM containing both the HTTP gateway and all configured broker partitions.
  * Suitable for single-node development and testing. For multi-node cluster deployments, run one
- * instance per physical node with a distinct {@code event-bridge.node-id} and
- * {@code event-bridge.advertised-host} configuration.
+ * instance per physical node with a distinct {@code event-bridge.node-id} and {@code
+ * event-bridge.advertised-host} configuration.
  *
  * <p>Usage: {@code bin/event-bridge [--spring.config.location=...]}
  */
@@ -29,9 +29,7 @@ public class StandaloneEventBridge {
         "spring.banner.location", "classpath:/assets/event_bridge_banner.txt");
 
     MainSupport.createDefaultApplicationBuilder()
-        .sources(
-            EventBridgeModuleConfiguration.class,
-            EventBridgeGatewayConfiguration.class)
+        .sources(EventBridgeModuleConfiguration.class, EventBridgeGatewayConfiguration.class)
         .profiles(Profile.EVENT_BRIDGE.getId(), Profile.STANDALONE.getId())
         .build(args)
         .run();

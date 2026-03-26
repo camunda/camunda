@@ -25,6 +25,7 @@
     <module>event-bridge-broker</module>
     <module>event-bridge-gateway</module>
     <module>event-bridge-client</module>
+    <module>event-bridge-protocol</module>
   </modules>
 
 </project>

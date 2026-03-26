@@ -104,6 +104,14 @@ public final class EventBridgeDtos {
   // -------------------------------------------------------------------------
   // Heartbeat
 
+  public record JoinGroupRequest(String instanceId) {}
+
+  public record JoinGroupResponse(String errorCode, String memberId, long memberEpoch) {}
+
+  public record LeaveGroupRequest(String memberId, long memberEpoch) {}
+
+  public record LeaveGroupResponse(String errorCode) {}
+
   /**
    * Request body for {@code POST /v1/consumers/{groupId}/{consumerId}/heartbeat}.
    *
@@ -111,7 +119,7 @@ public final class EventBridgeDtos {
    *     consumer that has never received an epoch
    * @param ownedPartitions partition IDs the consumer currently holds
    */
-  public record HeartbeatRequest(Long epoch, List<Integer> ownedPartitions) {}
+  public record HeartbeatRequest(String memberId, Long epoch, List<Integer> ownedPartitions) {}
 
   /**
    * Response body for {@code POST /v1/consumers/{groupId}/{consumerId}/heartbeat}.
@@ -124,29 +132,16 @@ public final class EventBridgeDtos {
    *     fully from this list
    */
   public record HeartbeatResponse(
-      long epoch, List<Integer> revoke, List<Integer> assign, List<Integer> fullAssignment) {}
+      String errorCode,
+      String memberId,
+      long epoch,
+      List<Integer> revoke,
+      List<Integer> assign,
+      long assignmentEpoch,
+      List<Integer> fullAssignment) {}
 
   // -------------------------------------------------------------------------
   // Ack
-
-  /** Status values returned in an {@link AckResponse}. */
-  public enum AckStatus {
-    /**
-     * ACK accepted; partition state advanced and consumer ownership recorded. Also returned for
-     * stale-epoch ACKs, which are silently discarded without state mutation.
-     */
-    OK,
-    /**
-     * The supplied epoch does not match the coordinator's current epoch. The consumer should
-     * re-synchronise by sending a heartbeat.
-     */
-    EPOCH_MISMATCH,
-    /**
-     * The {@code consumerId} is not registered in the specified group. The consumer should
-     * re-register via a heartbeat before retrying.
-     */
-    CONSUMER_NOT_FOUND
-  }
 
   /**
    * Request body for {@code POST /v1/consumers/{groupId}/{consumerId}/ack}.
@@ -169,13 +164,32 @@ public final class EventBridgeDtos {
     }
   }
 
+  public record LatestPositionResponse(long position) {}
+
   // -------------------------------------------------------------------------
   // Latest position
 
-  public record LatestPositionResponse(long position) {}
+  public record ErrorResponse(String error, String message) {}
 
   // -------------------------------------------------------------------------
   // Error (publish/routing errors)
 
-  public record ErrorResponse(String error, String message) {}
+  /** Status values returned in an {@link AckResponse}. */
+  public enum AckStatus {
+    /**
+     * ACK accepted; partition state advanced and consumer ownership recorded. Also returned for
+     * stale-epoch ACKs, which are silently discarded without state mutation.
+     */
+    OK,
+    /**
+     * The supplied epoch does not match the coordinator's current epoch. The consumer should
+     * re-synchronise by sending a heartbeat.
+     */
+    EPOCH_MISMATCH,
+    /**
+     * The {@code consumerId} is not registered in the specified group. The consumer should
+     * re-register via a heartbeat before retrying.
+     */
+    CONSUMER_NOT_FOUND
+  }
 }

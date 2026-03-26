@@ -1,0 +1,83 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.eventbridge.broker.request.coordination;
+
+import io.camunda.eventbridge.protocol.ExecuteCoordinateResponseDecoder;
+import io.camunda.eventbridge.protocol.ExecuteCoordinateResponseEncoder;
+import io.camunda.eventbridge.protocol.MessageHeaderDecoder;
+import io.camunda.eventbridge.protocol.MessageHeaderEncoder;
+import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+public class ExecuteCoordinateResponse implements BufferReader, BufferWriter {
+
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+
+  private final ExecuteCoordinateResponseEncoder bodyEncoder =
+      new ExecuteCoordinateResponseEncoder();
+  private final ExecuteCoordinateResponseDecoder bodyDecoder =
+      new ExecuteCoordinateResponseDecoder();
+
+  private final DirectBuffer value = new UnsafeBuffer(0, 0);
+
+  public ExecuteCoordinateResponse() {
+    reset();
+  }
+
+  public ExecuteCoordinateResponse reset() {
+    value.wrap(0, 0);
+    return this;
+  }
+
+  public DirectBuffer getValue() {
+    return value;
+  }
+
+  public ExecuteCoordinateResponse wrapValue(
+      final DirectBuffer buffer, final int offset, final int length) {
+    value.wrap(buffer, offset, length);
+    return this;
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    reset();
+    bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+
+    final var valueOffset =
+        headerDecoder.encodedLength()
+            + bodyDecoder.sbeBlockLength()
+            + ExecuteCoordinateResponseDecoder.valueHeaderLength();
+    final var valueLength = bodyDecoder.valueLength();
+
+    if (valueLength > 0) {
+      value.wrap(buffer, valueOffset, valueLength);
+    }
+  }
+
+  @Override
+  public int getLength() {
+    return headerDecoder.encodedLength()
+        + bodyDecoder.sbeBlockLength()
+        + ExecuteCoordinateResponseDecoder.valueHeaderLength()
+        + value.capacity();
+  }
+
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    bodyEncoder
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
+        .putValue(value, 0, value.capacity());
+
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
+  }
+}

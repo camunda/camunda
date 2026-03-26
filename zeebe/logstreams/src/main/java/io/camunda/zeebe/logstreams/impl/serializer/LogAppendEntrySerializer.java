@@ -24,7 +24,7 @@ import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 
 /** Serializes {@link LogAppendEntry}, including legacy dispatcher framing. */
-final class LogAppendEntrySerializer {
+public final class LogAppendEntrySerializer {
   /**
    * Serializes an entry into the given destination buffer. Returns the length of the serialized
    * entry, framed but unaligned.
@@ -38,7 +38,7 @@ final class LogAppendEntrySerializer {
    * @return the length of the serialized entry, with dispatcher framing but not aligned
    * @throws IllegalArgumentException if the entry's value is empty, i.e. has a length of 0
    */
-  static int serialize(
+  public static int serialize(
       final MutableDirectBuffer writeBuffer,
       final int writeBufferOffset,
       final LogAppendEntry entry,
@@ -113,7 +113,7 @@ final class LogAppendEntrySerializer {
         LogEntryDescriptor.headerLength(metadataLength) + recordValueLength);
   }
 
-  static int framedLength(final LogAppendEntry entry) {
+  public static int framedLength(final LogAppendEntry entry) {
     return framedLength(entry.recordMetadata().getLength(), entry.recordValue().getLength());
   }
 }
