@@ -4,9 +4,35 @@ package windows
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestBuildProcessTreeReturnsDescendantsWhenRootAlreadyExited(t *testing.T) {
+	tree, err := buildProcessTree(100, []processEntry{
+		{pid: 101, ppid: 100},
+		{pid: 102, ppid: 101},
+		{pid: 500, ppid: 1},
+	})
+	if err != nil {
+		t.Fatalf("expected descendants to be returned even when root pid already exited: %v", err)
+	}
+
+	expected := []uint32{100, 101, 102}
+	if !reflect.DeepEqual(tree, expected) {
+		t.Fatalf("unexpected process tree: got %v expected %v", tree, expected)
+	}
+}
+
+func TestBuildProcessTreeErrorsWhenRootAndDescendantsAreMissing(t *testing.T) {
+	_, err := buildProcessTree(100, []processEntry{
+		{pid: 500, ppid: 1},
+	})
+	if err == nil {
+		t.Fatal("expected an error when neither the root pid nor descendants are present")
+	}
+}
 
 func TestConnectorsCmdWithCustomPort(t *testing.T) {
 	tests := []struct {
