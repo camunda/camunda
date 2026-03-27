@@ -853,7 +853,6 @@ public class SearchQuerySortRequestMapper {
         case "processDefinitionId" -> builder.processDefinitionId();
         case "processInstanceKey" -> builder.processInstanceKey();
         case "errorType" -> builder.errorType();
-        case "errorMessage" -> builder.errorMessage();
         case "elementId" -> builder.flowNodeId();
         case "elementInstanceKey" -> builder.flowNodeInstanceKey();
         case "creationTime" -> builder.creationTime();
@@ -1005,7 +1004,6 @@ public class SearchQuerySortRequestMapper {
       switch (field) {
         case "actorId" -> builder.actorId();
         case "actorType" -> builder.actorType();
-        case "annotation" -> builder.annotation();
         case "auditLogKey" -> builder.auditLogKey();
         case "batchOperationKey" -> builder.batchOperationKey();
         case "batchOperationType" -> builder.batchOperationType();

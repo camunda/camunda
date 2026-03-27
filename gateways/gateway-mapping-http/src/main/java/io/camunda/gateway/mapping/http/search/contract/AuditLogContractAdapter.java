@@ -68,7 +68,6 @@ public final class AuditLogContractAdapter {
             ContractPolicy.mapEnum(entity.actorType(), GeneratedAuditLogActorTypeEnum::fromValue))
         .agentElementId(entity.agentElementId())
         .tenantId(entity.tenantId())
-        .annotation(entity.annotation())
         .processDefinitionId(entity.processDefinitionId())
         .processDefinitionKey(entity.processDefinitionKey())
         .processInstanceKey(entity.processInstanceKey())

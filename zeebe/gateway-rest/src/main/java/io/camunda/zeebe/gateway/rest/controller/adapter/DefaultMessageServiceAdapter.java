@@ -14,7 +14,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessag
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
-import io.camunda.zeebe.gateway.rest.config.ProcessEngineConfiguration;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.generated.MessageServiceAdapter;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -32,10 +32,10 @@ public class DefaultMessageServiceAdapter implements MessageServiceAdapter {
   public DefaultMessageServiceAdapter(
       final MessageServices messageServices,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final ProcessEngineConfiguration processEngineConfiguration) {
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.messageServices = messageServices;
     this.multiTenancyCfg = multiTenancyCfg;
-    this.maxNameFieldLength = processEngineConfiguration.getMaxNameFieldLength();
+    this.maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
   }
 
   @Override

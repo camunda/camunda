@@ -94,6 +94,7 @@
                 <typeMapping>OffsetDateTime=String</typeMapping>
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+                <typeMapping>DecisionEvaluationKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
                 <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
@@ -123,6 +124,7 @@
                 <schemaMapping>BatchOperationKey=String</schemaMapping>
                 <schemaMapping>DecisionDefinitionKey=String</schemaMapping>
                 <schemaMapping>DecisionEvaluationInstanceKey=String</schemaMapping>
+                <schemaMapping>DecisionEvaluationKey=String</schemaMapping>
                 <schemaMapping>DecisionInstanceKey=String</schemaMapping>
                 <schemaMapping>DecisionRequirementsKey=String</schemaMapping>
                 <schemaMapping>ElementInstanceKey=String</schemaMapping>
@@ -135,8 +137,6 @@
                 <schemaMapping>ScopeKey=String</schemaMapping>
                 <schemaMapping>UserTaskKey=String</schemaMapping>
                 <schemaMapping>VariableKey=String</schemaMapping>
-                <!-- Map response schemas to strict contract records -->
-                <schemaMapping>IncidentResult=GeneratedIncidentStrictContract</schemaMapping>
               </schemaMappings>
               <generateApis>true</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
@@ -178,6 +178,7 @@
                 <typeMapping>OffsetDateTime=String</typeMapping>
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+                <typeMapping>DecisionEvaluationKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
                 <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>

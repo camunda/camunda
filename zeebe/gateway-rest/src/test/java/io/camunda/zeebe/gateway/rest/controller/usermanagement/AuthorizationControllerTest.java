@@ -64,6 +64,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @ParameterizedTest
@@ -165,7 +167,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations"));
-    expectedBody.setDetail("Failed to read request");
+    expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
 
     // when - then
     webClient
@@ -301,7 +303,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations/3"));
-    expectedBody.setDetail("Failed to read request");
+    expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
 
     // when - then
     webClient

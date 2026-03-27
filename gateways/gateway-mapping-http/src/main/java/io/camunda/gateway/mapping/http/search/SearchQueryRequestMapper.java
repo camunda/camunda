@@ -53,6 +53,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenant
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAuditLogSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
@@ -623,6 +624,34 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
 
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQueryStrict(
+      final GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.variableSearchQuery().build());
+    }
+    final var p = request.page();
+    final var page =
+        p != null
+            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            : toSearchQueryPage(null, null, null, null);
+    final var sortRequests =
+        request.sort() != null
+            ? request.sort().stream()
+                .map(
+                    s ->
+                        new SearchQuerySortRequest(
+                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                .toList()
+            : java.util.List.<SearchQuerySortRequest>of();
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            sortRequests,
+            SortOptionBuilders::variable,
+            SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
+    final var filter = SearchQueryFilterMapper.toUserTaskVariableFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -2308,9 +2337,14 @@ public final class SearchQueryRequestMapper {
         request.sort() != null
             ? request.sort().stream()
                 .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                    s -> {
+                      final var sr =
+                          (io.camunda.gateway.mapping.http.search.contract.generated
+                                  .GeneratedUserTaskVariableSearchQuerySortRequestStrictContract)
+                              s;
+                      return new SearchQuerySortRequest(
+                          sr.field().getValue(), sr.order() != null ? sr.order().getValue() : null);
+                    })
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =

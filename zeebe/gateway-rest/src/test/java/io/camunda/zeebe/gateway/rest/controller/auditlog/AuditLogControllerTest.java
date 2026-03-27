@@ -170,6 +170,8 @@ public class AuditLogControllerTest extends RestControllerTest {
   void setUp() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -283,7 +285,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'SOMETHING'",
+                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [ADMIN, DEPLOYED_RESOURCES, USER_TASKS]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

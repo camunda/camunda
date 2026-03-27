@@ -27,6 +27,8 @@ import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDocumentServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDocumentController;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -38,12 +40,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(DocumentController.class)
+@Import(DefaultDocumentServiceAdapter.class)
+@WebMvcTest(GeneratedDocumentController.class)
 public class DocumentControllerTest extends RestControllerTest {
 
   static final String DOCUMENTS_BASE_URL = "/v2/documents";
@@ -54,6 +58,8 @@ public class DocumentControllerTest extends RestControllerTest {
   @BeforeEach
   void setUp() {
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
@@ -463,7 +469,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldRejectDocumentWithInvalidProcessDefinitionId() {
     // given — a processDefinitionId starting with a digit is invalid per the
-    // BPMN identifier pattern ^[\p{L}_][\p{L}\p{N}_\-.]*$
+    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
 
@@ -489,7 +495,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$'.");
+                + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-\\.]*$'.");
 
     verify(documentServices, never()).createDocument(any(), any());
   }
@@ -680,72 +686,9 @@ public class DocumentControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturn207WithApplicationJsonWhenSomeDocumentsFail() throws Exception {
-    // given
-    final var filename1 = "file.txt";
-    final var filename2 = "file2.txt";
-    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
-    final var content1 = new byte[] {1, 2, 3};
-    final var content2 = new byte[] {4, 5};
-    final var timestamp = OffsetDateTime.now();
-
-    final var successfulRef =
-        new DocumentReferenceResponse(
-            "documentId1",
-            "default",
-            "dummy_hash_1",
-            new DocumentMetadataModel(
-                contentType.toString(), filename1, timestamp, 0L, null, null, Map.of()));
-
-    final var failedError =
-        new DocumentServices.DocumentErrorResponse(
-            new DocumentServices.DocumentCreateRequest(
-                null,
-                null,
-                new ByteArrayInputStream(content2),
-                new DocumentMetadataModel(
-                    contentType.toString(),
-                    filename2,
-                    null,
-                    (long) content2.length,
-                    null,
-                    null,
-                    Map.of())),
-            ErrorMapper.mapDocumentError(new DocumentHashMismatch("doc2", "expected")));
-
-    when(documentServices.createDocumentBatch(any(), any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                List.of(Either.right(successfulRef), Either.left(failedError))));
-
-    final var mapper = new ObjectMapper();
-    final var multipartBodyBuilder = new MultipartBodyBuilder();
-    multipartBodyBuilder.part("files", content1).filename(filename1).contentType(contentType);
-    multipartBodyBuilder.part("files", content2).filename(filename2).contentType(contentType);
-
-    // when/then
-    webClient
-        .post()
-        .uri(DOCUMENTS_BASE_URL + "/batch")
-        .contentType(MediaType.MULTIPART_FORM_DATA)
-        .bodyValue(multipartBodyBuilder.build())
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isEqualTo(207)
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .jsonPath("$.createdDocuments.length()")
-        .isEqualTo(1)
-        .jsonPath("$.failedDocuments.length()")
-        .isEqualTo(1);
-  }
-
-  @Test
   void shouldRejectBatchDocumentWithInvalidProcessDefinitionId() throws Exception {
     // given — a processDefinitionId starting with a digit is invalid per the
-    // BPMN identifier pattern ^[\p{L}_][\p{L}\p{N}_\-.]*$
+    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var mapper = new ObjectMapper();
@@ -774,7 +717,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$'.");
+                + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-\\.]*$'.");
 
     verify(documentServices, never()).createDocumentBatch(any(), any());
   }

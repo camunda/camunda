@@ -15,6 +15,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAuditLogSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskCompletionRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQueryRequestStrictContract;
@@ -151,6 +152,29 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
               try {
                 final var result =
                     userTaskServices.searchUserTaskVariables(userTaskKey, query, authentication);
+                return ResponseEntity.ok(
+                    SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncate));
+              } catch (final Exception e) {
+                return mapErrorToResponse(e);
+              }
+            });
+  }
+
+  @Override
+  public ResponseEntity<Object> searchUserTaskEffectiveVariables(
+      final Long userTaskKey,
+      final Boolean truncateValues,
+      final GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract requestStrict,
+      final CamundaAuthentication authentication) {
+    final boolean truncate = truncateValues == null || truncateValues;
+    return SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(requestStrict)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> {
+              try {
+                final var result =
+                    userTaskServices.searchUserTaskEffectiveVariables(
+                        userTaskKey, query, authentication);
                 return ResponseEntity.ok(
                     SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncate));
               } catch (final Exception e) {
