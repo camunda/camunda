@@ -11,16 +11,12 @@
 
 import {defineConfig, type PluginOption, type UserConfig} from 'vite';
 import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
-import browserslistToEsbuild from 'browserslist-to-esbuild';
-import license from 'rollup-plugin-license';
-import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
 import {playwright} from '@vitest/browser-playwright';
 
-const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
+const plugins: PluginOption[] = [react(), svgr()];
 const outDir = 'build';
 
 function getReporters(): Pick<
@@ -68,30 +64,23 @@ export default defineConfig(({mode}) => ({
   },
   build: {
     outDir,
-    rollupOptions: {
+    sourcemap: mode !== 'sbom',
+    license: {
+      fileName: 'assets/vendor.LICENSE.txt',
+    },
+    rolldownOptions: {
+      output: {
+        postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+      },
       input: {
         index:
           mode === 'visual-regression' ? './index.html' : './index.prod.html',
       },
-      plugins: [
-        license({
-          thirdParty: {
-            output: path.resolve(
-              __dirname,
-              `./${outDir}/assets/vendor.LICENSE.txt`,
-            ),
-          },
-        }),
-      ],
     },
-    target: browserslistToEsbuild(),
-    sourcemap: mode !== 'sbom',
   },
-  esbuild: {
-    banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
-    legalComments: 'none',
+  resolve: {
+    tsconfigPaths: true,
   },
-  resolve: {alias: {src: path.resolve(__dirname, './src')}},
   test: {
     globals: true,
     restoreMocks: true,

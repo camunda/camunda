@@ -9,8 +9,6 @@
 import { defineConfig, PluginOption, UserConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 import react from "@vitejs/plugin-react";
-import license from "rollup-plugin-license";
-import path from "node:path";
 import sbom from "rollup-plugin-sbom";
 
 const outDir = "dist";
@@ -37,26 +35,18 @@ export default defineConfig(
     base: "",
     plugins: mode === "sbom" ? [...plugins, sbom()] : plugins,
     resolve: {
-      alias: {
-        src: "/src",
-      },
+      tsconfigPaths: true,
     },
     build: {
       outDir,
-      rollupOptions: {
-        plugins: license({
-          thirdParty: {
-            output: path.resolve(
-              __dirname,
-              `./${outDir}/assets/vendor.LICENSE.txt`,
-            ),
-          },
-        }) as PluginOption,
+      license: {
+        fileName: "assets/vendor.LICENSE.txt",
       },
-    },
-    esbuild: {
-      banner: "/*! licenses: /assets/vendor.LICENSE.txt */",
-      legalComments: "none",
+      rolldownOptions: {
+        output: {
+          postBanner: "/*! licenses: /assets/vendor.LICENSE.txt */",
+        },
+      },
     },
     server: {
       proxy: {
