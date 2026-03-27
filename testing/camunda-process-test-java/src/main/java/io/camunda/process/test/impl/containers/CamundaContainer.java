@@ -73,17 +73,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
             "true")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED, "false")
-        // Disable long polling so activate-jobs requests return immediately when no jobs
-        // are available. This is important in a test context for two reasons:
-        // 1. Performance: without long polling the gateway does not hold requests open for
-        //    the full request timeout (default 10s), avoiding unnecessary delays during
-        //    container shutdown between tests.
-        // 2. Correctness: when the test framework closes a client and creates a new one for
-        //    the next test, the gateway may not immediately detect the closed connection.
-        //    A long-polling request still held by the gateway can activate jobs meant for
-        //    the new test and deliver them to the now-defunct connection, causing the new
-        //    test's workers to miss those jobs and time out.
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_LONGPOLLING_ENABLED, "false")
         .withH2()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
