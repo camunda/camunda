@@ -20,16 +20,20 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultMessageSubscriptionServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedMessageSubscriptionController;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = MessageSubscriptionController.class)
+@Import(DefaultMessageSubscriptionServiceAdapter.class)
+@WebMvcTest(value = GeneratedMessageSubscriptionController.class)
 public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_SEARCH_RESPONSE =

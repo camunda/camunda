@@ -8,6 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateGlobalTaskListenerRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateGlobalTaskListenerRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
 import io.camunda.gateway.protocol.model.GlobalListenerBase;
@@ -134,5 +136,38 @@ public class GlobalListenerMapper {
         .afterNonGlobal(record.isAfterNonGlobal())
         .priority(record.getPriority())
         .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
+  }
+
+  // ---- Strict contract methods (direct field access) ----
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerCreateRequest(
+      final GeneratedCreateGlobalTaskListenerRequestStrictContract request) {
+    final var createRequest =
+        new CreateGlobalTaskListenerRequest()
+            .id(request.id())
+            .type(request.type())
+            .retries(request.retries())
+            .afterNonGlobal(request.afterNonGlobal())
+            .priority(request.priority())
+            .eventTypes(
+                request.eventTypes().stream()
+                    .map(e -> GlobalTaskListenerEventTypeEnum.fromValue(e.getValue()))
+                    .toList());
+    return toGlobalTaskListenerCreateRequest(createRequest);
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerUpdateRequest(
+      final String id, final GeneratedUpdateGlobalTaskListenerRequestStrictContract request) {
+    final var updateRequest =
+        new UpdateGlobalTaskListenerRequest()
+            .type(request.type())
+            .retries(request.retries())
+            .afterNonGlobal(request.afterNonGlobal())
+            .priority(request.priority())
+            .eventTypes(
+                request.eventTypes().stream()
+                    .map(e -> GlobalTaskListenerEventTypeEnum.fromValue(e.getValue()))
+                    .toList());
+    return toGlobalTaskListenerUpdateRequest(id, updateRequest);
   }
 }

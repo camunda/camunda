@@ -71,6 +71,7 @@ paths:
   /batch-operations/{batchOperationKey}/cancellation:
     post:
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Batch operation
       operationId: cancelBatchOperation
@@ -109,6 +110,7 @@ paths:
   /batch-operations/{batchOperationKey}/suspension:
     post:
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Batch operation
       operationId: suspendBatchOperation
@@ -149,6 +151,7 @@ paths:
   /batch-operations/{batchOperationKey}/resumption:
     post:
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Batch operation
       operationId: resumeBatchOperation

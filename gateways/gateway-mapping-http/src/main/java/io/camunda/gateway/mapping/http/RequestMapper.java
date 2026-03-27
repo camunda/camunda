@@ -23,6 +23,7 @@ import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.va
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceTags;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
@@ -36,9 +37,42 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCancelProcessInstanceRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedConditionalEvaluationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationByIdStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationByKeyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteResourceRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentLinkRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobCompletionRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobFailRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageCorrelationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessagePublicationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedModifyProcessInstanceVariableInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByIdStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByKeyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceMigrationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationActivateInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationBatchOperationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationMoveInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSignalBroadcastRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskCompletionRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
@@ -150,6 +184,17 @@ import org.springframework.web.multipart.MultipartFile;
  * <p>the split-up classes should be put in the @io.camunda.gateway.mapping.http.mapper package
  */
 public class RequestMapper {
+
+  // Jackson converter for types where strict-contract fields are untyped (Object / LinkedHashMap)
+  // and the protocol model relies on registered deserializers (polymorphic filter properties,
+  // oneOf sub-types). Used only for filter schemas and deeply nested polymorphic instructions.
+  private static final ObjectMapper PROTOCOL_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+  @SuppressWarnings("unchecked")
+  private static <T> T convertToProtocol(final Object value, final Class<T> type) {
+    return value == null ? null : PROTOCOL_MAPPER.convertValue(value, type);
+  }
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
@@ -496,6 +541,24 @@ public class RequestMapper {
     }
   }
 
+  public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequestFromParts(
+      final List<Part> resources, final String tenantId, final boolean multiTenancyEnabled) {
+    try {
+      final Either<ProblemDetail, String> validationResponse =
+          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources");
+      if (validationResponse.isLeft()) {
+        return Either.left(validationResponse.getLeft());
+      }
+      final Map<String, byte[]> resourceMap = new HashMap<>();
+      for (final Part resource : resources) {
+        resourceMap.put(resource.getSubmittedFileName(), resource.getInputStream().readAllBytes());
+      }
+      return Either.right(new DeployResourcesRequest(resourceMap, validationResponse.get()));
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
+    }
+  }
+
   public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
       final SetVariableRequest variableRequest, final long elementInstanceKey) {
     return getResult(
@@ -745,6 +808,112 @@ public class RequestMapper {
                 request.getBusinessId()));
   }
 
+  // --- Strict contract overloads for process instance creation ---
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final GeneratedProcessInstanceCreationInstructionStrictContract request,
+      final boolean multiTenancyEnabled) {
+    return switch (request) {
+      case GeneratedProcessInstanceCreationInstructionByIdStrictContract req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
+      case GeneratedProcessInstanceCreationInstructionByKeyStrictContract req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
+    };
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final GeneratedProcessInstanceCreationInstructionByIdStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.tenantId(), multiTenancyEnabled, "Create Process Instance")
+            .flatMap(
+                tenant ->
+                    validateCreateProcessInstanceTags(request.tags())
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)));
+
+    return validationResponse.map(
+        tenantId ->
+            new ProcessInstanceCreateRequest(
+                -1L,
+                request.processDefinitionId() != null ? request.processDefinitionId() : "",
+                request.processDefinitionVersion() != null
+                    ? request.processDefinitionVersion()
+                    : -1,
+                request.variables() != null ? request.variables() : Map.of(),
+                tenantId,
+                request.awaitCompletion(),
+                request.requestTimeout(),
+                request.operationReference(),
+                request.startInstructions() != null
+                    ? request.startInstructions().stream()
+                        .map(
+                            si ->
+                                new ProcessInstanceCreationStartInstruction()
+                                    .setElementId(si.elementId()))
+                        .toList()
+                    : List.of(),
+                mapStrictRuntimeInstructions(request.runtimeInstructions()),
+                request.fetchVariables() != null ? request.fetchVariables() : List.of(),
+                request.tags(),
+                request.businessId()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final GeneratedProcessInstanceCreationInstructionByKeyStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.tenantId(), multiTenancyEnabled, "Create Process Instance")
+            .flatMap(
+                tenant ->
+                    validateCreateProcessInstanceTags(request.tags())
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)));
+
+    return validationResponse.map(
+        tenantId ->
+            new ProcessInstanceCreateRequest(
+                request.processDefinitionKey() != null
+                    ? Long.parseLong(request.processDefinitionKey())
+                    : -1L,
+                "",
+                -1,
+                request.variables() != null ? request.variables() : Map.of(),
+                tenantId,
+                request.awaitCompletion(),
+                request.requestTimeout(),
+                request.operationReference(),
+                request.startInstructions() != null
+                    ? request.startInstructions().stream()
+                        .map(
+                            si ->
+                                new ProcessInstanceCreationStartInstruction()
+                                    .setElementId(si.elementId()))
+                        .toList()
+                    : List.of(),
+                mapStrictRuntimeInstructions(request.runtimeInstructions()),
+                request.fetchVariables() != null ? request.fetchVariables() : List.of(),
+                request.tags(),
+                request.businessId()));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<ProcessInstanceCreationRuntimeInstruction> mapStrictRuntimeInstructions(
+      final List<Object> runtimeInstructions) {
+    if (runtimeInstructions == null) {
+      return List.of();
+    }
+    return runtimeInstructions.stream()
+        .map(
+            obj -> {
+              final var map = (Map<String, Object>) obj;
+              return new ProcessInstanceCreationRuntimeInstruction()
+                  .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                  .setAfterElementId((String) map.get("afterElementId"));
+            })
+        .toList();
+  }
+
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
       final long processInstanceKey, final CancelProcessInstanceRequest request) {
     final Long operationReference = request != null ? request.getOperationReference() : null;
@@ -811,25 +980,29 @@ public class RequestMapper {
                 mapProcessInstanceModificationActivateInstruction(
                     request.getActivateInstructions()),
                 mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions()),
-                request.getTerminateInstructions().stream()
-                    .map(
-                        instruction -> {
-                          final var mappedInstruction =
-                              new ProcessInstanceModificationTerminateInstruction();
-                          if (instruction
-                              instanceof
-                              final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
-                            mappedInstruction.setElementInstanceKey(
-                                KeyUtil.keyToLong(byKey.getElementInstanceKey()));
-                          } else {
-                            mappedInstruction.setElementId(
-                                ((ProcessInstanceModificationTerminateByIdInstruction) instruction)
-                                    .getElementId());
-                          }
+                request.getTerminateInstructions() != null
+                    ? request.getTerminateInstructions().stream()
+                        .map(
+                            instruction -> {
+                              final var mappedInstruction =
+                                  new ProcessInstanceModificationTerminateInstruction();
+                              if (instruction
+                                  instanceof
+                                  final ProcessInstanceModificationTerminateByKeyInstruction
+                                      byKey) {
+                                mappedInstruction.setElementInstanceKey(
+                                    KeyUtil.keyToLong(byKey.getElementInstanceKey()));
+                              } else {
+                                mappedInstruction.setElementId(
+                                    ((ProcessInstanceModificationTerminateByIdInstruction)
+                                            instruction)
+                                        .getElementId());
+                              }
 
-                          return mappedInstruction;
-                        })
-                    .toList(),
+                              return mappedInstruction;
+                            })
+                        .toList()
+                    : List.of(),
                 request.getOperationReference()));
   }
 
@@ -884,6 +1057,49 @@ public class RequestMapper {
                 "",
                 getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
+                tenantId));
+  }
+
+  // --- Strict contract overloads for decision evaluation ---
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final GeneratedDecisionEvaluationInstructionStrictContract request,
+      final boolean multiTenancyEnabled) {
+    return switch (request) {
+      case GeneratedDecisionEvaluationByIdStrictContract req ->
+          toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      case GeneratedDecisionEvaluationByKeyStrictContract req ->
+          toEvaluateDecisionRequest(req, multiTenancyEnabled);
+    };
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final GeneratedDecisionEvaluationByIdStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Decision");
+    return validationResponse.map(
+        tenantId ->
+            new DecisionEvaluationRequest(
+                request.decisionDefinitionId() != null ? request.decisionDefinitionId() : "",
+                -1L,
+                request.variables() != null ? request.variables() : Map.of(),
+                tenantId));
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final GeneratedDecisionEvaluationByKeyStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Decision");
+    return validationResponse.map(
+        tenantId ->
+            new DecisionEvaluationRequest(
+                "",
+                request.decisionDefinitionKey() != null
+                    ? Long.parseLong(request.decisionDefinitionKey())
+                    : -1L,
+                request.variables() != null ? request.variables() : Map.of(),
                 tenantId));
   }
 
@@ -989,6 +1205,9 @@ public class RequestMapper {
           final List<
                   io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction>
               instructions) {
+    if (instructions == null) {
+      return List.of();
+    }
     return instructions.stream()
         .map(
             instruction -> {
@@ -996,9 +1215,11 @@ public class RequestMapper {
               mappedInstruction
                   .setElementId(instruction.getElementId())
                   .setAncestorScopeKey(getAncestorKey(instruction.getAncestorElementInstanceKey()));
-              instruction.getVariableInstructions().stream()
-                  .map(RequestMapper::mapVariableInstruction)
-                  .forEach(mappedInstruction::addVariableInstruction);
+              if (instruction.getVariableInstructions() != null) {
+                instruction.getVariableInstructions().stream()
+                    .map(RequestMapper::mapVariableInstruction)
+                    .forEach(mappedInstruction::addVariableInstruction);
+              }
               return mappedInstruction;
             })
         .toList();
@@ -1022,6 +1243,9 @@ public class RequestMapper {
       mapProcessInstanceModificationMoveInstruction(
           final List<io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruction>
               instructions) {
+    if (instructions == null) {
+      return List.of();
+    }
     return instructions.stream()
         .map(
             instruction -> {
@@ -1049,9 +1273,11 @@ public class RequestMapper {
                     mappedInstruction.setUseSourceParentKeyAsAncestorScopeKey(true);
                 default -> mappedInstruction.setInferAncestorScopeFromSourceHierarchy(true);
               }
-              instruction.getVariableInstructions().stream()
-                  .map(RequestMapper::mapVariableInstruction)
-                  .forEach(mappedInstruction::addVariableInstruction);
+              if (instruction.getVariableInstructions() != null) {
+                instruction.getVariableInstructions().stream()
+                    .map(RequestMapper::mapVariableInstruction)
+                    .forEach(mappedInstruction::addVariableInstruction);
+              }
               return mappedInstruction;
             })
         .toList();
@@ -1228,4 +1454,497 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  // ---- Strict contract methods (direct field access) ----
+
+  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
+      final GeneratedUserTaskCompletionRequestStrictContract request, final long userTaskKey) {
+    return new CompleteUserTaskRequest(
+        userTaskKey,
+        request == null || request.variables() == null ? Map.of() : request.variables(),
+        request == null || request.action() == null ? "" : request.action());
+  }
+
+  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
+      final GeneratedUserTaskAssignmentRequestStrictContract request, final long userTaskKey) {
+    final var assignmentRequest =
+        new UserTaskAssignmentRequest()
+            .assignee(request.assignee())
+            .allowOverride(request.allowOverride())
+            .action(request.action());
+    return toUserTaskAssignmentRequest(assignmentRequest, userTaskKey);
+  }
+
+  public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
+      final GeneratedUserTaskUpdateRequestStrictContract request, final long userTaskKey) {
+    final var updateRequest =
+        new UserTaskUpdateRequest().action(request != null ? request.action() : null);
+    if (request != null && request.changeset() != null) {
+      updateRequest.changeset(
+          new Changeset()
+              .dueDate(request.changeset().dueDate())
+              .followUpDate(request.changeset().followUpDate())
+              .candidateUsers(request.changeset().candidateUsers())
+              .candidateGroups(request.changeset().candidateGroups())
+              .priority(request.changeset().priority()));
+    }
+    return toUserTaskUpdateRequest(updateRequest, userTaskKey);
+  }
+
+  public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
+      final GeneratedJobActivationRequestStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final var activationRequest =
+        new JobActivationRequest()
+            .type(request.type())
+            .worker(request.worker())
+            .timeout(request.timeout())
+            .maxJobsToActivate(request.maxJobsToActivate())
+            .fetchVariable(request.fetchVariable())
+            .requestTimeout(request.requestTimeout())
+            .tenantIds(request.tenantIds())
+            .tenantFilter(
+                request.tenantFilter() != null
+                    ? TenantFilterEnum.fromValue(request.tenantFilter().getValue())
+                    : null);
+    return toJobsActivationRequest(activationRequest, multiTenancyEnabled);
+  }
+
+  public static FailJobRequest toJobFailRequest(
+      final GeneratedJobFailRequestStrictContract request, final long jobKey) {
+    return new FailJobRequest(
+        jobKey,
+        request == null || request.retries() == null ? 0 : request.retries(),
+        request == null || request.errorMessage() == null ? "" : request.errorMessage(),
+        request == null || request.retryBackOff() == null ? 0L : request.retryBackOff(),
+        request == null || request.variables() == null ? Map.of() : request.variables());
+  }
+
+  public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
+      final GeneratedJobErrorRequestStrictContract request, final long jobKey) {
+    final var errorRequest =
+        new JobErrorRequest()
+            .errorCode(request.errorCode())
+            .errorMessage(request.errorMessage())
+            .variables(request.variables());
+    return toJobErrorRequest(errorRequest, jobKey);
+  }
+
+  public static CompleteJobRequest toJobCompletionRequest(
+      final GeneratedJobCompletionRequestStrictContract request, final long jobKey) {
+    // JobResult is polymorphic (oneOf: JobResultUserTask, JobResultAdHocSubProcess) with
+    // custom deserialization. The strict contract holds it as Object (LinkedHashMap at runtime).
+    // Construct the protocol model to reuse existing polymorphic deserialization logic.
+    final var completionRequest = convertToProtocol(request, JobCompletionRequest.class);
+    return toJobCompletionRequest(completionRequest, jobKey);
+  }
+
+  public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
+      final GeneratedJobUpdateRequestStrictContract request, final long jobKey) {
+    final var updateRequest =
+        new JobUpdateRequest()
+            .operationReference(request.operationReference())
+            .changeset(
+                new io.camunda.gateway.protocol.model.JobChangeset()
+                    .retries(request.changeset().retries())
+                    .timeout(request.changeset().timeout()));
+    return toJobUpdateRequest(updateRequest, jobKey);
+  }
+
+  public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
+      final GeneratedSignalBroadcastRequestStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final var signalRequest =
+        new SignalBroadcastRequest()
+            .signalName(request.signalName())
+            .variables(request.variables())
+            .tenantId(request.tenantId());
+    return toBroadcastSignalRequest(signalRequest, multiTenancyEnabled);
+  }
+
+  public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
+      final long resourceKey, final GeneratedDeleteResourceRequestStrictContract request) {
+    final Long operationReference = request != null ? request.operationReference() : null;
+    final boolean deleteHistory = request != null && Boolean.TRUE.equals(request.deleteHistory());
+    return getResult(
+        validateResourceDeletion(
+            request != null
+                ? new DeleteResourceRequest()
+                    .operationReference(operationReference)
+                    .deleteHistory(deleteHistory)
+                : null),
+        () -> new ResourceDeletionRequest(resourceKey, operationReference, deleteHistory));
+  }
+
+  public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
+      final String documentId,
+      final String storeId,
+      final Part file,
+      final GeneratedDocumentMetadataStrictContract metadata) {
+    final var docMetadata =
+        metadata != null
+            ? new DocumentMetadata()
+                .contentType(metadata.contentType())
+                .fileName(metadata.fileName())
+                .expiresAt(metadata.expiresAt())
+                .size(metadata.size())
+                .processDefinitionId(metadata.processDefinitionId())
+                .processInstanceKey(metadata.processInstanceKey())
+                .customProperties(metadata.customProperties())
+            : null;
+    return toDocumentCreateRequest(documentId, storeId, file, docMetadata);
+  }
+
+  public static Either<ProblemDetail, List<DocumentCreateRequest>>
+      toDocumentCreateRequestBatchStrict(
+          final List<Part> parts,
+          final String storeId,
+          final ObjectMapper objectMapper,
+          final List<GeneratedDocumentMetadataStrictContract> metadataList) {
+    return toDocumentCreateRequestBatch(
+        parts,
+        storeId,
+        objectMapper,
+        metadataList == null
+            ? null
+            : metadataList.stream()
+                .map(
+                    m ->
+                        m == null
+                            ? null
+                            : new DocumentMetadata()
+                                .contentType(m.contentType())
+                                .fileName(m.fileName())
+                                .expiresAt(m.expiresAt())
+                                .size(m.size())
+                                .processDefinitionId(m.processDefinitionId())
+                                .processInstanceKey(m.processInstanceKey())
+                                .customProperties(m.customProperties()))
+                .toList());
+  }
+
+  public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(
+      final GeneratedDocumentLinkRequestStrictContract request) {
+    return getResult(
+        validateDocumentLinkParams(
+            request != null ? new DocumentLinkRequest().timeToLive(request.timeToLive()) : null),
+        () ->
+            new DocumentLinkParams(
+                request != null ? Duration.ofMillis(request.timeToLive()) : Duration.ZERO));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
+      final long processInstanceKey,
+      final GeneratedCancelProcessInstanceRequestStrictContract request) {
+    final Long operationReference = request != null ? request.operationReference() : null;
+    return getResult(
+        validateCancelProcessInstanceRequest(
+            request != null
+                ? new CancelProcessInstanceRequest().operationReference(operationReference)
+                : null),
+        () -> new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, io.camunda.search.filter.ProcessInstanceFilter>
+      toRequiredProcessInstanceFilter(final GeneratedProcessInstanceFilterStrictContract request) {
+    final var filter = SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request);
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
+    }
+    return Either.right(filter.get());
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
+      toProcessInstanceMigrationBatchOperationRequest(
+          final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract request) {
+    // Validate and map filter using strict contract mapper (avoids convertToProtocol)
+    final var filterResult = toRequiredProcessInstanceFilter(request.filter());
+    if (filterResult.isLeft()) {
+      return Either.left(filterResult.getLeft());
+    }
+
+    final var migPlan = request.migrationPlan();
+    final List<String> violations = new ArrayList<>();
+    if (migPlan == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("migrationPlan"));
+      return Either.left(createProblemDetail(violations).get());
+    }
+    if (migPlan.targetProcessDefinitionKey() == null
+        || migPlan.targetProcessDefinitionKey().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
+    }
+    if (migPlan.mappingInstructions() == null || migPlan.mappingInstructions().isEmpty()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
+    }
+    if (!violations.isEmpty()) {
+      return Either.left(createProblemDetail(violations).get());
+    }
+
+    return Either.right(
+        new ProcessInstanceMigrateBatchOperationRequest(
+            filterResult.get(),
+            KeyUtil.keyToLong(migPlan.targetProcessDefinitionKey()),
+            migPlan.mappingInstructions().stream()
+                .map(
+                    mi ->
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setSourceElementId(mi.sourceElementId())
+                            .setTargetElementId(mi.targetElementId()))
+                .toList()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
+      toProcessInstanceModifyBatchOperationRequest(
+          final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract request) {
+    // Validate and map filter using strict contract mapper (avoids convertToProtocol)
+    final var filterResult = toRequiredProcessInstanceFilter(request.filter());
+    if (filterResult.isLeft()) {
+      return Either.left(filterResult.getLeft());
+    }
+
+    final List<String> violations = new ArrayList<>();
+    if (request.moveInstructions() == null || request.moveInstructions().isEmpty()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
+    }
+    if (!violations.isEmpty()) {
+      return Either.left(createProblemDetail(violations).get());
+    }
+
+    return Either.right(
+        new ProcessInstanceModifyBatchOperationRequest(
+            filterResult.get(),
+            request.moveInstructions().stream()
+                .map(
+                    mi ->
+                        new ProcessInstanceModificationMoveInstruction()
+                            .setSourceElementId(mi.sourceElementId())
+                            .setTargetElementId(mi.targetElementId())
+                            .setInferAncestorScopeFromSourceHierarchy(true))
+                .toList()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
+      final long processInstanceKey,
+      final GeneratedProcessInstanceMigrationInstructionStrictContract request) {
+    final var protoRequest =
+        new ProcessInstanceMigrationInstruction()
+            .targetProcessDefinitionKey(request.targetProcessDefinitionKey())
+            .operationReference(request.operationReference())
+            .mappingInstructions(
+                request.mappingInstructions().stream()
+                    .map(
+                        mi ->
+                            new io.camunda.gateway.protocol.model
+                                    .MigrateProcessInstanceMappingInstruction()
+                                .sourceElementId(mi.sourceElementId())
+                                .targetElementId(mi.targetElementId()))
+                    .toList());
+    return toMigrateProcessInstance(processInstanceKey, protoRequest);
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(
+      final long processInstanceKey,
+      final GeneratedProcessInstanceModificationInstructionStrictContract request) {
+    final List<String> violations = new ArrayList<>();
+    final var activateInstructions =
+        mapActivateInstructionsFromContract(request.activateInstructions());
+    final var moveInstructions =
+        mapMoveInstructionsFromContract(request.moveInstructions(), violations);
+    final var terminateInstructions =
+        mapTerminateInstructionsFromContract(request.terminateInstructions(), violations);
+    return getResult(
+        createProblemDetail(violations),
+        () ->
+            new ProcessInstanceModifyRequest(
+                processInstanceKey,
+                activateInstructions,
+                moveInstructions,
+                terminateInstructions,
+                request.operationReference()));
+  }
+
+  private static List<ProcessInstanceModificationActivateInstruction>
+      mapActivateInstructionsFromContract(
+          final List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
+              instructions) {
+    if (instructions == null) {
+      return List.of();
+    }
+    return instructions.stream()
+        .map(
+            instruction -> {
+              final var mapped = new ProcessInstanceModificationActivateInstruction();
+              mapped
+                  .setElementId(instruction.elementId())
+                  .setAncestorScopeKey(getAncestorKey(instruction.ancestorElementInstanceKey()));
+              if (instruction.variableInstructions() != null) {
+                instruction.variableInstructions().stream()
+                    .map(RequestMapper::mapVariableInstructionFromContract)
+                    .forEach(mapped::addVariableInstruction);
+              }
+              return mapped;
+            })
+        .toList();
+  }
+
+  private static ProcessInstanceModificationVariableInstruction mapVariableInstructionFromContract(
+      final GeneratedModifyProcessInstanceVariableInstructionStrictContract variable) {
+    return new ProcessInstanceModificationVariableInstruction()
+        .setElementId(variable.scopeId() != null ? variable.scopeId() : "")
+        .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.variables())));
+  }
+
+  private static List<ProcessInstanceModificationMoveInstruction> mapMoveInstructionsFromContract(
+      final List<GeneratedProcessInstanceModificationMoveInstructionStrictContract> instructions,
+      final List<String> violations) {
+    if (instructions == null) {
+      return List.of();
+    }
+    return instructions.stream()
+        .map(
+            instruction -> {
+              final var mapped =
+                  new ProcessInstanceModificationMoveInstruction()
+                      .setTargetElementId(instruction.targetElementId());
+              if (instruction.sourceElementInstruction() instanceof final Map<?, ?> sourceMap) {
+                if (sourceMap.containsKey("sourceElementId")) {
+                  mapped.setSourceElementId(String.valueOf(sourceMap.get("sourceElementId")));
+                } else if (sourceMap.containsKey("sourceElementInstanceKey")) {
+                  mapped.setSourceElementInstanceKey(
+                      KeyUtil.keyToLong(String.valueOf(sourceMap.get("sourceElementInstanceKey"))));
+                }
+              }
+              mapAncestorScopeFromContract(
+                  instruction.ancestorScopeInstruction(), mapped, violations);
+              if (instruction.variableInstructions() != null) {
+                instruction.variableInstructions().stream()
+                    .map(RequestMapper::mapVariableInstructionFromContract)
+                    .forEach(mapped::addVariableInstruction);
+              }
+              return mapped;
+            })
+        .toList();
+  }
+
+  private static void mapAncestorScopeFromContract(
+      final Object ancestorScope,
+      final ProcessInstanceModificationMoveInstruction mapped,
+      final List<String> violations) {
+    if (ancestorScope == null) {
+      mapped.setAncestorScopeKey(-1);
+    } else if (ancestorScope instanceof final Map<?, ?> ancestorMap) {
+      final var scopeType =
+          ancestorMap.containsKey("ancestorScopeType")
+              ? String.valueOf(ancestorMap.get("ancestorScopeType"))
+              : "";
+      switch (scopeType) {
+        case "direct" ->
+            mapped.setAncestorScopeKey(
+                getAncestorKey(
+                    ancestorMap.containsKey("ancestorElementInstanceKey")
+                        ? String.valueOf(ancestorMap.get("ancestorElementInstanceKey"))
+                        : null));
+        case "sourceParent" -> mapped.setUseSourceParentKeyAsAncestorScopeKey(true);
+        case "inferred" -> mapped.setInferAncestorScopeFromSourceHierarchy(true);
+        default ->
+            violations.add(
+                ("Cannot map value '%s' for type 'ancestorScopeInstruction'. "
+                        + "Use any of the following values: [direct, inferred, sourceParent].")
+                    .formatted(scopeType));
+      }
+    }
+  }
+
+  private static List<ProcessInstanceModificationTerminateInstruction>
+      mapTerminateInstructionsFromContract(
+          final List<Object> instructions, final List<String> violations) {
+    if (instructions == null) {
+      return List.of();
+    }
+    return instructions.stream()
+        .map(
+            obj -> {
+              final var mapped = new ProcessInstanceModificationTerminateInstruction();
+              if (obj instanceof final Map<?, ?> map) {
+                final boolean hasElementId = map.containsKey("elementId");
+                final boolean hasKey = map.containsKey("elementInstanceKey");
+                if (hasElementId && hasKey) {
+                  violations.add("Only one of [elementId, elementInstanceKey] is allowed.");
+                } else if (!hasElementId && !hasKey) {
+                  violations.add("At least one of [elementId, elementInstanceKey] is required.");
+                } else if (hasKey) {
+                  mapped.setElementInstanceKey(
+                      KeyUtil.keyToLong(String.valueOf(map.get("elementInstanceKey"))));
+                } else {
+                  mapped.setElementId(String.valueOf(map.get("elementId")));
+                }
+              }
+              return mapped;
+            })
+        .toList();
+  }
+
+  public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
+      final GeneratedMessagePublicationRequestStrictContract request,
+      final boolean multiTenancyEnabled,
+      final int maxNameFieldLength) {
+    final var pubRequest =
+        new MessagePublicationRequest()
+            .name(request.name())
+            .correlationKey(request.correlationKey())
+            .timeToLive(request.timeToLive())
+            .messageId(request.messageId())
+            .variables(request.variables())
+            .tenantId(request.tenantId());
+    return toMessagePublicationRequest(pubRequest, multiTenancyEnabled, maxNameFieldLength);
+  }
+
+  public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
+      final GeneratedMessageCorrelationRequestStrictContract request,
+      final boolean multiTenancyEnabled,
+      final int maxNameFieldLength) {
+    final var corrRequest =
+        new MessageCorrelationRequest()
+            .name(request.name())
+            .correlationKey(request.correlationKey())
+            .variables(request.variables())
+            .tenantId(request.tenantId());
+    return toMessageCorrelationRequest(corrRequest, multiTenancyEnabled, maxNameFieldLength);
+  }
+
+  public static Either<ProblemDetail, EvaluateConditionalRequest> toEvaluateConditionalRequest(
+      final GeneratedConditionalEvaluationInstructionStrictContract request,
+      final boolean multiTenancyEnabled) {
+    final var condRequest =
+        new ConditionalEvaluationInstruction()
+            .tenantId(request.tenantId())
+            .processDefinitionKey(request.processDefinitionKey())
+            .variables(request.variables());
+    return toEvaluateConditionalRequest(condRequest, multiTenancyEnabled);
+  }
+
+  public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
+      toAdHocSubProcessActivateActivitiesRequest(
+          final String adHocSubProcessInstanceKey,
+          final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract request) {
+    final var adHocRequest =
+        new AdHocSubProcessActivateActivitiesInstruction()
+            .cancelRemainingInstances(request.cancelRemainingInstances());
+    final var elements =
+        request.elements().stream()
+            .map(
+                e ->
+                    new io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivityReference()
+                        .elementId(e.elementId())
+                        .variables(e.variables()))
+            .toList();
+    adHocRequest.setElements(elements);
+    return toAdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, adHocRequest);
+  }
+
+  public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
+      final GeneratedDecisionInstanceFilterStrictContract request) {
+    return toRequiredDecisionInstanceFilter(
+        convertToProtocol(request, io.camunda.gateway.protocol.model.DecisionInstanceFilter.class));
+  }
 }

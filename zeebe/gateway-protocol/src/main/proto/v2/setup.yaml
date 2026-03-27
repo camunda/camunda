@@ -4,6 +4,7 @@ paths:
   /setup/user:
     post:
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Setup
       operationId: createAdminUser

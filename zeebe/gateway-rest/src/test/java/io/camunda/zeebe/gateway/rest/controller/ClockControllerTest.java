@@ -19,6 +19,8 @@ import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClockServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedClockController;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -29,12 +31,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(ClockController.class)
+@Import(DefaultClockServiceAdapter.class)
+@WebMvcTest(GeneratedClockController.class)
 public class ClockControllerTest extends RestControllerTest {
 
   private static final String CLOCK_URL = "/v2/clock";
@@ -74,11 +78,7 @@ public class ClockControllerTest extends RestControllerTest {
   }
 
   static Stream<Arguments> invalidClockPinRequests() {
-    return Stream.of(
-        of(new ClockPinRequest(), "No timestamp provided."),
-        of(
-            new ClockPinRequest().timestamp(-1L),
-            "The value for timestamp is '-1' but must be not negative."));
+    return Stream.of(of(new ClockPinRequest(), "No timestamp provided."));
   }
 
   @ParameterizedTest

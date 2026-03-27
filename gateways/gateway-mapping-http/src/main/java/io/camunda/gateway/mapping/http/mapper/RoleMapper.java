@@ -8,6 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
 import io.camunda.gateway.protocol.model.RoleCreateRequest;
 import io.camunda.gateway.protocol.model.RoleUpdateRequest;
@@ -51,5 +53,22 @@ public class RoleMapper {
     return RequestMapper.getResult(
         roleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
         () -> new RoleMemberRequest(roleId, memberId, entityType));
+  }
+
+  // ---- Strict contract methods (direct field access) ----
+
+  public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
+      final GeneratedRoleCreateRequestStrictContract request) {
+    return toRoleCreateRequest(
+        new RoleCreateRequest()
+            .roleId(request.roleId())
+            .name(request.name())
+            .description(request.description()));
+  }
+
+  public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
+      final GeneratedRoleUpdateRequestStrictContract request, final String roleId) {
+    return toRoleUpdateRequest(
+        new RoleUpdateRequest().name(request.name()).description(request.description()), roleId);
   }
 }

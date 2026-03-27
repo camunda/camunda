@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
-import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -39,6 +39,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -58,12 +60,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = ProcessInstanceController.class)
+@Import(DefaultProcessInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
@@ -358,7 +362,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Variable value must not be null.",
+                  "detail": "No value provided.",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -650,7 +654,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -691,7 +695,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -885,12 +889,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(ProcessInstanceStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(GeneratedProcessInstanceStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(GeneratedProcessInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(ProcessInstanceStateEnum.COMPLETED),
-                    String.valueOf(ProcessInstanceStateEnum.ACTIVE)),
+                    String.valueOf(GeneratedProcessInstanceStateEnum.COMPLETED),
+                    String.valueOf(GeneratedProcessInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
     stringOperationTestCases(
@@ -952,8 +956,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(ProcessInstanceStateEnum.class)
-  void shouldSearchProcessInstancesByState(final ProcessInstanceStateEnum state) {
+  @EnumSource(GeneratedProcessInstanceStateEnum.class)
+  void shouldSearchProcessInstancesByState(final GeneratedProcessInstanceStateEnum state) {
     // given
     final var request =
         """

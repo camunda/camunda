@@ -64,6 +64,11 @@
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -110,7 +115,30 @@
                 <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
               </typeMappings>
-              <generateApis>false</generateApis>
+              <schemaMappings>
+                <!-- map key types used in path parameters to String -->
+                <schemaMapping>LongKey=String</schemaMapping>
+                <schemaMapping>AuditLogKey=String</schemaMapping>
+                <schemaMapping>AuthorizationKey=String</schemaMapping>
+                <schemaMapping>BatchOperationKey=String</schemaMapping>
+                <schemaMapping>DecisionDefinitionKey=String</schemaMapping>
+                <schemaMapping>DecisionEvaluationInstanceKey=String</schemaMapping>
+                <schemaMapping>DecisionInstanceKey=String</schemaMapping>
+                <schemaMapping>DecisionRequirementsKey=String</schemaMapping>
+                <schemaMapping>ElementInstanceKey=String</schemaMapping>
+                <schemaMapping>FormKey=String</schemaMapping>
+                <schemaMapping>IncidentKey=String</schemaMapping>
+                <schemaMapping>JobKey=String</schemaMapping>
+                <schemaMapping>ProcessDefinitionKey=String</schemaMapping>
+                <schemaMapping>ProcessInstanceKey=String</schemaMapping>
+                <schemaMapping>ResourceKey=String</schemaMapping>
+                <schemaMapping>ScopeKey=String</schemaMapping>
+                <schemaMapping>UserTaskKey=String</schemaMapping>
+                <schemaMapping>VariableKey=String</schemaMapping>
+                <!-- Map response schemas to strict contract records -->
+                <schemaMapping>IncidentResult=GeneratedIncidentStrictContract</schemaMapping>
+              </schemaMappings>
+              <generateApis>true</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
               <generateModelDocumentation>false</generateModelDocumentation>
@@ -118,6 +146,7 @@
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
               <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
+              <apiPackage>io.camunda.gateway.protocol.api</apiPackage>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
@@ -125,6 +154,10 @@
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
+                <interfaceOnly>true</interfaceOnly>
+                <useTags>true</useTags>
+                <useBeanValidation>true</useBeanValidation>
+                <skipDefaultInterface>true</skipDefaultInterface>
               </configOptions>
             </configuration>
           </execution>

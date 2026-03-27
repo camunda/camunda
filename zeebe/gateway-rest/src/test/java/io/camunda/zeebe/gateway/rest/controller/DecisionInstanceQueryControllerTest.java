@@ -31,6 +31,8 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionInstanceController;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -41,11 +43,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = DecisionInstanceController.class)
+@Import(DefaultDecisionInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedDecisionInstanceController.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -243,10 +247,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturnDecisionInstanceById() {
     // given
-    final var decisionInstanceId = "123-1";
+    final var decisionInstanceId = 12345L;
     final var decisionInstanceInDB =
         new DecisionInstanceEntity(
-            "123-1",
+            "12345",
             123L,
             DecisionInstanceState.EVALUATED,
             OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
@@ -269,7 +273,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 new DecisionInstanceOutputEntity("1", "name1", "value1", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("2", "name2", "value2", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("3", "name3", "value3", "ruleId2", 2)));
-    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
+    when(decisionInstanceServices.getById(eq(String.valueOf(decisionInstanceId)), any()))
         .thenReturn(decisionInstanceInDB);
     // when
     webClient
@@ -282,7 +286,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .json(
             """
                 {
-                     "decisionEvaluationInstanceKey": "123-1",
+                     "decisionEvaluationInstanceKey": "12345",
                      "decisionEvaluationKey": "123",
                      "state": "EVALUATED",
                      "evaluationDate": "2024-06-05T08:29:15.027Z",
@@ -348,12 +352,12 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturn404WhenDecisionInstanceNotFound() {
     // given
-    final var decisionInstanceId = "123-1";
-    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
+    final var decisionInstanceId = 12345L;
+    when(decisionInstanceServices.getById(eq(String.valueOf(decisionInstanceId)), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
-                    "Decision instance with key 123-1 was not found.",
+                    "Decision instance with key 12345 was not found.",
                     CamundaSearchException.Reason.NOT_FOUND)));
     // when
     webClient
@@ -371,8 +375,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "NOT_FOUND",
                           "status": 404,
-                          "detail": "Decision instance with key 123-1 was not found.",
-                          "instance": "/v2/decision-instances/123-1"
+                          "detail": "Decision instance with key 12345 was not found.",
+                          "instance": "/v2/decision-instances/12345"
                         }""",
             JsonCompareMode.STRICT);
   }
@@ -380,8 +384,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturn500ForInternalErrorGetDecisionDefinitionByKey() {
     // given
-    final var decisionInstanceId = "123-1";
-    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
+    final var decisionInstanceId = 12345L;
+    when(decisionInstanceServices.getById(eq(String.valueOf(decisionInstanceId)), any()))
         .thenThrow(new RuntimeException("Something bad happened."));
     // when
     webClient
@@ -400,7 +404,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "title": "java.lang.RuntimeException",
                   "status": 500,
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
-                  "instance": "/v2/decision-instances/123-1"
+                  "instance": "/v2/decision-instances/12345"
                 }""",
             JsonCompareMode.STRICT);
   }
@@ -408,8 +412,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturn403ForUnauthorizedGetDecisionDefinitionByKey() {
     // given
-    final var decisionInstanceId = "123-1";
-    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
+    final var decisionInstanceId = 12345L;
+    when(decisionInstanceServices.getById(eq(String.valueOf(decisionInstanceId)), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
@@ -430,7 +434,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "title": "FORBIDDEN",
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
-                  "instance": "/v2/decision-instances/123-1"
+                  "instance": "/v2/decision-instances/12345"
                 }""",
             JsonCompareMode.STRICT);
   }
@@ -455,10 +459,25 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionRequirementsKey",
         ops -> new DecisionInstanceFilter.Builder().decisionRequirementsKeyOperations(ops).build());
-    basicStringOperationTestCases(
+    // Use numeric string values for key fields that have a numeric pattern constraint.
+    keyOperationTestCases(
         streamBuilder,
         "decisionEvaluationInstanceKey",
-        ops -> new DecisionInstanceFilter.Builder().decisionInstanceIdOperations(ops).build());
+        ops -> {
+          final var stringOps =
+              ops.stream()
+                  .map(
+                      op ->
+                          new Operation<>(
+                              op.operator(),
+                              op.values() != null
+                                  ? op.values().stream().map(String::valueOf).toList()
+                                  : null))
+                  .toList();
+          return new DecisionInstanceFilter.Builder()
+              .decisionInstanceIdOperations(stringOps)
+              .build();
+        });
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

@@ -57,19 +57,30 @@ test.describe.parallel('Search User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search user tasks - bad request - invalid payload', async ({
+  test('Search user tasks - bad request - invalid page type', async ({
     request,
   }) => {
     const res = await request.post(buildUrl('/user-tasks/search'), {
       headers: jsonHeaders(),
       data: {
-        // Invalid field
         page: 'invalidValue',
+      },
+    });
+    await assertBadRequest(res, 'Request property [page] cannot be parsed');
+  });
+
+  test('Search user tasks - bad request - invalid page field', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/user-tasks/search'), {
+      headers: jsonHeaders(),
+      data: {
+        page: {limit: 'notAnInteger'},
       },
     });
     await assertBadRequest(
       res,
-      'At least one of [from, after, before, limit] is required.',
+      'Request property [page.limit] cannot be parsed',
     );
   });
 

@@ -19,6 +19,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionDefinitionServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionDefinitionController;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -29,12 +31,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
-@WebMvcTest(DecisionDefinitionController.class)
+@Import(DefaultDecisionDefinitionServiceAdapter.class)
+@WebMvcTest(GeneratedDecisionDefinitionController.class)
 public class DecisionDefinitionControllerTest extends RestControllerTest {
 
   private static final String DECISION_BASE_URL = "/v2/decision-definitions";
@@ -213,7 +217,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"Bad Request",
                 "status":400,
-                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed",
+                "detail":"Request property [decisionDefinitionKey] cannot be parsed",
                 "instance":"/v2/decision-definitions/evaluation"
              }""";
 
@@ -248,7 +252,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"Bad Request",
                 "status":400,
-                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required",
+                "detail":"Failed to read request",
                 "instance":"/v2/decision-definitions/evaluation"
              }""";
 

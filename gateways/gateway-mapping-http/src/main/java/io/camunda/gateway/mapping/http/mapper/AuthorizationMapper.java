@@ -9,6 +9,10 @@ package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationIdBasedRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationPropertyBasedRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPermissionTypeEnum;
 import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
@@ -124,6 +128,99 @@ public class AuthorizationMapper {
     return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
         ? AuthorizationResourceMatcher.ANY
         : AuthorizationResourceMatcher.ID;
+  }
+
+  // --- Strict contract overloads ---
+
+  public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
+      final GeneratedAuthorizationRequestStrictContract request) {
+    return switch (request) {
+      case GeneratedAuthorizationIdBasedRequestStrictContract idReq ->
+          toCreateAuthorizationRequest(idReq);
+      case GeneratedAuthorizationPropertyBasedRequestStrictContract propReq ->
+          toCreateAuthorizationRequest(propReq);
+    };
+  }
+
+  public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
+      final GeneratedAuthorizationIdBasedRequestStrictContract request) {
+    return RequestMapper.getResult(
+        authorizationRequestValidator.validateIdBasedRequest(request),
+        () ->
+            new CreateAuthorizationRequest(
+                request.ownerId(),
+                AuthorizationOwnerType.valueOf(request.ownerType().name()),
+                resolveIdBasedResourceMatcher(request.resourceId()),
+                request.resourceId(),
+                "",
+                AuthorizationResourceType.valueOf(request.resourceType().name()),
+                transformStrictPermissionTypes(request.permissionTypes())));
+  }
+
+  public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
+      final GeneratedAuthorizationPropertyBasedRequestStrictContract request) {
+    return RequestMapper.getResult(
+        authorizationRequestValidator.validatePropertyBasedRequest(request),
+        () ->
+            new CreateAuthorizationRequest(
+                request.ownerId(),
+                AuthorizationOwnerType.valueOf(request.ownerType().name()),
+                AuthorizationResourceMatcher.PROPERTY,
+                "",
+                request.resourcePropertyName(),
+                AuthorizationResourceType.valueOf(request.resourceType().name()),
+                transformStrictPermissionTypes(request.permissionTypes())));
+  }
+
+  public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey, final GeneratedAuthorizationRequestStrictContract request) {
+    return switch (request) {
+      case GeneratedAuthorizationIdBasedRequestStrictContract idReq ->
+          toUpdateAuthorizationRequest(authorizationKey, idReq);
+      case GeneratedAuthorizationPropertyBasedRequestStrictContract propReq ->
+          toUpdateAuthorizationRequest(authorizationKey, propReq);
+    };
+  }
+
+  public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey,
+      final GeneratedAuthorizationIdBasedRequestStrictContract request) {
+    return RequestMapper.getResult(
+        authorizationRequestValidator.validateIdBasedRequest(request),
+        () ->
+            new UpdateAuthorizationRequest(
+                authorizationKey,
+                request.ownerId(),
+                AuthorizationOwnerType.valueOf(request.ownerType().name()),
+                resolveIdBasedResourceMatcher(request.resourceId()),
+                request.resourceId(),
+                "",
+                AuthorizationResourceType.valueOf(request.resourceType().name()),
+                transformStrictPermissionTypes(request.permissionTypes())));
+  }
+
+  public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey,
+      final GeneratedAuthorizationPropertyBasedRequestStrictContract request) {
+    return RequestMapper.getResult(
+        authorizationRequestValidator.validatePropertyBasedRequest(request),
+        () ->
+            new UpdateAuthorizationRequest(
+                authorizationKey,
+                request.ownerId(),
+                AuthorizationOwnerType.valueOf(request.ownerType().name()),
+                AuthorizationResourceMatcher.PROPERTY,
+                "",
+                request.resourcePropertyName(),
+                AuthorizationResourceType.valueOf(request.resourceType().name()),
+                transformStrictPermissionTypes(request.permissionTypes())));
+  }
+
+  private static Set<PermissionType> transformStrictPermissionTypes(
+      final List<GeneratedPermissionTypeEnum> permissionTypes) {
+    return permissionTypes.stream()
+        .map(permission -> PermissionType.valueOf(permission.name()))
+        .collect(Collectors.toSet());
   }
 
   private static ProblemDetail createUnsupportedAuthorizationProblemDetail(

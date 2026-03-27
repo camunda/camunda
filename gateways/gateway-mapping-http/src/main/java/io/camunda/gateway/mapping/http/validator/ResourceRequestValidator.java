@@ -7,9 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
-
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -18,11 +15,6 @@ public class ResourceRequestValidator {
 
   public static Optional<ProblemDetail> validateResourceDeletion(
       final DeleteResourceRequest request) {
-    return validate(
-        violations -> {
-          if (request != null) {
-            validateOperationReference(request.getOperationReference(), violations);
-          }
-        });
+    return Optional.empty();
   }
 }

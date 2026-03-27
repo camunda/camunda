@@ -35,6 +35,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultTenantServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedTenantController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -45,11 +47,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = TenantController.class)
+@Import(DefaultTenantServiceAdapter.class)
+@WebMvcTest(value = GeneratedTenantController.class)
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
@@ -741,7 +745,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Only one of [from, after, before] is allowed.",
                       "instance": "%s"

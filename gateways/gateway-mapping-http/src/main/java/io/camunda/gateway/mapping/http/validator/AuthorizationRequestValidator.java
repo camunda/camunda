@@ -9,6 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationIdBasedRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationPropertyBasedRequestStrictContract;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.security.validation.AuthorizationValidator;
@@ -47,5 +49,31 @@ public final class AuthorizationRequestValidator {
                 null,
                 request.getResourcePropertyName(),
                 Set.copyOf(request.getPermissionTypes())));
+  }
+
+  public Optional<ProblemDetail> validateIdBasedRequest(
+      final GeneratedAuthorizationIdBasedRequestStrictContract request) {
+    return validate(
+        () ->
+            authorizationValidator.validate(
+                request.ownerId(),
+                request.ownerType(),
+                request.resourceType(),
+                request.resourceId(),
+                null,
+                Set.copyOf(request.permissionTypes())));
+  }
+
+  public Optional<ProblemDetail> validatePropertyBasedRequest(
+      final GeneratedAuthorizationPropertyBasedRequestStrictContract request) {
+    return validate(
+        () ->
+            authorizationValidator.validate(
+                request.ownerId(),
+                request.ownerType(),
+                request.resourceType(),
+                null,
+                request.resourcePropertyName(),
+                Set.copyOf(request.permissionTypes())));
   }
 }

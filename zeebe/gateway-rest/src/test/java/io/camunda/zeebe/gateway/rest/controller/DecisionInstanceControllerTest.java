@@ -17,6 +17,8 @@ import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionInstanceController;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -25,11 +27,13 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = DecisionInstanceController.class)
+@Import(DefaultDecisionInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedDecisionInstanceController.class)
 public class DecisionInstanceControllerTest extends RestControllerTest {
 
   static final String DECISION_INSTANCES_BASE_URL = "/v2/decision-instances";

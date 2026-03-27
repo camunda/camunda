@@ -10,20 +10,26 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClusterServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedClusterController;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(StatusController.class)
+@Import(DefaultClusterServiceAdapter.class)
+@WebMvcTest(GeneratedClusterController.class)
 class StatusControllerTest extends RestControllerTest {
 
   static final String STATUS_URL = "/v2/status";
 
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean TopologyServices topologyServices;
 
   @Test

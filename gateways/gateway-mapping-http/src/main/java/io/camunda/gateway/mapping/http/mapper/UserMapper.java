@@ -8,6 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
@@ -44,5 +46,27 @@ public class UserMapper {
                 updateRequest.getName(),
                 updateRequest.getEmail(),
                 updateRequest.getPassword()));
+  }
+
+  // ---- Strict contract overloads (transitional) ----
+
+  public Either<ProblemDetail, UserDTO> toUserRequest(
+      final GeneratedUserRequestStrictContract request) {
+    return toUserRequest(
+        new UserRequest()
+            .username(request.username())
+            .password(request.password())
+            .name(request.name())
+            .email(request.email()));
+  }
+
+  public Either<ProblemDetail, UserDTO> toUserUpdateRequest(
+      final GeneratedUserUpdateRequestStrictContract request, final String username) {
+    return toUserUpdateRequest(
+        new UserUpdateRequest()
+            .password(request.password())
+            .name(request.name())
+            .email(request.email()),
+        username);
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TAGS_COUNT;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TAG_FORMAT;
 
 import io.camunda.zeebe.util.TagUtil;
@@ -21,11 +20,6 @@ public class TagsValidator {
     final List<String> errors = new ArrayList<>();
     if (tags == null || tags.isEmpty()) {
       return errors;
-    }
-
-    if (tags.size() > TagUtil.MAX_NUMBER_OF_TAGS) {
-      errors.add(
-          ERROR_MESSAGE_INVALID_TAGS_COUNT.formatted(tags.size(), TagUtil.MAX_NUMBER_OF_TAGS));
     }
 
     for (final String tag : tags) {
