@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import java.util.Collection;
 import org.agrona.DirectBuffer;
 
 public final class MessageCorrelateBehavior {
@@ -42,6 +43,13 @@ public final class MessageCorrelateBehavior {
 
   public void correlateToMessageStartEvents(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    correlateToMessageStartEvents(messageData, correlatingSubscriptions, null);
+  }
+
+  public void correlateToMessageStartEvents(
+      final MessageData messageData,
+      final Subscriptions correlatingSubscriptions,
+      final Collection<String> blockedProcessIds) {
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageData.tenantId(),
         messageData.messageName(),
@@ -49,13 +57,15 @@ public final class MessageCorrelateBehavior {
           final var subscriptionRecord = subscription.getRecord();
           final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
 
+          if (correlatingSubscriptions.contains(bpmnProcessIdBuffer)) {
+            return;
+          }
+
           // create only one instance of a process per correlation key
           // - allow multiple instance if correlation key is empty
-          if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
-              && (messageData.correlationKey().capacity() == 0
-                  || !messageState.existActiveProcessInstance(
-                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))) {
-
+          if (messageData.correlationKey().capacity() == 0
+              || !messageState.existActiveProcessInstance(
+                  messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey())) {
             final var processInstanceKey =
                 eventHandle.triggerMessageStartEvent(
                     subscription.getKey(),
@@ -67,6 +77,8 @@ public final class MessageCorrelateBehavior {
 
             subscriptionRecord.setProcessInstanceKey(processInstanceKey);
             correlatingSubscriptions.add(subscriptionRecord);
+          } else if (blockedProcessIds != null) {
+            blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
           }
         });
   }
