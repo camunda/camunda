@@ -1,5 +1,5 @@
 ---
-applyTo: "load-tests/**,.github/workflows/*load-test*,.github/scripts/*load*"
+applyTo: "load-tests/**,zeebe/benchmarks/**,.github/workflows/*load-test*,.github/workflows/*load_test*,.github/workflows/*benchmark*,.github/workflows/profile-load-test*,.github/workflows/camunda-*-load-tests*,.github/workflows/camunda-release-load-test*,.github/workflows/camunda-scheduled-release*,.github/workflows/camunda-verify-and-cleanup*,.github/scripts/*load*"
 ---
 
 # Load Test Review Guidelines
@@ -21,6 +21,7 @@ if related documentation needs updating:
 - `load-tests/README.md` — main entry point and workflow overview
 - `load-tests/docs/workflows.md` — detailed workflow reference
 - `load-tests/docs/directory-structure.md` — branch-specific path differences
+- `docs/testing/reliability-testing.md` — goals, test variants, observability, chaos engineering
 - This file (`.github/instructions/load-tests.instructions.md`) — AI-facing guidance
 
 ## Scheduled Release Load Tests
