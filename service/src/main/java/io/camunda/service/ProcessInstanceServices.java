@@ -12,6 +12,8 @@ import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -69,7 +71,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -78,14 +79,15 @@ public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
+  private static final int MAX_CACHED_DEFINITIONS = 1024;
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentServices incidentServices;
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
   private final int maxVariableNameLength;
-  private final ConcurrentHashMap<Long, RequestRetryHandler> definitionKeyToRetryHandler =
-      new ConcurrentHashMap<>();
+  private final Cache<Long, RequestRetryHandler> definitionKeyToRetryHandler =
+      Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -528,7 +530,7 @@ public final class ProcessInstanceServices
         .whenComplete(
             (response, error) -> {
               if (error == null && definitionKey != null) {
-                definitionKeyToRetryHandler.computeIfAbsent(
+                definitionKeyToRetryHandler.get(
                     definitionKey, ignored -> createRetryHandler());
               }
             });
@@ -538,7 +540,7 @@ public final class ProcessInstanceServices
     if (definitionKey == null) {
       return requestRetryHandler;
     }
-    final var handler = definitionKeyToRetryHandler.get(definitionKey);
+    final var handler = definitionKeyToRetryHandler.getIfPresent(definitionKey);
     return handler != null ? handler : requestRetryHandler;
   }
 
