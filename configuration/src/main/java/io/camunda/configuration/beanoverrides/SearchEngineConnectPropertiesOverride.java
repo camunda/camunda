@@ -9,6 +9,7 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.InterceptorPlugin;
+import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
@@ -80,6 +81,7 @@ public class SearchEngineConnectPropertiesOverride {
           database = secondaryStorage.getOpensearch();
           populateFromDocumentBasedSecondaryStorageDatabase(
               (DocumentBasedSecondaryStorageDatabase) database, override);
+          override.setAwsEnabled(((Opensearch) database).isAwsEnabled());
           break;
         }
     }

@@ -103,7 +103,10 @@ public class OpensearchConnector {
         final HealthResponse response = openSearchClient.cluster().health();
         LOGGER.info("OpenSearch cluster health: {}", response.status());
       } catch (final IOException e) {
-        LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+        LOGGER.error(
+            "Error in getting health status from {}",
+            operateProperties.getOpensearch().getUrl(),
+            e);
       }
     } else {
       LOGGER.warn("OpenSearch cluster health check is disabled.");
@@ -159,7 +162,8 @@ public class OpensearchConnector {
         final HealthResponse response = openSearchClient.cluster().health();
         LOGGER.info("OpenSearch cluster health: {}", response.status());
       } catch (final IOException e) {
-        LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+        final String host = hosts.length == 1 ? hosts[0].toString() : "no host defined";
+        LOGGER.error("Error in getting health status from '{}'", host, e);
       }
 
       if (!checkHealth(openSearchClient)) {
