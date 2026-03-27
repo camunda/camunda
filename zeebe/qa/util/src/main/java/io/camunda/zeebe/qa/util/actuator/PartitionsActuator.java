@@ -17,9 +17,8 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.zeebe.containers.ZeebeBrokerNode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +28,8 @@ import java.util.Map;
  * service). To instantiate this interface, you can use {@link Feign}; see {@link #of(String)} as an
  * example.
  *
- * <p>You can use one of {@link #of(String)} or {@link #of(ZeebeBrokerNode)} to create a new client
- * to use for yourself.
+ * <p>You can use one of {@link #of(String)} or {@link #of(BrokerNode)} to create a new client to
+ * use for yourself.
  *
  * <p>Adding a new method is simple: simply define the input/output here as you normally would, and
  * make sure to add the correct JSON encoding headers (`Accept` for the response type,
@@ -42,13 +41,13 @@ public interface PartitionsActuator {
 
   /**
    * Returns a {@link PartitionsActuator} instance using the given node as upstream. This only
-   * accepts {@link ZeebeBrokerNode} at the moment, as only the broker has this actuator. It can be
+   * accepts {@link BrokerNode} at the moment, as only the broker has this actuator. It can be
    * changed if we move these to the gateway.
    *
    * @param node the node to connect to
    * @return a new instance of {@link PartitionsActuator}
    */
-  static PartitionsActuator of(final ZeebeBrokerNode<?> node) {
+  static PartitionsActuator of(final BrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/partitions", node.getExternalMonitoringAddress());
     return of(endpoint);
