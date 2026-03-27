@@ -134,9 +134,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     // given
     when(batchOperationCache.get("42")).thenReturn(Optional.empty());
 
-    final int numItems = 1;
-    final Record<BatchOperationChunkRecordValue> record =
-        aChunkRecordWithMultipleItems(42L, numItems);
+    final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(42L, 1);
     final var item = record.getValue().getItems().getFirst();
     final String expectedId =
         String.format(ID_PATTERN, record.getValue().getBatchOperationKey(), item.getItemKey());
