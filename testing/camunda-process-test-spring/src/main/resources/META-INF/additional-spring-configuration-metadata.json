@@ -49,6 +49,11 @@
           "value": "openai-compatible",
           "description": "Use an OpenAI-compatible embedding API (requires base-url and model)."
         }
+      ],
+      "providers": [
+        {
+          "name": "any"
+        }
       ]
     },
     {

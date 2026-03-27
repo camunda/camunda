@@ -613,7 +613,7 @@ public class SemanticSimilarityConfigBootstrapTest {
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
-      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, null, null, null);
+      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, null);
       final OpenAiEmbeddingModelAdapterProvider provider =
           new OpenAiEmbeddingModelAdapterProvider();
       assertThatThrownBy(() -> provider.create(config)).isInstanceOf(IllegalStateException.class);
