@@ -77,6 +77,12 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
       }
     };
 
+    // Avoid cursor jump while typing: use defaultValue when editable,
+    // value only when read-only (to reflect external updates)
+    const valueProps = readOnly
+      ? {value: displayValue}
+      : {defaultValue: displayValue};
+
     return (
       <EditorWrapper
         id={id}
@@ -92,12 +98,13 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
             Value
           </label>
           <JSONEditor
-            value={displayValue}
+            {...valueProps}
             onChange={isReadOnly ? undefined : handleChange}
             readOnly={isReadOnly}
             height={`${height}px`}
             width="100%"
             options={{
+              formatOnType: false,
               lineNumbers: 'off',
               lineDecorationsWidth: 0,
               renderLineHighlight: 'none',

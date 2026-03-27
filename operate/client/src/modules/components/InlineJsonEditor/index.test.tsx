@@ -45,7 +45,7 @@ describe('<InlineJsonEditor />', () => {
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
-    await user.type(editor, '"{arrowLeft}updated');
+    await user.type(editor, '"updated"');
 
     expect(mockOnChange).toHaveBeenCalledWith('"updated"');
   });
@@ -93,7 +93,7 @@ describe('<InlineJsonEditor />', () => {
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
-    await user.type(editor, '"{arrowLeft}valid');
+    await user.type(editor, '"valid"');
 
     expect(mockOnValidate).toHaveBeenCalledWith(true);
   });

@@ -13,10 +13,9 @@ import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
 import {type editor} from 'monaco-editor';
 
-type Props = {
-  value: string;
-  onChange?: (value: string) => void;
+type BaseProps = {
   readOnly?: boolean;
+  onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
   onMount?: (editor: {
     showMarkers: () => void;
@@ -27,9 +26,22 @@ type Props = {
   options?: editor.IStandaloneEditorConstructionOptions;
 };
 
+type ControlledProps = BaseProps & {
+  value: string;
+  defaultValue?: never;
+};
+
+type UncontrolledProps = BaseProps & {
+  defaultValue?: string;
+  value?: never;
+};
+
+type Props = ControlledProps | UncontrolledProps;
+
 const JSONEditor: React.FC<Props> = observer(
   ({
     value,
+    defaultValue,
     onChange,
     readOnly = false,
     onValidate = () => {},
@@ -51,6 +63,7 @@ const JSONEditor: React.FC<Props> = observer(
           options={editorOptions}
           language="json"
           value={value}
+          defaultValue={defaultValue}
           height={height}
           width={width}
           theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
