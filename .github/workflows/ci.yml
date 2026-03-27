@@ -32,6 +32,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
+      validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
@@ -62,6 +63,39 @@ jobs:
       - run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) $ACTIONLINT_VERSION
           ./actionlint -shellcheck '' -ignore 'property "vault_.+" is not defined in object type' -ignore 'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  validate-pom-metadata:
+    if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
+    name: "Lint / Flattened POM Metadata"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: validate-pom-metadata
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Bootstrap Zeebe build tools
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -Dquickly=true -pl build-tools -am install
+      - name: Generate flattened POMs
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+      - name: Validate flattened POM metadata
+        uses: ./.github/actions/validate-pom-metadata
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -564,6 +598,7 @@ jobs:
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
+      - validate-pom-metadata
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
