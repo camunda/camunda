@@ -6,11 +6,11 @@ For background on goals, test variants, and observability, see the [reliability 
 
 ## Directory Layout
 
-| Directory | Description |
-|---|---|
-| `setup/` | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md)) |
-| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md)) |
-| `docs/` | Additional documentation: [workflow reference](docs/workflows.md), [directory structure history](docs/directory-structure.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
+|   Directory    |                                                                                                Description                                                                                                 |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                                                                                             |
+| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                                                                                                       |
+| `docs/`        | Additional documentation: [workflow reference](docs/workflows.md), [directory structure history](docs/directory-structure.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
 
 ## Quick Start
 
@@ -85,12 +85,12 @@ graph TD
 
 ### Schedule
 
-| Time | Workflow | Frequency |
-|---|---|---|
-| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly |
-| 01:00 UTC Monday | `camunda-weekly-load-tests.yml` | Weekly |
-| 04:00 UTC | `camunda-scheduled-release-load-tests.yml` | Daily |
-| 04:00 UTC | `camunda-daily-load-tests.yml` | Daily |
-| 04:00 UTC | `camunda-load-test-clean-up.yml` | Daily |
+|       Time       |                       Workflow                       | Frequency |
+|------------------|------------------------------------------------------|-----------|
+| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
+| 01:00 UTC Monday | `camunda-weekly-load-tests.yml`                      | Weekly    |
+| 04:00 UTC        | `camunda-scheduled-release-load-tests.yml`           | Daily     |
+| 04:00 UTC        | `camunda-daily-load-tests.yml`                       | Daily     |
+| 04:00 UTC        | `camunda-load-test-clean-up.yml`                     | Daily     |
 
 For detailed workflow inputs, job chains, and branch availability, see the [workflow reference](docs/workflows.md).
