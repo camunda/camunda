@@ -7,6 +7,11 @@ and Google Cloud clusters.
 
 The [scripts](scripts/README.md) section contains several scripts which can help on running benchmarks.
 
+## Workflows
+
+The [workflows](workflows.md) section documents all load test GitHub Actions workflows, their
+inputs/outputs, scheduling, and how they chain together.
+
 ## Directory Structure
 
 The [directory structure](directory-structure.md) section documents how the load test directory
