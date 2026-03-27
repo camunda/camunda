@@ -25,6 +25,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -39,6 +40,47 @@ import java.util.Set;
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public class VisibleForTestingArchTest {
+
+  static final List<String> PUBLIC_ELEMENTS =
+      List.of(
+          "io.camunda.application.commons.actor.ActorSchedulerConfiguration",
+          "io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR",
+          "io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR",
+          "io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR",
+          "io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY",
+          "io.camunda.db.rdbms.write.service.HistoryCleanupService.getHistoryCleanupInterval()",
+          "io.camunda.db.rdbms.write.service.HistoryCleanupService.resolveBatchOperationTTL(io.camunda.search.entities.BatchOperationType)",
+          "io.camunda.exporter.handlers.AuditLogHandler.getTransformer()",
+          "io.camunda.exporter.rdbms.RdbmsExporter.flushExecutionQueue()",
+          "io.camunda.exporter.rdbms.handlers.AuditLogExportHandler.getTransformer()",
+          "io.camunda.exporter.tasks.ReschedulingTask.executionCount()",
+          "io.camunda.operate.connect.ElasticsearchConnector.setEsClientRepository(io.camunda.search.connect.plugin.PluginRepository)",
+          "io.camunda.operate.connect.ElasticsearchConnector.setObjectMapper(com.fasterxml.jackson.databind.ObjectMapper)",
+          "io.camunda.search.schema.IndexMappingDifference$OrderInsensitiveEquivalence",
+          "io.camunda.tasklist.connect.ElasticsearchConnector.setTasklistProperties(io.camunda.tasklist.property.TasklistProperties)",
+          "io.camunda.tasklist.os.OpenSearchConnector.isHealthy(org.opensearch.client.opensearch.OpenSearchClient)",
+          "io.camunda.tasklist.os.OpenSearchConnector.setOsClientRepository(io.camunda.search.connect.plugin.PluginRepository)",
+          "io.camunda.tasklist.os.OpenSearchConnector.setTasklistObjectMapper(com.fasterxml.jackson.databind.ObjectMapper)",
+          "io.camunda.tasklist.os.OpenSearchConnector.setTasklistProperties(io.camunda.tasklist.property.TasklistProperties)",
+          "io.camunda.webapps.controllers.BackupController.mapState(io.camunda.webapps.backup.BackupStateDto)",
+          "io.camunda.zeebe.backup.client.api.BackupRequestHandler.takeBackup(long, io.camunda.zeebe.protocol.record.value.management.CheckpointType)",
+          "io.camunda.zeebe.broker.exporter.repo.ExporterRepository.validateAndAddExporterDescriptor(java.lang.String, java.lang.Class, java.util.Map)",
+          "io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.getCommitPosition()",
+          "io.camunda.zeebe.engine.processing.batchoperation.itemprovider.DecisionInstanceItemProvider.getFilter()",
+          "io.camunda.zeebe.engine.processing.batchoperation.itemprovider.IncidentItemProvider.getFilter()",
+          "io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ProcessInstanceItemProvider.getFilter()",
+          "io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry.createAllTransformers()",
+          "io.camunda.zeebe.gateway.JobStreamComponent",
+          "io.camunda.zeebe.gateway.JobStreamComponent.jobStreamClient(io.camunda.zeebe.scheduler.ActorScheduler, io.atomix.cluster.AtomixCluster, io.micrometer.core.instrument.MeterRegistry)",
+          "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE",
+          "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE",
+          "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.USERS_API_DISABLED_ERROR_MESSAGE",
+          "io.camunda.zeebe.gateway.rest.controller.LicenseController.DATE_TIME_FORMATTER",
+          "io.camunda.zeebe.journal.fs.LibC.ofNativeLibrary(java.lang.String)",
+          "io.camunda.zeebe.snapshots.PersistedSnapshot.isReserved()",
+          "io.camunda.zeebe.snapshots.impl.SnapshotMetrics.getTransferDuration(boolean)",
+          "io.camunda.zeebe.util.VersionUtil.overrideVersionForTesting(java.lang.String)",
+          "io.camunda.zeebe.util.VersionUtil.resetVersionForTesting()");
 
   //
   // Check that the extended visibility is only used for testing purposes
@@ -67,6 +109,7 @@ public class VisibleForTestingArchTest {
           .areAnnotatedWith(VisibleForTesting.class)
           .should()
           .notBePublic()
+          .orShould(beAllowedToBePublic())
           .andShould()
           .notBePrivate();
 
@@ -77,6 +120,7 @@ public class VisibleForTestingArchTest {
           .areAnnotatedWith(VisibleForTesting.class)
           .should()
           .notBePublic()
+          .orShould(beAllowedToBePublic())
           .andShould()
           .notBePrivate();
 
@@ -87,12 +131,28 @@ public class VisibleForTestingArchTest {
           .areAnnotatedWith(VisibleForTesting.class)
           .should()
           .notBePublic()
+          .orShould(beAllowedToBePublic())
           .andShould()
           .notBePrivate();
 
   //
   // Conditions implementation
   //
+
+  private static <T extends AndFullName> ArchCondition<T> beAllowedToBePublic() {
+    return new ArchCondition<T>("be explicitly allowed to be public") {
+      @Override
+      public void check(final T element, final ConditionEvents events) {
+        if (!PUBLIC_ELEMENTS.contains(element.getFullName())) {
+          events.add(
+              SimpleConditionEvent.violated(
+                  element,
+                  "%s is not in the list of allowed public elements"
+                      .formatted(displayName(element))));
+        }
+      }
+    };
+  }
 
   private static <T extends AndFullName> ArchCondition<T> beAccessedBySelfOrTest() {
     return new ArchCondition<>("be accessed from test or self") {
