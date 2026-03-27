@@ -316,15 +316,16 @@ Ownership model:
 
 - [ ] Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
 - [ ] Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
-- [ ] Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
-- [ ] Create `backport stable/<minor>` label in monorepo (and in ZPT where needed).
+- [ ] [DEPRECATED for +8.10] Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
+- [ ] Create `backport stable/<minor>` label in monorepo.
+- [ ] [DEPRECATED for +8.10] Create `backport stable/<minor>` label in ZPT.
 - [ ] Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
 
 #### 2. Versioning and branch plumbing (after last alpha branch exists)
 
 - [ ] On monorepo `main`, bump all `pom.xml` versions to `8.(x+1).0-SNAPSHOT` using:
   - `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
-- [ ] On ZPT `main`, bump versions to the next minor snapshot line.
+- [ ] [DEPRECATED for +8.10] On ZPT `main`, bump versions to the next minor snapshot line.
 - [ ] Update upgrade and migration test configuration so the previous minor upgrades to the new minor line.
 - [ ] Confirm artifact expectations:
   - `stable/<minor>` produces `<minor>.0-SNAPSHOT`
