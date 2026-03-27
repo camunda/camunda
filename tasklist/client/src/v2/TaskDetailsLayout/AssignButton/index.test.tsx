@@ -184,7 +184,7 @@ describe('AssignButton', () => {
     });
   });
 
-  it('should show error notification with subtitle on unauthorized assignment', async () => {
+  it('should show error notification with subtitle on forbidden assignment', async () => {
     const mockUnassignedTask = unassignedTask();
 
     nodeMockServer.use(
