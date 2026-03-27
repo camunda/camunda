@@ -12,11 +12,11 @@ import feign.Headers;
 import feign.RequestLine;
 import feign.Retryer;
 import feign.Target.HardCodedTarget;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
-import io.zeebe.containers.ZeebeNode;
 
 public interface GetFlowControlActuator {
-  static GetFlowControlActuator of(final ZeebeNode<?> node) {
+  static GetFlowControlActuator of(final BrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/flowControl", node.getExternalMonitoringAddress());
     return of(endpoint);
