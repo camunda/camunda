@@ -183,4 +183,100 @@ describe('AssignButton', () => {
       });
     });
   });
+
+  it('should show error notification with subtitle on unauthorized assignment', async () => {
+    const mockUnassignedTask = unassignedTask();
+
+    nodeMockServer.use(
+      http.post(
+        '/v2/user-tasks/:userTaskKey/assignment',
+        () =>
+          HttpResponse.json(
+            {
+              type: 'about:blank',
+              title: 'FORBIDDEN',
+              status: 403,
+              detail:
+                "Unauthorized to perform operation 'UPDATE' on resource 'USER_TASK'",
+              instance: '/v2/user-tasks/123/assignment',
+            },
+            {status: 403},
+          ),
+        {once: true},
+      ),
+    );
+
+    const {user} = render(
+      <AssignButton
+        id={mockUnassignedTask.userTaskKey}
+        assignee={null}
+        taskState={mockUnassignedTask.state}
+        currentUser={currentUser.username}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Assign to me'}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Task could not be assigned',
+        subtitle:
+          "You don't have the necessary permissions. Contact your admin to request access.",
+        isDismissable: true,
+      });
+    });
+
+    expect(
+      await screen.findByRole('button', {name: 'Assign to me'}),
+    ).toBeVisible();
+  });
+
+  it('should show error notification with subtitle on unauthorized unassignment', async () => {
+    const mockAssignedTask = assignedTask();
+
+    nodeMockServer.use(
+      http.delete(
+        '/v2/user-tasks/:userTaskKey/assignee',
+        () =>
+          HttpResponse.json(
+            {
+              type: 'about:blank',
+              title: 'FORBIDDEN',
+              status: 403,
+              detail:
+                "Unauthorized to perform operation 'UPDATE' on resource 'USER_TASK'",
+              instance: '/v2/user-tasks/123/assignee',
+            },
+            {status: 403},
+          ),
+        {once: true},
+      ),
+    );
+
+    const {user} = render(
+      <AssignButton
+        id={mockAssignedTask.userTaskKey}
+        assignee={currentUser.username}
+        taskState={mockAssignedTask.state}
+        currentUser={currentUser.username}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Unassign'}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Task could not be unassigned',
+        subtitle:
+          "You don't have the necessary permissions. Contact your admin to request access.",
+        isDismissable: true,
+      });
+    });
+
+    expect(await screen.findByRole('button', {name: 'Unassign'})).toBeVisible();
+  });
 });
