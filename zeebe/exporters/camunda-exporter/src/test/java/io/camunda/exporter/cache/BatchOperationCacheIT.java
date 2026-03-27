@@ -97,6 +97,21 @@ class BatchOperationCacheIT {
   }
 
   @ParameterizedTest
+  @MethodSource("provideBatchOperationCache")
+  void shouldReturnEmptyOptionalIfBatchOperationHasNullType(
+      final BatchOperationCacheArgument batchOperationCacheArgument) {
+    // given
+    final var batchOperationEntity = new BatchOperationEntity().setId("4").setType(null);
+    batchOperationCacheArgument.indexer().accept(batchOperationEntity);
+
+    // when
+    final var batchOperation = batchOperationCacheArgument.batchOperationCache().get("4");
+
+    // then
+    assertThat(batchOperation).isEmpty();
+  }
+
+  @ParameterizedTest
   @MethodSource("provideFailingBatchOperationCache")
   void shouldThrowExceptionIfQueryToElasticFailed(
       final BatchOperationCacheArgument batchOperationCacheArgument) {
