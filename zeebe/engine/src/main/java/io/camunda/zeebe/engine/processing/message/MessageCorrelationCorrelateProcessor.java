@@ -28,12 +28,19 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.HashSet;
 
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
+
+  private static final String SUBSCRIPTION_BLOCKED_BY_ACTIVE_INSTANCE =
+      "Expected to find subscription for message with name '%s' and correlation key '%s', but no "
+          + "active subscription was found. A process instance with this correlation key is already active "
+          + "for a message start event with this message name in process IDs %s. Only one active "
+          + "process instance per correlation key is allowed for message start events.";
 
   private final MessageCorrelateBehavior correlateBehavior;
   private final KeyGenerator keyGenerator;
@@ -94,15 +101,26 @@ public final class MessageCorrelationCorrelateProcessor
     stateWriter.appendFollowUpEvent(
         messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
+    final var blockedProcessIds = new HashSet<String>();
     final var correlatingSubscriptions = new Subscriptions();
     final var messageData = createMessageData(messageKey, messageCorrelationRecord);
     correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
-    correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.correlateToMessageStartEvents(
+        messageData, correlatingSubscriptions, blockedProcessIds);
 
     if (correlatingSubscriptions.isEmpty()) {
-      final var errorMessage =
-          SUBSCRIPTION_NOT_FOUND.formatted(
-              command.getValue().getName(), command.getValue().getCorrelationKey());
+      final String errorMessage;
+      if (!blockedProcessIds.isEmpty()) {
+        errorMessage =
+            SUBSCRIPTION_BLOCKED_BY_ACTIVE_INSTANCE.formatted(
+                command.getValue().getName(),
+                command.getValue().getCorrelationKey(),
+                blockedProcessIds);
+      } else {
+        errorMessage =
+            SUBSCRIPTION_NOT_FOUND.formatted(
+                command.getValue().getName(), command.getValue().getCorrelationKey());
+      }
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
     } else {
