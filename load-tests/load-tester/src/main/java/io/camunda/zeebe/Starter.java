@@ -207,6 +207,9 @@ public class Starter extends App {
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+            vars.put(
+                starterCfg.getBusinessKey() + "_string",
+                "\"" + businessKey.incrementAndGet() + "\"");
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
