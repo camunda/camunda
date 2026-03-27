@@ -42,6 +42,11 @@ on:
         required: false
         default: ''
         type: string
+      target_backport_pr:
+        description: 'TEST ONLY: restrict GitHub notifications to a single backport PR number (e.g. "39478")'
+        required: false
+        default: ''
+        type: string
   workflow_call:
     inputs:
       target_branch:
@@ -139,7 +144,7 @@ jobs:
       needs.collect-stale-backports.outputs.has_stale == 'true' &&
       (
         (github.event_name == 'schedule') ||
-        (github.event_name == 'workflow_dispatch' && inputs.notify_github == true && inputs.dry_run == false) ||
+        (github.event_name == 'workflow_dispatch' && inputs.notify_github == true) ||
         (github.event_name == 'workflow_call' && inputs.notify_github == true)
       )
     runs-on: ubuntu-slim
@@ -166,11 +171,19 @@ jobs:
       - name: Notify stale backport PRs
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-          DRY_RUN: "false"
+          DRY_RUN: ${{ inputs.dry_run }}
           NOTIFY_ORIGINAL: "false"
+          TARGET_BACKPORT_PR: ${{ inputs.target_backport_pr || '' }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
-          echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
+          stale_data='${{ needs.collect-stale-backports.outputs.stale_data }}'
+          if [[ -n "$TARGET_BACKPORT_PR" ]]; then
+            echo "🎯 Filtering to backport PR #${TARGET_BACKPORT_PR} only"
+            stale_data=$(printf '%s' "$stale_data" | jq --arg pr "$TARGET_BACKPORT_PR" '
+              [ .[] | .backport_prs = (.backport_prs | map(select((.backport_pr_number|tostring) == $pr)))
+                | select((.backport_prs | length) > 0) ]')
+          fi
+          printf '%s' "$stale_data" | \
             .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
 
   notify-slack:
