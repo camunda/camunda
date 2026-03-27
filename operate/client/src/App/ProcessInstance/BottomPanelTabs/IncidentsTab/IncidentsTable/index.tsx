@@ -15,11 +15,13 @@ import {
   FieldLabel,
   ErrorMessageCell,
   FlexContainer,
+  ChildIncidentContainer,
 } from './styled';
 import {Link} from 'modules/components/Link';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {Button} from '@carbon/react';
+import {Button, Stack} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState, useMemo} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
@@ -76,10 +78,17 @@ const getElementName = (
   return incident.elementName;
 };
 
+type ChildInstanceWithIncident = {
+  type: 'process' | 'decision';
+  key: string;
+  name: string;
+};
+
 type IncidentsTableProps = {
   processInstanceKey: string;
   incidents: EnhancedIncident[];
   decisionInstancesByElementKey?: DecisionInstanceLookup;
+  childInstanceWithIncident?: ChildInstanceWithIncident;
   state: React.ComponentProps<typeof SortableTable>['state'];
   onVerticalScrollStartReach?: React.ComponentProps<
     typeof SortableTable
@@ -95,6 +104,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     incidents,
     processInstanceKey,
     decisionInstancesByElementKey,
+    childInstanceWithIncident,
     onVerticalScrollEndReach,
     onVerticalScrollStartReach,
   }) {
@@ -162,6 +172,28 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
         ),
       [incidents],
     );
+
+    if (state === 'empty' && childInstanceWithIncident) {
+      const {type, key, name} = childInstanceWithIncident;
+      const linkTo =
+        type === 'process'
+          ? Paths.processInstance(key)
+          : Paths.decisionInstance(key);
+
+      return (
+        <ChildIncidentContainer>
+          <Stack gap={5}>
+            <EmptyMessage
+              message="No incidents found on this element."
+              additionalInfo="The incident may originate from a called instance."
+            />
+            <Link to={linkTo} title={`View in ${name}`}>
+              {`View in ${name}`}
+            </Link>
+          </Stack>
+        </ChildIncidentContainer>
+      );
+    }
 
     return (
       <>

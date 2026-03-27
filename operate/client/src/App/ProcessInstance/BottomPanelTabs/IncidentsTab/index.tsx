@@ -27,6 +27,7 @@ import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
+import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useMemo} from 'react';
 
 const ROW_HEIGHT = 32;
@@ -124,6 +125,59 @@ const IncidentsTab: React.FC = observer(() => {
     [decisionInstancesResult],
   );
 
+  const hasIncidentFromChild =
+    isElementInstanceSelected &&
+    !!resolvedElementInstance?.hasIncident &&
+    totalIncidentsCount === 0;
+
+  const resolvedElementType = resolvedElementInstance?.type;
+
+  const {data: calledProcessInstances} = useProcessInstancesSearch(
+    {
+      filter: {
+        parentElementInstanceKey: resolvedElementInstanceKey ?? '',
+        hasIncident: true,
+      },
+    },
+    {
+      enabled: hasIncidentFromChild && resolvedElementType === 'CALL_ACTIVITY',
+    },
+  );
+
+  const {data: calledDecisionInstances} = useDecisionInstancesSearch(
+    {
+      filter: {
+        elementInstanceKey: resolvedElementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled:
+        hasIncidentFromChild && resolvedElementType === 'BUSINESS_RULE_TASK',
+    },
+  );
+
+  const childInstanceWithIncident = useMemo(() => {
+    const calledProcess = calledProcessInstances?.items?.[0];
+    if (calledProcess) {
+      return {
+        type: 'process' as const,
+        key: calledProcess.processInstanceKey,
+        name: calledProcess.processDefinitionName,
+      };
+    }
+
+    const calledDecision = calledDecisionInstances?.items?.[0];
+    if (calledDecision) {
+      return {
+        type: 'decision' as const,
+        key: calledDecision.decisionEvaluationInstanceKey,
+        name: calledDecision.decisionDefinitionName,
+      };
+    }
+
+    return undefined;
+  }, [calledProcessInstances, calledDecisionInstances]);
+
   return (
     <Container>
       <PanelHeader count={totalIncidentsCount} size="sm">
@@ -136,6 +190,7 @@ const IncidentsTab: React.FC = observer(() => {
         processInstanceKey={processInstanceId}
         incidents={enhancedIncidents}
         decisionInstancesByElementKey={decisionInstancesByElementKey}
+        childInstanceWithIncident={childInstanceWithIncident}
       />
     </Container>
   );
