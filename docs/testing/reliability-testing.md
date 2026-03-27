@@ -280,7 +280,7 @@ After deployment, each load test is verified by the [verify-and-cleanup workflow
 2. Checks gateway connectivity via the Topology gRPC metric
 3. Deletes the namespace (regardless of verification outcome)
 
-Results are posted to the `#reliability-testing` Slack channel.
+Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 > [!Note]
 >
