@@ -60,14 +60,14 @@ final class ProcessInstanceRoundRobinDispatchTest {
   }
 
   @Test
-  void shouldRoundRobinAcrossPartitionsForSameProcessId() {
+  void shouldRoundRobinAcrossPartitionsForSameDefinitionKey() {
     // given
     final var partitions = capturePartitions();
 
     // when — first request warms up the per-definition handler via the global handler;
     // subsequent requests use the per-definition handler and cycle through all partitions
     for (int i = 0; i < PARTITION_COUNT + 1; i++) {
-      services.createProcessInstance(createRequest("my-process"), authentication).join();
+      services.createProcessInstance(createRequest(100L), authentication).join();
     }
 
     // then — the per-definition handler (requests 2..N) hit every partition
@@ -76,22 +76,22 @@ final class ProcessInstanceRoundRobinDispatchTest {
   }
 
   @Test
-  void shouldDistributeIndependentlyPerProcessId() {
-    // given — warm up per-definition handlers for both process IDs
+  void shouldDistributeIndependentlyPerDefinitionKey() {
+    // given — warm up per-definition handlers for both definition keys
     final var partitions = capturePartitions();
-    services.createProcessInstance(createRequest("process-a"), authentication).join();
-    services.createProcessInstance(createRequest("process-b"), authentication).join();
+    services.createProcessInstance(createRequest(100L), authentication).join();
+    services.createProcessInstance(createRequest(200L), authentication).join();
     partitions.clear();
 
     // when — send PARTITION_COUNT requests for each process definition
     for (int i = 0; i < PARTITION_COUNT; i++) {
-      services.createProcessInstance(createRequest("process-a"), authentication).join();
+      services.createProcessInstance(createRequest(100L), authentication).join();
     }
     final var partitionsA = List.copyOf(partitions);
     partitions.clear();
 
     for (int i = 0; i < PARTITION_COUNT; i++) {
-      services.createProcessInstance(createRequest("process-b"), authentication).join();
+      services.createProcessInstance(createRequest(200L), authentication).join();
     }
     final var partitionsB = List.copyOf(partitions);
 
@@ -116,7 +116,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
             });
 
     try {
-      services.createProcessInstance(createRequest("my-process"), authentication).join();
+      services.createProcessInstance(createRequest(100L), authentication).join();
     } catch (final Exception ignored) {
       // expected
     }
@@ -133,8 +133,8 @@ final class ProcessInstanceRoundRobinDispatchTest {
                   new BrokerResponse<>(new ProcessInstanceCreationRecord()));
             });
 
-    // when — send a second request for the same bpmnProcessId
-    services.createProcessInstance(createRequest("my-process"), authentication).join();
+    // when — send a second request for the same definition key
+    services.createProcessInstance(createRequest(100L), authentication).join();
 
     // then — the second request used the global handler (not a per-definition one),
     // so its partition is the global handler's next offset, different from the first
@@ -157,10 +157,10 @@ final class ProcessInstanceRoundRobinDispatchTest {
     return partitions;
   }
 
-  private static ProcessInstanceCreateRequest createRequest(final String bpmnProcessId) {
+  private static ProcessInstanceCreateRequest createRequest(final long definitionKey) {
     return new ProcessInstanceCreateRequest(
-        123L,
-        bpmnProcessId,
+        definitionKey,
+        "process",
         -1,
         null,
         "<default>",
