@@ -5281,15 +5281,15 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@18.13.1:
-  version "18.13.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.13.1.tgz#5207bb2f48cf43b7aceb6160094e468f927ba7c2"
-  integrity sha512-atIcE8BS6hKEdZzXI4Mt2JG/+CVQEEOQ+H0krqrMdPXsSrwhsXUgoGDK0OEjMvaVNxr1NfGHtIqd2SpXsmSpug==
+bpmn-js@18.14.0:
+  version "18.14.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.14.0.tgz#4c5a01afa40e4b083206151104da631ad52409a5"
+  integrity sha512-z4CjyvK2wtP+IIunQJpZK1g5Xkfa089rueB2MCY2+NeZFz2RaHn17qJcXOvOhXvLHbUo+ldiXnkFuiGqslxIbQ==
   dependencies:
     bpmn-moddle "^10.0.0"
-    diagram-js "^15.9.0"
+    diagram-js "^15.11.0"
     diagram-js-direct-editing "^3.3.0"
-    ids "^3.0.0"
+    ids "^3.0.2"
     inherits-browser "^0.1.0"
     min-dash "^5.0.0"
     min-dom "^5.2.0"
@@ -6775,17 +6775,17 @@ diagram-js-direct-editing@^3.3.0:
     min-dash "^5.0.0"
     min-dom "^5.2.0"
 
-diagram-js@^15.9.0:
-  version "15.9.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.9.0.tgz#ed8d505dd70baf5405177b4084a0341170c7c7e1"
-  integrity sha512-9FRoItWkrZnGalrqs0ekwS9wSuHQI2dzO+kJyHKa1hhMJPMBGrjR/cg0XMTpaLo2Vu9/gKL1o19P3sN4/YmIAA==
+diagram-js@^15.11.0:
+  version "15.11.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.11.0.tgz#8dda7b7cd4232e6be918aa20be2219734f29b80a"
+  integrity sha512-BpKCKlyTZ4x4aOwAOBMns2jYiaajEUXqy9IzNQk2WyIaI3hECI8rCTBSxg9A9l8Kq7C4mCUvovULSRZ7G8vpyA==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.3"
     clsx "^2.1.1"
     didi "^11.0.0"
     inherits-browser "^0.1.0"
     min-dash "^5.0.0"
-    min-dom "^5.2.0"
+    min-dom "^5.3.0"
     object-refs "^0.4.0"
     path-intersection "^4.1.0"
     tiny-svg "^4.1.4"
@@ -6968,6 +6968,11 @@ domify@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/domify/-/domify-2.0.0.tgz#951f0c36ff960b1cc527444f41819c765336dca8"
   integrity sha512-rmvrrmWQPD/X1A/nPBfIVg4r05792QdG9Z4Prk6oQG0F9zBMDkr0GKAdds1wjb2dq1rTz/ywc4ZxpZbgz0tttg==
+
+domify@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/domify/-/domify-3.0.0.tgz#28fe2613b51e2729ffc74530304ca14f62b8c162"
+  integrity sha512-bs2yO68JDFOm6rKv8f0EnrM2cENduhRkpqOtt/s5l5JBA/eqGBZCzLPmdYoHtJ6utgLGgcBajFsEQbl12pT0lQ==
 
 domutils@1.5.1:
   version "1.5.1"
@@ -9297,10 +9302,10 @@ ids@^1.0.0:
   resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.5.tgz#0aeb4777e77e0017a983c9f7b0ca0cccf352afe4"
   integrity sha512-XQ0yom/4KWTL29sLG+tyuycy7UmeaM/79GRtSJq6IG9cJGIPeBz5kwDCguie3TwxaMNIc3WtPi0cTa1XYHicpw==
 
-ids@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/ids/-/ids-3.0.1.tgz#f516114526ef403a374f33f064ad6c1b66f32625"
-  integrity sha512-mr0zAgpgA/hzCrHB0DnoTG6xZjNC3ABs4eaksXrpVtfaDatA2SVdDb1ZPLjmKjqzp4kexQRuHXwDWQILVK8FZQ==
+ids@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/ids/-/ids-3.0.2.tgz#6c934bdc802cddd4bd87a339f103a28a77987d33"
+  integrity sha512-t6YJP4mdC+GHF96Nbis/4FEANhP/8VWmYMvUuYpXvSdrhg5hpIVbq2XZlOA3UWTbtdwPCi0q7jEXOdHkAnqOnw==
 
 ieee754@^1.1.13:
   version "1.2.1"
@@ -11798,6 +11803,14 @@ min-dom@^5.2.0:
   integrity sha512-shfMH1tFbZCVSx3ECaQV1aGu8fYmGnXEWuItudWRd31DpVJzmVKXFH/Aqgf7YjOmZRgRH5BJafk16oeSbohJDg==
   dependencies:
     domify "^2.0.0"
+    min-dash "^5.0.0"
+
+min-dom@^5.3.0:
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-5.3.0.tgz#64ad685b2783fa83bd8e976cb2fec9e8a6fac5eb"
+  integrity sha512-0w5FEBgPAyHhmFojW3zxd7we3D+m5XYS3E/06OyvxmbHJoiQVa4Nagj6RWvoAKYRw5xth6cP5TMePc5cR1M9hA==
+  dependencies:
+    domify "^3.0.0"
     min-dash "^5.0.0"
 
 mini-css-extract-plugin@^2.4.5:
