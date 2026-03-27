@@ -1,42 +1,55 @@
 # Load Test Workflows
 
-All load test workflows live in `.github/workflows/`. The central piece is `camunda-load-test.yml`, a reusable workflow that handles image building, cluster deployment, and load test setup. All other workflows orchestrate calls to it.
+All load test workflows live in `.github/workflows/`. The central piece is `camunda-load-test.yml`, a reusable workflow that handles image building, cluster deployment, and load test setup. All other workflows orchestrate calls to it. The deploy step ultimately calls **Makefile targets** in `load-tests/setup/`, the same Makefiles used for manual ad-hoc deployments.
 
 ## Workflow Architecture
 
 ```mermaid
 graph TD
     subgraph "Scheduled Triggers"
+        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
-        RELEASE["camunda-release-load-test.yaml<br/><i>Daily 04:00 UTC (dry-run)</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
         CLEANUP["camunda-load-test-clean-up.yml<br/><i>Daily 04:00 UTC</i>"]
     end
 
-    subgraph "PR Trigger"
+    subgraph "Event Triggers"
         PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        ADHOC["Manual workflow_dispatch"]
     end
 
     subgraph "Reusable Workflows"
+        RELEASE["camunda-release-load-test.yaml<br/><i>workflow_call</i>"]
         CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+    end
+
+    subgraph "Deployment Layer"
+        MAKEFILE["load-tests/setup/<br/><b>Makefile</b><br/><i>make install / make clean</i>"]
     end
 
     subgraph "Infrastructure"
         GKE["GKE Cluster<br/>camunda-benchmark-prod"]
     end
 
+    SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
+    SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "scenario: max" --> CORE
     WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
-    RELEASE -- "scenario: realistic<br/>official Docker images" --> CORE
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
+    RELEASE -- "scenario: realistic<br/>official Docker images" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
+    ADHOC --> CORE
+    ADHOC --> RELEASE
 
-    CORE --> GKE
-    PROFILE --> GKE
-    CLEANUP --> GKE
+    CORE -- "newLoadTest.sh + make install" --> MAKEFILE
+    MAKEFILE -- "Helm install" --> GKE
+    PROFILE -- "async-profiler" --> GKE
+    VERIFY -- "kubectl wait + delete" --> GKE
+    CLEANUP -- "kubectl delete expired ns" --> GKE
 ```
 
 ## Schedule Overview
@@ -45,9 +58,55 @@ graph TD
 |---|---|---|
 | 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly |
 | 01:00 UTC Monday | `camunda-weekly-load-tests.yml` | Weekly |
+| 04:00 UTC | `camunda-scheduled-release-load-tests.yml` | Daily |
 | 04:00 UTC | `camunda-daily-load-tests.yml` | Daily |
-| 04:00 UTC | `camunda-release-load-test.yaml` (dry-run) | Daily |
 | 04:00 UTC | `camunda-load-test-clean-up.yml` | Daily |
+
+## Makefile Layer
+
+All workflows ultimately deploy through Makefiles in `load-tests/setup/`. This is also the interface for manual ad-hoc deployments.
+
+### How it works
+
+1. `newLoadTest.sh` creates a K8s namespace, copies the Makefile template from `load-tests/setup/default/`, and configures it for the namespace
+2. `make install` (or `make install-stable` for non-spot VMs) deploys everything via Helm
+
+### Key Make targets
+
+| Target | Description |
+|---|---|
+| `make install` | Full deployment: credentials, platform, load test, ES exporter |
+| `make install-stable` | Same as `install` but with non-preemptible VMs |
+| `make install-platform` | Deploy Camunda Platform Helm chart only |
+| `make install-load-test` | Deploy load test Helm chart (starters + workers) only |
+| `make clean` | Remove all Helm releases and PVCs |
+| `make template` | Dry-run Helm template for validation |
+| `make realistic` / `typical` / `latency` / `max` | Scenario shortcuts with predefined configs |
+
+### Parameters
+
+```bash
+make install \
+  secondary_storage=elasticsearch \      # elasticsearch, opensearch, postgresql, none
+  enable_optimize=true \                 # deploy Optimize
+  additional_platform_configuration="" \ # extra --set flags for platform chart
+  additional_load_test_configuration=""  # extra --set flags for load test chart
+```
+
+### Manual ad-hoc usage
+
+The same Makefile is used for manual deployments outside of GHA:
+
+```bash
+cd load-tests/setup
+./newLoadTest.sh my-test elasticsearch 7 true
+cd my-test
+make install
+# ... later ...
+make clean
+```
+
+A cloud variant exists at `load-tests/setup/cloud-default/Makefile` for SaaS load tests, which only manages load test pods (not the platform itself).
 
 ## Workflow Reference
 
@@ -76,7 +135,64 @@ The central reusable workflow. All load test creation routes through this workfl
 | `secondary-storage-type` | choice | `elasticsearch` | `elasticsearch`, `opensearch`, `postgresql`, `none` |
 | `publish` | string | | Where to publish results: `slack`, `comment` (workflow_call only) |
 
-**Key jobs:** `calculate-image-tag` -> `build-camunda-image` -> `build-load-test-images` -> `calculate-scenario-config` -> `deploy`
+**Key jobs:** `calculate-image-tag` -> `build-camunda-image` -> `build-load-test-images` -> `calculate-scenario-config` -> `deploy-cluster-under-test`
+
+The deploy job runs `newLoadTest.sh` to create the namespace and then `make install` to deploy via Helm.
+
+---
+
+### camunda-scheduled-release-load-tests.yml
+
+Orchestrates daily release load tests across all active stable branches and main. Each branch calls `camunda-release-load-test.yaml` at the respective branch ref, then verifies the deployment and cleans up.
+
+**Triggers:** `schedule` (daily 04:00 UTC), `workflow_dispatch`
+
+**Inputs:** None (release tags are hardcoded per branch in the workflow file).
+
+**Job chain:**
+1. One `release-load-test-<version>` job per branch — calls `camunda-release-load-test.yaml@stable/<version>` with hardcoded name and tag
+2. One `verify-and-cleanup-<version>` job per branch — calls `camunda-verify-and-cleanup-load-test.yml` to wait for pods and then delete namespace
+3. `notify-on-success` / `notify-on-failure` — Slack notification with per-branch results
+
+**Maintenance:** When a new minor version is released or a branch is deprecated, this workflow must be updated (add/remove jobs and update the notify conditions).
+
+---
+
+### camunda-release-load-test.yaml
+
+Creates a load test for official release images. Called by `camunda-scheduled-release-load-tests.yml` and can be triggered manually for ad-hoc release testing.
+
+**Triggers:** `workflow_dispatch`, `workflow_call`
+
+**Inputs:**
+
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | *required* | Load test name |
+| `tag` | string | *required* | Release tag to deploy |
+
+**Job chain:**
+1. `sanitize-inputs` — validates and sanitizes name/tag
+2. `create-load-test` — calls `camunda-load-test.yml` with `use-official-docker-images: true`, scenario: `realistic`
+3. `await-load-test` — waits 15 minutes
+4. `delete-load-test` — deletes namespace (only on schedule, not manual dispatch)
+5. `notify-on-failure` — Slack notification
+
+---
+
+### camunda-verify-and-cleanup-load-test.yml
+
+Verifies a load test deployment is healthy and deletes the namespace. Used by `camunda-scheduled-release-load-tests.yml`.
+
+**Triggers:** `workflow_call`
+
+**Inputs:**
+
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `namespace` | string | *required* | K8s namespace to verify and delete |
+
+**Steps:** Waits for all pods to be ready and checks gateway connectivity, then deletes the namespace regardless of outcome.
 
 ---
 
@@ -121,28 +237,6 @@ Runs four parallel endurance tests weekly against main.
    - `setup-rdbms-realistic-load-test` — scenario: `realistic`, secondary-storage: `postgresql`
    - `setup-latency-test` — scenario: `latency`
 4. `notify` — Slack notification on failure
-
----
-
-### camunda-release-load-test.yaml
-
-Creates load tests for official releases. Used by the release process and as a daily dry-run.
-
-**Triggers:** `schedule` (daily 04:00 UTC as dry-run), `workflow_dispatch`
-
-**Inputs:**
-
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `name` | string | *required* | Load test name |
-| `tag` | string | *required* | Release tag to deploy |
-
-**Job chain:**
-1. `sanitize-inputs` — validates and sanitizes name/tag
-2. `create-load-test` — calls `camunda-load-test.yml` with `use-official-docker-images: true`, scenario: `realistic`
-3. `await-load-test` — waits 15 minutes
-4. `delete-load-test` — deletes namespace (only on schedule, not manual dispatch)
-5. `notify-on-failure` — Slack notification
 
 ---
 
@@ -225,6 +319,8 @@ For how workflow file names differ across stable branches, see [directory-struct
 |---|---|---|---|
 | `camunda-load-test.yml` | `zeebe-benchmark.yml` (renamed) | `zeebe-benchmark.yml` (renamed) | `camunda-load-test.yml` |
 | `camunda-pr-load-test.yaml` | `zeebe-pr-benchmark.yaml` (renamed) | `zeebe-pr-benchmark.yaml` (renamed) | `camunda-pr-load-test.yaml` |
+| `camunda-scheduled-release-load-tests.yml` | absent | absent | present |
+| `camunda-verify-and-cleanup-load-test.yml` | absent | absent | present |
 | `camunda-daily-load-tests.yml` | present | present | present |
 | `camunda-weekly-load-tests.yml` | present | present | present |
 | `camunda-release-load-test.yaml` | present | present | present |
