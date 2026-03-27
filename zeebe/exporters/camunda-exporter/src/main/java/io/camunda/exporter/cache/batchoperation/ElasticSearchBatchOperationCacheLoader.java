@@ -53,10 +53,15 @@ public class ElasticSearchBatchOperationCacheLoader
             BatchOperationEntity.class);
     if (response.hits() != null && !response.hits().hits().isEmpty()) {
       final var entity = response.hits().hits().getFirst().source();
-      return new CachedBatchOperationEntity(entity.getId(), map(entity.getType()));
+      if (entity != null && entity.getType() != null) {
+        return new CachedBatchOperationEntity(entity.getId(), map(entity.getType()));
+      }
+      LOG.warn(
+          "Found BatchOperation '{}' in ElasticSearch but it is missing required fields or has invalid data",
+          batchOperationKey);
     } else {
-      LOG.debug("BatchOperation '{}' not found in Elasticsearch", batchOperationKey);
-      return null;
+      LOG.debug("BatchOperation '{}' not found in ElasticSearch", batchOperationKey);
     }
+    return null;
   }
 }
