@@ -98,9 +98,9 @@
     <version.feel-scala>1.18.0</version.feel-scala>
     <version.dmn-scala>1.10.0</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
-    <version.spring>6.2.10</version.spring>
-    <version.spring-security>6.4.7</version.spring-security>
-    <version.spring-boot>3.5.6</version.spring-boot>
+    <version.spring>6.2.17</version.spring>
+    <version.spring-security>6.5.9</version.spring-security>
+    <version.spring-boot>3.5.13</version.spring-boot>
     <version.logback>1.5.25</version.logback>
     <version.tomcat>10.1.44</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
