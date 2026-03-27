@@ -33,6 +33,7 @@ import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiConfig;
 import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.similarity.OpenAiEmbeddingModelAdapterProvider;
 import io.camunda.process.test.impl.similarity.SemanticSimilarityConfigResolver;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -597,6 +598,78 @@ public class SemanticSimilarityConfigBootstrapTest {
       EmbeddingModelAdapter genericEmbeddingModelAdapter() {
         return ADAPTER_A;
       }
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.process-test.similarity.embedding-model.provider=openai",
+        "camunda.process-test.similarity.embedding-model.model=text-embedding-3-small",
+        "camunda.process-test.similarity.embedding-model.api-key=test-key",
+        "camunda.process-test.similarity.embedding-model.dimensions=1536",
+        "camunda.process-test.similarity.embedding-model.timeout=PT30S"
+      })
+  class EmbeddingModelOptionalFields {
+
+    @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
+
+    @Test
+    void shouldBindDimensionsAndTimeoutToProviderConfig() {
+      final SemanticSimilarityConfiguration similarityConfiguration = configuration.getSimilarity();
+
+      // verify properties binding
+      assertThat(similarityConfiguration.getEmbeddingModel())
+          .satisfies(
+              embeddingModel -> {
+                assertThat(embeddingModel.getDimensions()).isEqualTo(1536);
+                assertThat(embeddingModel.getTimeout()).isEqualTo(Duration.ofSeconds(30));
+              });
+
+      // verify provider config creation
+      assertThat(similarityConfiguration.toProviderConfig())
+          .isInstanceOfSatisfying(
+              OpenAiConfig.class,
+              providerConfig -> {
+                assertThat(providerConfig.getDimensions()).isEqualTo(1536);
+                assertThat(providerConfig.getTimeout()).isEqualTo(Duration.ofSeconds(30));
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.process-test.similarity.embedding-model.provider=openai-compatible",
+        "camunda.process-test.similarity.embedding-model.model=nomic-embed-text",
+        "camunda.process-test.similarity.embedding-model.base-url=http://localhost:11434/v1",
+        "camunda.process-test.similarity.embedding-model.headers.Authorization=Bearer test-token",
+        "camunda.process-test.similarity.embedding-model.headers.X-Custom-Header=custom-value"
+      })
+  class OpenAiCompatibleProviderWithHeaders {
+
+    @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
+
+    @Test
+    void shouldBindHeadersToProviderConfig() {
+      final SemanticSimilarityConfiguration similarityConfiguration = configuration.getSimilarity();
+
+      // verify properties binding
+      assertThat(similarityConfiguration.getEmbeddingModel())
+          .satisfies(
+              embeddingModel ->
+                  assertThat(embeddingModel.getHeaders())
+                      .containsEntry("Authorization", "Bearer test-token")
+                      .containsEntry("X-Custom-Header", "custom-value"));
+
+      // verify provider config creation
+      assertThat(similarityConfiguration.toProviderConfig())
+          .isInstanceOfSatisfying(
+              OpenAiCompatibleConfig.class,
+              providerConfig ->
+                  assertThat(providerConfig.getHeaders())
+                      .containsEntry("Authorization", "Bearer test-token")
+                      .containsEntry("X-Custom-Header", "custom-value"));
     }
   }
 
