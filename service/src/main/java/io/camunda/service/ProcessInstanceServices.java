@@ -12,6 +12,8 @@ import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -77,12 +79,16 @@ public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
+  private static final int MAX_CACHED_DEFINITIONS = 1024;
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentServices incidentServices;
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
   private final int maxVariableNameLength;
+  private final Cache<ProcessDefinitionIdentifier, RequestRetryHandler>
+      definitionKeyToRetryHandler =
+          Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -295,7 +301,11 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendRequestWithRetryPartitions(brokerRequest, authentication);
+    if (request.businessId() != null) {
+      return sendRequestWithRetryPartitions(brokerRequest, authentication);
+    }
+    return sendWithPerProcessRoundRobin(
+        brokerRequest, request.processDefinitionIdentifier(), authentication, null);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -319,12 +329,16 @@ public final class ProcessInstanceServices
       brokerRequest.setOperationReference(request.operationReference());
     }
 
-    // Use custom request timeout if provided, otherwise use default
-    if (request.requestTimeout() != null && request.requestTimeout() > 0) {
-      return sendRequestWithRetryPartitions(
-          brokerRequest, authentication, Duration.ofMillis(request.requestTimeout()));
+    final Duration timeout =
+        request.requestTimeout() != null && request.requestTimeout() > 0
+            ? Duration.ofMillis(request.requestTimeout())
+            : null;
+    if (request.businessId() != null) {
+      return sendRequestWithRetryPartitions(brokerRequest, authentication, timeout);
     }
-    return sendRequestWithRetryPartitions(brokerRequest, authentication);
+
+    return sendWithPerProcessRoundRobin(
+        brokerRequest, request.processDefinitionIdentifier(), authentication, timeout);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
@@ -507,27 +521,63 @@ public final class ProcessInstanceServices
         authentication);
   }
 
+  private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
+      final BrokerRequest<R> brokerRequest,
+      final ProcessDefinitionIdentifier identifier,
+      final CamundaAuthentication authentication,
+      final Duration requestTimeout) {
+    final var handler = getRetryHandler(identifier);
+    return sendRequestWithRetryPartitions(brokerRequest, authentication, requestTimeout, handler)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null && identifier != null) {
+                definitionKeyToRetryHandler.get(identifier, ignored -> createRetryHandler());
+              }
+            });
+  }
+
+  private RequestRetryHandler getRetryHandler(final ProcessDefinitionIdentifier identifier) {
+    if (identifier == null) {
+      return requestRetryHandler;
+    }
+    final var handler = definitionKeyToRetryHandler.getIfPresent(identifier);
+    return handler != null ? handler : requestRetryHandler;
+  }
+
+  private RequestRetryHandler createRetryHandler() {
+    return new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
+  }
+
   private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
-    return sendRequestWithRetryPartitions(brokerRequest, authentication, null);
+    return sendRequestWithRetryPartitions(brokerRequest, authentication, null, requestRetryHandler);
   }
 
   private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
       final BrokerRequest<R> brokerRequest,
       final CamundaAuthentication authentication,
       final Duration requestTimeout) {
+    return sendRequestWithRetryPartitions(
+        brokerRequest, authentication, requestTimeout, requestRetryHandler);
+  }
+
+  private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
+      final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final Duration requestTimeout,
+      final RequestRetryHandler handler) {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
     final CompletableFuture<R> responseFuture = new CompletableFuture<>();
     if (requestTimeout != null) {
-      requestRetryHandler.sendRequest(
+      handler.sendRequest(
           brokerRequest,
           (key, response) -> responseFuture.complete(response),
           responseFuture::completeExceptionally,
           requestTimeout);
     } else {
-      requestRetryHandler.sendRequest(
+      handler.sendRequest(
           brokerRequest,
           (key, response) -> responseFuture.complete(response),
           responseFuture::completeExceptionally);
@@ -555,7 +605,20 @@ public final class ProcessInstanceServices
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables,
       Set<String> tags,
-      String businessId) {}
+      String businessId) {
+
+    ProcessDefinitionIdentifier processDefinitionIdentifier() {
+      if (processDefinitionKey > 0L) {
+        return new ProcessDefinitionIdentifier.ByKey(processDefinitionKey);
+      } else if (bpmnProcessId != null && !bpmnProcessId.isEmpty()) {
+        return new ProcessDefinitionIdentifier.ById(bpmnProcessId);
+      } else {
+        throw new IllegalStateException(
+            "Expected to have processDefinitionKey or bpmnProcessId set, but they are key=%d, id=%s"
+                .formatted(processDefinitionKey, bpmnProcessId));
+      }
+    }
+  }
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 
@@ -580,4 +643,11 @@ public final class ProcessInstanceServices
   public record ProcessInstanceModifyBatchOperationRequest(
       ProcessInstanceFilter filter,
       List<ProcessInstanceModificationMoveInstruction> moveInstructions) {}
+
+  /** The process can be identified by the key or by the definitionId. */
+  sealed interface ProcessDefinitionIdentifier {
+    record ByKey(long key) implements ProcessDefinitionIdentifier {}
+
+    record ById(String id) implements ProcessDefinitionIdentifier {}
+  }
 }
