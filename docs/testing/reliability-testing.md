@@ -187,23 +187,53 @@ We have different scenarios targeting different use cases and versions.
 
 #### Release load tests
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
 
 **Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
 **Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
-As of today (16 Jun 2025), we have load tests running:
+##### Architecture
 
-* For all the last minor versions, they are run until the version goes out of support (and are updated on every patch)
-  * release-8-4-x
-  * release-8-5-x
-  * release-8-6-x
-  * Release-8-7-x
-* For the current alpha
-  * release-8-8-0-alpha5
-* One rolling release test, which is always updated
-  * Release-rolling
+The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting only `name` and `tag` as inputs.
+
+```mermaid
+graph TD
+    subgraph "Callers"
+        BPMN["Release Process<br/>(BPMN)"]
+        SCHEDULE["Scheduled Smoke Tests<br/>(daily 04:00 UTC)"]
+    end
+
+    subgraph "Abstraction Layer — camunda-release-load-test.yaml"
+        direction TB
+        API["Public API<br/>inputs: name, tag"]
+        SANITIZE["Sanitize inputs"]
+        API --> SANITIZE
+    end
+
+    subgraph "Implementation — camunda-load-test.yml"
+        LOAD["Create load test cluster<br/>• use-official-docker-images: true<br/>• scenario: realistic<br/>• ttl: 60 days"]
+    end
+
+    BPMN -->|"workflow_dispatch<br/>name + tag"| API
+    SCHEDULE -->|"workflow_call @stable/8.x<br/>name + tag"| API
+    SANITIZE --> LOAD
+
+    subgraph "Verification — camunda-verify-and-cleanup-load-test.yml"
+        VERIFY["await-load-test action<br/>• pod readiness<br/>• gateway connectivity"]
+        CLEANUP["Delete namespace"]
+        VERIFY --> CLEANUP
+    end
+
+    SCHEDULE -->|"after load test"| VERIFY
+```
+
+This decoupling provides several benefits:
+
+* **Clear API**: The release process only needs to provide a test name and tag — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
+* **Independent evolution**: Changes to load test infrastructure (helm values, Makefiles, scripts) don't require changes to the release process BPMN
+* **Per-branch workflows**: Each stable branch has its own copy of the release load test workflow (via backports), ensuring the correct infrastructure files are used for each version
+* **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) validates daily that release load tests can be created for all active stable branches
 
 ##### Setup and integration
 
@@ -213,7 +243,7 @@ There exists a separate process (called a sub-process) to set up the load test, 
 
 ![setup-benchmark](assets/setup_benchmark.png)
 
-The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-load-test.yml/dispatches`) to trigger the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml) on a specific git reference (_The reference can be a branch or tag name._).
+The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-release-load-test.yaml/dispatches`) to trigger the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml) on a specific git reference (_The reference can be a branch or tag name._).
 
 > [!Important]
 >
@@ -227,22 +257,34 @@ An example payload looks like this:
     "ref": workflow_ref_name,
     "inputs": {
       "name": benchmark_name,
-      "ref": zeebe_ref_name,
-      "stable-vms": stable_vms
+      "tag": release_tag
     }
 }
 ```
 
 When we look at an example release process instance from the past, we can find the following example values:
 
-|      Variable       |  Example Value  |              Description               |
-|---------------------|-----------------|----------------------------------------|
-| `workflow_ref_name` | `8.7.17`        | The tag to trigger the workflow on     |
-| `zeebe_ref_name`    | `8.7.17`        | The tag to build the Docker image from |
-| `benchmark_name`    | `release-8-7-x` | The name of the load test              |
-| `stable_vms`        | `true`          | Whether to use stable VM types or not  |
+|      Variable       |  Example Value  |             Description             |
+|---------------------|-----------------|-------------------------------------|
+| `workflow_ref_name` | `stable/8.7`    | The stable branch to trigger on     |
+| `release_tag`       | `8.7.17`        | The release tag to use for the test |
+| `benchmark_name`    | `release-8-7-x` | The name of the load test           |
 
-In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
+##### Scheduled smoke tests
+
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+
+After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
+
+1. Waits for all pods to be ready
+2. Checks gateway connectivity via the Topology gRPC metric
+3. Deletes the namespace (regardless of verification outcome)
+
+Results are posted to the `#reliability-testing-alerts` Slack channel.
+
+> [!Note]
+>
+> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
 
 #### Weekly load tests
 
