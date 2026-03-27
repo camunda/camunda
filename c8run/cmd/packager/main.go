@@ -68,7 +68,6 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
-	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 	composeTag := os.Getenv("COMPOSE_TAG")
@@ -85,16 +84,16 @@ func main() {
 
 	switch baseCommand {
 	case "package":
-		err := packages.New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
+		err := packages.New(camundaVersion, connectorsVersion, composeTag)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(1)
 		}
 	case "clean":
-		cleanCommand(camundaVersion, elasticsearchVersion)
+		cleanCommand(camundaVersion)
 	}
 }
 
-func cleanCommand(camundaVersion string, elasticsearchVersion string) {
-	packages.Clean(camundaVersion, elasticsearchVersion)
+func cleanCommand(camundaVersion string) {
+	packages.Clean(camundaVersion)
 }

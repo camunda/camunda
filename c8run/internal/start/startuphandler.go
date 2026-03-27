@@ -23,7 +23,7 @@ import (
 
 var evalSymlinks = filepath.EvalSymlinks
 
-func printSystemInformation(javaVersion, javaHome, javaOpts string, usingElasticsearch bool) {
+func printSystemInformation(javaVersion, javaHome, javaOpts string) {
 	fmt.Println("")
 	fmt.Println("")
 	fmt.Println("System Version Information")
@@ -37,9 +37,6 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string, usingElastic
 	fmt.Printf("  JAVA_OPTS: %s\n", javaOpts)
 	fmt.Println("--------------------------")
 	fmt.Println("Logging Details:")
-	if usingElasticsearch {
-		fmt.Println("  Elasticsearch: ./log/elasticsearch.log")
-	}
 	fmt.Println("  Connectors: ./log/connectors.log")
 	fmt.Println("  Camunda: ./log/camunda.log")
 	fmt.Println("--------------------------")
@@ -226,9 +223,6 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	settings := state.Settings
 	processInfo := state.ProcessInfo
 
-	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
-	shouldStartElasticsearch := !settings.DisableElasticsearch
-
 	// Resolve JAVA_HOME and javaBinary
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
 	if err != nil {
@@ -247,7 +241,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
-	err = overrides.SetEnvVars(javaHome, shouldStartElasticsearch)
+	err = overrides.SetEnvVars()
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
@@ -280,29 +274,16 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	if shouldStartElasticsearch && settings.SecondaryStorageType != "" && !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
-		shouldStartElasticsearch = false
-		log.Info().
-			Str("secondaryStorage.type", settings.SecondaryStorageType).
-			Msg("Skipping Elasticsearch startup because configuration selects a different secondary storage backend")
+	if strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		event := log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType)
+		if settings.ResolvedConfigPath != "" {
+			event = event.Str("config", settings.ResolvedConfigPath)
+		}
+		event.Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
 	}
 
-	printSystemInformation(javaVersion, javaHome, javaOpts, shouldStartElasticsearch)
-	if shouldStartElasticsearch {
-		elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
-		s.ProcessHandler.AttemptToStartProcess(processInfo.Elasticsearch.PidPath, "Elasticsearch", func() {
-			elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
-			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-			err := s.startApplication(elasticsearchCmd, processInfo.Elasticsearch.PidPath, elasticsearchLogFilePath, stop)
-			if err != nil {
-				log.Err(err).Msg("Failed to start Elasticsearch")
-				stop()
-				return
-			}
-		}, func() error {
-			return health.QueryElasticsearch(ctx, "Elasticsearch", 12, elasticHealthEndpoint)
-		}, stop)
-	}
+	printSystemInformation(javaVersion, javaHome, javaOpts)
 
 	var extraArgs string
 	var slash string

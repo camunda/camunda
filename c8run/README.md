@@ -6,31 +6,17 @@ Please refer to the [local installation with Camunda 8 Run guide](https://docs.c
 
 ## Default secondary storage
 
-Camunda 8 Run now starts with H2 as the secondary storage backend. No additional configuration or flags are required—running `./c8run start` launches a full stack backed by an in-memory H2 database that is perfect for local development and testing scenarios. H2 is not supported for production workloads.
+Camunda 8 Run now starts with H2 as the secondary storage backend. No additional configuration or flags are required. Running `./c8run start` launches a full stack backed by H2 for local development and testing scenarios. H2 is not supported for production workloads.
 
-Elasticsearch remains available, but it is no longer started automatically. The `--disable-elasticsearch` flag defaults to `true`, so Elasticsearch processes are skipped unless you explicitly re-enable them.
-
-### Running with Elasticsearch
-
-1. Update `c8run/configuration/application.yaml` so that the secondary storage type is `elasticsearch` and points to your cluster:
-
-   ```yaml
-   camunda:
-     data:
-       secondary-storage:
-         type: elasticsearch
-         elasticsearch:
-           url: http://localhost:9200
-   ```
-2. Start Camunda 8 Run and instruct it to manage Elasticsearch:
+1. Start Camunda 8 Run:
 
    ```bash
-   ./c8run start --disable-elasticsearch=false
+   ./c8run start
    ```
-3. When stopping a stack that was started with Elasticsearch, pass the same flag to ensure the Elasticsearch processes are terminated:
+2. Stop Camunda 8 Run as usual:
 
    ```bash
-   ./c8run stop --disable-elasticsearch=false
+   ./c8run stop
    ```
 
 ## CI requirement for merging

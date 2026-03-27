@@ -59,16 +59,6 @@ func (s *ShutdownHandler) ShutdownProcesses(state *types.State) {
 }
 
 func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes types.Processes) {
-	if !settings.DisableElasticsearch {
-		log.Info().Msg("Trying to stop Elasticsearch")
-
-		err := s.stopProcess(processes.Elasticsearch.PidPath)
-		if err != nil {
-			log.Debug().Err(err).Msg("Failed to stop Elasticsearch")
-		} else {
-			log.Info().Msg("Elasticsearch is stopped.")
-		}
-	}
 	err := s.stopProcess(processes.Connectors.PidPath)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to stop connectors")
