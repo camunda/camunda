@@ -175,7 +175,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           maven-mirrors: '[{"id": "camunda-nexus", "name": "Camunda Nexus", "url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "mirrorOf": "*"}]'  
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         
       - name: Set project version
         id: set-version
