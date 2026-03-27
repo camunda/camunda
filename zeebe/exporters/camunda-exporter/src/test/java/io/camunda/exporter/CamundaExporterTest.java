@@ -314,6 +314,10 @@ final class CamundaExporterTest {
   final class FlushTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
+
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
 
@@ -330,6 +334,7 @@ final class CamundaExporterTest {
       exporter.configure(testContext);
       exporter.open(testController);
 
+      clock.advance(1001);
       testController.runScheduledTasks(Duration.ofHours(1));
 
       // force wait for pending flush to update metadata
@@ -414,7 +419,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -429,6 +436,7 @@ final class CamundaExporterTest {
       clock.advance(501);
       testController.runScheduledTasks(Duration.ofSeconds(1));
 
+      // wait for exporter to update positions
       exporter.waitForPendingFlush();
 
       // then — validate record1 was exported (position updated after timed flush)
@@ -446,6 +454,7 @@ final class CamundaExporterTest {
               ValueType.VARIABLE, b -> b.withPosition(2L).withBrokerVersion("8.8.0"));
       exporter.export(record2);
 
+      // wait for exporter to update positions
       exporter.waitForPendingFlush();
 
       // then — validate record2 was exported (position updated after flush)

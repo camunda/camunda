@@ -161,6 +161,7 @@ public class CamundaExporter implements Exporter {
       checkImportersCompletedAndReschedule();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
+      lastFlushTimestamp = context.clock().millis();
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
