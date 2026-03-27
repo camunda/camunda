@@ -12,18 +12,20 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.CamundaContainer.GatewayContainer;
+import io.camunda.container.ZeebeTopologyWaitStrategy;
+import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.util.VersionUtil;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebeGatewayContainer;
-import io.zeebe.containers.ZeebeTopologyWaitStrategy;
-import io.zeebe.containers.ZeebeVolume;
 import java.net.URI;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.jodah.failsafe.Failsafe;
@@ -32,6 +34,7 @@ import org.agrona.LangUtil;
 import org.agrona.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.unit.DataSize;
 import org.testcontainers.containers.ContainerFetchException;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
@@ -46,7 +49,7 @@ final class ContainerState implements AutoCloseable {
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
   private static final DockerImageName PREVIOUS_VERSION =
-      DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion());
+      DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion());
   private static final DockerImageName CURRENT_VERSION =
       ZeebeTestContainerDefaults.defaultTestImage();
 
@@ -63,11 +66,11 @@ final class ContainerState implements AutoCloseable {
             });
   }
 
-  private final ZeebeVolume volume = ZeebeVolume.newVolume();
+  private final CamundaVolume volume = CamundaVolume.newVolume();
 
   private Network network = Network.SHARED;
-  private ZeebeContainer broker;
-  private ZeebeGatewayContainer gateway;
+  private BrokerContainer broker;
+  private GatewayContainer gateway;
   private CamundaClient client;
   private PartitionsActuator partitionsActuator;
 
@@ -136,22 +139,26 @@ final class ContainerState implements AutoCloseable {
   public void start(final boolean enableDebug, final boolean withRemoteDebugging) {
     final URI grpcAddress;
     broker =
-        new ZeebeContainer(brokerImage)
+        new BrokerContainer(brokerImage)
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().setPartitionCount(PARTITION_COUNT);
+                  cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1);
+                  cfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getLogStream()
+                      .setLogSegmentSize(DataSize.ofMegabytes(64));
+                  cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(128));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                })
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-            .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
-            .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
-            .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
-            .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
-            .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", String.valueOf(PARTITION_COUNT))
-            .withEnv("ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT", "32MB")
-            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
             .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
             .withEnv("CAMUNDA_REST_ENABLED", "false")
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
-            .withZeebeData(volume)
+            .withCamundaData(volume)
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;
 
@@ -186,8 +193,11 @@ final class ContainerState implements AutoCloseable {
       grpcAddress = broker.getGrpcAddress();
     } else {
       gateway =
-          new ZeebeGatewayContainer(gatewayImage)
-              .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
+          new GatewayContainer(gatewayImage)
+              .withUnifiedConfig(
+                  cfg ->
+                      cfg.getCluster()
+                          .setInitialContactPoints(List.of(broker.getInternalClusterAddress())))
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
               .withEnv(UNPROTECTED_API_ENV_VAR, "true")

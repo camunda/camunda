@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.ZeebeTopologyWaitStrategy;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -20,8 +22,6 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.VersionUtil;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebeTopologyWaitStrategy;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -76,7 +76,7 @@ public interface BackupCompatibilityAcceptance {
    * Optional hook to further customize the old broker container beyond env vars. Implementations
    * can override this to add bind mounts, dependencies, or other container configuration.
    */
-  default void customizeOldBroker(final ZeebeContainer broker) {
+  default void customizeOldBroker(final BrokerContainer broker) {
     // no-op by default
   }
 
@@ -219,7 +219,7 @@ public interface BackupCompatibilityAcceptance {
   }
 
   /** Deploys a process with a service task and creates a single instance on the given broker. */
-  private void createProcessInstanceWithJob(final ZeebeContainer broker) {
+  private void createProcessInstanceWithJob(final BrokerContainer broker) {
     try (final var client =
         CamundaClient.newClientBuilder().restAddress(broker.getRestAddress()).build()) {
       client
@@ -239,7 +239,7 @@ public interface BackupCompatibilityAcceptance {
   }
 
   /** Takes a snapshot and backup on the given broker, waiting for both to complete. */
-  private void takeBackup(final ZeebeContainer broker, final long backupId) {
+  private void takeBackup(final BrokerContainer broker, final long backupId) {
     final var partitionsActuator = PartitionsActuator.of(broker);
     partitionsActuator.takeSnapshot();
     Awaitility.await("Snapshot is taken")
@@ -269,7 +269,7 @@ public interface BackupCompatibilityAcceptance {
    * RocksDB state (including any checkpoint info written by prior backups). Unlike {@link
    * #takeBackup}, this waits for the snapshot ID to actually change before proceeding.
    */
-  private void takeBackupWithFreshSnapshot(final ZeebeContainer broker, final long backupId) {
+  private void takeBackupWithFreshSnapshot(final BrokerContainer broker, final long backupId) {
     final var partitionsActuator = PartitionsActuator.of(broker);
     final var previousSnapshotId = partitionsActuator.query().get(1).snapshotId();
 
@@ -298,11 +298,12 @@ public interface BackupCompatibilityAcceptance {
             });
   }
 
-  private ZeebeContainer createOldBroker(final String storeBasePath) {
+  private BrokerContainer createOldBroker(final String storeBasePath) {
     final var broker =
-        new ZeebeContainer(
-                DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion()))
+        new BrokerContainer(
+                DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion()))
             .withNetwork(getNetwork())
+            .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
             .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
