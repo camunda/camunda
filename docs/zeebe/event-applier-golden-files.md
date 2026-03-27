@@ -143,3 +143,19 @@ In rare cases, updating the golden file is acceptable:
 
 When in doubt, register a new applier version. A new version is usually the safer choice and does
 not cost much effort.
+
+## Bulk Updates with GoldenFileUpdater
+
+> [!WARNING]
+> `GoldenFileUpdater` overwrites **all** golden files unconditionally. Running it without reviewing
+> each failure individually can hide breaking changes that cause leader/follower state divergence in
+> production.
+
+`NoChangesTest` contains an inner class `GoldenFileUpdater` with a `main` method. It iterates all
+registered appliers and copies each source file to its golden file (or creates an empty file for
+NOOP appliers). You can run it from your IDE (IntelliJ shows a run gutter icon) or from the command
+line.
+
+Only use this when you have many new golden files to create at once — for example, after adding
+several new appliers. Always review each failing test case first to confirm that updating the golden
+file is the right action.
