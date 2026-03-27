@@ -48,7 +48,7 @@ class BedrockEmbeddingModelBuilderTest {
   void shouldBuildEmbeddingModel() {
     // given
     final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY, null, null);
+        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY, null);
 
     // when
     final EmbeddingModel embeddingModel = BedrockEmbeddingModelBuilder.build(config);
@@ -61,7 +61,7 @@ class BedrockEmbeddingModelBuilderTest {
   void shouldSetRequiredFieldsOnBuilder() {
     // given
     final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(MODEL, REGION, null, null, null, null, null);
+        new AmazonBedrockConfig(MODEL, REGION, null, null, null, null);
     final BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder mockBuilder =
         mock(BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder.class);
 
@@ -77,7 +77,7 @@ class BedrockEmbeddingModelBuilderTest {
   void shouldForwardConfigToClientFactory() {
     // given
     final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(MODEL, REGION, API_KEY, ACCESS_KEY, SECRET_KEY, null, null);
+        new AmazonBedrockConfig(MODEL, REGION, API_KEY, ACCESS_KEY, SECRET_KEY, null);
     config.setTimeout(Duration.ofSeconds(60));
     final BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder mockBuilder =
         mock(BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder.class);
@@ -107,7 +107,8 @@ class BedrockEmbeddingModelBuilderTest {
   void shouldApplyDimensionsToBuilder() {
     // given
     final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY, null, 256);
+        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY, null);
+    config.setDimensions(256);
     final BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder mockBuilder =
         mock(BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder.class);
 
@@ -123,7 +124,7 @@ class BedrockEmbeddingModelBuilderTest {
   void shouldApplyNormalizeToBuilder() {
     // given
     final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY, true, null);
+        new AmazonBedrockConfig(MODEL, REGION, null, ACCESS_KEY, SECRET_KEY, true);
     final BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder mockBuilder =
         mock(BedrockTitanEmbeddingModel.BedrockTitanEmbeddingModelBuilder.class);
 
@@ -141,7 +142,7 @@ class BedrockEmbeddingModelBuilderTest {
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final AmazonBedrockConfig config =
-        new AmazonBedrockConfig(model, REGION, null, ACCESS_KEY, SECRET_KEY, null, null);
+        new AmazonBedrockConfig(model, REGION, null, ACCESS_KEY, SECRET_KEY, null);
 
     // when / then
     assertThatThrownBy(() -> BedrockEmbeddingModelBuilder.build(config))

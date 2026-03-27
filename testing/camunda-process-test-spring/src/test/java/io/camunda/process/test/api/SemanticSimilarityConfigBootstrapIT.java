@@ -352,6 +352,32 @@ public class SemanticSimilarityConfigBootstrapIT {
         "camunda.process-test.similarity.embeddingModel.provider=openai",
         "camunda.process-test.similarity.embeddingModel.model=text-embedding-3-small",
         "camunda.process-test.similarity.embeddingModel.apiKey=test-key",
+        "camunda.process-test.similarity.embedding-model.dimensions=512"
+      })
+  @CamundaSpringProcessTest
+  class WithDimensions {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBindDimensionsProperty() {
+      final SemanticSimilarityConfig config = CamundaAssert.getSemanticSimilarityConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getEmbeddingModel()).isNotNull();
+
+      final BaseProviderConfig providerConfig =
+          (BaseProviderConfig) runtimeConfig.getSimilarity().toProviderConfig();
+      assertThat(providerConfig.getDimensions()).isEqualTo(512);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = SemanticSimilarityConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.similarity.embeddingModel.provider=openai",
+        "camunda.process-test.similarity.embeddingModel.model=text-embedding-3-small",
+        "camunda.process-test.similarity.embeddingModel.apiKey=test-key",
         "camunda.process-test.similarity.embeddingModel.timeout=PT30S"
       })
   @CamundaSpringProcessTest
@@ -384,7 +410,7 @@ public class SemanticSimilarityConfigBootstrapIT {
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
-      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, null, null);
+      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, null);
       final OpenAiEmbeddingModelAdapterProvider provider =
           new OpenAiEmbeddingModelAdapterProvider();
       assertThatThrownBy(() -> provider.create(config)).isInstanceOf(IllegalStateException.class);

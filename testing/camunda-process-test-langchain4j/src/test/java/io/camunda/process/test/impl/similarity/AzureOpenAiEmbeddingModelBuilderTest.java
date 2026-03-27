@@ -41,7 +41,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldBuildEmbeddingModel() {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY);
 
     // when
     final EmbeddingModel embeddingModel = AzureOpenAiEmbeddingModelBuilder.build(config);
@@ -53,7 +53,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldSetRequiredFieldsOnBuilder() {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY);
     final AzureOpenAiEmbeddingModel.Builder mockBuilder =
         mock(AzureOpenAiEmbeddingModel.Builder.class);
 
@@ -70,7 +70,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldApplyTimeoutToBuilder() {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY);
     config.setTimeout(Duration.ofSeconds(45));
     final AzureOpenAiEmbeddingModel.Builder mockBuilder =
         mock(AzureOpenAiEmbeddingModel.Builder.class);
@@ -85,7 +85,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldApplyApiKeyToBuilder() {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY);
     final AzureOpenAiEmbeddingModel.Builder mockBuilder =
         mock(AzureOpenAiEmbeddingModel.Builder.class);
 
@@ -102,7 +102,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldApplyDefaultCredentialsToBuilderWhenNoApiKey(final String apiKey) {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, apiKey, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, apiKey);
     final AzureOpenAiEmbeddingModel.Builder mockBuilder =
         mock(AzureOpenAiEmbeddingModel.Builder.class);
 
@@ -117,7 +117,8 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldApplyDimensionsToBuilder() {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY, 512);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, ENDPOINT, API_KEY);
+    config.setDimensions(512);
     final AzureOpenAiEmbeddingModel.Builder mockBuilder =
         mock(AzureOpenAiEmbeddingModel.Builder.class);
 
@@ -133,7 +134,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenEndpointMissingOrBlank(final String endpoint) {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, endpoint, API_KEY, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(MODEL, endpoint, API_KEY);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))
@@ -147,7 +148,7 @@ class AzureOpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final AzureOpenAiConfig config = new AzureOpenAiConfig(model, ENDPOINT, API_KEY, null);
+    final AzureOpenAiConfig config = new AzureOpenAiConfig(model, ENDPOINT, API_KEY);
 
     // when / then
     assertThatThrownBy(() -> AzureOpenAiEmbeddingModelBuilder.build(config))

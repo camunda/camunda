@@ -151,9 +151,7 @@ public class SemanticSimilarityProperties {
     final BaseProviderConfig config;
     switch (normalized) {
       case PROVIDER_OPENAI:
-        config =
-            new BaseProviderConfig.OpenAiConfig(
-                embeddingModelModel, embeddingModelApiKey, embeddingModelDimensions);
+        config = new BaseProviderConfig.OpenAiConfig(embeddingModelModel, embeddingModelApiKey);
         break;
       case PROVIDER_OPENAI_COMPATIBLE:
         config =
@@ -161,16 +159,12 @@ public class SemanticSimilarityProperties {
                 embeddingModelModel,
                 embeddingModelBaseUrl,
                 embeddingModelApiKey,
-                embeddingModelDimensions,
                 embeddingModelHeaders);
         break;
       case PROVIDER_AZURE_OPENAI:
         config =
             new BaseProviderConfig.AzureOpenAiConfig(
-                embeddingModelModel,
-                embeddingModelEndpoint,
-                embeddingModelApiKey,
-                embeddingModelDimensions);
+                embeddingModelModel, embeddingModelEndpoint, embeddingModelApiKey);
         break;
       case PROVIDER_AMAZON_BEDROCK:
         config =
@@ -180,14 +174,16 @@ public class SemanticSimilarityProperties {
                 embeddingModelApiKey,
                 embeddingModelCredentialsAccessKey,
                 embeddingModelCredentialsSecretKey,
-                embeddingModelNormalize,
-                embeddingModelDimensions);
+                embeddingModelNormalize);
         break;
       default:
         config =
             new BaseProviderConfig.GenericConfig(
                 normalized, embeddingModelModel, embeddingModelCustomProperties);
         break;
+    }
+    if (embeddingModelDimensions != null) {
+      config.setDimensions(embeddingModelDimensions);
     }
     if (embeddingModelTimeout != null) {
       config.setTimeout(embeddingModelTimeout);

@@ -39,7 +39,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldBuildEmbeddingModel() {
     // given
-    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, null);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY);
 
     // when
     final EmbeddingModel embeddingModel = OpenAiEmbeddingModelBuilder.build(config);
@@ -51,7 +51,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldSetRequiredFieldsOnBuilder() {
     // given
-    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, null);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -68,7 +68,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldApplyTimeoutToBuilder() {
     // given
-    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, null);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY);
     config.setTimeout(Duration.ofSeconds(30));
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
@@ -83,7 +83,8 @@ class OpenAiEmbeddingModelBuilderTest {
   @Test
   void shouldApplyDimensionsToBuilder() {
     // given
-    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY, 512);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, API_KEY);
+    config.setDimensions(512);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -99,7 +100,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final OpenAiConfig config = new OpenAiConfig(MODEL, apiKey, null);
+    final OpenAiConfig config = new OpenAiConfig(MODEL, apiKey);
 
     // when / then
     assertThatThrownBy(() -> OpenAiEmbeddingModelBuilder.build(config))
@@ -113,7 +114,7 @@ class OpenAiEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final OpenAiConfig config = new OpenAiConfig(model, API_KEY, null);
+    final OpenAiConfig config = new OpenAiConfig(model, API_KEY);
 
     // when / then
     assertThatThrownBy(() -> OpenAiEmbeddingModelBuilder.build(config))

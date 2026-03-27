@@ -43,7 +43,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldBuildEmbeddingModel() {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null, null);
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null);
 
     // when
     final EmbeddingModel embeddingModel = OpenAiCompatibleEmbeddingModelBuilder.build(config);
@@ -55,8 +55,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   @Test
   void shouldSetRequiredFieldsOnBuilder() {
     // given
-    final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -75,8 +74,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   @Test
   void shouldApplyTimeoutToBuilder() {
     // given
-    final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null);
     config.setTimeout(Duration.ofSeconds(30));
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
@@ -92,7 +90,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   void shouldApplyApiKeyToBuilderWhenNoAuthorizationHeader() {
     // given
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null, null);
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -108,7 +106,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
     // given
     final Map<String, String> headers = Map.of("Authorization", "Bearer test-token");
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null, headers);
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, headers);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -125,8 +123,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldNotApplyApiKeyToBuilderWhenNullOrBlank(final String apiKey) {
     // given
-    final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, apiKey, null, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, BASE_URL, apiKey, null);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -142,7 +139,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
     // given
     final Map<String, String> headers = Map.of("X-Custom-Header", "value");
     final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null, headers);
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, headers);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -156,8 +153,8 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   @Test
   void shouldApplyDimensionsToBuilder() {
     // given
-    final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, 768, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null);
+    config.setDimensions(768);
     final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder mockBuilder =
         mock(OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder.class);
 
@@ -173,8 +170,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(model, BASE_URL, null, null, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(model, BASE_URL, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleEmbeddingModelBuilder.build(config))
@@ -188,8 +184,7 @@ class OpenAiCompatibleEmbeddingModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
-    final OpenAiCompatibleConfig config =
-        new OpenAiCompatibleConfig(MODEL, baseUrl, null, null, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, baseUrl, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleEmbeddingModelBuilder.build(config))

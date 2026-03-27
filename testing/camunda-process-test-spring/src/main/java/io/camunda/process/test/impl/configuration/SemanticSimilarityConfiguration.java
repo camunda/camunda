@@ -73,9 +73,7 @@ public class SemanticSimilarityConfiguration {
       case BaseProviderConfig.PROVIDER_OPENAI:
         config =
             new BaseProviderConfig.OpenAiConfig(
-                embeddingModel.getModel(),
-                embeddingModel.getApiKey(),
-                embeddingModel.getDimensions());
+                embeddingModel.getModel(), embeddingModel.getApiKey());
         break;
       case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
         config =
@@ -83,7 +81,6 @@ public class SemanticSimilarityConfiguration {
                 embeddingModel.getModel(),
                 embeddingModel.getBaseUrl(),
                 embeddingModel.getApiKey(),
-                embeddingModel.getDimensions(),
                 embeddingModel.getHeaders());
         break;
       case BaseProviderConfig.PROVIDER_AZURE_OPENAI:
@@ -91,8 +88,7 @@ public class SemanticSimilarityConfiguration {
             new BaseProviderConfig.AzureOpenAiConfig(
                 embeddingModel.getModel(),
                 embeddingModel.getEndpoint(),
-                embeddingModel.getApiKey(),
-                embeddingModel.getDimensions());
+                embeddingModel.getApiKey());
         break;
       case BaseProviderConfig.PROVIDER_AMAZON_BEDROCK:
         config =
@@ -102,14 +98,16 @@ public class SemanticSimilarityConfiguration {
                 embeddingModel.getApiKey(),
                 credentials != null ? credentials.getAccessKey() : null,
                 credentials != null ? credentials.getSecretKey() : null,
-                embeddingModel.getNormalize(),
-                embeddingModel.getDimensions());
+                embeddingModel.getNormalize());
         break;
       default:
         config =
             new BaseProviderConfig.GenericConfig(
                 provider, embeddingModel.getModel(), embeddingModel.customProperties);
         break;
+    }
+    if (embeddingModel.getDimensions() != null) {
+      config.setDimensions(embeddingModel.getDimensions());
     }
     if (embeddingModel.getTimeout() != null) {
       config.setTimeout(embeddingModel.getTimeout());
