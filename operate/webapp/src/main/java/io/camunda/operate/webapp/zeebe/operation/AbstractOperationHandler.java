@@ -15,6 +15,7 @@ import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +72,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         Metrics.TAG_KEY_STATUS,
         operation.getState().name(),
         Metrics.TAG_KEY_TYPE,
-        operation.getType().name());
+        Optional.ofNullable(operation.getType()).map(Enum::name).orElse(null));
   }
 
   protected boolean canForceFailOperation(final OperationEntity operation) {
