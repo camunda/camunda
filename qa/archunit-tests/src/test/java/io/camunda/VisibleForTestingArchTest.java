@@ -43,10 +43,6 @@ public class VisibleForTestingArchTest {
 
   static final List<String> PUBLIC_ELEMENTS =
       List.of(
-          "io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR",
-          "io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR",
-          "io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR",
-          "io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY",
           "io.camunda.db.rdbms.write.service.HistoryCleanupService.getHistoryCleanupInterval()",
           "io.camunda.db.rdbms.write.service.HistoryCleanupService.resolveBatchOperationTTL(io.camunda.search.entities.BatchOperationType)",
           "io.camunda.exporter.handlers.AuditLogHandler.getTransformer()",

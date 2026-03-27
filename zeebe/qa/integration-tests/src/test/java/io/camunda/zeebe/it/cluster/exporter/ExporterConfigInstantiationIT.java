@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.exporter;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
-
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporter;
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporterConfig;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
@@ -50,8 +47,8 @@ final class ExporterConfigInstantiationIT {
             .withEnv("ZEEBE_BROKER_EXPORTERS_TEST_CLASSNAME", "com.acme.Exporter")
             .withEnv("ZEEBE_BROKER_EXPORTERS_TEST_JARPATH", "/exporter.jar")
             .withEnv("ZEEBE_BROKER_EXPORTERS_TEST_ARGS_STRINGS_0", "foo")
-            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+            .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
             .withLogConsumer(new Slf4jLogConsumer(LOGGER));
 
     // when - then - the broker will fail to start if the strings were not properly parsed, as per

@@ -8,17 +8,7 @@
 package io.camunda.configuration.beans;
 
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
-import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("camunda.database.schema-manager")
-public class LegacySearchEngineSchemaManagerProperties extends SchemaManagerConfiguration {
-
-  @VisibleForTesting
-  public static final String CREATE_SCHEMA_PROPERTY =
-      "camunda.database.schema-manager.createSchema";
-
-  @VisibleForTesting
-  public static final String CREATE_SCHEMA_ENV_VAR =
-      "CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA";
-}
+public class LegacySearchEngineSchemaManagerProperties extends SchemaManagerConfiguration {}

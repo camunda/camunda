@@ -13,7 +13,6 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 import java.util.regex.PatternSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,14 +24,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CamundaSecurityProperties.class)
 public class CamundaSecurityConfiguration {
-
-  @VisibleForTesting
-  public static final String UNPROTECTED_API_ENV_VAR =
-      "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI";
-
-  @VisibleForTesting
-  public static final String AUTHORIZATION_CHECKS_ENV_VAR =
-      "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED";
 
   private final CamundaSecurityProperties camundaSecurityProperties;
 

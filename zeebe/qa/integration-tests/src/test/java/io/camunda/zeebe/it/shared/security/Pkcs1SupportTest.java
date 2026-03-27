@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.it.shared.security;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
-
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -65,7 +63,7 @@ final class Pkcs1SupportTest {
             .withEnv("CAMUNDA_API_GRPC_SSL_ENABLED", "true")
             .withEnv("CAMUNDA_API_GRPC_SSL_CERTIFICATE", containerCertPath)
             .withEnv("CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY", containerKeyPath)
-            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+            .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
             .withoutTopologyCheck(); // avoid the missing TLS config by the client
 
     // when

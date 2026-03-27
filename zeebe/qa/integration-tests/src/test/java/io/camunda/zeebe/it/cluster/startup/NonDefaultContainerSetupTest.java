@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.startup;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -73,9 +70,9 @@ public class NonDefaultContainerSetupTest {
   void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
     try (final ZeebeBrokerContainer broker =
             new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-                .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+                .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+                .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+                .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
                 .withCreateContainerCmdModifier(containerModifier);
         final ZeebeGatewayContainer gateway =
             new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
@@ -85,9 +82,9 @@ public class NonDefaultContainerSetupTest {
                 .withEnv(
                     "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
                     broker.getInternalClusterAddress())
-                .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-                .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")) {
+                .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+                .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+                .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")) {
       // given
       broker.start();
       gateway.start();

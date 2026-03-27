@@ -7,7 +7,6 @@
  */
 package io.camunda.it.schema.strategy;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
 
 import io.camunda.application.Profile;
@@ -141,7 +140,7 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
     camunda
         .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withUnauthenticatedAccess()
-        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withProperty("camunda.database.schema-manager.createSchema", "false")
         .withProperty("camunda.operate.opensearch.health-check-enabled", "false")
         .withProperty("camunda.tasklist.opensearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.opensearch)

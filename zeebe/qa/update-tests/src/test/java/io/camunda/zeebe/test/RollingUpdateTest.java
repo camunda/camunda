@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.test;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -86,9 +83,9 @@ final class RollingUpdateTest {
           .withReplicationFactor(3)
           .withNodeConfig(
               node ->
-                  node.withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-                      .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+                  node.withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+                      .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+                      .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
                       .withEnv(
                           "CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER", "false"))
           .build();
