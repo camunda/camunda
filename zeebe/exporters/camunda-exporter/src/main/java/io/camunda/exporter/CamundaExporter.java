@@ -139,7 +139,9 @@ public class CamundaExporter implements Exporter {
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush(context.clock().millis());
+      final long now = context.clock().millis();
+      lastFlushTimestamp = now;
+      scheduleDelayedFlush(now);
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -342,15 +344,15 @@ public class CamundaExporter implements Exporter {
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
-        lastFlushTimestamp = context.clock().millis();
       } catch (final PersistenceException ex) {
         metrics.recordFailedFlush();
         throw new ExporterException(ex.getMessage(), ex);
       }
     }
 
-    // Update the record counters only after the flush was successful. If the synchronous flush
-    // fails then the exporter will be invoked with the same record again.
+    // Update record counters and lastFlushTimestamp only after the flush attempt was successful.
+    // If the synchronous flush fails then the exporter will be invoked with the same record again.
+    lastFlushTimestamp = context.clock().millis();
     updateLastExportedPosition(lastPosition);
   }
 
