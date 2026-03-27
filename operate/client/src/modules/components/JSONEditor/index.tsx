@@ -13,7 +13,8 @@ import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
 import {type editor} from 'monaco-editor';
 
-type BaseProps = {
+type Props = {
+  value: string;
   readOnly?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
@@ -23,31 +24,20 @@ type BaseProps = {
   }) => void;
   height?: string;
   width?: string;
+  shouldFocusOnMount?: boolean;
   options?: editor.IStandaloneEditorConstructionOptions;
 };
-
-type ControlledProps = BaseProps & {
-  value: string;
-  defaultValue?: never;
-};
-
-type UncontrolledProps = BaseProps & {
-  defaultValue?: string;
-  value?: never;
-};
-
-type Props = ControlledProps | UncontrolledProps;
 
 const JSONEditor: React.FC<Props> = observer(
   ({
     value,
-    defaultValue,
     onChange,
     readOnly = false,
     onValidate = () => {},
     onMount = () => {},
     height = '60vh',
     width = '100%',
+    shouldFocusOnMount = true,
     options = {},
   }) => {
     const editorOptions = {
@@ -63,7 +53,6 @@ const JSONEditor: React.FC<Props> = observer(
           options={editorOptions}
           language="json"
           value={value}
-          defaultValue={defaultValue}
           height={height}
           width={width}
           theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
@@ -71,7 +60,9 @@ const JSONEditor: React.FC<Props> = observer(
             onChange?.(value ?? '');
           }}
           onMount={(editor) => {
-            editor.focus();
+            if (shouldFocusOnMount) {
+              editor.focus();
+            }
 
             onMount({
               showMarkers: () => {

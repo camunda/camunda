@@ -77,7 +77,11 @@ const VariablesTable: React.FC<Props> = ({
                 isPreview={Boolean(isTruncated)}
               />
             ) : (
-              <InlineJsonEditor value={value} readOnly />
+              <InlineJsonEditor
+                value={value}
+                isTruncatedValue={Boolean(isTruncated)}
+                readOnly
+              />
             ),
             width: 'auto',
           },

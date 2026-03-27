@@ -14,13 +14,18 @@ function beautifyJSON(value: string) {
 
     return JSON.stringify(parsedValue, null, '\t');
   } catch {
-    try {
-      const parsedValue = JSON.parse(untruncateJson(value));
-      return JSON.stringify(parsedValue, null, '\t');
-    } catch {
-      return value;
-    }
+    return value;
   }
 }
 
-export {beautifyJSON};
+function beautifyTruncatedJSON(value: string) {
+  try {
+    const parsedValue = JSON.parse(untruncateJson(value));
+
+    return JSON.stringify(parsedValue, null, '\t');
+  } catch {
+    return value;
+  }
+}
+
+export {beautifyJSON, beautifyTruncatedJSON};

@@ -6,9 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense} from 'react';
+import {lazy, Suspense, useEffect, useState} from 'react';
 import {observer} from 'mobx-react-lite';
-import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
+import {
+  beautifyJSON,
+  beautifyTruncatedJSON,
+} from 'modules/utils/editor/beautifyJSON';
 import {EditorLoader, EditorWrapper} from './styled';
 import {useFieldError} from '../../hooks/useFieldError';
 
@@ -29,12 +32,12 @@ const JSONEditor = lazy(async () => {
 type Props = {
   name?: string;
   value: string;
+  isTruncatedValue?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
   onBlur?: () => void;
   onFocus?: () => void;
   readOnly?: boolean;
-  /** Max number of lines before a scrollbar appears. Default: 5 */
   maxLines?: number;
   id?: string;
   'data-testid'?: string;
@@ -55,17 +58,34 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     onBlur,
     onFocus,
     readOnly,
+    isTruncatedValue = false,
     maxLines = MAX_LINES,
     id,
     'data-testid': dataTestId,
     fieldError,
   }) => {
     const isReadOnly = readOnly === true || onChange === undefined;
-    const displayValue = beautifyJSON(value);
+    const [displayValue, setDisplayValue] = useState(
+      isTruncatedValue ? beautifyTruncatedJSON(value) : beautifyJSON(value),
+    );
     const height = computeHeight(displayValue, maxLines);
+
+    // Sync the external `value` into `displayValue` in two cases:
+    // 1. Read-only mode: always reflect the latest value (e.g. after saving).
+    // 2. Edit mode: only when `value` diverges from `displayValue`, meaning the
+    //    change came from outside (e.g. modal apply) and not from the user typing
+    //    (handleChange keeps them in sync, so keystrokes never trigger this).
+    useEffect(() => {
+      if (isReadOnly || value !== displayValue) {
+        setDisplayValue(
+          isTruncatedValue ? beautifyTruncatedJSON(value) : beautifyJSON(value),
+        );
+      }
+    }, [isReadOnly, value, isTruncatedValue, displayValue]);
 
     const handleChange = (newValue: string) => {
       onChange?.(newValue);
+      setDisplayValue(newValue);
 
       if (onValidate) {
         try {
@@ -76,12 +96,6 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
         }
       }
     };
-
-    // Avoid cursor jump while typing: use defaultValue when editable,
-    // value only when read-only (to reflect external updates)
-    const valueProps = readOnly
-      ? {value: displayValue}
-      : {defaultValue: displayValue};
 
     return (
       <EditorWrapper
@@ -98,11 +112,12 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
             Value
           </label>
           <JSONEditor
-            {...valueProps}
+            value={displayValue}
             onChange={isReadOnly ? undefined : handleChange}
             readOnly={isReadOnly}
             height={`${height}px`}
             width="100%"
+            shouldFocusOnMount={false}
             options={{
               formatOnType: false,
               lineNumbers: 'off',
