@@ -1387,7 +1387,7 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           branch-name: ${{ github.event.pull_request.head.ref }}
       - name: Delete matrix job generated artifacts
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: |
             zeebe-unit-tests-*
