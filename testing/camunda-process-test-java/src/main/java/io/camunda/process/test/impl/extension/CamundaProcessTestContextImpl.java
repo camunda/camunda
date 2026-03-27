@@ -105,6 +105,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier) {
     final CamundaClientBuilder builder = camundaClientBuilderFactory.get();
+<<<<<<< HEAD
+=======
+    // Instead of using the default REST connection, we use gRPC for now to avoid issues with stale
+    // long-polling connection of job workers. See https://github.com/camunda/camunda/issues/45177.
+>>>>>>> 251aa46b (feat: Use gRPC for CPT clients)
     builder.preferRestOverGrpc(false);
 
     modifier.accept(builder);
