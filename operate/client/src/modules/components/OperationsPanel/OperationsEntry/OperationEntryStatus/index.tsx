@@ -28,7 +28,14 @@ const getSuccessMessage = (
   completedCount: number,
 ): string => {
   if (type === 'RESOLVE_INCIDENT') {
-    return `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`;
+    switch (completedCount) {
+      case 0:
+        return 'Completed — No incidents to retry';
+      case 1:
+        return '1 retry succeeded';
+      default:
+        return `${completedCount} retries succeeded`;
+    }
   }
 
   return `${pluralSuffix(completedCount, 'operation')} succeeded`;

@@ -136,7 +136,9 @@ describe('OperationEntryStatus', () => {
       />,
     );
 
-    expect(screen.getByText(/0 retries succeeded/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Completed — No incidents to retry/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/\d+\s(rejected)/i)).not.toBeInTheDocument();
   });
 });
