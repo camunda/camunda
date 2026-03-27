@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.awaitility.Awaitility.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -250,7 +251,9 @@ final class CamundaExporterIT {
     spiedController.runScheduledTasks(Duration.ofSeconds(duration));
 
     // then
-    verify(spiedController, times(2)).scheduleCancellableTask(eq(Duration.ofSeconds(2)), any());
+    verify(spiedController, times(2))
+        .scheduleCancellableTask(
+            argThat(delay -> delay.getSeconds() >= 0 && delay.getSeconds() <= 2), any());
   }
 
   @TestTemplate

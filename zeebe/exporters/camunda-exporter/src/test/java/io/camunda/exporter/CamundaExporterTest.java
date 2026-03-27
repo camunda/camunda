@@ -233,6 +233,10 @@ final class CamundaExporterTest {
   final class FlushTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
+
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
       exporter = new CamundaExporter(resourceProvider, expected);
@@ -244,6 +248,8 @@ final class CamundaExporterTest {
       // when
       exporter.configure(testContext);
       exporter.open(testController);
+
+      clock.advance(1001);
       testController.runScheduledTasks(Duration.ofHours(1));
 
       // then
