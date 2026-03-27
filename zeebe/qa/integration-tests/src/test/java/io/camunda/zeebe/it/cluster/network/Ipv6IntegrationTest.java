@@ -7,21 +7,19 @@
  */
 package io.camunda.zeebe.it.cluster.network;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
-import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
+import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+import static io.camunda.container.cluster.CamundaCluster.newClientBuilder;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
 import io.camunda.client.api.response.Topology;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.container.cluster.BrokerNode;
+import io.camunda.container.cluster.CamundaCluster;
+import io.camunda.container.cluster.CamundaPort;
+import io.camunda.container.cluster.GatewayNode;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.containers.ZeebeBrokerNode;
-import io.zeebe.containers.ZeebeGatewayNode;
-import io.zeebe.containers.ZeebePort;
-import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -54,14 +52,13 @@ final class Ipv6IntegrationTest {
                       .withName(UUID.randomUUID().toString()))
           .enableIpv6(true)
           .build();
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
+  private final CamundaCluster cluster =
+      CamundaCluster.builder()
           .withPartitionsCount(1)
           .withReplicationFactor(1)
-          .withNetwork(network)
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withBrokerConfig(this::configureBroker)
           .withBrokersCount(1)
+          .withNetwork(network)
+          .withBrokerConfig(this::configureBroker)
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
           .withGatewayConfig(this::configureGateway)
@@ -97,16 +94,16 @@ final class Ipv6IntegrationTest {
     }
   }
 
-  private void configureBroker(final ZeebeBrokerNode<?> broker) {
+  private void configureBroker(final BrokerNode<?> broker) {
     final var hostName = String.format("[%s]", BROKER_IP);
 
     broker
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostName)
-        .withEnv("ZEEBE_BROKER_NETWORK_HOST", INADDR6_ANY)
-        .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-        .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+        .withProperty("zeebe.broker.network.host", INADDR6_ANY)
+        .withProperty("zeebe.broker.network.advertised-host", hostName)
+        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withProperty("camunda.security.authentication.unprotected-api", true)
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, BROKER_IP));
   }
 
@@ -117,20 +114,19 @@ final class Ipv6IntegrationTest {
     cmd.withIpv6Address(hostNameWithoutBraces).withHostName(hostNameWithoutBraces);
   }
 
-  private void configureGateway(final ZeebeGatewayNode<?> gateway) {
+  private void configureGateway(final GatewayNode<?> gateway) {
     final var hostName = String.format("[%s]", GATEWAY_IP);
 
     gateway
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
-        .withEnv(
-            "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
-            String.format("[%s]:%d", BROKER_IP, ZeebePort.INTERNAL.getPort()))
-        .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", INADDR6_ANY)
-        .withEnv("ZEEBE_GATEWAY_NETWORK_ADVERTISEDHOST", hostName)
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", hostName)
-        .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-        .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+        .withProperty(
+            "zeebe.gateway.cluster.contact-point",
+            String.format("[%s]:%d", BROKER_IP, CamundaPort.INTERNAL.getPort()))
+        .withProperty("zeebe.gateway.network.host", INADDR6_ANY)
+        .withProperty("zeebe.gateway.cluster.host", hostName)
+        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withProperty("camunda.security.authentication.unprotectedapi", true)
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, GATEWAY_IP));
   }
 }
