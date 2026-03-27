@@ -137,7 +137,6 @@ similarity.embeddingModel.provider=openai
 similarity.embeddingModel.apiKey=<your api key>
 similarity.embeddingModel.model=text-embedding-3-small
 similarity.embeddingModel.dimensions=512                                     # optional
-similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Azure OpenAI
@@ -148,18 +147,18 @@ similarity.embeddingModel.endpoint=https://my-resource.openai.azure.com/
 similarity.embeddingModel.apiKey=<your api key>
 similarity.embeddingModel.model=text-embedding-3-large
 similarity.embeddingModel.dimensions=1024                                    # optional
-similarity.embeddingModel.headers.<header-name>=<header-value>               # optional, can have multiple custom headers
 ```
 
 ### Amazon Bedrock
 
 ```properties
 similarity.embeddingModel.provider=amazon-bedrock
-similarity.embeddingModel.region=eu-central-1                               # optional, defaults to us-east-1
+similarity.embeddingModel.region=eu-central-1                               # optional
 similarity.embeddingModel.model=amazon.titan-embed-text-v2:0
 similarity.embeddingModel.credentials.accessKey=<your access key>           # optional; uses default credentials chain if absent
 similarity.embeddingModel.credentials.secretKey=<your secret key>           # optional
-similarity.embeddingModel.credentials.normalize=true                        # optional, defaults to no normalization
+similarity.embeddingModel.apiKey=<your api key>                             # optional, instead of accessKey and secretKey
+similarity.embeddingModel.normalize=true                                    # optional, defaults to no normalization
 ```
 
 ### OpenAI-compatible

@@ -15,12 +15,13 @@
  */
 package io.camunda.process.test.impl.similarity;
 
+import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.AzureOpenAiConfig;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,29 +34,35 @@ final class AzureOpenAiEmbeddingModelBuilder {
 
   static EmbeddingModel build(final AzureOpenAiConfig config) {
     LOG.debug("Building Azure OpenAI embedding model");
+    final EmbeddingModel embeddingModel = build(config, AzureOpenAiEmbeddingModel.builder());
+    LOG.debug(
+        "Successfully built Azure OpenAI embedding model with endpoint '{}' and deployment '{}'",
+        config.getEndpoint(),
+        config.getModel());
+    return embeddingModel;
+  }
 
-    final String endpoint = require(config.getEndpoint(), "endpoint", AZURE_OPENAI);
-    final String apiKey = require(config.getApiKey(), "apiKey", AZURE_OPENAI);
-    final String deploymentName = require(config.getModel(), "model", AZURE_OPENAI);
-
-    final AzureOpenAiEmbeddingModel.Builder builder =
-        AzureOpenAiEmbeddingModel.builder()
-            .endpoint(endpoint)
-            .apiKey(apiKey)
-            .deploymentName(deploymentName);
-
+  static EmbeddingModel build(
+      final AzureOpenAiConfig config, final AzureOpenAiEmbeddingModel.Builder builder) {
+    builder.endpoint(require(config.getEndpoint(), "endpoint", AZURE_OPENAI));
+    builder.deploymentName(require(config.getModel(), "model", AZURE_OPENAI));
+    if (hasText(config.getApiKey())) {
+      LOG.debug("Using API key authentication");
+      builder.apiKey(config.getApiKey().trim());
+    } else {
+      LOG.debug(
+          "No API key configured, falling back to DefaultAzureCredential "
+              + "(environment, workload identity, managed identity, Azure CLI)");
+      builder.tokenCredential(new DefaultAzureCredentialBuilder().build());
+    }
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
     if (config.getDimensions() != null) {
+      LOG.debug("Setting dimensions to {}", config.getDimensions());
       builder.dimensions(config.getDimensions());
     }
-
-    final Map<String, String> headers = config.getHeaders();
-    if (headers != null && !headers.isEmpty()) {
-      builder.customHeaders(headers);
-    }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug(
-        "Successfully built Azure OpenAI embedding model with deploymentName '{}'", deploymentName);
-    return embeddingModel;
+    return builder.build();
   }
 }

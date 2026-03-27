@@ -20,7 +20,6 @@ import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig.OpenAiConfig;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,24 +32,23 @@ final class OpenAiEmbeddingModelBuilder {
 
   static EmbeddingModel build(final OpenAiConfig config) {
     LOG.debug("Building OpenAI embedding model");
+    final EmbeddingModel embeddingModel = build(config, OpenAiEmbeddingModel.builder());
+    LOG.debug("Successfully built OpenAI embedding model with model '{}'", config.getModel());
+    return embeddingModel;
+  }
 
-    final String model = require(config.getModel(), "model", OPENAI);
-    final String apiKey = require(config.getApiKey(), "apiKey", OPENAI);
-
-    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder =
-        OpenAiEmbeddingModel.builder().apiKey(apiKey).modelName(model);
-
+  static EmbeddingModel build(
+      final OpenAiConfig config, final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {
+    builder.apiKey(require(config.getApiKey(), "apiKey", OPENAI));
+    builder.modelName(require(config.getModel(), "model", OPENAI));
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
     if (config.getDimensions() != null) {
+      LOG.debug("Setting dimensions to {}", config.getDimensions());
       builder.dimensions(config.getDimensions());
     }
-
-    final Map<String, String> headers = config.getHeaders();
-    if (headers != null && !headers.isEmpty()) {
-      builder.customHeaders(headers);
-    }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug("Successfully built OpenAI embedding model with model '{}'", model);
-    return embeddingModel;
+    return builder.build();
   }
 }

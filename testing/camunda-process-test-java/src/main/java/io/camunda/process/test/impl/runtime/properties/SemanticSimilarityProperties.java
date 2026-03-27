@@ -27,6 +27,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import io.camunda.process.test.api.similarity.ProviderConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
 
@@ -57,6 +58,8 @@ public class SemanticSimilarityProperties {
       "similarity.preprocessors.defaults-enabled";
   public static final String PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_NORMALIZE =
       "similarity.embeddingModel.normalize";
+  public static final String PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_TIMEOUT =
+      "similarity.embeddingModel.timeout";
   public static final String PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_CUSTOM_PROPERTIES_PREFIX =
       "similarity.embeddingModel.customProperties";
 
@@ -75,6 +78,7 @@ public class SemanticSimilarityProperties {
   private final Map<String, String> embeddingModelHeaders;
   private final boolean defaultPreprocessorsEnabled;
   private final Boolean embeddingModelNormalize;
+  private final Duration embeddingModelTimeout;
   private final Map<String, String> embeddingModelCustomProperties;
 
   public SemanticSimilarityProperties(final Properties properties) {
@@ -106,11 +110,8 @@ public class SemanticSimilarityProperties {
     embeddingModelEndpoint =
         getPropertyOrNull(properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_ENDPOINT);
     embeddingModelDimensions =
-        getPropertyOrDefault(
-            properties,
-            PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_DIMENSIONS,
-            Integer::parseInt,
-            null);
+        getPropertyOrNull(
+            properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_DIMENSIONS, Integer::parseInt);
     embeddingModelHeaders =
         getPropertyMapOrEmpty(properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_HEADERS);
     defaultPreprocessorsEnabled =
@@ -120,11 +121,11 @@ public class SemanticSimilarityProperties {
             Boolean::parseBoolean,
             true);
     embeddingModelNormalize =
-        getPropertyOrDefault(
-            properties,
-            PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_NORMALIZE,
-            Boolean::parseBoolean,
-            null);
+        getPropertyOrNull(
+            properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_NORMALIZE, Boolean::parseBoolean);
+    embeddingModelTimeout =
+        getPropertyOrNull(
+            properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_TIMEOUT, Duration::parse);
     embeddingModelCustomProperties =
         getPropertyMapOrEmpty(
             properties, PROPERTY_NAME_SIMILARITY_EMBEDDING_MODEL_CUSTOM_PROPERTIES_PREFIX);
@@ -147,38 +148,46 @@ public class SemanticSimilarityProperties {
       return null;
     }
     final String normalized = embeddingModelProvider.trim().toLowerCase();
+    final BaseProviderConfig config;
     switch (normalized) {
       case PROVIDER_OPENAI:
-        return new BaseProviderConfig.OpenAiConfig(
-            embeddingModelModel,
-            embeddingModelApiKey,
-            embeddingModelDimensions,
-            embeddingModelHeaders);
+        config = new BaseProviderConfig.OpenAiConfig(embeddingModelModel, embeddingModelApiKey);
+        break;
       case PROVIDER_OPENAI_COMPATIBLE:
-        return new BaseProviderConfig.OpenAiCompatibleConfig(
-            embeddingModelModel,
-            embeddingModelBaseUrl,
-            embeddingModelApiKey,
-            embeddingModelDimensions,
-            embeddingModelHeaders);
+        config =
+            new BaseProviderConfig.OpenAiCompatibleConfig(
+                embeddingModelModel,
+                embeddingModelBaseUrl,
+                embeddingModelApiKey,
+                embeddingModelHeaders);
+        break;
       case PROVIDER_AZURE_OPENAI:
-        return new BaseProviderConfig.AzureOpenAiConfig(
-            embeddingModelModel,
-            embeddingModelEndpoint,
-            embeddingModelApiKey,
-            embeddingModelDimensions,
-            embeddingModelHeaders);
+        config =
+            new BaseProviderConfig.AzureOpenAiConfig(
+                embeddingModelModel, embeddingModelEndpoint, embeddingModelApiKey);
+        break;
       case PROVIDER_AMAZON_BEDROCK:
-        return new BaseProviderConfig.AmazonBedrockConfig(
-            embeddingModelModel,
-            embeddingModelRegion,
-            embeddingModelCredentialsAccessKey,
-            embeddingModelCredentialsSecretKey,
-            embeddingModelNormalize,
-            embeddingModelDimensions);
+        config =
+            new BaseProviderConfig.AmazonBedrockConfig(
+                embeddingModelModel,
+                embeddingModelRegion,
+                embeddingModelApiKey,
+                embeddingModelCredentialsAccessKey,
+                embeddingModelCredentialsSecretKey,
+                embeddingModelNormalize);
+        break;
       default:
-        return new BaseProviderConfig.GenericConfig(
-            normalized, embeddingModelModel, embeddingModelCustomProperties);
+        config =
+            new BaseProviderConfig.GenericConfig(
+                normalized, embeddingModelModel, embeddingModelCustomProperties);
+        break;
     }
+    if (embeddingModelDimensions != null) {
+      config.setDimensions(embeddingModelDimensions);
+    }
+    if (embeddingModelTimeout != null) {
+      config.setTimeout(embeddingModelTimeout);
+    }
+    return config;
   }
 }

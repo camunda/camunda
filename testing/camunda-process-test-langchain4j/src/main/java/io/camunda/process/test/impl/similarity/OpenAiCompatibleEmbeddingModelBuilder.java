@@ -35,34 +35,41 @@ final class OpenAiCompatibleEmbeddingModelBuilder {
 
   static EmbeddingModel build(final OpenAiCompatibleConfig config) {
     LOG.debug("Building OpenAI-compatible embedding model");
+    final EmbeddingModel embeddingModel = build(config, OpenAiEmbeddingModel.builder());
+    LOG.debug(
+        "Successfully built OpenAI-compatible embedding model with baseUrl '{}' and model '{}'",
+        config.getBaseUrl(),
+        config.getModel());
+    return embeddingModel;
+  }
 
-    final String model = require(config.getModel(), "model", OPENAI_COMPATIBLE);
-    final String baseUrl = require(config.getBaseUrl(), "baseUrl", OPENAI_COMPATIBLE);
-
-    final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder =
-        OpenAiEmbeddingModel.builder().baseUrl(baseUrl).modelName(model);
-
-    if (hasText(config.getApiKey())) {
-      LOG.debug("Using configured API key");
-      builder.apiKey(config.getApiKey().trim());
-    } else {
-      LOG.debug("No API key configured, building without authentication");
-    }
-
-    if (config.getDimensions() != null) {
-      builder.dimensions(config.getDimensions());
-    }
-
+  static EmbeddingModel build(
+      final OpenAiCompatibleConfig config,
+      final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {
+    builder.baseUrl(require(config.getBaseUrl(), "baseUrl", OPENAI_COMPATIBLE));
+    builder.modelName(require(config.getModel(), "model", OPENAI_COMPATIBLE));
     final Map<String, String> headers = config.getHeaders();
+    final boolean hasAuthorizationHeader =
+        headers != null && headers.keySet().stream().anyMatch("Authorization"::equalsIgnoreCase);
+    if (hasText(config.getApiKey())) {
+      if (hasAuthorizationHeader) {
+        LOG.warn("Both API key and Authorization header are set. The API key will be ignored.");
+      } else {
+        LOG.debug("Using configured API key");
+        builder.apiKey(config.getApiKey().trim());
+      }
+    }
     if (headers != null && !headers.isEmpty()) {
       builder.customHeaders(headers);
     }
-
-    final EmbeddingModel embeddingModel = builder.build();
-    LOG.debug(
-        "Successfully built OpenAI-compatible embedding model with baseUrl '{}' and model '{}'",
-        baseUrl,
-        model);
-    return embeddingModel;
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
+    if (config.getDimensions() != null) {
+      LOG.debug("Setting dimensions to {}", config.getDimensions());
+      builder.dimensions(config.getDimensions());
+    }
+    return builder.build();
   }
 }

@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.configuration;
 import io.camunda.process.test.api.similarity.ProviderConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.similarity.BaseProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -67,39 +68,51 @@ public class SemanticSimilarityConfiguration {
   public ProviderConfig toProviderConfig() {
     final AwsCredentialsConfiguration credentials = embeddingModel.getCredentials();
     final String provider = embeddingModel.getProvider().trim().toLowerCase();
+    final BaseProviderConfig config;
     switch (provider) {
       case BaseProviderConfig.PROVIDER_OPENAI:
-        return new BaseProviderConfig.OpenAiConfig(
-            embeddingModel.getModel(),
-            embeddingModel.getApiKey(),
-            embeddingModel.getDimensions(),
-            embeddingModel.getHeaders());
+        config =
+            new BaseProviderConfig.OpenAiConfig(
+                embeddingModel.getModel(), embeddingModel.getApiKey());
+        break;
       case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
-        return new BaseProviderConfig.OpenAiCompatibleConfig(
-            embeddingModel.getModel(),
-            embeddingModel.getBaseUrl(),
-            embeddingModel.getApiKey(),
-            embeddingModel.getDimensions(),
-            embeddingModel.getHeaders());
+        config =
+            new BaseProviderConfig.OpenAiCompatibleConfig(
+                embeddingModel.getModel(),
+                embeddingModel.getBaseUrl(),
+                embeddingModel.getApiKey(),
+                embeddingModel.getHeaders());
+        break;
       case BaseProviderConfig.PROVIDER_AZURE_OPENAI:
-        return new BaseProviderConfig.AzureOpenAiConfig(
-            embeddingModel.getModel(),
-            embeddingModel.getEndpoint(),
-            embeddingModel.getApiKey(),
-            embeddingModel.getDimensions(),
-            embeddingModel.getHeaders());
+        config =
+            new BaseProviderConfig.AzureOpenAiConfig(
+                embeddingModel.getModel(),
+                embeddingModel.getEndpoint(),
+                embeddingModel.getApiKey());
+        break;
       case BaseProviderConfig.PROVIDER_AMAZON_BEDROCK:
-        return new BaseProviderConfig.AmazonBedrockConfig(
-            embeddingModel.getModel(),
-            embeddingModel.getRegion(),
-            credentials != null ? credentials.getAccessKey() : null,
-            credentials != null ? credentials.getSecretKey() : null,
-            embeddingModel.getNormalize(),
-            embeddingModel.getDimensions());
+        config =
+            new BaseProviderConfig.AmazonBedrockConfig(
+                embeddingModel.getModel(),
+                embeddingModel.getRegion(),
+                embeddingModel.getApiKey(),
+                credentials != null ? credentials.getAccessKey() : null,
+                credentials != null ? credentials.getSecretKey() : null,
+                embeddingModel.getNormalize());
+        break;
       default:
-        return new BaseProviderConfig.GenericConfig(
-            provider, embeddingModel.getModel(), embeddingModel.customProperties);
+        config =
+            new BaseProviderConfig.GenericConfig(
+                provider, embeddingModel.getModel(), embeddingModel.customProperties);
+        break;
     }
+    if (embeddingModel.getDimensions() != null) {
+      config.setDimensions(embeddingModel.getDimensions());
+    }
+    if (embeddingModel.getTimeout() != null) {
+      config.setTimeout(embeddingModel.getTimeout());
+    }
+    return config;
   }
 
   public static class EmbeddingModelConfiguration {
@@ -133,6 +146,9 @@ public class SemanticSimilarityConfiguration {
 
     /** Optional custom HTTP headers to include in embedding model requests. */
     private Map<String, String> headers;
+
+    /** The timeout for embedding model API calls as an ISO-8601 duration (e.g. 'PT30S', 'PT2M'). */
+    private Duration timeout;
 
     @NestedConfigurationProperty
     private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
@@ -210,6 +226,14 @@ public class SemanticSimilarityConfiguration {
 
     public void setHeaders(final Map<String, String> headers) {
       this.headers = headers;
+    }
+
+    public Duration getTimeout() {
+      return timeout;
+    }
+
+    public void setTimeout(final Duration timeout) {
+      this.timeout = timeout;
     }
 
     public AwsCredentialsConfiguration getCredentials() {

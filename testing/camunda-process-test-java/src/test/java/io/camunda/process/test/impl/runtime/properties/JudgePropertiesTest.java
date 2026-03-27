@@ -23,6 +23,7 @@ import io.camunda.process.test.impl.judge.BaseProviderConfig;
 import io.camunda.process.test.impl.judge.BaseProviderConfig.AzureOpenAiConfig;
 import io.camunda.process.test.impl.judge.BaseProviderConfig.OpenAiCompatibleConfig;
 import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
@@ -101,6 +102,7 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.provider", "openai");
     properties.setProperty("judge.chatModel.model", "gpt-4o");
     properties.setProperty("judge.chatModel.apiKey", "test-key");
+    properties.setProperty("judge.chatModel.timeout", "PT30S");
 
     // when
     final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
@@ -109,6 +111,8 @@ public class JudgePropertiesTest {
     assertThat(config).isInstanceOf(BaseProviderConfig.OpenAiConfig.class);
     assertThat(config.getProvider()).isEqualTo("openai");
     assertThat(config.getModel()).isEqualTo("gpt-4o");
+    assertThat(((BaseProviderConfig.OpenAiConfig) config).getTimeout())
+        .isEqualTo(Duration.ofSeconds(30));
   }
 
   @Test
@@ -168,6 +172,7 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.model", "gpt-4o");
     properties.setProperty("judge.chatModel.endpoint", "https://my-resource.openai.azure.com/");
     properties.setProperty("judge.chatModel.apiKey", "test-key");
+    properties.setProperty("judge.chatModel.timeout", "PT30S");
 
     // when
     final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
@@ -179,6 +184,7 @@ public class JudgePropertiesTest {
     final AzureOpenAiConfig azureConfig = (AzureOpenAiConfig) config;
     assertThat(azureConfig.getEndpoint()).isEqualTo("https://my-resource.openai.azure.com/");
     assertThat(azureConfig.getApiKey()).isEqualTo("test-key");
+    assertThat(azureConfig.getTimeout()).isEqualTo(Duration.ofSeconds(30));
   }
 
   @Test
@@ -196,86 +202,6 @@ public class JudgePropertiesTest {
     assertThat(config).isInstanceOf(AzureOpenAiConfig.class);
     final AzureOpenAiConfig azureConfig = (AzureOpenAiConfig) config;
     assertThat(azureConfig.getApiKey()).isNull();
-  }
-
-  @Test
-  void shouldParseTimeout() {
-    // given
-    final Properties properties = new Properties();
-    properties.setProperty("judge.chatModel.provider", "openai");
-    properties.setProperty("judge.chatModel.model", "gpt-4o");
-    properties.setProperty("judge.chatModel.apiKey", "test-key");
-    properties.setProperty("judge.chatModel.timeout", "PT30S");
-
-    // when
-    final BaseProviderConfig config =
-        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
-
-    // then
-    assertThat(config.getTimeout()).isEqualTo(Duration.ofSeconds(30));
-  }
-
-  @Test
-  void shouldParseTimeoutMinutes() {
-    // given
-    final Properties properties = new Properties();
-    properties.setProperty("judge.chatModel.provider", "openai");
-    properties.setProperty("judge.chatModel.model", "gpt-4o");
-    properties.setProperty("judge.chatModel.apiKey", "test-key");
-    properties.setProperty("judge.chatModel.timeout", "PT2M");
-
-    // when
-    final BaseProviderConfig config =
-        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
-
-    // then
-    assertThat(config.getTimeout()).isEqualTo(Duration.ofMinutes(2));
-  }
-
-  @Test
-  void shouldReturnNullTimeoutWhenNotConfigured() {
-    // given
-    final Properties properties = new Properties();
-    properties.setProperty("judge.chatModel.provider", "openai");
-    properties.setProperty("judge.chatModel.model", "gpt-4o");
-    properties.setProperty("judge.chatModel.apiKey", "test-key");
-
-    // when
-    final BaseProviderConfig config =
-        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
-
-    // then
-    assertThat(config.getTimeout()).isNull();
-  }
-
-  @Test
-  void shouldRejectInvalidTimeout() {
-    // given
-    final Properties properties = new Properties();
-    properties.setProperty("judge.chatModel.timeout", "not-a-duration");
-
-    // when / then
-    assertThatThrownBy(() -> new JudgeProperties(properties))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("judge.chatModel.timeout");
-  }
-
-  @Test
-  void shouldTreatPlaceholderTimeoutAsAbsent() {
-    // given
-    final Properties properties = new Properties();
-    properties.setProperty("judge.chatModel.provider", "openai");
-    properties.setProperty("judge.chatModel.model", "gpt-4o");
-    properties.setProperty("judge.chatModel.apiKey", "test-key");
-    properties.setProperty("judge.chatModel.timeout", "${TIMEOUT}");
-
-    // when
-    // when
-    final BaseProviderConfig config =
-        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
-
-    // then
-    assertThat(config.getTimeout()).isNull();
   }
 
   @Test
@@ -319,6 +245,33 @@ public class JudgePropertiesTest {
     // when / then
     assertThatThrownBy(() -> new JudgeProperties(properties))
         .isInstanceOf(NumberFormatException.class);
+  }
+
+  @Test
+  void shouldReturnNullTimeoutWhenNotConfigured() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+
+    // when
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config.getTimeout()).isNull();
+  }
+
+  @Test
+  void shouldRejectInvalidTimeout() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.timeout", "1ms");
+
+    // when/then
+    assertThatThrownBy(() -> new JudgeProperties(properties))
+        .isInstanceOf(DateTimeParseException.class);
   }
 
   @Test

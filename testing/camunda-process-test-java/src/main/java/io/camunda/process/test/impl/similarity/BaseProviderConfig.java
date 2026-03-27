@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.similarity;
 
 import io.camunda.process.test.api.similarity.ProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
@@ -30,6 +31,9 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   private final String provider;
   private final String model;
 
+  private Integer dimensions;
+  private Duration timeout;
+
   protected BaseProviderConfig(final String provider, final String model) {
     this.provider = provider;
     this.model = model;
@@ -43,6 +47,22 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   @Override
   public String getModel() {
     return model;
+  }
+
+  public Integer getDimensions() {
+    return dimensions;
+  }
+
+  public void setDimensions(final Integer dimensions) {
+    this.dimensions = dimensions;
+  }
+
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(final Duration timeout) {
+    this.timeout = timeout;
   }
 
   /** Generic provider configuration for unknown or custom providers. */
@@ -70,30 +90,14 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   public static final class OpenAiConfig extends BaseProviderConfig {
 
     private final String apiKey;
-    private final Integer dimensions;
-    private final Map<String, String> headers;
 
-    public OpenAiConfig(
-        final String model,
-        final String apiKey,
-        final Integer dimensions,
-        final Map<String, String> headers) {
+    public OpenAiConfig(final String model, final String apiKey) {
       super(PROVIDER_OPENAI, model);
       this.apiKey = apiKey;
-      this.dimensions = dimensions;
-      this.headers = headers;
     }
 
     public String getApiKey() {
       return apiKey;
-    }
-
-    public Integer getDimensions() {
-      return dimensions;
-    }
-
-    public Map<String, String> getHeaders() {
-      return headers;
     }
   }
 
@@ -102,19 +106,16 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     private final String baseUrl;
     private final String apiKey;
-    private final Integer dimensions;
     private final Map<String, String> headers;
 
     public OpenAiCompatibleConfig(
         final String model,
         final String baseUrl,
         final String apiKey,
-        final Integer dimensions,
         final Map<String, String> headers) {
       super(PROVIDER_OPENAI_COMPATIBLE, model);
       this.baseUrl = baseUrl;
       this.apiKey = apiKey;
-      this.dimensions = dimensions;
       this.headers = headers;
     }
 
@@ -124,10 +125,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public String getApiKey() {
       return apiKey;
-    }
-
-    public Integer getDimensions() {
-      return dimensions;
     }
 
     public Map<String, String> getHeaders() {
@@ -140,20 +137,11 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     private final String endpoint;
     private final String apiKey;
-    private final Integer dimensions;
-    private final Map<String, String> headers;
 
-    public AzureOpenAiConfig(
-        final String model,
-        final String endpoint,
-        final String apiKey,
-        final Integer dimensions,
-        final Map<String, String> headers) {
+    public AzureOpenAiConfig(final String model, final String endpoint, final String apiKey) {
       super(PROVIDER_AZURE_OPENAI, model);
       this.endpoint = endpoint;
       this.apiKey = apiKey;
-      this.dimensions = dimensions;
-      this.headers = headers;
     }
 
     public String getEndpoint() {
@@ -163,42 +151,38 @@ public abstract class BaseProviderConfig implements ProviderConfig {
     public String getApiKey() {
       return apiKey;
     }
-
-    public Integer getDimensions() {
-      return dimensions;
-    }
-
-    public Map<String, String> getHeaders() {
-      return headers;
-    }
   }
 
   /** Amazon Bedrock embedding model provider configuration. */
   public static final class AmazonBedrockConfig extends BaseProviderConfig {
 
     private final String region;
+    private final String apiKey;
     private final String credentialsAccessKey;
     private final String credentialsSecretKey;
     private final Boolean normalize;
-    private final Integer dimensions;
 
     public AmazonBedrockConfig(
         final String model,
         final String region,
+        final String apiKey,
         final String credentialsAccessKey,
         final String credentialsSecretKey,
-        final Boolean normalize,
-        final Integer dimensions) {
+        final Boolean normalize) {
       super(PROVIDER_AMAZON_BEDROCK, model);
       this.region = region;
+      this.apiKey = apiKey;
       this.credentialsAccessKey = credentialsAccessKey;
       this.credentialsSecretKey = credentialsSecretKey;
       this.normalize = normalize;
-      this.dimensions = dimensions;
     }
 
     public String getRegion() {
       return region;
+    }
+
+    public String getApiKey() {
+      return apiKey;
     }
 
     public String getCredentialsAccessKey() {
@@ -216,10 +200,6 @@ public abstract class BaseProviderConfig implements ProviderConfig {
      */
     public Boolean getNormalize() {
       return normalize;
-    }
-
-    public Integer getDimensions() {
-      return dimensions;
     }
   }
 }

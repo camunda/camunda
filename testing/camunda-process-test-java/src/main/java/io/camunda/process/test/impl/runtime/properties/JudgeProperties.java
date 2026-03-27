@@ -29,7 +29,6 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.judge.BaseProviderConfig;
 import java.time.Duration;
-import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Properties;
 
@@ -89,7 +88,8 @@ public class JudgeProperties {
     chatModelRegion = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_REGION);
     chatModelEndpoint = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_ENDPOINT);
     chatModelHeaders = getPropertyMapOrEmpty(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_HEADERS);
-    chatModelTimeout = parseTimeout(properties);
+    chatModelTimeout =
+        getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_TIMEOUT, Duration::parse);
     chatModelTemperature =
         getPropertyOrNull(
             properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_TEMPERATURE, Double::parseDouble);
@@ -158,18 +158,5 @@ public class JudgeProperties {
       config.setTemperature(chatModelTemperature);
     }
     return config;
-  }
-
-  private Duration parseTimeout(final Properties properties) {
-    final String raw = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_TIMEOUT);
-    if (raw == null) {
-      return null;
-    }
-    try {
-      return Duration.parse(raw);
-    } catch (final DateTimeParseException e) {
-      throw new IllegalArgumentException(
-          "judge.chatModel.timeout must be a valid ISO-8601 duration (e.g. PT30S), was: " + raw, e);
-    }
   }
 }
