@@ -976,11 +976,12 @@ final class CamundaExporterIT {
               UserIntent.CREATED);
 
       camundaExporter.export(record);
-      camundaExporter.close();
 
       // as the importer state is ignored, this should trigger a flush still resulting in the
       // record being visible in ES/OS
       controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
+
+      camundaExporter.close();
 
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
