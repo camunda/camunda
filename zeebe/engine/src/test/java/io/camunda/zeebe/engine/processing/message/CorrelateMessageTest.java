@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -60,6 +61,52 @@ public final class CorrelateMessageTest {
                 .getValue())
         .hasName(MESSAGE_NAME)
         .hasCorrelationKey(CORRELATION_KEY);
+  }
+
+  @Test
+  public void shouldRejectWithClarifyingMessageWhenStartEventBlockedByActiveInstance() {
+    // given - deploy a process that stays active (with a user task) and correlate a message to
+    // start the instance
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .message(MESSAGE_NAME)
+                .userTask()
+                .endEvent()
+                .done())
+        .deploy();
+
+    engine
+        .messageCorrelation()
+        .withCorrelationKey(CORRELATION_KEY)
+        .withName(MESSAGE_NAME)
+        .correlate();
+
+    // wait for the process instance to be active at the user task
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withBpmnProcessId("process")
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    // when - correlate the same message again while the instance is still active
+    final var rejection =
+        engine
+            .messageCorrelation()
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
+            .expectRejection()
+            .correlate();
+
+    // then - rejection with NOT_FOUND and a clarifying message mentioning the active instance
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .contains(MESSAGE_NAME)
+        .contains(CORRELATION_KEY)
+        .contains("active process instance")
+        .contains("correlation key")
+        .contains("process IDs [process]");
   }
 
   @Test
