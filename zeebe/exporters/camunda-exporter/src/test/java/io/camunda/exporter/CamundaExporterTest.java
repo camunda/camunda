@@ -443,7 +443,9 @@ final class CamundaExporterTest {
     private final ProtocolFactory factory = new ProtocolFactory();
 
     private Record<?> stubRecord() {
-      return factory.generateRecord(ValueType.VARIABLE);
+      final var record = spy(factory.generateRecord(ValueType.VARIABLE));
+      when(record.getBrokerVersion()).thenReturn("8.8.0");
+      return record;
     }
 
     @Test
