@@ -113,15 +113,17 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 			continue
 		}
 
-		killErr = s.ProcessHandler.KillProcess(procPid)
-	}
-
-	if err := os.Remove(pidPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		log.Warn().Err(err).Str("pidFile", pidPath).Msg("Failed to remove pidfile")
+		if err := s.ProcessHandler.KillProcess(procPid); err != nil && killErr == nil {
+			killErr = err
+		}
 	}
 
 	if killErr != nil {
 		return fmt.Errorf("stopProcess: %w", killErr)
+	}
+
+	if err := os.Remove(pidPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Warn().Err(err).Str("pidFile", pidPath).Msg("Failed to remove pidfile")
 	}
 
 	log.Info().Str("pidFile", pidPath).Msg("Successfully stopped process")
