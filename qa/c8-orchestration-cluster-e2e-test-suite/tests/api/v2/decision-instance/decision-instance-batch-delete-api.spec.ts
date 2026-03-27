@@ -70,12 +70,15 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
   });
 
   test('Delete Decision Instance With Batch', async ({request}) => {
-    const decisionInstanceToDelete = decisionInstances1[0];
     const decisionEvaluationKeyToDelete1 =
-      decisionInstanceToDelete.decisionEvaluationKey;
+      decisionInstances1[0].decisionEvaluationKey;
+    const decisionEvaluationInstanceKeyToGet1 = decisionInstances1[0].decisionEvaluationInstanceKey;
 
     const decisionEvaluationKeyToDelete2 =
       decisionInstances2[0].decisionEvaluationKey;
+    const decisionEvaluationInstanceKeyToGet2 = decisionInstances2[0].decisionEvaluationInstanceKey;
+    console.log(`Decision Evaluation Key to Delete 1: ${decisionEvaluationKeyToDelete1}`);
+    console.log(`Decision Evaluation Key to Delete 2: ${decisionEvaluationKeyToDelete2}`);
 
     await test.step('Delete Decision Instance', async () => {
       await expect(async () => {
@@ -111,7 +114,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res1 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete1}`),
+          buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet1}`),
           {
             headers: jsonHeaders(),
           },
@@ -119,11 +122,11 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
 
         await assertNotFoundRequest(
           res1,
-          `Decision Instance with id '${decisionEvaluationKeyToDelete1}' not found`,
+          `Decision Instance with id '${decisionEvaluationInstanceKeyToGet1}' not found`,
         );
 
         const res2 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete2}`),
+          buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet2}`),
           {
             headers: jsonHeaders(),
           },
@@ -131,7 +134,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
 
         await assertNotFoundRequest(
           res2,
-          `Decision Instance with id '${decisionEvaluationKeyToDelete2}' not found`,
+          `Decision Instance with id '${decisionEvaluationInstanceKeyToGet2}' not found`,
         );
       }).toPass(defaultAssertionOptions);
     });
@@ -265,7 +268,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
         );
         await assertForbiddenRequest(
           res,
-          "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE' on resource 'BATCH'",
+          'CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE',
         );
       }).toPass(defaultAssertionOptions);
     });

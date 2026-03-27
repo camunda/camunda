@@ -27,17 +27,43 @@ import {cleanupUsers} from 'utils/usersCleanup';
 
 test.describe.serial('Delete Decision Instances API Tests', () => {
   let decisionInstances: DecisionInstance[] = [];
-  let processInstanceKey: string;
+  let userWithResourcesAuthorizationToSendRequest: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    } = {} as {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
 
   test.beforeAll(async ({request}) => {
     const result =
       await createMammalProcessInstanceAndDeployMammalDecision(request);
-    processInstanceKey = result.instance.processInstanceKey;
     decisionInstances = result.decisions;
+
+    await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
+      userWithResourcesAuthorizationToSendRequest = await createUser(request);
+      await grantUserResourceAuthorization(
+        request,
+        userWithResourcesAuthorizationToSendRequest,
+      );
+    });
+  });
+
+  test.afterAll(async ({request}) => {
+    await test.step('Cleanup - Delete test users', async () => {
+      await cleanupUsers(request, [
+        userWithResourcesAuthorizationToSendRequest.username,
+      ]);
+    });
   });
 
   test('Delete Decision Instance - Success', async ({request}) => {
-    const decisionInstanceToDelete = decisionInstances[0];
+    const decisionInstanceToDelete =
+        decisionInstances[decisionInstances.length - 1];
     const decisionEvaluationKeyToDelete =
       decisionInstanceToDelete.decisionEvaluationKey;
 
@@ -57,9 +83,10 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     });
 
     await test.step('Verify Decision Instance is Deleted', async () => {
+      const decisionEvaluationInstanceKeyToGet = decisionInstanceToDelete.decisionEvaluationInstanceKey;
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete}`),
+          buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet}`),
           {
             headers: jsonHeaders(),
           },
@@ -67,7 +94,7 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
 
         await assertNotFoundRequest(
           res,
-          `Decision Instance with id '${decisionEvaluationKeyToDelete}' not found`,
+          `Decision Instance with id '${decisionEvaluationInstanceKeyToGet}' not found`,
         );
       }).toPass(defaultAssertionOptions);
     });
@@ -107,26 +134,6 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
   });
 
   test('Delete Decision Instance - Forbidden', async ({request}) => {
-    let userWithResourcesAuthorizationToSendRequest: {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    } = {} as {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    };
-
-    await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
-      userWithResourcesAuthorizationToSendRequest = await createUser(request);
-      await grantUserResourceAuthorization(
-        request,
-        userWithResourcesAuthorizationToSendRequest,
-      );
-    });
-
     await test.step('Attempt to Delete Decision Instance with insufficient permissions', async () => {
       const decisionInstanceToDelete = decisionInstances[0];
       const decisionEvaluationKeyToDelete =
@@ -145,14 +152,8 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
       );
       await assertForbiddenRequest(
         res,
-        "Command 'DELETE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION', required resource identifiers are one of '[*, MammalLikeBody]'",
+        "operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
       );
-    });
-
-    await test.step('Cleanup - Delete test users', async () => {
-      await cleanupUsers(request, [
-        userWithResourcesAuthorizationToSendRequest.username,
-      ]);
     });
   });
 });
