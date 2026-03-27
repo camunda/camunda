@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-identity_unified_architecture" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Identity Unification Architecture | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-49865/identity_unified_architecture/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Identity Unification Architecture | Camunda Platform"><meta data-rh="true" name="description" content="IMPORTANT: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models. The architecture is subject to change as we iterate on the design and gather feedback from stakeholders."><meta data-rh="true" property="og:description" content="IMPORTANT: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models. The architecture is subject to change as we iterate on the design and gather feedback from stakeholders."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-49865/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-49865/identity_unified_architecture/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49865/identity_unified_architecture/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49865/identity_unified_architecture/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Identity Unification Architecture","item":"https://camunda.github.io/camunda/pr-preview/pr-49865/identity_unified_architecture"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-49865/assets/css/styles.9181a4df.css">
+<script src="/camunda/pr-preview/pr-49865/assets/js/runtime~main.7b419118.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49865/assets/js/main.c61a251d.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-49865/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-49865/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-49865/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-49865/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/"><span title="Camunda Platform Developer Documentation" class="linkLabel_WmDU">Camunda Platform Developer Documentation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/collaboration-guidelines/"><span title="Collaboration Guidelines" class="linkLabel_WmDU">Collaboration Guidelines</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/ci/"><span title="CI &amp; Automation" class="linkLabel_WmDU">CI &amp; Automation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/ci-runbooks/"><span title="CI Runbooks" class="linkLabel_WmDU">CI Runbooks</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/infrastructure-services/"><span title="Infrastructure Services" class="linkLabel_WmDU">Infrastructure Services</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/renovate-pr-handling/"><span title="Renovate PR Handling" class="linkLabel_WmDU">Renovate PR Handling</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-49865/release/"><span title="Release Process" class="linkLabel_WmDU">Release Process</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/camunda/pr-preview/pr-49865/identity_unified_architecture/"><span title="Identity Unification Architecture" class="linkLabel_WmDU">Identity Unification Architecture</span></a></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/camunda/pr-preview/pr-49865/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Identity Unification Architecture</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Identity Unification Architecture</h1></header>
+<p><strong>IMPORTANT</strong>: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models. The architecture is subject to change as we iterate on the design and gather feedback from stakeholders.</p>
+<hr>
+<h1>1. Introduction and goals</h1>
+<p>This document describes the planned Unified Identity Architecture for Camunda Hub and Orchestration Clusters in an arc42-style structure. It:</p>
+<ul>
+<li class="">Summarizes the current identity architecture across Camunda platform components (OC Identity, Management Identity, SaaS Auth0).</li>
+<li class="">Proposes a target architecture with a single identity plane, implemented as a hexagonal library reused in Hub and Orchestration Clusters.</li>
+<li class="">Shows how the architecture supports multiple engines per cluster and multi-tenancy.</li>
+<li class="">Emphasizes that standalone Orchestration Cluster (without Hub) remains a first-class deployment option.</li>
+<li class="">Outlines how a single shared frontend and pluggable backends (persistence, OC command creation, etc.) fit into the design.</li>
+</ul>
+<hr>
+<h1>2. Current identity architecture (Camunda platform today)</h1>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="21-identity-components">2.1 Identity components<a href="#21-identity-components" class="hash-link" aria-label="Direct link to 2.1 Identity components" title="Direct link to 2.1 Identity components" translate="no">​</a></h2>
+<p>Today identity responsibilities are split across several components:</p>
+<ul>
+<li class="">
+<p><strong>Orchestration Cluster Identity (OC Identity)</strong></p>
+<ul>
+<li class="">Embedded into the Orchestration Cluster runtime.</li>
+<li class="">Manages runtime authentication and fine-grained authorizations (process definitions, instances, tasks, tenants, cluster APIs) for Zeebe, Operate, Tasklist, and OC APIs.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Management Identity</strong></p>
+<ul>
+<li class="">Separate service used to control access to Web Modeler, Console, and Optimize and other management-plane functions in earlier releases.</li>
+<li class="">Uses Keycloak or an external OIDC provider plus its own SQL database in self-managed deployments (see existing Management Identity arc42 docs).</li>
+</ul>
+</li>
+<li class="">
+<p><strong>SaaS Auth0 tenant (Console / Hub)</strong></p>
+<ul>
+<li class="">In SaaS today, Console and other management-side UIs use a Camunda-operated Auth0 tenant as their IdP/broker.</li>
+<li class="">From the target-architecture perspective, this is an internal broker/IdP implementation detail, not part of the long-term reference model.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Customer Enterprise IdPs</strong></p>
+<ul>
+<li class="">In self-managed and in the target state, the Enterprise IdP is always the customer’s IdP (Entra, Okta, Keycloak, etc.), integrated via standard OIDC.</li>
+<li class="">SAML is supported via Keycloak.</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="22-current-high-level-structure">2.2 Current high-level structure<a href="#22-current-high-level-structure" class="hash-link" aria-label="Direct link to 2.2 Current high-level structure" title="Direct link to 2.2 Current high-level structure" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="221-saas">2.2.1 SaaS<a href="#221-saas" class="hash-link" aria-label="Direct link to 2.2.1 SaaS" title="Direct link to 2.2.1 SaaS" translate="no">​</a></h3>
+<!-- -->
+<p>In SaaS today:</p>
+<ul>
+<li class="">Console and Web Modeler authenticate users against a Camunda-managed Auth0 tenant, which acts as the IdP/broker for all SaaS tenants.</li>
+<li class="">OC Identity in each Orchestration Cluster also uses Auth0 as its OIDC IdP, applying runtime authorization for Operate, Tasklist, and cluster APIs.</li>
+<li class="">Auth0 either federates to the customer Enterprise IdP or manages user accounts directly, depending on tenant configuration. The concrete integration code lives in the respective SaaS backends (Console/Hub services and OC Identity OIDC client configuration), which use standard OAuth2/OIDC client libraries to communicate with Auth0.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="222-self-managed">2.2.2 Self-managed<a href="#222-self-managed" class="hash-link" aria-label="Direct link to 2.2.2 Self-managed" title="Direct link to 2.2.2 Self-managed" translate="no">​</a></h3>
+<!-- -->
+<p>In Self-managed today:</p>
+<ul>
+<li class="">Console, Web Modeler, and Optimize delegate authentication and authorization to Management Identity, which in turn integrates with the customer Enterprise IdP via OIDC.</li>
+<li class="">OC Identity is embedded into each Orchestration Cluster and directly integrates with the same Enterprise IdP; it handles runtime authentication and fine-grained authorizations for Operate, Tasklist, and the cluster APIs.</li>
+<li class="">This results in two identity silos (Management Identity vs OC Identity) that both depend on the Enterprise IdP but use different models and configuration surfaces.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="23-limitations-and-motivation-for-change">2.3 Limitations and motivation for change<a href="#23-limitations-and-motivation-for-change" class="hash-link" aria-label="Direct link to 2.3 Limitations and motivation for change" title="Direct link to 2.3 Limitations and motivation for change" translate="no">​</a></h2>
+<p>Based on the target-architecture appendix and identity roadmap, the current setup has several issues:</p>
+<ul>
+<li class="">Split identity<!-- -->
+<ul>
+<li class="">Separate models and configuration for Management Identity vs OC Identity.</li>
+<li class="">SaaS and self-managed use different stacks (Auth0 vs direct IdP).</li>
+</ul>
+</li>
+<li class="">SaaS vs self-managed parity gaps<!-- -->
+<ul>
+<li class="">Capabilities such as mapping rules, tenants, and fine-grained RBAC/ABAC differ or are missing depending on deployment.</li>
+</ul>
+</li>
+<li class="">Manual lifecycle and configuration<!-- -->
+<ul>
+<li class="">Joiner/mover/leaver flows are not fully automated from the customer’s IdP/HR system.</li>
+<li class="">Tenants, roles, and mappings are often configured by hand in UIs.</li>
+</ul>
+</li>
+<li class="">Limited observability and migration tooling<!-- -->
+<ul>
+<li class="">Identity migrations (e.g. Management Identity → unified plane) and policy changes are fragile, not first-class “jobs”.</li>
+<li class="">It is hard to see and debug identity health end to end.</li>
+</ul>
+</li>
+</ul>
+<p>These limitations motivate a unified identity plane with consistent semantics and tooling across Hub and all clusters, including multi-engine and multi-tenant scenarios.</p>
+<hr>
+<h1>3. Solution strategy: unified identity plane and library</h1>
+<p>The target architecture introduces one consistent identity and policy model shared between Hub and all Orchestration Clusters:</p>
+<ul>
+<li class="">Hub Identity &amp; Policy<!-- -->
+<ul>
+<li class="">Source of Truth (SoT) for users, groups, roles, tenants, mapping rules, and authorizations for all clusters and Hub apps.</li>
+</ul>
+</li>
+<li class="">OC Identity<!-- -->
+<ul>
+<li class="">Per-cluster projection and enforcement of that policy, optimized for runtime access checks, and aware of multiple engines/tenants per cluster.</li>
+</ul>
+</li>
+<li class="">Single identity plane for all consumers<!-- -->
+<ul>
+<li class="">Web UIs, user apps, workers, and integrations are all just API clients authenticated by the Enterprise IdP and authorized against this unified policy model.</li>
+</ul>
+</li>
+</ul>
+<p>Technically, this is implemented as a pluggable identity/security library:</p>
+<ul>
+<li class="">Embedded into Hub and Orchestration Cluster.</li>
+<li class="">Exposes Authentication (OIDC/SAML) and Authorization (RBAC/ABAC) capabilities via well-defined SPIs.</li>
+<li class="">Reuses the host application’s existing storage and infrastructure via SPI interfaces (no new standalone database or service).</li>
+</ul>
+<p>Key design principles (selected):</p>
+<ul>
+<li class="">One identity plane for Hub and OC, with Hub as policy SoT whenever present.</li>
+<li class="">SaaS / self-managed parity: same concepts (tenants, mapping rules, fine‑grained permissions, BYO IdP) in both deployment models.</li>
+<li class="">Hexagonal architecture: all persistence, messaging, OC command creation, and engine‑level wiring are behind interfaces; default implementations can be swapped or replaced entirely.</li>
+<li class="">IdP-agnostic: only relies on OIDC and SAML standards, so any compliant IdP can integrate.</li>
+<li class="">Automated lifecycle and migrations: IdP claim mapping and outbox-based policy replication, with idempotent and observable migrations.</li>
+<li class="">Standalone OC support: OC can act as the top-level policy authority when Hub is absent, mirroring the fallback topologies in existing docs.</li>
+</ul>
+<hr>
+<h1>4. Target system context</h1>
+<p>This section describes the unified identity system at a high level, showing how the new library integrates into the platform across two supported deployment modes. The diagrams illustrate key components (Hub, Orchestration Clusters, identity UIs, infrastructure) and their relationships.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="41-full-mode-hub--oc">4.1 Full mode (Hub + OC)<a href="#41-full-mode-hub--oc" class="hash-link" aria-label="Direct link to 4.1 Full mode (Hub + OC)" title="Direct link to 4.1 Full mode (Hub + OC)" translate="no">​</a></h2>
+<p>In full mode, the platform runs with both Hub (management/control plane) and Orchestration Cluster (execution plane). Both use the same identity model and the same Security Gateway Framework.</p>
+<p>Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated via the outbox pattern to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy.</p>
+<!-- -->
+<ul>
+<li class="">Hub and each OC use the same Security Gateway Framework as the shared identity and policy engine.</li>
+<li class="">Hub is the single source of truth for all policy and configuration.</li>
+<li class="">Hub propagates policy changes via the outbox pattern to OC, which maintains a local projection and handles runtime enforcement per engine/tenant.</li>
+<li class="">Existing infrastructure is reused, no new databases or services are introduced.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="42-oc-only-mode-standalone-oc">4.2 OC-only mode (standalone OC)<a href="#42-oc-only-mode-standalone-oc" class="hash-link" aria-label="Direct link to 4.2 OC-only mode (standalone OC)" title="Direct link to 4.2 OC-only mode (standalone OC)" translate="no">​</a></h2>
+<p>In OC-only mode, Hub is not present. The Orchestration Cluster becomes the local source of truth for all policy and configuration. OC is a first-class deployment option and acts as top-level policy authority for its engines. This mode is useful for development environments and self-contained production scenarios.</p>
+<p>Configuration flows locally: OC manages all policies directly, and the Admin UI in OC runs in read-write mode, allowing full policy authoring and management. Configuration then propagates from OC to individual engines.</p>
+<!-- -->
+<ul>
+<li class="">OC is the single source of truth for all policy and configuration.</li>
+<li class="">The same Security Gateway Framework is used but configured for standalone operation.</li>
+<li class="">Existing infrastructure is reused, no new databases or services are introduced.</li>
+</ul>
+<hr>
+<h1>5. Building block view (target)</h1>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="51-high-level-components">5.1 High-level components<a href="#51-high-level-components" class="hash-link" aria-label="Direct link to 5.1 High-level components" title="Direct link to 5.1 High-level components" translate="no">​</a></h2>
+<p>The following diagrams show the internal structure of Hub and Orchestration Cluster, including how Security Gateway Framework instance connects to frontend applications, infrastructure, and (in multi-engine scenarios) individual engine instances.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="511-full-mode-hub--oc">5.1.1 Full mode (Hub + OC)<a href="#511-full-mode-hub--oc" class="hash-link" aria-label="Direct link to 5.1.1 Full mode (Hub + OC)" title="Direct link to 5.1.1 Full mode (Hub + OC)" translate="no">​</a></h3>
+<!-- -->
+<p>Key building blocks in full mode:</p>
+<ul>
+<li class="">Console, Web Modeler, Admin UI (read-write): Frontend applications in the management plane. The Admin UI here allows full policy authoring for all configurable layers (Hub, OCs, engines, tenants).</li>
+<li class="">Hub + Security Gateway Framework: Central source of truth. Manages all policy configuration for all clusters, OCs, and engines. All policy changes originate here.</li>
+<li class="">Operate, Tasklist, Admin UI (read-only): Runtime frontends in the execution plane. The Admin UI shows the cluster-local projection of Hub policy; configuration is read-only.</li>
+<li class="">OC + Security Gateway Framework: Per-cluster policy enforcement and projection layer. Receives policy snapshots from Hub via the outbox pattern. Propagates scoped policy views to individual engines.</li>
+<li class="">Engine instances (Default Engine, Engine2 optional): Optional multi-engine support. Each engine receives its scoped projection of cluster policy from OC. No direct Hub connection.</li>
+<li class="">Security Engine Framework: Engine-specific policy enforcement layer.</li>
+<li class="">Infrastructure (IDPs, DBs): Shared existing persistence and IdP connectivity for authentication and authorization across all layers.</li>
+</ul>
+<p>Configuration propagation chain: Hub → OC → Engine.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="512-oc-only-mode-standalone-oc">5.1.2 OC-only mode (standalone OC)<a href="#512-oc-only-mode-standalone-oc" class="hash-link" aria-label="Direct link to 5.1.2 OC-only mode (standalone OC)" title="Direct link to 5.1.2 OC-only mode (standalone OC)" translate="no">​</a></h3>
+<!-- -->
+<p>Key building blocks in OC-only mode:</p>
+<ul>
+<li class="">Operate, Tasklist, Admin UI (read-write): Runtime frontends that interact directly with OC. The Admin UI allows full policy authoring (no Hub restrictions).</li>
+<li class="">OC + Security Gateway Framework: Local source of truth. Manages all policy and authorization directly without Hub coordination. All policy changes originate here.</li>
+<li class="">Engine instances (Default Engine, Engine2 optional): Each engine receives its scoped projection of local OC policy. OC is the single source of all policy.</li>
+<li class="">Security Engine Framework: Engine-specific policy enforcement layer.</li>
+<li class="">Infrastructure (IDPs, DBs): Local persistence and IdP connectivity; no cross-cluster replication or Hub involvement.</li>
+</ul>
+<p>Configuration propagation chain: OC → Engine.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="52-outbox-based-policy-propagation-hub--orchestration-clusters">5.2 Outbox-based policy propagation (Hub → Orchestration Clusters)<a href="#52-outbox-based-policy-propagation-hub--orchestration-clusters" class="hash-link" aria-label="Direct link to 5.2 Outbox-based policy propagation (Hub → Orchestration Clusters)" title="Direct link to 5.2 Outbox-based policy propagation (Hub → Orchestration Clusters)" translate="no">​</a></h2>
+<p>The Security Gateway Framework uses an outbox pattern to propagate policy changes from Hub (policy SoT) to each Orchestration Cluster in a reliable, observable, and idempotent way.</p>
+<p><strong>Snapshot vs. incremental diff:</strong> Sending a full snapshot on every change would be unnecessarily expensive at scale. The propagation therefore follows a two-phase approach:</p>
+<ul>
+<li class=""><strong>Initial sync (full snapshot):</strong> When an OC connects for the first time (or after a reset), Hub sends a complete <code>POLICY_SNAPSHOT</code> — the full current state of tenants, roles, groups, mapping rules, principals, and authorizations for that cluster.</li>
+<li class=""><strong>Subsequent updates (incremental diff):</strong> After the initial sync, Hub sends only the changed entities as a <code>POLICY_DIFF</code> event. The OC applies the diff on top of its locally cached state. This keeps payloads small and propagation fast.</li>
+</ul>
+<p>If an OC falls behind (e.g. due to a gap in its applied version sequence), it can request a full re-sync from Hub to recover a consistent baseline.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="component-view">Component view<a href="#component-view" class="hash-link" aria-label="Direct link to Component view" title="Direct link to Component view" translate="no">​</a></h3>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="521-responsibilities-and-guarantees">5.2.1 Responsibilities and guarantees<a href="#521-responsibilities-and-guarantees" class="hash-link" aria-label="Direct link to 5.2.1 Responsibilities and guarantees" title="Direct link to 5.2.1 Responsibilities and guarantees" translate="no">​</a></h3>
+<ul>
+<li class="">Hub Security Gateway Framework<!-- -->
+<ul>
+<li class="">Accepts policy changes via UI/API.</li>
+<li class="">Writes a <code>PolicyVersion</code> and a corresponding <code>OutboxEvent</code> (<code>POLICY_SNAPSHOT</code> or <code>POLICY_DIFF</code>, status = PENDING) in the same transaction.</li>
+<li class="">Tracks per-OC <code>last_acked_version</code> to decide whether to send a diff or fall back to a full snapshot.</li>
+</ul>
+</li>
+<li class="">Outbox Dispatcher<!-- -->
+<ul>
+<li class="">Periodically selects due PENDING events.</li>
+<li class="">Loads the corresponding <code>PolicyVersion</code> and either prepares the full snapshot or computes the diff against the OC&#x27;s last acknowledged version.<!-- -->
+<ul>
+<li class="">The diff contains only the changed entities. (But the full entity, not just updated fields)</li>
+</ul>
+</li>
+<li class="">Calls each OC&#x27;s admin endpoint (e.g. <code>POST /identity/policies/apply</code>) with the snapshot or diff payload.</li>
+<li class="">Updates <code>OutboxEvent.status</code> to DELIVERED or FAILED and manages retries via <code>attempts</code> and <code>next_attempt_at</code>.</li>
+</ul>
+</li>
+<li class="">OC Security Gateway Framework<!-- -->
+<ul>
+<li class="">Tracks <code>last_applied_version</code> locally.</li>
+<li class="">For <code>POLICY_SNAPSHOT</code>: replaces the local projection entirely and updates <code>last_applied_version</code>.</li>
+<li class="">For <code>POLICY_DIFF</code>: applies the delta on top of local state; rejects and requests a re-sync if the diff&#x27;s <code>base_version</code> does not match <code>last_applied_version</code>.</li>
+<li class="">Treats every apply as idempotent per <code>policyVersionId</code>.</li>
+<li class="">Returns an ACK (including <code>last_applied_version</code>) to the dispatcher.</li>
+</ul>
+</li>
+</ul>
+<p>This pattern decouples policy authoring (Hub) from policy enforcement (OCs), ensures at-least-once delivery, keeps incremental payloads small, and provides clear observability hooks (per-cluster status, last error, retry attempts) for identity operations.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="522-hub-data-model-simplified">5.2.2 Hub data model (simplified)<a href="#522-hub-data-model-simplified" class="hash-link" aria-label="Direct link to 5.2.2 Hub data model (simplified)" title="Direct link to 5.2.2 Hub data model (simplified)" translate="no">​</a></h3>
+<p>Conceptually, Hub maintains:</p>
+<ul>
+<li class=""><code>PolicyVersion</code>
+<ul>
+<li class="">One row per cluster and version of the desired policy.</li>
+<li class="">For snapshot events: captures the full state of tenants, roles, groups, mapping rules, principals, and authorizations for that cluster.</li>
+<li class="">For diff events: captures only the changed entities relative to the previous version (<code>base_version</code>).</li>
+</ul>
+</li>
+<li class=""><code>OutboxEvent</code>
+<ul>
+<li class="">One row per policy delivery attempt to a specific cluster.</li>
+<li class=""><code>event_type</code> distinguishes <code>POLICY_SNAPSHOT</code> (initial / re-sync) from <code>POLICY_DIFF</code> (incremental).</li>
+<li class="">Drives asynchronous delivery and retry without coupling Hub writes to OC availability.</li>
+</ul>
+</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">PolicyVersion</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  id                UUID</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  cluster_id        string</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  engine_id         string</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  version_number    int</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  base_version      int      -- null for snapshots; previous version number for diffs</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  created_at        timestamp</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  created_by        string</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ...               -- full state (snapshot) or changed entities only (diff)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">OutboxEvent</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  id                UUID</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  cluster_id        string</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  engine_id         string</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  policy_version_id UUID</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  event_type        string   -- &#x27;POLICY_SNAPSHOT&#x27; | &#x27;POLICY_DIFF&#x27;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  status            string   -- &#x27;PENDING&#x27; | &#x27;DELIVERED&#x27; | &#x27;FAILED&#x27;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  attempts          int</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  next_attempt_at   timestamp</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  last_error        text</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  created_at        timestamp</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  updated_at        timestamp</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="523-open-questions">5.2.3 Open Questions<a href="#523-open-questions" class="hash-link" aria-label="Direct link to 5.2.3 Open Questions" title="Direct link to 5.2.3 Open Questions" translate="no">​</a></h3>
+<p>Those questions can maybe also be addressed later in the project:</p>
+<ul>
+<li class="">How will the Hub know which cluster it should talk to?</li>
+<li class="">Who will initiate the communication between Hub and OCs? Does OC know about Hub?</li>
+<li class="">Should Hub or OC keep track of the last policy version applied?</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="53-security-gateway-framework--hexagonal-architecture">5.3 Security Gateway Framework – hexagonal architecture<a href="#53-security-gateway-framework--hexagonal-architecture" class="hash-link" aria-label="Direct link to 5.3 Security Gateway Framework – hexagonal architecture" title="Direct link to 5.3 Security Gateway Framework – hexagonal architecture" translate="no">​</a></h2>
+<p>The <strong>Security Gateway Framework</strong> is a <strong>hexagonal (ports and adapters)</strong> library. Its core domain never imports a concrete database class, OIDC library, or Zeebe API — all external dependencies are hidden behind port interfaces that the host application (Hub, OC) wires in.</p>
+<p><strong>Key rule: all port interfaces — both inbound and outbound — are defined inside the library core.</strong> The host application depends on the library, never the other way around.</p>
+<ul>
+<li class=""><strong>Inbound (driving) side:</strong> A Spring MVC controller or security filter lives in the host application. It imports and calls an inbound port interface (e.g. <code>PolicyService</code>) from the library. The domain service inside the library implements that interface.</li>
+<li class=""><strong>Outbound (driven) side:</strong> The domain service calls an outbound port interface (e.g. <code>PolicyRepository</code>) defined in the library. The host application (or a default adapter module) provides the concrete implementation.</li>
+</ul>
+<p><em><strong>WIP</strong></em>: The following diagram is a work-in-progress and more an example than the actual architecture.</p>
+<!-- -->
+<p><strong>Outbound port responsibilities and example implementations:</strong></p>
+<table><thead><tr><th>Port interface</th><th>Responsibility</th><th>Example implementations</th></tr></thead><tbody><tr><td><code>PolicyRepository</code></td><td>Persist and query tenants, roles, mapping rules, principals, authorizations</td><td>Hub: Spring Data JPA; OC: RDBMS adapter, Elasticsearch adapter</td></tr><tr><td><code>OutboxPort</code></td><td>Write outbox events transactionally alongside business changes</td><td>SQL transactional outbox (same DB as policy store)</td></tr><tr><td><code>IdpPort</code></td><td>Resolve IdP metadata, validate tokens, fetch claim mappings</td><td>OIDC client (Keycloak, Entra, Auth0), SAML adapter</td></tr><tr><td><code>OcCommandPort</code></td><td>Emit identity persistence commands so OC stores the identity model through its command path</td><td>OC identity command adapter backed by engine command handling; no-op stub in Hub</td></tr><tr><td><code>FeatureTogglePort</code></td><td>Gate capabilities (outbox publishing, multi-tenancy, shadow-mode evaluation)</td><td>Spring <code>@ConfigurationProperties</code>, Unleash, LaunchDarkly</td></tr></tbody></table>
+<p>This design guarantees that <strong>swapping a database, replacing the IdP client, or providing a custom command backend requires only a new adapter class</strong> — no changes to the domain core.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="54-single-shared-admin-ui">5.4 Single shared Admin UI<a href="#54-single-shared-admin-ui" class="hash-link" aria-label="Direct link to 5.4 Single shared Admin UI" title="Direct link to 5.4 Single shared Admin UI" translate="no">​</a></h2>
+<p>The target frontend approach is a single Admin UI package reused by Hub and OC, with behavior controlled by configuration (e.g. Hub-managed vs standalone OC) and feature toggles.</p>
+<p>Read-write vs read-only modes:</p>
+<ul>
+<li class="">Hub (read-write): The UI exposes full policy authoring (tenants, mapping rules, fine‑grained permissions) for all clusters. All policy changes originate here and propagate downward via the outbox pattern.</li>
+<li class="">OC with Hub present (read-only / diagnostic): The same UI runs in read-only mode, showing the cluster-local projection of Hub policy. Users can inspect current policy, health, and last-applied version, but cannot make changes (policy is authored in Hub).</li>
+<li class="">Standalone OC (read-write): The UI enables direct local policy management; Hub integration and outbox features are disabled by configuration. OC becomes the full policy editor.</li>
+</ul>
+<!-- -->
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="55-multi-engine-support">5.5 Multi-engine support<a href="#55-multi-engine-support" class="hash-link" aria-label="Direct link to 5.5 Multi-engine support" title="Direct link to 5.5 Multi-engine support" translate="no">​</a></h2>
+<p>The unified identity plane supports multiple engines per Orchestration Cluster in both deployment modes:</p>
+<ul>
+<li class="">Full mode (Hub + OC): Hub as SoT defines cluster-scoped policies (roles, mappings, tenants, authorizations), OC projects them, and engines consume scoped views.</li>
+<li class="">OC-only mode: OC is SoT for local policies and propagates scoped views directly to engines.</li>
+<li class="">In both modes: Engines do not define their own identity models.</li>
+</ul>
+<!-- -->
+<ul>
+<li class="">In full mode, Hub is the single SoT; policy flows downward: Hub → all OCs → all Engines.</li>
+<li class="">OC identity instances maintain cluster-local projections and handle engine-level scoping.</li>
+<li class="">Engines consume the cluster-level projection; they do not define their own identity models and cannot override OC policy.</li>
+<li class="">In OC-only mode, the same projection model applies with local flow: OC → Engines.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="56-multi-tenancy-support">5.6 Multi-tenancy support<a href="#56-multi-tenancy-support" class="hash-link" aria-label="Direct link to 5.6 Multi-tenancy support" title="Direct link to 5.6 Multi-tenancy support" translate="no">​</a></h2>
+<p>Multi-tenancy is a first-class concern in the policy model. Tenant configuration is authored once in Hub and propagated top-down to OC and then to engines. Each layer maintains tenant-aware roles, mapping rules, and authorizations.</p>
+<!-- -->
+<p>On each request, the Security Gateway Framework:</p>
+<ol>
+<li class="">Resolves the tenant context from token claims and/or headers.</li>
+<li class="">Loads the tenant-specific policy view (roles, mappings, authorizations).</li>
+<li class="">Enforces permissions within the tenant boundary, preventing cross-tenant data access.</li>
+</ol>
+<hr>
+<h1>6. Runtime view (selected scenarios)</h1>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="61-user-login-hub--oc">6.1 User login (Hub / OC)<a href="#61-user-login-hub--oc" class="hash-link" aria-label="Direct link to 6.1 User login (Hub / OC)" title="Direct link to 6.1 User login (Hub / OC)" translate="no">​</a></h2>
+<p>High-level behavior (independent of the specific IdP):</p>
+<ol>
+<li class="">Browser is redirected to the Enterprise IdP (or Auth0 broker in current SaaS) to authenticate.</li>
+<li class="">The Security Gateway Framework validates the token/assertion, derives the principal and IdP claims.</li>
+<li class="">Claims are matched against mapping rules to determine roles, groups, and tenant assignments.</li>
+<li class="">A session is established; subsequent requests carry an access token with tenant and role context.</li>
+</ol>
+<!-- -->
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="62-hub--cluster-policy-replication-outbox-pattern">6.2 Hub → cluster policy replication (outbox pattern)<a href="#62-hub--cluster-policy-replication-outbox-pattern" class="hash-link" aria-label="Direct link to 6.2 Hub → cluster policy replication (outbox pattern)" title="Direct link to 6.2 Hub → cluster policy replication (outbox pattern)" translate="no">​</a></h2>
+<!-- -->
+<p>This follows the outbox pattern described in the unified identity target architecture, including idempotence per policyVersionId and explicit status transitions.</p>
+<p>In the library, this scenario is expressed via the Outbox SPI and Policy Apply inbound adapter.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="63-runtime-access-cluster-apis-multi-tenant-multi-engine">6.3 Runtime access: cluster APIs (multi-tenant, multi-engine)<a href="#63-runtime-access-cluster-apis-multi-tenant-multi-engine" class="hash-link" aria-label="Direct link to 6.3 Runtime access: cluster APIs (multi-tenant, multi-engine)" title="Direct link to 6.3 Runtime access: cluster APIs (multi-tenant, multi-engine)" translate="no">​</a></h2>
+<p>At runtime, both Web UIs and API clients are authenticated by the Enterprise IdP and authorized by OC Identity. The same model applies whether the call is targeting a single-engine cluster or a cluster with multiple engines; the tenant and permission context are evaluated once per request, then enforced consistently in all engines involved.</p>
+<!-- -->
+<hr>
+<h1>7. Deployment view</h1>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="71-saas-hub--oc-with-security-gateway-framework">7.1 SaaS: Hub + OC with Security Gateway Framework<a href="#71-saas-hub--oc-with-security-gateway-framework" class="hash-link" aria-label="Direct link to 7.1 SaaS: Hub + OC with Security Gateway Framework" title="Direct link to 7.1 SaaS: Hub + OC with Security Gateway Framework" translate="no">​</a></h2>
+<!-- -->
+<p>Note: Auth0 is an internal IdP/broker used in the current SaaS implementation. It is an implementation detail, not part of the long-term reference model.</p>
+<p>Highlights:</p>
+<ul>
+<li class="">Hub is the source of truth for all policy. Configuration is authored in Hub and propagated to each OC via the outbox pattern.</li>
+<li class="">Hub and OC both embed the same Security Gateway Framework.</li>
+<li class="">Enterprise IdP is the long-term external SoT for identities; Auth0 is an internal broker in current SaaS.</li>
+<li class="">Policy propagates top-down: Hub → OCs → Engines.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="72-self-managed-hub--oc-with-security-gateway-framework">7.2 Self-managed: Hub + OC with Security Gateway Framework<a href="#72-self-managed-hub--oc-with-security-gateway-framework" class="hash-link" aria-label="Direct link to 7.2 Self-managed: Hub + OC with Security Gateway Framework" title="Direct link to 7.2 Self-managed: Hub + OC with Security Gateway Framework" translate="no">​</a></h2>
+<!-- -->
+<ul>
+<li class="">Same logical model as SaaS: Hub is source of truth, configuration propagates top-down (Hub → OCs → Engines).</li>
+<li class="">All deployment is fully under customer operation.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="73-self-managed-standalone-oc-no-hub">7.3 Self-managed: standalone OC (no Hub)<a href="#73-self-managed-standalone-oc-no-hub" class="hash-link" aria-label="Direct link to 7.3 Self-managed: standalone OC (no Hub)" title="Direct link to 7.3 Self-managed: standalone OC (no Hub)" translate="no">​</a></h2>
+<p>Standalone Orchestration Cluster remains a first-class deployment option, especially for:</p>
+<ul>
+<li class="">Local development (e.g. C8Run).</li>
+<li class="">Simple or embedded production scenarios where Hub is not yet in use.</li>
+</ul>
+<p>In this mode, OC acts as top-level identity and policy authority for its engines; Hub-specific features (cross-cluster policy orchestration) are disabled.</p>
+<!-- -->
+<p>Key points:</p>
+<ul>
+<li class="">OC is the local source of truth for all configuration; no Hub involvement.</li>
+<li class="">Configuration propagates locally: OC → Engines. Admin UI is in full read-write mode.</li>
+<li class="">Same Security Gateway Framework, but configured in internally managed mode (no Hub outbox, no cross-cluster replication).</li>
+<li class="">Policy is edited and stored locally in OC’s persistence (via SPIs).</li>
+</ul>
+<hr>
+<h1>8. Crosscutting concepts (target)</h1>
+<ul>
+<li class="">IdP-agnostic: Any OIDC/SAML IdP integrating via standards (no IdP-specific code in the domain layer).</li>
+<li class="">RBAC + ABAC: Roles and authorizations with optional attribute-based policies (resource attributes, environment conditions).</li>
+<li class="">Multi-tenancy: Tenant-aware identity context propagated from tokens/headers; tenant-specific policy and IdP configuration; outbox filters by tenant.</li>
+<li class="">Lifecycle handling: Principal and tenant assignment are derived from IdP claims and mapping rules; clusters receive derived principals and policies from Hub.</li>
+<li class="">Observability: Identity flows emit metrics, logs, and traces (e.g. authn attempts, authz decisions, outbox propagation delay, health indicators).</li>
+</ul>
+<hr>
+<h1>9. Architecture decisions and open points</h1>
+<p>This unified architecture builds on existing identity arc42 docs and ADRs for OC Identity and Management Identity; those ADRs remain the canonical source for detailed trade-offs. The main new decisions here are:</p>
+<ul>
+<li class="">Use a shared hexagonal Security Gateway Framework with SPIs for persistence, outbox, IdP, OC commands, and (optionally) engine-level integration.</li>
+<li class="">Use Hub as policy SoT whenever present; OC-only deployments are treated as documented first-class modes, not afterthoughts.</li>
+<li class="">Ship a single shared Admin UI package, feature-gated by configuration for Hub vs OC, standalone vs Hub-managed.</li>
+<li class="">Make multi-tenancy and multi-engine support explicit in the core model and diagrams, not side effects.</li>
+</ul>
+<p>Open High Level points (to be refined in separate ADRs):</p>
+<ul>
+<li class="">Exact SPI boundaries for OC/engine command creation.</li>
+<li class="">Migration path from current Auth0-based SaaS setup to “Enterprise IdP as SoT” while keeping Auth0 as a private implementation detail.</li>
+</ul>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="sources">Sources<a href="#sources" class="hash-link" aria-label="Direct link to Sources" title="Direct link to Sources" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://docs.google.com/document/d/1ExLH2KYmz_V7Zq51adzz9c1Yk2s5ZR7ZhhIKwaEcPs0" target="_blank" rel="noopener noreferrer" class="">Unified Identity Target Architecture for Camunda Hub and Orchestration Clusters</a></li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/../docs/monorepo-docs/identity_unified_architecture.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/camunda/pr-preview/pr-49865/release/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Release Process</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#21-identity-components" class="table-of-contents__link toc-highlight">2.1 Identity components</a></li><li><a href="#22-current-high-level-structure" class="table-of-contents__link toc-highlight">2.2 Current high-level structure</a><ul><li><a href="#221-saas" class="table-of-contents__link toc-highlight">2.2.1 SaaS</a></li><li><a href="#222-self-managed" class="table-of-contents__link toc-highlight">2.2.2 Self-managed</a></li></ul></li><li><a href="#23-limitations-and-motivation-for-change" class="table-of-contents__link toc-highlight">2.3 Limitations and motivation for change</a></li><li><a href="#41-full-mode-hub--oc" class="table-of-contents__link toc-highlight">4.1 Full mode (Hub + OC)</a></li><li><a href="#42-oc-only-mode-standalone-oc" class="table-of-contents__link toc-highlight">4.2 OC-only mode (standalone OC)</a></li><li><a href="#51-high-level-components" class="table-of-contents__link toc-highlight">5.1 High-level components</a><ul><li><a href="#511-full-mode-hub--oc" class="table-of-contents__link toc-highlight">5.1.1 Full mode (Hub + OC)</a></li><li><a href="#512-oc-only-mode-standalone-oc" class="table-of-contents__link toc-highlight">5.1.2 OC-only mode (standalone OC)</a></li></ul></li><li><a href="#52-outbox-based-policy-propagation-hub--orchestration-clusters" class="table-of-contents__link toc-highlight">5.2 Outbox-based policy propagation (Hub → Orchestration Clusters)</a><ul><li><a href="#component-view" class="table-of-contents__link toc-highlight">Component view</a></li><li><a href="#521-responsibilities-and-guarantees" class="table-of-contents__link toc-highlight">5.2.1 Responsibilities and guarantees</a></li><li><a href="#522-hub-data-model-simplified" class="table-of-contents__link toc-highlight">5.2.2 Hub data model (simplified)</a></li><li><a href="#523-open-questions" class="table-of-contents__link toc-highlight">5.2.3 Open Questions</a></li></ul></li><li><a href="#53-security-gateway-framework--hexagonal-architecture" class="table-of-contents__link toc-highlight">5.3 Security Gateway Framework – hexagonal architecture</a></li><li><a href="#54-single-shared-admin-ui" class="table-of-contents__link toc-highlight">5.4 Single shared Admin UI</a></li><li><a href="#55-multi-engine-support" class="table-of-contents__link toc-highlight">5.5 Multi-engine support</a></li><li><a href="#56-multi-tenancy-support" class="table-of-contents__link toc-highlight">5.6 Multi-tenancy support</a></li><li><a href="#61-user-login-hub--oc" class="table-of-contents__link toc-highlight">6.1 User login (Hub / OC)</a></li><li><a href="#62-hub--cluster-policy-replication-outbox-pattern" class="table-of-contents__link toc-highlight">6.2 Hub → cluster policy replication (outbox pattern)</a></li><li><a href="#63-runtime-access-cluster-apis-multi-tenant-multi-engine" class="table-of-contents__link toc-highlight">6.3 Runtime access: cluster APIs (multi-tenant, multi-engine)</a></li><li><a href="#71-saas-hub--oc-with-security-gateway-framework" class="table-of-contents__link toc-highlight">7.1 SaaS: Hub + OC with Security Gateway Framework</a></li><li><a href="#72-self-managed-hub--oc-with-security-gateway-framework" class="table-of-contents__link toc-highlight">7.2 Self-managed: Hub + OC with Security Gateway Framework</a></li><li><a href="#73-self-managed-standalone-oc-no-hub" class="table-of-contents__link toc-highlight">7.3 Self-managed: standalone OC (no Hub)</a></li><li><a href="#sources" class="table-of-contents__link toc-highlight">Sources</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
