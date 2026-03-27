@@ -1,0 +1,369 @@
+# description: Tracks stale backport PRs and notifies authors via GitHub comments and Slack.
+#   Runs every 4 hours on weekdays, on manual dispatch, and can be called by other workflows.
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+---
+name: Stale Backport Tracker
+
+on:
+  schedule:
+    # Run every 4 hours during weekday business hours (UTC): 6, 10, 14, 18
+    # First run at 6 AM creates a new message; subsequent runs update it in-place.
+    - cron: '0 6-18/4 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Filter to a specific stable branch (e.g. "stable/8.8"). Leave empty for all.'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Run in dry-run mode (no GitHub comments or labels will be created)'
+        required: false
+        default: true
+        type: boolean
+      notify_slack:
+        description: 'Post results to Slack'
+        required: false
+        default: false
+        type: boolean
+      notify_github:
+        description: 'Add comments to stale backport PRs'
+        required: false
+        default: false
+        type: boolean
+      stale_hours_threshold:
+        description: 'Hours after which a backport PR is considered stale'
+        required: false
+        default: '24'
+        type: string
+      slack_channel_id:
+        description: 'Slack channel ID to post the report to. Required for manual runs — the default #top-monorepo-release channel is only used by the scheduled cron trigger.'
+        required: false
+        default: ''
+        type: string
+      target_backport_pr:
+        description: 'TEST ONLY: restrict GitHub notifications to a single backport PR number (e.g. "39478")'
+        required: false
+        default: ''
+        type: string
+  workflow_call:
+    inputs:
+      target_branch:
+        description: 'Filter to a specific stable branch'
+        required: false
+        default: ''
+        type: string
+      notify_slack:
+        description: 'Post results to Slack'
+        required: false
+        default: true
+        type: boolean
+      notify_github:
+        description: 'Add comments to stale backport PRs'
+        required: false
+        default: false
+        type: boolean
+      stale_hours_threshold:
+        description: 'Hours after which a backport PR is considered stale'
+        required: false
+        default: '24'
+        type: string
+      slack_channel_id:
+        description: 'Slack channel ID to post the report to. Required when notify_slack is true — the default #top-monorepo-release channel is only used by the scheduled cron trigger.'
+        required: false
+        default: ''
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  collect-stale-backports:
+    name: Collect stale backport PRs
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      stale_data: ${{ steps.collect.outputs.stale_data }}
+      has_stale: ${{ steps.collect.outputs.has_stale }}
+      total_stale: ${{ steps.collect.outputs.total_stale }}
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Collect stale backport PRs
+        id: collect
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
+          STALE_HOURS_THRESHOLD: ${{ inputs.stale_hours_threshold || '3' }}
+          TARGET_BRANCH: ${{ inputs.target_branch || '' }}
+        run: |
+          chmod +x .ci/scripts/stale-backport-scripts/collect-stale-backports.sh
+          stale_data=$(.ci/scripts/stale-backport-scripts/collect-stale-backports.sh)
+
+          total_stale=$(echo "$stale_data" | jq '[.[].backport_prs | length] | add // 0')
+          has_stale="false"
+          if [[ "$total_stale" -gt 0 ]]; then
+            has_stale="true"
+          fi
+
+          # Use heredoc delimiter for multi-line JSON output
+          {
+            echo "stale_data<<STALE_EOF"
+            echo "$stale_data"
+            echo "STALE_EOF"
+            echo "has_stale=$has_stale"
+            echo "total_stale=$total_stale"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "📊 Summary: $total_stale stale backport PR(s) found"
+
+  notify-github:
+    name: Notify on GitHub PRs
+    needs: collect-stale-backports
+    if: |
+      needs.collect-stale-backports.outputs.has_stale == 'true' &&
+      (
+        (github.event_name == 'schedule') ||
+        (github.event_name == 'workflow_dispatch' && inputs.notify_github == true) ||
+        (github.event_name == 'workflow_call' && inputs.notify_github == true)
+      )
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+  
+      - name: Checkout repository
+        uses: actions/checkout@v6
+  
+      - name: Notify stale backport PRs
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          NOTIFY_ORIGINAL: "false"
+          TARGET_BACKPORT_PR: ${{ inputs.target_backport_pr || '' }}
+        run: |
+          chmod +x .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
+          stale_data='${{ needs.collect-stale-backports.outputs.stale_data }}'
+          if [[ -n "$TARGET_BACKPORT_PR" ]]; then
+            echo "🎯 Filtering to backport PR #${TARGET_BACKPORT_PR} only"
+            stale_data=$(printf '%s' "$stale_data" | jq --arg pr "$TARGET_BACKPORT_PR" '
+              [ .[] | .backport_prs = (.backport_prs | map(select((.backport_pr_number|tostring) == $pr)))
+                | select((.backport_prs | length) > 0) ]')
+          fi
+          printf '%s' "$stale_data" | \
+            .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
+
+  notify-slack:
+    name: Post Slack report
+    needs: collect-stale-backports
+    if: |
+      (github.event_name == 'schedule') ||
+      (github.event_name == 'workflow_dispatch' && inputs.notify_slack == true && inputs.slack_channel_id != '') ||
+      (github.event_name == 'workflow_call' && inputs.notify_slack == true && inputs.slack_channel_id != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Get Slack secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+             secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_CHANNEL_ID;
+
+      - name: Resolve Slack user IDs
+        id: slack-users
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+        run: |
+          chmod +x .ci/scripts/stale-backport-scripts/resolve-slack-users.sh
+
+          # Extract unique author names from stale data
+          names=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
+            jq '[.[].original_pr_author_name // empty] | unique')
+
+          # Resolve names to Slack user IDs
+          slack_user_map=$(echo "$names" | .ci/scripts/stale-backport-scripts/resolve-slack-users.sh)
+
+          {
+            echo "slack_user_map<<SLACK_MAP_EOF"
+            echo "$slack_user_map"
+            echo "SLACK_MAP_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Format Slack report
+        id: format
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          TARGET_BRANCH: ${{ inputs.target_branch || '' }}
+          REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
+          SLACK_USER_MAP: ${{ steps.slack-users.outputs.slack_user_map }}
+        run: |
+          chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
+          payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
+            .ci/scripts/stale-backport-scripts/format-slack-report.sh)
+
+          {
+            echo "payload<<PAYLOAD_EOF"
+            echo "$payload"
+            echo "PAYLOAD_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing Slack message to update
+        id: find-message
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}
+        run: |
+          # Look for the bot's most recent "Stale Backport PRs" message in the channel (last 24h)
+          oldest=$(date -u -d '24 hours ago' +%s 2>/dev/null || date -u -v-24H +%s)
+          response=$(curl -s \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            "https://slack.com/api/conversations.history?channel=${SLACK_CHANNEL}&oldest=${oldest}&limit=50")
+
+          # Debug: show API status
+          echo "API ok: $(echo "$response" | jq -r '.ok')" >&2
+          echo "API error: $(echo "$response" | jq -r '.error // "none"')" >&2
+          echo "Messages count: $(echo "$response" | jq '[(.messages // [])] | length')" >&2
+
+          # Find the most recent message from this bot containing our marker text
+          message_ts=$(echo "$response" | jq -r '
+            [(.messages // [])[] | select(
+              .bot_id != null and
+              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+            )] | first | .ts // ""')
+
+          if [[ -n "$message_ts" ]]; then
+            echo "Found existing message: $message_ts — will update" >&2
+            echo "message_ts=$message_ts" >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No existing message found — will post new" >&2
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update existing Slack message
+        if: steps.find-message.outputs.found == 'true'
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        continue-on-error: true
+        with:
+          method: chat.update
+          token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          payload: |
+            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}"
+            ts: "${{ steps.find-message.outputs.message_ts }}"
+            text: "Stale backport report"
+            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+
+      - name: Post new Slack message
+        if: steps.find-message.outputs.found != 'true'
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        continue-on-error: true
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          payload: |
+            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}"
+            text: "Stale backport report"
+            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+
+      - name: Log notification status
+        if: always()
+        run: |
+          total="${{ needs.collect-stale-backports.outputs.total_stale }}"
+          echo "::notice::Stale backport report: ${total} stale PR(s) posted to #top-monorepo-release"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  summary:
+    name: Generate workflow summary
+    needs: collect-stale-backports
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Write job summary
+        env:
+          STALE_DATA: ${{ needs.collect-stale-backports.outputs.stale_data }}
+          TOTAL_STALE: ${{ needs.collect-stale-backports.outputs.total_stale }}
+          HAS_STALE: ${{ needs.collect-stale-backports.outputs.has_stale }}
+        run: |
+          {
+            echo "## 📊 Stale Backport PR Report"
+            echo ""
+
+            if [[ "$HAS_STALE" != "true" ]]; then
+              echo "✅ **No stale backport PRs found.** All backports are merged or up to date."
+              exit 0
+            fi
+
+            echo "Found **${TOTAL_STALE}** stale backport PR(s):"
+            echo ""
+
+            echo "$STALE_DATA" | jq -r '
+              group_by(.repository // "unknown") | .[] |
+              "## 📦 \(.[0].repository // "unknown")\n\n" +
+              ([.[] |
+                "### 📌 Original PR: [#\(.original_pr_number // "?") — \(.original_pr_title // "Unknown")](\(.original_pr_url // ""))\n" +
+                "**Author:** \(.original_pr_author // "unknown")\n\n" +
+                "| Backport PR | Target Branch | Age | Draft | Assignees |\n" +
+                "|-------------|---------------|-----|-------|-----------|\n" +
+                ([.backport_prs[] |
+                  "| [#\(.backport_pr_number)](\(.backport_pr_url)) | `\(.target_branch)` | \(if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h" end) | \(if .is_draft then "⚠️ Yes" else "No" end) | \(if (.assignees | length) > 0 then (.assignees | join(", ")) else "none" end) |"
+                ] | join("\n")) + "\n"
+              ] | join("\n"))
+            '
+          } >> "$GITHUB_STEP_SUMMARY"
