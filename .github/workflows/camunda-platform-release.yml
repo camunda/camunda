@@ -957,6 +957,8 @@ jobs:
     needs: [release, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
     name: Github Release
     runs-on: ubuntu-latest
+    outputs:
+      releaseBodyUpdateOutcome: ${{ steps.update-github-release-body.outcome }}
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
     if: ${{ always() && !cancelled() && 
@@ -1021,15 +1023,8 @@ jobs:
           --label="version:$ZCL_TARGET_REV" \
           --org camunda --repo camunda)
 
-          # With multiline strings the output needs to be set differently.
-          #
-          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
-          #
-          {
-            echo 'CHANGELOG<<EOF'
-            echo "$changelog"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
+          # Persist full changelog to a file and pass it via bodyFile to avoid ARG_MAX/env limits.
+          printf '%s\n' "$changelog" > changelog.md
 
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
@@ -1038,6 +1033,10 @@ jobs:
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
+      - name: Add Full Changelog to Release Artifacts
+        if: ${{ !inputs.dryRun }}
+        run: |
+          cp changelog.md "release-artifacts/CHANGELOG-${RELEASE_VERSION}.md"
       - name: Create Artifact Checksums
         id: checksum
         working-directory: ./release-artifacts
@@ -1062,7 +1061,7 @@ jobs:
           shopt -u nocasematch # reset it
           echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd
         if: ${{ !inputs.dryRun }}
         with:
           name: ${{ env.RELEASE_TAG }}
@@ -1070,10 +1069,33 @@ jobs:
           artifactErrorsFailBuild: true
           draft: ${{ inputs.releaseProcessDryRun }}
           makeLatest: ${{ inputs.isLatest }}
-          body: ${{ steps.gen-changelog.outputs.changelog }}
+          body: Release ${{ env.RELEASE_TAG }} - changelog will be added shortly. Full changelog is available as CHANGELOG-${{ env.RELEASE_VERSION }}.md in the release assets.
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
           tag: ${{ env.RELEASE_TAG }}
+      - name: Update Github release body from changelog file
+        id: update-github-release-body
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd
+        if: ${{ !inputs.dryRun }}
+        continue-on-error: true
+        with:
+          allowUpdates: true
+          bodyFile: changelog.md
+          omitBodyDuringUpdate: false
+          omitNameDuringUpdate: true
+          omitDraftDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.RELEASE_TAG }}
+      - name: Warn if Github release body update failed
+        if: ${{ !inputs.dryRun && steps.update-github-release-body.outcome == 'failure' }}
+        run: |
+          {
+            echo "## Github release body update failed"
+            echo
+            echo "Release assets were published successfully."
+            echo "The inline release body was not updated; use release asset CHANGELOG-${RELEASE_VERSION}.md as the source changelog."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1189,6 +1211,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send success Slack notification
+        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -1202,6 +1225,33 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": ":success: *Release job for ${{ inputs.releaseVersion }}* succeeded! (excluding Maven Central publishing - this is done separately)\n"
+                  }
+                }
+              ]
+            }
+
+      - name: Send success Slack notification with manual follow-up
+        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":success: *Release job for ${{ inputs.releaseVersion }}* succeeded! (excluding Maven Central publishing - this is done separately)\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: GitHub release body update failed due to size/API constraints. This is non-blocking; release artifacts were published. Please update release notes manually using `CHANGELOG-${{ inputs.releaseVersion }}.md` from release assets."
                   }
                 }
               ]
