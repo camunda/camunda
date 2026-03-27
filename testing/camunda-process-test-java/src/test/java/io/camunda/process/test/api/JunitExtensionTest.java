@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -355,100 +356,119 @@ public class JunitExtensionTest {
     verify(camundaRuntimeBuilder).withConnectorsSecret("secret-2", "2");
   }
 
-  @Test
-  void shouldPrintResultIfTestFailed() throws Exception {
-    // given
-    final StringBuilder outputBuilder = new StringBuilder();
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(
-            camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
-
-    when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    when(extensionContext.getExecutionException())
-        .thenReturn(Optional.of(new AssertionError("test failure (expected)")));
-
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(extension);
-    setTestResultCollectorMock(extension);
-    extension.afterEach(extensionContext);
-
-    // then
-    assertThat(outputBuilder.toString()).startsWith("Process test results");
-    verify(camundaProcessTestResultCollector).collect();
-  }
-
-  @Test
-  void shouldNotPrintResultIfTestSuccessful() throws Exception {
-    // given
-    final StringBuilder outputBuilder = new StringBuilder();
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(
-            camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    when(extensionContext.getExecutionException()).thenReturn(Optional.empty());
-
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(extension);
-    setTestResultCollectorMock(extension);
-    extension.afterEach(extensionContext);
-
-    // then
-    assertThat(outputBuilder.toString()).isEmpty();
-    verify(camundaProcessTestResultCollector, never()).collect();
-  }
-
-  @Test
-  void shouldPurgeTheClusterInBetweenTests() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(extension);
-    extension.afterEach(extensionContext);
-
-    // then
-    verify(camundaManagementClient).purgeCluster();
-  }
-
-  private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
-    try {
-      final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
-      cmcField.setAccessible(true);
-      cmcField.set(extension, camundaManagementClient);
-    } catch (final Throwable t) {
-      ExceptionUtils.throwAsUncheckedException(t);
-    }
-  }
-
-  private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
-    try {
-      final Field cmcField = extension.getClass().getDeclaredField("processTestResultCollector");
-      cmcField.setAccessible(true);
-      cmcField.set(extension, camundaProcessTestResultCollector);
-    } catch (final Throwable t) {
-      ExceptionUtils.throwAsUncheckedException(t);
-    }
-  }
-
   @CamundaProcessTest
   private static final class MainProcessTest {
     static class NestedProcessTest {}
+  }
+
+  @Nested
+  class AfterEachTests {
+
+    @Test
+    void shouldPrintResultIfTestFailed() throws Exception {
+      // given
+      final StringBuilder outputBuilder = new StringBuilder();
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(
+              camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
+
+      when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      setTestResultCollectorMock(extension);
+
+      when(extensionContext.getExecutionException())
+          .thenReturn(Optional.of(new AssertionError("test failure (expected)")));
+
+      extension.afterEach(extensionContext);
+
+      // then
+      assertThat(outputBuilder.toString()).startsWith("Process test results");
+      verify(camundaProcessTestResultCollector).collect();
+    }
+
+    @Test
+    void shouldNotPrintResultIfTestSuccessful() throws Exception {
+      // given
+      final StringBuilder outputBuilder = new StringBuilder();
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(
+              camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      setTestResultCollectorMock(extension);
+
+      when(extensionContext.getExecutionException()).thenReturn(Optional.empty());
+
+      extension.afterEach(extensionContext);
+
+      // then
+      assertThat(outputBuilder.toString()).isEmpty();
+      verify(camundaProcessTestResultCollector, never()).collect();
+    }
+
+    @Test
+    void shouldPurgeCluster() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient).purgeCluster();
+    }
+
+    @Test
+    void shouldResetClock() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient).resetTime();
+    }
+
+    private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
+      try {
+        final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
+        cmcField.setAccessible(true);
+        cmcField.set(extension, camundaManagementClient);
+      } catch (final Throwable t) {
+        ExceptionUtils.throwAsUncheckedException(t);
+      }
+    }
+
+    private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
+      try {
+        final Field cmcField = extension.getClass().getDeclaredField("processTestResultCollector");
+        cmcField.setAccessible(true);
+        cmcField.set(extension, camundaProcessTestResultCollector);
+      } catch (final Throwable t) {
+        ExceptionUtils.throwAsUncheckedException(t);
+      }
+    }
   }
 }
