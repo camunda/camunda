@@ -28,6 +28,7 @@ type C8RunSettings struct {
 	Password             string
 	Docker               bool
 	StartupUrl           string
+	StartupMarkerPath    string
 	ExtraDrivers         []string
 }
 

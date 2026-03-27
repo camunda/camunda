@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,6 +20,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/start"
+	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -193,6 +193,11 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 			return err
 		}
 		err = health.PrintStatus(settings)
+		if err == nil {
+			if markerErr := startupurl.MarkSeen(settings.StartupMarkerPath); markerErr != nil {
+				log.Warn().Err(markerErr).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+			}
+		}
 	case "stop":
 		err = runDockerCommand(composeExtractedFolder, "down")
 	default:
@@ -207,7 +212,7 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
-const docsStartupURL = "https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/#work-with-camunda-8-run"
+const docsStartupURL = startupurl.DocsURL
 
 func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, error) {
 	var (
@@ -266,47 +271,8 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	return startFlagSet
 }
 
-func createOperateUrl(settings *types.C8RunSettings) string {
-	return fmt.Sprintf("%s://localhost:%s/operate", settings.GetProtocol(), strconv.Itoa(settings.Port))
-}
-
 func createDefaultStartupUrl(settings *types.C8RunSettings, camundaVersion string) string {
-	if shouldUseDocsStartup(camundaVersion) {
-		return docsStartupURL
-	}
-	return createOperateUrl(settings)
-}
-
-func shouldUseDocsStartup(camundaVersion string) bool {
-	major, minor, ok := parseMajorMinor(camundaVersion)
-	if !ok {
-		return false
-	}
-	if major > 8 {
-		return true
-	}
-	return major == 8 && minor >= 9
-}
-
-func parseMajorMinor(version string) (int, int, bool) {
-	version = strings.TrimSpace(version)
-	if version == "" {
-		return 0, 0, false
-	}
-	base := strings.SplitN(version, "-", 2)[0]
-	parts := strings.Split(base, ".")
-	if len(parts) < 2 {
-		return 0, 0, false
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, false
-	}
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, false
-	}
-	return major, minor, true
+	return startupurl.Default(*settings, camundaVersion)
 }
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
@@ -338,6 +304,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
+	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") && settings.ResolvedConfigPath != "" {
 		var vendor string
