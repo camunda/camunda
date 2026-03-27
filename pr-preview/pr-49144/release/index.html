@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-49144/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-49144/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-49144/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49144/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49144/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-49144/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-49144/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-49144/assets/js/runtime~main.9e3c3d58.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-49144/assets/js/main.0fa6241a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49144/assets/js/runtime~main.ab300fc3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49144/assets/js/main.d8f9831d.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -53,6 +53,7 @@
 </ul>
 </li>
 </ul>
+<p>See <a href="/camunda/pr-preview/pr-49144/release-timeline/" target="_blank" rel="noopener noreferrer" class="">this self-updating release timeline page</a>.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="release-dependencies">Release Dependencies<a href="#release-dependencies" class="hash-link" aria-label="Direct link to Release Dependencies" title="Direct link to Release Dependencies" translate="no">​</a></h3>
 <p><em>Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers only Operate/Tasklist/Zeebe).</em></p>
 <p>Component releases that the C8 monorepo releases depend on:</p>
@@ -325,8 +326,9 @@
 <ul class="contains-task-list containsTaskList_mC6p">
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Send feature freeze communication before the last alpha using the <a href="#feature-freeze-vs-code-freeze-minor-releases" class="">feature-freeze template</a> and explicitly state that only bug fixes and stabilization are expected after freeze.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Create <code>stable/&lt;minor&gt;</code> from <code>main</code> before the last alpha according to the early-stable strategy (i.e. create the <code>stable/&lt;minor&gt;</code> branch before the last alpha and branch all subsequent alpha/RC/final release branches from <code>stable/&lt;minor&gt;</code> instead of <code>main</code>).</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Mirror the same strategy in <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">zeebe-process-test</a>: create <code>stable/&lt;minor&gt;</code> from <code>main</code> and align release-branch handling.</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Create <code>backport stable/&lt;minor&gt;</code> label in monorepo (and in ZPT where needed).</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->[DEPRECATED for +8.10] Mirror the same strategy in <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">zeebe-process-test</a>: create <code>stable/&lt;minor&gt;</code> from <code>main</code> and align release-branch handling.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Create <code>backport stable/&lt;minor&gt;</code> label in monorepo.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->[DEPRECATED for +8.10] Create <code>backport stable/&lt;minor&gt;</code> label in ZPT.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Announce stable branch creation and backport procedure (label + <code>/backport</code>) in the relevant engineering channels.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-versioning-and-branch-plumbing-after-last-alpha-branch-exists">2. Versioning and branch plumbing (after last alpha branch exists)<a href="#2-versioning-and-branch-plumbing-after-last-alpha-branch-exists" class="hash-link" aria-label="Direct link to 2. Versioning and branch plumbing (after last alpha branch exists)" title="Direct link to 2. Versioning and branch plumbing (after last alpha branch exists)" translate="no">​</a></h4>
@@ -336,7 +338,7 @@
 <li class=""><code>./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT</code></li>
 </ul>
 </li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->On ZPT <code>main</code>, bump versions to the next minor snapshot line.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->[DEPRECATED for +8.10] On ZPT <code>main</code>, bump versions to the next minor snapshot line.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Update upgrade and migration test configuration so the previous minor upgrades to the new minor line.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm artifact expectations:<!-- -->
 <ul>
