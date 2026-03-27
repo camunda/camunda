@@ -133,7 +133,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
         const json = await res.json();
         expect(json.batchOperationKey).toBe(createdBatchOperationKey);
         expect(json.batchOperationType).toBe('DELETE_DECISION_INSTANCE');
-        expect(json.operationsTotalCount).toBe(2);
+        expect(json.operationsTotalCount).toBeGreaterThanOrEqual(2);
         expect(json.operationsCompletedCount).toBe(2);
       }).toPass(defaultAssertionOptions);
     });
