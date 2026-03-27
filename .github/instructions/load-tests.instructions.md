@@ -13,6 +13,16 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
 2. **Backport**: Load test changes must be backported to all active maintenance
    branches. Ensure the changes are compatible with each target branch.
 
+## Documentation
+
+When modifying load test infrastructure, workflows, or setup scripts, always check
+if related documentation needs updating:
+
+- `load-tests/README.md` — main entry point and workflow overview
+- `load-tests/docs/workflows.md` — detailed workflow reference
+- `load-tests/docs/directory-structure.md` — branch-specific path differences
+- This file (`.github/instructions/load-tests.instructions.md`) — AI-facing guidance
+
 ## Scheduled Release Load Tests
 
 The file `camunda-scheduled-release-load-tests.yml` uses hardcoded release tags
