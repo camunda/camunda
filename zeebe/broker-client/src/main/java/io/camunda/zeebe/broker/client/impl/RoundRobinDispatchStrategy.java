@@ -33,6 +33,10 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   }
 
   public RoundRobinDispatchStrategy(final int initialOffset) {
+    if (initialOffset < 0) {
+      throw new IllegalArgumentException(
+          "Expected initialOffset to be >= 0, but got %d".formatted(initialOffset));
+    }
     offset = new AtomicLong(initialOffset);
   }
 
@@ -117,7 +121,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     }
 
     public int partitionAtOffset(final long offset) {
-      return partitions[(int) (offset % partitions.length)];
+      return partitions[Math.floorMod(offset, partitions.length)];
     }
   }
 }
