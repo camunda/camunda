@@ -12,6 +12,7 @@ import static io.camunda.exporter.utils.ExporterUtil.map;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -92,8 +94,13 @@ public class BatchOperationCreatedHandler
     // overwriting operationsTotalCount increments or state transitions applied by other partitions.
     // With upsert: if the document does not yet exist, it is created from the entity; if it
     // already exists, only the specified fields are updated without affecting other fields.
-    // An empty updateFields map means the update path is a no-op, preserving the existing document.
-    batchRequest.upsert(indexName, entity.getId(), entity, Map.of());
+    // Note: STATE is intentionally excluded from updateFields because a late CREATED event from a
+    // slow partition could overwrite a state that has already advanced (e.g., ACTIVE or COMPLETED).
+    // The state is set correctly on initial document creation via the entity.
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(BatchOperationTemplate.TYPE, entity.getType());
+
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override

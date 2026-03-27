@@ -90,15 +90,24 @@ public class BatchOperationChunkCreatedItemHandler
         item.getProcessInstanceKey(),
         indexName);
 
-    final var cachedEntity = batchOperationCache.get(String.valueOf(value.getBatchOperationKey()));
+    final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
+
     entity
-        .setBatchOperationId(String.valueOf(value.getBatchOperationKey()))
+        .setBatchOperationId(batchOperationKey)
         .setType(
-            cachedEntity
+            batchOperationCache
+                .get(batchOperationKey)
                 .map(CachedBatchOperationEntity::type)
                 .map(String::valueOf)
                 .map(OperationType::valueOf)
-                .orElse(null))
+                .orElseGet(
+                    () -> {
+                      LOG.warn(
+                          "BatchOperation '{}' not found in cache or has null type. "
+                              + "The operation item will be written with null type. ",
+                          batchOperationKey);
+                      return null;
+                    }))
         .setState(OperationState.SCHEDULED)
         .setProcessInstanceKey(item.getProcessInstanceKey())
         .setItemKey(item.getItemKey());

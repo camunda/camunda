@@ -13,11 +13,16 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchOperationEntityTransformer
     implements ServiceTransformer<
         io.camunda.webapps.schema.entities.operation.BatchOperationEntity, BatchOperationEntity> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationEntityTransformer.class);
 
   @Override
   public BatchOperationEntity apply(
@@ -43,10 +48,19 @@ public class BatchOperationEntityTransformer
 
   private BatchOperationEntity mapBatchOperation(
       final io.camunda.webapps.schema.entities.operation.BatchOperationEntity source) {
+    final var batchOperationType =
+        Optional.ofNullable(source.getType())
+            .map(Enum::name)
+            .map(BatchOperationType::valueOf)
+            .orElseGet(
+                () -> {
+                  LOG.debug("Batch operation with id '{}' has no type", source.getId());
+                  return null;
+                });
     return new BatchOperationEntity(
         source.getId(),
         BatchOperationState.valueOf(source.getState().name()),
-        BatchOperationType.valueOf(source.getType().name()),
+        batchOperationType,
         source.getStartDate(),
         source.getEndDate(),
         source.getOperationsTotalCount(),
