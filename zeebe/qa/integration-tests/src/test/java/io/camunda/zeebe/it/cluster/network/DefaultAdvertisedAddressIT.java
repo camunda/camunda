@@ -12,9 +12,10 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.container.cluster.CamundaCluster;
+import io.camunda.container.cluster.CamundaPort;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.containers.cluster.ZeebeCluster;
 import java.net.URI;
 import java.time.Duration;
 import org.awaitility.Awaitility;
@@ -30,8 +31,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 final class DefaultAdvertisedAddressIT {
   @Container
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
+  private final CamundaCluster cluster =
+      CamundaCluster.builder()
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withGatewaysCount(1)
           .withBrokersCount(1)
@@ -62,9 +63,17 @@ final class DefaultAdvertisedAddressIT {
     final var clientBuilder =
         CamundaClient.newClientBuilder()
             .restAddress(
-                URI.create("http://localhost:" + cluster.getAvailableGateway().getMappedPort(8080)))
+                URI.create(
+                    "http://localhost:"
+                        + cluster
+                            .getAvailableGateway()
+                            .getMappedPort(CamundaPort.GATEWAY_REST.getPort())))
             .grpcAddress(
-                URI.create("http://" + cluster.getAvailableGateway().getExternalGatewayAddress()));
+                URI.create(
+                    "http://"
+                        + cluster
+                            .getAvailableGateway()
+                            .getMappedPort(CamundaPort.GATEWAY_GRPC.getPort())));
 
     try (final var client = clientBuilder.build()) {
       // when - then

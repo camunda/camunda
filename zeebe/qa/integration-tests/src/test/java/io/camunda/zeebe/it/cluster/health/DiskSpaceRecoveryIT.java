@@ -11,31 +11,32 @@ import static io.camunda.application.commons.search.SearchEngineDatabaseConfigur
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.container.CamundaContainer;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.cluster.GatewayNode;
+import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Status.Code;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebeVolume;
-import io.zeebe.containers.engine.ContainerEngine;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.util.unit.DataSize;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -50,24 +51,37 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 final class DiskSpaceRecoveryIT {
-  private final ZeebeVolume volume = createVolume();
-  private final ZeebeContainer container =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withZeebeData(volume)
-          .withEnv("ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD", "0")
-          .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
-          .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
-          .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "8MB")
-          .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "1MB")
+  private final CamundaVolume volume = createVolume();
+  private final BrokerContainer container =
+      new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+          .withCamundaData(volume)
+          .withRecordingExporter()
+          .withUnifiedConfig(
+              cfg -> {
+                cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
+                cfg.getData()
+                    .getPrimaryStorage()
+                    .getDisk()
+                    .getFreeSpace()
+                    .setProcessing(DataSize.ofMegabytes(4));
+                cfg.getData()
+                    .getPrimaryStorage()
+                    .getDisk()
+                    .getFreeSpace()
+                    .setReplication(DataSize.ofMegabytes(1));
+                cfg.getData()
+                    .getPrimaryStorage()
+                    .getLogStream()
+                    .setLogSegmentSize(DataSize.ofMegabytes(1));
+                cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
+              })
           .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+          .withEnv("ATOMIX_LOG_LEVEL", "DEBUG")
           .withEnv(UNPROTECTED_API_ENV_VAR, "true")
           .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
           .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
           // Unified Config: DB type + legacy compatibility
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none")
-          .withEnv("CAMUNDA_DATABASE_TYPE", "none")
-          .withEnv("CAMUNDA_OPERATE_DATABASE", "none")
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", "none");
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none");
 
   @SuppressWarnings("JUnitMalformedDeclaration")
   @RegisterExtension
@@ -81,9 +95,9 @@ final class DiskSpaceRecoveryIT {
     CloseHelper.quietClose(volume);
   }
 
-  private ZeebeVolume createVolume() {
+  private CamundaVolume createVolume() {
     final var options = Map.of("type", "tmpfs", "device", "tmpfs", "o", "size=16m");
-    return ZeebeVolume.newVolume(cmd -> cmd.withDriver("local").withDriverOpts(options));
+    return CamundaVolume.newVolume(cmd -> cmd.withDriver("local").withDriverOpts(options));
   }
 
   private void publishMessage() {
@@ -99,24 +113,18 @@ final class DiskSpaceRecoveryIT {
 
   @Nested
   final class WithStandardContainerTest {
-    @Container
-    private final ContainerEngine engine =
-        ContainerEngine.builder()
-            .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
-            .withContainer(container)
-            .withAutoAcknowledge(true)
-            .build();
+    @Container private final BrokerContainer engine = container;
 
     @BeforeEach
     void beforeEach() {
+      engine.start();
       client = newClientBuilder(engine).build();
     }
 
     @Test
-    void shouldRecoverAfterOutOfDiskSpaceAfterExporting()
-        throws InterruptedException, TimeoutException {
+    void shouldRecoverAfterOutOfDiskSpaceAfterExporting() throws InterruptedException {
       // given
-      final var partitionsClient = PartitionsActuator.of(container);
+      final var partitionsClient = PartitionsActuator.of(engine);
       partitionsClient.pauseExporting();
 
       // fill out the disk as fast as possible
@@ -136,10 +144,20 @@ final class DiskSpaceRecoveryIT {
       // when
       partitionsClient.resumeExporting();
       // wait until all records are exported
-      engine.waitForIdleState(Duration.ofMinutes(5));
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(3))
+          .until(
+              () -> {
+                final var partitionStatus = partitionsClient.query();
+                final var processedPosition = partitionStatus.get(1).processedPosition();
+                final var exportedPosition = partitionStatus.get(1).exportedPosition();
+                return exportedPosition >= processedPosition;
+              });
+
+      Thread.sleep(2000);
+
       // trigger a snapshot
       partitionsClient.takeSnapshot();
-
       // then
       await("until the disk is not full anymore")
           .atMost(Duration.ofMinutes(3))
@@ -153,19 +171,32 @@ final class DiskSpaceRecoveryIT {
   @Nested
   final class WithAlreadyDiskFullTest {
     @Container
-    private final ContainerEngine engine =
-        ContainerEngine.builder()
-            .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
-            .withContainer(
-                container
-                    .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "16MB")
-                    .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "10MB")
-                    .withEnv(UNPROTECTED_API_ENV_VAR, "true"))
-            .build();
+    private final CamundaContainer engine =
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+            .withCamundaData(volume)
+            .withEmbeddedGateway()
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getDisk()
+                      .getFreeSpace()
+                      .setProcessing(DataSize.ofMegabytes(16));
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getDisk()
+                      .getFreeSpace()
+                      .setReplication(DataSize.ofMegabytes(10));
+                })
+            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none")
+            .withEnv("CAMUNDA_DATABASE_TYPE", "none");
 
     @BeforeEach
     void beforeEach() {
-      client = newClientBuilder(engine).build();
+      client = newClientBuilder((GatewayNode) engine).build();
     }
 
     @Test

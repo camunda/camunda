@@ -7,19 +7,17 @@
  */
 package io.camunda.zeebe.it.shared.smoke;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
+import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.zeebe.containers.cluster.ZeebeCluster;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.testcontainers.junit.jupiter.Container;
@@ -29,8 +27,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class ContainerClusterSmokeIT {
 
   @Container
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
+  private final CamundaCluster cluster =
+      CamundaCluster.builder()
           .withBrokersCount(1)
           .withBrokerConfig(
               zeebeBrokerNode -> {
@@ -47,7 +45,6 @@ final class ContainerClusterSmokeIT {
               })
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .build();
 
   /** A smoke test which checks that a gateway of a cluster can be accessed. */
@@ -95,7 +92,7 @@ final class ContainerClusterSmokeIT {
   private CamundaClient createCamundaClient() {
     // increased request timeout as container tests might be less responsive when emulation is
     // involved e.g. emulation of ARM64
-    return newClientBuilder(cluster)
+    return CamundaCluster.newClientBuilder(cluster)
         .preferRestOverGrpc(false)
         .defaultRequestTimeout(Duration.ofMinutes(2))
         .build();

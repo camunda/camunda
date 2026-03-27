@@ -15,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebeGatewayContainer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -71,14 +71,14 @@ public class NonDefaultContainerSetupTest {
   @ParameterizedTest
   @MethodSource("containerModifiers")
   void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
-    try (final ZeebeBrokerContainer broker =
-            new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+    try (final BrokerContainer broker =
+            new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
                 .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
                 .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
                 .withCreateContainerCmdModifier(containerModifier);
-        final ZeebeGatewayContainer gateway =
-            new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        final GatewayContainer gateway =
+            new GatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
                 .withNetwork(broker.getNetwork())
                 .withCreateContainerCmdModifier(containerModifier)
                 .dependsOn(broker)

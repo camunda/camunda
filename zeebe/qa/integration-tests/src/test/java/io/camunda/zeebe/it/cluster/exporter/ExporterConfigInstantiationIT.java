@@ -10,11 +10,11 @@ package io.camunda.zeebe.it.cluster.exporter;
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
+import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporter;
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporterConfig;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.nio.file.Path;
 import net.bytebuddy.ByteBuddy;
@@ -45,7 +45,7 @@ final class ExporterConfigInstantiationIT {
             .toJar(tempDir.resolve("exporter.jar").toFile())
             .toPath();
     final var broker =
-        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withCopyFileToContainer(MountableFile.forHostPath(exporterJar), "/exporter.jar")
             .withEnv("ZEEBE_BROKER_EXPORTERS_TEST_CLASSNAME", "com.acme.Exporter")
             .withEnv("ZEEBE_BROKER_EXPORTERS_TEST_JARPATH", "/exporter.jar")
