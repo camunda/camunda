@@ -99,15 +99,24 @@ const TaskDetails: React.FC = observer(() => {
   async function handleSubmissionFailure(error: unknown) {
     const {data: parsedError, success} = requestErrorSchema.safeParse(error);
     if (success && parsedError.variant === 'failed-response') {
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: t('taskCouldNotBeCompletedNotification'),
-        subtitle: parseDenialReason(
-          await parsedError?.response?.json(),
-          'completion',
-        ),
-        isDismissable: true,
-      });
+      if (parsedError.response.status === 403) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskCouldNotBeCompletedNotification'),
+          subtitle: t('taskActionForbidden'),
+          isDismissable: true,
+        });
+      } else {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskCouldNotBeCompletedNotification'),
+          subtitle: parseDenialReason(
+            await parsedError?.response?.json(),
+            'completion',
+          ),
+          isDismissable: true,
+        });
+      }
       return;
     }
 

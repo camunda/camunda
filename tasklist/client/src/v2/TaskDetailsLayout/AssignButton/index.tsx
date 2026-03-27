@@ -98,16 +98,23 @@ const AssignButton: React.FC<Props> = ({
       if (success && parsedError.variant === 'failed-response') {
         const errorData = await parsedError.response.json();
 
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: t('taskDetailsTaskAssignmentError'),
-          subtitle: parseDenialReason(errorData, 'assignment'),
-          isDismissable: true,
-        });
-
-        if (errorData.title !== 'DEADLINE_EXCEEDED') {
-          setAssignmentStatus('off');
+        if (parsedError.response.status === 403) {
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: t('taskDetailsTaskAssignmentError'),
+            subtitle: t('taskActionForbidden'),
+            isDismissable: true,
+          });
+        } else {
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: t('taskDetailsTaskAssignmentError'),
+            subtitle: parseDenialReason(errorData, 'assignment'),
+            isDismissable: true,
+          });
         }
+
+        setAssignmentStatus('off');
         return;
       }
 
@@ -134,15 +141,26 @@ const AssignButton: React.FC<Props> = ({
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
       if (success && parsedError.variant === 'failed-response') {
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: t('taskDetailsTaskUnassignmentError'),
-          subtitle: parseDenialReason(
-            await parsedError?.response?.json(),
-            'unassignment',
-          ),
-          isDismissable: true,
-        });
+        if (parsedError.response.status === 403) {
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: t('taskDetailsTaskUnassignmentError'),
+            subtitle: t('taskActionForbidden'),
+            isDismissable: true,
+          });
+        } else {
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: t('taskDetailsTaskUnassignmentError'),
+            subtitle: parseDenialReason(
+              await parsedError?.response?.json(),
+              'unassignment',
+            ),
+            isDismissable: true,
+          });
+        }
+
+        setAssignmentStatus('off');
         return;
       }
 
