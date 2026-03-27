@@ -84,7 +84,7 @@ public final class ProcessInstanceServices
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
   private final int maxVariableNameLength;
-  private final ConcurrentHashMap<String, RequestRetryHandler> processIdToRetryHandler =
+  private final ConcurrentHashMap<Long, RequestRetryHandler> definitionKeyToRetryHandler =
       new ConcurrentHashMap<>();
 
   public ProcessInstanceServices(
@@ -302,7 +302,7 @@ public final class ProcessInstanceServices
       return sendRequestWithRetryPartitions(brokerRequest, authentication);
     }
     return sendWithPerProcessRoundRobin(
-        brokerRequest, request.bpmnProcessId(), authentication, null);
+        brokerRequest, request.processDefinitionKey(), authentication, null);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -335,7 +335,7 @@ public final class ProcessInstanceServices
     }
 
     return sendWithPerProcessRoundRobin(
-        brokerRequest, request.bpmnProcessId(), authentication, timeout);
+        brokerRequest, request.processDefinitionKey(), authentication, timeout);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
@@ -520,25 +520,25 @@ public final class ProcessInstanceServices
 
   private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
       final BrokerRequest<R> brokerRequest,
-      final String bpmnProcessId,
+      final Long definitionKey,
       final CamundaAuthentication authentication,
       final Duration requestTimeout) {
-    final var handler = getRetryHandler(bpmnProcessId);
+    final var handler = getRetryHandler(definitionKey);
     return sendRequestWithRetryPartitions(brokerRequest, authentication, requestTimeout, handler)
         .whenComplete(
             (response, error) -> {
-              if (error == null && bpmnProcessId != null) {
-                processIdToRetryHandler.computeIfAbsent(
-                    bpmnProcessId, ignored -> createRetryHandler());
+              if (error == null && definitionKey != null) {
+                definitionKeyToRetryHandler.computeIfAbsent(
+                    definitionKey, ignored -> createRetryHandler());
               }
             });
   }
 
-  private RequestRetryHandler getRetryHandler(final String bpmnProcessId) {
-    if (bpmnProcessId == null) {
+  private RequestRetryHandler getRetryHandler(final Long definitionKey) {
+    if (definitionKey == null) {
       return requestRetryHandler;
     }
-    final var handler = processIdToRetryHandler.get(bpmnProcessId);
+    final var handler = definitionKeyToRetryHandler.get(definitionKey);
     return handler != null ? handler : requestRetryHandler;
   }
 
