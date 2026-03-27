@@ -135,7 +135,7 @@ orchestration:
           existingSecretKey: orchestration-security-authentication-oidc-secret
 
     authorizations:
-      enabled: false
+      enabled: true
 
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
