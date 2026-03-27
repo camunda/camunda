@@ -8,7 +8,6 @@
 package io.camunda.zeebe.snapshots;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -109,7 +108,6 @@ public interface PersistedSnapshot {
     return getMetadata() != null && getMetadata().isBootstrap();
   }
 
-  @VisibleForTesting
   boolean isReserved();
 
   /**

@@ -62,7 +62,6 @@ public class VisibleForTestingArchTest {
           "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE",
           "io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.USERS_API_DISABLED_ERROR_MESSAGE",
           "io.camunda.zeebe.journal.fs.LibC.ofNativeLibrary(java.lang.String)",
-          "io.camunda.zeebe.snapshots.PersistedSnapshot.isReserved()",
           "io.camunda.zeebe.snapshots.impl.SnapshotMetrics.getTransferDuration(boolean)",
           "io.camunda.zeebe.util.VersionUtil.overrideVersionForTesting(java.lang.String)",
           "io.camunda.zeebe.util.VersionUtil.resetVersionForTesting()");
