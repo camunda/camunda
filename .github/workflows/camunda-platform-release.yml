@@ -423,7 +423,7 @@ jobs:
       - name: Sync Zeebe Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -436,7 +436,7 @@ jobs:
       - name: Sync Zeebe Latest Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -531,7 +531,7 @@ jobs:
       - name: Sync Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -544,7 +544,7 @@ jobs:
       - name: Sync Latest Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -639,7 +639,7 @@ jobs:
       - name: Sync Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -652,7 +652,7 @@ jobs:
       - name: Sync Latest Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -764,7 +764,7 @@ jobs:
       - name: Sync Optimize Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -777,7 +777,7 @@ jobs:
       - name: Sync Latest Optimize Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -790,7 +790,7 @@ jobs:
       - name: Sync Optimize Docker Image to Internal Registry
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -885,7 +885,7 @@ jobs:
       - name: Sync Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -898,7 +898,7 @@ jobs:
       - name: Sync Latest Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
