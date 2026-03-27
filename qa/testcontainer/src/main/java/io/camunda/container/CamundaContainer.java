@@ -54,9 +54,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     final var tempDir = createTempDir();
     final var configFile = configurationBuilder.exportConfig(tempDir);
     withCopyFileToContainer(MountableFile.forHostPath(configFile), CONFIG_PATH)
-        .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH)
-        .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
-        .withEnv("MANAGEMENT_ENDPOINTS_ACCESS_DEFAULT", "unrestricted");
+        .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH);
     super.start();
   }
 
