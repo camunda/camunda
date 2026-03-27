@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.health;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -60,9 +57,9 @@ final class DiskSpaceRecoveryIT {
           .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "8MB")
           .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "1MB")
           .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-          .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-          .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-          .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+          .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
           // Unified Config: DB type + legacy compatibility
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none")
           .withEnv("CAMUNDA_DATABASE_TYPE", "none")
@@ -160,7 +157,7 @@ final class DiskSpaceRecoveryIT {
                 container
                     .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "16MB")
                     .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "10MB")
-                    .withEnv(UNPROTECTED_API_ENV_VAR, "true"))
+                    .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true"))
             .build();
 
     @BeforeEach

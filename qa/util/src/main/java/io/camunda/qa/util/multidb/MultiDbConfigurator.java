@@ -7,8 +7,6 @@
  */
 package io.camunda.qa.util.multidb;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
@@ -61,7 +59,7 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Camunda */
-    elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+    elasticsearchProperties.put("camunda.database.schema-manager.createSchema", true);
 
     testApplication.withAdditionalProperties(elasticsearchProperties);
     testApplication
@@ -175,7 +173,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.aws.enabled", isAws);
 
     /* Camunda */
-    opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+    opensearchProperties.put("camunda.database.schema-manager.createSchema", true);
     opensearchProperties.put("camunda.database.aws-enabled", isAws);
 
     testApplication.withAdditionalProperties(opensearchProperties);

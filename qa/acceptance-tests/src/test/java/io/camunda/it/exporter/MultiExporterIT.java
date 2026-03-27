@@ -7,7 +7,6 @@
  */
 package io.camunda.it.exporter;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -227,7 +226,7 @@ public class MultiExporterIT {
           case CAMUNDA -> {
             final Map<String, Object> elasticsearchProperties = new HashMap<>();
             elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", INDEX_PREFIX);
-            elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+            elasticsearchProperties.put("camunda.database.schema-manager.createSchema", true);
             testStandaloneApplication.withAdditionalProperties(elasticsearchProperties);
 
             testStandaloneApplication.withExporter(

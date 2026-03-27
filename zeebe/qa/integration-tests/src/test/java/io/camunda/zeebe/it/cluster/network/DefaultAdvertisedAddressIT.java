@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.network;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
-
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -42,17 +38,17 @@ final class DefaultAdvertisedAddressIT {
               node -> {
                 node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST");
                 node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_HOST");
-                node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
-                node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
-                node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+                node.addEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false");
+                node.addEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+                node.addEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
               })
           .withGatewayConfig(
               node -> {
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST");
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_HOST");
-                node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
-                node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
-                node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+                node.addEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false");
+                node.addEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+                node.addEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
               })
           .build();
 

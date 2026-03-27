@@ -7,7 +7,6 @@
  */
 package io.camunda.it.schema.strategy;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -154,7 +153,7 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
   public void configureCamundaApplication(final TestCamundaApplication camunda) {
     camunda
         .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
-        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withProperty("camunda.database.schema-manager.createSchema", "false")
         .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
         .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.elasticsearch)

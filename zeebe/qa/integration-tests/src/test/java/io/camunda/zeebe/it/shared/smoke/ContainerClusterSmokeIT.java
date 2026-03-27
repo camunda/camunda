@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.it.shared.smoke;
 
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
-import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,16 +31,16 @@ final class ContainerClusterSmokeIT {
           .withBrokersCount(1)
           .withBrokerConfig(
               zeebeBrokerNode -> {
-                zeebeBrokerNode.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
-                zeebeBrokerNode.addEnv(UNPROTECTED_API_ENV_VAR, "true");
-                zeebeBrokerNode.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+                zeebeBrokerNode.addEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false");
+                zeebeBrokerNode.addEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+                zeebeBrokerNode.addEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
               })
           .withGatewaysCount(1)
           .withGatewayConfig(
               gateway -> {
-                gateway.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
-                gateway.addEnv(UNPROTECTED_API_ENV_VAR, "true");
-                gateway.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+                gateway.addEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false");
+                gateway.addEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+                gateway.addEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
               })
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)

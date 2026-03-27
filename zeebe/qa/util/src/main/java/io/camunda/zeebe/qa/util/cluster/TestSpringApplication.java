@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.application.MainSupport;
@@ -198,7 +197,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withCreateSchema(final boolean createSchema) {
-    return withProperty(CREATE_SCHEMA_PROPERTY, String.valueOf(createSchema));
+    return withProperty(
+        "camunda.database.schema-manager.createSchema", String.valueOf(createSchema));
   }
 
   /**
