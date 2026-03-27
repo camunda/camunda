@@ -1,0 +1,99 @@
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+
+  <changeSet id="drop_var_name_index" author="Camunda">
+    <preConditions onFail="MARK_RAN">
+      <indexExists indexName="${prefix}IDX_VARIABLE_NAME" tableName="${prefix}VARIABLE"/>
+    </preConditions>
+    <dropIndex indexName="${prefix}IDX_VARIABLE_NAME" tableName="${prefix}VARIABLE"/>
+  </changeSet>
+
+  <!-- Index LONG_VALUE to speed up numeric comparison searches on VARIABLE -->
+  <changeSet id="create_variable_long_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_LONG_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_LONG_VALUE" >
+      <column name="VAR_NAME"/>
+      <column name="LONG_VALUE"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Index DOUBLE_VALUE to speed up numeric comparison searches on VARIABLE -->
+  <changeSet id="create_variable_double_value_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_DOUBLE_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_DOUBLE_VALUE">
+      <column name="VAR_NAME"/>
+      <column name="DOUBLE_VALUE"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Index VAR_VALUE to speed up equality searches on VARIABLE.
+       - MySQL/MariaDB: prefix index on first 255 chars (reasonable index size, used for equality)
+       - Postgres: regular index (small, uses prefix-optimization)
+       - H2: regular index (test database, no production size concerns)
+       - Oracle: via virtual column + index (see create_variable_value_hash_column / create_variable_value_hash_index below)
+       - MSSQL: via persisted computed column + index (see same changesets below) -->
+  <changeSet id="create_variable_value_index" author="camunda" dbms="mysql,mariadb,h2,postgresql">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql,mariadb">
+      CREATE INDEX ${prefix}IDX_VARIABLE_VALUE ON ${prefix}VARIABLE (VAR_NAME, VAR_VALUE(255))
+    </sql>
+    <sql dbms="h2,postgresql">
+      CREATE INDEX ${prefix}IDX_VARIABLE_VALUE ON ${prefix}VARIABLE (VAR_NAME, VAR_VALUE)
+    </sql>
+  </changeSet>
+
+  <!-- Add a VAR_VALUE_HASH column to VARIABLE for Oracle and MSSQL to enable equality search indexing.
+       Oracle uses a virtual column (STANDARD_HASH SHA256) — not persisted on disk, always in sync.
+       MSSQL uses a persisted computed column (CHECKSUM) — must be persisted to be indexable.
+       The column is then indexed by create_variable_value_hash_index below.
+       Queries on Oracle use STANDARD_HASH(VAR_VALUE, 'SHA256') = STANDARD_HASH(:value, 'SHA256'),
+       and Oracle recognizes the equivalence with the virtual column to use the index.
+       Queries on MSSQL reference VAR_VALUE_HASH directly. -->
+  <changeSet id="create_variable_value_hash_column" author="camunda" dbms="oracle,mssql">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}VARIABLE" columnName="VAR_VALUE_HASH"/>
+      </not>
+    </preConditions>
+    <sql dbms="oracle">
+      ALTER TABLE ${prefix}VARIABLE ADD (VAR_VALUE_HASH GENERATED ALWAYS AS (STANDARD_HASH(VAR_VALUE, 'SHA256')) VIRTUAL)
+    </sql>
+    <sql dbms="mssql">
+      ALTER TABLE ${prefix}VARIABLE
+        ADD VAR_VALUE_HASH AS CHECKSUM(VAR_VALUE) PERSISTED
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_variable_value_hash_index" author="camunda" dbms="oracle,mssql">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_VALUE" tableName="${prefix}VARIABLE"/>
+      </not>
+    </preConditions>
+    <sql>
+      CREATE INDEX ${prefix}IDX_VARIABLE_VALUE ON ${prefix}VARIABLE (VAR_NAME, VAR_VALUE_HASH)
+    </sql>
+  </changeSet>
+
+</databaseChangeLog>
