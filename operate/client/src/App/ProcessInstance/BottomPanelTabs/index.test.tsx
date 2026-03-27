@@ -71,6 +71,10 @@ function getWrapper(initialPath?: string) {
               path: Paths.processInstanceOperationsLog({isRelative: true}),
               element: <LocationLog />,
             },
+            {
+              path: Paths.processInstanceHistory({isRelative: true}),
+              element: <LocationLog />,
+            },
           ],
         },
       ],
@@ -245,7 +249,7 @@ describe('<BottomPanelTabs />', () => {
     ).toBeVisible();
 
     const tabs = screen.getAllByRole('link');
-    expect(tabs).toHaveLength(7);
+    expect(tabs).toHaveLength(8);
     expect(tabs[0]).toHaveAccessibleName('Incidents');
     expect(tabs[1]).toHaveAccessibleName('Details');
     expect(tabs[2]).toHaveAccessibleName('Variables');
@@ -253,6 +257,7 @@ describe('<BottomPanelTabs />', () => {
     expect(tabs[4]).toHaveAccessibleName('Output Mappings');
     expect(tabs[5]).toHaveAccessibleName('Listeners');
     expect(tabs[6]).toHaveAccessibleName('Operations Log');
+    expect(tabs[7]).toHaveAccessibleName('Instance History');
   });
 
   it('should navigate to the correct route when clicking always visible tabs', async () => {
@@ -359,6 +364,56 @@ describe('<BottomPanelTabs />', () => {
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );
+  });
+
+  it('should navigate to the Instance History route when clicking the Instance History tab', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+
+    const instanceHistoryTab = screen.getByRole('link', {
+      name: /^Instance History$/i,
+    });
+
+    await user.click(instanceHistoryTab);
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceHistory({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should not show Instance History tab (large screen)', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      () =>
+        ({
+          matches: true,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }) as unknown as MediaQueryList,
+    );
+
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+
+    expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
+    expect(
+      screen.queryByRole('link', {name: /^Instance History$/i}),
+    ).not.toBeInTheDocument();
   });
 
   it('should preserve search params when navigating between tabs', async () => {

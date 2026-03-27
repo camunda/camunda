@@ -42,6 +42,8 @@ const Paths = {
   processInstanceListeners: getRelativeProcessInstancePathHandler('listeners'),
   processInstanceOperationsLog:
     getRelativeProcessInstancePathHandler('operations-log'),
+  processInstanceHistory:
+    getRelativeProcessInstancePathHandler('instance-history'),
   decisions() {
     return '/decisions';
   },
