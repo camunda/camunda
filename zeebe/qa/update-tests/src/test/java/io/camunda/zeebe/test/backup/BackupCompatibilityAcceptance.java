@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
-import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.ZeebeTopologyWaitStrategy;
+import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -308,7 +308,7 @@ public interface BackupCompatibilityAcceptance {
   private BrokerContainer createOldBroker(final String storeBasePath) {
     final var broker =
         new BrokerContainer(
-                DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion()))
+                DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion()))
             .withNetwork(getNetwork())
             .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
