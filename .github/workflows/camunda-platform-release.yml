@@ -227,6 +227,13 @@ jobs:
           export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
           echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
           popd
+
+      - name: Validate flattened POM metadata
+        if: ${{ inputs.dryRun }}
+        uses: ./.github/actions/validate-pom-metadata
+        with:
+          search-root: target/checkout
+
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
