@@ -66,13 +66,15 @@ const OperationEntryStatus: React.FC<Props> = ({
   completedCount = 0,
   state,
 }) => {
+  const isEmptyCompletion =
+    state === 'COMPLETED' && completedCount === 0 && failedCount === 0;
+
   return (
     <Stack gap={3}>
       {state === 'PARTIALLY_COMPLETED' && <PartiallyCompleted />}
       {state === 'FAILED' && <Failed />}
       <StatusContainer>
-        {completedCount > 0 ||
-        (completedCount === 0 && failedCount === 0 && state === 'COMPLETED') ? (
+        {completedCount > 0 || isEmptyCompletion ? (
           <>
             <CheckmarkFilled />
             <Text>{getSuccessMessage(type, completedCount)}</Text>

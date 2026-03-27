@@ -52,7 +52,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const {fakeProgressPercentage, isVisuallyCompleted} = useLoadingProgress({
     totalCount: operationsTotalCount,
     processedCount: operationsCompletedCount + operationsFailedCount,
-    isCompleted: !['CREATED', 'ACTIVE'].includes(state),
+    isCompleted: state !== 'CREATED' && state !== 'ACTIVE',
   });
 
   const label = TYPE_LABELS[batchOperationType];
