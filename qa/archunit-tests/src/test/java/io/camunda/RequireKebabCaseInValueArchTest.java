@@ -7,7 +7,6 @@
  */
 package io.camunda;
 
-import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
@@ -81,11 +80,7 @@ public final class RequireKebabCaseInValueArchTest {
               new ArchCondition<>("expect property keys in @Value to use kebab-case") {
                 @Override
                 public void check(final JavaField field, final ConditionEvents events) {
-                  for (final JavaAnnotation<?> annotation : field.getAnnotations()) {
-                    if (annotation.getRawType().isEquivalentTo(Value.class)) {
-                      validateValueAnnotation(annotation.as(Value.class), field, events);
-                    }
-                  }
+                  validateValueAnnotation(field.getAnnotationOfType(Value.class), field, events);
                 }
               });
 
@@ -98,10 +93,9 @@ public final class RequireKebabCaseInValueArchTest {
                 @Override
                 public void check(final JavaMethod method, final ConditionEvents events) {
                   for (final JavaParameter parameter : method.getParameters()) {
-                    for (final JavaAnnotation<?> annotation : parameter.getAnnotations()) {
-                      if (annotation.getRawType().isEquivalentTo(Value.class)) {
-                        validateValueAnnotation(annotation.as(Value.class), method, events);
-                      }
+                    if (parameter.isAnnotatedWith(Value.class)) {
+                      validateValueAnnotation(
+                          parameter.getAnnotationOfType(Value.class), method, events);
                     }
                   }
                 }
@@ -116,10 +110,9 @@ public final class RequireKebabCaseInValueArchTest {
                 @Override
                 public void check(final JavaConstructor constructor, final ConditionEvents events) {
                   for (final JavaParameter parameter : constructor.getParameters()) {
-                    for (final JavaAnnotation<?> annotation : parameter.getAnnotations()) {
-                      if (annotation.getRawType().isEquivalentTo(Value.class)) {
-                        validateValueAnnotation(annotation.as(Value.class), constructor, events);
-                      }
+                    if (parameter.isAnnotatedWith(Value.class)) {
+                      validateValueAnnotation(
+                          parameter.getAnnotationOfType(Value.class), constructor, events);
                     }
                   }
                 }
