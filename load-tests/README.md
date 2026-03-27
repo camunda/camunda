@@ -1,15 +1,96 @@
-# Welcome
+# Camunda Load Tests
 
-Welcome to the Camunda Load test :wave:
+Load tests validate the reliability and performance of Camunda 8 across releases and development branches. They run as automated GitHub Actions workflows on a GKE cluster (`camunda-benchmark-prod`), deploying via the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm) and a custom [load test Helm chart](https://github.com/camunda/camunda-load-tests-helm).
 
-## Introduction
+For background on goals, test variants, and observability, see the [reliability testing documentation](../docs/testing/reliability-testing.md).
 
-Make sure you have access to our Google Cloud environment. Ask the team or Infra for help, if necessary.
+## Directory Layout
 
-More details can also be found in our [reliability testing documentation](../docs/testing/reliability-testing.md).
+| Directory | Description |
+|---|---|
+| `setup/` | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md)) |
+| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md)) |
+| `docs/` | Additional documentation: [workflow reference](docs/workflows.md), [directory structure history](docs/directory-structure.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
 
-## What's next?
+## Quick Start
 
-* [Run a load test](setup/README.md)
-* [Change the Project](project/README.md)
+Prerequisites: access to the GKE benchmark cluster via [Teleport](https://camunda.teleport.sh).
 
+### Via GitHub Actions (recommended)
+
+Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) via the UI. Select a branch, name your test, and choose a scenario.
+
+### Via Makefile (manual)
+
+```bash
+cd load-tests/setup
+./newLoadTest.sh <name> <storage-type> <ttl-days> <enable-optimize>
+cd <name>
+make install
+```
+
+See the [setup README](setup/README.md) for full details.
+
+## Workflow Overview
+
+All automated load tests flow through `camunda-load-test.yml`, which builds images and deploys via the same Makefiles used for manual deployments.
+
+```mermaid
+graph TD
+    subgraph "Scheduled Triggers"
+        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
+        DAILY["camunda-daily-load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
+        WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
+        ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
+        CLEANUP["camunda-load-test-clean-up.yml<br/><i>Daily 04:00 UTC</i>"]
+    end
+
+    subgraph "Event Triggers"
+        PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        ADHOC["Manual workflow_dispatch"]
+    end
+
+    subgraph "Reusable Workflows"
+        RELEASE["camunda-release-load-test.yaml<br/><i>workflow_call</i>"]
+        CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
+        PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+    end
+
+    subgraph "Deployment Layer"
+        MAKEFILE["load-tests/setup/<br/><b>Makefile</b><br/><i>make install / make clean</i>"]
+    end
+
+    subgraph "Infrastructure"
+        GKE["GKE Cluster<br/>camunda-benchmark-prod"]
+    end
+
+    SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
+    SCHEDULED -- "verify + delete namespace" --> VERIFY
+    DAILY -- "scenario: max" --> CORE
+    WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
+    ROLLING -- "latest release tag<br/>custom helm values" --> CORE
+    RELEASE -- "scenario: realistic<br/>official Docker images" --> CORE
+    PR -- "scenario: max" --> CORE
+    PR -- "after 15min wait" --> PROFILE
+    ADHOC --> CORE
+    ADHOC --> RELEASE
+
+    CORE -- "newLoadTest.sh + make install" --> MAKEFILE
+    MAKEFILE -- "Helm install" --> GKE
+    PROFILE -- "async-profiler" --> GKE
+    VERIFY -- "kubectl wait + delete" --> GKE
+    CLEANUP -- "kubectl delete expired ns" --> GKE
+```
+
+### Schedule
+
+| Time | Workflow | Frequency |
+|---|---|---|
+| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly |
+| 01:00 UTC Monday | `camunda-weekly-load-tests.yml` | Weekly |
+| 04:00 UTC | `camunda-scheduled-release-load-tests.yml` | Daily |
+| 04:00 UTC | `camunda-daily-load-tests.yml` | Daily |
+| 04:00 UTC | `camunda-load-test-clean-up.yml` | Daily |
+
+For detailed workflow inputs, job chains, and branch availability, see the [workflow reference](docs/workflows.md).
