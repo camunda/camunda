@@ -314,6 +314,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   public void stopFlushLatencyMeasurement() {
     if (flushLatencyMeasurement != null) {
       flushLatencyMeasurement.stop(flushLatency);
+      flushLatencyMeasurement = null;
     }
   }
 
@@ -410,7 +411,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   public void observeRecordExportLatencies(final Collection<Long> recordTimestamps) {
     final var now = streamClock.millis();
     recordTimestamps.stream()
-        .mapToLong(timestamp -> now - timestamp)
+        .mapToLong(timestamp -> Math.max(0, now - timestamp))
         .forEach(duration -> recordExportDuration.record(duration, TimeUnit.MILLISECONDS));
   }
 
