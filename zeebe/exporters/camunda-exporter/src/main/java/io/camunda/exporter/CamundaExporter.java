@@ -300,7 +300,9 @@ public class CamundaExporter implements Exporter {
 
   private boolean shouldFlush() {
     return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit();
+        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()
+        || (writer.getBatchSize() > 0
+            && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs);
   }
 
   private ExporterBatchWriter createBatchWriter() {
