@@ -72,7 +72,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         Metrics.TAG_KEY_STATUS,
         operation.getState().name(),
         Metrics.TAG_KEY_TYPE,
-        Optional.ofNullable(operation.getType()).map(Enum::name).orElse(null));
+        Optional.ofNullable(operation.getType()).map(Enum::name).orElse("unknown"));
   }
 
   protected boolean canForceFailOperation(final OperationEntity operation) {
