@@ -16,7 +16,20 @@ const (
 	markerFileValue = "seen\n"
 )
 
+var (
+	userConfigDir = os.UserConfigDir
+	userHomeDir   = os.UserHomeDir
+)
+
 func MarkerPath(baseDir string) string {
+	if configDir, err := userConfigDir(); err == nil && strings.TrimSpace(configDir) != "" {
+		return filepath.Join(configDir, "camunda", "c8run", markerFileName)
+	}
+
+	if homeDir, err := userHomeDir(); err == nil && strings.TrimSpace(homeDir) != "" {
+		return filepath.Join(homeDir, ".config", "camunda", "c8run", markerFileName)
+	}
+
 	return filepath.Join(baseDir, markerFileName)
 }
 

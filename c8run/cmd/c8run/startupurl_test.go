@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/camunda/camunda/c8run/internal/startupurl"
@@ -13,6 +14,7 @@ import (
 func TestShouldUseQuickstartUrlForFirstStartupOnEightNineAndLater(t *testing.T) {
 	// given
 	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
 
 	// when
 	settings := buildSettingsWithVersion(t, []string{"c8run", "start"}, "8.9.0", baseDir)
@@ -26,6 +28,7 @@ func TestShouldUseQuickstartUrlForFirstStartupOnEightNineAndLater(t *testing.T) 
 func TestShouldUseOperateUrlAfterQuickstartWasSeen(t *testing.T) {
 	// given
 	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
 	markerPath := startupurl.MarkerPath(baseDir)
 	if err := startupurl.MarkSeen(markerPath); err != nil {
 		t.Fatalf("failed to create quickstart marker: %v", err)
@@ -44,6 +47,7 @@ func TestShouldUseOperateUrlAfterQuickstartWasSeen(t *testing.T) {
 func TestShouldUseOperateUrlForOlderVersions(t *testing.T) {
 	// given
 	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
 
 	// when
 	settings := buildSettingsWithVersion(t, []string{"c8run", "start", "--port", "9090"}, "8.8.0", baseDir)
@@ -58,6 +62,7 @@ func TestShouldUseOperateUrlForOlderVersions(t *testing.T) {
 func TestShouldKeepCustomStartupUrlWhenProvided(t *testing.T) {
 	// given
 	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
 
 	// when
 	settings := buildSettingsWithVersion(t, []string{
@@ -86,4 +91,18 @@ func buildSettingsWithVersion(t *testing.T, args []string, camundaVersion string
 		settings.StartupUrl = createDefaultStartupUrl(&settings, camundaVersion)
 	}
 	return settings
+}
+
+func setUserConfigEnv(t *testing.T, dir string) {
+	t.Helper()
+
+	switch runtime.GOOS {
+	case "windows":
+		t.Setenv("APPDATA", dir)
+	case "darwin":
+		t.Setenv("HOME", dir)
+	default:
+		t.Setenv("XDG_CONFIG_HOME", dir)
+		t.Setenv("HOME", dir)
+	}
 }
