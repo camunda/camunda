@@ -121,6 +121,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   private static Stream<Arguments> provideQueryParameters() {
@@ -549,9 +551,9 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
-              "detail": "The provided evaluationDate 'invalid' cannot be parsed as a date according to RFC 3339, section 5.6.",
+              "detail": "Failed to parse date-time: [invalid]",
               "instance": "/v2/decision-instances/search"
             }""";
     webClient

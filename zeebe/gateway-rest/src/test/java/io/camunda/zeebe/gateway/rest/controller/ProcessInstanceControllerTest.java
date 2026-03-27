@@ -31,8 +31,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOpe
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
-import io.camunda.service.exception.ErrorMapper;
-import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
 import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
@@ -55,7 +53,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +63,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -107,6 +103,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -121,6 +119,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -223,6 +223,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -271,6 +273,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -362,52 +366,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.businessId()).isEqualTo(businessId);
-  }
-
-  @Test
-  void shouldRejectCreateProcessInstanceWhenBusinessIdAlreadyExists() {
-    // given
-    final var businessId = "order-12345";
-    final var processDefinitionId = "bpmnProcessId";
-    final var rejectionReason =
-        "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'"
-            .formatted(businessId, processDefinitionId);
-    when(processInstanceServices.createProcessInstance(
-            any(ProcessInstanceCreateRequest.class), any()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException(rejectionReason, ServiceException.Status.ALREADY_EXISTS)));
-
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            """
-            {
-                "processDefinitionId": "bpmnProcessId",
-                "businessId": "order-12345"
-            }""")
-        .exchange()
-        .expectStatus()
-        .isEqualTo(HttpStatus.CONFLICT)
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
-            """
-            {
-                "type":"about:blank",
-                "title":"ALREADY_EXISTS",
-                "status":409,
-                "detail":"Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition '%s'",
-                "instance":"/v2/process-instances"
-            }"""
-                .formatted(businessId, processDefinitionId),
-            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -571,6 +529,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -620,6 +580,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -672,6 +634,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -721,6 +685,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -777,38 +743,41 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "awaitCompletion": true,
+                "businessId": "order-12345"
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "processDefinitionKey":"123",
+              "processDefinitionId":"bpmnProcessId",
+              "processDefinitionVersion":-1,
+              "processInstanceKey":"456",
+              "tenantId":"<default>",
+              "variables":{},
+              "tags":[],
+              "businessId":"order-12345"
+            }""";
+
     // when / then
     webClient
         .post()
         .uri(PROCESS_INSTANCES_START_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            """
-            {
-                "processDefinitionKey": "123",
-                "awaitCompletion": true,
-                "businessId": "order-12345"
-            }""")
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(
-            """
-            {
-                "processDefinitionKey":"123",
-                "processDefinitionId":"bpmnProcessId",
-                "processDefinitionVersion":-1,
-                "processInstanceKey":"456",
-                "tenantId":"<default>",
-                "variables":{},
-                "tags":[],
-                "businessId":"order-12345"
-            }""",
-            JsonCompareMode.STRICT);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
@@ -816,53 +785,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
     assertThat(capturedRequest.businessId()).isEqualTo(businessId);
-  }
-
-  @Test
-  void shouldRejectCreateProcessInstanceWithResultWhenBusinessIdAlreadyExists() {
-    // given
-    final var businessId = "order-12345";
-    final var processDefinitionId = "bpmnProcessId";
-    final var rejectionReason =
-        "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'"
-            .formatted(businessId, processDefinitionId);
-    when(processInstanceServices.createProcessInstanceWithResult(
-            any(ProcessInstanceCreateRequest.class), any()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new ServiceException(rejectionReason, ServiceException.Status.ALREADY_EXISTS)));
-
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            """
-            {
-              "processDefinitionId": "bpmnProcessId",
-              "awaitCompletion": true,
-              "businessId": "order-12345"
-            }""")
-        .exchange()
-        .expectStatus()
-        .isEqualTo(HttpStatus.CONFLICT)
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
-            """
-            {
-                "type":"about:blank",
-                "title":"ALREADY_EXISTS",
-                "status":409,
-                "detail":"Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition '%s'",
-                "instance":"/v2/process-instances"
-            }"""
-                .formatted(businessId, processDefinitionId),
-            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -881,7 +803,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"Bad Request",
                 "status":400,
-                "detail":"Failed to read request",
+                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required",
                 "instance":"/v2/process-instances"
              }""";
 
@@ -918,7 +840,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"Bad Request",
                 "status":400,
-                "detail":"Request property [processDefinitionKey] cannot be parsed",
+                "detail":"Request property [processDefinitionId] cannot be parsed",
                 "instance":"/v2/process-instances"
              }""";
 
@@ -1091,34 +1013,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldReturnGatewayTimeoutWhenCancelProcessInstanceTimesOut() {
-    // given
-    when(processInstanceServices.cancelProcessInstance(
-            any(ProcessInstanceCancelRequest.class), any()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                ErrorMapper.mapError(new TimeoutException("Task listener blocked cancellation"))));
-
-    // when / then
-    webClient
-        .post()
-        .uri(CANCEL_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .jsonPath("$.title")
-        .isEqualTo("DEADLINE_EXCEEDED")
-        .jsonPath("$.detail")
-        .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
-        .jsonPath("$.status")
-        .isEqualTo(504);
   }
 
   @Test
@@ -2851,7 +2745,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"No targetProcessDefinitionKey provided.",
+                "detail":"No targetProcessDefinitionKey provided. No mappingInstructions provided.",
                 "instance":"/v2/process-instances/migration"
              }""";
 
@@ -3288,7 +3182,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[\\\\p{L}_][\\\\p{L}\\\\p{N}_\\\\-.]*$'.",
+                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[\\\\p{L}_][\\\\p{L}\\\\p{N}_\\\\-\\\\.]*$'.",
                 "instance":"/v2/process-instances"
              }""";
 

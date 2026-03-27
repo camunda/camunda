@@ -19,7 +19,7 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.ProcessEngineConfiguration;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultMessageServiceAdapter;
 import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedMessageController;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -42,7 +42,7 @@ import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
-@Import({DefaultMessageServiceAdapter.class, ProcessEngineConfiguration.class})
+@Import({DefaultMessageServiceAdapter.class, GatewayRestConfiguration.class})
 @WebMvcTest(GeneratedMessageController.class)
 public class MessageControllerTest extends RestControllerTest {
 
@@ -64,6 +64,8 @@ public class MessageControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
@@ -125,6 +127,8 @@ public class MessageControllerTest extends RestControllerTest {
   void shouldCorrelateMessageWithMultiTenancyEnabled() {
     // given
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(messageServices.correlateMessage(any(), any()))
@@ -473,7 +477,7 @@ public class MessageControllerTest extends RestControllerTest {
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
-    assertThat(capturedRequest.correlationKey()).isNull();
+    assertThat(capturedRequest.correlationKey()).isEmpty();
     assertThat(capturedRequest.timeToLive()).isEqualTo(123L);
     assertThat(capturedRequest.messageId()).isEqualTo("messageId");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
@@ -512,8 +516,8 @@ public class MessageControllerTest extends RestControllerTest {
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
-    assertThat(capturedRequest.correlationKey()).isNull();
-    assertThat(capturedRequest.timeToLive()).isNull();
+    assertThat(capturedRequest.correlationKey()).isEmpty();
+    assertThat(capturedRequest.timeToLive()).isEqualTo(0L);
     assertThat(capturedRequest.messageId()).isEqualTo("messageId");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
     assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);

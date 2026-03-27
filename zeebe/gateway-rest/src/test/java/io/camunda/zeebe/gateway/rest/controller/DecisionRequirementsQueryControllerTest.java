@@ -100,6 +100,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
     when(decisionRequirementsServices.getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any()))
         .thenReturn(new DecisionRequirementsEntity(1L, "id", "name", 1, "rN", null, "t"));

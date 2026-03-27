@@ -160,6 +160,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
     when(variableServices.getByKey(eq(VALID_VARIABLE_KEY), any()))
         .thenReturn(new VariableEntity(0L, "n", "v", null, false, 2L, 3L, 4L, "bpid", "<default>"));

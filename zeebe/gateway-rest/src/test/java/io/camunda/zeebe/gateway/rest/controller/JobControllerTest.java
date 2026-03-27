@@ -74,6 +74,8 @@ public class JobControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     final var jobMetricsCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
     jobMetricsCfg.setEnabled(true);
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);

@@ -55,12 +55,16 @@ public class SignalControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
   void shouldBroadcastSignal() {
     // given
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
@@ -133,6 +137,8 @@ public class SignalControllerTest extends RestControllerTest {
   void shouldBroadcastSignalWithEmptySignalName() {
     // given
     when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))

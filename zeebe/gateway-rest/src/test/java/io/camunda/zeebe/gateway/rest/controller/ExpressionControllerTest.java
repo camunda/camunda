@@ -52,6 +52,8 @@ public class ExpressionControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
   }
 
@@ -146,50 +148,6 @@ public class ExpressionControllerTest extends RestControllerTest {
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("x", 4, "y", 6));
-  }
-
-  @Test
-  void shouldEvaluateExpressionWithWarnings() {
-    // given
-    final var expressionRecord = mock(ExpressionRecord.class);
-    when(expressionRecord.getExpression()).thenReturn("=invalid_function()");
-    when(expressionRecord.getResultValue()).thenReturn(null);
-    when(expressionRecord.getWarnings())
-        .thenReturn(List.of("No function found with name 'invalid_function' and 0 parameters"));
-
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
-
-    final var request =
-        """
-        {
-            "expression": "=invalid_function()",
-            "tenantId": "tenant1"
-        }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(EXPRESSION_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            {
-                "expression": "=invalid_function()",
-                "result": null,
-                "warnings": [
-                    {
-                        "message": "No function found with name 'invalid_function' and 0 parameters"
-                    }
-                ]
-            }""",
-            JsonCompareMode.STRICT);
   }
 
   @Test

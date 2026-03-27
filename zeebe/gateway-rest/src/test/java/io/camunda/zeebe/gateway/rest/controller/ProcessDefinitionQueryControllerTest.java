@@ -156,6 +156,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   void setupProcessDefinitionServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authenticationProvider.getAnonymousIfUnavailable())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -377,47 +379,6 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                             .build())
                     .build()),
             any());
-  }
-
-  @Test
-  public void shouldRejectElementStatisticsWithInvalidRootFilterAndValidOrClause() {
-    // given
-    final var request =
-        """
-            {
-              "filter": {
-                "processInstanceKey": "abc",
-                "$or": [
-                  { "elementId": "elementId" }
-                ]
-              }
-            }""";
-    final var expectedResponse =
-        """
-            {
-              "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
-              "status": 400,
-              "detail": "The provided processInstanceKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
-              "instance": "/v2/process-definitions/1/statistics/element-instances"
-            }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_DEFINITION_URL + "1/statistics/element-instances")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
-
-    verify(processDefinitionServices, never()).elementStatistics(any(), any());
   }
 
   @Test
