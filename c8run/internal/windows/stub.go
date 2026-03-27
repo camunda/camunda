@@ -19,10 +19,6 @@ func (w *WindowsC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *e
 	panic("Platform was not built for windows")
 }
 
-func (w *WindowsC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd {
-	panic("Platform was not built for windows")
-}
-
 func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	panic("Platform was not built for windows")
 }
