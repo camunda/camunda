@@ -14,18 +14,30 @@ const EditorWrapper = styled.div<{
   $invalid?: boolean;
 }>`
   height: ${({height}) => height}px;
-  margin: var(--cds-spacing-02) 0;
 
-  ${({$readOnly}) =>
-    $readOnly &&
-    `
+  .monaco-editor {
+    padding-top: var(--cds-spacing-02);
+    padding-bottom: var(--cds-spacing-02);
+  }
+
+  ${({$readOnly}) => {
+    if ($readOnly) {
+      return `
+        .monaco-editor {
+          --vscode-editor-background: var(--cds-layer-01) !important;
+        }
+        .monaco-editor .cursors-layer > .cursor {
+          display: none !important;
+        }
+      `;
+    } else {
+      return `
       .monaco-editor {
-        --vscode-editor-background: var(--cds-layer-01) !important;
+        --vscode-editor-background: var(--cds-field) !important;
       }
-      .monaco-editor .cursors-layer > .cursor {
-        display: none !important;
-      }
-    `}
+    `;
+    }
+  }}
 
   ${({$invalid}) =>
     $invalid &&

@@ -15,7 +15,8 @@ import {
 import {EditorLoader, EditorWrapper} from './styled';
 import {useFieldError} from '../../hooks/useFieldError';
 
-const LINE_HEIGHT = 20;
+const LINE_HEIGHT = 22;
+const MIN_HEIGHT = 28;
 const MAX_LINES = 5;
 
 const JSONEditor = lazy(async () => {
@@ -45,7 +46,9 @@ type Props = {
 
 function computeHeight(text: string, maxLines: number): number {
   const lineCount = Math.max(1, (text || '').split('\n').length);
-  return Math.min(lineCount, maxLines) * LINE_HEIGHT;
+  const textHeight = Math.min(lineCount, maxLines) * LINE_HEIGHT;
+
+  return Math.max(MIN_HEIGHT, textHeight);
 }
 
 type InnerProps = Props & {fieldError?: string};
@@ -129,6 +132,7 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
               scrollbar: {
                 useShadows: false,
               },
+              minimap: {enabled: false},
             }}
           />
           {fieldError && (
