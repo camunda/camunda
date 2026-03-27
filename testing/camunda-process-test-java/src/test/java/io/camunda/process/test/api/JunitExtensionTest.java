@@ -27,6 +27,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
@@ -627,6 +628,71 @@ public class JunitExtensionTest {
 
       // then
       assertThat(CamundaAssert.getJudgeConfig()).isEqualTo(judgeConfig);
+    }
+  }
+
+  @Nested
+  class SemanticSimilarityConfigurationTest {
+
+    private @Mock SemanticSimilarityConfig semanticSimilarityConfig;
+
+    @AfterEach
+    void clearConfig() {
+      CamundaAssert.setSemanticSimilarityConfig(null);
+    }
+
+    @Test
+    void shouldBootstrapSemanticSimilarityConfigFromServiceLoader() throws Exception {
+      // given: the FakeEmbeddingModelAdapterProvider is registered in the file
+      // `META-INF/services/io.camunda.process.test.api.similarity.EmbeddingModelAdapterProvider`
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getSemanticSimilarityConfig())
+          .as("SemanticSimilarityConfig should be auto-bootstrapped via SPI")
+          .isNotNull()
+          .satisfies(
+              config ->
+                  assertThat(config.getEmbeddingModel().embed("any text"))
+                      .isEqualTo(new float[] {1.0f, 0.0f}))
+          .satisfies(config -> assertThat(config.getThreshold()).isEqualTo(0.9));
+    }
+
+    @Test
+    void shouldSetSemanticSimilarityConfigOnExtension() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+              .withSemanticSimilarityConfig(semanticSimilarityConfig);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getSemanticSimilarityConfig()).isEqualTo(semanticSimilarityConfig);
+    }
+
+    @Test
+    void shouldSetSemanticSimilarityConfigOnAssertion() throws Exception {
+      // given
+      CamundaAssert.setSemanticSimilarityConfig(semanticSimilarityConfig);
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getSemanticSimilarityConfig()).isEqualTo(semanticSimilarityConfig);
     }
   }
 }
