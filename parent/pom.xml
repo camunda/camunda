@@ -169,6 +169,7 @@
     <version.caffeine>3.2.3</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
     <version.reflections>0.10.2</version.reflections>
+    <version.duct-tape>1.0.8</version.duct-tape>
 
     <version.commons-io>2.21.0</version.commons-io>
     <version.thymeleaf>3.1.4.RELEASE</version.thymeleaf>
@@ -388,6 +389,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-qa-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-testcontainer</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1455,18 +1462,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-test-container</artifactId>
-        <version>${version.zeebe-test-container}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-test-container-engine</artifactId>
-        <version>${version.zeebe-test-container}</version>
-      </dependency>
-
-      <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
         <version>${version.error-prone}</version>
@@ -2214,6 +2209,13 @@
         <artifactId>json-flattener</artifactId>
         <version>${version.json-flattener}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.rnorth.duct-tape</groupId>
+        <artifactId>duct-tape</artifactId>
+        <version>${version.duct-tape}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
