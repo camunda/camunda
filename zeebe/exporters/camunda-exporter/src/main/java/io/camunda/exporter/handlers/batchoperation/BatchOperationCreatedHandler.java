@@ -100,15 +100,6 @@ public class BatchOperationCreatedHandler
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.TYPE, entity.getType());
 
-    final var actorType = entity.getActorType();
-    if (actorType != null) {
-      updateFields.put(BatchOperationTemplate.ACTOR_TYPE, actorType);
-    }
-
-    final var actorId = entity.getActorId();
-    if (actorId != null) {
-      updateFields.put(BatchOperationTemplate.ACTOR_ID, actorId);
-    }
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 

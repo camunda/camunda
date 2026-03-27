@@ -54,7 +54,7 @@ public class BatchOperationEntityTransformer
             .map(BatchOperationType::valueOf)
             .orElseGet(
                 () -> {
-                  LOG.warn("Batch operation with id '{}' has no type", source.getId());
+                  LOG.debug("Batch operation with id '{}' has no type", source.getId());
                   return null;
                 });
     return new BatchOperationEntity(

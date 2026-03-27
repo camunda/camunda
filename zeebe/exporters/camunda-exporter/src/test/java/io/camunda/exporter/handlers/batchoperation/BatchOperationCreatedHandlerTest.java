@@ -108,7 +108,8 @@ class BatchOperationCreatedHandlerTest {
   @Test
   void shouldUpsertWithPopulatedUpdateFieldsOnFlush() throws PersistenceException {
     // given
-    final var entity = new BatchOperationEntity().setId("123");
+    final var entity =
+        new BatchOperationEntity().setId("123").setType(OperationType.RESOLVE_INCIDENT);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
@@ -120,10 +121,6 @@ class BatchOperationCreatedHandlerTest {
             eq(indexName),
             eq("123"),
             eq(entity),
-            eq(
-                Map.of(
-                    BatchOperationTemplate.TYPE, entity.getType(),
-                    BatchOperationTemplate.ACTOR_ID, entity.getActorId(),
-                    BatchOperationTemplate.ACTOR_TYPE, entity.getActorType())));
+            eq(Map.of(BatchOperationTemplate.TYPE, entity.getType())));
   }
 }
