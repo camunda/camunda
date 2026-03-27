@@ -401,7 +401,7 @@ describe('<Task />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show error notification with subtitle on unauthorized task completion', async () => {
+  it('should show error notification with subtitle on forbidden task completion', async () => {
     nodeMockServer.use(
       http.get(
         '/v2/user-tasks/:userTaskKey',
