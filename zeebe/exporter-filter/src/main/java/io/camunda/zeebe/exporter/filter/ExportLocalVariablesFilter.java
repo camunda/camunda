@@ -38,9 +38,7 @@ public final class ExportLocalVariablesFilter implements ExporterRecordFilter, R
     if (exportLocalVariablesEnabled) {
       return true;
     }
-    final boolean isLocal =
-        variableRecordValue.getScopeKey() != variableRecordValue.getProcessInstanceKey();
-    return !isLocal;
+    return !VariableScope.isLocal(variableRecordValue);
   }
 
   @Override
