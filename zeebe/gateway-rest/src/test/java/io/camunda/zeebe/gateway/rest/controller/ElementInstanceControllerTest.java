@@ -16,6 +16,8 @@ import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultElementInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedElementInstanceController;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -28,13 +30,15 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(ElementInstanceController.class)
+@Import(DefaultElementInstanceServiceAdapter.class)
+@WebMvcTest(GeneratedElementInstanceController.class)
 public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
@@ -120,23 +124,16 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectSetVariablesWithSetVariablesEmpty() {
-    // given
+  void shouldAcceptSetVariablesWithSetVariablesEmpty() {
+    // given — strict DTO accepts empty variables (spec has no minProperties constraint)
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new VariableDocumentRecord()));
+
     final var request =
         """
             {
                 "variables": {}
             }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
-                "status":400,
-                "detail":"No variables provided.",
-                "instance":"/v2/element-instances/123/variables"
-             }""";
 
     // when / then
     webClient
@@ -147,11 +144,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
+        .isNoContent();
   }
 
   @Test

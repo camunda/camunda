@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogOperationTypeEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 
 public final class AuditLogOperationTypeConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof AuditLogOperationTypeEnum;
+    return value instanceof GeneratedAuditLogOperationTypeEnum;
   }
 
   @Override
@@ -22,7 +22,7 @@ public final class AuditLogOperationTypeConverter implements CustomConverter<Str
     if (value == null) {
       return null;
     }
-    if (value instanceof final AuditLogOperationTypeEnum operationTypeEnum) {
+    if (value instanceof final GeneratedAuditLogOperationTypeEnum operationTypeEnum) {
       return toInternalOperationTypeAsString(operationTypeEnum);
     }
     throw new IllegalArgumentException(
@@ -30,17 +30,17 @@ public final class AuditLogOperationTypeConverter implements CustomConverter<Str
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                AuditLogOperationTypeEnum.class.getSimpleName()));
+                GeneratedAuditLogOperationTypeEnum.class.getSimpleName()));
   }
 
   public static String toInternalOperationTypeAsString(
-      final AuditLogOperationTypeEnum operationTypeEnum) {
+      final GeneratedAuditLogOperationTypeEnum operationTypeEnum) {
     final AuditLogOperationType internalType = toInternalOperationType(operationTypeEnum);
     return internalType == null ? null : internalType.name();
   }
 
   public static AuditLogOperationType toInternalOperationType(
-      final AuditLogOperationTypeEnum operationTypeEnum) {
+      final GeneratedAuditLogOperationTypeEnum operationTypeEnum) {
     if (operationTypeEnum == null) {
       return null;
     }

@@ -116,27 +116,38 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search user task variables - bad request - invalid payload', async ({
+  test('Search user task variables - bad request - invalid page type', async ({
     request,
   }) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
+    const userTaskKey = 2251799813738612; // non-existing, but valid format
     const res = await request.post(
       buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
       {
         headers: jsonHeaders(),
         data: {
-          // Invalid field
           page: 'invalidValue',
+        },
+      },
+    );
+    await assertBadRequest(res, 'Request property [page] cannot be parsed');
+  });
+
+  test('Search user task variables - bad request - invalid page field', async ({
+    request,
+  }) => {
+    const userTaskKey = 2251799813738612; // non-existing, but valid format
+    const res = await request.post(
+      buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+      {
+        headers: jsonHeaders(),
+        data: {
+          page: {limit: 'notAnInteger'},
         },
       },
     );
     await assertBadRequest(
       res,
-      'At least one of [from, after, before, limit] is required.',
+      'Request property [page.limit] cannot be parsed',
     );
   });
 

@@ -85,6 +85,7 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 - `description` — full sentence(s) with period. First line must be a complete sentence (used as `meta description` in docs)
 - `tags` — exactly one tag matching the resource
 - `x-eventually-consistent` — explicitly `true` or `false` (see §2.5)
+- `x-requires-secondary-storage` — `true` when a command requires secondary storage (see §2.5)
 
 **Path patterns:**
 
@@ -268,7 +269,11 @@ This is enforced by the `array-properties-must-be-required` Spectral rule.
 
 Use `nullable: true` only when the property can genuinely be `null` in the response (e.g., `name` on a process definition that may not have one). Never use `nullable` on array properties.
 
-### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
+### 2.5 Secondary storage vendor extensions
+
+Two vendor extensions control the `@RequiresSecondaryStorage` annotation on generated API interface methods. When secondary storage is not configured (`camunda.database.type=none`), endpoints with this annotation return **HTTP 403**.
+
+#### `x-eventually-consistent`
 
 Every operation **should** declare `x-eventually-consistent` explicitly:
 
@@ -279,15 +284,30 @@ Every operation **should** declare `x-eventually-consistent` explicitly:
 
 > **What the Spectral rule enforces:** The `no-eventually-consistent-on-commands` rule only prevents command (mutating) operations from being marked `x-eventually-consistent: true`. It does **not** require the extension to be present on every operation, nor does it enforce that query operations set it to `true`. Declaring the annotation on all operations is a **team convention** for clarity and SDK correctness; setting `true` on a command causes SDK generators to emit unnecessary polling wrappers.
 
-#### Relationship to `@RequiresSecondaryStorage`
+#### `x-requires-secondary-storage`
 
-On the Java controller side, query endpoints that read from the secondary storage (Elasticsearch/OpenSearch) are annotated with `@RequiresSecondaryStorage`. This annotation causes the endpoint to return **HTTP 403** when secondary storage is not configured (`camunda.database.type=none`).
+Some **mutations** also require secondary storage — for example, batch operations that need the secondary storage subsystem to exist, or mutations that read from secondary storage during authorization. These cannot use `x-eventually-consistent: true` (reserved for reads), so they declare a separate extension:
 
-**Keep these two in sync:**
-- If a spec operation has `x-eventually-consistent: true`, the corresponding controller method should have `@RequiresSecondaryStorage`.
-- If you add `@RequiresSecondaryStorage` to a controller method, set `x-eventually-consistent: true` on the matching spec operation.
+```yaml
+/process-instances/{processInstanceKey}/incident-resolution:
+  post:
+    x-eventually-consistent: false
+    x-requires-secondary-storage: true
+```
 
-A mismatch means SDK consumers get incorrect consistency guarantees. See §2.15 for more details on controller–spec alignment.
+Use `x-requires-secondary-storage: true` when the endpoint is a command (mutation) **and** it requires the secondary storage subsystem to be available.
+
+#### Annotation generation
+
+Both extensions drive `@RequiresSecondaryStorage` annotation generation on the API interface methods. The annotation is emitted when **either** extension is true:
+
+| `x-eventually-consistent` | `x-requires-secondary-storage` | Annotation generated? |                Use case                |
+|:-------------------------:|:------------------------------:|:---------------------:|:--------------------------------------:|
+|          `true`           |           (not set)            |          Yes          | Queries reading from secondary storage |
+|          `false`          |             `true`             |          Yes          | Mutations requiring secondary storage  |
+|          `false`          |           (not set)            |          No           |         Pure engine mutations          |
+
+> **Important:** Both extensions must never be `true` on the same operation. `x-eventually-consistent: true` is for reads; `x-requires-secondary-storage: true` is for mutations.
 
 ### 2.6 Component reuse and schema organisation
 
@@ -751,15 +771,16 @@ public ResponseEntity<String> getCurrentToken() { … }
 
 This prevents the endpoint from appearing in the generated spec while keeping the route functional at runtime. Current uses include the SaaS token endpoint in `SaaSTokenController`.
 
-#### `@RequiresSecondaryStorage` ↔ `x-eventually-consistent` alignment
+#### `@RequiresSecondaryStorage` — generated from the spec
 
-Controller methods annotated with `@RequiresSecondaryStorage` serve data from the eventually-consistent secondary storage (e.g., Elasticsearch/OpenSearch). Their corresponding spec operations should have `x-eventually-consistent: true` so that SDK generators can emit appropriate polling behaviour.
+The `@RequiresSecondaryStorage` annotation is **automatically generated** on API interface methods from two OpenAPI vendor extensions (see §2.5):
 
-If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart has `x-eventually-consistent: true` — and vice versa. A mismatch means either:
-- The SDK will incorrectly advise callers about consistency guarantees, or
-- The endpoint will reject requests when secondary storage is disabled but the spec doesn't indicate it requires it.
+- `x-eventually-consistent: true` — query endpoints reading from secondary storage
+- `x-requires-secondary-storage: true` — mutations that require secondary storage
 
-> **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against `x-eventually-consistent`. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
+Controller implementations inherit the annotation from the generated interface. When adding a new endpoint, set the appropriate vendor extension in the spec rather than manually annotating the controller.
+
+> **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against the vendor extensions. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
 
 ---
 
@@ -1094,6 +1115,7 @@ Before opening a PR:
 - [ ] **All properties have descriptions**
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
+- [ ] **`x-requires-secondary-storage`** set to `true` if the command requires secondary storage (see §2.5)
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`
 - [ ] **Controller implemented** following conventions (§4)
@@ -1182,7 +1204,7 @@ properties:
     x-eventually-consistent: true
 ```
 
-**Fix:** Change to `x-eventually-consistent: false`. Only search/statistics/GET endpoints use `true`.
+**Fix:** Change to `x-eventually-consistent: false`. Only search/statistics/GET endpoints use `true`. If the command requires secondary storage, add `x-requires-secondary-storage: true` instead (see §2.5).
 
 ---
 

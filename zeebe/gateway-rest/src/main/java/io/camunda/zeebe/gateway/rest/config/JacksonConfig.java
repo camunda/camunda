@@ -142,7 +142,18 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceModificationTerminateInstruction.class,
         new ProcessInstanceModificationTerminateInstructionDeserializer());
-    return builder -> builder.modulesToInstall(modules -> modules.add(module));
+    return builder ->
+        builder
+            .featuresToEnable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .featuresToDisable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+            .postConfigurer(
+                om ->
+                    om.coercionConfigDefaults()
+                        .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail)
+                        .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                        .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                        .setCoercion(CoercionInputShape.String, CoercionAction.Fail))
+            .modulesToInstall(modules -> modules.add(module));
   }
 
   @Bean("gatewayRestObjectMapper")

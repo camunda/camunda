@@ -73,6 +73,7 @@ paths:
   /decision-instances/{decisionEvaluationKey}/deletion:
     post:
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Decision instance
       operationId: deleteDecisionInstance
@@ -112,6 +113,7 @@ paths:
   /decision-instances/deletion:
     post:
       x-eventually-consistent: false
+      x-requires-secondary-storage: true
       tags:
         - Decision instance
       operationId: deleteDecisionInstancesBatchOperation

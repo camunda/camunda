@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 
 public final class AuditLogCategoryConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof AuditLogCategoryEnum;
+    return value instanceof GeneratedAuditLogCategoryEnum || value instanceof String;
   }
 
   @Override
@@ -22,24 +22,28 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
     if (value == null) {
       return null;
     }
-    if (value instanceof final AuditLogCategoryEnum categoryEnum) {
+    if (value instanceof final GeneratedAuditLogCategoryEnum categoryEnum) {
       return toInternalCategoryAsString(categoryEnum);
+    }
+    if (value instanceof final String stringValue) {
+      return toInternalCategoryAsString(GeneratedAuditLogCategoryEnum.fromValue(stringValue));
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                AuditLogCategoryEnum.class.getSimpleName()));
+                GeneratedAuditLogCategoryEnum.class.getSimpleName()));
   }
 
-  public static String toInternalCategoryAsString(final AuditLogCategoryEnum categoryEnum) {
+  public static String toInternalCategoryAsString(
+      final GeneratedAuditLogCategoryEnum categoryEnum) {
     final AuditLogOperationCategory internalType = toInternalCategory(categoryEnum);
     return internalType == null ? null : internalType.name();
   }
 
   public static AuditLogOperationCategory toInternalCategory(
-      final AuditLogCategoryEnum categoryEnum) {
+      final GeneratedAuditLogCategoryEnum categoryEnum) {
     if (categoryEnum == null) {
       return null;
     }

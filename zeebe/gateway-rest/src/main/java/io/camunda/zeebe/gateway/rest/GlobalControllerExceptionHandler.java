@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
@@ -69,17 +70,26 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       detail = REQUEST_BODY_MISSING_EXCEPTION_MESSAGE;
     } else if (isUnknownTypeError(ex)) {
       final var typeException = (InvalidTypeIdException) ex.getCause();
-      final var invalidValue = typeException.getTypeId();
-      final var typeName = typeException.getPath().getLast().getFieldName();
-
-      final var typeAnnotation =
-          typeException.getBaseType().getRawClass().getDeclaredAnnotation(JsonSubTypes.class);
-      if (typeAnnotation == null) {
-        detail = INVALID_TYPE_ERROR_MESSAGE.formatted(invalidValue, typeName);
+      final var path = typeException.getPath();
+      if (path.isEmpty()) {
+        detail = defaultDetail;
       } else {
-        final var options = Arrays.stream(typeAnnotation.value()).map(Type::name).toList();
-        detail = INVALID_TYPE_ERROR_MESSAGE_WITH_OPTIONS.formatted(invalidValue, typeName, options);
+        final var invalidValue = typeException.getTypeId();
+        final var typeName = path.getLast().getFieldName();
+
+        final var typeAnnotation =
+            typeException.getBaseType().getRawClass().getDeclaredAnnotation(JsonSubTypes.class);
+        if (typeAnnotation == null) {
+          detail = INVALID_TYPE_ERROR_MESSAGE.formatted(invalidValue, typeName);
+        } else {
+          final var options = Arrays.stream(typeAnnotation.value()).map(Type::name).toList();
+          detail =
+              INVALID_TYPE_ERROR_MESSAGE_WITH_OPTIONS.formatted(invalidValue, typeName, options);
+        }
       }
+    } else if (isFilterPropertyEnumError(ex)) {
+      // Filter property enum validation — deserializer already formatted the full message.
+      detail = ((InvalidFormatException) ex.getCause()).getOriginalMessage();
     } else if (isMismatchedInputError(ex)) {
       final var mismatchedInputException = (MismatchedInputException) ex.getCause();
       final var path =
@@ -99,6 +109,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
               ((HttpMessageNotReadableException) ex).getRootCause().getMessage(), field, options);
     } else if (isArrayTypeDeserializationError(ex)) {
       detail = ((HttpMessageNotReadableException) ex).getRootCause().getMessage() + ".";
+    } else if (isStrictContractConstraintViolation(ex)) {
+      detail = extractConstraintViolationDetail(ex);
     } else {
       detail = defaultDetail;
     }
@@ -106,6 +118,20 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     final var problemDetail =
         super.createProblemDetail(
             ex, status, detail, detailMessageCode, detailMessageArguments, request);
+
+    // Strict contract constraint violations from record compact constructors (null required
+    // fields, constraint checks) use INVALID_ARGUMENT title for backward compatibility with the
+    // hand-written controllers, which routed these validations through RequestValidator /
+    // GatewayErrorMapper with RejectionType.INVALID_ARGUMENT. Polymorphic deserializer errors
+    // (sealed interfaces) and other parsing errors keep the Spring default "Bad Request" title.
+    if (isStrictContractConstraintViolation(ex)) {
+      final var vie =
+          (ValueInstantiationException) ((HttpMessageNotReadableException) ex).getCause();
+      if (vie.getType().getRawClass().isRecord()) {
+        problemDetail.setTitle("INVALID_ARGUMENT");
+      }
+    }
+
     return CamundaProblemDetail.wrap(problemDetail);
   }
 
@@ -148,6 +174,13 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         && ex.getCause() instanceof MismatchedInputException;
   }
 
+  private boolean isFilterPropertyEnumError(final Exception ex) {
+    return ex instanceof HttpMessageNotReadableException
+        && ex.getCause() instanceof final InvalidFormatException ife
+        && ife.getMessage() != null
+        && ife.getMessage().startsWith("Unexpected value '");
+  }
+
   private boolean isUnknownEnumError(final Exception ex) {
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof final ValueInstantiationException instantiationException
@@ -157,6 +190,35 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   private boolean isUnknownTypeError(final Exception ex) {
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof InvalidTypeIdException;
+  }
+
+  /**
+   * Detects ValueInstantiationException from strict contract compact constructors. These occur when
+   * a required field is null (NullPointerException) or a constraint check fails
+   * (IllegalArgumentException) during Jackson deserialization of a strict contract record.
+   */
+  private boolean isStrictContractConstraintViolation(final Exception ex) {
+    return ex instanceof HttpMessageNotReadableException
+        && ex.getCause() instanceof final ValueInstantiationException vie
+        && !vie.getType().isEnumType()
+        && (vie.getCause() instanceof NullPointerException
+            || vie.getCause() instanceof IllegalArgumentException);
+  }
+
+  private String extractConstraintViolationDetail(final Exception ex) {
+    final var rootCause = ((HttpMessageNotReadableException) ex).getRootCause();
+    if (rootCause != null && rootCause.getMessage() != null) {
+      final var message = rootCause.getMessage();
+      // Record compact constructor messages may omit trailing period; append it for consistency.
+      // Polymorphic deserializer messages are pre-formatted and should not be modified.
+      final var vie =
+          (ValueInstantiationException) ((HttpMessageNotReadableException) ex).getCause();
+      if (vie.getType().getRawClass().isRecord() && !message.endsWith(".")) {
+        return message + ".";
+      }
+      return message;
+    }
+    return "Invalid request.";
   }
 
   @ExceptionHandler(ResponseValidationException.class)

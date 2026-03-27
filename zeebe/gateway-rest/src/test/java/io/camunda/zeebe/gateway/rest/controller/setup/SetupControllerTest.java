@@ -24,6 +24,8 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSetupServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedSetupController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -37,13 +39,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(SetupController.class)
+@Import(DefaultSetupServiceAdapter.class)
+@WebMvcTest(GeneratedSetupController.class)
 class SetupControllerTest extends RestControllerTest {
   private static final String BASE_PATH = "/v2/setup";
   private static final String USER_PATH = BASE_PATH + "/user";
@@ -125,7 +129,8 @@ class SetupControllerTest extends RestControllerTest {
     // when then
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
-            HttpStatus.FORBIDDEN, SetupController.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
+            HttpStatus.FORBIDDEN,
+            DefaultSetupServiceAdapter.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
     expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
@@ -150,7 +155,7 @@ class SetupControllerTest extends RestControllerTest {
     // when then
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
-            HttpStatus.FORBIDDEN, SetupController.ADMIN_EXISTS_ERROR_MESSAGE);
+            HttpStatus.FORBIDDEN, DefaultSetupServiceAdapter.ADMIN_EXISTS_ERROR_MESSAGE);
     expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 

@@ -18,6 +18,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultExpressionServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedExpressionController;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.List;
 import java.util.Map;
@@ -29,12 +31,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = ExpressionController.class)
+@Import(DefaultExpressionServiceAdapter.class)
+@WebMvcTest(value = GeneratedExpressionController.class)
 public class ExpressionControllerTest extends RestControllerTest {
 
   static final String EXPRESSION_URL = "/v2/expression/evaluation";
@@ -203,7 +207,7 @@ public class ExpressionControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "INVALID_ARGUMENT",
               "status": 400,
-              "detail": "No expression provided",
+              "detail": "No expression provided.",
               "instance": "%s"
             }"""
             .formatted(EXPRESSION_URL);

@@ -25,6 +25,8 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultVariableServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedVariableController;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,12 +39,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = VariableController.class)
+@Import(DefaultVariableServiceAdapter.class)
+@WebMvcTest(value = GeneratedVariableController.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;
@@ -367,7 +371,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -407,7 +411,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"

@@ -23,6 +23,8 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSystemServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedSystemController;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -31,11 +33,13 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(SystemController.class)
+@Import(DefaultSystemServiceAdapter.class)
+@WebMvcTest(GeneratedSystemController.class)
 public class SystemControllerTest extends RestControllerTest {
   static final String USAGE_METRICS_URL = "/v2/system/usage-metrics";
   static final String SYSTEM_CONFIGURATION_URL = "/v2/system/configuration";
@@ -197,9 +201,9 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
-          "detail":"Required parameter 'startTime' is not present.",
+          "detail":"The startTime and endTime must both be specified.",
           "instance":"/v2/system/usage-metrics"
         }
         """;
@@ -251,9 +255,9 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
-          "detail":"Required parameter 'endTime' is not present.",
+          "detail":"The startTime and endTime must both be specified.",
           "instance":"/v2/system/usage-metrics"
         }
         """;

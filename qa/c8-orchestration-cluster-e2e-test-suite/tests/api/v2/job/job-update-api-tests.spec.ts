@@ -54,6 +54,26 @@ test.describe('Job Update API Tests', () => {
     });
   });
 
+  test('Update Job - invalid operationReference', async ({request}) => {
+    const jobKey = 2251799813738612; // non-existing
+
+    await test.step('Send update with invalid operationReference', async () => {
+      const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {retries: 0, timeout: 0},
+          operationReference: 0,
+        },
+      });
+
+      await assertBadRequest(
+        updateRes,
+        "The value for operationReference is '0' but must be > 0.",
+        'INVALID_ARGUMENT',
+      );
+    });
+  });
+
   test('Update Job - not found', async ({request}) => {
     const jobKey = 2251799813738612; // non-existing
 
@@ -62,7 +82,7 @@ test.describe('Job Update API Tests', () => {
         headers: jsonHeaders(),
         data: {
           changeset: {retries: 0, timeout: 0},
-          operationReference: 0,
+          operationReference: 1,
         },
       });
 

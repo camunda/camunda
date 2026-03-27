@@ -14,20 +14,26 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthenticationServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAuthenticationController;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(AuthenticationController.class)
+@Import(DefaultAuthenticationServiceAdapter.class)
+@WebMvcTest(GeneratedAuthenticationController.class)
 @ActiveProfiles("consolidated-auth")
 public class AuthenticationControllerTest extends RestControllerTest {
 
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private CamundaUserService camundaUserService;
 
   @Test

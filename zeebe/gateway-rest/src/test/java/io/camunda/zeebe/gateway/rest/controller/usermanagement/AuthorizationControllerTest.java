@@ -28,6 +28,8 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAuthorizationController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -51,8 +53,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(AuthorizationController.class)
-@Import(SecurityConfiguration.class)
+@Import({DefaultAuthorizationServiceAdapter.class, SecurityConfiguration.class})
+@WebMvcTest(GeneratedAuthorizationController.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
@@ -131,9 +133,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
             }""";
 
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
-    expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
+    expectedBody.setDetail("No ownerId provided.");
 
     // when - then
     webClient
@@ -163,7 +165,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations"));
-    expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
+    expectedBody.setDetail("Failed to read request");
 
     // when - then
     webClient
@@ -267,9 +269,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
             }""";
 
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/2"));
-    expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
+    expectedBody.setDetail("No ownerId provided.");
 
     // when - then
     webClient
@@ -299,7 +301,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/authorizations/3"));
-    expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
+    expectedBody.setDetail("Failed to read request");
 
     // when - then
     webClient

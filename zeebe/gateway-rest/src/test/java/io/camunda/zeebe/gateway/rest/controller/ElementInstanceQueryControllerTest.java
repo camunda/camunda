@@ -34,6 +34,8 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultElementInstanceServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedElementInstanceController;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -51,12 +53,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = ElementInstanceController.class)
+@Import(DefaultElementInstanceServiceAdapter.class)
+@WebMvcTest(value = GeneratedElementInstanceController.class)
 public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -606,6 +610,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .post()
         .uri(String.format(INCIDENTS_SEARCH_URL, 1L))
         .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
         .exchange()
         .expectStatus()
         .isOk()

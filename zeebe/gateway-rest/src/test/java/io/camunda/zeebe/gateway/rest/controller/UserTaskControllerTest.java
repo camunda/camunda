@@ -19,6 +19,8 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserTaskServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserTaskController;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -37,12 +39,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(UserTaskController.class)
+@Import(DefaultUserTaskServiceAdapter.class)
+@WebMvcTest(GeneratedUserTaskController.class)
 public class UserTaskControllerTest extends RestControllerTest {
 
   static final CompletableFuture<UserTaskRecord> BROKER_RESPONSE =
@@ -716,8 +720,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value for a supported attribute in the \\"changeset\\".",
+              "title": "Bad Request",
+              "detail": "Request property [changeset.elementInstanceKey] cannot be parsed",
               "instance": "%s"
             }"""
             .formatted(baseUrl + "/1");
@@ -758,16 +762,20 @@ public class UserTaskControllerTest extends RestControllerTest {
             }"""
             .formatted(priority);
 
+    final var detailMessage =
+        priority < 0
+            ? "The value for priority is '%s' but must be not negative."
+            : "The value for priority is '%s' but must be at most 100.";
     final var expectedBody =
         """
             {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The value for priority is '%s' but must be within the [0,100] range.",
+              "detail": "%s",
               "instance": "%s"
             }"""
-            .formatted(priority, baseUrl + "/1");
+            .formatted(detailMessage.formatted(priority), baseUrl + "/1");
 
     // when / then
     webClient

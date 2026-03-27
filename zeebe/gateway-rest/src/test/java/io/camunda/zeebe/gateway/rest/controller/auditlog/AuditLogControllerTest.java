@@ -18,10 +18,10 @@ import io.camunda.gateway.mapping.http.converters.AuditLogCategoryConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
-import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
-import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogResultEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogEntityTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -33,16 +33,20 @@ import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuditLogServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAuditLogController;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(AuditLogController.class)
+@Import(DefaultAuditLogServiceAdapter.class)
+@WebMvcTest(GeneratedAuditLogController.class)
 public class AuditLogControllerTest extends RestControllerTest {
 
   static final String AUDIT_LOGS_BASE_URL = "/v2/audit-logs";
@@ -247,14 +251,16 @@ public class AuditLogControllerTest extends RestControllerTest {
             .actorTypes(AuditLogActorType.USER.name())
             .operationTypes(
                 AuditLogOperationTypeConverter.toInternalOperationTypeAsString(
-                    AuditLogOperationTypeEnum.CREATE))
+                    GeneratedAuditLogOperationTypeEnum.CREATE))
             .entityTypes(
                 AuditLogEntityTypeConverter.toInternalEntityTypeAsString(
-                    AuditLogEntityTypeEnum.USER))
+                    GeneratedAuditLogEntityTypeEnum.USER))
             .categories(
                 AuditLogCategoryConverter.toInternalCategoryAsString(
-                    AuditLogCategoryEnum.DEPLOYED_RESOURCES))
-            .results(AuditLogResultConverter.toInternalResultAsString(AuditLogResultEnum.SUCCESS))
+                    GeneratedAuditLogCategoryEnum.DEPLOYED_RESOURCES))
+            .results(
+                AuditLogResultConverter.toInternalResultAsString(
+                    GeneratedAuditLogResultEnum.SUCCESS))
             .build();
     verify(auditLogServices).search(eq(new AuditLogQuery.Builder().filter(filter).build()), any());
   }
@@ -277,7 +283,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [ADMIN, DEPLOYED_RESOURCES, USER_TASKS]",
+                  "detail": "Unexpected value 'SOMETHING'",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

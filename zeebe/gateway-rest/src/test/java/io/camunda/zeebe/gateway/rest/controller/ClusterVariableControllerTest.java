@@ -20,6 +20,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClusterVariableServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedClusterVariableController;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -30,12 +32,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = ClusterVariableController.class)
+@Import(DefaultClusterVariableServiceAdapter.class)
+@WebMvcTest(value = GeneratedClusterVariableController.class)
 public class ClusterVariableControllerTest extends RestControllerTest {
 
   static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
