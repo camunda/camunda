@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -272,8 +271,24 @@ public class EventAppliersTest {
             });
   }
 
+  /**
+   * Verifies that event applier source files match their golden copies.
+   *
+   * @see <a
+   *     href="https://github.com/camunda/camunda/blob/main/docs/zeebe/event-applier-golden-files.md">Event
+   *     Applier Golden Files</a>
+   */
   @Nested
   class NoChangesTest {
+
+    // Paths relative to repo root, for use in describedAs messages and GoldenFileUpdater.
+    // Surefire runs from the module directory (zeebe/engine/), so we prefix with the module path.
+    private static final String MODULE_PATH = "zeebe/engine/";
+    private static final String EVENT_APPLIERS_FOLDER =
+        "src/main/java/io/camunda/zeebe/engine/state/appliers";
+    private static final String GOLDEN_FILES_FOLDER = "src/test/resources/state/appliers/golden";
+    private static final String DOCS_URL =
+        "https://github.com/camunda/camunda/blob/main/docs/zeebe/event-applier-golden-files.md";
 
     private static Stream<RegisteredApplier> registeredAppliers() {
       final var eventAppliers = new EventAppliers();
@@ -292,18 +307,10 @@ public class EventAppliersTest {
               });
     }
 
-    /**
-     * EventAppliers are not allowed to change (with a few exceptions). This test ensures that event
-     * appliers don't change by verifying source files of the event applier classes match golden
-     * copies.
-     */
     @ParameterizedTest
     @MethodSource("registeredAppliers")
     void shouldNotChangeImplementation(final RegisteredApplier registeredApplier)
         throws IOException {
-      final var eventAppliersFolder = "src/main/java/io/camunda/zeebe/engine/state/appliers";
-      final var goldenFilesFolder = "src/test/resources/state/appliers/golden";
-
       final var intent = registeredApplier.intent;
       final var version = registeredApplier.version;
       final var applier = registeredApplier.applier;
@@ -311,20 +318,35 @@ public class EventAppliersTest {
 
       // find source file
       final var applierClassName = applier.getClass().getSimpleName();
-      final var applierSourceFile = "%s/%s.java".formatted(eventAppliersFolder, applierClassName);
+      final var applierSourceFile = "%s/%s.java".formatted(EVENT_APPLIERS_FOLDER, applierClassName);
       final var applierSourcePath = Paths.get(applierSourceFile);
 
       // find golden file
       final var goldenFilename = "%s_%s_v%s.golden".formatted(valueTypeName, intent, version);
-      final var goldenFilePath = Paths.get("%s/%s".formatted(goldenFilesFolder, goldenFilename));
+      final var goldenFilePath = Paths.get("%s/%s".formatted(GOLDEN_FILES_FOLDER, goldenFilename));
+
+      // repo-root-relative paths for use in copy commands
+      final var repoSourcePath = MODULE_PATH + applierSourceFile;
+      final var repoGoldenPath = MODULE_PATH + GOLDEN_FILES_FOLDER + "/" + goldenFilename;
+
       if (!goldenFilePath.toFile().exists()) {
         LOG.error("Golden file for {} does not exist.", applierClassName);
-        printWarningAboutChangingGoldenFiles();
-        printCommandToCreateGoldenFile(applierSourcePath, goldenFilePath);
+        final var copyCommand =
+            applierSourcePath.toFile().exists()
+                ? "  cp %s %s".formatted(repoSourcePath, repoGoldenPath)
+                : "  echo -n > %s".formatted(repoGoldenPath);
+        assertThat(goldenFilePath.toFile())
+            .describedAs(
+                """
+                Event appliers must not change after release.
+                Expected golden file to exist for %s (v%d) but it was missing — create it with:
+                %s
+                For bulk updates, run GoldenFileUpdater.main() in NoChangesTest — \
+                this overwrites ALL golden files, review each failure first.
+                See %s"""
+                    .formatted(applierClassName, version, copyCommand, DOCS_URL))
+            .exists();
       }
-      assertThat(goldenFilePath.toFile())
-          .describedAs("Expected to find golden file for %s", applierClassName)
-          .exists();
 
       // if the source file does not exist, expect that the golden file's content is empty
       // this ensures we also check golden files for NOOP appliers
@@ -332,10 +354,21 @@ public class EventAppliersTest {
       if (!applierSourcePath.toFile().exists()) {
         if (!goldenFileContents.isEmpty()) {
           LOG.error("Golden file is not empty, even though this is a NOOP applier.");
-          printWarningAboutChangingGoldenFiles();
-          printCommandToCreateGoldenFile(applierSourcePath, goldenFilePath);
         }
-        assertThat(goldenFileContents).describedAs("Expected an empty golden file").isEmpty();
+        assertThat(goldenFileContents)
+            .describedAs(
+                """
+                Event appliers must not change after release.
+                Expected empty golden file for NOOP applier %s (v%d) but it has content.
+                The most common fix is to register a new applier version, \
+                not update the golden file.
+                If you're sure the golden file should change:
+                  echo -n > %s
+                For bulk updates, run GoldenFileUpdater.main() in NoChangesTest — \
+                this overwrites ALL golden files, review each failure first.
+                See %s"""
+                    .formatted(applierClassName, version, repoGoldenPath, DOCS_URL))
+            .isEmpty();
         return;
       }
 
@@ -343,85 +376,21 @@ public class EventAppliersTest {
       final String sourceContents = Files.readString(applierSourcePath);
       if (!sourceContents.equals(goldenFileContents)) {
         LOG.error("Golden file for {} does not match source file.", applierClassName);
-        printWarningAboutChangingGoldenFiles();
-        printCommandToCreateGoldenFile(applierSourcePath, goldenFilePath);
       }
       assertThat(sourceContents)
-          .describedAs("Expected source file of class %s to match golden copy", applierClassName)
+          .describedAs(
+              """
+              Event appliers must not change after release.
+              Expected golden file to match source for %s (v%d) but they differ.
+              The most common fix is to register a new applier version, \
+              not update the golden file.
+              If you're sure the golden file should change:
+                cp %s %s
+              For bulk updates, run GoldenFileUpdater.main() in NoChangesTest — \
+              this overwrites ALL golden files, review each failure first.
+              See %s"""
+                  .formatted(applierClassName, version, repoSourcePath, repoGoldenPath, DOCS_URL))
           .isEqualTo(goldenFileContents);
-    }
-
-    private static void printWarningAboutChangingGoldenFiles() {
-      LOG.warn(
-          """
-          Event appliers are not allowed to change once registered and released/used in production.
-          The golden files exist to ensure that we carefully review changes to the appliers.
-
-          Context: In Zeebe, an event must be replayed in the exact same way as it was applied to
-          the state when it was initially written. This ensures that we can rebuild the state from
-          all events by replaying them. Changes to the appliers can lead to replaying the events
-          differently when updating to a new version. This can lead to serious bugs as the leader
-          and followers may be ending up with different state. It is thus vital that we find ways
-          to avoid such bugs. This failing test is one such way.
-
-          But the test failed! What to do now? Please consider the following scenarios:
-
-          1. If you've introduced a new event applier in another version, ported it here, and then
-          found that the golden file is different, then you need to carefully consider the case:
-
-          - If the applier was backported: this is a breaking change, and we need to
-            abandon it. Please rollback the change in the newer version. Instead, register a new
-            applier version, and ensure that is is available in all newer versions before adding
-            it here.
-
-          - If the applier was forward ported: you may have found a critical bug if the current
-            code is already released. In that case, we need to carefully consider the changes and
-            see if we can allow them or not. There's no standard process here. If the current code
-            is not released yet, we can simply update the golden file to align with the older
-            version.
-
-          2. If you've introduced a new event applier, but an empty golden file already existed:
-
-          - You're trying to change the applier. Please register a new version instead of adjusting
-            the golden file. Please ensure that you also register the new applier in all newer minor
-            versions.
-
-          3. If you've introduced a new event applier, and the golden file didn't exist yet:
-
-          - You can simply create a new golden file. You can safely register a new version. Please
-            ensure that you also register the new applier in all newer minor versions.
-
-          Lastly, there are a few cases where changing the event applier is allowed:
-
-          - If the changes are purely cosmetic, such as changing comments or refactoring.
-
-          - If the change doesn't strictly need to be consistent between versions, such as storing a
-            new optional field that is always used in a same way and where it's acceptable that the
-            field may or may not be present in the state. However, we should always be cautious of
-            these cases, and consider whether they are truly safe.
-          """);
-    }
-
-    private static void printCommandToCreateGoldenFile(
-        final Path applierSourcePath, final Path goldenFilePathSystem) {
-      // use absolute paths so it's easy to run anywhere
-      final var sourcePath = applierSourcePath.toAbsolutePath();
-      final var targetPath = goldenFilePathSystem.toAbsolutePath();
-      if (Files.exists(sourcePath)) {
-        LOG.info(
-            """
-            To create/overwrite the golden file, run the following command:
-            cp {} {}""",
-            sourcePath,
-            targetPath);
-      } else {
-        // if there is no source file, we expect the golden file to be empty
-        LOG.info(
-            """
-            To create/overwrite the golden file, run the following command:
-            echo -n > {}""",
-            targetPath);
-      }
     }
 
     private record RegisteredApplier(Intent intent, int version, TypedEventApplier applier) {}
