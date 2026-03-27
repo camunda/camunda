@@ -230,6 +230,14 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    */
   T withProperty(final String key, final Object value);
 
+  /**
+   * Removes a previously set Spring property override.
+   *
+   * @param key the property key to remove
+   * @return itself for chaining
+   */
+  T withoutProperty(final String key);
+
   default T withAdditionalProperties(final Map<String, Object> properties) {
     properties.forEach(this::withProperty);
     return self();

@@ -198,6 +198,41 @@ public class GlobalListenerCreateTest {
     assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
   }
 
+  @Test
+  public void shouldBeAuthorizedToCreateExecutionListenerWithCancelEventType() {
+    // given — "cancel" is valid per API spec for execution listeners
+    final var username = createUserWithPermissions(PermissionType.CREATE_EXECUTION_LISTENER);
+
+    // when / then — should succeed without rejection
+    engine
+        .globalListener()
+        .withId("el-cancel")
+        .withType("my-type")
+        .withEventTypes("cancel")
+        .withListenerType(GlobalListenerType.EXECUTION)
+        .create(username);
+  }
+
+  @Test
+  public void shouldRejectExecutionListenerWithCancelEventTypeWithoutPermission() {
+    // given — user has no execution listener permission
+    final var username = createUserWithPermissions(PermissionType.CREATE_TASK_LISTENER);
+
+    // when
+    final var rejection =
+        engine
+            .globalListener()
+            .withId("el-cancel")
+            .withType("my-type")
+            .withEventTypes("cancel")
+            .withListenerType(GlobalListenerType.EXECUTION)
+            .expectRejection()
+            .create(username);
+
+    // then
+    assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+  }
+
   private String createUserWithoutPermissions() {
     final var user = engine.user().newUser(UUID.randomUUID().toString()).create().getValue();
     return user.getUsername();

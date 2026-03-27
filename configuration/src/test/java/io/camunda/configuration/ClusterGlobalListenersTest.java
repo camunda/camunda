@@ -241,6 +241,105 @@ public class ClusterGlobalListenersTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.listener.execution.0.type=shortcut-listener",
+        "camunda.listener.execution.0.event-types.0=start",
+        "camunda.listener.execution.0.event-types.1=end",
+        "camunda.listener.execution.0.retries=3",
+        "camunda.listener.execution.0.element-types.0=serviceTask"
+      })
+  class WithListenerExecutionPath {
+    final BrokerBasedProperties brokerCfg;
+
+    WithListenerExecutionPath(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldBindExecutionListenerFromListenerPath() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(1);
+      assertThat(listeners.getFirst().getType()).isEqualTo("shortcut-listener");
+    }
+
+    @Test
+    void shouldSetEventTypesFromListenerPath() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners.getFirst().getEventTypes()).containsExactly("start", "end");
+    }
+
+    @Test
+    void shouldSetRetriesFromListenerPath() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners.getFirst().getRetries()).isEqualTo("3");
+    }
+
+    @Test
+    void shouldSetElementTypesFromListenerPath() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners.getFirst().getElementTypes()).containsExactly("serviceTask");
+    }
+
+    @Test
+    void shouldForceExecutionTypeOnRuntimeConfiguration() {
+      final var runtimeConfig =
+          brokerCfg
+              .getExperimental()
+              .getEngine()
+              .getGlobalListeners()
+              .createGlobalListenersConfiguration();
+      assertThat(runtimeConfig.execution()).hasSize(1);
+      assertThat(runtimeConfig.execution().getFirst().listenerType())
+          .isEqualTo(GlobalListenerType.EXECUTION);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.cluster.global-listeners.execution.0.type=cluster-listener",
+        "camunda.cluster.global-listeners.execution.0.event-types.0=start",
+        "camunda.listener.execution.0.type=shortcut-listener",
+        "camunda.listener.execution.0.event-types.0=end"
+      })
+  class WithMergedClusterAndListenerExecutionPaths {
+    final BrokerBasedProperties brokerCfg;
+
+    WithMergedClusterAndListenerExecutionPaths(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldMergeBothSourcesIntoExecutionList() {
+      final List<GlobalListenerCfg> listeners =
+          brokerCfg.getExperimental().getEngine().getGlobalListeners().getExecution();
+      assertThat(listeners).hasSize(2);
+      assertThat(listeners)
+          .extracting(GlobalListenerCfg::getType)
+          .containsExactly("cluster-listener", "shortcut-listener");
+    }
+
+    @Test
+    void shouldForceExecutionTypeForAllMergedEntries() {
+      final var runtimeConfig =
+          brokerCfg
+              .getExperimental()
+              .getEngine()
+              .getGlobalListeners()
+              .createGlobalListenersConfiguration();
+      assertThat(runtimeConfig.execution()).hasSize(2);
+      assertThat(runtimeConfig.execution())
+          .allSatisfy(
+              cfg -> assertThat(cfg.listenerType()).isEqualTo(GlobalListenerType.EXECUTION));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.cluster.global-listeners.execution.0.type=audit-event",
         "camunda.cluster.global-listeners.execution.0.event-types.0=start",
         "camunda.cluster.global-listeners.execution.0.element-types.0=process",

@@ -64,6 +64,22 @@ class GlobalListenerValidatorTest {
     }
 
     @Test
+    void shouldAcceptCancelForExecutionListener() {
+      // given — "cancel" is valid per OpenAPI spec GlobalExecutionListenerEventTypeEnum
+      final var record =
+          new GlobalListenerRecord()
+              .setId("el-1")
+              .setListenerType(GlobalListenerType.EXECUTION)
+              .setEventTypes(List.of("cancel"));
+
+      // when
+      final var result = validator.validEventTypes(record);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+    }
+
+    @Test
     void shouldAcceptMultipleValidExecutionListenerEventTypes() {
       // given
       final var record =
@@ -80,12 +96,46 @@ class GlobalListenerValidatorTest {
     }
 
     @Test
-    void shouldAcceptAllEventTypeForExecutionListener() {
-      // given
+    void shouldAcceptAllThreeExecutionListenerEventTypes() {
+      // given — start, end, cancel are all valid per API spec
       final var record =
           new GlobalListenerRecord()
               .setId("el-1")
               .setListenerType(GlobalListenerType.EXECUTION)
+              .setEventTypes(List.of("start", "end", "cancel"));
+
+      // when
+      final var result = validator.validEventTypes(record);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+    }
+
+    @Test
+    void shouldRejectAllEventTypeForExecutionListener() {
+      // given — "all" is only valid for task listeners, not execution listeners
+      final var record =
+          new GlobalListenerRecord()
+              .setId("el-1")
+              .setListenerType(GlobalListenerType.EXECUTION)
+              .setEventTypes(List.of("all"));
+
+      // when
+      final var result = validator.validEventTypes(record);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().type()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+      assertThat(result.getLeft().reason()).contains("all");
+    }
+
+    @Test
+    void shouldAcceptAllEventTypeForTaskListener() {
+      // given
+      final var record =
+          new GlobalListenerRecord()
+              .setId("tl-1")
+              .setListenerType(GlobalListenerType.USER_TASK)
               .setEventTypes(List.of("all"));
 
       // when

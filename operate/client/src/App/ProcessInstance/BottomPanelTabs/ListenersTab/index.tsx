@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {Layer} from '@carbon/react';
 
 import {EmptyMessage} from 'modules/components/EmptyMessage';
@@ -65,6 +65,7 @@ const ListenersTab: React.FC = () => {
     fetchPreviousPage,
     hasNextPage,
     hasPreviousPage,
+    isFetching,
   } = useJobs({
     payload: {
       filter: {
@@ -88,6 +89,26 @@ const ListenersTab: React.FC = () => {
   };
 
   const filteredListeners = filterBySource(listeners);
+
+  // Auto-fetch next pages when source filter is active but no matches on current pages
+  useEffect(() => {
+    if (
+      sourceFilter !== 'ALL' &&
+      filteredListeners.length === 0 &&
+      listeners.length > 0 &&
+      hasNextPage &&
+      !isFetching
+    ) {
+      fetchNextPage();
+    }
+  }, [
+    sourceFilter,
+    filteredListeners.length,
+    listeners.length,
+    hasNextPage,
+    isFetching,
+    fetchNextPage,
+  ]);
 
   const handleEmptyMessages = () => {
     if (sourceFilter === 'GLOBAL') {
@@ -165,99 +186,107 @@ const ListenersTab: React.FC = () => {
         disabled={listeners?.length === 0}
       />
       <Stack as={Layer}>
-        {filteredListeners?.length > 0 ? (
-          <StructuredList
-            dataTestId="listeners-list"
-            headerColumns={[
-              {cellContent: 'Listener type', width: '17%'},
-              {cellContent: 'Source', width: '10%'},
-              {cellContent: 'Listener key', width: '17%'},
-              {cellContent: 'State', width: '10%'},
-              {cellContent: 'Job type', width: '13%'},
-              {cellContent: 'Event', width: '13%'},
-              {cellContent: 'Time', width: '20%'},
-            ]}
-            headerSize="sm"
-            verticalCellPadding="var(--cds-spacing-02)"
-            label="Listeners List"
-            onVerticalScrollStartReach={() => {
-              if (hasPreviousPage) {
-                fetchPreviousPage();
-              }
-            }}
-            onVerticalScrollEndReach={() => {
-              if (hasNextPage) {
-                fetchNextPage();
-              }
-            }}
-            rows={filteredListeners?.map(
-              ({
-                kind,
-                jobKey,
-                state,
-                type,
-                listenerEventType,
-                endTime,
-                tags,
-              }) => {
-                return {
-                  key: jobKey,
-                  dataTestId: jobKey,
-                  columns: [
-                    {
-                      cellContent: (
-                        <CellContainer orientation="horizontal" gap={3}>
-                          {spaceAndCapitalize(kind)}
-                          {state === 'FAILED' && <WarningFilled />}
-                        </CellContainer>
-                      ),
-                    },
-                    {
-                      cellContent: (
-                        <CellContainer>
-                          <SourceTag
-                            type={
-                              isGlobalListener(tags ?? [])
-                                ? 'blue'
-                                : 'high-contrast'
-                            }
-                            size="sm"
-                          >
-                            {isGlobalListener(tags ?? [])
-                              ? 'Global'
-                              : 'Model'}
-                          </SourceTag>
-                        </CellContainer>
-                      ),
-                    },
-                    {cellContent: <CellContainer>{jobKey}</CellContainer>},
-                    {
-                      cellContent: (
-                        <CellContainer>
-                          {spaceAndCapitalize(state)}
-                        </CellContainer>
-                      ),
-                    },
-                    {
-                      cellContent: <CellContainer>{type}</CellContainer>,
-                    },
-                    {
-                      cellContent: (
-                        <CellContainer>
-                          {spaceAndCapitalize(listenerEventType)}
-                        </CellContainer>
-                      ),
-                    },
-                    {
-                      cellContent: (
-                        <CellContainer>{formatDate(endTime)}</CellContainer>
-                      ),
-                    },
-                  ],
-                };
-              },
-            )}
-          />
+        {listeners.length > 0 ? (
+          filteredListeners.length > 0 ? (
+            <StructuredList
+              dataTestId="listeners-list"
+              headerColumns={[
+                {cellContent: 'Listener type', width: '17%'},
+                {cellContent: 'Source', width: '10%'},
+                {cellContent: 'Listener key', width: '17%'},
+                {cellContent: 'State', width: '10%'},
+                {cellContent: 'Job type', width: '13%'},
+                {cellContent: 'Event', width: '13%'},
+                {cellContent: 'Time', width: '20%'},
+              ]}
+              headerSize="sm"
+              verticalCellPadding="var(--cds-spacing-02)"
+              label="Listeners List"
+              onVerticalScrollStartReach={() => {
+                if (hasPreviousPage) {
+                  fetchPreviousPage();
+                }
+              }}
+              onVerticalScrollEndReach={() => {
+                if (hasNextPage) {
+                  fetchNextPage();
+                }
+              }}
+              rows={filteredListeners?.map(
+                ({
+                  kind,
+                  jobKey,
+                  state,
+                  type,
+                  listenerEventType,
+                  endTime,
+                  tags,
+                }) => {
+                  return {
+                    key: jobKey,
+                    dataTestId: jobKey,
+                    columns: [
+                      {
+                        cellContent: (
+                          <CellContainer orientation="horizontal" gap={3}>
+                            {spaceAndCapitalize(kind)}
+                            {state === 'FAILED' && <WarningFilled />}
+                          </CellContainer>
+                        ),
+                      },
+                      {
+                        cellContent: (
+                          <CellContainer>
+                            <SourceTag
+                              type={
+                                isGlobalListener(tags ?? [])
+                                  ? 'blue'
+                                  : 'high-contrast'
+                              }
+                              size="sm"
+                            >
+                              {isGlobalListener(tags ?? [])
+                                ? 'Global'
+                                : 'Model'}
+                            </SourceTag>
+                          </CellContainer>
+                        ),
+                      },
+                      {cellContent: <CellContainer>{jobKey}</CellContainer>},
+                      {
+                        cellContent: (
+                          <CellContainer>
+                            {spaceAndCapitalize(state)}
+                          </CellContainer>
+                        ),
+                      },
+                      {
+                        cellContent: <CellContainer>{type}</CellContainer>,
+                      },
+                      {
+                        cellContent: (
+                          <CellContainer>
+                            {spaceAndCapitalize(listenerEventType)}
+                          </CellContainer>
+                        ),
+                      },
+                      {
+                        cellContent: (
+                          <CellContainer>{formatDate(endTime)}</CellContainer>
+                        ),
+                      },
+                    ],
+                  };
+                },
+              )}
+            />
+          ) : (
+            !hasNextPage && (
+              <EmptyMessageWrapper>
+                <EmptyMessage message={handleEmptyMessages()} />
+              </EmptyMessageWrapper>
+            )
+          )
         ) : (
           <EmptyMessageWrapper>
             <EmptyMessage message={handleEmptyMessages()} />

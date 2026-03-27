@@ -50,11 +50,13 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   // Set of all possible task listener event types as strings, to be used while validating records
   public static final Set<String> TASK_LISTENER_EVENT_TYPES =
       Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
-  // Set of all possible execution listener event types as strings
+  // Set of all possible execution listener event types as strings.
+  // Includes BPMN-level types (start, end) plus "cancel" which is only used by global listeners.
   public static final Set<String> EXECUTION_LISTENER_EVENT_TYPES =
-      Stream.of(ZeebeExecutionListenerEventType.values())
-          .map(Enum::name)
-          .collect(Collectors.toSet());
+      Stream.concat(
+              Stream.of(ZeebeExecutionListenerEventType.values()).map(Enum::name),
+              Stream.of("cancel"))
+          .collect(Collectors.toUnmodifiableSet());
 
   private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
   private final StringProperty idProp = new StringProperty("id", "");

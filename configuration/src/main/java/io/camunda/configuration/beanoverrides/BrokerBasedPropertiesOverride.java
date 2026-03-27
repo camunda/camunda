@@ -1047,22 +1047,45 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromGlobalListeners(final BrokerBasedProperties override) {
-    override
-        .getExperimental()
-        .getEngine()
-        .setGlobalListeners(unifiedConfiguration.getCamunda().getCluster().getGlobalListeners());
+    // Deep-copy GlobalListenersCfg so mutations do not leak into the unified config object
+    final var source = unifiedConfiguration.getCamunda().getCluster().getGlobalListeners();
+    final var copy = new io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg();
+    copy.setUserTask(deepCopyListenerList(source.getUserTask()));
+    copy.setExecution(deepCopyListenerList(source.getExecution()));
+    copy.setClusterExecutionCount(source.getExecution().size());
+    override.getExperimental().getEngine().setGlobalListeners(copy);
 
     // Merge entries from camunda.listener.execution into the broker execution list
-    final var listenerExecution =
-        unifiedConfiguration.getCamunda().getListener().getExecution();
+    final var listenerExecution = unifiedConfiguration.getCamunda().getListener().getExecution();
     if (listenerExecution != null && !listenerExecution.isEmpty()) {
-      override
-          .getExperimental()
-          .getEngine()
-          .getGlobalListeners()
-          .getExecution()
-          .addAll(listenerExecution);
+      final var merged = new java.util.ArrayList<>(copy.getExecution());
+      merged.addAll(deepCopyListenerList(listenerExecution));
+      copy.setExecution(merged);
     }
+  }
+
+  private java.util.ArrayList<io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg>
+      deepCopyListenerList(
+          final java.util.List<
+                  io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg>
+              source) {
+    final var result =
+        new java.util.ArrayList<
+            io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg>(source.size());
+    for (final var entry : source) {
+      final var clone = new io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg();
+      clone.setId(entry.getId());
+      clone.setEventTypes(new java.util.ArrayList<>(entry.getEventTypes()));
+      clone.setType(entry.getType());
+      clone.setRetries(entry.getRetries());
+      clone.setAfterNonGlobal(entry.isAfterNonGlobal());
+      clone.setPriority(entry.getPriority());
+      clone.setListenerType(entry.getListenerType());
+      clone.setElementTypes(new java.util.ArrayList<>(entry.getElementTypes()));
+      clone.setCategories(new java.util.ArrayList<>(entry.getCategories()));
+      result.add(clone);
+    }
+    return result;
   }
 
   private void populateFromProcessInstanceCreation(final BrokerBasedProperties override) {

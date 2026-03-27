@@ -8,10 +8,15 @@
 package io.camunda.zeebe.it.engine.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.GlobalExecutionListenerResponse;
 import io.camunda.client.api.search.enums.GlobalExecutionListenerElementType;
 import io.camunda.client.api.search.enums.GlobalExecutionListenerEventType;
+import io.camunda.client.api.search.enums.GlobalListenerSource;
+import io.camunda.client.api.search.response.GlobalExecutionListener;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -47,7 +52,10 @@ public class GlobalExecutionListenersTest {
 
   @TestZeebe(autoStart = false)
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess()
+          .withProperty("spring.main.allow-bean-definition-overriding", true);
 
   @AutoClose private CamundaClient camundaClient;
 
@@ -744,5 +752,246 @@ public class GlobalExecutionListenersTest {
     listenerCfg.setAfterNonGlobal(afterNonGlobal);
     listenerCfg.setPriority(priority);
     return listenerCfg;
+  }
+
+  // --- CRUD API Tests (Issue 3) ---
+
+  @Test
+  void shouldCreateAndGetGlobalExecutionListenerViaApi() {
+    // given
+    restartBroker();
+
+    // when: create a listener via API
+    final GlobalExecutionListenerResponse createResponse =
+        camundaClient
+            .newCreateGlobalExecutionListenerRequest("crud-get-test")
+            .type("crud-get-type")
+            .eventTypes(
+                GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END)
+            .elementTypes(GlobalExecutionListenerElementType.SERVICE_TASK)
+            .retries(5)
+            .afterNonGlobal(true)
+            .priority(42)
+            .send()
+            .join();
+
+    // then: create response has correct fields
+    assertThat(createResponse.getId()).isEqualTo("crud-get-test");
+    assertThat(createResponse.getType()).isEqualTo("crud-get-type");
+    assertThat(createResponse.getRetries()).isEqualTo(5);
+    assertThat(createResponse.getEventTypes())
+        .containsExactlyInAnyOrder(
+            GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END);
+    assertThat(createResponse.getElementTypes())
+        .containsExactly(GlobalExecutionListenerElementType.SERVICE_TASK);
+    assertThat(createResponse.getAfterNonGlobal()).isTrue();
+    assertThat(createResponse.getPriority()).isEqualTo(42);
+    assertThat(createResponse.getSource()).isEqualTo(GlobalListenerSource.API);
+
+    // when: get the listener by ID
+    final GlobalExecutionListener getResponse =
+        camundaClient.newGlobalExecutionListenerGetRequest("crud-get-test").send().join();
+
+    // then: get response matches create input
+    assertThat(getResponse.getId()).isEqualTo("crud-get-test");
+    assertThat(getResponse.getType()).isEqualTo("crud-get-type");
+    assertThat(getResponse.getRetries()).isEqualTo(5);
+    assertThat(getResponse.getEventTypes())
+        .containsExactlyInAnyOrder(
+            GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END);
+    assertThat(getResponse.getElementTypes())
+        .containsExactly(GlobalExecutionListenerElementType.SERVICE_TASK);
+    assertThat(getResponse.getAfterNonGlobal()).isTrue();
+    assertThat(getResponse.getPriority()).isEqualTo(42);
+    assertThat(getResponse.getSource()).isEqualTo(GlobalListenerSource.API);
+  }
+
+  @Test
+  void shouldUpdateGlobalExecutionListenerViaApi() {
+    // given: a listener created via API
+    restartBroker();
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("crud-update-test")
+        .type("original-type")
+        .eventTypes(GlobalExecutionListenerEventType.START)
+        .send()
+        .join();
+
+    // when: update the listener
+    final GlobalExecutionListenerResponse updateResponse =
+        camundaClient
+            .newUpdateGlobalExecutionListenerRequest("crud-update-test")
+            .type("updated-type")
+            .eventTypes(
+                GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END)
+            .retries(10)
+            .afterNonGlobal(true)
+            .priority(99)
+            .elementTypes(
+                GlobalExecutionListenerElementType.SERVICE_TASK,
+                GlobalExecutionListenerElementType.SCRIPT_TASK)
+            .send()
+            .join();
+
+    // then: update response reflects the changes
+    assertThat(updateResponse.getId()).isEqualTo("crud-update-test");
+    assertThat(updateResponse.getType()).isEqualTo("updated-type");
+    assertThat(updateResponse.getRetries()).isEqualTo(10);
+    assertThat(updateResponse.getEventTypes())
+        .containsExactlyInAnyOrder(
+            GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END);
+    assertThat(updateResponse.getAfterNonGlobal()).isTrue();
+    assertThat(updateResponse.getPriority()).isEqualTo(99);
+    assertThat(updateResponse.getSource()).isEqualTo(GlobalListenerSource.API);
+
+    // verify via get
+    final GlobalExecutionListener getResponse =
+        camundaClient.newGlobalExecutionListenerGetRequest("crud-update-test").send().join();
+    assertThat(getResponse.getType()).isEqualTo("updated-type");
+    assertThat(getResponse.getRetries()).isEqualTo(10);
+    assertThat(getResponse.getEventTypes())
+        .containsExactlyInAnyOrder(
+            GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END);
+  }
+
+  @Test
+  void shouldDeleteGlobalExecutionListenerViaApi() {
+    // given: a listener created via API
+    restartBroker();
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("crud-delete-test")
+        .type("delete-me")
+        .eventTypes(GlobalExecutionListenerEventType.START)
+        .send()
+        .join();
+
+    // verify it exists
+    final GlobalExecutionListener existing =
+        camundaClient.newGlobalExecutionListenerGetRequest("crud-delete-test").send().join();
+    assertThat(existing.getId()).isEqualTo("crud-delete-test");
+
+    // when: delete the listener
+    camundaClient.newDeleteGlobalExecutionListenerRequest("crud-delete-test").send().join();
+
+    // then: getting the deleted listener should fail
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGlobalExecutionListenerGetRequest("crud-delete-test")
+                    .send()
+                    .join())
+        .hasMessageContaining("crud-delete-test");
+  }
+
+  @Test
+  void shouldSearchGlobalExecutionListenersViaApi() {
+    // given: multiple listeners created via API
+    restartBroker();
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("crud-search-1")
+        .type("search-type-a")
+        .eventTypes(GlobalExecutionListenerEventType.START)
+        .send()
+        .join();
+    camundaClient
+        .newCreateGlobalExecutionListenerRequest("crud-search-2")
+        .type("search-type-b")
+        .eventTypes(GlobalExecutionListenerEventType.END)
+        .priority(50)
+        .send()
+        .join();
+
+    // when: search for API-sourced listeners
+    final SearchResponse<GlobalExecutionListener> searchResponse =
+        camundaClient
+            .newGlobalExecutionListenerSearchRequest()
+            .filter(f -> f.source(GlobalListenerSource.API))
+            .send()
+            .join();
+
+    // then: results contain our API-created listeners
+    assertThat(searchResponse.items()).hasSizeGreaterThanOrEqualTo(2);
+    assertThat(searchResponse.items())
+        .extracting(GlobalExecutionListener::getId)
+        .contains("crud-search-1", "crud-search-2");
+
+    // verify individual item fields
+    final GlobalExecutionListener item1 =
+        searchResponse.items().stream()
+            .filter(l -> "crud-search-1".equals(l.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(item1.getType()).isEqualTo("search-type-a");
+    assertThat(item1.getSource()).isEqualTo(GlobalListenerSource.API);
+
+    final GlobalExecutionListener item2 =
+        searchResponse.items().stream()
+            .filter(l -> "crud-search-2".equals(l.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(item2.getType()).isEqualTo("search-type-b");
+    assertThat(item2.getPriority()).isEqualTo(50);
+  }
+
+  // --- Config File Loading Test (Issue 4) ---
+
+  @Test
+  void shouldLoadGlobalExecutionListenersFromConfigProperties() {
+    // given: global execution listeners defined via Spring properties (simulating config file)
+    final List<String> configPropertyKeys =
+        List.of(
+            "camunda.cluster.global-listeners.execution.0.id",
+            "camunda.cluster.global-listeners.execution.0.type",
+            "camunda.cluster.global-listeners.execution.0.event-types.0",
+            "camunda.cluster.global-listeners.execution.0.event-types.1",
+            "camunda.cluster.global-listeners.execution.0.element-types.0",
+            "camunda.cluster.global-listeners.execution.0.retries",
+            "camunda.cluster.global-listeners.execution.0.after-non-global",
+            "camunda.cluster.global-listeners.execution.0.priority");
+
+    ZEEBE.withProperty(configPropertyKeys.get(0), "config-property-listener");
+    ZEEBE.withProperty(configPropertyKeys.get(1), "config-property-type");
+    ZEEBE.withProperty(configPropertyKeys.get(2), "start");
+    ZEEBE.withProperty(configPropertyKeys.get(3), "end");
+    ZEEBE.withProperty(configPropertyKeys.get(4), "serviceTask");
+    ZEEBE.withProperty(configPropertyKeys.get(5), "5");
+    ZEEBE.withProperty(configPropertyKeys.get(6), "true");
+    ZEEBE.withProperty(configPropertyKeys.get(7), "100");
+
+    try {
+      // when: broker starts with the config properties
+      restartBroker();
+
+      // then: the listener is loaded and searchable with source=CONFIGURATION
+      final SearchResponse<GlobalExecutionListener> searchResponse =
+          camundaClient
+              .newGlobalExecutionListenerSearchRequest()
+              .filter(f -> f.source(GlobalListenerSource.CONFIGURATION))
+              .send()
+              .join();
+
+      assertThat(searchResponse.items()).isNotEmpty();
+      final GlobalExecutionListener configListener =
+          searchResponse.items().stream()
+              .filter(l -> "config-property-listener".equals(l.getId()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new AssertionError(
+                          "Expected config-property-listener not found in search results"));
+      assertThat(configListener.getType()).isEqualTo("config-property-type");
+      assertThat(configListener.getRetries()).isEqualTo(5);
+      assertThat(configListener.getEventTypes())
+          .containsExactlyInAnyOrder(
+              GlobalExecutionListenerEventType.START, GlobalExecutionListenerEventType.END);
+      assertThat(configListener.getElementTypes())
+          .containsExactly(GlobalExecutionListenerElementType.SERVICE_TASK);
+      assertThat(configListener.getAfterNonGlobal()).isTrue();
+      assertThat(configListener.getPriority()).isEqualTo(100);
+      assertThat(configListener.getSource()).isEqualTo(GlobalListenerSource.CONFIGURATION);
+    } finally {
+      // cleanup: remove Spring property overrides to prevent leaking into other tests
+      configPropertyKeys.forEach(key -> ZEEBE.withoutProperty(key));
+    }
   }
 }

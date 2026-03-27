@@ -164,6 +164,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   @Override
+  public T withoutProperty(final String key) {
+    propertyOverrides.remove(key);
+    return self();
+  }
+
+  @Override
   public T withAdditionalProfile(final String profile) {
     additionalProfiles.add(profile);
     return self();

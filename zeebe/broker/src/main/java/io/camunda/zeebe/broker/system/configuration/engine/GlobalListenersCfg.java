@@ -27,6 +27,15 @@ public class GlobalListenersCfg implements ConfigurationEntry {
    */
   private List<GlobalListenerCfg> execution = new ArrayList<>();
 
+  /**
+   * Tracks how many entries in the {@link #execution} list originated from {@code
+   * camunda.cluster.global-listeners.execution}. A value of {@code -1} means no merge with {@code
+   * camunda.listener.execution} occurred (all entries are from global-listeners). Used by {@link
+   * io.camunda.zeebe.broker.system.SystemContext} to log the correct source property path during
+   * validation.
+   */
+  private int clusterExecutionCount = -1;
+
   public List<GlobalListenerCfg> getUserTask() {
     return userTask;
   }
@@ -41,6 +50,14 @@ public class GlobalListenersCfg implements ConfigurationEntry {
 
   public void setExecution(final List<GlobalListenerCfg> execution) {
     this.execution = execution;
+  }
+
+  public int getClusterExecutionCount() {
+    return clusterExecutionCount;
+  }
+
+  public void setClusterExecutionCount(final int clusterExecutionCount) {
+    this.clusterExecutionCount = clusterExecutionCount;
   }
 
   public GlobalListenersConfiguration createGlobalListenersConfiguration() {

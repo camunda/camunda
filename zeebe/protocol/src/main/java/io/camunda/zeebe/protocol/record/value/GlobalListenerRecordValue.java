@@ -128,7 +128,8 @@ public interface GlobalListenerRecordValue extends RecordValue {
   /**
    * Returns the listener type of the global listener.
    *
-   * <p>Currently only global "user task" listeners are supported.
+   * <p>Supported types are {@link GlobalListenerType#USER_TASK} and {@link
+   * GlobalListenerType#EXECUTION}.
    *
    * @return the listener type
    */

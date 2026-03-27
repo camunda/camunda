@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TlsConfigUtil;
@@ -684,12 +685,19 @@ public final class SystemContext {
     listeners.setUserTask(validListeners);
 
     // Validate execution listeners using the same logic
-    final String execPropertyLocation = "camunda.listener.execution";
+    final int clusterExecCount = listeners.getClusterExecutionCount();
     final List<GlobalListenerCfg> execListeners = listeners.getExecution();
     final List<GlobalListenerCfg> validExecutionListeners = new ArrayList<>();
     for (int i = 0; i < execListeners.size(); i++) {
       final GlobalListenerCfg listenerCfg = execListeners.get(i);
-      final String propertyPrefix = String.format("%s.%d", execPropertyLocation, i);
+      final String propertyPrefix;
+      if (clusterExecCount < 0 || i < clusterExecCount) {
+        // Entry originates from camunda.cluster.global-listeners.execution
+        propertyPrefix = String.format("camunda.cluster.global-listeners.execution.%d", i);
+      } else {
+        // Entry originates from camunda.listener.execution
+        propertyPrefix = String.format("camunda.listener.execution.%d", i - clusterExecCount);
+      }
 
       // Check if retries actually contains a number
       try {

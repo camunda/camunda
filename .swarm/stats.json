@@ -110,12 +110,12 @@
       }
     },
     "engineer": {
-      "invocations": 40,
-      "totalElapsedMs": 56177292,
+      "invocations": 54,
+      "totalElapsedMs": 61883054,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-opus-4-6": 40
+        "claude-opus-4-6": 54
       }
     },
     "code-reviewer": {
@@ -128,15 +128,60 @@
       }
     },
     "cross-model": {
-      "invocations": 125,
-      "totalElapsedMs": 173749428,
+      "invocations": 142,
+      "totalElapsedMs": 189313993,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "gpt-5.3-codex": 125
+        "gpt-5.3-codex": 142
+      }
+    },
+    "engineer/summarizer-5": {
+      "invocations": 2,
+      "totalElapsedMs": 47005,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2
+      }
+    },
+    "engineer/summarizer-4": {
+      "invocations": 2,
+      "totalElapsedMs": 51120,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2
+      }
+    },
+    "engineer/summarizer-2": {
+      "invocations": 2,
+      "totalElapsedMs": 49899,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2
+      }
+    },
+    "engineer/summarizer-3": {
+      "invocations": 2,
+      "totalElapsedMs": 52169,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2
+      }
+    },
+    "engineer/summarizer-1": {
+      "invocations": 2,
+      "totalElapsedMs": 79639,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-haiku-4.5": 2
       }
     }
   },
   "totalRuns": 8,
-  "lastUpdated": "2026-03-24T17:49:28.828Z"
+  "lastUpdated": "2026-03-27T14:47:25.155Z"
 }
