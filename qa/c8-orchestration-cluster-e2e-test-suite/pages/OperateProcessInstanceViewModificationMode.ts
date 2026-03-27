@@ -152,39 +152,41 @@ export class OperateProcessInstanceViewModificationModePage {
       jsonEditorButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('cell')
-        .nth(1)
-        .getByRole('button'),
+        .nth(2)
+        .getByRole('button')
+        .nth(0),
       deleteButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('cell')
         .nth(2)
-        .getByRole('button'),
+        .getByRole('button')
+        .nth(1),
       jsonEditorModal: {
         header: this.page
           .getByTestId(`variable-newVariables[${index}]`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByText('Edit a new Variable'),
         cancelButton: this.page
           .getByTestId(`variable-newVariables[${index}]`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
         applyButton: this.page
           .getByTestId(`variable-newVariables[${index}]`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Apply'}),
         inputField: this.page
           .getByTestId(`variable-newVariables[${index}]`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
@@ -210,34 +212,34 @@ export class OperateProcessInstanceViewModificationModePage {
       jsonEditorButton: this.page
         .getByTestId(`variable-${name}`)
         .getByRole('cell')
-        .nth(1)
+        .nth(2)
         .getByRole('button'),
       jsonEditorModal: {
         header: this.page
           .getByTestId(`variable-${name}`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByText(`Edit Variable "${name}"`),
         cancelButton: this.page
           .getByTestId(`variable-${name}`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
         applyButton: this.page
           .getByTestId(`variable-${name}`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Apply'}),
         inputField: this.page
           .getByTestId(`variable-${name}`)
           .getByRole('cell')
-          .nth(1)
+          .nth(2)
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
