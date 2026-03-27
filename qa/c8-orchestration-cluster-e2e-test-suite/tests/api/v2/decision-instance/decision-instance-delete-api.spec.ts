@@ -61,6 +61,30 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     });
   });
 
+    test('Delete Decision Instance - Forbidden', async ({request}) => {
+    await test.step('Attempt to Delete Decision Instance with insufficient permissions', async () => {
+      const decisionInstanceToDelete = decisionInstances[0];
+      const decisionEvaluationKeyToDelete =
+        decisionInstanceToDelete.decisionEvaluationKey;
+      const token = encode(
+        `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
+      );
+
+      const res = await request.post(
+        buildUrl(
+          `/decision-instances/${decisionEvaluationKeyToDelete}/deletion`,
+        ),
+        {
+          headers: jsonHeaders(token), // overrides default demo:demo
+        },
+      );
+      await assertForbiddenRequest(
+        res,
+        "operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
+      );
+    });
+  });
+
   test('Delete Decision Instance - Success', async ({request}) => {
     const decisionInstanceToDelete =
         decisionInstances[decisionInstances.length - 1];
@@ -131,29 +155,5 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
       res,
       `Decision Instance with key '${notExistingDecisionEvaluationKeyToDelete}' not found`,
     );
-  });
-
-  test('Delete Decision Instance - Forbidden', async ({request}) => {
-    await test.step('Attempt to Delete Decision Instance with insufficient permissions', async () => {
-      const decisionInstanceToDelete = decisionInstances[0];
-      const decisionEvaluationKeyToDelete =
-        decisionInstanceToDelete.decisionEvaluationKey;
-      const token = encode(
-        `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
-      );
-
-      const res = await request.post(
-        buildUrl(
-          `/decision-instances/${decisionEvaluationKeyToDelete}/deletion`,
-        ),
-        {
-          headers: jsonHeaders(token), // overrides default demo:demo
-        },
-      );
-      await assertForbiddenRequest(
-        res,
-        "operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
-      );
-    });
   });
 });

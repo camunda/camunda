@@ -71,14 +71,12 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
 
   test('Delete Decision Instance With Batch', async ({request}) => {
     const decisionEvaluationKeyToDelete1 =
-      decisionInstances1[0].decisionEvaluationKey;
-    const decisionEvaluationInstanceKeyToGet1 = decisionInstances1[0].decisionEvaluationInstanceKey;
+      decisionInstances1[0].decisionEvaluationInstanceKey;
 
     const decisionEvaluationKeyToDelete2 =
-      decisionInstances2[0].decisionEvaluationKey;
-    const decisionEvaluationInstanceKeyToGet2 = decisionInstances2[0].decisionEvaluationInstanceKey;
-    console.log(`Decision Evaluation Key to Delete 1: ${decisionEvaluationKeyToDelete1}`);
-    console.log(`Decision Evaluation Key to Delete 2: ${decisionEvaluationKeyToDelete2}`);
+      decisionInstances2[0].decisionEvaluationInstanceKey;
+
+    let createdBatchOperationKey: string;
 
     await test.step('Delete Decision Instance', async () => {
       await expect(async () => {
@@ -108,13 +106,42 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
           },
           res,
         );
+        const json = await res.json();
+        expect(json.batchOperationType).toBe('DELETE_DECISION_INSTANCE');
+        createdBatchOperationKey = json.batchOperationKey;
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Verify batch operation has two operations', async () => {
+      await expect(async () => {
+        const res = await request.get(
+          buildUrl(`/batch-operations/${createdBatchOperationKey}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/batch-operations/{batchOperationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        expect(json.batchOperationKey).toBe(createdBatchOperationKey);
+        expect(json.batchOperationType).toBe('DELETE_DECISION_INSTANCE');
+        expect(json.operationsTotalCount).toBe(2);
+        expect(json.operationsCompletedCount).toBe(2);
       }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res1 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet1}`),
+          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete1}`),
           {
             headers: jsonHeaders(),
           },
@@ -122,15 +149,15 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
 
         await assertNotFoundRequest(
           res1,
-          `Decision Instance with id '${decisionEvaluationInstanceKeyToGet1}' not found`,
+          `Decision Instance with id '${decisionEvaluationKeyToDelete1}' not found`,
         );
       }).toPass(defaultAssertionOptions);
     });
-    
+
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res2 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet2}`),
+          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete2}`),
           {
             headers: jsonHeaders(),
           },
@@ -138,7 +165,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
 
         await assertNotFoundRequest(
           res2,
-          `Decision Instance with id '${decisionEvaluationInstanceKeyToGet2}' not found`,
+          `Decision Instance with id '${decisionEvaluationKeyToDelete2}' not found`,
         );
       }).toPass(defaultAssertionOptions);
     });
