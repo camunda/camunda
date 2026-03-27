@@ -385,7 +385,7 @@ jobs:
         if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.4.0
+        uses: octokit/request-action@v3.0.0
         with:
           route: POST /repos/camunda/camunda/releases
           make_latest: false

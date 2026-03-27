@@ -163,7 +163,7 @@ jobs:
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.4.0
+        uses: octokit/request-action@v3.0.0
         with:
           route: POST /repos/camunda/zeebe/releases
           draft: true
