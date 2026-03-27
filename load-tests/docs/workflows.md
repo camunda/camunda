@@ -54,13 +54,13 @@ graph TD
 
 ## Schedule Overview
 
-| Time | Workflow | Frequency |
-|---|---|---|
-| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly |
-| 01:00 UTC Monday | `camunda-weekly-load-tests.yml` | Weekly |
-| 04:00 UTC | `camunda-scheduled-release-load-tests.yml` | Daily |
-| 04:00 UTC | `camunda-daily-load-tests.yml` | Daily |
-| 04:00 UTC | `camunda-load-test-clean-up.yml` | Daily |
+|       Time       |                       Workflow                       | Frequency |
+|------------------|------------------------------------------------------|-----------|
+| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
+| 01:00 UTC Monday | `camunda-weekly-load-tests.yml`                      | Weekly    |
+| 04:00 UTC        | `camunda-scheduled-release-load-tests.yml`           | Daily     |
+| 04:00 UTC        | `camunda-daily-load-tests.yml`                       | Daily     |
+| 04:00 UTC        | `camunda-load-test-clean-up.yml`                     | Daily     |
 
 ## Makefile Layer
 
@@ -73,15 +73,15 @@ All workflows ultimately deploy through Makefiles in `load-tests/setup/`. This i
 
 ### Key Make targets
 
-| Target | Description |
-|---|---|
-| `make install` | Full deployment: credentials, platform, load test, ES exporter |
-| `make install-stable` | Same as `install` but with non-preemptible VMs |
-| `make install-platform` | Deploy Camunda Platform Helm chart only |
-| `make install-load-test` | Deploy load test Helm chart (starters + workers) only |
-| `make clean` | Remove all Helm releases and PVCs |
-| `make template` | Dry-run Helm template for validation |
-| `make realistic` / `typical` / `latency` / `max` | Scenario shortcuts with predefined configs |
+|                      Target                      |                          Description                           |
+|--------------------------------------------------|----------------------------------------------------------------|
+| `make install`                                   | Full deployment: credentials, platform, load test, ES exporter |
+| `make install-stable`                            | Same as `install` but with non-preemptible VMs                 |
+| `make install-platform`                          | Deploy Camunda Platform Helm chart only                        |
+| `make install-load-test`                         | Deploy load test Helm chart (starters + workers) only          |
+| `make clean`                                     | Remove all Helm releases and PVCs                              |
+| `make template`                                  | Dry-run Helm template for validation                           |
+| `make realistic` / `typical` / `latency` / `max` | Scenario shortcuts with predefined configs                     |
 
 ### Parameters
 
@@ -118,22 +118,22 @@ The central reusable workflow. All load test creation routes through this workfl
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `ref` | string | `main` | Git reference for Docker image build |
-| `name` | string | *required* | Load test name (becomes K8s namespace with `c8-` prefix) |
-| `ttl` | number | `1` | Days until namespace is auto-deleted |
-| `reuse-tag` | string | `""` | Reuse existing Docker image tag (skips build) |
-| `use-official-docker-images` | boolean | `false` | Use Docker Hub images instead of building |
-| `scenario` | choice | `custom` | Workload variant: `custom`, `latency`, `realistic`, `typical`, `max` |
-| `load-test-load` | string | | Helm arguments for load test components |
-| `platform-helm-values` | string | `""` | Additional Helm chart values |
-| `perform-read-benchmarks` | boolean | `false` | Enable read benchmarks |
-| `stable-vms` | boolean | `false` | Deploy to non-spot VMs |
-| `enable-optimize` | boolean | `true` | Enable Optimize |
-| `build-frontend` | boolean | `false` | Build frontend |
-| `secondary-storage-type` | choice | `elasticsearch` | `elasticsearch`, `opensearch`, `postgresql`, `none` |
-| `publish` | string | | Where to publish results: `slack`, `comment` (workflow_call only) |
+|            Input             |  Type   |     Default     |                             Description                              |
+|------------------------------|---------|-----------------|----------------------------------------------------------------------|
+| `ref`                        | string  | `main`          | Git reference for Docker image build                                 |
+| `name`                       | string  | *required*      | Load test name (becomes K8s namespace with `c8-` prefix)             |
+| `ttl`                        | number  | `1`             | Days until namespace is auto-deleted                                 |
+| `reuse-tag`                  | string  | `""`            | Reuse existing Docker image tag (skips build)                        |
+| `use-official-docker-images` | boolean | `false`         | Use Docker Hub images instead of building                            |
+| `scenario`                   | choice  | `custom`        | Workload variant: `custom`, `latency`, `realistic`, `typical`, `max` |
+| `load-test-load`             | string  |                 | Helm arguments for load test components                              |
+| `platform-helm-values`       | string  | `""`            | Additional Helm chart values                                         |
+| `perform-read-benchmarks`    | boolean | `false`         | Enable read benchmarks                                               |
+| `stable-vms`                 | boolean | `false`         | Deploy to non-spot VMs                                               |
+| `enable-optimize`            | boolean | `true`          | Enable Optimize                                                      |
+| `build-frontend`             | boolean | `false`         | Build frontend                                                       |
+| `secondary-storage-type`     | choice  | `elasticsearch` | `elasticsearch`, `opensearch`, `postgresql`, `none`                  |
+| `publish`                    | string  |                 | Where to publish results: `slack`, `comment` (workflow_call only)    |
 
 **Key jobs:** `calculate-image-tag` -> `build-camunda-image` -> `build-load-test-images` -> `calculate-scenario-config` -> `deploy-cluster-under-test`
 
@@ -166,10 +166,10 @@ Creates a load test for official release images. Called by `camunda-scheduled-re
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `name` | string | *required* | Load test name |
-| `tag` | string | *required* | Release tag to deploy |
+| Input  |  Type  |  Default   |      Description      |
+|--------|--------|------------|-----------------------|
+| `name` | string | *required* | Load test name        |
+| `tag`  | string | *required* | Release tag to deploy |
 
 **Job chain:**
 1. `sanitize-inputs` — validates and sanitizes name/tag
@@ -188,8 +188,8 @@ Verifies a load test deployment is healthy and deletes the namespace. Used by `c
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
+|    Input    |  Type  |  Default   |            Description             |
+|-------------|--------|------------|------------------------------------|
 | `namespace` | string | *required* | K8s namespace to verify and delete |
 
 **Steps:** Waits for all pods to be ready and checks gateway connectivity, then deletes the namespace regardless of outcome.
@@ -204,9 +204,9 @@ Runs a daily max-load stress test against main.
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `reuse-tag` | string | `""` | Reuse existing Docker image tag |
+|    Input    |  Type  | Default |           Description           |
+|-------------|--------|---------|---------------------------------|
+| `reuse-tag` | string | `""`    | Reuse existing Docker image tag |
 
 **Job chain:**
 1. `benchmark-data` — generates name: `medic-daily-YYYY-MM-DD-<sha>`
@@ -223,19 +223,19 @@ Runs four parallel endurance tests weekly against main.
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `reuse-tag` | string | `""` | Reuse existing Docker image tag |
-| `ttl` | number | `28` | Days until namespace deletion |
+|    Input    |  Type  | Default |           Description           |
+|-------------|--------|---------|---------------------------------|
+| `reuse-tag` | string | `""`    | Reuse existing Docker image tag |
+| `ttl`       | number | `28`    | Days until namespace deletion   |
 
 **Job chain:**
 1. `test-data` — generates image tag: `medic-y-YYYY-cw-WW-<sha>`
 2. `build-camunda-image` + `build-load-test-images` — conditional, skipped if `reuse-tag` provided
 3. Four parallel load tests, each calling `camunda-load-test.yml`:
-   - `setup-typical-load-test` — scenario: `typical`
-   - `setup-realistic-test` — scenario: `realistic`
-   - `setup-rdbms-realistic-load-test` — scenario: `realistic`, secondary-storage: `postgresql`
-   - `setup-latency-test` — scenario: `latency`
+- `setup-typical-load-test` — scenario: `typical`
+- `setup-realistic-test` — scenario: `realistic`
+- `setup-rdbms-realistic-load-test` — scenario: `realistic`, secondary-storage: `postgresql`
+- `setup-latency-test` — scenario: `latency`
 4. `notify` — Slack notification on failure
 
 ---
@@ -267,11 +267,11 @@ Profiles a running load test cluster using async-profiler. Produces flamegraph a
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `name` | string | *required* | Load test namespace name |
-| `pod` | string | `""` | Pod to profile (empty = all 3 pods) |
-| `profiler_options` | string | `""` | Additional async-profiler flags |
+|       Input        |  Type  |  Default   |             Description             |
+|--------------------|--------|------------|-------------------------------------|
+| `name`             | string | *required* | Load test namespace name            |
+| `pod`              | string | `""`       | Pod to profile (empty = all 3 pods) |
+| `profiler_options` | string | `""`       | Additional async-profiler flags     |
 
 **Jobs (mutually exclusive):**
 - `profile-all-pods` — profiles 3 pods in parallel (cpu, wall, alloc events)
@@ -289,8 +289,8 @@ Deletes expired load test namespaces based on TTL labels.
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
+| Input  |  Type  | Default |                      Description                       |
+|--------|--------|---------|--------------------------------------------------------|
 | `date` | string | *today* | Delete namespaces with deadline on or before this date |
 
 **Jobs (parallel):**
@@ -315,15 +315,16 @@ Updates the rolling release benchmark weekly with the latest release tag.
 
 For how workflow file names differ across stable branches, see [directory-structure.md](directory-structure.md).
 
-| Workflow | stable/8.6-8.7 | stable/8.8 | stable/8.9+ / main |
-|---|---|---|---|
-| `camunda-load-test.yml` | `zeebe-benchmark.yml` (renamed) | `zeebe-benchmark.yml` (renamed) | `camunda-load-test.yml` |
-| `camunda-pr-load-test.yaml` | `zeebe-pr-benchmark.yaml` (renamed) | `zeebe-pr-benchmark.yaml` (renamed) | `camunda-pr-load-test.yaml` |
-| `camunda-scheduled-release-load-tests.yml` | absent | absent | present |
-| `camunda-verify-and-cleanup-load-test.yml` | absent | absent | present |
-| `camunda-daily-load-tests.yml` | present | present | present |
-| `camunda-weekly-load-tests.yml` | present | present | present |
-| `camunda-release-load-test.yaml` | present | present | present |
-| `camunda-load-test-clean-up.yml` | present | present | present |
-| `profile-load-test.yml` | present | present | present |
-| `zeebe-update-long-running-migrating-benchmark.yaml` | present | present | present |
+|                       Workflow                       |           stable/8.6-8.7            |             stable/8.8              |     stable/8.9+ / main      |
+|------------------------------------------------------|-------------------------------------|-------------------------------------|-----------------------------|
+| `camunda-load-test.yml`                              | `zeebe-benchmark.yml` (renamed)     | `zeebe-benchmark.yml` (renamed)     | `camunda-load-test.yml`     |
+| `camunda-pr-load-test.yaml`                          | `zeebe-pr-benchmark.yaml` (renamed) | `zeebe-pr-benchmark.yaml` (renamed) | `camunda-pr-load-test.yaml` |
+| `camunda-scheduled-release-load-tests.yml`           | absent                              | absent                              | present                     |
+| `camunda-verify-and-cleanup-load-test.yml`           | absent                              | absent                              | present                     |
+| `camunda-daily-load-tests.yml`                       | present                             | present                             | present                     |
+| `camunda-weekly-load-tests.yml`                      | present                             | present                             | present                     |
+| `camunda-release-load-test.yaml`                     | present                             | present                             | present                     |
+| `camunda-load-test-clean-up.yml`                     | present                             | present                             | present                     |
+| `profile-load-test.yml`                              | present                             | present                             | present                     |
+| `zeebe-update-long-running-migrating-benchmark.yaml` | present                             | present                             | present                     |
+
