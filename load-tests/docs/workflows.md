@@ -26,11 +26,15 @@ All workflows ultimately deploy through Makefiles in `load-tests/setup/`. This i
 ### Parameters
 
 ```bash
+# secondary_storage: elasticsearch, opensearch, postgresql, none
+# enable_optimize: deploy Optimize
+# additional_platform_configuration: extra --set flags for platform chart
+# additional_load_test_configuration: extra --set flags for load test chart
 make install \
-  secondary_storage=elasticsearch \      # elasticsearch, opensearch, postgresql, none
-  enable_optimize=true \                 # deploy Optimize
-  additional_platform_configuration="" \ # extra --set flags for platform chart
-  additional_load_test_configuration=""  # extra --set flags for load test chart
+  secondary_storage=elasticsearch \
+  enable_optimize=true \
+  additional_platform_configuration="" \
+  additional_load_test_configuration=""
 ```
 
 ### Manual ad-hoc usage
@@ -114,9 +118,9 @@ Creates a load test for official release images. Called by `camunda-scheduled-re
 **Job chain:**
 1. `sanitize-inputs` — validates and sanitizes name/tag
 2. `create-load-test` — calls `camunda-load-test.yml` with `use-official-docker-images: true`, scenario: `realistic`
-3. `await-load-test` — waits 15 minutes
-4. `delete-load-test` — deletes namespace (only on schedule, not manual dispatch)
-5. `notify-on-failure` — Slack notification
+3. `notify-on-failure` — sends a Slack notification if the workflow fails
+
+Automated verification of the deployment and namespace cleanup are handled by `camunda-scheduled-release-load-tests.yml` via `camunda-verify-and-cleanup-load-test.yml`.
 
 ---
 
