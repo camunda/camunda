@@ -415,7 +415,9 @@ public class CamundaExporter implements Exporter {
 
   private boolean shouldFlush() {
     return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit();
+        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()
+        || (writer.getBatchSize() > 0
+            && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs);
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -506,16 +508,17 @@ public class CamundaExporter implements Exporter {
   void waitForPendingFlush() {
     if (pendingFlush != null) {
       pendingFlush.waitForCompletion();
+      // Update the record counters only after the flush was successful. If the asynchronous flush
+      // fails then the exporter will be invoked with the same record again.
+      updateLastExportedPosition(pendingFlush.getLastPosition());
+      updateLastFlushTimestamp(pendingFlush);
     }
   }
 
   private void flush() {
     if (pendingFlush != null) {
-      pendingFlush.waitForCompletion();
-      // Update the record counters only after the flush was successful. If the asynchronous flush
-      // fails then the exporter will be invoked with the same record again.
-      updateLastExportedPosition(pendingFlush.getLastPosition());
-      updateLastFlushTimestamp(pendingFlush);
+      // wait for completion and update record counters and last flush time
+      waitForPendingFlush();
       pendingFlush = null;
     }
 
