@@ -49,6 +49,14 @@ public final class RequireKebabCaseInValueArchTest {
   static final Pattern FORBIDDEN_CHARS = Pattern.compile(".*[A-Z_].*");
 
   /**
+   * Matches a Spring {@code ${...}} property placeholder and captures the property key in group 1.
+   * The key is the portion before the first {@code :} (default-value separator).
+   *
+   * <p>SpEL expressions ({@code #{...}}) and any other non-placeholder strings do not match.
+   */
+  static final Pattern PROPERTY_KEY_PATTERN = Pattern.compile("\\$\\{([^:}]+)[^}]*}");
+
+  /**
    * Property keys exempted from kebab-case enforcement.
    *
    * <p>Use this whitelist only for genuine edge cases where renaming would introduce a
@@ -139,24 +147,24 @@ public final class RequireKebabCaseInValueArchTest {
   }
 
   /**
-   * Extracts the property key from a Spring @Value expression. Handles expressions like: {@code
-   * ${property.key}}, {@code ${property.key:defaultValue}}, {@code ${property.key:#{true}}}
+   * Extracts the property key from a Spring {@code @Value} expression by matching against {@link
+   * #PROPERTY_KEY_PATTERN}. Returns the captured key for {@code ${property.key}} and {@code
+   * ${property.key:defaultValue}} expressions.
    *
-   * @param expression the full @Value expression string
-   * @return Optional containing the property key, or empty if no key can be extracted
+   * <p>Returns empty for SpEL expressions ({@code #{...}}) and any other non-placeholder strings,
+   * which are silently skipped.
+   *
+   * @param expression the full {@code @Value} expression string
+   * @return Optional containing the property key, or empty if the value is not a {@code ${...}}
+   *     placeholder
    */
   private static Optional<String> extractPropertyKey(final String expression) {
-    if (expression == null || !expression.contains("${")) {
+    if (expression == null) {
       return Optional.empty();
     }
-    final int start = expression.indexOf("${") + 2;
-    final int colonPos = expression.indexOf(':', start);
-    final int bracePos = expression.indexOf('}', start);
-    if (bracePos < 0) {
-      return Optional.empty();
-    }
-    final int end = (colonPos >= 0 && colonPos < bracePos) ? colonPos : bracePos;
-    return Optional.of(expression.substring(start, end));
+
+    final var matcher = PROPERTY_KEY_PATTERN.matcher(expression);
+    return matcher.matches() ? Optional.of(matcher.group(1)) : Optional.empty();
   }
 
   private static boolean valueContainsForbiddenCharacters(final String value) {
