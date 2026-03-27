@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -391,6 +392,80 @@ public class EventAppliersTest {
               See %s"""
                   .formatted(applierClassName, version, repoSourcePath, repoGoldenPath, DOCS_URL))
           .isEqualTo(goldenFileContents);
+    }
+
+    /**
+     * Utility to update all golden files at once. Run from an IDE or command line.
+     *
+     * <p>Usage: Run {@code GoldenFileUpdater.main()} — it iterates all registered appliers and
+     * copies each source file to its golden file (or creates an empty golden file for NOOPs).
+     *
+     * <p>To run this, make sure to add the following VM option to your run configuration:
+     *
+     * <pre>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</pre>
+     */
+    public static class GoldenFileUpdater {
+
+      public static void main(final String[] args) throws IOException {
+        System.out.println(
+            """
+            WARNING: This overwrites ALL golden files unconditionally.
+            Only run this after reviewing each failing test case.
+            Updating golden files for changed appliers may hide breaking changes.
+
+            Do you want to continue? (y/N)""");
+
+        try (final var scanner = new java.util.Scanner(System.in)) {
+          final var input = scanner.nextLine().trim();
+          if (!input.equalsIgnoreCase("y")) {
+            System.out.println("Aborted.");
+            return;
+          }
+        }
+
+        // Use a JDK Proxy instead of Mockito so this main() method can run without a test
+        // framework. All methods return null (or 0 for primitives) because applier constructors
+        // only store these references and never call methods on them.
+        @SuppressWarnings("SuspiciousInvocationHandlerImplementation")
+        final var state =
+            (MutableProcessingState)
+                Proxy.newProxyInstance(
+                    MutableProcessingState.class.getClassLoader(),
+                    new Class<?>[] {MutableProcessingState.class},
+                    (proxy, method, params) -> method.getReturnType().isPrimitive() ? 0 : null);
+
+        final var eventAppliers = new EventAppliers();
+        eventAppliers.registerEventAppliers(state);
+
+        final var goldenDir = Paths.get(MODULE_PATH + GOLDEN_FILES_FOLDER);
+        Files.createDirectories(goldenDir);
+
+        for (final var intentEntry : eventAppliers.getRegisteredAppliers().entrySet()) {
+          final var intent = intentEntry.getKey();
+          final var valueTypeName = intent.getClass().getSimpleName().replace("Intent", "");
+
+          for (final var applierEntry : intentEntry.getValue().entrySet()) {
+            final var version = applierEntry.getKey();
+            final var applier = applierEntry.getValue();
+            final var applierClassName = applier.getClass().getSimpleName();
+
+            final var goldenFilename = "%s_%s_v%s.golden".formatted(valueTypeName, intent, version);
+            final var goldenFilePath = goldenDir.resolve(goldenFilename);
+
+            final var sourcePath =
+                Paths.get(
+                    "%s%s/%s.java".formatted(MODULE_PATH, EVENT_APPLIERS_FOLDER, applierClassName));
+            if (Files.exists(sourcePath)) {
+              Files.copy(
+                  sourcePath, goldenFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+              System.out.printf("Copied %s.java -> %s%n", applierClassName, goldenFilename);
+            } else {
+              Files.writeString(goldenFilePath, "");
+              System.out.printf("Created empty %s (NOOP applier)%n", goldenFilename);
+            }
+          }
+        }
+      }
     }
 
     private record RegisteredApplier(Intent intent, int version, TypedEventApplier applier) {}
