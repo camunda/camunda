@@ -86,8 +86,9 @@ public final class ProcessInstanceServices
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
   private final int maxVariableNameLength;
-  private final Cache<Long, RequestRetryHandler> definitionKeyToRetryHandler =
-      Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
+  private final Cache<ProcessDefinitionIdentifier, RequestRetryHandler>
+      definitionKeyToRetryHandler =
+          Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -304,7 +305,7 @@ public final class ProcessInstanceServices
       return sendRequestWithRetryPartitions(brokerRequest, authentication);
     }
     return sendWithPerProcessRoundRobin(
-        brokerRequest, request.processDefinitionKey(), authentication, null);
+        brokerRequest, request.processDefinitionIdentifier(), authentication, null);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -337,7 +338,7 @@ public final class ProcessInstanceServices
     }
 
     return sendWithPerProcessRoundRobin(
-        brokerRequest, request.processDefinitionKey(), authentication, timeout);
+        brokerRequest, request.processDefinitionIdentifier(), authentication, timeout);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
@@ -522,25 +523,24 @@ public final class ProcessInstanceServices
 
   private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
       final BrokerRequest<R> brokerRequest,
-      final Long definitionKey,
+      final ProcessDefinitionIdentifier identifier,
       final CamundaAuthentication authentication,
       final Duration requestTimeout) {
-    final var handler = getRetryHandler(definitionKey);
+    final var handler = getRetryHandler(identifier);
     return sendRequestWithRetryPartitions(brokerRequest, authentication, requestTimeout, handler)
         .whenComplete(
             (response, error) -> {
-              if (error == null && definitionKey != null) {
-                definitionKeyToRetryHandler.get(
-                    definitionKey, ignored -> createRetryHandler());
+              if (error == null && identifier != null) {
+                definitionKeyToRetryHandler.get(identifier, ignored -> createRetryHandler());
               }
             });
   }
 
-  private RequestRetryHandler getRetryHandler(final Long definitionKey) {
-    if (definitionKey == null) {
+  private RequestRetryHandler getRetryHandler(final ProcessDefinitionIdentifier identifier) {
+    if (identifier == null) {
       return requestRetryHandler;
     }
-    final var handler = definitionKeyToRetryHandler.getIfPresent(definitionKey);
+    final var handler = definitionKeyToRetryHandler.getIfPresent(identifier);
     return handler != null ? handler : requestRetryHandler;
   }
 
@@ -605,7 +605,20 @@ public final class ProcessInstanceServices
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables,
       Set<String> tags,
-      String businessId) {}
+      String businessId) {
+
+    ProcessDefinitionIdentifier processDefinitionIdentifier() {
+      if (processDefinitionKey > 0L) {
+        return new ProcessDefinitionIdentifier.ByKey(processDefinitionKey);
+      } else if (bpmnProcessId != null && !bpmnProcessId.isEmpty()) {
+        return new ProcessDefinitionIdentifier.ById(bpmnProcessId);
+      } else {
+        throw new IllegalStateException(
+            "Expected to have processDefinitionKey or bpmnProcessId set, but they are key=%d, id=%s"
+                .formatted(processDefinitionKey, bpmnProcessId));
+      }
+    }
+  }
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 
@@ -630,4 +643,11 @@ public final class ProcessInstanceServices
   public record ProcessInstanceModifyBatchOperationRequest(
       ProcessInstanceFilter filter,
       List<ProcessInstanceModificationMoveInstruction> moveInstructions) {}
+
+  /** The process can be identified by the key or by the definitionId. */
+  sealed interface ProcessDefinitionIdentifier {
+    record ByKey(long key) implements ProcessDefinitionIdentifier {}
+
+    record ById(String id) implements ProcessDefinitionIdentifier {}
+  }
 }
