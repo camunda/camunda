@@ -21,7 +21,8 @@ import java.util.List;
 public class StarterCfg {
 
   private String processId;
-  private int rate;
+  private double rate;
+  private Duration rateDuration = Duration.ofSeconds(1);
   private int threads;
 
   /** Paths are relative to classpath. */
@@ -64,12 +65,24 @@ public class StarterCfg {
     this.processId = processId;
   }
 
-  public int getRate() {
+  public double getRate() {
     return rate;
   }
 
-  public void setRate(final int rate) {
+  public void setRate(final double rate) {
     this.rate = rate;
+  }
+
+  public Duration getRateDuration() {
+    return rateDuration;
+  }
+
+  public void setRateDuration(final Duration rateDuration) {
+    this.rateDuration = rateDuration;
+  }
+
+  public double getRatePerSecond() {
+    return rate / (rateDuration.toNanos() / 1_000_000_000.0);
   }
 
   public int getThreads() {
