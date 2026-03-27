@@ -36,7 +36,6 @@ final class AnthropicChatModelBuilder {
     return chatModel;
   }
 
-  // visible for testing
   static ChatModel build(
       final BaseProviderConfig.AnthropicConfig config,
       final AnthropicChatModel.AnthropicChatModelBuilder builder) {

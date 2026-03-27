@@ -36,7 +36,6 @@ final class OpenAiChatModelBuilder {
     return chatModel;
   }
 
-  // visible for testing
   static ChatModel build(
       final BaseProviderConfig.OpenAiConfig config,
       final OpenAiChatModel.OpenAiChatModelBuilder builder) {

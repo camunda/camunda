@@ -41,7 +41,6 @@ final class OpenAiCompatibleChatModelBuilder {
     return chatModel;
   }
 
-  // visible for testing
   static ChatModel build(
       final BaseProviderConfig.OpenAiCompatibleConfig config,
       final OpenAiChatModel.OpenAiChatModelBuilder builder) {

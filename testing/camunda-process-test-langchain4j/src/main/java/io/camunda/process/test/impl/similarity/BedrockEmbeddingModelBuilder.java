@@ -41,7 +41,6 @@ final class BedrockEmbeddingModelBuilder {
     return embeddingModel;
   }
 
-  // visible for testing
   static EmbeddingModel build(
       final AmazonBedrockConfig config, final BedrockTitanEmbeddingModelBuilder builder) {
     final String model = require(config.getModel(), "model", AMAZON_BEDROCK);

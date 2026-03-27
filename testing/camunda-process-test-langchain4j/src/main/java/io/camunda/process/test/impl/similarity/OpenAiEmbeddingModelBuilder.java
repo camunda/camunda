@@ -37,7 +37,6 @@ final class OpenAiEmbeddingModelBuilder {
     return embeddingModel;
   }
 
-  // visible for testing
   static EmbeddingModel build(
       final OpenAiConfig config, final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {
     builder.apiKey(require(config.getApiKey(), "apiKey", OPENAI));

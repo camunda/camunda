@@ -42,7 +42,6 @@ final class AzureOpenAiEmbeddingModelBuilder {
     return embeddingModel;
   }
 
-  // visible for testing
   static EmbeddingModel build(
       final AzureOpenAiConfig config, final AzureOpenAiEmbeddingModel.Builder builder) {
     builder.endpoint(require(config.getEndpoint(), "endpoint", AZURE_OPENAI));

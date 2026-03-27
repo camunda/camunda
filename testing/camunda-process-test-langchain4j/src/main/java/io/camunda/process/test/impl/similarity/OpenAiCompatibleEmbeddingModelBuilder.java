@@ -43,7 +43,6 @@ final class OpenAiCompatibleEmbeddingModelBuilder {
     return embeddingModel;
   }
 
-  // visible for testing
   static EmbeddingModel build(
       final OpenAiCompatibleConfig config,
       final OpenAiEmbeddingModel.OpenAiEmbeddingModelBuilder builder) {

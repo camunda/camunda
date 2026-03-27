@@ -41,7 +41,6 @@ final class AzureOpenAiChatModelBuilder {
     return chatModel;
   }
 
-  // visible for testing
   static ChatModel build(
       final BaseProviderConfig.AzureOpenAiConfig config,
       final AzureOpenAiChatModel.Builder builder) {

@@ -39,7 +39,6 @@ final class BedrockChatModelBuilder {
     return chatModel;
   }
 
-  // visible for testing
   static ChatModel build(
       final BaseProviderConfig.AmazonBedrockConfig config, final BedrockChatModel.Builder builder) {
     final String model = require(config.getModel(), "model", AMAZON_BEDROCK);
