@@ -124,7 +124,11 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
           res1,
           `Decision Instance with id '${decisionEvaluationInstanceKeyToGet1}' not found`,
         );
-
+      }).toPass(defaultAssertionOptions);
+    });
+    
+    await test.step('Verify Decision Instance is Deleted', async () => {
+      await expect(async () => {
         const res2 = await request.get(
           buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet2}`),
           {
