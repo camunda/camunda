@@ -271,7 +271,7 @@ jobs:
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             max)
-              echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              echo "load-test-load=--set starter.rate=450" >> "$GITHUB_OUTPUT"
               # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
               # We inject the overrides via --set-file into extraConfiguration[1] (application-override.yml),
               # which is loaded after (and thus takes priority over) the base application.yml.
