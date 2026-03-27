@@ -109,7 +109,11 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     final var entity = new AuditLogEntity().setId(batch.getId());
     batch.setAuditLogEntity(mapToEntity(log, entity));
 
-    if (transformer.triggersCleanUp(record)) {
+    // archiving of decision instances is done by the StandaloneDecisionArchiverJob
+    final boolean decisionLog =
+        log.getEntityType()
+            == io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.DECISION;
+    if (transformer.triggersCleanUp(record) && !decisionLog) {
       final var cleanupEntity = new AuditLogCleanupEntity().setId(batch.getId());
       batch.setAuditLogCleanupEntity(mapToCleanupEntity(record, log, cleanupEntity));
     }
