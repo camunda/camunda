@@ -177,6 +177,11 @@ public final class DeployResourceCommandImpl
     return addResourceBytes(outStream.toByteArray(), resourceName);
   }
 
+    @Override
+    public DeployResourceCommandStep2 batch() {
+        return this;
+    }
+
   @Override
   public FinalCommandStep<DeploymentEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
