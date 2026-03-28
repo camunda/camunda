@@ -24,7 +24,7 @@ public class ExporterConfiguration {
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
   private boolean createSchema = true;
-  private boolean skipVariableWriteWithoutUserTasks = false;
+  private boolean skipVariableWriteWithoutUserTasks = true;
 
   public ConnectConfiguration getConnect() {
     return connect;
