@@ -443,4 +443,32 @@ public final class DeployResourceTest extends ClientTest {
             new FormImpl(formId1, 1, 1, filename1, DEFAULT_TENANT),
             new FormImpl(formId2, 1, 2, filename2, DEFAULT_TENANT));
   }
+    @Test
+    public void shouldDeployResourcesUsingBatch() {
+        // given
+        final String filename1 = BPMN_1_FILENAME.substring(1);
+        final String filename2 = BPMN_2_FILENAME.substring(1);
+
+        // when
+        client
+                .newDeployResourceCommand()
+                .batch()
+                .addResourceFromClasspath(filename1)
+                .addResourceFromClasspath(filename2)
+                .send()
+                .join();
+
+        // then
+        final DeployResourceRequest request = gatewayService.getLastRequest();
+        assertThat(request.getResourcesList()).hasSize(2);
+
+        final Resource resource1 = request.getResources(0);
+        assertThat(resource1.getName()).isEqualTo(filename1);
+        assertThat(resource1.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+
+        final Resource resource2 = request.getResources(1);
+        assertThat(resource2.getName()).isEqualTo(filename2);
+        assertThat(resource2.getContent().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
+    }
+
 }
