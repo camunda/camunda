@@ -17,6 +17,7 @@ import Authorizations from "src/pages/authorizations";
 import ClusterVariables from "src/pages/cluster-variables";
 import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
+import GlobalExecutionListeners from "src/pages/global-execution-listeners";
 import {
   isCamundaGroupsEnabled,
   isOIDC,
@@ -24,91 +25,85 @@ import {
   isTenantsApiEnabled,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
+import { JSX } from "react";
 
-export const useGlobalRoutes = () => {
+export type RouteEntry = {
+  path: string;
+  key: string;
+  label: string;
+  element: JSX.Element;
+  isCurrentPage: boolean;
+};
+
+export type GroupEntry = {
+  key: string;
+  label: string;
+  isCurrentPage: boolean;
+  subElements: RouteEntry[];
+};
+
+export type GlobalRoute = RouteEntry | GroupEntry;
+
+export const useGlobalRoutes = (): GlobalRoute[] => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
 
-  const OIDCDependentRoutes = !isOIDC
-    ? [
-        {
-          path: `${Paths.users()}/*`,
-          key: Paths.users(),
-          label: t("users"),
-          element: <Users />,
-        },
-      ]
+  const route = (
+    key: string,
+    label: string,
+    element: JSX.Element,
+  ): RouteEntry => ({
+    path: `${key}/*`,
+    key,
+    label,
+    element,
+    isCurrentPage: pathname.startsWith(key),
+  });
+
+  const OIDCDependentRoutes: RouteEntry[] = !isOIDC
+    ? [route(Paths.users(), t("users"), <Users />)]
     : !isSaaS
-      ? [
-          {
-            path: `${Paths.mappingRules()}/*`,
-            key: Paths.mappingRules(),
-            label: t("mappingRules"),
-            element: <MappingRules />,
-          },
-        ]
+      ? [route(Paths.mappingRules(), t("mappingRules"), <MappingRules />)]
       : [];
 
-  const camundaGroupsDependentRoutes = isCamundaGroupsEnabled
-    ? [
-        {
-          path: `${Paths.groups()}/*`,
-          key: Paths.groups(),
-          label: t("groups"),
-          element: <Groups />,
-        },
-      ]
+  const camundaGroupsDependentRoutes: RouteEntry[] = isCamundaGroupsEnabled
+    ? [route(Paths.groups(), t("groups"), <Groups />)]
     : [];
 
-  const tenantsDependentRoutes = isTenantsApiEnabled
-    ? [
-        {
-          path: `${Paths.tenants()}/*`,
-          key: Paths.tenants(),
-          label: t("tenants"),
-          element: <Tenants />,
-        },
-      ]
+  const tenantsDependentRoutes: RouteEntry[] = isTenantsApiEnabled
+    ? [route(Paths.tenants(), t("tenants"), <Tenants />)]
     : [];
 
-  const routes = [
+  const listenersGroup: GroupEntry = {
+    key: Paths.listeners(),
+    label: t("listeners"),
+    isCurrentPage: pathname.startsWith(Paths.listeners()),
+    subElements: [
+      route(
+        Paths.globalTaskListeners(),
+        t("taskListeners"),
+        <GlobalTaskListeners />,
+      ),
+      route(
+        Paths.globalExecutionListeners(),
+        t("executionListeners"),
+        <GlobalExecutionListeners />,
+      ),
+    ],
+  };
+
+  return [
     ...OIDCDependentRoutes,
     ...camundaGroupsDependentRoutes,
-    {
-      path: `${Paths.roles()}/*`,
-      key: Paths.roles(),
-      label: t("roles"),
-      element: <Roles />,
-    },
+    route(Paths.roles(), t("roles"), <Roles />),
     ...tenantsDependentRoutes,
-    {
-      path: `${Paths.authorizations()}/*`,
-      key: Paths.authorizations(),
-      label: t("authorizations"),
-      element: <Authorizations />,
-    },
-    {
-      path: `${Paths.globalTaskListeners()}/*`,
-      key: Paths.globalTaskListeners(),
-      label: t("globalTaskListeners"),
-      element: <GlobalTaskListeners />,
-    },
-    {
-      path: `${Paths.clusterVariables()}/*`,
-      key: Paths.clusterVariables(),
-      label: t("clusterVariables"),
-      element: <ClusterVariables />,
-    },
-    {
-      path: `${Paths.operationsLog()}/*`,
-      key: Paths.operationsLog(),
-      label: t("operationsLog"),
-      element: <OperationsLog />,
-    },
+    route(Paths.authorizations(), t("authorizations"), <Authorizations />),
+    listenersGroup,
+    route(
+      Paths.clusterVariables(),
+      t("clusterVariables"),
+      <ClusterVariables />,
+    ),
+    route(Paths.operationsLog(), t("operationsLog"), <OperationsLog />),
   ];
-
-  return routes.map((route) => ({
-    ...route,
-    isCurrentPage: pathname.startsWith(route.key),
-  }));
 };

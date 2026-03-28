@@ -47,5 +47,33 @@ class GlobalListenerEntityTransformerTest {
         .isEqualTo(io.camunda.search.entities.GlobalListenerSource.API);
     assertThat(searchEntity.listenerType())
         .isEqualTo(io.camunda.search.entities.GlobalListenerType.USER_TASK);
+    assertThat(searchEntity.elementTypes()).isEmpty();
+    assertThat(searchEntity.categories()).isEmpty();
+  }
+
+  @Test
+  void shouldTransformExecutionListenerEntityToSearchEntity() {
+    // given
+    final GlobalListenerEntity entity = new GlobalListenerEntity();
+    entity.setId("EXECUTION_LISTENER-my-listener");
+    entity.setListenerId("my-listener");
+    entity.setType("my-job");
+    entity.setRetries(3);
+    entity.setEventTypes(List.of("start", "end"));
+    entity.setAfterNonGlobal(false);
+    entity.setPriority(10);
+    entity.setSource(GlobalListenerSource.API);
+    entity.setListenerType(GlobalListenerType.EXECUTION_LISTENER);
+    entity.setElementTypes(List.of("serviceTask"));
+    entity.setCategories(List.of("tasks"));
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+    assertThat(searchEntity).isNotNull();
+    assertThat(searchEntity.id()).isEqualTo("EXECUTION_LISTENER-my-listener");
+    assertThat(searchEntity.listenerType())
+        .isEqualTo(io.camunda.search.entities.GlobalListenerType.EXECUTION_LISTENER);
+    assertThat(searchEntity.elementTypes()).isEqualTo(List.of("serviceTask"));
+    assertThat(searchEntity.categories()).isEqualTo(List.of("tasks"));
   }
 }

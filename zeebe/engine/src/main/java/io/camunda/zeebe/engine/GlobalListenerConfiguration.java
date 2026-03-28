@@ -19,7 +19,9 @@ public record GlobalListenerConfiguration(
     String retries,
     boolean afterNonGlobal,
     int priority,
-    GlobalListenerType listenerType) {
+    GlobalListenerType listenerType,
+    List<String> elementTypes,
+    List<String> categories) {
 
   public GlobalListenerRecord toRecord() {
     return new GlobalListenerRecord()
@@ -30,6 +32,8 @@ public record GlobalListenerConfiguration(
         .setAfterNonGlobal(this.afterNonGlobal())
         .setPriority(this.priority())
         .setSource(GlobalListenerSource.CONFIGURATION)
-        .setListenerType(this.listenerType());
+        .setListenerType(this.listenerType())
+        .setElementTypes(this.elementTypes() != null ? this.elementTypes() : List.of())
+        .setCategories(this.categories() != null ? this.categories() : List.of());
   }
 }

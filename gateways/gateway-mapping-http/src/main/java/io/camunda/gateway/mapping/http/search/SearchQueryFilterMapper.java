@@ -32,6 +32,7 @@ import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
@@ -1362,6 +1363,39 @@ public class SearchQueryFilterMapper {
 
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter != null) {
+      ofNullable(filter.getId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::listenerIdOperations);
+      ofNullable(filter.getType()).map(mapToStringOperations()).ifPresent(builder::typeOperations);
+      ofNullable(filter.getRetries())
+          .map(mapToIntegerOperations("retries", validationErrors))
+          .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getEventTypes())
+          .map(mapToStringOperations())
+          .ifPresent(builder::eventTypeOperations);
+      ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
+      ofNullable(filter.getPriority())
+          .map(mapToIntegerOperations("priority", validationErrors))
+          .ifPresent(builder::priorityOperations);
+      ofNullable(filter.getSource())
+          .map(mapToStringOperations())
+          .ifPresent(builder::sourceOperations);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, GlobalListenerFilter> toGlobalExecutionListenerFilter(
+      final GlobalExecutionListenerSearchQueryFilterRequest filter) {
+
+    final var builder =
+        FilterBuilders.globalListener()
+            .listenerTypes(GlobalListenerType.EXECUTION_LISTENER.name());
     final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {

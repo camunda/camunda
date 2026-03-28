@@ -59,12 +59,17 @@ const AppHeader = ({ hideNavLinks = false }) => {
       navbar={{
         elements: hideNavLinks
           ? []
-          : routes.map((route) => ({
-              ...route,
-              routeProps: {
-                to: route.key,
-              },
-            })),
+          : routes.map((route) =>
+              "subElements" in route
+                ? {
+                    ...route,
+                    subElements: route.subElements.map((sub) => ({
+                      ...sub,
+                      routeProps: { to: sub.key },
+                    })),
+                  }
+                : { ...route, routeProps: { to: route.key } },
+            ),
         licenseTag: getLicenseTag(license),
       }}
       userSideBar={{

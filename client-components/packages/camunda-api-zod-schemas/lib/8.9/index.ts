@@ -178,6 +178,13 @@ import {
 	updateGlobalTaskListener,
 	deleteGlobalTaskListener,
 } from './global-task-listener';
+import {
+	searchGlobalExecutionListeners,
+	createGlobalExecutionListener,
+	getGlobalExecutionListener,
+	updateGlobalExecutionListener,
+	deleteGlobalExecutionListener,
+} from './global-execution-listener';
 
 const endpoints = {
 	getCurrentUser,
@@ -349,6 +356,11 @@ const endpoints = {
 	getGlobalTaskListener,
 	updateGlobalTaskListener,
 	deleteGlobalTaskListener,
+	searchGlobalExecutionListeners,
+	createGlobalExecutionListener,
+	getGlobalExecutionListener,
+	updateGlobalExecutionListener,
+	deleteGlobalExecutionListener,
 } as const;
 
 export {
@@ -957,4 +969,22 @@ export {
 	type QueryGlobalTaskListenersRequestBody,
 	type QueryGlobalTaskListenersResponseBody,
 } from './global-task-listener';
+export {
+	globalExecutionListenerEventTypeSchema,
+	globalExecutionListenerElementTypeSchema,
+	globalExecutionListenerCategorySchema,
+	globalExecutionListenerSchema,
+	createGlobalExecutionListenerRequestBodySchema,
+	updateGlobalExecutionListenerRequestBodySchema,
+	queryGlobalExecutionListenersRequestBodySchema,
+	queryGlobalExecutionListenersResponseBodySchema,
+	type GlobalExecutionListenerEventType,
+	type GlobalExecutionListenerElementType,
+	type GlobalExecutionListenerCategory,
+	type GlobalExecutionListener,
+	type CreateGlobalExecutionListenerRequestBody,
+	type UpdateGlobalExecutionListenerRequestBody,
+	type QueryGlobalExecutionListenersRequestBody,
+	type QueryGlobalExecutionListenersResponseBody,
+} from './global-execution-listener';
 export {endpoints};
