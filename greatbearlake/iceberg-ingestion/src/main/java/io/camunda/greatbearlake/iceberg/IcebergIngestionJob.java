@@ -107,7 +107,7 @@ public class IcebergIngestionJob {
         String.format(
             """
             CREATE TABLE IF NOT EXISTS %s (
-              position        BIGINT        NOT NULL,
+              `position`      BIGINT        NOT NULL,
               partition_id    INT           NOT NULL,
               `key`           BIGINT        NOT NULL,
               record_type     STRING        NOT NULL,
@@ -115,9 +115,10 @@ public class IcebergIngestionJob {
               intent          STRING        NOT NULL,
               `timestamp`     TIMESTAMP_LTZ(6) NOT NULL,
               broker_version  STRING        NOT NULL,
-              json            STRING        NOT NULL,
-              ingested_at     TIMESTAMP_LTZ(3) NOT NULL
-            ) PARTITIONED BY (DATE_FORMAT(`timestamp`, 'yyyy-MM-dd'))
+              `json`          STRING        NOT NULL,
+              ingested_at     TIMESTAMP_LTZ(3) NOT NULL,
+              record_date     STRING        NOT NULL
+            ) PARTITIONED BY (record_date)
             WITH (
               'format-version'        = '2',
               'write.format.default'  = 'parquet',
@@ -146,7 +147,7 @@ public class IcebergIngestionJob {
         String.format(
             """
             CREATE TEMPORARY TABLE parquet_landing (
-              position        BIGINT        NOT NULL,
+              `position`      BIGINT        NOT NULL,
               partition_id    INT           NOT NULL,
               `key`           BIGINT        NOT NULL,
               record_type     STRING        NOT NULL,
@@ -154,7 +155,7 @@ public class IcebergIngestionJob {
               intent          STRING        NOT NULL,
               `timestamp`     BIGINT        NOT NULL,
               broker_version  STRING        NOT NULL,
-              json            STRING        NOT NULL
+              `json`          STRING        NOT NULL
             ) WITH (
               'connector'               = 'filesystem',
               'path'                    = '%s%s',
@@ -176,7 +177,7 @@ public class IcebergIngestionJob {
             """
             INSERT INTO %s
             SELECT
-              position,
+              `position`,
               partition_id,
               `key`,
               record_type,
@@ -184,8 +185,9 @@ public class IcebergIngestionJob {
               intent,
               TO_TIMESTAMP_LTZ(`timestamp`, 6),
               broker_version,
-              json,
-              CURRENT_TIMESTAMP
+              `json`,
+              CURRENT_TIMESTAMP,
+              DATE_FORMAT(TO_TIMESTAMP_LTZ(`timestamp`, 6), 'yyyy-MM-dd')
             FROM parquet_landing
             """,
             config.table()));

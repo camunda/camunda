@@ -15,6 +15,7 @@
 networks:
   lakehouse:
     driver: bridge
+    name: lakehouse
 
 volumes:
   namenode-data:
@@ -154,13 +155,14 @@ services:
   #
   # Required JARs:
   #   iceberg-flink-runtime-2.0-1.10.1.jar            — Iceberg + Flink 2.0 catalog/connector
-  #   flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar  — fat JAR bundling Hive 2.3.9 + Thrift +
+  #   flink-sql-connector-hive-3.1.3_2.12-1.19.3.jar  — fat JAR bundling Hive 3.1.3 + Thrift +
   #                                                      HiveConf + all Hive client deps.
-  #                                                      Flink 2.0.0 version not yet on Maven
-  #                                                      Central; 1.19.3 has identical Hive deps.
-  #                                                      parent-first classloading ensures Flink
-  #                                                      2.0 image classes take precedence over
-  #                                                      any stale Flink 1.19 code in this JAR.
+  #                                                      Hive 3.1.3 client is compatible with
+  #                                                      Hive 4.x metastore servers. Flink 2.0.0
+  #                                                      version not yet on Maven Central; 1.19.3
+  #                                                      has identical Hive deps. parent-first
+  #                                                      classloading ensures Flink 2.0 image
+  #                                                      classes take precedence.
   #   hadoop-client-api-3.4.1.jar                     — org.apache.hadoop.* classes
   #   hadoop-client-runtime-3.4.1.jar                 — shaded Hadoop third-party deps
 
@@ -180,10 +182,12 @@ services:
 
         test -f iceberg-flink-runtime-2.0-1.10.1.jar || \
           wget -q https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-flink-runtime-2.0/1.10.1/iceberg-flink-runtime-2.0-1.10.1.jar
-        test -f flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar || \
-          wget -q https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-hive-2.3.9_2.12/1.19.3/flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar
+        test -f flink-sql-connector-hive-3.1.3_2.12-1.19.3.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-hive-3.1.3_2.12/1.19.3/flink-sql-connector-hive-3.1.3_2.12-1.19.3.jar
         test -f commons-logging-1.2.jar || \
           wget -q https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+        test -f javax.servlet-api-3.1.0.jar || \
+          wget -q -O javax.servlet-api-3.1.0.jar https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar
         test -f hadoop-client-api-3.4.1.jar || \
           wget -q https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-api/3.4.1/hadoop-client-api-3.4.1.jar
         test -f hadoop-client-runtime-3.4.1.jar || \
@@ -225,10 +229,12 @@ services:
 
         test -f iceberg-flink-runtime-2.0-1.10.1.jar || \
           wget -q https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-flink-runtime-2.0/1.10.1/iceberg-flink-runtime-2.0-1.10.1.jar
-        test -f flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar || \
-          wget -q https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-hive-2.3.9_2.12/1.19.3/flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar
+        test -f flink-sql-connector-hive-3.1.3_2.12-1.19.3.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-hive-3.1.3_2.12/1.19.3/flink-sql-connector-hive-3.1.3_2.12-1.19.3.jar
         test -f commons-logging-1.2.jar || \
           wget -q https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+        test -f javax.servlet-api-3.1.0.jar || \
+          wget -q -O javax.servlet-api-3.1.0.jar https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar
         test -f hadoop-client-api-3.4.1.jar || \
           wget -q https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-api/3.4.1/hadoop-client-api-3.4.1.jar
         test -f hadoop-client-runtime-3.4.1.jar || \
