@@ -186,6 +186,50 @@ jobs:
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Validate Docker image tags exist
+        if: ${{ inputs.use-official-docker-images == true && inputs.reuse-tag != '' }}
+        env:
+          TAG: ${{ inputs.reuse-tag }}
+          ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
+        run: |
+          validate_image() {
+            local image="$1"
+            local max_retries=3
+            local retry_delay=5
+            local attempt=1
+
+            while true; do
+              echo "Validating Docker image ${image} (attempt ${attempt}/${max_retries})"
+              manifest_output=$(docker manifest inspect "${image}" 2>&1 >/dev/null)
+              status=$?
+
+              if [ "${status}" -eq 0 ]; then
+                echo "Docker image ${image} exists"
+                return 0
+              fi
+
+              # Distinguish missing tag from transient errors
+              if echo "${manifest_output}" | grep -qiE "manifest unknown|no such manifest|not found"; then
+                echo "::error::Docker image ${image} does not exist on Docker Hub"
+                return 1
+              fi
+
+              if [ "${attempt}" -ge "${max_retries}" ]; then
+                echo "::error::Failed to validate Docker image ${image} after ${max_retries} attempts: ${manifest_output}"
+                return "${status}"
+              fi
+
+              echo "Transient error (attempt ${attempt}/${max_retries}), retrying in ${retry_delay}s..."
+              sleep "${retry_delay}"
+              attempt=$((attempt + 1))
+            done
+          }
+
+          validate_image "camunda/camunda:${TAG}" || exit 1
+
+          if [[ "${ENABLE_OPTIMIZE}" == "true" ]]; then
+            validate_image "camunda/optimize:${TAG}" || exit 1
+          fi
 
   calculate-scenario-config:
     name: Calculate Scenario Configuration
@@ -332,6 +376,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
+      needs.calculate-image-tag.result == 'success' &&
       (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     runs-on: ubuntu-latest
