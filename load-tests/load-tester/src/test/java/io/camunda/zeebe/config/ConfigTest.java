@@ -25,7 +25,7 @@ public class ConfigTest {
     // then
     assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
     assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8080");
-    assertThat(appCfg.isPreferRest()).isFalse();
+    assertThat(appCfg.isPreferRest()).isTrue();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
     assertThat(appCfg.isMonitorDataAvailability()).isTrue();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
