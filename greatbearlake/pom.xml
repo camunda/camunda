@@ -11,6 +11,12 @@
   </parent>
 
   <artifactId>greatbearlake</artifactId>
+  <packaging>pom</packaging>
   <name>Camunda Great Bear Lake</name>
+
+  <modules>
+    <module>parquet-exporter</module>
+    <module>iceberg-ingestion</module>
+  </modules>
 
 </project>

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>greatbearlake-iceberg-ingestion</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Camunda Great Bear Lake - Iceberg Ingestion</name>
+  <description>Flink job that reads Zeebe records from the HDFS parquet landing zone written by
+    greatbearlake-parquet-exporter and ingests them into an Apache Iceberg table
+    registered in the Hive Metastore. The Iceberg table is then queryable via Trino.</description>
+
+  <properties>
+    <version.flink>2.0.0</version.flink>
+    <version.iceberg>1.10.1</version.iceberg>
+    <version.hadoop>3.4.1</version.hadoop>
+    <version.parquet>1.14.3</version.parquet>
+    <!--
+      Flink and its transitive deps are provided at runtime by the cluster.
+      They are compile-scoped here only so the IDE and tests can resolve them.
+    -->
+    <flink.scope>provided</flink.scope>
+    <!-- Flink 1.18 cluster runs Java 17; override the repo-wide Java version -->
+    <version.java>17</version.java>
+  </properties>
+
+  <dependencies>
+
+    <!-- Flink streaming API -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-streaming-java</artifactId>
+      <version>${version.flink}</version>
+      <scope>${flink.scope}</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-clients</artifactId>
+      <version>${version.flink}</version>
+      <scope>${flink.scope}</scope>
+    </dependency>
+
+    <!-- Flink Table / SQL API (needed for Iceberg Flink runtime) -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-table-api-java-bridge</artifactId>
+      <version>${version.flink}</version>
+      <scope>${flink.scope}</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-table-runtime</artifactId>
+      <version>${version.flink}</version>
+      <scope>${flink.scope}</scope>
+    </dependency>
+
+    <!--
+      iceberg-flink-runtime is a fat-JAR that includes Iceberg core + Flink connector.
+      It is placed in the Flink cluster's lib/ directory at runtime (via flink-lib/).
+      We reference it here as "provided" so Maven can compile against the Iceberg APIs
+      without bundling Flink again.
+    -->
+    <dependency>
+      <groupId>org.apache.iceberg</groupId>
+      <artifactId>iceberg-flink-runtime-2.0</artifactId>
+      <version>${version.iceberg}</version>
+      <scope>${flink.scope}</scope>
+    </dependency>
+
+    <!-- Parquet reading (to resolve the schema; Iceberg brings its own reader) -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-hadoop</artifactId>
+      <version>${version.parquet}</version>
+      <scope>${flink.scope}</scope>
+    </dependency>
+
+    <!--
+      Hadoop is bundled in the fat JAR (compile scope) so that Iceberg's FlinkCatalogFactory
+      can find org.apache.hadoop.conf.Configuration and all transitive Hadoop classes.
+      The Flink cluster's hadoop-client-runtime is shaded and relocates Hadoop packages,
+      making them invisible to Iceberg which expects the original package names.
+    -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>${version.hadoop}</version>
+      <scope>${flink.scope}</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-reload4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-hdfs-client</artifactId>
+      <version>${version.hadoop}</version>
+      <scope>${flink.scope}</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-reload4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Build a fat JAR so the job can be submitted with a single file.
+        Flink and Hadoop classes are excluded (provided scope) so the cluster's
+        own versions are used.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>io.camunda.greatbearlake.iceberg.IcebergIngestionJob</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies combine.children="append">
+            <!-- All provided deps are intentionally not bundled -->
+          </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

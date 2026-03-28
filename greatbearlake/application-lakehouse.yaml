@@ -1,0 +1,38 @@
+# Great Bear Lake – Parquet Exporter dev configuration for StandaloneCamunda
+#
+# Usage in IntelliJ Spring Boot run config for StandaloneCamunda:
+#
+#   Main class:   io.camunda.application.StandaloneCamunda
+#
+#   Active profiles (add to existing):
+#     lakehouse
+#
+#   VM options:
+#     -Dspring.config.additional-location=file:${PROJECT_DIR}/greatbearlake/application-lakehouse.yaml
+#
+#   Module classpath (must include the parquet exporter JAR):
+#     Add module: greatbearlake-parquet-exporter
+#     (Edit Configurations → Modify options → Add dependencies with provided scope → select module)
+#
+# The parquet exporter writes to the HDFS running in docker compose
+# (docker compose -f greatbearlake/docker-compose.yml up -d).
+# -------------------------------------------------------------------------------
+
+server:
+  port: 8090
+
+zeebe:
+  broker:
+    exporters:
+      parquet:
+        className: io.camunda.greatbearlake.exporter.ParquetExporter
+        args:
+          # HDFS namenode exposed by docker compose on localhost:9000
+          hdfsUri: hdfs://localhost:9000
+          # Landing zone that the Flink ingestion job monitors
+          outputPath: /zeebe/export
+          batch:
+            # Flush every 100 records — low value keeps latency visible during dev
+            size: 100
+            # Also flush after 10 s even if the batch is not full
+            delay: 10

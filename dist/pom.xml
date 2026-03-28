@@ -20,6 +20,53 @@
     <spring-boot.run.jvmArguments>${jvm.module.opens}</spring-boot.run.jvmArguments>
   </properties>
 
+  <!--
+    Convergence pins introduced by greatbearlake-parquet-exporter (runtime).
+    Hadoop 3.3.6 and Parquet 1.14.3 pull in older transitive versions of several
+    artifacts that conflict with versions already required by other dist dependencies.
+    Each entry below selects the highest version across all conflict paths.
+  -->
+  <dependencyManagement>
+    <dependencies>
+      <!-- parquet-hadoop 1.14.3 → 1.1.10.5 ; hadoop-common 3.3.6 → 1.1.8.2 and avro 1.7.7 → 1.0.5 -->
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>1.1.10.5</version>
+      </dependency>
+      <!-- hadoop-common 3.3.6 → re2j 1.1 ; google-cloud-storage 2.63.0 → re2j 1.8 -->
+      <dependency>
+        <groupId>com.google.re2j</groupId>
+        <artifactId>re2j</artifactId>
+        <version>1.8</version>
+      </dependency>
+      <!-- hadoop-hdfs-client 3.3.6 → okhttp 4.9.3 ; auth0 3.2.0 → okhttp 5.2.1 -->
+      <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>5.2.1</version>
+      </dependency>
+      <!-- avro 1.7.7 → paranamer 2.3 ; jackson-module-scala → paranamer 2.8.3 -->
+      <dependency>
+        <groupId>com.thoughtworks.paranamer</groupId>
+        <artifactId>paranamer</artifactId>
+        <version>2.8.3</version>
+      </dependency>
+      <!-- hadoop-common 3.3.6 → woodstox-core 5.4.0 ; google-cloud-storage 2.63.0 → woodstox-core 7.0.0 -->
+      <dependency>
+        <groupId>com.fasterxml.woodstox</groupId>
+        <artifactId>woodstox-core</artifactId>
+        <version>7.0.0</version>
+      </dependency>
+      <!-- hadoop-common 3.3.6 → stax2-api 4.2.1 ; woodstox-core → 4.2 ; google-cloud-storage → 4.2.2 -->
+      <dependency>
+        <groupId>org.codehaus.woodstox</groupId>
+        <artifactId>stax2-api</artifactId>
+        <version>4.2.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
 
     <dependency>
@@ -164,6 +211,13 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>greatbearlake-parquet-exporter</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
@@ -1067,6 +1121,8 @@
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
+            <!-- loaded at runtime via Zeebe's ServiceLoader exporter discovery -->
+            <dep>io.camunda:greatbearlake-parquet-exporter</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

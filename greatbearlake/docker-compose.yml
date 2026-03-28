@@ -1,0 +1,309 @@
+# Great Bear Lake – Lakehouse BI Stack
+#
+# Boot order: namenode → datanode → init-hdfs → hive-metastore → flink-* → trino
+#
+# Usage:
+#   docker compose up -d
+#
+# Ports:
+#   9870  HDFS NameNode Web UI
+#   9000  HDFS RPC  (Zeebe parquet-exporter writes here)
+#   9083  Hive Metastore Thrift
+#   8081  Flink Web UI
+#   8080  Trino Web UI + JDBC
+
+networks:
+  lakehouse:
+    driver: bridge
+
+volumes:
+  namenode-data:
+  datanode-data:
+  hive-metastore-db:
+
+services:
+
+  # ---------- HDFS -----------------------------------------------------------------
+  #
+  # apache/hadoop:3.4.1 is multi-arch (arm64 native on Apple Silicon) — no platform override needed.
+  # Configuration is injected via CORE-SITE.XML_* / HDFS-SITE.XML_* env vars which are
+  # translated to XML by the image's entrypoint before the service starts.
+  # The namenode formats automatically when ENSURE_NAMENODE_DIR is empty on first boot.
+
+  namenode:
+    image: apache/hadoop:3.4.1
+    platform: linux/amd64   # image is amd64-only; Rosetta handles this on Apple Silicon
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    environment:
+      # starter.sh runs `chmod o+rwx /data` (the declared VOLUME) before starting;
+      # point all data paths into /data so that chmod applies.
+      # ENSURE_NAMENODE_DIR must be a sub-path that does NOT pre-exist so that the
+      # `! -d DIR` check in starter.sh fires and triggers `hdfs namenode -format`.
+      ENSURE_NAMENODE_DIR: /data/namenode
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:9000
+      HDFS-SITE.XML_dfs.replication: "1"
+      HDFS-SITE.XML_dfs.namenode.name.dir: /data/namenode
+      HDFS-SITE.XML_dfs.client.use.datanode.hostname: "true"
+      # Disable IP↔hostname cross-check so the datanode's "localhost" hostname is accepted
+      HDFS-SITE.XML_dfs.namenode.datanode.registration.ip-hostname-check: "false"
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - namenode-data:/data
+    networks:
+      - lakehouse
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9870/dfshealth.html"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+
+  datanode:
+    image: apache/hadoop:3.4.1
+    platform: linux/amd64
+    command: ["hdfs", "datanode"]
+    environment:
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:9000
+      HDFS-SITE.XML_dfs.replication: "1"
+      HDFS-SITE.XML_dfs.datanode.data.dir: /data/datanode
+      HDFS-SITE.XML_dfs.client.use.datanode.hostname: "true"
+      HDFS-SITE.XML_dfs.namenode.datanode.registration.ip-hostname-check: "false"
+      # Advertise localhost so clients running on the host can reach the datanode
+      HDFS-SITE.XML_dfs.datanode.hostname: localhost
+      HDFS-SITE.XML_dfs.datanode.address: 0.0.0.0:9866
+      HDFS-SITE.XML_dfs.datanode.ipc.address: 0.0.0.0:9867
+    depends_on:
+      namenode:
+        condition: service_healthy
+    ports:
+      - "9866:9866"
+      - "9867:9867"
+    volumes:
+      - datanode-data:/data
+    networks:
+      - lakehouse
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9864/datanode.html"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Creates required HDFS directories once the cluster is healthy.
+  init-hdfs:
+    image: apache/hadoop:3.4.1
+    platform: linux/amd64
+    depends_on:
+      datanode:
+        condition: service_healthy
+    environment:
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:9000
+    command:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        hdfs dfsadmin -safemode wait
+        hdfs dfs -mkdir -p /zeebe/export
+        hdfs dfs -mkdir -p /flink/checkpoints
+        hdfs dfs -mkdir -p /user/hive/warehouse
+        hdfs dfs -chmod -R 777 /zeebe /flink /user
+        echo "==> HDFS directories ready"
+    networks:
+      - lakehouse
+    restart: "no"
+
+  # ---------- Hive Metastore -------------------------------------------------------
+  #
+  # apache/hive:4.2.0 — latest stable Hive 4 release.
+  # Still amd64-only upstream; platform override enables Rosetta on Apple Silicon.
+
+  hive-metastore:
+    image: apache/hive:4.2.0
+    platform: linux/amd64
+    depends_on:
+      init-hdfs:
+        condition: service_completed_successfully
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: derby
+      HIVE_CUSTOM_CONF_DIR: /hive-conf
+    volumes:
+      - hive-metastore-db:/opt/hive/data/derby
+      - ./hive-conf:/hive-conf:ro
+    ports:
+      - "9083:9083"
+    networks:
+      - lakehouse
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9083' 2>/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # ---------- Flink ---------------------------------------------------------------
+  #
+  # flink:2.0.0-scala_2.12-java17 — the version officially supported by Iceberg 1.10.1.
+  # Each container self-bootstraps: downloads extra JARs into /opt/flink/lib-extra on
+  # first start (cached across restarts via a local directory inside the container's
+  # writable layer), then copies them into /opt/flink/lib/ before starting Flink.
+  #
+  # Required JARs:
+  #   iceberg-flink-runtime-2.0-1.10.1.jar            — Iceberg + Flink 2.0 catalog/connector
+  #   flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar  — fat JAR bundling Hive 2.3.9 + Thrift +
+  #                                                      HiveConf + all Hive client deps.
+  #                                                      Flink 2.0.0 version not yet on Maven
+  #                                                      Central; 1.19.3 has identical Hive deps.
+  #                                                      parent-first classloading ensures Flink
+  #                                                      2.0 image classes take precedence over
+  #                                                      any stale Flink 1.19 code in this JAR.
+  #   hadoop-client-api-3.4.1.jar                     — org.apache.hadoop.* classes
+  #   hadoop-client-runtime-3.4.1.jar                 — shaded Hadoop third-party deps
+
+  flink-jobmanager:
+    image: flink:2.0.0-scala_2.12-java17
+    depends_on:
+      hive-metastore:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        mkdir -p /opt/flink/lib-extra
+        cd /opt/flink/lib-extra
+
+        echo "==> Ensuring Flink + Iceberg + Hive/Hadoop jars are present"
+
+        test -f iceberg-flink-runtime-2.0-1.10.1.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-flink-runtime-2.0/1.10.1/iceberg-flink-runtime-2.0-1.10.1.jar
+        test -f flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-hive-2.3.9_2.12/1.19.3/flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar
+        test -f commons-logging-1.2.jar || \
+          wget -q https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+        test -f hadoop-client-api-3.4.1.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-api/3.4.1/hadoop-client-api-3.4.1.jar
+        test -f hadoop-client-runtime-3.4.1.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-runtime/3.4.1/hadoop-client-runtime-3.4.1.jar
+
+        cp /opt/flink/lib-extra/*.jar /opt/flink/lib/
+
+        exec /docker-entrypoint.sh jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        state.checkpoints.dir: hdfs://namenode:9000/flink/checkpoints
+        execution.checkpointing.interval: 60000
+        execution.checkpointing.mode: EXACTLY_ONCE
+        classloader.resolve-order: parent-first
+    ports:
+      - "8081:8081"
+    networks:
+      - lakehouse
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/overview"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  flink-taskmanager:
+    image: flink:2.0.0-scala_2.12-java17
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        mkdir -p /opt/flink/lib-extra
+        cd /opt/flink/lib-extra
+
+        test -f iceberg-flink-runtime-2.0-1.10.1.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-flink-runtime-2.0/1.10.1/iceberg-flink-runtime-2.0-1.10.1.jar
+        test -f flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-hive-2.3.9_2.12/1.19.3/flink-sql-connector-hive-2.3.9_2.12-1.19.3.jar
+        test -f commons-logging-1.2.jar || \
+          wget -q https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+        test -f hadoop-client-api-3.4.1.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-api/3.4.1/hadoop-client-api-3.4.1.jar
+        test -f hadoop-client-runtime-3.4.1.jar || \
+          wget -q https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-runtime/3.4.1/hadoop-client-runtime-3.4.1.jar
+
+        cp /opt/flink/lib-extra/*.jar /opt/flink/lib/
+
+        exec /docker-entrypoint.sh taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        classloader.resolve-order: parent-first
+    networks:
+      - lakehouse
+
+  # ---------- Flink Iceberg Ingestion Job -----------------------------------------
+  #
+  # Not started by default — requires the "ingestion" profile.
+  # Build the JAR first, then start:
+  #   ./setup.sh
+  #   docker compose --profile ingestion up -d iceberg-ingestion
+
+  iceberg-ingestion:
+    profiles:
+      - ingestion
+    # Use alpine + curl to submit via the Flink REST API.
+    # main() then runs on the jobmanager where all Hadoop/Iceberg JARs are in /opt/flink/lib/.
+    image: alpine:3.21
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        apk add --no-cache curl jq > /dev/null
+        echo "==> Uploading JAR to Flink REST API"
+        RESPONSE=$$(curl -sf -X POST http://flink-jobmanager:8081/jars/upload \
+          -H "Expect:" \
+          -F "jarfile=@/opt/app/greatbearlake-iceberg-ingestion.jar;type=application/java-archive")
+        JAR_ID=$$(echo "$$RESPONSE" | jq -r '.filename | split("/") | last')
+        echo "==> Uploaded JAR: $$JAR_ID"
+        echo "==> Submitting job"
+        curl -sf -X POST "http://flink-jobmanager:8081/jars/$$JAR_ID/run" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "entryClass": "io.camunda.greatbearlake.iceberg.IcebergIngestionJob",
+            "programArgs": "--hdfsUri hdfs://namenode:9000 --inputPath /zeebe/export --metastoreUri thrift://hive-metastore:9083 --catalog zeebe_iceberg --database zeebe --table zeebe_records"
+          }'
+        echo "==> Job submitted successfully"
+    volumes:
+      - ./iceberg-ingestion/target/greatbearlake-iceberg-ingestion.jar:/opt/app/greatbearlake-iceberg-ingestion.jar:ro
+    networks:
+      - lakehouse
+    restart: "no"
+
+  # ---------- Trino ---------------------------------------------------------------
+  #
+  # trinodb/trino:480 — latest stable release; multi-arch (arm64 native).
+
+  trino:
+    image: trinodb/trino:480
+    depends_on:
+      hive-metastore:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog:ro
+    networks:
+      - lakehouse
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/v1/info | grep -q '\"starting\":false'"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s

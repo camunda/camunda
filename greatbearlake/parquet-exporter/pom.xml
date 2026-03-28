@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>greatbearlake-parquet-exporter</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Camunda Great Bear Lake - Parquet Exporter</name>
+  <description>Zeebe exporter that writes records as Apache Parquet files directly to HDFS.
+    The files are laid out with Hive-style date partitioning so that a downstream
+    Flink job can register them as Apache Iceberg tables and expose them to Trino.</description>
+
+  <properties>
+    <!--
+      Hadoop version must match the apache/hadoop image used by the lakehouse stack
+      (apache/hadoop:3.4.1) so that HDFS wire-protocol is compatible.
+    -->
+    <version.hadoop>3.4.1</version.hadoop>
+    <version.parquet>1.14.3</version.parquet>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!--
+        Pin transitive dependencies to their highest required version to satisfy the
+        enforcer's DependencyConvergence rule.
+
+        stax2-api: hadoop-common pulls 4.2.1 directly and 4.2 via woodstox-core; pin to 4.2.1.
+        snappy-java: parquet-hadoop pulls 1.1.10.5; hadoop-common pulls 1.1.8.2 and avro pulls
+        1.0.5; pin to 1.1.10.5 (highest).
+      -->
+      <dependency>
+        <groupId>org.codehaus.woodstox</groupId>
+        <artifactId>stax2-api</artifactId>
+        <version>4.2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>1.1.10.5</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+    <!-- Zeebe exporter API -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!--
+      parquet-hadoop provides ExampleParquetWriter (Group-based writer), HadoopOutputFile,
+      HadoopInputFile, and GroupWriteSupport / GroupReadSupport. Using native Parquet MessageType
+      instead of Avro avoids embedding an Avro schema in the file footer, which means the parquet
+      schema maps 1-to-1 onto Iceberg types without any Avro-to-Iceberg translation step.
+    -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-hadoop</artifactId>
+      <version>${version.parquet}</version>
+    </dependency>
+
+    <!-- parquet-column and parquet-common are used directly (schema types, Binary, etc.) -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-column</artifactId>
+      <version>${version.parquet}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-common</artifactId>
+      <version>${version.parquet}</version>
+    </dependency>
+
+    <!--
+      hadoop-common provides Configuration, FileSystem, and the base I/O abstractions
+      used by parquet-hadoop.
+    -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>${version.hadoop}</version>
+      <exclusions>
+        <!-- Remove logging bridges that conflict with the broker's SLF4J setup -->
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-reload4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <!-- Jersey / servlet not needed for HDFS client -->
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-json</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-server</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!--
+      hadoop-hdfs-client provides DistributedFileSystem (the hdfs:// scheme handler).
+      Without this artifact, Hadoop's FileSystem.get() cannot resolve hdfs:// URIs.
+    -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-hdfs-client</artifactId>
+      <version>${version.hadoop}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-reload4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Test dependencies -->
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>org.apache.hadoop:hadoop-common</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.apache.hadoop:hadoop-hdfs-client</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
+          <!-- hadoop-hdfs-client is loaded at runtime via ServiceLoader for hdfs:// URIs -->
+          <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>org.apache.hadoop:hadoop-hdfs-client</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
