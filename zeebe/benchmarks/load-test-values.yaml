@@ -1,3 +1,7 @@
+global:
+  preferRest:
+    enabled: true
+
 # Saas configuration to run load tests against Camunda SaaS environment
 saas:
   # Saas.enabled if true enables the load tests to run against Camunda SaaS
