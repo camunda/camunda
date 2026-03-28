@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor.TransitionOutcome;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnExecutionListenerBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -59,6 +60,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnExecutionListenerBehavior executionListenerBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -90,6 +92,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             bpmnBehaviors, stateTransitionBehavior, processingState.getAsyncRequestState(), config);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    executionListenerBehavior = bpmnBehaviors.executionListenerBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
@@ -221,7 +224,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return processElementWithListeners(
         element,
         context,
-        ExecutableFlowNode::getStartExecutionListeners,
+        executionListenerBehavior::getStartExecutionListeners,
         processor::finalizeActivation);
   }
 
@@ -232,7 +235,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return processElementWithListeners(
         element,
         context,
-        ExecutableFlowNode::getEndExecutionListeners,
+        executionListenerBehavior::getEndExecutionListeners,
         processor::finalizeCompletion);
   }
 
@@ -273,7 +276,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return onExecutionListenerComplete(
         element,
         context,
-        ExecutableFlowNode::getStartExecutionListeners,
+        executionListenerBehavior::getStartExecutionListeners,
         processor::finalizeActivation);
   }
 
@@ -285,7 +288,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return onExecutionListenerComplete(
         element,
         context,
-        ExecutableFlowNode::getEndExecutionListeners,
+        executionListenerBehavior::getEndExecutionListeners,
         processor::finalizeCompletion);
   }
 

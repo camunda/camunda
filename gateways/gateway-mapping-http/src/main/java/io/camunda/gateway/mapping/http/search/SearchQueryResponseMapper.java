@@ -54,6 +54,11 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerCategoryEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerElementTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerResult;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerSearchQueryResult;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
@@ -1693,6 +1698,50 @@ public final class SearchQueryResponseMapper {
         .afterNonGlobal(entity.afterNonGlobal())
         .priority(entity.priority())
         .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
+  }
+
+  public static GlobalExecutionListenerSearchQueryResult toGlobalExecutionListenerSearchQueryResponse(
+      final SearchQueryResult<GlobalListenerEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GlobalExecutionListenerSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    entities ->
+                        entities.stream()
+                            .map(SearchQueryResponseMapper::toGlobalExecutionListenerResult)
+                            .toList())
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static GlobalExecutionListenerResult toGlobalExecutionListenerResult(
+      final GlobalListenerEntity entity) {
+    final var result =
+        new GlobalExecutionListenerResult()
+            .id(entity.listenerId())
+            .type(entity.type())
+            .retries(entity.retries())
+            .eventTypes(
+                entity.eventTypes().stream()
+                    .map(GlobalExecutionListenerEventTypeEnum::fromValue)
+                    .toList())
+            .afterNonGlobal(entity.afterNonGlobal())
+            .priority(entity.priority())
+            .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
+    if (entity.elementTypes() != null && !entity.elementTypes().isEmpty()) {
+      result.elementTypes(
+          entity.elementTypes().stream()
+              .map(GlobalExecutionListenerElementTypeEnum::fromValue)
+              .toList());
+    }
+    if (entity.categories() != null && !entity.categories().isEmpty()) {
+      result.categories(
+          entity.categories().stream()
+              .map(GlobalExecutionListenerCategoryEnum::fromValue)
+              .toList());
+    }
+    return result;
   }
 
   // sometimes we've seen null for properties that should not be null; log a warning if that happens

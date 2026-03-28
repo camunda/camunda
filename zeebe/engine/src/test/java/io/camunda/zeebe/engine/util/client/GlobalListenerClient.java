@@ -97,6 +97,16 @@ public final class GlobalListenerClient {
     return this;
   }
 
+  public GlobalListenerClient withElementTypes(final String... elementTypes) {
+    globalListenerRecord.setElementTypes(List.of(elementTypes));
+    return this;
+  }
+
+  public GlobalListenerClient withCategories(final String... categories) {
+    globalListenerRecord.setCategories(List.of(categories));
+    return this;
+  }
+
   public GlobalListenerClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;

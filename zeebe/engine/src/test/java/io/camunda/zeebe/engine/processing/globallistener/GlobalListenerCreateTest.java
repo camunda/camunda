@@ -124,6 +124,50 @@ public class GlobalListenerCreateTest {
   }
 
   @Test
+  public void shouldCreateExecutionListenerWithValidEventTypes() {
+    final var result =
+        engine
+            .globalListener()
+            .withId("my-exec-listener")
+            .withType("my-type")
+            .withEventTypes("start", "end")
+            .withListenerType(GlobalListenerType.EXECUTION_LISTENER)
+            .create();
+    assertThat(result.getValue())
+        .hasId("my-exec-listener")
+        .hasListenerType(GlobalListenerType.EXECUTION_LISTENER)
+        .hasEventTypes("start", "end");
+  }
+
+  @Test
+  public void shouldNotCreateExecutionListenerWithTaskListenerEventType() {
+    final var rejection =
+        engine
+            .globalListener()
+            .withId("my-exec-listener")
+            .withType("my-type")
+            .withEventTypes("creating")
+            .withListenerType(GlobalListenerType.EXECUTION_LISTENER)
+            .expectRejection()
+            .create();
+    assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldNotCreateUserTaskListenerWithExecutionListenerEventType() {
+    final var rejection =
+        engine
+            .globalListener()
+            .withId("my-task-listener")
+            .withType("my-type")
+            .withEventTypes("start")
+            .withListenerType(GlobalListenerType.USER_TASK)
+            .expectRejection()
+            .create();
+    assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
   public void shouldNotCreateListenerIfItAlreadyExists() {
     // given
     engine.globalListener().withId("my-id").withType("my-type").withEventTypes("creating").create();

@@ -135,6 +135,26 @@ public interface GlobalListenerRecordValue extends RecordValue {
   GlobalListenerType getListenerType();
 
   /**
+   * Returns the list of BPMN element types this execution listener is scoped to.
+   *
+   * <p>Only used for {@link GlobalListenerType#EXECUTION_LISTENER} listeners. An empty list means
+   * no element type filter is applied via this field (use {@link #getCategories()} instead).
+   *
+   * @return the list of element type names (e.g. "serviceTask", "userTask")
+   */
+  List<String> getElementTypes();
+
+  /**
+   * Returns the list of element categories this execution listener is scoped to.
+   *
+   * <p>Only used for {@link GlobalListenerType#EXECUTION_LISTENER} listeners. Supported values:
+   * {@code all}, {@code tasks}, {@code gateways}, {@code events}, {@code containers}.
+   *
+   * @return the list of category names
+   */
+  List<String> getCategories();
+
+  /**
    * When this value is set, it indicates that the record is part of the changes necessary to define
    * a global listeners configuration with this key.
    */

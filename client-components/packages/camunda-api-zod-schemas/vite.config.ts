@@ -84,6 +84,7 @@ export default defineConfig({
 				'8.9/variable': resolve(__dirname, 'lib/8.9/variable.ts'),
 				'8.9/cluster-variable': resolve(__dirname, 'lib/8.9/cluster-variable.ts'),
 				'8.9/global-task-listener': resolve(__dirname, 'lib/8.9/global-task-listener.ts'),
+				'8.9/global-execution-listener': resolve(__dirname, 'lib/8.9/global-execution-listener.ts'),
 			},
 			formats: ['es'],
 		},

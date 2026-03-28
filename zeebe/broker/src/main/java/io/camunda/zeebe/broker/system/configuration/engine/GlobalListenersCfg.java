@@ -20,6 +20,12 @@ public class GlobalListenersCfg implements ConfigurationEntry {
    */
   private List<GlobalListenerCfg> userTask = new ArrayList<>();
 
+  /**
+   * Configures global execution listeners that will be applied to all matching BPMN elements and
+   * will be triggered during execution listener processing.
+   */
+  private List<GlobalListenerCfg> execution = new ArrayList<>();
+
   public List<GlobalListenerCfg> getUserTask() {
     return userTask;
   }
@@ -28,8 +34,26 @@ public class GlobalListenersCfg implements ConfigurationEntry {
     this.userTask = userTask;
   }
 
+  public List<GlobalListenerCfg> getExecution() {
+    return execution;
+  }
+
+  public void setExecution(final List<GlobalListenerCfg> execution) {
+    this.execution = execution;
+  }
+
   public GlobalListenersConfiguration createGlobalListenersConfiguration() {
-    return new GlobalListenersConfiguration(
-        userTask.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList());
+    final var userTaskConfigs =
+        userTask.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList();
+    final var executionConfigs =
+        execution.stream()
+            .map(
+                cfg -> {
+                  cfg.setListenerType(
+                      io.camunda.zeebe.protocol.record.value.GlobalListenerType.EXECUTION_LISTENER);
+                  return cfg.createGlobalListenerConfiguration();
+                })
+            .toList();
+    return new GlobalListenersConfiguration(userTaskConfigs, executionConfigs);
   }
 }

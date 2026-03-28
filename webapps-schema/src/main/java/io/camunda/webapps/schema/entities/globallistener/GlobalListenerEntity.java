@@ -51,6 +51,12 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private GlobalListenerType listenerType;
 
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private List<String> elementTypes;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private List<String> categories;
+
   @Override
   public String getId() {
     return id;
@@ -134,10 +140,38 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
     return this;
   }
 
+  public List<String> getElementTypes() {
+    return elementTypes;
+  }
+
+  public GlobalListenerEntity setElementTypes(final List<String> elementTypes) {
+    this.elementTypes = elementTypes;
+    return this;
+  }
+
+  public List<String> getCategories() {
+    return categories;
+  }
+
+  public GlobalListenerEntity setCategories(final List<String> categories) {
+    this.categories = categories;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
-        id, listenerId, type, retries, eventTypes, afterNonGlobal, priority, source, listenerType);
+        id,
+        listenerId,
+        type,
+        retries,
+        eventTypes,
+        afterNonGlobal,
+        priority,
+        source,
+        listenerType,
+        elementTypes,
+        categories);
   }
 
   @Override
@@ -154,7 +188,9 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
         && Objects.equals(type, that.type)
         && Objects.equals(eventTypes, that.eventTypes)
         && source == that.source
-        && listenerType == that.listenerType;
+        && listenerType == that.listenerType
+        && Objects.equals(elementTypes, that.elementTypes)
+        && Objects.equals(categories, that.categories);
   }
 
   @Override
@@ -180,6 +216,10 @@ public final class GlobalListenerEntity implements ExporterEntity<GlobalListener
         + source
         + ", listenerType="
         + listenerType
+        + ", elementTypes="
+        + elementTypes
+        + ", categories="
+        + categories
         + ']';
   }
 }

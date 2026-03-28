@@ -8,5 +8,6 @@
 package io.camunda.search.entities;
 
 public enum GlobalListenerType {
-  USER_TASK
+  USER_TASK,
+  EXECUTION_LISTENER
 }

@@ -185,6 +185,12 @@ paths:
     $ref: 'global-listeners.yaml#/paths/~1global-task-listeners~1{id}'
   /global-task-listeners/search:
     $ref: 'global-listeners.yaml#/paths/~1global-task-listeners~1search'
+  /global-execution-listeners:
+    $ref: 'global-execution-listeners.yaml#/paths/~1global-execution-listeners'
+  /global-execution-listeners/{id}:
+    $ref: 'global-execution-listeners.yaml#/paths/~1global-execution-listeners~1{id}'
+  /global-execution-listeners/search:
+    $ref: 'global-execution-listeners.yaml#/paths/~1global-execution-listeners~1search'
 
   # Group endpoints
   /groups:

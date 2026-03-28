@@ -390,6 +390,12 @@
 				"default": "./dist/8.9/global-task-listener.js"
 			}
 		},
+		"./8.9/global-execution-listener": {
+			"import": {
+				"types": "./dist/8.9/global-execution-listener.d.ts",
+				"default": "./dist/8.9/global-execution-listener.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {

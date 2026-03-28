@@ -46,6 +46,9 @@
   "retriesHelperText": "Number of retries for the listener (minimum 1)",
   "priority": "Priority",
   "priorityHelperText": "Execution priority (higher values run first)",
+  "source": "Source",
+  "sourceApi": "API",
+  "sourceConfiguration": "Configuration",
   "createError": "We're having trouble creating the user task listener",
   "updateError": "We're having trouble updating the user task listener",
   "deleteError": "We're having trouble deleting the user task listener"
