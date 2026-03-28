@@ -228,7 +228,7 @@
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.14</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.0</plugin.version.maven-jar>
-    <plugin.version.protobuf-maven-plugin>5.1.0</plugin.version.protobuf-maven-plugin>
+    <plugin.version.protobuf-maven-plugin>5.1.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
