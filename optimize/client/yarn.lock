@@ -16884,10 +16884,10 @@ vfile@^6.0.0:
     "@types/unist" "^3.0.0"
     vfile-message "^4.0.0"
 
-vite-plugin-svgr@^4.2.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/vite-plugin-svgr/-/vite-plugin-svgr-4.5.0.tgz#253e4c703d1f0b30935c285ca8621f4857952338"
-  integrity sha512-W+uoSpmVkSmNOGPSsDCWVW/DDAyv+9fap9AZXBvWiQqrboJ08j2vh0tFxTD/LjwqwAd3yYSVJgm54S/1GhbdnA==
+vite-plugin-svgr@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/vite-plugin-svgr/-/vite-plugin-svgr-5.0.0.tgz#3993ab856a994c9fdc03be6ce910504e75947330"
+  integrity sha512-CZFWDtbWSLnF6C+uv8u7E5Ao6UVQYBpJrS6212XsEod/Lm4ErhOoFc01/po4ie5hqvMCr5KYrlMrSGQQEtMtBg==
   dependencies:
     "@rollup/pluginutils" "^5.2.0"
     "@svgr/core" "^8.1.0"
