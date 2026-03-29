@@ -40,7 +40,7 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. When not set to "custom", this will override the load-test-load input.'
+        description: 'Choose the variant of workload to use for the load test.'
         required: false
         type: choice
         options:
@@ -110,10 +110,10 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
+        description: 'Choose the variant of workload to use for the load test. Options: latency, realistic, typical, max. If specified, this will override the load-test-load input.'
         type: string
         required: false
-        default: custom
+        default: max
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
         type: string
@@ -271,17 +271,7 @@ jobs:
               # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
               # We inject the overrides via --set-file into extraConfiguration (application-override.yml),
               # which is loaded after (and thus takes priority over) the base application.yml.
-              # All values files define extraConfiguration.application-override.yml (empty by default),
-              # so this override works regardless of which secondary storage type is selected.
-              # The 8.8 Helm chart expects extraConfiguration as a map (key=filename, value=content),
-              # so we use the map key syntax with escaped dots instead of array indexing.
-              # Path is relative to the helm working dir: load-tests/setup/$NAMESPACE/
-              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
-              ;;
-            custom)
-              # Use the provided load-test-load inputs
-              echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
-              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=--set-file 'zeebe.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -323,7 +313,7 @@ jobs:
         name: Build Zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         name: Build Zeebe Docker Image
         with:
@@ -332,16 +322,6 @@ jobs:
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
-          dockerfile: 'Dockerfile'
-      - uses: ./.github/actions/build-platform-docker
-        name: Build Optimize Docker Image
-        if: ${{ inputs.enable-optimize }}
-        with:
-          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
-          revision: ${{ inputs.ref }}
-          push: true
-          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
           dockerfile: 'Dockerfile'
       - name: Observe build status
         if: always()
@@ -452,25 +432,18 @@ jobs:
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
-          # Resolve image registry/repository based on whether official images are used
-          image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
-          camunda_repo="${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }}"
-          optimize_repo="${{ inputs.use-official-docker-images && 'camunda/optimize' || 'team-zeebe/optimize' }}"
+          # Build platform configuration matching stable/8.7 helm chart keys
           image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+          image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+          zeebe_repo="${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
 
-          # Build platform configuration
           additional_platform_config="--set global.image.tag=${image_tag} \
-            --set orchestration.image.registry=${image_registry} \
-            --set orchestration.image.repository=${camunda_repo} \
-            --set orchestration.image.tag=${image_tag}"
-
-          # Append optimize image config if enabled
-          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
-            additional_platform_config+=" \
-              --set optimize.image.registry=${image_registry} \
-              --set optimize.image.repository=${optimize_repo} \
-              --set optimize.image.tag=${image_tag}"
-          fi
+            --set zeebe.image.registry=${image_registry} \
+            --set zeebe.image.repository=${zeebe_repo} \
+            --set zeebe.image.tag=${image_tag} \
+            --set zeebeGateway.image.registry=${image_registry} \
+            --set zeebeGateway.image.repository=${zeebe_repo} \
+            --set zeebeGateway.image.tag=${image_tag}"
 
           # Append user-provided helm values if present
           if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
