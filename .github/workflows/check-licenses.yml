@@ -86,11 +86,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@c7038d3c5dcea15896418e230bec10a25c1381e8
+      uses: camunda/infra-global-github-actions/fossa/setup@527a28284297c9e25451879b07c90cc84e2c3d21
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@c7038d3c5dcea15896418e230bec10a25c1381e8
+      uses: camunda/infra-global-github-actions/fossa/info@527a28284297c9e25451879b07c90cc84e2c3d21
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -113,7 +113,7 @@ jobs:
           optimize/pom.xml
 
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@c7038d3c5dcea15896418e230bec10a25c1381e8
+      uses: camunda/infra-global-github-actions/fossa/analyze@527a28284297c9e25451879b07c90cc84e2c3d21
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -125,7 +125,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@c7038d3c5dcea15896418e230bec10a25c1381e8
+      uses: camunda/infra-global-github-actions/fossa/pr-check@527a28284297c9e25451879b07c90cc84e2c3d21
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
