@@ -110,10 +110,10 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: latency, realistic, typical, max. If specified, this will override the load-test-load input.'
+        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
         type: string
         required: false
-        default: max
+        default: custom
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
         type: string

@@ -175,7 +175,7 @@ zeebe:
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
-      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
+      value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
   resources:
