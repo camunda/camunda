@@ -305,7 +305,27 @@ public class MultiDbConfigurator {
     testApplication.withExporter(
         "rdbms",
         cfg -> {
+<<<<<<< HEAD
           cfg.setClassName("-");
+=======
+          cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
+          cfg.setArgs(
+              Map.of(
+                  "flushInterval",
+                  "PT0S",
+                  "history",
+                  Map.of(
+                      "defaultHistoryTTL",
+                      retentionEnabled ? "PT1S" : "PT1H",
+                      "minHistoryCleanupInterval",
+                      retentionEnabled ? "PT1S" : "PT1H",
+                      "maxHistoryCleanupInterval",
+                      retentionEnabled ? "PT5S" : "PT2H",
+                      "defaultBatchOperationHistoryTTL",
+                      retentionEnabled ? "PT1S" : "PT1H",
+                      "decisionInstanceTTL",
+                      retentionEnabled ? "PT1S" : "PT1H")));
+>>>>>>> 569a084c (test: add IT for standalone decision instance history cleanup)
         });
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");

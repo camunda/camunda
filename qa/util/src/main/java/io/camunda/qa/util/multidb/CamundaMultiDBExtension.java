@@ -267,7 +267,22 @@ public class CamundaMultiDBExtension
   public static DatabaseType currentMultiDbDatabaseType() {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
+<<<<<<< HEAD
     return property == null ? LOCAL : DatabaseType.valueOf(property.toUpperCase());
+=======
+    if (property != null) {
+      return DatabaseType.valueOf(property.toUpperCase());
+    }
+
+    final Class<?> testClass = context.getRequiredTestClass();
+    return AnnotationSupport.findAnnotation(testClass, HistoryMultiDbTest.class)
+        .map(HistoryMultiDbTest::value)
+        .or(
+            () ->
+                AnnotationSupport.findAnnotation(testClass, MultiDbTest.class)
+                    .map(MultiDbTest::value))
+        .orElse(DatabaseType.LOCAL);
+>>>>>>> 569a084c (test: add IT for standalone decision instance history cleanup)
   }
 
   private void setupTestApplication(final Class<?> testClass) {
