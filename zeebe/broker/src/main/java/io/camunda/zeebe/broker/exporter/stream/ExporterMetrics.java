@@ -85,7 +85,7 @@ public final class ExporterMetrics {
       final ValueType valueType, final long written, final long exporting) {
     exportingLatency
         .computeIfAbsent(valueType, this::registerExportingLatency)
-        .record(exporting - written, TimeUnit.MILLISECONDS);
+        .record(Math.max(0, exporting - written), TimeUnit.MILLISECONDS);
   }
 
   public CloseableSilently startExporterExportingTimer(
