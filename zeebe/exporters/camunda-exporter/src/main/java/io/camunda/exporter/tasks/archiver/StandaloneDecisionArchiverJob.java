@@ -91,7 +91,9 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch
   private CompletableFuture<Void> archiveDecisionDependants(final BasicArchiveBatch batch) {
     final var moveDependentDocuments =
         decisionInstanceDependants.stream()
-            .map(dependant -> super.archive(dependant, batch))
+            .map(
+                dependant ->
+                    super.archive(dependant, batch, dependant.getDecisionDependantFilters()))
             .toArray(CompletableFuture[]::new);
     return CompletableFuture.allOf(moveDependentDocuments);
   }

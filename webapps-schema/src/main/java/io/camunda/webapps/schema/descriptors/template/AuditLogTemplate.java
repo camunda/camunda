@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.descriptors.template;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
@@ -19,7 +20,10 @@ import java.util.Map;
 import java.util.Optional;
 
 public class AuditLogTemplate extends AbstractTemplateDescriptor
-    implements ProcessInstanceDependant, BatchOperationDependant, Prio4Backup {
+    implements ProcessInstanceDependant,
+        DecisionInstanceDependant,
+        BatchOperationDependant,
+        Prio4Backup {
 
   public static final String INDEX_NAME = "audit-log";
   public static final String INDEX_VERSION = "8.9.0";
@@ -96,5 +100,15 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   @Override
   public Map<String, String> getBatchOperationDependantFilters() {
     return Map.of(AuditLogTemplate.ENTITY_TYPE, AuditLogEntityType.BATCH.toString());
+  }
+
+  @Override
+  public String getDecisionDependantField() {
+    return ENTITY_KEY;
+  }
+
+  @Override
+  public Map<String, String> getDecisionDependantFilters() {
+    return Map.of(AuditLogTemplate.ENTITY_TYPE, AuditLogEntityType.DECISION.toString());
   }
 }
