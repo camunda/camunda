@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.8.20</version>
+    <version>8.8.21-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
