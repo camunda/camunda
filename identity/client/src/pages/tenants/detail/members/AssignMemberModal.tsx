@@ -70,7 +70,7 @@ const AssignMemberModal: FC<
             <Translate i18nKey="usernameDescription">
               Check the documentation for{" "}
               <DocumentationLink
-                path="/docs/components/identity/tenant/#assign-users-to-a-tenant"
+                path="/components/admin/tenant/#assign-users-to-a-tenant"
                 withIcon
               >
                 how to reference users

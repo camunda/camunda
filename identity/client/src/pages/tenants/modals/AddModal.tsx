@@ -140,7 +140,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                         <Link
                           href={documentationHref(
                             docsUrl,
-                            "/docs/components/identity/tenant/",
+                            "/components/admin/tenant/",
                           )}
                           target="_blank"
                           inline
