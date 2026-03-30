@@ -154,10 +154,11 @@ while IFS= read -r repo_name; do
   fi
 done < "$TMPDIR_WORK/repo_list.txt"
 
-# Footer context
+# Legend + footer
 jq -c --arg wf "$workflow_link" \
   '. + [
     {type: "divider"},
+    {type: "context", elements: [{type: "mrkdwn", text: ":pull-request-merged: Merged original PR  •  :pull-request-open: Open backport  •  :pr-draft: Draft backport  •  :warning: Merge conflict detected"}]},
     {type: "context", elements: [{type: "mrkdwn", text: ("🤖 Stale backport tracker" + $wf)}]}
   ]' "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
 
