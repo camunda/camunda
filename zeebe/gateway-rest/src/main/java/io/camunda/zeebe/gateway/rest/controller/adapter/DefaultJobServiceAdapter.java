@@ -96,9 +96,17 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
       final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/global")
         .flatMap(
-            ok ->
-                SearchQueryRequestMapper.toGlobalJobStatisticsQuery(
-                    OffsetDateTime.parse(from), OffsetDateTime.parse(to), jobType))
+            ok -> {
+              if (from == null || to == null) {
+                final var problem =
+                    CamundaProblemDetail.forStatusAndDetail(
+                        HttpStatus.BAD_REQUEST,
+                        "Both 'from' and 'to' query parameters are required.");
+                return Either.left(problem);
+              }
+              return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(
+                  OffsetDateTime.parse(from), OffsetDateTime.parse(to), jobType);
+            })
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -276,7 +284,6 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
       final var problemDetail =
           CamundaProblemDetail.forStatusAndDetail(
               HttpStatus.FORBIDDEN, "Job metrics feature is disabled");
-      problemDetail.setTitle("FORBIDDEN");
       problemDetail.setInstance(URI.create(requestUri));
       return Either.left(problemDetail);
     }

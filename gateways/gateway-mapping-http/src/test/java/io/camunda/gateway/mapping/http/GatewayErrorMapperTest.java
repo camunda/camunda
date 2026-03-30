@@ -8,9 +8,6 @@
 package io.camunda.gateway.mapping.http;
 
 import static io.camunda.service.exception.ServiceException.Status.ALREADY_EXISTS;
-import static io.camunda.service.exception.ServiceException.Status.INTERNAL;
-import static io.camunda.service.exception.ServiceException.Status.INVALID_ARGUMENT;
-import static io.camunda.service.exception.ServiceException.Status.UNAVAILABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.exception.CamundaSearchException;
@@ -33,7 +30,7 @@ public class GatewayErrorMapperTest {
     final ProblemDetail pd = GatewayErrorMapper.mapErrorToProblem(error);
 
     assertThat(pd).isNotNull();
-    assertThat(pd.getTitle()).isEqualTo("FORBIDDEN");
+    assertThat(pd.getTitle()).isEqualTo("Forbidden");
     assertThat(pd.getDetail()).isEqualTo("Wrapped error");
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
   }
@@ -46,7 +43,22 @@ public class GatewayErrorMapperTest {
     assertThat(pd).isNotNull();
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(pd.getDetail().contains("Generic failure")).isTrue();
-    assertThat(pd.getTitle()).isEqualTo(RuntimeException.class.getName());
+    assertThat(pd.getTitle()).isEqualTo("Internal Server Error");
+  }
+
+  @Test
+  void shouldMapNumberFormatExceptionWithSanitizedMessage() {
+    // given — a raw NFE leaks Java internals like 'For input string: "meow"'
+    final Throwable error = new NumberFormatException("For input string: \"meow\"");
+
+    // when
+    final ProblemDetail pd = GatewayErrorMapper.mapErrorToProblem(error);
+
+    // then — the detail should be a generic, non-leaking message
+    assertThat(pd).isNotNull();
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(pd.getTitle()).isEqualTo("Bad Request");
+    assertThat(pd.getDetail()).isEqualTo("Invalid numeric value provided.");
   }
 
   @Test
@@ -54,7 +66,7 @@ public class GatewayErrorMapperTest {
     final ProblemDetail pd =
         GatewayErrorMapper.createProblemDetail(
             HttpStatus.BAD_REQUEST, "Bad request", "INVALID_ARGUMENT");
-    assertThat(pd.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(pd.getTitle()).isEqualTo("Bad Request");
     assertThat(pd.getDetail()).isEqualTo("Bad request");
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
   }
@@ -91,7 +103,7 @@ public class GatewayErrorMapperTest {
     // then
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail()).isEqualTo("No reason");
-    assertThat(problemDetail.getTitle()).isEqualTo("INTERNAL");
+    assertThat(problemDetail.getTitle()).isEqualTo("Internal Server Error");
   }
 
   @Test
@@ -107,7 +119,7 @@ public class GatewayErrorMapperTest {
     // then
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
     assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
-    assertThat(problemDetail.getTitle()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
   }
 
   @Test
@@ -123,7 +135,7 @@ public class GatewayErrorMapperTest {
     // then
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
     assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
-    assertThat(problemDetail.getTitle()).isEqualTo(ALREADY_EXISTS.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
   }
 
   @Test
@@ -143,7 +155,7 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo("The search client could not connect to the search server");
-    assertThat(problemDetail.getTitle()).isEqualTo(UNAVAILABLE.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Service Unavailable");
   }
 
   @Test
@@ -163,7 +175,7 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo("The search client was unable to process the request");
-    assertThat(problemDetail.getTitle()).isEqualTo(INTERNAL.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Internal Server Error");
   }
 
   @Test
@@ -183,7 +195,7 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo("The search client could not connect to the search server");
-    assertThat(problemDetail.getTitle()).isEqualTo(UNAVAILABLE.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Service Unavailable");
   }
 
   @Test
@@ -203,7 +215,7 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo("The search client was unable to process the request");
-    assertThat(problemDetail.getTitle()).isEqualTo(INTERNAL.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Internal Server Error");
   }
 
   @Test
@@ -222,7 +234,7 @@ public class GatewayErrorMapperTest {
     // then
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
     assertThat(problemDetail.getDetail()).isEqualTo("Invalid argument provided");
-    assertThat(problemDetail.getTitle()).isEqualTo(INVALID_ARGUMENT.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
   }
 
   @Test
@@ -237,7 +249,7 @@ public class GatewayErrorMapperTest {
 
     // then
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-    assertThat(problemDetail.getTitle()).isEqualTo(ALREADY_EXISTS.name());
+    assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
     assertThat(problemDetail.getDetail()).isEqualTo(reason);
   }
 

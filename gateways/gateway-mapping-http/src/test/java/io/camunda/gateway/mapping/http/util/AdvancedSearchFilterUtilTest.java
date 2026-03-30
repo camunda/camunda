@@ -204,4 +204,16 @@ class AdvancedSearchFilterUtilTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Failed to parse date-time: [2023-11-11T10:10:10.1010+0100]");
   }
+
+  @Test
+  void shouldThrowExceptionWhenLongValueInvalid() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$Eq("meow");
+
+    // when/then
+    assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("The provided value 'meow' is not a valid key.");
+  }
 }
