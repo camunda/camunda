@@ -84,7 +84,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     await assertBadRequest(
       res,
       /.*\b(mappingRuleId|name|claimValue)\b.*/,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 
@@ -99,7 +99,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     await assertBadRequest(
       res,
       /.*\b(mappingRuleId|name|claimName)\b.*/,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 
@@ -114,7 +114,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     await assertBadRequest(
       res,
       /.*\b(mappingRuleId|claimValue|claimName)\b.*/,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 
@@ -129,7 +129,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     await assertBadRequest(
       res,
       /.*\b(name|claimValue|claimName)\b.*/,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 
@@ -507,7 +507,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       await assertBadRequest(
         res,
         /.*\b(mappingRuleId|name|claimValue)\b.*/,
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });
@@ -532,7 +532,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       await assertBadRequest(
         res,
         /.*\b(mappingRuleId|name|claimName)\b.*/,
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });
@@ -558,7 +558,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       await assertBadRequest(
         res,
         /.*\b(mappingRuleId|claimValue|claimName)\b.*/,
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });

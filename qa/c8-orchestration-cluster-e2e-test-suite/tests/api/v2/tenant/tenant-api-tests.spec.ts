@@ -74,7 +74,7 @@ test.describe.parallel('Tenants API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
   });
 
   test('Create Tenant Empty Name Invalid Body 400', async ({request}) => {
@@ -87,7 +87,7 @@ test.describe.parallel('Tenants API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
   });
 
   test('Create Tenant Missing Tenant Id Invalid Body 400', async ({
@@ -101,7 +101,7 @@ test.describe.parallel('Tenants API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /.*\b(tenantId)\b.*/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.*\b(tenantId)\b.*/i, 'Bad Request');
   });
 
   test('Create Tenant Conflict', async ({request}) => {
@@ -197,7 +197,7 @@ test.describe.parallel('Tenants API Tests', () => {
         headers: jsonHeaders(),
         data: {name: ''},
       });
-      await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+      await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
     }).toPass(defaultAssertionOptions);
   });
 
@@ -209,7 +209,7 @@ test.describe.parallel('Tenants API Tests', () => {
         headers: jsonHeaders(),
         data: {description: 'missing name only description'},
       });
-      await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+      await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
     }).toPass(defaultAssertionOptions);
   });
 

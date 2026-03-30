@@ -69,7 +69,7 @@ test.describe('Job Update API Tests', () => {
       await assertBadRequest(
         updateRes,
         "The value for operationReference is '0' but must be > 0.",
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     });
   });

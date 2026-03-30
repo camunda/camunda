@@ -314,7 +314,7 @@ test.describe('Element Instance Incident Search API', () => {
       await assertBadRequest(
         res,
         "The provided processInstanceKey 'notANumber' is not a valid key",
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });
@@ -454,7 +454,7 @@ test.describe('Element Instance Incident Search API', () => {
       await assertBadRequest(
         res,
         'Sort field must not be null.',
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });

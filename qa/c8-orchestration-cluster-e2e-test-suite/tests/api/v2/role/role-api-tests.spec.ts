@@ -89,7 +89,7 @@ test.describe.parallel('Roles API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
   });
 
   test('Create Role Empty Name Invalid Body 400', async ({request}) => {
@@ -98,7 +98,7 @@ test.describe.parallel('Roles API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
   });
 
   test('Create Role Missing Role Id Invalid Body 400', async ({request}) => {
@@ -107,7 +107,7 @@ test.describe.parallel('Roles API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /.*\b(roleId)\b.*/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.*\b(roleId)\b.*/i, 'Bad Request');
   });
 
   test('Create Role Conflict', async ({request}) => {
@@ -200,7 +200,7 @@ test.describe.parallel('Roles API Tests', () => {
         headers: jsonHeaders(),
         data: {name: ''},
       });
-      await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+      await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
     }).toPass(defaultAssertionOptions);
   });
 
@@ -212,7 +212,7 @@ test.describe.parallel('Roles API Tests', () => {
         headers: jsonHeaders(),
         data: {description: 'missing name only description'},
       });
-      await assertBadRequest(res, /.*\b(name)\b.*/i, 'INVALID_ARGUMENT');
+      await assertBadRequest(res, /.*\b(name)\b.*/i, 'Bad Request');
     }).toPass(defaultAssertionOptions);
   });
 

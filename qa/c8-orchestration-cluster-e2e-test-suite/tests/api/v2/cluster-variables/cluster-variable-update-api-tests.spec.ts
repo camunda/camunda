@@ -279,7 +279,7 @@ test.describe
         data: {},
       },
     );
-    await assertBadRequest(res, /value/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /value/i, 'Bad Request');
   });
 
   test('Update Global Cluster Variable Verify Response Structure', async ({
@@ -719,7 +719,7 @@ test.describe
         data: {},
       },
     );
-    await assertBadRequest(res, /value/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /value/i, 'Bad Request');
   });
 
   test('Update Tenant Cluster Variable Invalid Tenant Not Found', async ({

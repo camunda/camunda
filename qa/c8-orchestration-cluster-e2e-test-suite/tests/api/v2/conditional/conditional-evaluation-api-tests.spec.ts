@@ -245,7 +245,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: {},
     });
 
-    await assertBadRequest(res, /variables|required/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /variables|required/i, 'Bad Request');
   });
 
   test('Evaluate Conditional - Invalid Tenant', async ({request}) => {
@@ -255,7 +255,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertBadRequest(res, /.+/, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /.+/, 'Bad Request');
   });
 
   test('Evaluate Conditional - Invalid Process Definition Key', async ({

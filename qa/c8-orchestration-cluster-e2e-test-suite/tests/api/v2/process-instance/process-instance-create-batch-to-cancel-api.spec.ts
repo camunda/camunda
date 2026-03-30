@@ -102,7 +102,7 @@ test.describe.parallel('Create Process Instance Batch to Cancel Tests', () => {
         },
       },
     );
-    await assertBadRequest(res, 'No filter provided.', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No filter provided.', 'Bad Request');
   });
 
   test('Create a Batch Operation to Cancel Process Instances - With Invalid Filter - Bad Request', async ({
