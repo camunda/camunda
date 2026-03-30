@@ -61,10 +61,19 @@ public final class RequestHandlerCustomizer {
           errorMessage ->
               Mono.error(
                   McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
-                      .message(errorMessage)
-                      .data("Tool not found: " + callToolRequest.name())
+                      .message("Unknown tool: invalid_tool_name")
+                      .data(errorMessage)
                       .build()),
-          spec -> Mono.just(spec.callHandler().apply(ctx, callToolRequest)));
+          spec -> {
+            if (spec == null) {
+              return Mono.error(
+                  McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
+                      .message("Unknown tool: invalid_tool_name")
+                      .data("Tool not found: " + callToolRequest.name())
+                      .build());
+            }
+            return Mono.fromCallable(() -> spec.callHandler().apply(ctx, callToolRequest));
+          });
     };
   }
 
