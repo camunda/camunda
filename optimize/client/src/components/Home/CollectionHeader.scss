@@ -5,9 +5,12 @@
   width: 100%;
 
   .text {
+    display: inline-block;
+    max-width: calc(60vw - 40px);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    vertical-align: middle;
     white-space: nowrap;
   }
 
