@@ -255,7 +255,7 @@ final class CamundaExporterIT {
     // then
     verify(spiedController, times(2))
         .scheduleCancellableTask(
-            argThat(delay -> delay.getSeconds() >= 0 && delay.getSeconds() <= 2), any());
+            argThat(delay -> delay.toMillis() > 0 && delay.toMillis() <= 2 * 1000L), any());
   }
 
   @TestTemplate
