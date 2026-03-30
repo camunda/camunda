@@ -54,8 +54,12 @@ for repo in "${REPO_LIST[@]}"; do
   echo "📦 Scanning ${repo}..." >&2
 
   # Common gh pr list args
-  json_fields="number,title,url,body,createdAt,isDraft,baseRefName,author,assignees,labels,commits,mergeable"
-  common_args=(--repo "$repo" --state open --limit 1000 --json "$json_fields")
+  # 'commits' is intentionally excluded from the bulk list query — the commits connection
+  # has a nested 'authors' connection that GitHub's GraphQL complexity algorithm expands to
+  # PR_limit × commits_per_PR × authors_per_commit, quickly exceeding the 500,000 node cap.
+  # Draft PRs are checked for BACKPORT-CONFLICT commit messages individually in a second pass.
+  json_fields="number,title,url,body,createdAt,isDraft,baseRefName,author,assignees,labels,mergeable"
+  common_args=(--repo "$repo" --state open --limit 450 --json "$json_fields")
 
   # Build branch filter
   branch_args=()
@@ -96,7 +100,7 @@ for repo in "${REPO_LIST[@]}"; do
         backport_pr_title: .title,
         target_branch: .baseRefName,
         is_draft: .isDraft,
-        has_conflict: (.mergeable == "CONFLICTING" or ([.commits[].messageHeadline] | any(. == "BACKPORT-CONFLICT"))),
+        has_conflict: (.mergeable == "CONFLICTING"),
         created_at: .createdAt,
         age_minutes: $age_minutes,
         age_hours: $age_hours,
@@ -110,6 +114,25 @@ for repo in "${REPO_LIST[@]}"; do
       }
     ] | sort_by(-.age_hours)
   ' "$TMPDIR_WORK/backport_prs.json" > "$TMPDIR_WORK/result.json"
+
+  # Second pass: for draft PRs not already marked as conflicting via 'mergeable', check for
+  # a BACKPORT-CONFLICT commit message. The backport-action adds this commit when it cannot
+  # apply changes cleanly; GitHub may still report mergeable=MERGEABLE until it recomputes.
+  # Fetching commits for a single PR is safe — complexity stays well under 500,000 nodes.
+  while IFS= read -r bp; do
+    bp_num=$(echo "$bp" | jq -r '.backport_pr_number')
+    is_draft=$(echo "$bp" | jq -r '.is_draft')
+    has_conflict=$(echo "$bp" | jq -r '.has_conflict')
+
+    if [[ "$is_draft" == "true" && "$has_conflict" == "false" ]]; then
+      has_bc=$(gh pr view "$bp_num" --repo "$repo" --json commits \
+        --jq '[.commits[].messageHeadline] | any(. == "BACKPORT-CONFLICT")' 2>/dev/null || echo "false")
+      echo "$bp" | jq -c --argjson bc "$has_bc" '.has_conflict = (.has_conflict or $bc)'
+    else
+      echo "$bp"
+    fi
+  done < <(jq -c '.[]' "$TMPDIR_WORK/result.json") | jq -s '.' > "$TMPDIR_WORK/result_updated.json"
+  mv "$TMPDIR_WORK/result_updated.json" "$TMPDIR_WORK/result.json"
 
   # Group by original PR number
   jq -c '
@@ -128,15 +151,15 @@ for repo in "${REPO_LIST[@]}"; do
     if [[ "$orig_num" != "null" ]]; then
       orig_data=$(gh pr view "$orig_num" \
         --repo "$repo" \
-        --json title,url,author,assignees \
-        --jq '{title: .title, url: .url, author: .author.login, assignees: [.assignees[].login]}' 2>/dev/null \
-        || echo '{"title": "Unknown", "url": "", "author": "unknown", "assignees": []}')
+        --json title,url,author,assignees,reviews \
+        --jq '{title: .title, url: .url, author: .author.login, assignees: [.assignees[].login], approvers: ([.reviews[] | select(.state == "APPROVED") | .author.login | select(test("^(app/|backport-action)") | not)] | unique)}' 2>/dev/null \
+        || echo '{"title": "Unknown", "url": "", "author": "unknown", "assignees": [], "approvers": []}')
 
       echo "$group" | jq -c \
         --argjson orig "$orig_data" \
-        '. + {original_pr_title: $orig.title, original_pr_url: $orig.url, original_pr_author: $orig.author, original_pr_assignees: $orig.assignees}'
+        '. + {original_pr_title: $orig.title, original_pr_url: $orig.url, original_pr_author: $orig.author, original_pr_assignees: $orig.assignees, original_pr_approvers: $orig.approvers}'
     else
-      echo "$group" | jq -c '. + {original_pr_title: "Unknown origin", original_pr_url: "", original_pr_author: "unknown", original_pr_assignees: []}'
+      echo "$group" | jq -c '. + {original_pr_title: "Unknown origin", original_pr_url: "", original_pr_author: "unknown", original_pr_assignees: [], original_pr_approvers: []}'
     fi
   done | jq -s '.' > "$TMPDIR_WORK/repo_groups.json"
 
@@ -153,7 +176,7 @@ echo "" >&2
 echo "👤 Resolving author names..." >&2
 
 # Collect all unique usernames (authors + assignees)
-jq -r '[.[].original_pr_author, .[].original_pr_assignees[]?, .[].backport_prs[].assignees[]?] | unique | .[] | select(. != "unknown" and . != "")' \
+jq -r '[.[].original_pr_author, .[].original_pr_assignees[]?, .[].original_pr_approvers[]?, .[].backport_prs[].assignees[]?] | unique | .[] | select(. != "unknown" and . != "")' \
   "$TMPDIR_WORK/all_groups.json" > "$TMPDIR_WORK/usernames.txt"
 
 # Build a username→name mapping JSON object
@@ -177,6 +200,7 @@ done < "$TMPDIR_WORK/usernames.txt"
 jq --argjson names "$(cat "$TMPDIR_WORK/name_map.json")" '
   [.[] | . + {
     original_pr_author_name: ($names[.original_pr_author] // null),
+    original_pr_approver_names: [.original_pr_approvers[]? | {username: ., name: ($names[.] // null)}],
     backport_prs: [.backport_prs[] | . + {
       assignee_names: [.assignees[] | {username: ., name: ($names[.] // null)}]
     }]

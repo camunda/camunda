@@ -77,15 +77,20 @@ while IFS= read -r entry; do
     # Get assignees as space-separated list
     bp_assignees=$(jq -r ".[$group_idx].backport_prs[$bp_idx].assignees // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
     orig_assignees=$(jq -r ".[$group_idx].original_pr_assignees // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
+    orig_approvers=$(jq -r ".[$group_idx].original_pr_approvers // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
 
-    # Determine who to mention: backport PR assignees > original PR author > original PR assignees
+    # Determine who to mention: backport PR assignees > original PR author (if not bot) > original PR approvers (for bot authors) > original PR assignees
     mentions=""
     if [[ -n "$bp_assignees" ]]; then
       while IFS= read -r assignee; do
         [[ -n "$assignee" ]] && mentions="${mentions}@${assignee} "
       done <<< "$bp_assignees"
-    elif [[ "$orig_author" != "unknown" && ! "$orig_author" =~ ^(backport-action|app/.*)$ ]]; then
+    elif [[ "$orig_author" != "unknown" && ! "$orig_author" =~ ^(backport-action|app/.*) ]]; then
       mentions="@${orig_author} "
+    elif [[ -n "$orig_approvers" ]]; then
+      while IFS= read -r approver; do
+        [[ -n "$approver" ]] && mentions="${mentions}@${approver} "
+      done <<< "$orig_approvers"
     elif [[ -n "$orig_assignees" ]]; then
       while IFS= read -r assignee; do
         [[ -n "$assignee" ]] && mentions="${mentions}@${assignee} "
@@ -159,6 +164,17 @@ ${state_note}
       echo "--- comment body ---" >&2
       echo "$comment_body" >&2
       echo "--- end ---" >&2
+      if [[ "$orig_author" =~ ^app/ && -n "$orig_approvers" ]]; then
+        existing_reviewers=$(gh pr view "$bp_num" --repo "$repo" --json reviewRequests --jq '[.reviewRequests[].login] | join(" ")' 2>/dev/null || true)
+        while IFS= read -r approver; do
+          [[ -n "$approver" ]] || continue
+          if echo " $existing_reviewers " | grep -qF " $approver "; then
+            echo "🔍 DRY-RUN: $approver is already a reviewer on PR #${bp_num}, would skip" >&2
+          else
+            echo "🔍 DRY-RUN: Would add $approver as reviewer on PR #${bp_num}" >&2
+          fi
+        done <<< "$orig_approvers"
+      fi
     else
       echo "💬 Commenting on PR #${bp_num} (${bp_target}, open ${age_display})..." >&2
 
@@ -170,6 +186,20 @@ ${state_note}
 
       # Add stale-backport label
       gh pr edit "$bp_num" --add-label "$STALE_LABEL" --repo "$repo" 2>/dev/null || true
+
+      # If original PR was authored by a bot, add original PR approvers as reviewers
+      if [[ "$orig_author" =~ ^app/ && -n "$orig_approvers" ]]; then
+        existing_reviewers=$(gh pr view "$bp_num" --repo "$repo" --json reviewRequests --jq '[.reviewRequests[].login] | join(" ")' 2>/dev/null || true)
+        while IFS= read -r approver; do
+          [[ -n "$approver" ]] || continue
+          if echo " $existing_reviewers " | grep -qF " $approver "; then
+            echo "  ⏭️  $approver is already a reviewer on PR #${bp_num}, skipping" >&2
+          else
+            echo "  👥 Adding $approver as reviewer on PR #${bp_num}..." >&2
+            gh pr edit "$bp_num" --add-reviewer "$approver" --repo "$repo" 2>/dev/null || true
+          fi
+        done <<< "$orig_approvers"
+      fi
     fi
 
     notified_count=$((notified_count + 1))
