@@ -283,6 +283,8 @@ public class MultiDbConfigurator {
                       "maxHistoryCleanupInterval",
                       retentionEnabled ? "PT5S" : "PT2H",
                       "defaultBatchOperationHistoryTTL",
+                      retentionEnabled ? "PT1S" : "PT1H",
+                      "decisionInstanceTTL",
                       retentionEnabled ? "PT1S" : "PT1H")));
         });
   }
