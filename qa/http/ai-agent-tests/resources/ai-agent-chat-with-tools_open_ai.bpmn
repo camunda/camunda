@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0"
+  xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_18jxukq"
+  targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler"
+  exporterVersion="2de5b0b" modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.9.0">
+  <bpmn:process id="ai-agent-chat-with-tools-openAI" name="AI Agent Chat With Tools openAI"
+    isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formId="ai-agent-chat-initial-request" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0pbzrme</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0pbzrme" sourceRef="StartEvent_1" targetRef="Gateway_0z6ctwk" />
+    <bpmn:serviceTask id="AI_Agent" name="AI Agent"
+      zeebe:modelerTemplate="io.camunda.connectors.agenticai.aiagent.v1"
+      zeebe:modelerTemplateVersion="6"
+      zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNBNTZFRkYiLz4KPG1hc2sgaWQ9InBhdGgtMi1vdXRzaWRlLTFfMTg1XzYiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjQiIHk9IjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iYmxhY2siPgo8cmVjdCBmaWxsPSJ3aGl0ZSIgeD0iNCIgeT0iNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ii8+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIvPgo8L21hc2s+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yMC4wMTA1IDEyLjA5ODdDMTguNDkgMTAuNTg5NCAxNy4xNTk0IDguMTA4MTQgMTYuMTc5OSA2LjAxMTAzQzE2LjE1MiA2LjAwNDUxIDE2LjExNzYgNiAxNi4wNzk0IDZDMTYuMDQxMSA2IDE2LjAwNjYgNi4wMDQ1MSAxNS45Nzg4IDYuMDExMDRDMTQuOTk5NCA4LjEwODE0IDEzLjY2OTcgMTAuNTg4OSAxMi4xNDgxIDEyLjA5ODFDMTAuNjI2OSAxMy42MDcxIDguMTI1NjggMTQuOTI2NCA2LjAxMTU3IDE1Ljg5ODFDNi4wMDQ3NCAxNS45MjYxIDYgMTUuOTYxMSA2IDE2QzYgMTYuMDM4NyA2LjAwNDY4IDE2LjA3MzYgNi4wMTE0NCAxNi4xMDE0QzguMTI1MTkgMTcuMDcyOSAxMC42MjYyIDE4LjM5MTkgMTIuMTQ3NyAxOS45MDE2QzEzLjY2OTcgMjEuNDEwNyAxNC45OTk2IDIzLjg5MiAxNS45NzkxIDI1Ljk4OUMxNi4wMDY4IDI1Ljk5NTYgMTYuMDQxMSAyNiAxNi4wNzkzIDI2QzE2LjExNzUgMjYgMTYuMTUxOSAyNS45OTU0IDE2LjE3OTYgMjUuOTg5QzE3LjE1OTEgMjMuODkyIDE4LjQ4ODggMjEuNDExIDIwLjAwOTkgMTkuOTAyMU0yMC4wMDk5IDE5LjkwMjFDMjEuNTI1MyAxOC4zOTg3IDIzLjk0NjUgMTcuMDY2OSAyNS45OTE1IDE2LjA4MjRDMjUuOTk2NSAxNi4wNTkzIDI2IDE2LjAzMSAyNiAxNS45OTk3QzI2IDE1Ljk2ODQgMjUuOTk2NSAxNS45NDAzIDI1Ljk5MTUgMTUuOTE3MUMyMy45NDc0IDE0LjkzMjcgMjEuNTI1OSAxMy42MDEgMjAuMDEwNSAxMi4wOTg3IiBzdHJva2U9IiM0OTFEOEIiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgbWFzaz0idXJsKCNwYXRoLTItb3V0c2lkZS0xXzE4NV82KSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:aiagent:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="openai" target="provider.type" />
+          <zeebe:input source="{{secrets.OPENAI_API_KEY}}"
+            target="provider.openai.authentication.apiKey" />
+          <zeebe:input source="gpt-4o" target="provider.openai.model.model" />
+          <zeebe:input
+            source="You are a helpful, generic chat agent which can answer a wide amount of questions based on your knowledge and an optional set of available tools.&#10;&#10;If tools are provided, you should prefer them instead of guessing an answer. You can call the same tool multiple times by providing different input values. Don&#39;t guess any tools which were not explicitely configured. If no tool matches the request, try to generate an answer. If you&#39;re not able to find a good answer, return with a message stating why you&#39;re not able to.&#10;&#10;If you are prompted to interact with a person, never guess contact details, but use available user/person lookup tools instead and return with an error if you&#39;re not able to look up appropriate data.&#10;&#10;Thinking, step by step, before you execute your tools, you think using the template `&#60;thinking&#62;&#60;context&#62;&#60;/context&#62;&#60;reflection&#62;&#60;/reflection&#62;&#60;/thinking&#62;`"
+            target="data.systemPrompt.prompt" />
+          <zeebe:input
+            source="=&#34;Generate a single sentence in the following exact format, always using a new random city and country each time:&#10;&#10;Latest Message The current date and time in {City, Country}, is approximately {h:mm AM/PM} on {Month day, year}.&#34;"
+            target="data.userPrompt.prompt" />
+          <zeebe:input
+            source="=if (is defined(followUpInput) or is defined(followUpDocuments)) then followUpDocuments else inputDocuments"
+            target="data.userPrompt.documents" />
+          <zeebe:input source="Agent_Tools" target="data.tools.containerElementId" />
+          <zeebe:input source="=toolCallResults" target="data.tools.toolCallResults" />
+          <zeebe:input source="=agent.context" target="data.context" />
+          <zeebe:input source="in-process" target="data.memory.storage.type" />
+          <zeebe:input source="=20" target="data.memory.contextWindowSize" />
+          <zeebe:input source="=10" target="data.limits.maxModelCalls" />
+          <zeebe:input source="text" target="data.response.format.type" />
+          <zeebe:input source="=false" target="data.response.format.parseJson" />
+          <zeebe:input source="=false" target="data.response.includeAssistantMessage" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="6" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.aiagent.v1" />
+          <zeebe:header key="resultVariable" value="agent" />
+          <zeebe:header key="retryBackoff" value="PT2S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_050377t</bpmn:incoming>
+      <bpmn:outgoing>Flow_041ffce</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_0z6ctwk">
+      <bpmn:incoming>Flow_0pbzrme</bpmn:incoming>
+      <bpmn:incoming>Flow_01k9dy1</bpmn:incoming>
+      <bpmn:incoming>Flow_19gp461</bpmn:incoming>
+      <bpmn:outgoing>Flow_050377t</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="User_Feedback" name="User Feedback">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="ai-agent-chat-user-feedback" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_11y3kim</bpmn:incoming>
+      <bpmn:outgoing>Flow_09y08ef</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_1dcg4ha" name="User satisfied?">
+      <bpmn:incoming>Flow_09y08ef</bpmn:incoming>
+      <bpmn:outgoing>Flow_19gp461</bpmn:outgoing>
+      <bpmn:outgoing>Flow_16c9bwj</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_09y08ef" sourceRef="User_Feedback" targetRef="Gateway_1dcg4ha" />
+    <bpmn:sequenceFlow id="Flow_19gp461" name="no - we follow up" sourceRef="Gateway_1dcg4ha"
+      targetRef="Gateway_0z6ctwk">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=userSatisfied = null or
+        userSatisfied = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_0i39jej">
+      <bpmn:incoming>Flow_16c9bwj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_16c9bwj" name="yes" sourceRef="Gateway_1dcg4ha"
+      targetRef="Event_0i39jej">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=userSatisfied</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_041ffce" sourceRef="AI_Agent" targetRef="Gateway_0bukj01" />
+    <bpmn:exclusiveGateway id="Gateway_0bukj01" name="Includes tool calls?">
+      <bpmn:incoming>Flow_041ffce</bpmn:incoming>
+      <bpmn:outgoing>Flow_00lg7l2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11y3kim</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:adHocSubProcess id="Agent_Tools" name="Agent Tools">
+      <bpmn:extensionElements>
+        <zeebe:adHoc activeElementsCollection="=[toolCall._meta.name]" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00lg7l2</bpmn:incoming>
+      <bpmn:outgoing>Flow_01k9dy1</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=agent.toolCalls" inputElement="toolCall"
+            outputCollection="toolCallResults"
+            outputElement="={&#10;  id: toolCall._meta.id,&#10;  name: toolCall._meta.name,&#10;  content: toolCallResult&#10;}" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:scriptTask id="GetDateAndTime" name="Get Date and Time">
+        <bpmn:documentation>Returns the current date and time including the timezone.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:script expression="=now()" resultVariable="toolCallResult" />
+        </bpmn:extensionElements>
+      </bpmn:scriptTask>
+      <bpmn:serviceTask id="Search_Recipe" name="Search recipe"
+        zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="10"
+        zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+        <bpmn:documentation>Searches a recipe given a search query</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+          <zeebe:ioMapping>
+            <zeebe:input source="noAuth" target="authentication.type" />
+            <zeebe:input source="GET" target="method" />
+            <zeebe:input source="https://dummyjson.com/recipes/search" target="url" />
+            <zeebe:input
+              source="={&#10;  q: fromAi(toolCall.searchQuery, &#34;The query describing which recipe to search (e.g. a specific dish or the cuisine).&#34;)&#10;}"
+              target="queryParameters" />
+            <zeebe:input source="=false" target="storeResponse" />
+            <zeebe:input source="20" target="connectionTimeoutInSeconds" />
+            <zeebe:input source="20" target="readTimeoutInSeconds" />
+            <zeebe:input source="=false" target="ignoreNullValues" />
+          </zeebe:ioMapping>
+          <zeebe:taskHeaders>
+            <zeebe:header key="resultExpression"
+              value="={&#10;  toolCallResult: if (count(response.body.recipes) &#62; 0) then response.body.recipes else &#34;No result found.&#34;&#10;}" />
+            <zeebe:header key="retryBackoff" value="PT0S" />
+          </zeebe:taskHeaders>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:scriptTask id="SuperfluxProduct" name="Superflux Product Calculation">
+        <bpmn:documentation>Calculates the superflux product (a very complicated method only this
+          tool can do) given two input numbers</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:script expression="=3 * (inputA + inputB)" resultVariable="toolCallResult" />
+          <zeebe:ioMapping>
+            <zeebe:input
+              source="=fromAi(toolCall.a, &#34;The first number to be superflux calculated.&#34;, &#34;number&#34;)"
+              target="inputA" />
+            <zeebe:input
+              source="=fromAi(toolCall.b, &#34;The second number to be superflux calculated.&#34;, &#34;number&#34;)"
+              target="inputB" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:scriptTask>
+      <bpmn:userTask id="AskHumanToSendEmail" name="Ask human to send email">
+        <bpmn:documentation>Ask a human to send an email for you</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="ai-agent-chat-human-send-email-request" />
+          <zeebe:ioMapping>
+            <zeebe:input
+              source="=fromAi(toolCall.instructions, &#34;Instructions for the human to follow when sending the email, including background of the email.&#34;)"
+              target="instructions" />
+            <zeebe:input
+              source="=fromAi(toolCall.recipient_name, &#34;The recipient&#39;s full name.&#34;)"
+              target="recipient_name" />
+            <zeebe:input
+              source="=fromAi(toolCall.recipient_email, &#34;The the recipient&#39;s email address.&#34;)"
+              target="recipient_email" />
+            <zeebe:input
+              source="=fromAi(toolCall.email_subject, &#34;The subject of the email.&#34;)"
+              target="email_subject" />
+            <zeebe:input source="=fromAi(toolCall.email_body, &#34;The body of the email.&#34;)"
+              target="email_body" />
+            <zeebe:output
+              source="={&#10;  operatorFeedback: operatorFeedback,&#10;  emailOk: emailOk&#10;}"
+              target="toolCallResult" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>Flow_0demz1g</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_0demz1g" sourceRef="AskHumanToSendEmail"
+        targetRef="Gateway_1lux75t" />
+      <bpmn:exclusiveGateway id="Gateway_1lux75t" name="OK to send email?">
+        <bpmn:incoming>Flow_0demz1g</bpmn:incoming>
+        <bpmn:outgoing>Flow_0uqjclh</bpmn:outgoing>
+        <bpmn:outgoing>Flow_1l2ws6w</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="Flow_0uqjclh" name="yes" sourceRef="Gateway_1lux75t"
+        targetRef="SendEmail">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=toolCallResult.emailOk</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_1l2ws6w" name="no" sourceRef="Gateway_1lux75t"
+        targetRef="Event_1wxfv4u">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=toolCallResult.emailOk != true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:intermediateThrowEvent id="Event_1wxfv4u" name="loop back with feedback">
+        <bpmn:incoming>Flow_1l2ws6w</bpmn:incoming>
+      </bpmn:intermediateThrowEvent>
+      <bpmn:scriptTask id="SendEmail" name="Send email">
+        <bpmn:extensionElements>
+          <zeebe:script expression="=true" resultVariable="emailSent" />
+          <zeebe:ioMapping>
+            <zeebe:output source="=emailSent" target="toolCallResult.emailSent" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_0uqjclh</bpmn:incoming>
+      </bpmn:scriptTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:sequenceFlow id="Flow_00lg7l2" name="yes" sourceRef="Gateway_0bukj01"
+      targetRef="Agent_Tools">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=not(is empty(agent.toolCalls))</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_11y3kim" name="no" sourceRef="Gateway_0bukj01"
+      targetRef="User_Feedback">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=is empty(agent.toolCalls)</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_050377t" sourceRef="Gateway_0z6ctwk" targetRef="AI_Agent" />
+    <bpmn:sequenceFlow id="Flow_01k9dy1" sourceRef="Agent_Tools" targetRef="Gateway_0z6ctwk" />
+    <bpmn:textAnnotation id="TextAnnotation_0rg9ar3">
+      <bpmn:text>Rough outline of the functionality
+
+        - Loads previous agent context (conversation, metrics, ...)
+        - Loads available tool information from ad-hoc sub-process definition
+        - Resolves tool information from gateway tool definitions such as MCP
+        - Checks limits (e.g. maximum LLM model calls)
+        - Merges the current request (either a user message or a tool call response) into the memory
+        - Calls the LLM, including previous/edited memory (limited to max amount of messages) +
+        available tools schema
+        - Returns last response as text or JSON format, depending on the configuration
+        - Returns tools to call, including their parameters</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0ic98nl" associationDirection="None" sourceRef="AI_Agent"
+      targetRef="TextAnnotation_0rg9ar3" />
+    <bpmn:textAnnotation id="TextAnnotation_1keavvi">
+      <bpmn:text>For every tool call in &lt;agent.toolCalls&gt;</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0q5n90x" associationDirection="None" sourceRef="Agent_Tools"
+      targetRef="TextAnnotation_1keavvi" />
+    <bpmn:textAnnotation id="TextAnnotation_1cvjkfu">
+      <bpmn:text>Every execution (flow node or sequence of flow nodes) MUST write
+        &lt;toolCallResult&gt; variable</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_1tvejhg">
+      <bpmn:text>Every task inside of an execution MAY query for external inputs provided by the
+        model through the fromAI helper:
+
+        fromAi(toolCall.id, "The user ID", "number")
+
+        The outside brain &lt;AI Agent&gt; will take that information to instruct the model which
+        data to provide in which format.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_0xt28ql">
+      <bpmn:text>Must produce output as &lt;toolCallResults=[ { id, name, content } ]&gt;</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_14t02ll" associationDirection="None" sourceRef="Agent_Tools"
+      targetRef="TextAnnotation_0xt28ql" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ai-agent-chat-with-tools-openAI">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xj2598_di" bpmnElement="AI_Agent" bioc:stroke="#205022"
+        bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
+        <dc:Bounds x="340" y="420" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0z6ctwk_di" bpmnElement="Gateway_0z6ctwk" isMarkerVisible="true">
+        <dc:Bounds x="245" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1fam9db_di" bpmnElement="User_Feedback">
+        <dc:Bounds x="640" y="420" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1dcg4ha_di" bpmnElement="Gateway_1dcg4ha" isMarkerVisible="true">
+        <dc:Bounds x="805" y="435" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="794" y="492" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0i39jej_di" bpmnElement="Event_0i39jej">
+        <dc:Bounds x="912" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0bukj01_di" bpmnElement="Gateway_0bukj01" isMarkerVisible="true">
+        <dc:Bounds x="505" y="435" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="499" y="406" width="62" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03yngb7_di" bpmnElement="Agent_Tools" isExpanded="true"
+        bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2"
+        color:border-color="#6b3c00">
+        <dc:Bounds x="640" y="560" width="400" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1sbkoqq_di" bpmnElement="GetDateAndTime">
+        <dc:Bounds x="670" y="600" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0d8luif_di" bpmnElement="Search_Recipe">
+        <dc:Bounds x="920" y="600" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0x0a1hy" bpmnElement="SuperfluxProduct">
+        <dc:Bounds x="790" y="600" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_16uhg8o_di" bpmnElement="AskHumanToSendEmail">
+        <dc:Bounds x="670" y="730" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1lux75t_di" bpmnElement="Gateway_1lux75t" isMarkerVisible="true">
+        <dc:Bounds x="815" y="745" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="812" y="716" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ny5xkz_di" bpmnElement="Event_1wxfv4u">
+        <dc:Bounds x="822" y="832" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="805" y="875" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1sddc2g_di" bpmnElement="SendEmail">
+        <dc:Bounds x="910" y="730" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0demz1g_di" bpmnElement="Flow_0demz1g">
+        <di:waypoint x="770" y="770" />
+        <di:waypoint x="815" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0uqjclh_di" bpmnElement="Flow_0uqjclh">
+        <di:waypoint x="865" y="770" />
+        <di:waypoint x="910" y="770" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="879" y="752" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1l2ws6w_di" bpmnElement="Flow_1l2ws6w">
+        <di:waypoint x="840" y="795" />
+        <di:waypoint x="840" y="832" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="849" y="803" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0rg9ar3_di" bpmnElement="TextAnnotation_0rg9ar3">
+        <dc:Bounds x="401" y="80" width="578" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1keavvi_di" bpmnElement="TextAnnotation_1keavvi">
+        <dc:Bounds x="1080" y="510" width="240" height="26" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1cvjkfu_di" bpmnElement="TextAnnotation_1cvjkfu">
+        <dc:Bounds x="1210" y="660" width="260" height="60" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1tvejhg_di" bpmnElement="TextAnnotation_1tvejhg">
+        <dc:Bounds x="1210" y="740" width="286" height="142" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0xt28ql_di" bpmnElement="TextAnnotation_0xt28ql">
+        <dc:Bounds x="1168" y="920" width="370" height="26" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0pbzrme_di" bpmnElement="Flow_0pbzrme">
+        <di:waypoint x="188" y="460" />
+        <di:waypoint x="245" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09y08ef_di" bpmnElement="Flow_09y08ef">
+        <di:waypoint x="740" y="460" />
+        <di:waypoint x="805" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19gp461_di" bpmnElement="Flow_19gp461">
+        <di:waypoint x="830" y="435" />
+        <di:waypoint x="830" y="350" />
+        <di:waypoint x="270" y="350" />
+        <di:waypoint x="270" y="435" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="748" y="333" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16c9bwj_di" bpmnElement="Flow_16c9bwj">
+        <di:waypoint x="855" y="460" />
+        <di:waypoint x="912" y="460" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="875" y="442" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_041ffce_di" bpmnElement="Flow_041ffce">
+        <di:waypoint x="440" y="460" />
+        <di:waypoint x="505" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00lg7l2_di" bpmnElement="Flow_00lg7l2">
+        <di:waypoint x="530" y="485" />
+        <di:waypoint x="530" y="850" />
+        <di:waypoint x="640" y="850" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="541" y="492" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11y3kim_di" bpmnElement="Flow_11y3kim">
+        <di:waypoint x="555" y="460" />
+        <di:waypoint x="640" y="460" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="591" y="442" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_050377t_di" bpmnElement="Flow_050377t">
+        <di:waypoint x="295" y="460" />
+        <di:waypoint x="340" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01k9dy1_di" bpmnElement="Flow_01k9dy1">
+        <di:waypoint x="1040" y="850" />
+        <di:waypoint x="1150" y="850" />
+        <di:waypoint x="1150" y="950" />
+        <di:waypoint x="270" y="950" />
+        <di:waypoint x="270" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0ic98nl_di" bpmnElement="Association_0ic98nl">
+        <di:waypoint x="410" y="420" />
+        <di:waypoint x="495" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0q5n90x_di" bpmnElement="Association_0q5n90x">
+        <di:waypoint x="1040" y="620" />
+        <di:waypoint x="1120" y="536" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_14t02ll_di" bpmnElement="Association_14t02ll">
+        <di:waypoint x="1040" y="902" />
+        <di:waypoint x="1160" y="933" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

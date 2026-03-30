@@ -1,0 +1,87 @@
+{
+  "components": [
+    {
+      "label": "AI Response",
+      "components": [
+        {
+          "text": "=agent.responseText",
+          "type": "text",
+          "layout": {
+            "row": "Row_0bbt4ob",
+            "columns": null
+          },
+          "id": "Field_0e59eom"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_1m365mf",
+        "columns": null
+      },
+      "id": "Field_0cj02xb"
+    },
+    {
+      "type": "separator",
+      "layout": {
+        "row": "Row_06uyv64",
+        "columns": null
+      },
+      "id": "Field_1mue7xa"
+    },
+    {
+      "label": "Are you satisfied with the result?",
+      "type": "checkbox",
+      "layout": {
+        "row": "Row_14oyfjc",
+        "columns": null
+      },
+      "id": "Field_03n8az1",
+      "key": "userSatisfied"
+    },
+    {
+      "label": "Follow Up",
+      "components": [
+        {
+          "label": "",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_0o7jpzk",
+            "columns": null
+          },
+          "id": "Field_0378jfk",
+          "key": "followUpInput"
+        },
+        {
+          "label": "Additional documents",
+          "type": "filepicker",
+          "layout": {
+            "row": "Row_06i75kk",
+            "columns": null
+          },
+          "id": "Field_0vzezpk",
+          "key": "followUpDocuments"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_1nitkoj",
+        "columns": null
+      },
+      "id": "Field_1c8s8ll",
+      "conditional": {
+        "hide": "=userSatisfied"
+      }
+    }
+  ],
+  "type": "default",
+  "id": "ai-agent-chat-user-feedback",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.35.0"
+  },
+  "schemaVersion": 18
+}

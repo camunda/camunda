@@ -1,0 +1,384 @@
+### =============================================
+### AI Agent Connector E2E Tests (OpenAI)
+### =============================================
+### Flow: Auth -> Deploy -> Start -> Wait for AI -> Assign -> Complete -> Assert COMPLETED
+
+
+### Step 1: Get Bearer token (Keycloak client_credentials)
+# @name get-bearer-token
+POST {{HOST}}/auth/realms/camunda-platform/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+    client_id={{CLIENT_ID}}
+    &client_secret={{CLIENT_SECRET}}
+    &grant_type=client_credentials
+
+> {%
+  client.test("Get token should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.global.set("TOKEN", response.body.access_token);
+  });
+%}
+
+
+### Step 2: Deploy BPMN and Form together
+# @name deploy-ai-agent-resources
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{HOST}}/core/v2/deployments
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="tenantId"
+Content-Type: application/json
+
+<default>
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="ai-agent-chat-user-feedback.form"
+Content-Type: application/octet-stream
+
+< ./resources/ai-agent-chat-user-feedback.form
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="ai-agent-chat-with-tools_open_ai.bpmn"
+Content-Type: application/octet-stream
+
+< ./resources/ai-agent-chat-with-tools_open_ai.bpmn
+--boundary123--
+
+> {%
+  client.test("Deployment is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response contains process definition", function () {
+    const deployments = response.body.deployments;
+    client.assert(Array.isArray(deployments), "deployments must be an array");
+    client.assert(deployments.length >= 1, "Expected at least 1 deployment");
+
+    // Find the process definition deployment (not the form)
+    let processDefKey = null;
+    for (let i = 0; i < deployments.length; i++) {
+      if (deployments[i].processDefinition) {
+        processDefKey = deployments[i].processDefinition.processDefinitionKey;
+        break;
+      }
+    }
+    client.assert(processDefKey !== null, "No process definition found in deployments");
+    client.global.set("PROCESS_DEFINITION_KEY", processDefKey);
+    client.log("Process definition key: " + processDefKey);
+  });
+%}
+
+
+### Step 3: Start process instance
+# @name start-process-instance
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{HOST}}/core/v2/process-instances
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionKey": "{{PROCESS_DEFINITION_KEY}}",
+  "variables": {},
+  "tenantId": "<default>"
+}
+
+> {%
+  client.test("Process instance creation is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response contains process instance key", function () {
+    client.assert(response.body.processInstanceKey !== undefined, "processInstanceKey not found");
+    client.global.set("PROCESS_INSTANCE_KEY", response.body.processInstanceKey);
+    client.log("Process instance key: " + response.body.processInstanceKey);
+  });
+%}
+
+
+### Step 4a: Wait for AI Agent to complete + Search user tasks (attempt 1)
+# @name search-user-task-attempt-1
+< {%
+  import {wait} from "../js/wait"
+  wait(20)
+%}
+POST {{HOST}}/core/v2/user-tasks/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  client.test("User task search (attempt 1) is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  if (response.body.items && response.body.items.length > 0) {
+    client.global.set("TASK_FOUND", "true");
+    client.global.set("USER_TASK_KEY", response.body.items[0].userTaskKey);
+    client.log("Task found on attempt 1: " + response.body.items[0].userTaskKey);
+  } else {
+    client.global.set("TASK_FOUND", "false");
+    client.log("No task found on attempt 1, will retry...");
+  }
+%}
+
+
+### Step 4b: Wait + Search user tasks (attempt 2 - skip if already found)
+# @name search-user-task-attempt-2
+< {%
+  import {wait} from "../js/wait"
+  const found = client.global.get("TASK_FOUND");
+  if (found !== "true") {
+    wait(20)
+  }
+%}
+POST {{HOST}}/core/v2/user-tasks/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  const alreadyFound = client.global.get("TASK_FOUND");
+  if (alreadyFound === "true") {
+    client.test("User task search (attempt 2) - skipped, already found", function () {
+      client.assert(true, "Skipped");
+    });
+  } else {
+    client.test("User task search (attempt 2) is successful", function () {
+      client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+
+    if (response.body.items && response.body.items.length > 0) {
+      client.global.set("TASK_FOUND", "true");
+      client.global.set("USER_TASK_KEY", response.body.items[0].userTaskKey);
+      client.log("Task found on attempt 2: " + response.body.items[0].userTaskKey);
+    } else {
+      client.global.set("TASK_FOUND", "false");
+      client.log("No task found on attempt 2, will retry...");
+    }
+  }
+%}
+
+
+### Step 4c: Wait + Search user tasks (attempt 3 - final)
+# @name search-user-task-attempt-3
+< {%
+  import {wait} from "../js/wait"
+  const found = client.global.get("TASK_FOUND");
+  if (found !== "true") {
+    wait(20)
+  }
+%}
+POST {{HOST}}/core/v2/user-tasks/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  const alreadyFound = client.global.get("TASK_FOUND");
+  if (alreadyFound === "true") {
+    client.test("User task search (attempt 3) - skipped, already found", function () {
+      client.assert(true, "Skipped");
+    });
+  } else {
+    client.test("User task search (attempt 3) is successful", function () {
+      client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+
+    client.test("User task should exist after 3 attempts", function () {
+      client.assert(response.body.items && response.body.items.length > 0,
+        "No user task found after 3 search attempts (~60s). The AI Agent connector may have failed or timed out.");
+      client.global.set("TASK_FOUND", "true");
+      client.global.set("USER_TASK_KEY", response.body.items[0].userTaskKey);
+      client.log("Task found on attempt 3: " + response.body.items[0].userTaskKey);
+    });
+  }
+%}
+
+
+### Step 5: Get user task details and validate AI response
+# @name get-user-task-details
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+GET {{HOST}}/core/v2/user-tasks/{{USER_TASK_KEY}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Get user task is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("User task belongs to correct process instance", function () {
+    const expectedKey = client.global.get("PROCESS_INSTANCE_KEY");
+    client.assert(String(response.body.processInstanceKey) === String(expectedKey),
+      "User task processInstanceKey mismatch. Expected " + expectedKey + " got " + response.body.processInstanceKey);
+  });
+%}
+
+
+### Step 6: Search for agent variable to get its key
+# @name search-agent-variable
+POST {{HOST}}/core/v2/variables/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY}}",
+    "name": "agent"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  client.test("Variable search is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Agent variable exists", function () {
+    client.assert(response.body.items && response.body.items.length > 0,
+      "No 'agent' variable found for the process instance");
+    client.global.set("AGENT_VARIABLE_KEY", response.body.items[0].variableKey);
+  });
+%}
+
+
+### Step 6b: Fetch full agent variable value and validate AI response
+# @name get-agent-variable-details
+GET {{HOST}}/core/v2/variables/{{AGENT_VARIABLE_KEY}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Get variable is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Agent response contains responseText", function () {
+    const value = typeof response.body.value === "string" ? JSON.parse(response.body.value) : response.body.value;
+    client.assert(value.responseText !== undefined && value.responseText !== null,
+      "agent.responseText is missing");
+    client.assert(value.responseText.length > 0,
+      "agent.responseText is empty");
+    client.log("AI Agent response: " + value.responseText.substring(0, 200));
+  });
+%}
+
+
+### Step 7: Assign user task
+# @name assign-user-task
+POST {{HOST}}/core/v2/user-tasks/{{USER_TASK_KEY}}/assignment
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "assignee": "demo",
+  "allowOverride": true,
+  "action": "assign"
+}
+
+> {%
+  client.test("Assign user task is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+
+### Step 8: Complete user task with userSatisfied=true
+# @name complete-user-task
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{HOST}}/core/v2/user-tasks/{{USER_TASK_KEY}}/completion
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "variables": {
+    "userSatisfied": true
+  },
+  "action": "complete"
+}
+
+> {%
+  client.test("Complete user task is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+
+### Step 9: Assert process instance is COMPLETED
+# @name assert-process-completed
+< {%
+  import {wait} from "../js/wait"
+  wait(10)
+%}
+GET {{HOST}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Get process instance is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Process instance is COMPLETED", function () {
+    client.assert(response.body.state === "COMPLETED",
+      "Expected state COMPLETED but got " + response.body.state);
+    client.log("Process instance " + response.body.processInstanceKey + " completed successfully");
+  });
+%}
