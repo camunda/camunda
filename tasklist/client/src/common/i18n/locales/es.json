@@ -36,6 +36,7 @@
     "forbiddenPageTitle": "No tienes acceso a este componente",
     "forbiddenPageDesc": "Parece que no tienes los permisos necesarios para acceder a este componente. <strong>Ponte en contacto con tu administrador de clúster</strong> para solicitar acceso.",
     "forbiddenPageLinkLabel": "Más información sobre roles y permisos",
+    "taskActionForbidden": "No tienes los permisos necesarios. Ponte en contacto con tu administrador para solicitar acceso.",
     "taskDetailsResetDiagramZoom": "Restablecer el zoom del diagrama",
     "taskDetailsZoomInDiagram": "Acercar el diagrama",
     "taskDetailsZoomOutDiagram": "Alejar el diagrama",
