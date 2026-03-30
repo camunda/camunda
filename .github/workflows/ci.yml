@@ -78,7 +78,7 @@ jobs:
     name: "Lint / Flattened POM Metadata"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
