@@ -22,7 +22,7 @@ const sidebars = {
     'infrastructure-services',
     'renovate-pr-handling',
     'release',
-    'identity_unified_architecture',
+    'unified_identity_architecture',
     {
       type: 'category',
       label: 'Architecture',
