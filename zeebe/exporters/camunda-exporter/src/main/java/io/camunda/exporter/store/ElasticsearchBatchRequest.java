@@ -18,6 +18,7 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
+import io.camunda.exporter.utils.NdJsonSizeUtil;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -262,6 +263,24 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         metrics.recordBulkOperations(bulkRequest.operations().size());
       }
     } catch (final IOException | ElasticsearchException ex) {
+      if (LOGGER.isTraceEnabled()) {
+        try {
+          final var payloadSize =
+              NdJsonSizeUtil.measureNdJsonPayloadSize(bulkRequest, esClient._jsonpMapper());
+          LOGGER.trace(
+              "Elasticsearch bulk request FAILED: operations={} serializedPayloadBytes={} error={}",
+              bulkRequest.operations().size(),
+              payloadSize.totalBytes(),
+              ex.getMessage());
+          LOGGER.trace("Breakdown of operations in bulk request, {}", payloadSize.operationSizes());
+        } catch (final Exception measureEx) {
+          LOGGER.trace(
+              "Elasticsearch bulk request FAILED and payload measurement also failed: operations={} error={} measurementError={}",
+              bulkRequest.operations().size(),
+              ex.getMessage(),
+              measureEx.getMessage());
+        }
+      }
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
