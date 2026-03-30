@@ -13,7 +13,6 @@ import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.STARTS_WITH;
 import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
 
 import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.filter.VariableTypeFilter.VariableValueType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -46,7 +45,7 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
 
     final Set<VariableValueType> valueTypeInclusion =
         VariableTypeFilter.parseTypes(index.getVariableValueTypeInclusion());
-    final Set<VariableTypeFilter.VariableValueType> valueTypeExclusion =
+    final Set<VariableValueType> valueTypeExclusion =
         VariableTypeFilter.parseTypes(index.getVariableValueTypeExclusion());
 
     final List<ExporterRecordFilter> filters = new ArrayList<>();
