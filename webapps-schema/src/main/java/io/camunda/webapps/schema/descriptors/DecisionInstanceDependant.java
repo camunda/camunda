@@ -17,7 +17,7 @@ package io.camunda.webapps.schema.descriptors;
  */
 public interface DecisionInstanceDependant extends IndexTemplateDescriptor {
 
-  String DECISION_INSTANCE_KEY = "decisionDefinitionKey";
+  String DECISION_INSTANCE_KEY = "decisionInstanceKey";
 
   default String getDecisionDependantField() {
     return DECISION_INSTANCE_KEY;
