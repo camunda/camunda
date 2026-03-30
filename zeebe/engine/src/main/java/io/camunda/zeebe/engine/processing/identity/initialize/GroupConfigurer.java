@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 
 import io.camunda.security.configuration.ConfiguredGroup;
 import io.camunda.security.validation.GroupValidator;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.Either;
@@ -43,11 +44,30 @@ public class GroupConfigurer
     final String groupId = group.groupId();
     return Stream.of(
             mapToGroupMembers(groupId, group.users(), EntityType.USER),
-            mapToGroupMembers(groupId, group.roles(), EntityType.ROLE),
             mapToGroupMembers(groupId, group.mappingRules(), EntityType.MAPPING_RULE),
             mapToGroupMembers(groupId, group.clients(), EntityType.CLIENT))
         .flatMap(s -> s)
         .toList();
+  }
+
+  // Adding a role to a group is a special case as the relation can only be created one way round.
+  public List<RoleRecord> configureRoleMembers(final ConfiguredGroup group) {
+    final String groupId = group.groupId();
+    return mapToRoleMembers(groupId, group.roles()).toList();
+  }
+
+  private static Stream<RoleRecord> mapToRoleMembers(
+      final String groupId, final List<String> memberIds) {
+    if (memberIds == null) {
+      return Stream.empty();
+    }
+    return memberIds.stream()
+        .map(
+            id ->
+                new RoleRecord()
+                    .setRoleId(id)
+                    .setEntityId(groupId)
+                    .setEntityType(EntityType.GROUP));
   }
 
   private static Stream<GroupRecord> mapToGroupMembers(
