@@ -7,7 +7,6 @@
  */
 
 import {useMemo} from 'react';
-import {Navigate, useLocation} from 'react-router-dom';
 import {StructuredListSkeleton} from '@carbon/react';
 import {Link} from 'modules/components/Link';
 import {Paths, Locations} from 'modules/Routes';
@@ -22,7 +21,6 @@ import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 
 const DetailsTab: React.FC = () => {
   const {
@@ -30,11 +28,8 @@ const DetailsTab: React.FC = () => {
     selectedElementId,
     selectedInstancesCount,
     isFetchingElement,
-    hasSelection,
   } = useProcessInstanceElementSelection();
 
-  const {processInstanceId} = useProcessInstancePageParams();
-  const location = useLocation();
   const {data: processInstance} = useProcessInstance();
   const {data: xmlData} = useProcessInstanceXml({
     processDefinitionKey: processInstance?.processDefinitionKey,
@@ -245,18 +240,6 @@ const DetailsTab: React.FC = () => {
     processInstance,
     calledDecisionInstance,
   ]);
-
-  if (!hasSelection) {
-    return (
-      <Navigate
-        to={{
-          ...location,
-          pathname: Paths.processInstanceVariables({processInstanceId}),
-        }}
-        replace
-      />
-    );
-  }
 
   if (isFetchingElement) {
     return <StructuredListSkeleton rowCount={5} />;
