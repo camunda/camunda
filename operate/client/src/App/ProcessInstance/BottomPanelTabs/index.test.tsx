@@ -170,6 +170,43 @@ describe('<BottomPanelTabs />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should not show Incidents tab when selected element instance has no incidents', async () => {
+    const elementInstanceKey = '456';
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockFetchElementInstance(':key').withSuccess({
+      elementInstanceKey,
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: '2223894723423800',
+      processDefinitionId: 'someKey',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: null,
+      state: 'ACTIVE',
+      incidentKey: null,
+      elementId: 'someElement',
+      elementName: null,
+      type: 'SERVICE_TASK',
+      tenantId: '<default>',
+      hasIncident: false,
+      rootProcessInstanceKey: null,
+    });
+    mockSearchIncidentsByElementInstance(':key').withSuccess(
+      searchResult([], 0),
+    );
+
+    const path = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement&elementInstanceKey=${elementInstanceKey}`;
+    render(<BottomPanelTabs />, {wrapper: getWrapper(path)});
+
+    expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
+    expect(
+      screen.queryByRole('link', {name: /^Incidents$/i}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should show Incidents tab when process instance has an incident', async () => {
     mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
       searchResult([], 3),
@@ -508,5 +545,123 @@ describe('<BottomPanelTabs />', () => {
       await screen.findByRole('link', {name: /^Incidents$/i}),
     ).toBeVisible();
     expect(await screen.findByText('3')).toBeVisible();
+  });
+
+  it('should redirect incidents tab when process instance has no incidents', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const path = Paths.processInstanceIncidents({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs />, {wrapper: getWrapper(path)});
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect incidents tab when selected element has no incidents', async () => {
+    const elementInstanceKey = '456';
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockFetchElementInstance(':key').withSuccess({
+      elementInstanceKey,
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: '2223894723423800',
+      processDefinitionId: 'someKey',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: null,
+      state: 'ACTIVE',
+      incidentKey: null,
+      elementId: 'someElement',
+      elementName: null,
+      type: 'SERVICE_TASK',
+      tenantId: '<default>',
+      hasIncident: false,
+      rootProcessInstanceKey: null,
+    });
+    mockSearchIncidentsByElementInstance(':key').withSuccess(
+      searchResult([], 0),
+    );
+
+    const path = `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=someElement&elementInstanceKey=${elementInstanceKey}`;
+    render(<BottomPanelTabs />, {wrapper: getWrapper(path)});
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect input mappings tab when no element is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const inputMappingsPath = Paths.processInstanceInputMappings({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs />, {wrapper: getWrapper(inputMappingsPath)});
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect output mappings tab when no element is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const outputMappingsPath = Paths.processInstanceOutputMappings({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs />, {wrapper: getWrapper(outputMappingsPath)});
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect details tab when no element is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const path = Paths.processInstanceDetails({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs />, {wrapper: getWrapper(path)});
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
   });
 });
