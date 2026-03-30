@@ -59,7 +59,7 @@ class ProcessInstanceRequestValidatorTest {
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
-    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getTitle()).isEqualTo("Bad Request");
     assertThat(problem.getDetail()).contains("is not valid. Tags must start with a letter");
   }
 
@@ -98,7 +98,7 @@ class ProcessInstanceRequestValidatorTest {
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
-    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getTitle()).isEqualTo("Bad Request");
     assertThat(problem.getDetail()).contains("businessId").contains("256");
   }
 }

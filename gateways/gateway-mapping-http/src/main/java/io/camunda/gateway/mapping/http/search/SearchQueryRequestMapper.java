@@ -27,7 +27,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobal
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupClientSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorStatisticsQueryStrictContract;
@@ -39,7 +39,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappin
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
@@ -635,7 +635,7 @@ public final class SearchQueryRequestMapper {
     final var p = request.page();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.limit(), p.from(), null, null)
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
         request.sort() != null
@@ -1350,7 +1350,9 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
       toProcessDefinitionInstanceVersionStatisticsQuery(
-          final GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract request) {
+          final
+          GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract
+              request) {
     if (request == null || request.filter() == null) {
       final var problem =
           RequestValidator.createProblemDetail(
@@ -1420,7 +1422,9 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
       toIncidentProcessInstanceStatisticsByDefinitionQuery(
-          final GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract request) {
+          final
+          GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract
+              request) {
     final var p = request.page();
     final var page =
         p != null
@@ -2337,14 +2341,9 @@ public final class SearchQueryRequestMapper {
         request.sort() != null
             ? request.sort().stream()
                 .map(
-                    s -> {
-                      final var sr =
-                          (io.camunda.gateway.mapping.http.search.contract.generated
-                                  .GeneratedUserTaskVariableSearchQuerySortRequestStrictContract)
-                              s;
-                      return new SearchQuerySortRequest(
-                          sr.field().getValue(), sr.order() != null ? sr.order().getValue() : null);
-                    })
+                    s ->
+                        new SearchQuerySortRequest(
+                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
