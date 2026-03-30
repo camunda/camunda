@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.zeebe.engine.Loggers;
@@ -20,11 +19,12 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.Either;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -150,10 +150,14 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         .getGroups()
         .forEach(
             group -> groupConfigurer.configureMembers(group).forEach(setupRecord::addGroupMember));
-
     initialization
-        .getRoles()
-        .forEach(role -> roleConfigurer.configureMembers(role).forEach(setupRecord::addRoleMember));
+        .getGroups()
+        .forEach(
+            group ->
+                groupConfigurer.configureRoleMembers(group).forEach(setupRecord::addRoleMember));
+
+    final List<RoleRecord> customRoleMembers =
+        initialization.getRoles().stream().flatMap(roleConfigurer::configureMembers).toList();
 
     initialization
         .getUsers()
@@ -177,34 +181,16 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                         .setClaimValue(mappingRule.getClaimValue())
                         .setName(mappingRule.getMappingRuleId())));
 
-    setupRoleMembership(initialization, setupRecord);
+    final List<RoleRecord> defaultRoleMemberships =
+        PlatformDefaultEntities.setupRoleMemberships(initialization.getDefaultRoles());
+    deduplicate(defaultRoleMemberships, customRoleMembers).forEach(setupRecord::addRoleMember);
     return setupRecord;
   }
 
-  private static void setupRoleMembership(
-      final InitializationConfiguration initialization, final IdentitySetupRecord setupRecord) {
-    for (final var assignmentsForRole : initialization.getDefaultRoles().entrySet()) {
-      final var roleId = assignmentsForRole.getKey();
-      for (final var assignmentsForEntityType : assignmentsForRole.getValue().entrySet()) {
-        final var entityType =
-            switch (assignmentsForEntityType.getKey().toLowerCase()) {
-              case "users" -> EntityType.USER;
-              case "clients" -> EntityType.CLIENT;
-              // when using config via env variables,
-              // spring will convert MAPPING_RULES to mapping.rules
-              case "mappingrules", "mapping-rules", "mapping.rules" -> EntityType.MAPPING_RULE;
-              case "groups" -> EntityType.GROUP;
-              case "roles" -> EntityType.ROLE;
-              default ->
-                  throw new IllegalStateException(
-                      "Unexpected entity type for role membership: %s"
-                          .formatted(assignmentsForEntityType.getKey()));
-            };
-        for (final var entityId : assignmentsForEntityType.getValue()) {
-          setupRecord.addRoleMember(
-              new RoleRecord().setRoleId(roleId).setEntityType(entityType).setEntityId(entityId));
-        }
-      }
-    }
+  private static Stream<RoleRecord> deduplicate(
+      final List<RoleRecord> defaultRoleMemberships, final List<RoleRecord> customRoleMembers) {
+    return Stream.of(defaultRoleMemberships, customRoleMembers)
+        .flatMap(Collection::stream)
+        .distinct();
   }
 }
