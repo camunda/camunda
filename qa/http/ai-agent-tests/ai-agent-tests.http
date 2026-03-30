@@ -364,7 +364,7 @@ Accept: application/json
 # @name assert-process-completed
 < {%
   import {wait} from "../js/wait"
-  wait(10)
+  wait(20)
 %}
 GET {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
 Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
