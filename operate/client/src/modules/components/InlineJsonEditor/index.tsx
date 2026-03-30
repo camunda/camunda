@@ -14,9 +14,16 @@ import {
 } from 'modules/utils/editor/beautifyJSON';
 import {EditorLoader, EditorWrapper} from './styled';
 import {useFieldError} from '../../hooks/useFieldError';
+import {
+  EDITOR_DECORATION_WIDTH,
+  EDITOR_FONT_SIZE,
+  EDITOR_FONT_FAMILY,
+  EDITOR_LINE_HEIGHT,
+  EDITOR_PADDING_BOTTOM,
+  EDITOR_PADDING_TOP,
+} from './constants';
 
-const LINE_HEIGHT = 22;
-const MIN_HEIGHT = 28;
+const MIN_HEIGHT = 32;
 const MAX_LINES = 5;
 
 const JSONEditor = lazy(async () => {
@@ -33,6 +40,7 @@ const JSONEditor = lazy(async () => {
 type Props = {
   name?: string;
   value: string;
+  placeholder?: string;
   isTruncatedValue?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
@@ -46,7 +54,7 @@ type Props = {
 
 function computeHeight(text: string, maxLines: number): number {
   const lineCount = Math.max(1, (text || '').split('\n').length);
-  const textHeight = Math.min(lineCount, maxLines) * LINE_HEIGHT;
+  const textHeight = Math.min(lineCount, maxLines) * EDITOR_LINE_HEIGHT;
 
   return Math.max(MIN_HEIGHT, textHeight);
 }
@@ -61,6 +69,7 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     onBlur,
     onFocus,
     readOnly,
+    placeholder = 'Value',
     isTruncatedValue = false,
     maxLines = MAX_LINES,
     id,
@@ -106,9 +115,10 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
         data-testid={dataTestId}
         onBlur={onBlur}
         onFocus={onFocus}
-        height={height}
         $readOnly={isReadOnly}
         $invalid={!!fieldError}
+        $placeholder={placeholder}
+        $empty={displayValue === ''}
       >
         <Suspense fallback={<EditorLoader height={height} />}>
           <label htmlFor="value" className="cds--visually-hidden">
@@ -124,15 +134,20 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
             options={{
               formatOnType: false,
               lineNumbers: 'off',
-              lineDecorationsWidth: 0,
+              lineDecorationsWidth: isReadOnly ? 0 : EDITOR_DECORATION_WIDTH,
               renderLineHighlight: 'none',
               stickyScroll: {enabled: false},
               glyphMargin: false,
               folding: false,
-              scrollbar: {
-                useShadows: false,
-              },
+              scrollbar: {useShadows: false},
               minimap: {enabled: false},
+              fontSize: EDITOR_FONT_SIZE,
+              lineHeight: EDITOR_LINE_HEIGHT,
+              fontFamily: EDITOR_FONT_FAMILY,
+              padding: {
+                top: EDITOR_PADDING_TOP,
+                bottom: EDITOR_PADDING_BOTTOM,
+              },
             }}
           />
           {fieldError && (
