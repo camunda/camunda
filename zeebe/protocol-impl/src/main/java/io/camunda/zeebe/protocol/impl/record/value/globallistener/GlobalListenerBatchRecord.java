@@ -82,6 +82,13 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
         .toList();
   }
 
+  @JsonIgnore
+  public List<GlobalListenerRecord> getExecutionListeners() {
+    return listenersProp.stream()
+        .filter(listener -> listener.getListenerType() == GlobalListenerType.EXECUTION_LISTENER)
+        .toList();
+  }
+
   /**
    * Check if two global listener batches lead to equivalent configurations, ignoring the keys of
    * the batch and the listeners.

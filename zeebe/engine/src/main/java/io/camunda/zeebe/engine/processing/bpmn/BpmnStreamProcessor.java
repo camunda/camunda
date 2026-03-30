@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
+import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
@@ -22,22 +23,28 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -62,6 +69,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final GlobalListenersState globalListenersState;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -93,6 +101,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    globalListenersState = processingState.getGlobalListenersState();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -221,7 +230,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return processElementWithListeners(
         element,
         context,
-        ExecutableFlowNode::getStartExecutionListeners,
+        node -> getMergedExecutionListeners(node, context, ZeebeExecutionListenerEventType.start),
         processor::finalizeActivation);
   }
 
@@ -232,7 +241,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return processElementWithListeners(
         element,
         context,
-        ExecutableFlowNode::getEndExecutionListeners,
+        node -> getMergedExecutionListeners(node, context, ZeebeExecutionListenerEventType.end),
         processor::finalizeCompletion);
   }
 
@@ -273,7 +282,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return onExecutionListenerComplete(
         element,
         context,
-        ExecutableFlowNode::getStartExecutionListeners,
+        node -> getMergedExecutionListeners(node, context, ZeebeExecutionListenerEventType.start),
         processor::finalizeActivation);
   }
 
@@ -285,7 +294,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     return onExecutionListenerComplete(
         element,
         context,
-        ExecutableFlowNode::getEndExecutionListeners,
+        node -> getMergedExecutionListeners(node, context, ZeebeExecutionListenerEventType.end),
         processor::finalizeCompletion);
   }
 
@@ -339,6 +348,106 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
+  }
+
+  /**
+   * Merges global execution listeners with BPMN-level execution listeners using the sandwich
+   * pattern: global before-non-global listeners run first, then BPMN model listeners, then global
+   * after-non-global listeners.
+   *
+   * <p>Global listeners are filtered by the element's BPMN type and the requested event type
+   * (start/end). Uses the current (non-pinned) global listener config.
+   */
+  private List<ExecutionListener> getMergedExecutionListeners(
+      final ExecutableFlowNode node,
+      final BpmnElementContext context,
+      final ZeebeExecutionListenerEventType eventType) {
+
+    final var bpmnListeners =
+        eventType == ZeebeExecutionListenerEventType.start
+            ? node.getStartExecutionListeners()
+            : node.getEndExecutionListeners();
+
+    final var currentConfig = globalListenersState.getCurrentConfig();
+    if (currentConfig == null) {
+      return bpmnListeners;
+    }
+
+    final var globalExecutionListeners = currentConfig.getExecutionListeners();
+    if (globalExecutionListeners.isEmpty()) {
+      return bpmnListeners;
+    }
+
+    final var elementTypeName = resolveElementTypeName(context.getBpmnElementType());
+    if (elementTypeName == null) {
+      return bpmnListeners;
+    }
+
+    final var eventTypeStr = eventType == ZeebeExecutionListenerEventType.start ? "START" : "END";
+
+    final List<ExecutionListener> beforeNonGlobal = new ArrayList<>();
+    final List<ExecutionListener> afterNonGlobal = new ArrayList<>();
+
+    for (final var globalListener : globalExecutionListeners) {
+      if (!matchesElementType(globalListener, elementTypeName)) {
+        continue;
+      }
+      if (!matchesEventType(globalListener, eventTypeStr)) {
+        continue;
+      }
+      final var converted = toExecutionListenerModel(globalListener, eventType);
+      if (globalListener.isAfterNonGlobal()) {
+        afterNonGlobal.add(converted);
+      } else {
+        beforeNonGlobal.add(converted);
+      }
+    }
+
+    if (beforeNonGlobal.isEmpty() && afterNonGlobal.isEmpty()) {
+      return bpmnListeners;
+    }
+
+    final List<ExecutionListener> merged = new ArrayList<>();
+    merged.addAll(beforeNonGlobal);
+    merged.addAll(bpmnListeners);
+    merged.addAll(afterNonGlobal);
+    return merged;
+  }
+
+  private boolean matchesElementType(
+      final GlobalListenerRecordValue globalListener, final String elementTypeName) {
+    final var targetTypes = ((GlobalListenerRecord) globalListener).resolveTargetElementTypes();
+    return targetTypes.contains(elementTypeName);
+  }
+
+  private boolean matchesEventType(
+      final GlobalListenerRecordValue globalListener, final String eventType) {
+    final var eventTypes = globalListener.getEventTypes();
+    return eventTypes.contains(GlobalListenerRecord.ALL_EVENT_TYPES)
+        || eventTypes.contains(eventType);
+  }
+
+  private ExecutionListener toExecutionListenerModel(
+      final GlobalListenerRecordValue globalListener,
+      final ZeebeExecutionListenerEventType eventType) {
+    final var listener = new ExecutionListener();
+    listener.setEventType(eventType);
+
+    final var jobProperties = new JobWorkerProperties();
+    jobProperties.setType(new StaticExpression(globalListener.getType()));
+    jobProperties.setRetries(new StaticExpression(String.valueOf(globalListener.getRetries())));
+    listener.setJobWorkerProperties(jobProperties);
+
+    return listener;
+  }
+
+  /** Maps a BpmnElementType to the camelCase string used in global listener element type config. */
+  private String resolveElementTypeName(final BpmnElementType bpmnElementType) {
+    return switch (bpmnElementType) {
+      case EVENT_SUB_PROCESS -> "eventSubProcess";
+      case MULTI_INSTANCE_BODY -> "multiInstanceBody";
+      default -> bpmnElementType.getElementTypeName().orElse(null);
+    };
   }
 
   private ExecutableFlowElement getElement(

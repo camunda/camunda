@@ -43,4 +43,7 @@ export const Paths = {
   globalTaskListeners() {
     return "/global-task-listeners";
   },
+  globalExecutionListeners() {
+    return "/global-execution-listeners";
+  },
 } as const;

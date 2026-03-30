@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 public class GlobalListenerIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "global-listener";
-  public static final String INDEX_VERSION = "8.9.0";
+  public static final String INDEX_VERSION = "8.10.0";
 
   public static final String ID = "id";
   public static final String LISTENER_ID = "listenerId";
@@ -26,6 +26,8 @@ public class GlobalListenerIndex extends AbstractIndexDescriptor implements Prio
   public static final String PRIORITY = "priority";
   public static final String SOURCE = "source";
   public static final String LISTENER_TYPE = "listenerType";
+  public static final String ELEMENT_TYPES = "elementTypes";
+  public static final String CATEGORIES = "categories";
 
   public GlobalListenerIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

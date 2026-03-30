@@ -28,6 +28,12 @@
       },
       "listenerType": {
         "type": "keyword"
+      },
+      "elementTypes": {
+        "type": "keyword"
+      },
+      "categories": {
+        "type": "keyword"
       }
     }
   }

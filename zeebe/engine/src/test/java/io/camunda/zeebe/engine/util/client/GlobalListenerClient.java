@@ -69,6 +69,16 @@ public final class GlobalListenerClient {
     return this;
   }
 
+  public GlobalListenerClient withElementTypes(final String... elementTypes) {
+    globalListenerRecord.setElementTypes(List.of(elementTypes));
+    return this;
+  }
+
+  public GlobalListenerClient withCategories(final String... categories) {
+    globalListenerRecord.setCategories(List.of(categories));
+    return this;
+  }
+
   public GlobalListenerClient withAfterNonGlobal(final boolean afterNonGlobal) {
     globalListenerRecord.setAfterNonGlobal(afterNonGlobal);
     return this;
