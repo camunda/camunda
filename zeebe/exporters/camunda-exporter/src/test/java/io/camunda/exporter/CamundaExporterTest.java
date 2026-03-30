@@ -186,6 +186,10 @@ final class CamundaExporterTest {
   final class FlushTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
+
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
       exporter = new CamundaExporter(resourceProvider, expected);
@@ -200,6 +204,8 @@ final class CamundaExporterTest {
       // when
       exporter.configure(testContext);
       exporter.open(testController);
+
+      clock.advance(1001);
       testController.runScheduledTasks(Duration.ofHours(1));
 
       // then
@@ -267,6 +273,53 @@ final class CamundaExporterTest {
     }
 
     @Test
+    void shouldFlushWhenExportIfDelayElapsed() {
+      // given — use a controllable clock so we can verify timing
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      // bulk size = 10 so that a single export does NOT trigger a size-based flush;
+      // flushing only happens via the scheduled task
+      configuration.getBulk().setSize(10);
+      configuration.getBulk().setDelay(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // export at t=500 — batch size < 10, no size-based flush
+      clock.advance(500);
+      final var record1 =
+          factory.generateRecord(
+              ValueType.VARIABLE, b -> b.withPosition(1L).withBrokerVersion("8.8.0"));
+      exporter.export(record1);
+
+      // advance clock to trigger scheduled flush task at t=1000
+      clock.advance(500);
+      testController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // then — validate record1 was exported (position updated after timed flush)
+      assertThat(testController.getPosition())
+          .as("Record1 should have been flushed and position updated")
+          .isEqualTo(record1.getPosition());
+
+      // advance clock beyond delay to exceed the flush duration
+      clock.advance(1001);
+
+      // next export record with a higher position
+      // batch size still < 10, but clock has advanced, so should flush
+      final var record2 =
+          factory.generateRecord(
+              ValueType.VARIABLE, b -> b.withPosition(2L).withBrokerVersion("8.8.0"));
+      exporter.export(record2);
+
+      // then — validate record2 was exported (position updated after flush)
+      assertThat(testController.getPosition())
+          .as("Record2 should have been flushed and position updated")
+          .isEqualTo(record2.getPosition());
+    }
+
+    @Test
     void shouldKeepStableDelayAcrossMultipleFlushCycles() {
       // Regression test: the rescheduled flush delay must remain stable across
       // repeated flush cycles and not degrade to zero.
@@ -294,6 +347,34 @@ final class CamundaExporterTest {
         assertThat(tasks.getLast().getDelay())
             .as("Rescheduled delay in cycle %d must not degrade", cycle)
             .isEqualTo(Duration.ofMillis(500));
+      }
+    }
+
+    @Test
+    void shouldKeepStableDelayAcrossMultipleFlushCyclesWhenBatchIsEmpty() {
+      // Regression test: the rescheduled flush delay must remain stable across
+      // repeated flush cycles and not degrade to zero.
+
+      // given
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      configuration.getBulk().setSize(1); // every export() triggers size-based flush
+      configuration.getBulk().setDelay(1); // 1 second
+      configuration.getIndex().setShouldWaitForImporters(false); // do not wait for importers
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when
+      for (int cycle = 0; cycle < 4; cycle++) {
+        testController.runScheduledTasks(Duration.ofSeconds(2));
+        clock.advance(1000);
+
+        // then
+        final var tasks = testController.getScheduledTasks();
+        assertThat(tasks.getLast().getDelay()).isEqualTo(Duration.ofMillis(1000));
       }
     }
   }

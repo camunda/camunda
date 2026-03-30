@@ -136,7 +136,7 @@ public class CamundaExporter implements Exporter {
       }
 
       writer = createBatchWriter();
-
+      lastFlushTimestamp = context.clock().millis();
       checkImportersCompletedAndReschedule();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
@@ -368,7 +368,9 @@ public class CamundaExporter implements Exporter {
 
   private boolean shouldFlush() {
     return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit();
+        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()
+        || (writer.getBatchSize() > 0
+            && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs);
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -450,15 +452,15 @@ public class CamundaExporter implements Exporter {
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
-        lastFlushTimestamp = context.clock().millis();
       } catch (final PersistenceException ex) {
         metrics.recordFailedFlush();
         throw new ExporterException(ex.getMessage(), ex);
       }
     }
 
-    // Update the record counters only after the flush was successful. If the synchronous flush
-    // fails then the exporter will be invoked with the same record again.
+    // Update record counters and lastFlushTimestamp only after the flush attempt was successful.
+    // If the synchronous flush fails then the exporter will be invoked with the same record again.
+    lastFlushTimestamp = context.clock().millis();
     updateLastExportedPosition(lastPosition);
   }
 
