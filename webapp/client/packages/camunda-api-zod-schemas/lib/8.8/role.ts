@@ -7,220 +7,239 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
-import {
-	roleCreateRequestSchema,
-	roleCreateResultSchema,
-	roleUpdateRequestSchema,
-	roleUpdateResultSchema,
-	roleSearchQueryRequestSchema,
-	roleSearchQueryResultSchema,
-	roleUserSearchQueryRequestSchema,
-	roleUserSearchResultSchema,
-	roleClientSearchQueryRequestSchema,
-	roleClientSearchResultSchema,
-	roleGroupSearchQueryRequestSchema,
-	roleGroupSearchResultSchema,
-	mappingRuleSearchQueryRequestSchema,
-	mappingRuleSearchQueryResultSchema,
-	roleResultSchema,
-} from './gen';
-import type {Group} from './group';
-import type {MappingRule} from './mapping-rule';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
+import {groupSchema, roleSchema, type Group, type Role} from './group-role';
+import {mappingRuleSchema, type MappingRule} from './mapping-rule';
+import {userSchema} from './user';
 
-const roleSchema = roleResultSchema;
-type Role = z.infer<typeof roleSchema>;
-
-const createRoleRequestBodySchema = roleCreateRequestSchema;
+const createRoleRequestBodySchema = roleSchema;
 type CreateRoleRequestBody = z.infer<typeof createRoleRequestBodySchema>;
 
-const createRoleResponseBodySchema = roleCreateResultSchema;
+const createRoleResponseBodySchema = roleSchema;
 type CreateRoleResponseBody = z.infer<typeof createRoleResponseBodySchema>;
 
-const updateRoleRequestBodySchema = roleUpdateRequestSchema;
+const updateRoleRequestBodySchema = roleSchema.pick({
+	name: true,
+	description: true,
+});
 type UpdateRoleRequestBody = z.infer<typeof updateRoleRequestBodySchema>;
 
-const updateRoleResponseBodySchema = roleUpdateResultSchema;
+const updateRoleResponseBodySchema = roleSchema;
 type UpdateRoleResponseBody = z.infer<typeof updateRoleResponseBodySchema>;
 
-const queryRolesRequestBodySchema = roleSearchQueryRequestSchema;
+const queryRolesRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['name', 'roleId'] as const,
+	filter: roleSchema
+		.pick({
+			roleId: true,
+			name: true,
+		})
+		.partial(),
+});
 type QueryRolesRequestBody = z.infer<typeof queryRolesRequestBodySchema>;
 
-const queryRolesResponseBodySchema = roleSearchQueryResultSchema;
+const queryRolesResponseBodySchema = getQueryResponseBodySchema(roleSchema);
 type QueryRolesResponseBody = z.infer<typeof queryRolesResponseBodySchema>;
 
-const queryUsersByRoleRequestBodySchema = roleUserSearchQueryRequestSchema;
+const queryUsersByRoleRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['username'] as const,
+	filter: z.never(),
+});
 type QueryUsersByRoleRequestBody = z.infer<typeof queryUsersByRoleRequestBodySchema>;
 
-const queryUsersByRoleResponseBodySchema = roleUserSearchResultSchema;
+const queryUsersByRoleResponseBodySchema = getQueryResponseBodySchema(userSchema.pick({username: true}));
 type QueryUsersByRoleResponseBody = z.infer<typeof queryUsersByRoleResponseBodySchema>;
 
-const queryClientsByRoleRequestBodySchema = roleClientSearchQueryRequestSchema;
+const queryClientsByRoleRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['clientId'] as const,
+	filter: z.never(),
+});
 type QueryClientsByRoleRequestBody = z.infer<typeof queryClientsByRoleRequestBodySchema>;
 
-const queryClientsByRoleResponseBodySchema = roleClientSearchResultSchema;
+const queryClientsByRoleResponseBodySchema = getQueryResponseBodySchema(
+	z.object({
+		clientId: z.string(),
+	}),
+);
 type QueryClientsByRoleResponseBody = z.infer<typeof queryClientsByRoleResponseBodySchema>;
 
-const queryGroupsByRoleRequestBodySchema = roleGroupSearchQueryRequestSchema;
+const queryGroupsByRoleRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['name', 'groupId'] as const,
+	filter: groupSchema
+		.pick({
+			groupId: true,
+			name: true,
+		})
+		.partial(),
+});
 type QueryGroupsByRoleRequestBody = z.infer<typeof queryGroupsByRoleRequestBodySchema>;
 
-const queryGroupsByRoleResponseBodySchema = roleGroupSearchResultSchema;
+const queryGroupsByRoleResponseBodySchema = getQueryResponseBodySchema(groupSchema);
 type QueryGroupsByRoleResponseBody = z.infer<typeof queryGroupsByRoleResponseBodySchema>;
 
-const queryMappingRulesByRoleRequestBodySchema = mappingRuleSearchQueryRequestSchema;
+const queryMappingRulesByRoleRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['claimName', 'claimValue', 'name'] as const,
+	filter: mappingRuleSchema
+		.pick({
+			claimName: true,
+			claimValue: true,
+			name: true,
+		})
+		.partial(),
+});
 type QueryMappingRulesByRoleRequestBody = z.infer<typeof queryMappingRulesByRoleRequestBodySchema>;
 
-const queryMappingRulesByRoleResponseBodySchema = mappingRuleSearchQueryResultSchema;
+const queryMappingRulesByRoleResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesByRoleResponseBody = z.infer<typeof queryMappingRulesByRoleResponseBodySchema>;
 
-const createRole = {
+const createRole: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/roles` as const;
+		return `/${API_VERSION}/roles`;
 	},
-} as const satisfies Endpoint;
+};
 
-const getRole = {
+const getRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'GET',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
-const updateRole = {
+const updateRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
-const deleteRole = {
+const deleteRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
-const queryRoles = {
+const queryRoles: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/roles/search` as const;
+		return `/${API_VERSION}/roles/search`;
 	},
-} as const satisfies Endpoint;
+};
 
-const queryUsersByRole = {
+const queryUsersByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'POST',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/search` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/search`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
-const queryClientsByRole = {
+const queryClientsByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'POST',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/search` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/search`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
-const assignUserToRole = {
+const assignUserToRole: Endpoint<Pick<Role, 'roleId'> & {username: string}> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {roleId, username} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & {username: string}>;
+};
 
-const unassignUserFromRole = {
+const unassignUserFromRole: Endpoint<Pick<Role, 'roleId'> & {username: string}> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {roleId, username} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & {username: string}>;
+};
 
-const assignClientToRole = {
+const assignClientToRole: Endpoint<Pick<Role, 'roleId'> & {clientId: string}> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {roleId, clientId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & {clientId: string}>;
+};
 
-const unassignClientFromRole = {
+const unassignClientFromRole: Endpoint<Pick<Role, 'roleId'> & {clientId: string}> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {roleId, clientId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & {clientId: string}>;
+};
 
-const assignGroupToRole = {
+const assignGroupToRole: Endpoint<Pick<Role, 'roleId'> & Pick<Group, 'groupId'>> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {roleId, groupId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & Pick<Group, 'groupId'>>;
+};
 
-const unassignGroupFromRole = {
+const unassignGroupFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<Group, 'groupId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {roleId, groupId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & Pick<Group, 'groupId'>>;
+};
 
-const queryGroupsByRole = {
+const queryGroupsByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'POST',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/search` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/search`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
-const assignMappingToRole = {
+const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {roleId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mappings/${encodeURIComponent(mappingRuleId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mappings/${encodeURIComponent(mappingRuleId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>>;
+};
 
-const unassignMappingFromRole = {
+const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {roleId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mappings/${encodeURIComponent(mappingRuleId)}` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mappings/${encodeURIComponent(mappingRuleId)}`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>>;
+};
 
-const queryMappingRulesByRole = {
+const queryMappingRulesByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	method: 'POST',
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mapping-rules/search` as const;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mapping-rules/search`;
 	},
-} as const satisfies Endpoint<Pick<Role, 'roleId'>>;
+};
 
 export {
 	createRole,

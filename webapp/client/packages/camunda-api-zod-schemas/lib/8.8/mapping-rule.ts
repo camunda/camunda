@@ -7,76 +7,88 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
-import {
-	mappingRuleResultSchema,
-	mappingRuleCreateRequestSchema,
-	mappingRuleUpdateRequestSchema,
-	mappingRuleSearchQueryRequestSchema,
-	mappingRuleSearchQueryResultSchema,
-} from './gen';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
 
-const mappingRuleSchema = mappingRuleResultSchema;
+const mappingRuleSchema = z.object({
+	mappingRuleId: z.string(),
+	claimName: z.string(),
+	claimValue: z.string(),
+	name: z.string(),
+});
 type MappingRule = z.infer<typeof mappingRuleSchema>;
 
-const createMappingRuleRequestBodySchema = mappingRuleCreateRequestSchema;
+const createMappingRuleRequestBodySchema = mappingRuleSchema;
 type CreateMappingRuleRequestBody = z.infer<typeof createMappingRuleRequestBodySchema>;
 
-const createMappingRuleResponseBodySchema = mappingRuleResultSchema;
+const createMappingRuleResponseBodySchema = mappingRuleSchema;
 type CreateMappingRuleResponseBody = z.infer<typeof createMappingRuleResponseBodySchema>;
 
-const updateMappingRuleRequestBodySchema = mappingRuleUpdateRequestSchema;
+const updateMappingRuleRequestBodySchema = mappingRuleSchema.pick({
+	claimName: true,
+	claimValue: true,
+	name: true,
+});
 type UpdateMappingRuleRequestBody = z.infer<typeof updateMappingRuleRequestBodySchema>;
 
-const updateMappingRuleResponseBodySchema = mappingRuleResultSchema;
+const updateMappingRuleResponseBodySchema = mappingRuleSchema;
 type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBodySchema>;
 
-const queryMappingRulesRequestBodySchema = mappingRuleSearchQueryRequestSchema;
+const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
+	filter: mappingRuleSchema
+		.pick({
+			mappingRuleId: true,
+			claimName: true,
+			claimValue: true,
+			name: true,
+		})
+		.partial(),
+});
 type QueryMappingRulesRequestBody = z.infer<typeof queryMappingRulesRequestBodySchema>;
 
-const queryMappingRulesResponseBodySchema = mappingRuleSearchQueryResultSchema;
+const queryMappingRulesResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesResponseBody = z.infer<typeof queryMappingRulesResponseBodySchema>;
 
-const createMappingRule = {
+const createMappingRule: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/mapping-rules` as const;
+		return `/${API_VERSION}/mapping-rules`;
 	},
-} as const satisfies Endpoint;
+};
 
-const updateMappingRule = {
+const updateMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
 		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}` as const;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
-} as const satisfies Endpoint<Pick<MappingRule, 'mappingRuleId'>>;
+};
 
-const deleteMappingRule = {
+const deleteMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}` as const;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
-} as const satisfies Endpoint<Pick<MappingRule, 'mappingRuleId'>>;
+};
 
-const getMappingRule = {
+const getMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'GET',
 	getUrl(params) {
 		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}` as const;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
-} as const satisfies Endpoint<Pick<MappingRule, 'mappingRuleId'>>;
+};
 
-const queryMappingRules = {
+const queryMappingRules: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/mapping-rules/search` as const;
+		return `/${API_VERSION}/mapping-rules/search`;
 	},
-} as const satisfies Endpoint;
+};
 
 export {
 	createMappingRule,

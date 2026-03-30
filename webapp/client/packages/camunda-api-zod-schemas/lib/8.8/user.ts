@@ -7,73 +7,100 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
 import {
-	userResultSchema,
-	userRequestSchema,
-	userUpdateRequestSchema,
-	userSearchQueryRequestSchema,
-	userSearchResultSchema,
-} from './gen';
+	API_VERSION,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	advancedStringFilterSchema,
+	type Endpoint,
+} from '../common';
 
-const userSchema = userResultSchema;
+const userSchema = z.object({
+	username: z.string(),
+	name: z.string(),
+	email: z.string(),
+});
 type User = z.infer<typeof userSchema>;
 
-const createUserRequestBodySchema = userRequestSchema;
+const createUserRequestBodySchema = userSchema
+	.pick({
+		username: true,
+		name: true,
+		email: true,
+	})
+	.extend({
+		password: z.string(),
+	});
 type CreateUserRequestBody = z.infer<typeof createUserRequestBodySchema>;
 
-const createUserResponseBodySchema = userResultSchema;
+const createUserResponseBodySchema = userSchema;
 type CreateUserResponseBody = z.infer<typeof createUserResponseBodySchema>;
 
-const updateUserRequestBodySchema = userUpdateRequestSchema;
+const updateUserRequestBodySchema = userSchema
+	.pick({
+		username: true,
+		name: true,
+		email: true,
+	})
+	.extend({
+		password: z.string(),
+	})
+	.partial();
 type UpdateUserRequestBody = z.infer<typeof updateUserRequestBodySchema>;
 
-const queryUsersRequestBodySchema = userSearchQueryRequestSchema;
+const queryUsersRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['username', 'name', 'email'] as const,
+	filter: z.object({
+		username: advancedStringFilterSchema.optional(),
+		name: advancedStringFilterSchema.optional(),
+		email: advancedStringFilterSchema.optional(),
+	}),
+});
 type QueryUsersRequestBody = z.infer<typeof queryUsersRequestBodySchema>;
 
-const queryUsersResponseBodySchema = userSearchResultSchema;
+const queryUsersResponseBodySchema = getQueryResponseBodySchema(userSchema);
 type QueryUsersResponseBody = z.infer<typeof queryUsersResponseBodySchema>;
 
-const createUser = {
+const createUser: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/users` as const;
+		return `/${API_VERSION}/users`;
 	},
-} as const satisfies Endpoint;
+};
 
-const queryUsers = {
+const queryUsers: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/users/search` as const;
+		return `/${API_VERSION}/users/search`;
 	},
-} as const satisfies Endpoint;
+};
 
-const getUser = {
+const getUser: Endpoint<Pick<User, 'username'>> = {
 	method: 'GET',
 	getUrl(params) {
 		const {username} = params;
 
-		return `/${API_VERSION}/users/${username}` as const;
+		return `/${API_VERSION}/users/${username}`;
 	},
-} as const satisfies Endpoint<Pick<User, 'username'>>;
+};
 
-const deleteUser = {
+const deleteUser: Endpoint<Pick<User, 'username'>> = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {username} = params;
 
-		return `/${API_VERSION}/users/${username}` as const;
+		return `/${API_VERSION}/users/${username}`;
 	},
-} as const satisfies Endpoint<Pick<User, 'username'>>;
+};
 
-const updateUser = {
+const updateUser: Endpoint<Pick<User, 'username'>> = {
 	method: 'PATCH',
 	getUrl(params) {
 		const {username} = params;
 
-		return `/${API_VERSION}/users/${username}` as const;
+		return `/${API_VERSION}/users/${username}`;
 	},
-} as const satisfies Endpoint<Pick<User, 'username'>>;
+};
 
 export {
 	createUser,
