@@ -7,82 +7,100 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
+import {queryGroupsRequestBodySchema, queryGroupsResponseBodySchema, type Group} from './group';
+import {queryRolesRequestBodySchema, queryRolesResponseBodySchema, type Role} from './role';
 import {
-	tenantResultSchema,
-	tenantCreateRequestSchema,
-	tenantUpdateRequestSchema,
-	tenantSearchQueryRequestSchema,
-	tenantSearchQueryResultSchema,
-	tenantUserResultSchema,
-	tenantUserSearchQueryRequestSchema,
-	tenantUserSearchResultSchema,
-	tenantClientResultSchema,
-	tenantClientSearchQueryRequestSchema,
-	tenantClientSearchResultSchema,
-	tenantGroupSearchQueryRequestSchema,
-	tenantGroupSearchResultSchema,
-	roleSearchQueryRequestSchema,
-	roleSearchQueryResultSchema,
-	mappingRuleSearchQueryRequestSchema,
-	mappingRuleSearchQueryResultSchema,
-} from './gen';
+	queryMappingRulesRequestBodySchema,
+	queryMappingRulesResponseBodySchema,
+	type MappingRule,
+} from './mapping-rule';
 
-const tenantSchema = tenantResultSchema;
+const tenantSchema = z.object({
+	tenantKey: z.string(),
+	tenantId: z.string(),
+	name: z.string(),
+	description: z.string().optional(),
+});
 type Tenant = z.infer<typeof tenantSchema>;
 
-const createTenantRequestBodySchema = tenantCreateRequestSchema;
+const createTenantRequestBodySchema = tenantSchema.pick({
+	tenantId: true,
+	name: true,
+	description: true,
+});
 type CreateTenantRequestBody = z.infer<typeof createTenantRequestBodySchema>;
 
-const createTenantResponseBodySchema = tenantResultSchema;
+const createTenantResponseBodySchema = tenantSchema;
 type CreateTenantResponseBody = z.infer<typeof createTenantResponseBodySchema>;
 
-const updateTenantRequestBodySchema = tenantUpdateRequestSchema;
+const updateTenantRequestBodySchema = tenantSchema.pick({
+	name: true,
+	description: true,
+});
 type UpdateTenantRequestBody = z.infer<typeof updateTenantRequestBodySchema>;
 
-const updateTenantResponseBodySchema = tenantResultSchema;
+const updateTenantResponseBodySchema = tenantSchema;
 type UpdateTenantResponseBody = z.infer<typeof updateTenantResponseBodySchema>;
 
-const queryTenantsRequestBodySchema = tenantSearchQueryRequestSchema;
+const queryTenantsRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['key', 'name', 'tenantId'] as const,
+	filter: tenantSchema
+		.pick({
+			tenantId: true,
+			name: true,
+		})
+		.partial(),
+});
 type QueryTenantsRequestBody = z.infer<typeof queryTenantsRequestBodySchema>;
 
-const queryTenantsResponseBodySchema = tenantSearchQueryResultSchema;
+const queryTenantsResponseBodySchema = getQueryResponseBodySchema(tenantSchema);
 type QueryTenantsResponseBody = z.infer<typeof queryTenantsResponseBodySchema>;
 
-const tenantUserSchema = tenantUserResultSchema;
+const tenantUserSchema = z.object({
+	username: z.string(),
+});
 type TenantUser = z.infer<typeof tenantUserSchema>;
 
-const queryUsersByTenantRequestBodySchema = tenantUserSearchQueryRequestSchema;
+const queryUsersByTenantRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['username'] as const,
+	filter: z.never(),
+});
 type QueryUsersByTenantRequestBody = z.infer<typeof queryUsersByTenantRequestBodySchema>;
 
-const queryUsersByTenantResponseBodySchema = tenantUserSearchResultSchema;
+const queryUsersByTenantResponseBodySchema = getQueryResponseBodySchema(tenantUserSchema);
 type QueryUsersByTenantResponseBody = z.infer<typeof queryUsersByTenantResponseBodySchema>;
 
-const tenantClientSchema = tenantClientResultSchema;
+const tenantClientSchema = z.object({
+	clientId: z.string(),
+});
 type TenantClient = z.infer<typeof tenantClientSchema>;
 
-const queryClientsByTenantRequestBodySchema = tenantClientSearchQueryRequestSchema;
+const queryClientsByTenantRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['clientId'] as const,
+	filter: z.never(),
+});
 type QueryClientsByTenantRequestBody = z.infer<typeof queryClientsByTenantRequestBodySchema>;
 
-const queryClientsByTenantResponseBodySchema = tenantClientSearchResultSchema;
+const queryClientsByTenantResponseBodySchema = getQueryResponseBodySchema(tenantClientSchema);
 type QueryClientsByTenantResponseBody = z.infer<typeof queryClientsByTenantResponseBodySchema>;
 
-const queryGroupsByTenantRequestBodySchema = tenantGroupSearchQueryRequestSchema;
+const queryGroupsByTenantRequestBodySchema = queryGroupsRequestBodySchema;
 type QueryGroupsByTenantRequestBody = z.infer<typeof queryGroupsByTenantRequestBodySchema>;
 
-const queryGroupsByTenantResponseBodySchema = tenantGroupSearchResultSchema;
+const queryGroupsByTenantResponseBodySchema = queryGroupsResponseBodySchema;
 type QueryGroupsByTenantResponseBody = z.infer<typeof queryGroupsByTenantResponseBodySchema>;
 
-const queryRolesByTenantRequestBodySchema = roleSearchQueryRequestSchema;
+const queryRolesByTenantRequestBodySchema = queryRolesRequestBodySchema;
 type QueryRolesByTenantRequestBody = z.infer<typeof queryRolesByTenantRequestBodySchema>;
 
-const queryRolesByTenantResponseBodySchema = roleSearchQueryResultSchema;
+const queryRolesByTenantResponseBodySchema = queryRolesResponseBodySchema;
 type QueryRolesByTenantResponseBody = z.infer<typeof queryRolesByTenantResponseBodySchema>;
 
-const queryMappingRulesByTenantRequestBodySchema = mappingRuleSearchQueryRequestSchema;
+const queryMappingRulesByTenantRequestBodySchema = queryMappingRulesRequestBodySchema;
 type QueryMappingRulesByTenantRequestBody = z.infer<typeof queryMappingRulesByTenantRequestBodySchema>;
 
-const queryMappingRulesByTenantResponseBodySchema = mappingRuleSearchQueryResultSchema;
+const queryMappingRulesByTenantResponseBodySchema = queryMappingRulesResponseBodySchema;
 type QueryMappingRulesByTenantResponseBody = z.infer<typeof queryMappingRulesByTenantResponseBodySchema>;
 
 const createTenant: Endpoint = {
@@ -90,17 +108,17 @@ const createTenant: Endpoint = {
 	getUrl: () => `/${API_VERSION}/tenants`,
 };
 
-const getTenant: Endpoint<{tenantId: string}> = {
+const getTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'GET',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}`,
 };
 
-const updateTenant: Endpoint<{tenantId: string}> = {
+const updateTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'PUT',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}`,
 };
 
-const deleteTenant: Endpoint<{tenantId: string}> = {
+const deleteTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'DELETE',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}`,
 };
@@ -110,84 +128,86 @@ const queryTenants: Endpoint = {
 	getUrl: () => `/${API_VERSION}/tenants/search`,
 };
 
-const assignUserToTenant: Endpoint<{tenantId: string; username: string}> = {
+const assignUserToTenant: Endpoint<Pick<Tenant, 'tenantId'> & {username: string}> = {
 	method: 'PUT',
 	getUrl: ({tenantId, username}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
 };
 
-const unassignUserFromTenant: Endpoint<{tenantId: string; username: string}> = {
+const unassignUserFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {username: string}> = {
 	method: 'DELETE',
 	getUrl: ({tenantId, username}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
 };
 
-const queryUsersByTenant: Endpoint<{tenantId: string}> = {
+const queryUsersByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/search`,
 };
 
-const queryClientsByTenant: Endpoint<{tenantId: string}> = {
+const queryClientsByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/search`,
 };
 
-const queryGroupsByTenant: Endpoint<{tenantId: string}> = {
+const queryGroupsByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/search`,
 };
 
-const queryRolesByTenant: Endpoint<{tenantId: string}> = {
+const queryRolesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/search`,
 };
 
-const assignClientToTenant: Endpoint<{tenantId: string; clientId: string}> = {
+const assignClientToTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: string}> = {
 	method: 'PUT',
 	getUrl: ({tenantId, clientId}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
 };
 
-const unassignClientFromTenant: Endpoint<{tenantId: string; clientId: string}> = {
+const unassignClientFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: string}> = {
 	method: 'DELETE',
 	getUrl: ({tenantId, clientId}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
 };
 
-const assignMappingRuleToTenant: Endpoint<{tenantId: string; mappingRuleId: string}> = {
+const assignMappingRuleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, mappingRuleId}) => `/${API_VERSION}/tenants/${tenantId}/mappings/${mappingRuleId}`,
+	getUrl: ({tenantId, mappingRuleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mappings/${encodeURIComponent(mappingRuleId)}`,
 };
 
-const unassignMappingRuleFromTenant: Endpoint<{tenantId: string; mappingRuleId: string}> = {
+const unassignMappingRuleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, mappingRuleId}) => `/${API_VERSION}/tenants/${tenantId}/mappings/${mappingRuleId}`,
+	getUrl: ({tenantId, mappingRuleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mappings/${encodeURIComponent(mappingRuleId)}`,
 };
 
-const queryMappingRulesByTenant: Endpoint<{tenantId: string}> = {
+const queryMappingRulesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
 	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mappings/search`,
 };
 
-const assignGroupToTenant: Endpoint<{tenantId: string; groupId: string}> = {
+const assignGroupToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Group, 'groupId'>> = {
 	method: 'PUT',
 	getUrl: ({tenantId, groupId}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
 };
 
-const unassignGroupFromTenant: Endpoint<{tenantId: string; groupId: string}> = {
+const unassignGroupFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Group, 'groupId'>> = {
 	method: 'DELETE',
 	getUrl: ({tenantId, groupId}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
 };
 
-const assignRoleToTenant: Endpoint<{tenantId: string; roleId: string}> = {
+const assignRoleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Role, 'roleId'>> = {
 	method: 'PUT',
 	getUrl: ({tenantId, roleId}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
 };
 
-const unassignRoleFromTenant: Endpoint<{tenantId: string; roleId: string}> = {
+const unassignRoleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Role, 'roleId'>> = {
 	method: 'DELETE',
 	getUrl: ({tenantId, roleId}) =>
 		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,

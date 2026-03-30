@@ -8,12 +8,18 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
-import {signalBroadcastRequestSchema, signalBroadcastResultSchema} from './gen';
 
-const broadcastSignalRequestBodySchema = signalBroadcastRequestSchema;
+const broadcastSignalRequestBodySchema = z.object({
+	signalName: z.string(),
+	variables: z.record(z.string(), z.unknown()).optional(),
+	tenantId: z.string().optional(),
+});
 type BroadcastSignalRequestBody = z.infer<typeof broadcastSignalRequestBodySchema>;
 
-const broadcastSignalResponseBodySchema = signalBroadcastResultSchema;
+const broadcastSignalResponseBodySchema = z.object({
+	tenantId: z.string(),
+	signalKey: z.string(),
+});
 type BroadcastSignalResponseBody = z.infer<typeof broadcastSignalResponseBodySchema>;
 
 const broadcastSignal: Endpoint = {

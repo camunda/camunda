@@ -8,9 +8,12 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
-import {usageMetricsResponseItemSchema} from './gen';
 
-const usageMetricsSchema = usageMetricsResponseItemSchema;
+const usageMetricsSchema = z.object({
+	assignees: z.number().int(),
+	processInstances: z.number().int(),
+	decisionInstances: z.number().int(),
+});
 type UsageMetrics = z.infer<typeof usageMetricsSchema>;
 
 const getUsageMetricsResponseBodySchema = usageMetricsSchema;

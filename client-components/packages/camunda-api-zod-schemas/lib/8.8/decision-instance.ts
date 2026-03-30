@@ -7,32 +7,93 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
 import {
-	decisionDefinitionTypeEnumSchema,
-	decisionInstanceStateEnumSchema,
-	decisionInstanceResultSchema,
-	decisionInstanceSearchQuerySchema,
-	decisionInstanceSearchQueryResultSchema,
-	decisionInstanceGetQueryResultSchema,
-} from './gen';
+	API_VERSION,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	advancedDateTimeFilterSchema,
+	basicStringFilterSchema,
+	type Endpoint,
+	getEnumFilterSchema,
+} from '../common';
+import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 
-const decisionDefinitionTypeSchema = decisionDefinitionTypeEnumSchema;
+const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION']);
 type DecisionDefinitionType = z.infer<typeof decisionDefinitionTypeSchema>;
 
-const decisionInstanceStateSchema = decisionInstanceStateEnumSchema;
+const decisionInstanceStateSchema = z.enum(['EVALUATED', 'FAILED']);
 type DecisionInstanceState = z.infer<typeof decisionInstanceStateSchema>;
 
-const decisionInstanceSchema = decisionInstanceResultSchema;
+const decisionInstanceSchema = z.object({
+	decisionEvaluationInstanceKey: z.string(),
+	state: decisionInstanceStateSchema,
+	evaluationDate: z.string(),
+	evaluationFailure: z.string(),
+	decisionDefinitionId: z.string(),
+	decisionDefinitionName: z.string(),
+	decisionDefinitionVersion: z.number(),
+	decisionDefinitionType: decisionDefinitionTypeSchema,
+	result: z.string(),
+	tenantId: z.string(),
+	decisionEvaluationKey: z.string(),
+	processDefinitionKey: z.string(),
+	processInstanceKey: z.string(),
+	decisionDefinitionKey: z.string(),
+	elementInstanceKey: z.string(),
+	rootDecisionDefinitionKey: z.string(),
+});
 type DecisionInstance = z.infer<typeof decisionInstanceSchema>;
 
-const queryDecisionInstancesRequestBodySchema = decisionInstanceSearchQuerySchema;
+const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: [
+		'decisionEvaluationKey',
+		'decisionEvaluationInstanceKey',
+		'state',
+		'evaluationDate',
+		'evaluationFailure',
+		'processDefinitionKey',
+		'processInstanceKey',
+		'decisionDefinitionKey',
+		'decisionDefinitionId',
+		'decisionDefinitionName',
+		'decisionDefinitionVersion',
+		'decisionDefinitionType',
+		'tenantId',
+		'elementInstanceKey',
+		'rootDecisionDefinitionKey',
+	] as const,
+	filter: z
+		.object({
+			decisionEvaluationInstanceKey: basicStringFilterSchema,
+			state: getEnumFilterSchema(decisionInstanceStateSchema),
+			evaluationDate: advancedDateTimeFilterSchema,
+			decisionDefinitionKey: basicStringFilterSchema,
+			elementInstanceKey: basicStringFilterSchema,
+			...decisionInstanceSchema.pick({
+				evaluationFailure: true,
+				decisionDefinitionId: true,
+				decisionDefinitionName: true,
+				decisionDefinitionVersion: true,
+				decisionDefinitionType: true,
+				tenantId: true,
+				decisionEvaluationKey: true,
+				processDefinitionKey: true,
+				processInstanceKey: true,
+				rootDecisionDefinitionKey: true,
+			}).shape,
+		})
+		.partial(),
+});
 type QueryDecisionInstancesRequestBody = z.infer<typeof queryDecisionInstancesRequestBodySchema>;
 
-const queryDecisionInstancesResponseBodySchema = decisionInstanceSearchQueryResultSchema;
+const queryDecisionInstancesResponseBodySchema = getQueryResponseBodySchema(decisionInstanceSchema);
 type QueryDecisionInstancesResponseBody = z.infer<typeof queryDecisionInstancesResponseBodySchema>;
 
-const getDecisionInstanceResponseBodySchema = decisionInstanceGetQueryResultSchema;
+const getDecisionInstanceResponseBodySchema = z.object({
+	evaluatedInputs: z.array(evaluatedDecisionInputItemSchema).optional(),
+	matchedRules: z.array(matchedDecisionRuleItemSchema).optional(),
+	...decisionInstanceSchema.shape,
+});
 type GetDecisionInstanceResponseBody = z.infer<typeof getDecisionInstanceResponseBodySchema>;
 
 const queryDecisionInstances: Endpoint = {
@@ -40,7 +101,7 @@ const queryDecisionInstances: Endpoint = {
 	getUrl: () => `/${API_VERSION}/decision-instances/search`,
 };
 
-const getDecisionInstance: Endpoint<{decisionEvaluationInstanceKey: string}> = {
+const getDecisionInstance: Endpoint<Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>> = {
 	method: 'GET',
 	getUrl: ({decisionEvaluationInstanceKey}) => `/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}`,
 };
