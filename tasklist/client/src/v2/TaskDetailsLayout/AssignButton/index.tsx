@@ -96,8 +96,6 @@ const AssignButton: React.FC<Props> = ({
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
       if (success && parsedError.variant === 'failed-response') {
-        const errorData = await parsedError.response.json();
-
         if (parsedError.response.status === 403) {
           notificationsStore.displayNotification({
             kind: 'error',
@@ -109,7 +107,10 @@ const AssignButton: React.FC<Props> = ({
           notificationsStore.displayNotification({
             kind: 'error',
             title: t('taskDetailsTaskAssignmentError'),
-            subtitle: parseDenialReason(errorData, 'assignment'),
+            subtitle: parseDenialReason(
+              await parsedError.response.json(),
+              'assignment',
+            ),
             isDismissable: true,
           });
         }
@@ -153,7 +154,7 @@ const AssignButton: React.FC<Props> = ({
             kind: 'error',
             title: t('taskDetailsTaskUnassignmentError'),
             subtitle: parseDenialReason(
-              await parsedError?.response?.json(),
+              await parsedError.response.json(),
               'unassignment',
             ),
             isDismissable: true,
