@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
@@ -27,7 +28,6 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
 public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF>>
@@ -53,7 +53,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
   public void start() {
     final var tempDir = createTempDir();
     final var configFile = configurationBuilder.exportConfig(tempDir);
-    withCopyFileToContainer(MountableFile.forHostPath(configFile), CONFIG_PATH)
+    withFileSystemBind(configFile.toAbsolutePath().toString(), CONFIG_PATH, BindMode.READ_ONLY)
         .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH);
     super.start();
   }
@@ -209,7 +209,10 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     public BrokerContainer withRecordingExporter() {
       final var jarPath = resolveJar(RecordingExporter.class);
 
-      return withCopyToContainer(MountableFile.forHostPath(jarPath), "/tmp/recording-exporter.jar")
+      return withFileSystemBind(
+              jarPath.toAbsolutePath().toString(),
+              "/tmp/recording-exporter.jar",
+              BindMode.READ_ONLY)
           .withUnifiedConfig(
               cfg -> {
                 final var exporter =
