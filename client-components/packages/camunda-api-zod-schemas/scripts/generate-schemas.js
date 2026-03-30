@@ -32,7 +32,7 @@ const PACKAGE_ROOT = path.resolve(__dirname, '..');
 
 /**
  * Generates Zod schemas and TypeScript types for a specific version.
- * @param {string} version - The API version (e.g., '8.8')
+ * @param {string} version - The API version (e.g., '8.9')
  * @param {GenerateConfig} config - The generation configuration
  * @returns {Promise<void>}
  */
@@ -133,7 +133,7 @@ Available versions: ${availableVersions}
 Examples:
   node generate-schemas.js                    # Generate all versions
   node generate-schemas.js --version 8.9      # Generate only 8.9
-  node generate-schemas.js -v 8.8 -v 8.9      # Generate 8.8 and 8.9
+  node generate-schemas.js -v 8.9 -v 8.10      # Generate 8.9 and 8.10
 
 Note: Run 'npm run download-specs' first to download the OpenAPI specs.
 `);

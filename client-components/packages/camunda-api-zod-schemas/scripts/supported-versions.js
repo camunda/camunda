@@ -11,7 +11,7 @@
 /**
  * Configuration for downloading specs - single file mode.
  * @typedef {Object} SingleFileDownloadConfig
- * @property {string} branch - Git branch name (e.g., 'stable/8.8')
+ * @property {string} branch - Git branch name (e.g., 'stable/8.9')
  * @property {string} file - Path to the single spec file
  * @property {undefined} [directory] - Not used in single-file mode
  */
@@ -47,24 +47,24 @@
  * @type {Record<string, VersionConfig>}
  */
 export const CONFIG = {
-	8.8: {
-		download: {
-			branch: 'stable/8.8',
-			file: 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml',
-		},
-		generate: {
-			input: 'specs/8.8/rest-api.yaml',
-			output: 'lib/8.8/gen',
-		},
-	},
 	8.9: {
 		download: {
-			branch: 'main',
+			branch: 'stable/8.9',
 			directory: 'zeebe/gateway-protocol/src/main/proto/v2',
 		},
 		generate: {
 			input: 'specs/8.9/rest-api.yaml',
 			output: 'lib/8.9/gen',
+		},
+	},
+	'8.10': {
+		download: {
+			branch: 'main',
+			directory: 'zeebe/gateway-protocol/src/main/proto/v2',
+		},
+		generate: {
+			input: 'specs/8.10/rest-api.yaml',
+			output: 'lib/8.10/gen',
 		},
 	},
 };
