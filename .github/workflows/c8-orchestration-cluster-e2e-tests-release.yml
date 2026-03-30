@@ -340,7 +340,7 @@ jobs:
             sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
             sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
           else
-            sed -i.bak "s|image: camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
+            sed -i.bak "s|image:.*camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
           fi
 
       - uses: ./.github/actions/setup-build
@@ -470,7 +470,7 @@ jobs:
           else
             echo "Updating unified camunda service image"
             # Replace the camunda image tag in docker-compose.yml
-            sed -i.bak "s|image: camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
+            sed -i.bak "s|image:.*camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
 
             echo "Updated docker-compose.yml with unified service:"
             grep "image: camunda/camunda:" "$compose_file"
