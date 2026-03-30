@@ -333,7 +333,6 @@
       "matchPackageNames": [
         "/io.camunda.optimize:camunda-optimize/",
         "/io.camunda.optimize:util/",
-        "/io.camunda:zeebe-client-java/",
         "/io.camunda:zeebe-protocol/",
         "/ant-contrib:ant-contrib/"
       ],

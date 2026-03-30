@@ -129,10 +129,6 @@ public class DefaultParameterResolverStrategyTest {
     assertThat(parameterResolver).isInstanceOf(UserTaskPropertiesParameterResolver.class);
   }
 
-  public void legacyMethod(
-      final io.camunda.zeebe.client.api.worker.JobClient jobClient,
-      final io.camunda.zeebe.client.api.response.ActivatedJob job) {}
-
   public void currentMethod(final JobClient jobClient, final ActivatedJob job) {}
 
   public void documentMethod(@Document final DocumentContext myDoc) {}
