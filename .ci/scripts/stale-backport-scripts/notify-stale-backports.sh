@@ -72,6 +72,7 @@ while IFS= read -r entry; do
     bp_age_hours=$(jq -r ".[$group_idx].backport_prs[$bp_idx].age_hours" "$TMPDIR_WORK/stale_data.json")
     bp_age_days=$(jq -r ".[$group_idx].backport_prs[$bp_idx].age_days" "$TMPDIR_WORK/stale_data.json")
     bp_is_draft=$(jq -r ".[$group_idx].backport_prs[$bp_idx].is_draft" "$TMPDIR_WORK/stale_data.json")
+    bp_has_conflict=$(jq -r ".[$group_idx].backport_prs[$bp_idx].has_conflict" "$TMPDIR_WORK/stale_data.json")
 
     # Get assignees as space-separated list
     bp_assignees=$(jq -r ".[$group_idx].backport_prs[$bp_idx].assignees // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
@@ -100,10 +101,14 @@ while IFS= read -r entry; do
       age_display="${bp_age_hours}h"
     fi
 
-    # Build draft warning
-    draft_note=""
-    if [[ "$bp_is_draft" == "true" ]]; then
-      draft_note=$'\n\n⚠️ This PR is in **draft** state, likely due to merge conflicts that need manual resolution.'
+    # Build state and conflict notes
+    state_note=""
+    if [[ "$bp_has_conflict" == "true" && "$bp_is_draft" == "true" ]]; then
+      state_note=$'\n\n⚠️ This PR is in **draft** state due to merge conflicts — the backport-action could not apply the changes cleanly and manual conflict resolution is required.'
+    elif [[ "$bp_has_conflict" == "true" ]]; then
+      state_note=$'\n\n⚠️ This PR has **merge conflicts** that need to be resolved before it can be merged.'
+    elif [[ "$bp_is_draft" == "true" ]]; then
+      state_note=$'\n\n⚠️ This PR is in **draft** state, likely due to merge conflicts that need manual resolution.'
     fi
 
     # Check for existing bot comment — delete and recreate if older than RENOTIFY_AFTER_DAYS
@@ -144,7 +149,7 @@ ${mentions:+Hey ${mentions}! }This backport PR targeting \`${bp_target}\` has be
 - ✅ **Merge** this PR if it's ready
 - 🔧 **Resolve conflicts** if it's in draft/conflicted state
 - ❌ **Close** this PR if the backport is no longer needed
-${draft_note}
+${state_note}
 
 ---
 <sub>🤖 This comment was added automatically by the stale backport tracker. • <a href="${WORKFLOW_RUN_URL}">View workflow run</a></sub>"
