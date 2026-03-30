@@ -64,6 +64,19 @@ public final class GlobalListenerServices
                     request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
   }
 
+  public GlobalListenerEntity getGlobalExecutionListener(
+      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            globalListenerSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
+                .getGlobalListener(
+                    request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
+  }
+
   public CompletableFuture<GlobalListenerRecord> updateGlobalListener(
       final GlobalListenerRecord request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(new BrokerUpdateGlobalListenerRequest(request), authentication);

@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
@@ -49,6 +50,11 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   // Set of all possible task listener event types as strings, to be used while validating records
   public static final Set<String> TASK_LISTENER_EVENT_TYPES =
       Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
+  // Set of all possible execution listener event types (start, end)
+  public static final Set<String> EXECUTION_LISTENER_EVENT_TYPES =
+      Stream.of(ZeebeExecutionListenerEventType.values())
+          .map(Enum::name)
+          .collect(Collectors.toSet());
 
   private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
   private final StringProperty idProp = new StringProperty("id", "");
@@ -65,8 +71,13 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
 
+  private final ArrayProperty<StringValue> elementTypesProp =
+      new ArrayProperty<>("elementTypes", StringValue::new);
+  private final ArrayProperty<StringValue> categoriesProp =
+      new ArrayProperty<>("categories", StringValue::new);
+
   public GlobalListenerRecord() {
-    super(10);
+    super(12);
     declareProperty(globalListenerKeyProp)
         .declareProperty(idProp)
         .declareProperty(typeProp)
@@ -76,7 +87,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
         .declareProperty(listenerTypeProp)
-        .declareProperty(configKeyProp);
+        .declareProperty(configKeyProp)
+        .declareProperty(elementTypesProp)
+        .declareProperty(categoriesProp);
   }
 
   @Override
@@ -185,6 +198,44 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord addEventType(final String eventType) {
     eventTypesProp.add().wrap(BufferUtil.wrapString(eventType));
+    return this;
+  }
+
+  @Override
+  public List<String> getElementTypes() {
+    return StreamSupport.stream(elementTypesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public GlobalListenerRecord setElementTypes(final List<String> elementTypes) {
+    elementTypesProp.reset();
+    elementTypes.forEach(this::addElementType);
+    return this;
+  }
+
+  public GlobalListenerRecord addElementType(final String elementType) {
+    elementTypesProp.add().wrap(BufferUtil.wrapString(elementType));
+    return this;
+  }
+
+  @Override
+  public List<String> getCategories() {
+    return StreamSupport.stream(categoriesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public GlobalListenerRecord setCategories(final List<String> categories) {
+    categoriesProp.reset();
+    categories.forEach(this::addCategory);
+    return this;
+  }
+
+  public GlobalListenerRecord addCategory(final String category) {
+    categoriesProp.add().wrap(BufferUtil.wrapString(category));
     return this;
   }
 }

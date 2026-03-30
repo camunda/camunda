@@ -26,6 +26,8 @@ public class GlobalListenerIndex extends AbstractIndexDescriptor implements Prio
   public static final String PRIORITY = "priority";
   public static final String SOURCE = "source";
   public static final String LISTENER_TYPE = "listenerType";
+  public static final String ELEMENT_TYPES = "elementTypes";
+  public static final String CATEGORIES = "categories";
 
   public GlobalListenerIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

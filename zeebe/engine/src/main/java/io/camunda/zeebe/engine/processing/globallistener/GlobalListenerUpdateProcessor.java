@@ -103,7 +103,10 @@ public final class GlobalListenerUpdateProcessor
             record -> globalListenerValidator.resolveExistingListener(record, globalListenersState))
         .flatMap(globalListenerValidator::typeProvided)
         .flatMap(globalListenerValidator::eventTypesProvided)
-        .flatMap(globalListenerValidator::validEventTypes);
+        .flatMap(globalListenerValidator::validEventTypes)
+        .flatMap(globalListenerValidator::elementTypesOrCategoriesProvided)
+        .flatMap(globalListenerValidator::validElementTypes)
+        .flatMap(globalListenerValidator::validCategories);
   }
 
   private void emitChangeEvents(final GlobalListenerRecord record) {

@@ -53,6 +53,9 @@ import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerResult;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerSearchQueryResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
@@ -1690,6 +1693,39 @@ public final class SearchQueryResponseMapper {
         .retries(entity.retries())
         .eventTypes(
             entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
+        .afterNonGlobal(entity.afterNonGlobal())
+        .priority(entity.priority())
+        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
+  }
+
+  public static GlobalExecutionListenerSearchQueryResult
+      toGlobalExecutionListenerSearchQueryResponse(
+          final SearchQueryResult<GlobalListenerEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GlobalExecutionListenerSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    entities ->
+                        entities.stream()
+                            .map(SearchQueryResponseMapper::toGlobalExecutionListenerResult)
+                            .toList())
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static GlobalExecutionListenerResult toGlobalExecutionListenerResult(
+      final GlobalListenerEntity entity) {
+    return new GlobalExecutionListenerResult()
+        .id(entity.listenerId())
+        .type(entity.type())
+        .retries(entity.retries())
+        .eventTypes(
+            entity.eventTypes().stream()
+                .map(GlobalExecutionListenerEventTypeEnum::fromValue)
+                .toList())
+        .elementTypes(entity.elementTypes())
+        .categories(entity.categories())
         .afterNonGlobal(entity.afterNonGlobal())
         .priority(entity.priority())
         .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));

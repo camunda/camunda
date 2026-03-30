@@ -18,6 +18,8 @@ public class GlobalListenerCfg implements ConfigurationEntry {
 
   private String id = "";
   private List<String> eventTypes = new ArrayList<>();
+  private List<String> elementTypes = new ArrayList<>();
+  private List<String> categories = new ArrayList<>();
   private String type = "";
   private String retries = String.valueOf(GlobalListenerRecordValue.DEFAULT_RETRIES);
   private boolean afterNonGlobal = false;
@@ -38,6 +40,22 @@ public class GlobalListenerCfg implements ConfigurationEntry {
 
   public void setEventTypes(final List<String> eventTypes) {
     this.eventTypes = eventTypes;
+  }
+
+  public List<String> getElementTypes() {
+    return elementTypes;
+  }
+
+  public void setElementTypes(final List<String> elementTypes) {
+    this.elementTypes = elementTypes;
+  }
+
+  public List<String> getCategories() {
+    return categories;
+  }
+
+  public void setCategories(final List<String> categories) {
+    this.categories = categories;
   }
 
   public String getType() {
@@ -82,6 +100,14 @@ public class GlobalListenerCfg implements ConfigurationEntry {
 
   public GlobalListenerConfiguration createGlobalListenerConfiguration() {
     return new GlobalListenerConfiguration(
-        id, eventTypes, type, retries, afterNonGlobal, priority, listenerType);
+        id,
+        eventTypes,
+        type,
+        retries,
+        afterNonGlobal,
+        priority,
+        listenerType,
+        elementTypes,
+        categories);
   }
 }

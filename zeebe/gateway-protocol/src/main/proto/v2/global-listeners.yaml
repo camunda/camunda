@@ -181,6 +181,186 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
+  /global-execution-listeners:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Global listener
+      operationId: createGlobalExecutionListener
+      summary: Create global execution listener
+      description: Create a new global execution listener.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGlobalExecutionListenerRequest'
+        required: true
+      responses:
+        "201":
+          description: The global execution listener was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalExecutionListenerResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: A global listener with this id already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+  /global-execution-listeners/{id}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Global listener
+      operationId: getGlobalExecutionListener
+      summary: Get global execution listener
+      description: Get a global execution listener by its id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the global execution listener.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
+      responses:
+        "200":
+          description: The global execution listener is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalExecutionListenerResult'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The global execution listener with the given id was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+    put:
+      x-eventually-consistent: false
+      tags:
+        - Global listener
+      operationId: updateGlobalExecutionListener
+      summary: Update global execution listener
+      description: Updates a global execution listener.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the global execution listener to update.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGlobalExecutionListenerRequest'
+        required: true
+      responses:
+        "200":
+          description: The global execution listener was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalExecutionListenerResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The global execution listener was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Global listener
+      operationId: deleteGlobalExecutionListener
+      summary: Delete global execution listener
+      description: Deletes a global execution listener.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the global execution listener to delete.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
+      responses:
+        "204":
+          description: The global execution listener was deleted successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The global execution listener was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+  /global-execution-listeners/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Global listener
+      operationId: searchGlobalExecutionListeners
+      summary: Search global execution listeners
+      description: Search for global execution listeners based on given criteria.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalExecutionListenerSearchQueryRequest'
+      responses:
+        "200":
+          description: The global execution listener search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalExecutionListenerSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 ## Schema definitions
 
 components:
@@ -202,6 +382,12 @@ components:
         - completing
         - canceling
       description: The event type that triggers the user task listener.
+    GlobalExecutionListenerEventTypeEnum:
+      type: string
+      enum:
+        - start
+        - end
+      description: The event type that triggers the execution listener.
 
     # Common
     GlobalListenerBase:
@@ -232,6 +418,28 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/GlobalTaskListenerEventTypeEnum'
+    GlobalExecutionListenerBase:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/GlobalListenerBase'
+      properties:
+        eventTypes:
+          $ref: '#/components/schemas/GlobalExecutionListenerEventTypes'
+        elementTypes:
+          description: List of BPMN element types that this execution listener applies to.
+          type: array
+          items:
+            type: string
+        categories:
+          description: List of BPMN element categories that this execution listener applies to (e.g. tasks, gateways, events, containers, all).
+          type: array
+          items:
+            type: string
+    GlobalExecutionListenerEventTypes:
+      description: List of execution listener event types that trigger the listener.
+      type: array
+      items:
+        $ref: '#/components/schemas/GlobalExecutionListenerEventTypeEnum'
 
     # CRUD Requests
     CreateGlobalTaskListenerRequest:
@@ -417,3 +625,172 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GlobalTaskListenerResult'
+
+    # ===============================
+    # Execution Listener CRUD Schemas
+    # ===============================
+
+    # CRUD Requests
+    CreateGlobalExecutionListenerRequest:
+      type: object
+      required:
+        - id
+        - type
+        - eventTypes
+      allOf:
+        - $ref: '#/components/schemas/GlobalExecutionListenerBase'
+      properties:
+        id:
+          $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
+    UpdateGlobalExecutionListenerRequest:
+      type: object
+      required:
+        - type
+        - eventTypes
+      allOf:
+        - $ref: '#/components/schemas/GlobalExecutionListenerBase'
+
+    # CRUD Responses
+    GlobalExecutionListenerResult:
+      type: object
+      required:
+        - id
+        - type
+        - retries
+        - eventTypes
+        - afterNonGlobal
+        - priority
+        - source
+      allOf:
+        - $ref: '#/components/schemas/GlobalExecutionListenerBase'
+      properties:
+        id:
+          $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
+        source:
+          $ref: '#/components/schemas/GlobalListenerSourceEnum'
+
+    # Execution Listener Search Requests
+    GlobalExecutionListenerSearchQueryRequest:
+      description: Global execution listener search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalExecutionListenerSearchQuerySortRequest'
+        filter:
+          description: The global execution listener search filters.
+          allOf:
+            - $ref: '#/components/schemas/GlobalExecutionListenerSearchQueryFilterRequest'
+    GlobalExecutionListenerSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - id
+            - type
+            - afterNonGlobal
+            - priority
+            - source
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+    GlobalExecutionListenerSearchQueryFilterRequest:
+      description: Global execution listener filter request.
+      type: object
+      properties:
+        id:
+          description: Id of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        type:
+          description: Job type of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        retries:
+          description: Number of retries of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        eventTypes:
+          description: Event types of the global listener.
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/GlobalExecutionListenerEventTypeFilterProperty'
+        elementTypes:
+          description: Element types of the global listener.
+          type: array
+          items:
+            allOf:
+              - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        categories:
+          description: Categories of the global listener.
+          type: array
+          items:
+            allOf:
+              - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        afterNonGlobal:
+          description: Whether the listener runs after model-level listeners.
+          type: boolean
+        priority:
+          description: Priority of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        source:
+          description: How the global listener was defined.
+          allOf:
+            - $ref: '#/components/schemas/GlobalListenerSourceFilterProperty'
+    GlobalExecutionListenerEventTypeFilterProperty:
+      description: Global execution listener event type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/GlobalExecutionListenerEventTypeEnum'
+        - $ref: '#/components/schemas/AdvancedGlobalExecutionListenerEventTypeFilter'
+    AdvancedGlobalExecutionListenerEventTypeFilter:
+      title: Advanced filter
+      description: Advanced global execution listener event type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/GlobalExecutionListenerEventTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/GlobalExecutionListenerEventTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalExecutionListenerEventTypeEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    # Execution Listener Search Responses
+    GlobalExecutionListenerSearchQueryResult:
+      description: Global execution listener search query response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching global execution listeners.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalExecutionListenerResult'

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
+import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
@@ -22,22 +23,29 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalExecutionListenerCategories;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -62,6 +70,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final GlobalListenersState globalListenersState;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -93,6 +102,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    globalListenersState = processingState.getGlobalListenersState();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -222,6 +232,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         element,
         context,
         ExecutableFlowNode::getStartExecutionListeners,
+        "start",
         processor::finalizeActivation);
   }
 
@@ -233,6 +244,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         element,
         context,
         ExecutableFlowNode::getEndExecutionListeners,
+        "end",
         processor::finalizeCompletion);
   }
 
@@ -240,20 +252,22 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExecutableFlowElement element,
       final BpmnElementContext context,
       final Function<ExecutableFlowNode, List<ExecutionListener>> listenersGetter,
+      final String eventType,
       final BiFunction<ExecutableFlowElement, BpmnElementContext, Either<Failure, ?>> finalizer) {
 
     if (!(element instanceof final ExecutableFlowNode node)) {
       // other elements, like sequence flows, do not have execution listeners
-      // assume that the element is processed already
       return BpmnElementProcessor.SUCCESS;
     }
 
-    final List<ExecutionListener> listeners = listenersGetter.apply(node);
-    if (listeners.isEmpty()) {
+    final List<ExecutionListener> modelListeners = listenersGetter.apply(node);
+    final List<ExecutionListener> mergedListeners =
+        getMergedExecutionListeners(modelListeners, context.getBpmnElementType(), eventType);
+    if (mergedListeners.isEmpty()) {
       return finalizer.apply(element, context);
     }
 
-    return createExecutionListenerJob(context, listeners.getFirst());
+    return createExecutionListenerJob(context, mergedListeners.getFirst());
   }
 
   private Either<Failure, ?> createExecutionListenerJob(
@@ -274,6 +288,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         element,
         context,
         ExecutableFlowNode::getStartExecutionListeners,
+        "start",
         processor::finalizeActivation);
   }
 
@@ -286,6 +301,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         element,
         context,
         ExecutableFlowNode::getEndExecutionListeners,
+        "end",
         processor::finalizeCompletion);
   }
 
@@ -293,13 +309,16 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExecutableFlowNode element,
       final BpmnElementContext context,
       final Function<ExecutableFlowNode, List<ExecutionListener>> listenersGetter,
+      final String eventType,
       final BiFunction<ExecutableFlowElement, BpmnElementContext, Either<Failure, ?>> finalizer) {
 
-    final List<ExecutionListener> listeners = listenersGetter.apply(element);
+    final List<ExecutionListener> modelListeners = listenersGetter.apply(element);
+    final List<ExecutionListener> mergedListeners =
+        getMergedExecutionListeners(modelListeners, context.getBpmnElementType(), eventType);
     final int currentListenerIndex =
         stateBehavior.getElementInstance(context).getExecutionListenerIndex();
     final Optional<ExecutionListener> nextListener =
-        findNextExecutionListener(listeners, currentListenerIndex);
+        findNextExecutionListener(mergedListeners, currentListenerIndex);
     return nextListener.isPresent()
         ? createExecutionListenerJob(context, nextListener.get())
         : finalizer.apply(element, context);
@@ -339,6 +358,67 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
+  }
+
+  /**
+   * Merges global execution listeners with model-level listeners. Global listeners with
+   * afterNonGlobal=false run before model-level listeners; those with afterNonGlobal=true run
+   * after.
+   */
+  private List<ExecutionListener> getMergedExecutionListeners(
+      final List<ExecutionListener> modelListeners,
+      final BpmnElementType elementType,
+      final String eventType) {
+
+    final var currentConfig = globalListenersState.getCurrentConfig();
+    if (currentConfig == null) {
+      return modelListeners;
+    }
+
+    final List<GlobalListenerRecord> matchingGlobalListeners =
+        currentConfig.getExecutionListeners().stream()
+            .filter(
+                listener ->
+                    GlobalExecutionListenerCategories.matchesElementType(listener, elementType))
+            .filter(
+                listener -> GlobalExecutionListenerCategories.matchesEventType(listener, eventType))
+            .toList();
+
+    if (matchingGlobalListeners.isEmpty()) {
+      return modelListeners;
+    }
+
+    final List<ExecutionListener> beforeNonGlobal = new ArrayList<>();
+    final List<ExecutionListener> afterNonGlobal = new ArrayList<>();
+    for (final var globalListener : matchingGlobalListeners) {
+      final ExecutionListener el = toExecutionListenerModel(globalListener, eventType);
+      if (globalListener.isAfterNonGlobal()) {
+        afterNonGlobal.add(el);
+      } else {
+        beforeNonGlobal.add(el);
+      }
+    }
+
+    final List<ExecutionListener> merged =
+        new ArrayList<>(beforeNonGlobal.size() + modelListeners.size() + afterNonGlobal.size());
+    merged.addAll(beforeNonGlobal);
+    merged.addAll(modelListeners);
+    merged.addAll(afterNonGlobal);
+    return merged;
+  }
+
+  private ExecutionListener toExecutionListenerModel(
+      final GlobalListenerRecordValue listener, final String eventType) {
+    final var properties = new JobWorkerProperties();
+    properties.setType(new StaticExpression(listener.getType()));
+    properties.setRetries(new StaticExpression(String.valueOf(listener.getRetries())));
+    final var el = new ExecutionListener();
+    el.setJobWorkerProperties(properties);
+    el.setEventType(
+        "start".equals(eventType)
+            ? ZeebeExecutionListenerEventType.start
+            : ZeebeExecutionListenerEventType.end);
+    return el;
   }
 
   private ExecutableFlowElement getElement(

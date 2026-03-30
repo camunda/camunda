@@ -24,7 +24,9 @@ public record GlobalListenerFilter(
     Boolean afterNonGlobal,
     List<Operation<Integer>> priorityOperations,
     List<Operation<String>> sourceOperations,
-    List<Operation<String>> listenerTypeOperations)
+    List<Operation<String>> listenerTypeOperations,
+    List<Operation<String>> elementTypeOperations,
+    List<Operation<String>> categoryOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<GlobalListenerFilter> {
@@ -36,6 +38,8 @@ public record GlobalListenerFilter(
     List<Operation<Integer>> priorityOperations;
     List<Operation<String>> sourceOperations;
     List<Operation<String>> listenerTypeOperations;
+    List<Operation<String>> elementTypeOperations;
+    List<Operation<String>> categoryOperations;
 
     @SafeVarargs
     public final Builder listenerIdOperations(
@@ -147,6 +151,36 @@ public record GlobalListenerFilter(
       return listenerTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
+    @SafeVarargs
+    public final Builder elementTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return elementTypeOperations(collectValues(operation, operations));
+    }
+
+    public Builder elementTypeOperations(final List<Operation<String>> operations) {
+      elementTypeOperations = addValuesToList(elementTypeOperations, operations);
+      return this;
+    }
+
+    public Builder elementTypes(final String value, final String... values) {
+      return elementTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder categoryOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return categoryOperations(collectValues(operation, operations));
+    }
+
+    public Builder categoryOperations(final List<Operation<String>> operations) {
+      categoryOperations = addValuesToList(categoryOperations, operations);
+      return this;
+    }
+
+    public Builder categories(final String value, final String... values) {
+      return categoryOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     @Override
     public GlobalListenerFilter build() {
       return new GlobalListenerFilter(
@@ -157,7 +191,9 @@ public record GlobalListenerFilter(
           afterNonGlobal,
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(sourceOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(listenerTypeOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(listenerTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(categoryOperations, Collections.emptyList()));
     }
   }
 }

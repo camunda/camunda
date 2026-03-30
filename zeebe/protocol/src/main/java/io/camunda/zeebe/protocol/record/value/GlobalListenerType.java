@@ -16,5 +16,6 @@
 package io.camunda.zeebe.protocol.record.value;
 
 public enum GlobalListenerType {
-  USER_TASK;
+  USER_TASK,
+  EXECUTION;
 }

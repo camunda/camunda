@@ -9,17 +9,23 @@ package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
+import io.camunda.gateway.protocol.model.CreateGlobalExecutionListenerRequest;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerBase;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerResult;
 import io.camunda.gateway.protocol.model.GlobalListenerBase;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerBase;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
+import io.camunda.gateway.protocol.model.UpdateGlobalExecutionListenerRequest;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
 import org.springframework.http.ProblemDetail;
 
 public class GlobalListenerMapper {
@@ -30,9 +36,9 @@ public class GlobalListenerMapper {
     this.requestValidator = requestValidator;
   }
 
-  //
-  // Request mapping
-  //
+  // =====================================================================
+  // Task listener request mapping
+  // =====================================================================
 
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerCreateRequest(
       final CreateGlobalTaskListenerRequest request) {
@@ -52,9 +58,7 @@ public class GlobalListenerMapper {
         requestValidator.validateGetRequest(id),
         () -> {
           final var record = new GlobalListenerRecord();
-          // Ensure basic data for a task listener request is set
           fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
-          // Add ID from the actual request
           record.setId(id);
           return record;
         });
@@ -67,7 +71,6 @@ public class GlobalListenerMapper {
         () -> {
           final var record = new GlobalListenerRecord();
           fillDataFromGlobalTaskListenerRequest(record, request);
-          // Add ID from the actual request
           record.setId(id);
           return record;
         });
@@ -79,13 +82,67 @@ public class GlobalListenerMapper {
         requestValidator.validateDeleteRequest(id),
         () -> {
           final var record = new GlobalListenerRecord();
-          // Ensure basic data for a task listener request is set
           fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
-          // Add ID from the actual request
           record.setId(id);
           return record;
         });
   }
+
+  // =====================================================================
+  // Execution listener request mapping
+  // =====================================================================
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerCreateRequest(
+      final CreateGlobalExecutionListenerRequest request) {
+    return RequestMapper.getResult(
+        requestValidator.validateCreateExecutionListenerRequest(request),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          fillDataFromGlobalExecutionListenerRequest(record, request);
+          record.setId(request.getId());
+          return record;
+        });
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerGetRequest(
+      final String id) {
+    return RequestMapper.getResult(
+        requestValidator.validateGetRequest(id),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          fillDataFromGlobalExecutionListenerRequest(record, new GlobalExecutionListenerBase());
+          record.setId(id);
+          return record;
+        });
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerUpdateRequest(
+      final String id, final UpdateGlobalExecutionListenerRequest request) {
+    return RequestMapper.getResult(
+        requestValidator.validateUpdateExecutionListenerRequest(id, request),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          fillDataFromGlobalExecutionListenerRequest(record, request);
+          record.setId(id);
+          return record;
+        });
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerDeleteRequest(
+      final String id) {
+    return RequestMapper.getResult(
+        requestValidator.validateDeleteRequest(id),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          fillDataFromGlobalExecutionListenerRequest(record, new GlobalExecutionListenerBase());
+          record.setId(id);
+          return record;
+        });
+  }
+
+  // =====================================================================
+  // Shared fill helpers
+  // =====================================================================
 
   private void fillDataFromGlobalListenerRequest(
       final GlobalListenerRecord record, final GlobalListenerBase request) {
@@ -118,11 +175,31 @@ public class GlobalListenerMapper {
     record.setListenerType(GlobalListenerType.USER_TASK);
   }
 
-  //
-  // Response mapping
-  //
+  private void fillDataFromGlobalExecutionListenerRequest(
+      final GlobalListenerRecord record, final GlobalExecutionListenerBase request) {
+    fillDataFromGlobalListenerRequest(record, request);
+    if (request.getEventTypes() != null) {
+      record.setEventTypes(
+          request.getEventTypes().stream()
+              .map(GlobalExecutionListenerEventTypeEnum::getValue)
+              .toList());
+    }
+    if (request.getElementTypes() != null) {
+      record.setElementTypes(request.getElementTypes());
+    }
+    if (request.getCategories() != null) {
+      record.setCategories(request.getCategories());
+    }
 
-  public GlobalTaskListenerResult toGlobalListenerResponse(final GlobalListenerRecord record) {
+    // All requests related to execution listeners must have the listener type set to EXECUTION
+    record.setListenerType(GlobalListenerType.EXECUTION);
+  }
+
+  // =====================================================================
+  // Task listener response mapping
+  // =====================================================================
+
+  public GlobalTaskListenerResult toGlobalTaskListenerResponse(final GlobalListenerRecord record) {
     return new GlobalTaskListenerResult()
         .id(record.getId())
         .type(record.getType())
@@ -131,6 +208,29 @@ public class GlobalListenerMapper {
             record.getEventTypes().stream()
                 .map(GlobalTaskListenerEventTypeEnum::fromValue)
                 .toList())
+        .afterNonGlobal(record.isAfterNonGlobal())
+        .priority(record.getPriority())
+        .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
+  }
+
+  // =====================================================================
+  // Execution listener response mapping
+  // =====================================================================
+
+  public GlobalExecutionListenerResult toGlobalExecutionListenerResponse(
+      final GlobalListenerRecord record) {
+    return new GlobalExecutionListenerResult()
+        .id(record.getId())
+        .type(record.getType())
+        .retries(record.getRetries())
+        .eventTypes(
+            record.getEventTypes().stream()
+                .map(GlobalExecutionListenerEventTypeEnum::fromValue)
+                .toList())
+        .elementTypes(
+            record.getElementTypes() != null ? record.getElementTypes() : Collections.emptyList())
+        .categories(
+            record.getCategories() != null ? record.getCategories() : Collections.emptyList())
         .afterNonGlobal(record.isAfterNonGlobal())
         .priority(record.getPriority())
         .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
