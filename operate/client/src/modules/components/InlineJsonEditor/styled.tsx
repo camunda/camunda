@@ -12,6 +12,8 @@ import {
   EDITOR_FONT_FAMILY,
   EDITOR_FONT_SIZE,
   EDITOR_LINE_HEIGHT,
+  EDITOR_MIN_HEIGHT,
+  EDITOR_PADDING_BOTTOM,
   EDITOR_PADDING_TOP,
 } from './constants';
 
@@ -26,62 +28,21 @@ const ring = (color: string) => css`
 `;
 
 const EditorWrapper = styled.div<{
-  $readOnly?: boolean;
   $invalid?: boolean;
-  $placeholder?: string;
-  $empty?: boolean;
 }>`
   height: 100%;
   position: relative;
 
-  ${({$placeholder, $empty}) =>
-    $placeholder &&
-    $empty &&
-    css`
-      &:not(:focus-within)::before {
-        content: '${$placeholder}';
-        position: absolute;
-        top: ${EDITOR_PADDING_TOP}px;
-        left: ${EDITOR_DECORATION_WIDTH}px;
-        color: var(--cds-text-placeholder, #a8a8a8);
-        font-family: ${EDITOR_FONT_FAMILY};
-        font-size: ${EDITOR_FONT_SIZE}px;
-        line-height: ${EDITOR_LINE_HEIGHT}px;
-        pointer-events: none;
-        z-index: 1;
-      }
-    `}
+  .monaco-editor {
+    width: 100% !important;
+    --vscode-editor-background: var(--cds-field) !important;
+    --vscode-editorGutter-background: var(--cds-field) !important;
+    background-color: var(--cds-field) !important;
 
-  ${({$readOnly}) => {
-    if ($readOnly) {
-      return `
-        .monaco-editor {
-          --vscode-editor-background: var(--cds-layer-01) !important;
-          --vscode-editorGutter-background: var(--cds-layer-01) !important;
-          background-color: var(--cds-layer-01) !important;
-        }
-        .monaco-editor .cursors-layer > .cursor {
-          display: none !important;
-        }
-      `;
-    } else {
-      return `
-        .monaco-editor {
-          --vscode-editor-background: var(--cds-field) !important;
-          --vscode-editorGutter-background: var(--cds-field) !important;
-          background-color: var(--cds-field) !important;
-        }
-      `;
+    &:focus-within::after {
+      ${ring('var(--cds-focus, #0f62fe)')}
     }
-  }}
-
-  ${({$readOnly}) =>
-    !$readOnly &&
-    css`
-      &:focus-within::after {
-        ${ring('var(--cds-focus, #0f62fe)')}
-      }
-    `}
+  }
 
   ${({$invalid}) =>
     $invalid &&
@@ -99,8 +60,41 @@ const EditorWrapper = styled.div<{
     `}
 `;
 
-const EditorLoader = styled.div<{height: number}>`
-  height: ${({height}) => height}px;
+const EditorLoader = styled.div<{$height: number}>`
+  height: ${({$height}) => $height}px;
 `;
 
-export {EditorWrapper, EditorLoader};
+const EditorReadonly = styled.pre<{
+  $height: number;
+  $empty: boolean;
+  $editMode: boolean;
+}>`
+  display: block;
+  text-wrap: wrap;
+  overflow-y: auto;
+  width: 100%;
+  min-height: ${EDITOR_MIN_HEIGHT}px;
+  font-size: ${EDITOR_FONT_SIZE}px;
+  line-height: ${EDITOR_LINE_HEIGHT}px;
+  font-family: ${EDITOR_FONT_FAMILY};
+  padding-top: ${EDITOR_PADDING_TOP}px;
+  padding-bottom: ${EDITOR_PADDING_BOTTOM}px;
+  tab-size: 2;
+  background-color: var(--cds-field);
+
+  ${({$height}) => css`
+    max-height: ${$height}px;
+  `}
+  ${({$empty}) =>
+    $empty &&
+    css`
+      color: var(--cds-text-placeholder, #a8a8a8);
+    `};
+  ${({$editMode}) =>
+    $editMode &&
+    css`
+      padding-left: ${EDITOR_DECORATION_WIDTH}px;
+    `};
+`;
+
+export {EditorWrapper, EditorLoader, EditorReadonly};

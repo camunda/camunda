@@ -10,19 +10,29 @@ import type {Locator, Page} from '@playwright/test';
 
 export class JSONEditor {
   private readonly page: Page;
-  readonly editor: Locator;
+  private readonly readOnlyEditor: Locator;
+  private readonly codeEditor: Locator;
+  readonly editorWrapper: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.editor = page.getByRole('code').nth(0);
+    this.editorWrapper = page.getByTestId('json-editor-wrapper');
+    this.readOnlyEditor = this.editorWrapper.getByTestId(
+      'json-editor-readonly',
+    );
+    this.codeEditor = page.getByRole('code').first();
+  }
+
+  getFirstWrapper(): Locator {
+    return this.editorWrapper.first();
+  }
+
+  getLastWrapper(): Locator {
+    return this.editorWrapper.last();
   }
 
   async waitForEditor() {
-    await this.editor.locator('textarea').waitFor({state: 'attached'});
-  }
-
-  async select() {
-    await this.editor.click();
+    await this.codeEditor.waitFor({state: 'visible'});
   }
 
   async fill(value: string) {

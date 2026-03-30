@@ -7,21 +7,40 @@
  */
 
 import {useState} from 'react';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, act} from 'modules/testing-library';
 import {InlineJsonEditor} from './index';
+import {
+  MonacoContext,
+  type JSONEditorComponent,
+} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/EditorContext/EditorContext';
 
 vi.unmock('modules/components/InlineJsonEditor');
 
+// Provide a lightweight textarea-based Editor so useEditor() returns a real component
+// (the global setupTests mock handles modules/components/JSONEditor, but the context
+// value must be injected explicitly because EditorProvider loads it asynchronously).
+const MockEditor: JSONEditorComponent = ({value, onChange}) => (
+  <textarea
+    data-testid="monaco-editor"
+    value={value}
+    onChange={(e) => onChange?.(e.target.value)}
+  />
+);
+
+const wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+  <MonacoContext.Provider value={MockEditor}>{children}</MonacoContext.Provider>
+);
+
 describe('<InlineJsonEditor />', () => {
-  it('should render read-only value pretty-printed', async () => {
+  it('should render read-only value pretty-printed', () => {
     const compactJson = '{"key":"value","nested":{"a":1}}';
+    const expectedFormatted =
+      '{\n\t"key": "value",\n\t"nested": {\n\t\t"a": 1\n\t}\n}';
 
-    render(<InlineJsonEditor value={compactJson} readOnly />);
+    render(<InlineJsonEditor value={compactJson} readOnly />, {wrapper});
 
-    const editor = await screen.findByTestId('monaco-editor');
-    expect(editor).toHaveValue(
-      '{\n\t"key": "value",\n\t"nested": {\n\t\t"a": 1\n\t}\n}',
-    );
+    const pre = screen.getByTestId('variable-value-readonly');
+    expect(pre.textContent).toBe(expectedFormatted);
   });
 
   it('should render editable and call onChange', async () => {
@@ -41,7 +60,10 @@ describe('<InlineJsonEditor />', () => {
       );
     };
 
-    const {user} = render(<TestWrapper />);
+    const {user} = render(<TestWrapper />, {wrapper});
+
+    // The editor is lazy — it only mounts after the user focuses/clicks the field.
+    await user.click(screen.getByTestId('inline-json-editor'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
@@ -51,6 +73,7 @@ describe('<InlineJsonEditor />', () => {
   });
 
   it('should call onValidate(false) for invalid JSON', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const mockOnValidate = vi.fn();
 
     const TestWrapper = () => {
@@ -65,16 +88,25 @@ describe('<InlineJsonEditor />', () => {
       );
     };
 
-    const {user} = render(<TestWrapper />);
+    const {user} = render(<TestWrapper />, {wrapper});
+
+    await user.click(screen.getByTestId('inline-json-editor'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
     await user.type(editor, '{{invalid');
 
+    // Flush the 300 ms debounce
+    act(() => {
+      vi.runAllTimers();
+    });
+
     expect(mockOnValidate).toHaveBeenCalledWith(false);
+    vi.useRealTimers();
   });
 
   it('should call onValidate(true) for valid JSON', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const mockOnValidate = vi.fn();
 
     const TestWrapper = () => {
@@ -89,12 +121,20 @@ describe('<InlineJsonEditor />', () => {
       );
     };
 
-    const {user} = render(<TestWrapper />);
+    const {user} = render(<TestWrapper />, {wrapper});
+
+    await user.click(screen.getByTestId('inline-json-editor'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
     await user.type(editor, '"valid"');
 
+    // Flush the 300 ms debounce
+    act(() => {
+      vi.runAllTimers();
+    });
+
     expect(mockOnValidate).toHaveBeenCalledWith(true);
+    vi.useRealTimers();
   });
 });

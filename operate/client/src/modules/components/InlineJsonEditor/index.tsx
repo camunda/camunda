@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {
   beautifyJSON,
   beautifyTruncatedJSON,
 } from 'modules/utils/editor/beautifyJSON';
-import {EditorLoader, EditorWrapper} from './styled';
+import {EditorLoader, EditorReadonly, EditorWrapper} from './styled';
 import {useFieldError} from '../../hooks/useFieldError';
 import {
   EDITOR_DECORATION_WIDTH,
@@ -22,20 +22,11 @@ import {
   EDITOR_PADDING_BOTTOM,
   EDITOR_PADDING_TOP,
 } from './constants';
+import {debounce} from 'lodash';
+import {useEditor} from '../../../App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/EditorContext/useEditor';
 
 const MIN_HEIGHT = 32;
 const MAX_LINES = 5;
-
-const JSONEditor = lazy(async () => {
-  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
-    import('modules/loadMonaco'),
-    import('modules/components/JSONEditor'),
-  ]);
-
-  loadMonaco();
-
-  return {default: JSONEditor};
-});
 
 type Props = {
   name?: string;
@@ -50,7 +41,6 @@ type Props = {
   readOnly?: boolean;
   maxLines?: number;
   id?: string;
-  'data-testid'?: string;
 };
 
 function computeHeight(text: string, maxLines: number): number {
@@ -72,16 +62,22 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     readOnly,
     placeholder = 'Value',
     isTruncatedValue = false,
-    shouldFocusOnMount = false,
     maxLines = MAX_LINES,
     id,
-    'data-testid': dataTestId,
     fieldError,
+    shouldFocusOnMount,
   }) => {
+    const Editor = useEditor();
     const isReadOnly = readOnly === true || onChange === undefined;
-    const [displayValue, setDisplayValue] = useState(
-      isTruncatedValue ? beautifyTruncatedJSON(value) : beautifyJSON(value),
-    );
+
+    const formattedValue = useMemo(() => {
+      return isTruncatedValue
+        ? beautifyTruncatedJSON(value)
+        : beautifyJSON(value);
+    }, [value, isTruncatedValue]);
+
+    const [displayValue, setDisplayValue] = useState(formattedValue);
+    const [isEditing, setIsEditing] = useState(false);
     const height = computeHeight(displayValue, maxLines);
 
     // Sync the external `value` into `displayValue` in two cases:
@@ -91,72 +87,109 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     //    (handleChange keeps them in sync, so keystrokes never trigger this).
     useEffect(() => {
       if (isReadOnly || value !== displayValue) {
-        setDisplayValue(
-          isTruncatedValue ? beautifyTruncatedJSON(value) : beautifyJSON(value),
-        );
+        setDisplayValue(formattedValue);
       }
-    }, [isReadOnly, value, isTruncatedValue, displayValue]);
+    }, [isReadOnly, value, displayValue, formattedValue]);
 
-    const handleChange = (newValue: string) => {
-      onChange?.(newValue);
-      setDisplayValue(newValue);
+    const debouncedValidate = useMemo(() => {
+      return debounce((val: string) => {
+        if (!onValidate) {
+          return;
+        }
 
-      if (onValidate) {
         try {
-          JSON.parse(newValue);
+          JSON.parse(val);
           onValidate(true);
         } catch {
           onValidate(false);
         }
-      }
+      }, 300);
+    }, [onValidate]);
+
+    useEffect(() => {
+      return () => {
+        debouncedValidate.cancel();
+      };
+    }, [debouncedValidate]);
+
+    const handleChange = (newValue: string) => {
+      onChange?.(newValue);
+      setDisplayValue(newValue);
+      debouncedValidate(newValue);
+    };
+
+    const handleClick = () => {
+      setIsEditing(true);
+      onFocus?.();
     };
 
     return (
       <EditorWrapper
+        tabIndex={0}
         id={id}
-        data-testid={dataTestId}
-        onBlur={onBlur}
-        onFocus={onFocus}
-        $readOnly={isReadOnly}
+        data-testid="json-editor-wrapper"
+        onBlur={() => {
+          setIsEditing(false);
+          onBlur?.();
+        }}
+        onFocus={() => {
+          setIsEditing(true);
+          onFocus?.();
+        }}
+        onClick={handleClick}
         $invalid={!!fieldError}
-        $placeholder={placeholder}
-        $empty={displayValue === ''}
       >
-        <Suspense fallback={<EditorLoader height={height} />}>
-          <label htmlFor="value" className="cds--visually-hidden">
-            Value
-          </label>
-          <JSONEditor
-            value={displayValue}
-            onChange={isReadOnly ? undefined : handleChange}
-            readOnly={isReadOnly}
-            height={`${height}px`}
-            width="100%"
-            shouldFocusOnMount={!isReadOnly && shouldFocusOnMount}
-            options={{
-              formatOnType: false,
-              lineNumbers: 'off',
-              lineDecorationsWidth: isReadOnly ? 0 : EDITOR_DECORATION_WIDTH,
-              renderLineHighlight: 'none',
-              overviewRulerLanes: 0,
-              stickyScroll: {enabled: false},
-              glyphMargin: false,
-              folding: false,
-              scrollbar: {useShadows: false},
-              minimap: {enabled: false},
-              fontSize: EDITOR_FONT_SIZE,
-              lineHeight: EDITOR_LINE_HEIGHT,
-              fontFamily: EDITOR_FONT_FAMILY,
-              padding: {
-                top: EDITOR_PADDING_TOP,
-                bottom: EDITOR_PADDING_BOTTOM,
-              },
-            }}
-          />
-          {fieldError && (
-            <div className="cds--form-requirement">{fieldError}</div>
-          )}
-        </Suspense>
+        {isReadOnly || !isEditing ? (
+          <EditorReadonly
+            data-testid="json-editor-readonly"
+            $height={height}
+            $empty={displayValue === ''}
+            $editMode={!isReadOnly}
+          >
+            {displayValue || placeholder}
+          </EditorReadonly>
+        ) : (
+          <>
+            <label htmlFor="value" className="cds--visually-hidden">
+              Value
+            </label>
+            {!Editor ? (
+              <EditorLoader $height={height} />
+            ) : (
+              <Editor
+                value={displayValue}
+                onChange={isReadOnly ? undefined : handleChange}
+                readOnly={isReadOnly}
+                height={`${height}px`}
+                shouldFocusOnMount={shouldFocusOnMount}
+                options={{
+                  formatOnType: false,
+                  lineNumbers: 'off',
+                  lineDecorationsWidth: isReadOnly
+                    ? 0
+                    : EDITOR_DECORATION_WIDTH,
+                  renderLineHighlight: 'none',
+                  overviewRulerLanes: 0,
+                  stickyScroll: {enabled: false},
+                  glyphMargin: false,
+                  folding: false,
+                  scrollbar: {useShadows: false},
+                  minimap: {enabled: false},
+                  fontSize: EDITOR_FONT_SIZE,
+                  lineHeight: EDITOR_LINE_HEIGHT,
+                  fontFamily: EDITOR_FONT_FAMILY,
+                  padding: {
+                    top: EDITOR_PADDING_TOP,
+                    bottom: EDITOR_PADDING_BOTTOM,
+                  },
+                }}
+              />
+            )}
+            {fieldError && (
+              <div className="cds--form-requirement">{fieldError}</div>
+            )}
+          </>
+        )}
       </EditorWrapper>
     );
   },

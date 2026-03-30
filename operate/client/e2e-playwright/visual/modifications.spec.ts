@@ -93,7 +93,6 @@ test.describe('modifications', () => {
       .click();
 
     await processInstancePage.addVariableButton.click();
-    await processInstancePage.variablesEditor.waitForEditor();
 
     await expect(page).toHaveScreenshot();
   });
@@ -216,7 +215,7 @@ test.describe('modifications', () => {
     await page.getByRole('link', {name: /variables/i}).click();
 
     const editor = processInstancePage.variablesEditor;
-    await editor.select();
+    await editor.getFirstWrapper().click();
     await editor.waitForEditor();
     await editor.clear();
     await editor.fill('"test"');

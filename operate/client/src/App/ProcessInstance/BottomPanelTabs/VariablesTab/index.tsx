@@ -18,6 +18,7 @@ import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {useVariableScopeKey} from 'modules/hooks/variables';
+import {EditorProvider} from './Variables/EditorContext/EditorProvider';
 
 const VariablesTab: React.FC = observer(() => {
   const {displayStatus, error} = useVariables();
@@ -74,7 +75,9 @@ const VariablesTab: React.FC = observer(() => {
       {displayStatus === 'spinner' && (
         <Loading data-testid="variables-spinner" />
       )}
-      {scopeKey !== null && <VariablesFinalForm scopeKey={scopeKey} />}
+      <EditorProvider>
+        {scopeKey !== null && <VariablesFinalForm scopeKey={scopeKey} />}
+      </EditorProvider>
     </Content>
   );
 });
