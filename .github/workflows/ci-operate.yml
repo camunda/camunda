@@ -337,7 +337,11 @@ jobs:
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Visual regression tests
-        run: npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+          PERCY_PARALLEL_NONCE: ${{ github.run_id }}
+          PERCY_PARALLEL_TOTAL: ${{ matrix.shardTotal }}
+        run: npx percy exec -- npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - name: Upload blob report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -395,6 +399,12 @@ jobs:
           name: operate-visual-regression-report
           path: operate/client/playwright-report/
           retention-days: 30
+      - name: Finalize Percy build
+        if: always()
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+          PERCY_PARALLEL_NONCE: ${{ github.run_id }}
+        run: npx percy build:finalize
 
   operate-update-screenshots:
     if: inputs.runFeTests

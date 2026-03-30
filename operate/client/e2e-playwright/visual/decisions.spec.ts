@@ -18,6 +18,7 @@ import {
 } from '../mocks/decisions.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -68,6 +69,7 @@ test.describe('decisions page', () => {
     });
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decisions - empty page');
   });
 
   test('error page', async ({page, decisionsPage}) => {
@@ -101,6 +103,7 @@ test.describe('decisions page', () => {
     await expect(decisionsPage.diagramSpinner).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decisions - error page');
   });
 
   test('filled with data', async ({page, decisionsPage}) => {
@@ -124,6 +127,7 @@ test.describe('decisions page', () => {
     });
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decisions - filled with data');
   });
 
   test('filled with data and operations panel expanded', async ({
@@ -159,6 +163,7 @@ test.describe('decisions page', () => {
     });
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decisions - filled with data and operations panel expanded');
   });
 
   test('optional filters visible', async ({page, decisionsPage}) => {
@@ -196,5 +201,6 @@ test.describe('decisions page', () => {
     await decisionsPage.displayOptionalFilter('Evaluation Date Range');
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decisions - optional filters visible');
   });
 });

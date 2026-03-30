@@ -11,11 +11,13 @@ import {styles} from '@carbon/elements';
 import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';
 import {Link} from 'modules/components/Link';
 
+// TODO: revert — Percy PoC demo change
 const Title = styled(Link)`
   ${styles.productiveHeading04};
   color: var(--cds-text-primary) !important;
   display: inline-block;
   margin-bottom: var(--cds-spacing-05);
+  letter-spacing: 0.5px;
 `;
 
 const LabelContainer = styled.div`

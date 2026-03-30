@@ -53,10 +53,13 @@ const Tile = styled(BaseTitle)`
   border: 1px solid var(--cds-border-subtle-01);
 `;
 
+// TODO: revert — Percy PoC demo change
 const TileTitle = styled.h2`
   ${styles.productiveHeading02};
   color: var(--cds-text-primary);
   margin-bottom: var(--cds-spacing-06);
+  border-bottom: 2px solid var(--cds-border-strong-01);
+  padding-bottom: var(--cds-spacing-03);
 `;
 
 const LinkWrapper = styled(Link)`

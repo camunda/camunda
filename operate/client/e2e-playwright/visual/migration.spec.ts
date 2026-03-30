@@ -18,6 +18,7 @@ import {
 import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -78,5 +79,6 @@ test.describe('migration view', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Migration - initial migration view');
   });
 });

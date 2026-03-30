@@ -56,6 +56,7 @@
     "fix:prettier": "prettier --write \"**/*.ts\"",
     "test:a11y": "playwright test --project=a11y",
     "test:visual": "cross-env CONTAINERIZED_BROWSER=true playwright test --project=visual-light --project=visual-dark",
+    "test:visual:percy": "percy exec -- playwright test --project=visual-light --project=visual-dark",
     "generate-screenshots": "playwright test --project=screenshot-generator",
     "coverage": "npm run test -- --coverage --changed",
     "extract-sbom": "vite build --mode sbom",
@@ -64,6 +65,8 @@
   "devDependencies": {
     "@camunda/lint-config": "file:../../client-components/packages/lint-config",
     "@eslint/js": "9.39.4",
+    "@percy/cli": "^1.31.10",
+    "@percy/playwright": "^1.1.0",
     "@playwright/test": "1.58.2",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",

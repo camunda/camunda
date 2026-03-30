@@ -8,6 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
+import {takePercySnapshot} from '../utils/percy';
 import {
   mockIncidentsByError,
   mockIncidentsByDefinition,
@@ -58,6 +59,7 @@ test.describe('dashboard page', () => {
     await dashboardPage.gotoDashboardPage();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Dashboard - empty page');
   });
 
   test('error page', async ({page, dashboardPage}) => {
@@ -71,6 +73,7 @@ test.describe('dashboard page', () => {
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Dashboard - error page');
   });
 
   test('filled with data', async ({page, dashboardPage}) => {
@@ -85,6 +88,7 @@ test.describe('dashboard page', () => {
     await dashboardPage.gotoDashboardPage();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Dashboard - filled with data');
   });
 
   test('expanded rows', async ({page, dashboardPage}) => {
@@ -135,5 +139,6 @@ test.describe('dashboard page', () => {
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Dashboard - expanded rows');
   });
 });

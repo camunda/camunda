@@ -11,6 +11,7 @@ import {test} from '../visual-fixtures';
 import {mockAuditLogs, mockResponses} from '../mocks/auditLog.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -47,6 +48,7 @@ test.describe('audit log page', () => {
     await expect(page.getByText('No operation log items yet')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Audit Log - empty page');
   });
 
   test('error page', async ({page, operationsLogPage}) => {
@@ -58,6 +60,7 @@ test.describe('audit log page', () => {
     await expect(page.getByText('Data could not be fetched')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Audit Log - error page');
   });
 
   test('filled with data', async ({page, operationsLogPage}) => {
@@ -72,6 +75,7 @@ test.describe('audit log page', () => {
     await expect(operationsLogPage.tableLoader).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Audit Log - filled with data');
   });
 
   test('filtered by process instance key', async ({
@@ -109,5 +113,6 @@ test.describe('audit log page', () => {
     await page.getByTestId('data-table-loader').waitFor({state: 'detached'});
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Audit Log - filtered by process instance key');
   });
 });

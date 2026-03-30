@@ -12,6 +12,7 @@ import {mockResponses, runningInstance} from '../mocks/processInstance';
 import {mockAuditLogs} from '../mocks/auditLog.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 const {processInstanceKey} = runningInstance.detail;
 
@@ -60,6 +61,7 @@ test.describe('process instance audit log tab', () => {
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance Audit Log - empty state');
   });
 
   test('error state', async ({page, processInstancePage}) => {
@@ -82,6 +84,7 @@ test.describe('process instance audit log tab', () => {
 
     await expect(page.getByText('Data could not be fetched')).toBeVisible();
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance Audit Log - error state');
   });
 
   test('filled with data', async ({page, processInstancePage}) => {
@@ -117,5 +120,6 @@ test.describe('process instance audit log tab', () => {
     ).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance Audit Log - filled with data');
   });
 });

@@ -8,6 +8,7 @@
 
 import {loginTest as test} from '../visual-fixtures';
 import {expect} from '@playwright/test';
+import {takePercySnapshot} from '../utils/percy';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -30,5 +31,6 @@ test.describe('login page', () => {
     await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Login - empty page');
   });
 });

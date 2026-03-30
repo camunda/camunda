@@ -17,9 +17,11 @@ const Button: typeof BaseButton = styled(BaseButton)`
   margin-top: var(--cds-spacing-05);
 `;
 
+// TODO: revert — Percy PoC demo change
 const Container = styled.main`
   height: 100%;
-  padding: var(--cds-spacing-03);
+  padding: var(--cds-spacing-06);
+  background-color: var(--cds-layer-02);
 `;
 
 const CopyrightNotice = styled.span`

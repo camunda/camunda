@@ -23,6 +23,7 @@ import {
 } from '../mocks/decisionInstance.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -46,6 +47,7 @@ test.describe('decision instance page', () => {
     });
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - error page');
   });
 
   test('evaluated', async ({page, decisionInstancePage}) => {
@@ -75,6 +77,7 @@ test.describe('decision instance page', () => {
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - evaluated');
   });
 
   test('evaluated (drd panel maximised)', async ({
@@ -100,6 +103,7 @@ test.describe('decision instance page', () => {
       })
       .click();
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - evaluated (drd panel maximised)');
   });
 
   test('evaluated (without input output panel)', async ({
@@ -124,6 +128,7 @@ test.describe('decision instance page', () => {
     await expect(page.getByText('"$1000"')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - evaluated (without input output panel)');
   });
 
   test('evaluated (with large table)', async ({page, decisionInstancePage}) => {
@@ -149,6 +154,7 @@ test.describe('decision instance page', () => {
     await page.getByText(/test annotation/i).hover();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - evaluated (with large table)');
   });
 
   test('failed', async ({page, decisionInstancePage}) => {
@@ -166,6 +172,7 @@ test.describe('decision instance page', () => {
     });
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - failed');
   });
 
   test('failed (result tab selected)', async ({page, decisionInstancePage}) => {
@@ -189,5 +196,6 @@ test.describe('decision instance page', () => {
       .click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Decision Instance - failed (result tab selected)');
   });
 });

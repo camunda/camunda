@@ -20,6 +20,7 @@ import {
 } from '../mocks/processes.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -90,6 +91,7 @@ test.describe('processes page', () => {
     });
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - empty page');
   });
 
   test('error page', async ({page, processesPage}) => {
@@ -130,6 +132,7 @@ test.describe('processes page', () => {
 
     await expect(page.getByText('Data could not be fetched')).toHaveCount(2);
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - error page');
   });
 
   test('filled with data and one element selected', async ({
@@ -171,6 +174,7 @@ test.describe('processes page', () => {
     await filtersPanel.selectElement('Event Subprocess task');
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - filled with data and one element selected');
   });
 
   test('filled with data and operations panel expanded', async ({
@@ -221,6 +225,7 @@ test.describe('processes page', () => {
     await expect(page.getByTestId(/^state-overlay/).first()).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - filled with data and operations panel expanded');
   });
 
   test('optional filters visible (part 1)', async ({
@@ -272,6 +277,7 @@ test.describe('processes page', () => {
       page.getByText('Id has to be a 16 to 19 digit number or a UUID'),
     ).toBeVisible();
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - optional filters visible (part 1)');
   });
 
   test('optional filters visible (part 2)', async ({
@@ -321,6 +327,7 @@ test.describe('processes page', () => {
     await filtersPanel.displayOptionalFilter('End Date Range');
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - optional filters visible (part 2)');
   });
 
   test('data table toolbar visible', async ({page, processesPage}) => {
@@ -354,6 +361,7 @@ test.describe('processes page', () => {
     await page.getByRole('columnheader', {name: 'Select all rows'}).click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - data table toolbar visible');
   });
 
   test('filled with data and active batchOperationId filter', async ({
@@ -383,6 +391,7 @@ test.describe('processes page', () => {
     await expect(page.getByLabel('Sort by Operation State')).toBeInViewport();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - filled with data and active batchOperationId filter');
   });
 
   test('filled with data, active batchOperationId filter and error message expanded', async ({
@@ -420,5 +429,6 @@ test.describe('processes page', () => {
     ).toBeInViewport();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Processes - filled with data, active batchOperationId filter and error message expanded');
   });
 });

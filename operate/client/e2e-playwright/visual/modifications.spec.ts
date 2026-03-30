@@ -15,6 +15,7 @@ import {
 } from '../mocks/processInstance';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -54,6 +55,7 @@ test.describe('modifications', () => {
       .click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Modifications - with helper modal');
   });
 
   test('with add variable state', async ({page, processInstancePage}) => {
@@ -95,6 +97,7 @@ test.describe('modifications', () => {
     await processInstancePage.addVariableButton.click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Modifications - with add variable state');
   });
 
   test('diagram badges and element instance history panel', async ({
@@ -166,6 +169,7 @@ test.describe('modifications', () => {
       .click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Modifications - diagram badges and element instance history panel');
   });
 
   test('apply modifications summary modal', async ({
@@ -247,5 +251,6 @@ test.describe('modifications', () => {
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Modifications - apply modifications summary modal');
   });
 });

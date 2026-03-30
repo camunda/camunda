@@ -15,6 +15,7 @@ import {
 } from '../mocks/processInstance';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -63,6 +64,7 @@ test.describe('input output mappings', () => {
     await expect(page.getByText('Local Variable Name')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Input Output Mappings - input mappings with info banner');
   });
 
   test('input mappings after dismissing banner', async ({
@@ -109,6 +111,7 @@ test.describe('input output mappings', () => {
     ).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Input Output Mappings - input mappings after dismissing banner');
   });
 
   test('empty input mappings', async ({page, processInstancePage}) => {
@@ -138,6 +141,7 @@ test.describe('input output mappings', () => {
     await expect(page.getByText('No Input Mappings defined')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Input Output Mappings - empty input mappings');
   });
 
   test('output mappings with info banner', async ({
@@ -176,6 +180,7 @@ test.describe('input output mappings', () => {
     await expect(page.getByText('Process Variable Name')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Input Output Mappings - output mappings with info banner');
   });
 
   test('output mappings after dismissing banner', async ({
@@ -224,6 +229,7 @@ test.describe('input output mappings', () => {
     ).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Input Output Mappings - output mappings after dismissing banner');
   });
 
   test('empty output mappings', async ({page, processInstancePage}) => {
@@ -253,5 +259,6 @@ test.describe('input output mappings', () => {
     await expect(page.getByText('No Output Mappings defined')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Input Output Mappings - empty output mappings');
   });
 });

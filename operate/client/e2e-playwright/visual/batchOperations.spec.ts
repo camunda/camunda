@@ -16,6 +16,7 @@ import {
 } from '../mocks/batchOperations.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -51,6 +52,7 @@ test.describe('batch operations page', () => {
     await expect(page.getByText('No batch operations found')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operations - empty page');
   });
 
   test('error page', async ({page, batchOperationsPage}) => {
@@ -61,6 +63,7 @@ test.describe('batch operations page', () => {
     await expect(page.getByText('Data could not be fetched')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operations - error page');
   });
 
   test('filled with data', async ({page, batchOperationsPage}) => {
@@ -76,6 +79,7 @@ test.describe('batch operations page', () => {
     await expect(batchOperationsPage.batchOperationsTable).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operations - filled with data');
   });
 });
 
@@ -104,6 +108,7 @@ test.describe('batch operation details page', () => {
     await expect(batchOperationPage.batchItemsTable).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operation Details - completed operation');
   });
 
   test('operation with errors', async ({page, batchOperationPage}) => {
@@ -130,6 +135,7 @@ test.describe('batch operation details page', () => {
     await expect(batchOperationPage.batchItemsTable).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operation Details - operation with errors');
   });
 
   test('active operation', async ({page, batchOperationPage}) => {
@@ -189,6 +195,7 @@ test.describe('batch operation details page', () => {
     await expect(batchOperationPage.batchItemsTable).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operation Details - active operation');
   });
 
   test('empty operation', async ({page, batchOperationPage}) => {
@@ -223,5 +230,6 @@ test.describe('batch operation details page', () => {
     await expect(page.getByText('No items found')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Batch Operation Details - empty operation');
   });
 });

@@ -17,6 +17,7 @@ import {
 } from '../mocks/processInstance';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
+import {takePercySnapshot} from '../utils/percy';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -53,6 +54,7 @@ test.describe('process instance page', () => {
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - error page');
   });
 
   test('helper modal', async ({page}) => {
@@ -76,6 +78,7 @@ test.describe('process instance page', () => {
     await expect(page.getByText("Here's what moved in Operate")).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - helper modal');
   });
 
   test('running instance', async ({page, processInstancePage}) => {
@@ -101,6 +104,7 @@ test.describe('process instance page', () => {
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - running instance');
   });
 
   test('add variable state', async ({page, processInstancePage}) => {
@@ -127,6 +131,7 @@ test.describe('process instance page', () => {
     await processInstancePage.addVariableButton.click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - add variable state');
   });
 
   test('edit variable state', async ({page, processInstancePage}) => {
@@ -157,6 +162,7 @@ test.describe('process instance page', () => {
       .click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - edit variable state');
   });
 
   test('instance with incident', async ({page, processInstancePage}) => {
@@ -185,6 +191,7 @@ test.describe('process instance page', () => {
     await page.getByRole('link', {name: 'Incidents'}).click();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - instance with incident');
   });
 
   test('instance with incident expanded row', async ({
@@ -220,6 +227,7 @@ test.describe('process instance page', () => {
     await expect(page.getByText('Error message')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - instance with incident expanded row');
   });
 
   test('completed instance', async ({page, processInstancePage}) => {
@@ -249,6 +257,7 @@ test.describe('process instance page', () => {
     await processInstancePage.endDateToggle.click({force: true});
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - completed instance');
   });
 
   test('compensation process instance', async ({page, processInstancePage}) => {
@@ -277,5 +286,6 @@ test.describe('process instance page', () => {
     await processInstancePage.endDateToggle.click({force: true});
 
     await expect(page).toHaveScreenshot();
+    await takePercySnapshot(page, 'Process Instance - compensation process instance');
   });
 });
