@@ -409,7 +409,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.assignedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: null,
+              formKey: undefined,
             }),
           );
         },

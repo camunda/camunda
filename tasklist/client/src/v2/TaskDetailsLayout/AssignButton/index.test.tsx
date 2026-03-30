@@ -209,7 +209,7 @@ describe('AssignButton', () => {
     const {user} = render(
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
-        assignee={null}
+        assignee={undefined}
         taskState={mockUnassignedTask.state}
         currentUser={currentUser.username}
       />,
