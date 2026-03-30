@@ -54,7 +54,7 @@ for repo in "${REPO_LIST[@]}"; do
   echo "📦 Scanning ${repo}..." >&2
 
   # Common gh pr list args
-  json_fields="number,title,url,body,createdAt,isDraft,baseRefName,author,assignees,labels"
+  json_fields="number,title,url,body,createdAt,isDraft,baseRefName,author,assignees,labels,commits,mergeable"
   common_args=(--repo "$repo" --state open --limit 1000 --json "$json_fields")
 
   # Build branch filter
@@ -96,6 +96,7 @@ for repo in "${REPO_LIST[@]}"; do
         backport_pr_title: .title,
         target_branch: .baseRefName,
         is_draft: .isDraft,
+        has_conflict: (.mergeable == "CONFLICTING" or ([.commits[].messageHeadline] | any(. == "BACKPORT-CONFLICT"))),
         created_at: .createdAt,
         age_minutes: $age_minutes,
         age_hours: $age_hours,

@@ -141,8 +141,9 @@ while IFS= read -r repo_name; do
       "*Stale backports:*\n" +
       ([.backport_prs[] |
         (if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h \((.age_minutes // 0) % 60)m" end) as $age |
-        (if .is_draft then "⚠️ " else "" end) as $draft |
-        "  ↳ \($draft):pull-request-open: <\(.backport_pr_url)|#\(.backport_pr_number)> → `\(.target_branch)` (open *\($age)*)"
+        (if .is_draft then ":pr-draft:" else ":pull-request-open:" end) as $state_emoji |
+        (if .has_conflict then " :warning:" else "" end) as $conflict_indicator |
+        "  ↳ \($state_emoji)\($conflict_indicator) <\(.backport_pr_url)|#\(.backport_pr_number)> → `\(.target_branch)` (open *\($age)*)"
       ] | join("\n"))
     ')
 
