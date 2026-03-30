@@ -501,7 +501,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                       "type":"about:blank",
-                      "title":"NOT_FOUND",
+                      "title":"Not Found",
                       "status":404,
                       "instance":"/v2/element-instances/5"
                   }

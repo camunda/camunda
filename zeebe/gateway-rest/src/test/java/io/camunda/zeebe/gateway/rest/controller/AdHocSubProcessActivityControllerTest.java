@@ -169,7 +169,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
     @ParameterizedTest
     @MethodSource("invalidActivateParameters")
     void shouldReturnBadRequestWhenValidationFails(
-        final String request, final String expectedErrorDetail) {
+        final String request, final String expectedErrorDetail, final String expectedTitle) {
       webClient
           .post()
           .uri(ACTIVATE_ACTIVITIES_URL, AD_HOC_SUBPROCESS_INSTANCE_KEY)
@@ -184,13 +184,13 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
               """
             {
                 "type": "about:blank",
-                "title": "INVALID_ARGUMENT",
+                "title": "%s",
                 "status": 400,
                 "detail": "%s",
                 "instance": "/v2/element-instances/ad-hoc-activities/%s/activation"
             }
             """
-                  .formatted(expectedErrorDetail, AD_HOC_SUBPROCESS_INSTANCE_KEY),
+                  .formatted(expectedTitle, expectedErrorDetail, AD_HOC_SUBPROCESS_INSTANCE_KEY),
               JsonCompareMode.STRICT);
 
       verifyNoInteractions(adHocSubProcessActivityServices);
@@ -202,14 +202,16 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
               """
               {}
               """,
-              "No elements provided."),
+              "No elements provided.",
+              "Bad Request"),
           arguments(
               """
               {
                 "elements": []
               }
               """,
-              "No elements provided."),
+              "No elements provided.",
+              "Bad Request"),
           arguments(
               """
               {
@@ -218,7 +220,8 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 ]
               }
               """,
-              "No elementId provided."),
+              "No elementId provided.",
+              "Bad Request"),
           arguments(
               """
               {
@@ -227,7 +230,8 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 ]
               }
               """,
-              "No elementId provided."),
+              "No elementId provided.",
+              "Bad Request"),
           arguments(
               """
               {
@@ -236,7 +240,8 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 ]
               }
               """,
-              "No elements[0].elementId provided."));
+              "No elements[0].elementId provided.",
+              "Bad Request"));
     }
   }
 }

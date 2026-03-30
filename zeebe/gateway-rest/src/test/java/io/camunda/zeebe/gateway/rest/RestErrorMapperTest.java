@@ -29,7 +29,7 @@ public class RestErrorMapperTest {
 
     final ProblemDetail pd = (ProblemDetail) response.get().getBody();
     assertThat(pd).isNotNull();
-    assertThat(pd.getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(pd.getTitle()).isEqualTo("Not Found");
     assertThat(pd.getDetail()).isEqualTo("Something went wrong");
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
   }

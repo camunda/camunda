@@ -333,7 +333,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Sort field must not be null.",
                   "instance": "%s"
@@ -373,7 +373,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -413,7 +413,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -487,7 +487,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "NOT_FOUND",
+                  "title": "Not Found",
                   "status": 404,
                   "detail": "Variable with key 99 not found",
                   "instance": "/v2/variables/99"

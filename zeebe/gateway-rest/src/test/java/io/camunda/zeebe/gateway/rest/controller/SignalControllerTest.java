@@ -186,7 +186,7 @@ public class SignalControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
                 "detail":"No signalName provided.",
                 "instance":"/v2/signals/broadcast"

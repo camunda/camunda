@@ -263,7 +263,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         {
           "type": "about:blank",
           "status": 400,
-          "title": "INVALID_ARGUMENT",
+          "title": "Bad Request",
           "detail": "Command 'UNKNOWN' rejected with code 'INVALID_ARGUMENT': expected",
           "instance": "%s"
         }"""

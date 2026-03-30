@@ -297,7 +297,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "NOT_FOUND",
+              "title": "Not Found",
               "status": 404,
               "detail": "tenant not found",
               "instance": "%s"
@@ -728,7 +728,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
                       "detail": "Sort field must not be null.",
                       "instance": "%s"
@@ -747,7 +747,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
                       "detail": "Only one of [from, after, before] is allowed.",
                       "instance": "%s"

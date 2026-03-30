@@ -100,7 +100,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -167,7 +167,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No name provided.",
               "instance": "%s"
@@ -204,7 +204,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -240,7 +240,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No value provided.",
               "instance": "%s"
@@ -332,7 +332,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -364,7 +364,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No value provided.",
               "instance": "%s"
@@ -394,7 +394,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -453,7 +453,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -481,7 +481,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '^[\\\\w\\\\.-]{1,31}$'.",
               "instance": "%s"
@@ -548,7 +548,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No name provided.",
               "instance": "%s"
@@ -585,7 +585,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -622,7 +622,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '^[\\\\w\\\\.-]{1,31}$'.",
               "instance": "%s"
@@ -658,7 +658,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No value provided.",
               "instance": "%s"
@@ -750,7 +750,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"
@@ -786,7 +786,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '^[\\\\w\\\\.-]{1,31}$'.",
               "instance": "%s"
@@ -818,7 +818,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No value provided.",
               "instance": "%s"
@@ -848,7 +848,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '^[\\\\w\\\\.-]{1,31}$'.",
               "instance": "%s"
@@ -876,7 +876,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"

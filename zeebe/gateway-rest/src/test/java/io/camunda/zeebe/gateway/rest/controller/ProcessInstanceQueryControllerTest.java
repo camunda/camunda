@@ -163,7 +163,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       """
       {
         "type":"about:blank",
-        "title":"INVALID_ARGUMENT",
+        "title":"Bad Request",
         "status":400,
         "detail":"The provided tag '1 invalid tag' is not valid. Tags must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. It must not be blank and must be 100 characters or less.",
         "instance":"/v2/process-instances/search"
@@ -319,7 +319,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Variable value must not be null.",
                   "instance": "%s"
@@ -362,7 +362,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "No value provided.",
                   "instance": "%s"
@@ -537,7 +537,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Sort field must not be null.",
                   "instance": "%s"
@@ -577,7 +577,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -618,7 +618,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -757,7 +757,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 404,
-                      "title": "NOT_FOUND",
+                      "title": "Not Found",
                       "detail": "Process Instance with key 100 not found",
                       "instance": "/v2/process-instances/%s"
                     }
@@ -1158,7 +1158,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "The value for page.limit is '-1' but must be a non-negative number.",
                   "instance": "%s"
@@ -1198,7 +1198,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
                   "detail": "The value for page.limit is '-1' but must be a non-negative number. The value for page.from is '-1' but must be a non-negative number.",
                   "instance": "%s"
