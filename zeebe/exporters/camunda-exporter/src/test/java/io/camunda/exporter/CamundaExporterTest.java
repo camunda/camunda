@@ -186,7 +186,7 @@ final class CamundaExporterTest {
   final class FlushTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       configuration.getBulk().setDelay(1);
 
@@ -246,7 +246,7 @@ final class CamundaExporterTest {
     @Test
     void shouldNotFlushBeforeDelayElapses() {
       // given — use a controllable clock so we can verify timing
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       // bulk size = 1 so that export() triggers an immediate size-based flush,
       // which sets lastFlushTimestamp without needing the scheduled task to flush
@@ -275,7 +275,7 @@ final class CamundaExporterTest {
     @Test
     void shouldFlushWhenExportIfDelayElapsed() {
       // given — use a controllable clock so we can verify timing
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       // bulk size = 10 so that a single export does NOT trigger a size-based flush;
       // flushing only happens via the scheduled task
@@ -325,7 +325,7 @@ final class CamundaExporterTest {
       // repeated flush cycles and not degrade to zero.
 
       // given
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       configuration.getBulk().setSize(1); // every export() triggers size-based flush
       configuration.getBulk().setDelay(1); // 1 second
@@ -356,9 +356,8 @@ final class CamundaExporterTest {
       // repeated flush cycles and not degrade to zero.
 
       // given
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
-      configuration.getBulk().setSize(1); // every export() triggers size-based flush
       configuration.getBulk().setDelay(1); // 1 second
       configuration.getIndex().setShouldWaitForImporters(false); // do not wait for importers
       exporter =
