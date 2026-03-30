@@ -401,6 +401,91 @@ describe('<Task />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should show error notification with subtitle on forbidden task completion', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/user-tasks/:userTaskKey',
+        () => {
+          return HttpResponse.json(
+            taskMocks.assignedTask({
+              userTaskKey: MOCK_USER_TASK_KEY,
+              formKey: null,
+            }),
+          );
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v2/authentication/me',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/completion',
+        () => {
+          return HttpResponse.json(
+            {
+              type: 'about:blank',
+              title: 'FORBIDDEN',
+              status: 403,
+              detail:
+                "Unauthorized to perform operation 'UPDATE' on resource 'USER_TASK'",
+              instance: '/v2/user-tasks/0/completion',
+            },
+            {status: 403},
+          );
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
+        () => {
+          return HttpResponse.json(getQueryVariablesResponseMock([]));
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v2/user-tasks/search',
+        async () => {
+          return HttpResponse.json(
+            getQueryTasksResponseMock(tasksMocks.unassignedTasks),
+          );
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v2/process-definitions/:processDefinitionKey/xml',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
+    );
+
+    const {user} = render(<Component />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(
+      await screen.findByRole('button', {name: /complete task/i}),
+    );
+
+    expect(await screen.findByText('Completion failed')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Task could not be completed',
+        subtitle:
+          "You don't have the necessary permissions. Contact your admin to request access.",
+        isDismissable: true,
+      });
+    });
+
+    expect(
+      await screen.findByRole('button', {name: /complete task/i}),
+    ).toBeInTheDocument();
+  });
+
   it('should show a skeleton while loading', async () => {
     nodeMockServer.use(
       http.get(

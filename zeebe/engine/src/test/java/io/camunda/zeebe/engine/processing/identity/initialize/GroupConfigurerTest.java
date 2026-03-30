@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.security.configuration.ConfiguredGroup;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;
@@ -20,6 +22,12 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class GroupConfigurerTest {
+
+  private static final String TEST_GROUP_ID = "foo";
+  private static final String TEST_USERNAME = "user-a";
+  private static final String TEST_ROLE_ID = "test-role";
+  private static final String TEST_MAPPING_RULE_ID = "mapping-rule-a";
+  private static final String TEST_CLIENT_ID = "client-a";
 
   private static final ConfiguredGroup MISSING_GROUP_ID =
       new ConfiguredGroup(
@@ -30,15 +38,16 @@ class GroupConfigurerTest {
           Collections.emptyList(),
           Collections.emptyList(),
           Collections.emptyList());
+
   private static final ConfiguredGroup VALID_GROUP =
       new ConfiguredGroup(
-          "foo",
+          TEST_GROUP_ID,
           "Foo",
           "",
-          Collections.emptyList(),
-          Collections.emptyList(),
-          Collections.emptyList(),
-          Collections.emptyList());
+          List.of(TEST_USERNAME),
+          List.of(TEST_ROLE_ID),
+          List.of(TEST_MAPPING_RULE_ID),
+          List.of(TEST_CLIENT_ID));
 
   private static final GroupValidator VALIDATOR =
       new GroupValidator(new IdentifierValidator(Pattern.compile(".*"), Pattern.compile(".*")));
@@ -61,6 +70,37 @@ class GroupConfigurerTest {
 
     // then:
     assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldCorrectlyMapMemberships() {
+    // when:
+    final List<GroupRecord> members = CONFIGURER.configureMembers(VALID_GROUP);
+    final List<RoleRecord> roleMembers = CONFIGURER.configureRoleMembers(VALID_GROUP);
+
+    // then:
+    assertThat(members).hasSize(3);
+    assertThat(members)
+        .containsExactlyInAnyOrder(
+            new GroupRecord()
+                .setGroupId(TEST_GROUP_ID)
+                .setEntityId(TEST_USERNAME)
+                .setEntityType(EntityType.USER),
+            new GroupRecord()
+                .setGroupId(TEST_GROUP_ID)
+                .setEntityId(TEST_MAPPING_RULE_ID)
+                .setEntityType(EntityType.MAPPING_RULE),
+            new GroupRecord()
+                .setGroupId(TEST_GROUP_ID)
+                .setEntityId(TEST_CLIENT_ID)
+                .setEntityType(EntityType.CLIENT));
+    assertThat(roleMembers).hasSize(1);
+    assertThat(roleMembers)
+        .containsExactlyInAnyOrder(
+            new RoleRecord()
+                .setRoleId(TEST_ROLE_ID)
+                .setEntityId(TEST_GROUP_ID)
+                .setEntityType(EntityType.GROUP));
   }
 
   @Test
