@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentResolutionRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
@@ -101,7 +101,8 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getProcessInstanceStatisticsByDefinition(
-      final GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryStrictContract
+      final
+      GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract
           incidentProcessInstanceStatisticsByDefinitionQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(

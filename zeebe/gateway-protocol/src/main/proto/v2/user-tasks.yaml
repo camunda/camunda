@@ -840,7 +840,7 @@ components:
           description: Sort field criteria.
           type: array
           items:
-             $ref: '#/components/schemas/UserTaskVariableSearchQuerySortRequest'
+            $ref: '#/components/schemas/UserTaskVariableSearchQuerySortRequest'
         filter:
           allOf:
             - $ref: '#/components/schemas/UserTaskVariableFilter'
