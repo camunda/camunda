@@ -418,6 +418,47 @@ flowchart TB
 
 #### 5.2.1 Responsibilities and guarantees
 
+Flowchart (detailed outbox flow):
+
+```mermaid
+flowchart TB
+  subgraph HUB["Hub scope"]
+    direction TB
+    Admin["Admin UI/API"] --> HubSvc["Hub Security Gateway Framework"]
+
+    subgraph HubTx["Hub transaction"]
+      direction TB
+      HubSvc --> WritePolicy["Write PolicyVersion"]
+      HubSvc --> WriteOutbox["Write OutboxEvent</br>status=PENDING"]
+    end
+
+    WritePolicy & WriteOutbox --> Commit["Commit TX"]
+    Commit --> Poll["Outbox Dispatcher polls</br>PENDING events"]
+    Poll --> Decide["Determine payload type"]
+    Decide -->|"first sync / resync"| Snapshot["Build POLICY_SNAPSHOT"]
+    Decide -->|"normal update"| Diff["Build POLICY_DIFF</br>(full changed entities)"]
+    Snapshot & Diff --> Send["POST /identity/policies/apply"]
+    Ack["ACK with last_applied_version"] --> Delivered["Mark OutboxEvent DELIVERED"]
+    Failed["Mark OutboxEvent FAILED</br>attempts++ / next_attempt_at"] --> Poll
+  end
+
+  subgraph OC_SCOPE["OC scope"]
+    direction TB
+    OCApply["Security Gateway Framework applies payload"]
+    VersionCheck{"base_version matches</br>last_applied_version?"}
+    Upsert["Update local projection</br>set last_applied_version"]
+    ResyncReq["Reject + request resync"]
+
+    OCApply --> VersionCheck
+    VersionCheck -->|"yes"| Upsert
+    VersionCheck -->|"no"| ResyncReq
+    Upsert --> Ack
+    ResyncReq --> Failed
+  end
+
+  Send --> OCApply
+```
+
 - Hub Security Gateway Framework
   - Accepts policy changes via UI/API.
   - Writes a `PolicyVersion` and a corresponding `OutboxEvent` (`POLICY_SNAPSHOT` or `POLICY_DIFF`, status = PENDING) in the same transaction.
@@ -449,6 +490,8 @@ Conceptually, Hub maintains:
   - One row per policy delivery attempt to a specific cluster.
   - `event_type` distinguishes `POLICY_SNAPSHOT` (initial / re-sync) from `POLICY_DIFF` (incremental).
   - Drives asynchronous delivery and retry without coupling Hub writes to OC availability.
+
+The full policy data model is described in [5.3 Unified policy model](#53-unified-policy-model), but the relevant tables for the outbox pattern are:
 
 ```text
 PolicyVersion
@@ -483,7 +526,88 @@ Those questions can maybe also be addressed later in the project:
 - Who will initiate the communication between Hub and OCs? Does OC know about Hub?
 - Should Hub or OC keep track of the last policy version applied?
 
-### 5.3 Security Gateway Framework – hexagonal architecture
+### 5.3 Unified policy model
+
+The unified identity architecture is built around a single **policy model** that is shared between Hub Identity & Policy and OC Identity. Hub is the **source of truth** for this model per cluster; each OC hosts a **cluster-local projection** of the same concepts for enforcement.
+
+At a high level, the shared policy model consists of:
+
+- **Tenant**
+  - Logical partition for data and access in a cluster (for example `default`, `retail`, `wholesale`, `customer-x`).
+  - Used to scope where a principal is allowed to read or write data.
+  - Tenant configuration (names, descriptions, flags) is authored in Hub and projected to each OC.
+
+- **Group / Role**
+  - **Group**
+    - Collection of principals (users, mapping rules, clients) that should share the same permissions.
+  - **Role**
+    - Reusable set of permissions that can be attached to groups, users, or clients.
+    - Roles are used both on the management plane (Hub apps) and execution plane (cluster APIs and UIs).
+
+- **MappingRule**
+  - Declarative rule that maps **IdP claims** to Camunda concepts:
+    - `claimName` (for example `groups`, `org`, `department`).
+    - `operator` (for example `EQUALS`, `CONTAINS`).
+    - `claimValue` (for example `camunda-platform-admin`, `Retail`).
+  - Targets one or more **roles**, **groups**, and **tenants**:
+    - When an incoming token’s claims match, the principal automatically receives those roles/groups/tenants.
+  - This is the main mechanism that turns IdP attributes into platform-level permissions.
+
+- **Principal**
+  - Represents an actor that can authenticate and be authorized:
+  - **User principal**
+    - Identified by an IdP user claim (for example `preferred_username`, `email`).
+    - May have direct role/group assignments in addition to mapping-rule derived ones.
+  - **Machine principal**
+    - Identified by client credentials (for example `client_id`).
+    - Used by workers, automation, and integrations (job workers, CI/CD, connectors, etc.).
+
+- **Authorization**
+  - Fine-grained permission record that ties **owners** to **resources** and **actions**:
+  - Conceptually:
+    - `(ownerType, ownerId, resourceType, resourceId, permissions[])`
+  - Examples:
+    - Owner: `GROUP:RetailDevelopers`
+      ResourceType: `PROCESS_DEFINITION`
+      ResourceId: `*`
+      Permissions: `[READ_PROCESS_DEFINITION, READ_PROCESS_INSTANCE, CREATE_PROCESS_INSTANCE]`
+    - Owner: `ROLE:ClusterAdmin`
+      ResourceType: `CLUSTER_API`
+      ResourceId: `*`
+      Permissions: `[MANAGE_CLUSTER_SETTINGS, MANAGE_USERS]`
+  - The same structure is used on:
+    - **OC side** for engine and cluster resources (definitions, instances, tasks, cluster APIs).
+    - **Hub side** for management resources (orgs, workspaces, projects, assets, clusters).
+
+- **PolicyVersion**
+  - Tracks the **desired policy state** per cluster in Hub.
+  - Each `PolicyVersion` ties together:
+    - The set of tenants, groups, roles, mapping rules, principals, and authorizations intended for a specific cluster.
+  - OC Identity applies `PolicyVersion` snapshots (and later diffs) received from Hub and stores an equivalent representation in its local policy store.
+  - `PolicyVersion` is also what the outbox pattern (section 5.2) uses as payload when propagating changes Hub → OC.
+
+### 5.3.1 Hub vs. OC responsibilities
+
+Both Hub and OC use exactly the same policy model, but with different responsibilities.
+
+- **Hub Identity & Policy**
+  - Acts as **policy source of truth** for all clusters.
+  - Authoring location for tenants, roles, groups, mapping rules, and authorizations.
+  - Stores `PolicyVersion` records per cluster and drives propagation via Outbox/`OutboxEvent`.
+
+- **OC Identity**
+  - Hosts a **cluster-local projection** of the same entities.
+  - Enforces authorizations for:
+    - Web UIs on the cluster (Operate, Tasklist, Admin).
+    - Cluster runtime APIs (gRPC/REST) for workers and integrations.
+  - Does not invent new policy; it only applies and enforces what Hub (or, in standalone mode, local OC configuration) defines.
+
+This unified model allows:
+
+- The same concepts (tenants, roles, groups, mapping rules, authorizations, principals) to be used consistently on both **management** and **execution** planes.
+- Identity-as-code and migrations to operate on one canonical representation (`PolicyVersion`) per cluster, with clear ownership (Hub) and enforcement (OC).
+
+### 5.4 Security Gateway Framework – hexagonal architecture
 
 The **Security Gateway Framework** is a **hexagonal (ports and adapters)** library. Its core domain never imports a concrete database class, OIDC library, or Zeebe API — all external dependencies are hidden behind port interfaces that the host application (Hub, OC) wires in.
 
@@ -492,7 +616,7 @@ The **Security Gateway Framework** is a **hexagonal (ports and adapters)** libra
 - **Inbound (driving) side:** A Spring MVC controller or security filter lives in the host application. It imports and calls an inbound port interface (e.g. `PolicyService`) from the library. The domain service inside the library implements that interface.
 - **Outbound (driven) side:** The domain service calls an outbound port interface (e.g. `PolicyRepository`) defined in the library. The host application (or a default adapter module) provides the concrete implementation.
 
-***WIP***: The following diagram is a work-in-progress and more an example than the actual architecture.
+***WIP***: The following diagram is a work-in-progress and more an example than the actual library architecture.
 
 ```mermaid
 graph LR
@@ -554,33 +678,11 @@ graph LR
 
 This design guarantees that **swapping a database, replacing the IdP client, or providing a custom command backend requires only a new adapter class** — no changes to the domain core.
 
-### 5.4 Single shared Admin UI
+### 5.5 Single shared Admin UI
 
-The target frontend approach is a single Admin UI package reused by Hub and OC, with behavior controlled by configuration (e.g. Hub-managed vs standalone OC) and feature toggles.
+TODO
 
-Read-write vs read-only modes:
-
-- Hub (read-write): The UI exposes full policy authoring (tenants, mapping rules, fine‑grained permissions) for all clusters. All policy changes originate here and propagate downward via the outbox pattern.
-- OC with Hub present (read-only / diagnostic): The same UI runs in read-only mode, showing the cluster-local projection of Hub policy. Users can inspect current policy, health, and last-applied version, but cannot make changes (policy is authored in Hub).
-- Standalone OC (read-write): The UI enables direct local policy management; Hub integration and outbox features are disabled by configuration. OC becomes the full policy editor.
-
-```mermaid
-graph TB
-  subgraph SharedUI["Shared Admin UI (npm package)"]
-    direction TB
-    AuthProvider["AuthProvider</br>(context + session)"]
-    TenantSelector["Tenant selector"]
-    RoleMgmt["Roles & groups</br>screens"]
-    MappingMgmt["Mapping rules</br>screens"]
-    PolicyView["Policy / diff</br>views"]
-    FeatureFlags["Feature flag awareness</br>(Hub vs OC,</br>standalone vs Hub-managed)"]
-  end
-
-  HubShell["Hub UI Shell"] --> SharedUI
-  OCShell["OC Admin UI Shell"] --> SharedUI
-```
-
-### 5.5 Multi-engine support
+### 5.6 Multi-engine support
 
 The unified identity plane supports multiple engines per Orchestration Cluster in both deployment modes:
 
@@ -616,7 +718,7 @@ flowchart TB
 - Engines consume the cluster-level projection; they do not define their own identity models and cannot override OC policy.
 - In OC-only mode, the same projection model applies with local flow: OC → Engines.
 
-### 5.6 Multi-tenancy support
+### 5.7 Multi-tenancy support
 
 Multi-tenancy is a first-class concern in the policy model. Tenant configuration is authored once in Hub and propagated top-down to OC and then to engines. Each layer maintains tenant-aware roles, mapping rules, and authorizations.
 
@@ -653,170 +755,11 @@ On each request, the Security Gateway Framework:
 
 ## 6. Runtime view (selected scenarios)
 
-### 6.1 User login (Hub / OC)
-
-High-level behavior (independent of the specific IdP):
-
-1. Browser is redirected to the Enterprise IdP (or Auth0 broker in current SaaS) to authenticate.
-2. The Security Gateway Framework validates the token/assertion, derives the principal and IdP claims.
-3. Claims are matched against mapping rules to determine roles, groups, and tenant assignments.
-4. A session is established; subsequent requests carry an access token with tenant and role context.
-
-```mermaid
-sequenceDiagram
-  actor User
-  participant Browser
-  participant App as Hub/OC App
-  participant IdLib as Security Gateway Framework
-  participant IdP as Enterprise IdP / Auth0
-
-  User ->> Browser: Open Hub/Operate URL
-  Browser ->> App: GET /
-  App ->> IdLib: Start Authentication flow
-  IdLib ->> IdP: Redirect / authorize request
-  IdP ->> User: Login / SSO
-  User ->> IdP: Credentials / SSO
-  IdP ->> IdLib: Auth code / token
-  IdLib ->> IdLib: Validate token + load IdP metadata
-  IdLib ->> IdLib: Apply mapping rules → roles, tenants
-  IdLib ->> App: Authenticated principal + permissions
-  App ->> Browser: Authenticated UI
-```
-
-### 6.2 Hub → cluster policy replication (outbox pattern)
-
-```mermaid
-sequenceDiagram
-  participant Admin as Admin (Hub UI / API)
-  participant Hub as Hub Security Gateway Framework
-  participant HubDB as Hub DB (with Outbox)
-  participant Relay as Outbox Dispatcher
-  participant OCId as OC Security Gateway Framework
-  participant OCDB as OC Identity DB
-
-  Admin ->> Hub: Change policy (roles, mappings, tenants)
-  Hub ->> HubDB: Store PolicyVersion + OutboxEvent(PENDING)
-  Note over HubDB: Business change and outbox row in one TX
-
-  Relay ->> HubDB: Fetch PENDING OutboxEvents
-  HubDB -->> Relay: Events + PolicyVersion ids
-  Relay ->> Hub: Load PolicyVersion snapshot
-  Relay ->> OCId: POST /internal/identity/policies/apply
-
-  OCId ->> OCDB: Upsert tenants, roles, mappings, principals, authorizations
-  OCId ->> Relay: ACK policy applied
-  Relay ->> HubDB: Mark OutboxEvent DELIVERED
-```
-
-This follows the outbox pattern described in the unified identity target architecture, including idempotence per policyVersionId and explicit status transitions.
-
-In the library, this scenario is expressed via the Outbox SPI and Policy Apply inbound adapter.
-
-### 6.3 Runtime access: cluster APIs (multi-tenant, multi-engine)
-
-At runtime, both Web UIs and API clients are authenticated by the Enterprise IdP and authorized by OC Identity. The same model applies whether the call is targeting a single-engine cluster or a cluster with multiple engines; the tenant and permission context are evaluated once per request, then enforced consistently in all engines involved.
-
-```mermaid
-sequenceDiagram
-  participant Client as API Client / UI
-  participant IdP as Enterprise IdP
-  participant OCAPI as Cluster Runtime API
-  participant OCId as OC Security Gateway Framework
-  participant OCDB as OC Identity DB
-
-  Client ->> IdP: Get access token
-  IdP -->> Client: Access token (tenant, roles, claims)
-
-  Client ->> OCAPI: REST/gRPC call + Bearer token
-  OCAPI ->> OCId: Validate token + authorize(resource, action, tenant)
-  OCId ->> OCDB: Resolve principal + permissions (cacheable)
-  OCDB -->> OCId: Policy data
-  OCId -->> OCAPI: ALLOW / DENY
-  OCAPI -->> Client: Success / 403
-```
-
----
+TODO
 
 ## 7. Deployment view
 
-### 7.1 SaaS: Hub + OC with Security Gateway Framework
-
-```mermaid
-flowchart TB
-  subgraph SaaS["Camunda SaaS"]
-    HubSaaS["Hub</br>(+ Security Gateway Framework)"]
-    OCSaaS["Orchestration Cluster</br>(+ Security Gateway Framework,</br>1..N engines)"]
-  end
-
-  CustIdP["Customer Enterprise IdP</br>(OIDC/SAML)"]
-  Auth0SaaS["Auth0 Broker</br>(Camunda-managed, internal)"]
-
-  HubSaaS --> OCSaaS
-
-  HubSaaS & OCSaaS -->|"Authentication/Authorization via</br>Security Gateway Framework"| CustIdP
-
-  HubSaaS -.- Auth0SaaS
-```
-
-Note: Auth0 is an internal IdP/broker used in the current SaaS implementation. It is an implementation detail, not part of the long-term reference model.
-
-Highlights:
-
-- Hub is the source of truth for all policy. Configuration is authored in Hub and propagated to each OC via the outbox pattern.
-- Hub and OC both embed the same Security Gateway Framework.
-- Enterprise IdP is the long-term external SoT for identities; Auth0 is an internal broker in current SaaS.
-- Policy propagates top-down: Hub → OCs → Engines.
-
-### 7.2 Self-managed: Hub + OC with Security Gateway Framework
-
-```mermaid
-flowchart TB
-  subgraph SM["Customer cluster"]
-    HubSM["Hub</br>(+ Security Gateway Framework)"]
-    subgraph OCSM["Orchestration Cluster</br>(1..N engines)"]
-      OCIdSM["OC Security Gateway Framework</br>(instance)"]
-    end
-  end
-
-  CustIdPSM["Customer Enterprise IdP</br>(OIDC/SAML)"]
-
-  HubSM --> OCSM
-  HubSM & OCIdSM -->|"Authentication/Authorization via</br>Security Gateway Framework"| CustIdPSM
-```
-
-- Same logical model as SaaS: Hub is source of truth, configuration propagates top-down (Hub → OCs → Engines).
-- All deployment is fully under customer operation.
-
-### 7.3 Self-managed: standalone OC (no Hub)
-
-Standalone Orchestration Cluster remains a first-class deployment option, especially for:
-
-- Local development (e.g. C8Run).
-- Simple or embedded production scenarios where Hub is not yet in use.
-
-In this mode, OC acts as top-level identity and policy authority for its engines; Hub-specific features (cross-cluster policy orchestration) are disabled.
-
-```mermaid
-flowchart TB
-  subgraph StandaloneOC["Standalone Orchestration Cluster"]
-    OCOnly["OC</br>(+ Security Gateway Framework)"]
-    Engines["1..N Engines"]
-  end
-
-  CustIdPOC["Customer Enterprise IdP</br>(OIDC/SAML)"]
-
-  OCOnly --> Engines
-  OCOnly -->|"Authentication/Authorization via</br>Security Gateway Framework"| CustIdPOC
-```
-
-Key points:
-
-- OC is the local source of truth for all configuration; no Hub involvement.
-- Configuration propagates locally: OC → Engines. Admin UI is in full read-write mode.
-- Same Security Gateway Framework, but configured in internally managed mode (no Hub outbox, no cross-cluster replication).
-- Policy is edited and stored locally in OC’s persistence (via SPIs).
-
----
+TODO
 
 ## 8. Crosscutting concepts (target)
 
