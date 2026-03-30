@@ -36,7 +36,7 @@ class ProcessesMcpServerStaticFallbackTest extends ToolsTest {
   }
 
   @Test
-  void shouldListStaticallyConfiguredToolsWhenNoRepositoryIsAvailable() {
+  void shouldListStaticallyConfiguredTools() {
     // when
     final var result = mcpClient.listTools();
 
@@ -45,7 +45,7 @@ class ProcessesMcpServerStaticFallbackTest extends ToolsTest {
   }
 
   @Test
-  void shouldCallStaticallyConfiguredToolsWhenNoRepositoryIsAvailable() {
+  void shouldCallStaticallyConfiguredTools() {
     // when
     final CallToolResult result =
         mcpClient.callTool(CallToolRequest.builder().name("staticProcess").build());
