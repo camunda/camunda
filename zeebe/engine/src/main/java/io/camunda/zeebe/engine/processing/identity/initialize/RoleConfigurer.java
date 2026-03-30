@@ -39,15 +39,14 @@ public class RoleConfigurer implements EntityInitializationConfigurer<Configured
     return Either.right(mapToRecord(role));
   }
 
-  public List<RoleRecord> configureMembers(final ConfiguredRole role) {
+  public Stream<RoleRecord> configureMembers(final ConfiguredRole role) {
     final String roleId = role.roleId();
     return Stream.of(
             mapToTenantMembers(roleId, role.users(), EntityType.USER),
             mapToTenantMembers(roleId, role.groups(), EntityType.GROUP),
             mapToTenantMembers(roleId, role.mappingRules(), EntityType.MAPPING_RULE),
             mapToTenantMembers(roleId, role.clients(), EntityType.CLIENT))
-        .flatMap(s -> s)
-        .toList();
+        .flatMap(s -> s);
   }
 
   private static Stream<RoleRecord> mapToTenantMembers(

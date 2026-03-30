@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 
 class GroupConfigurerTest {
 
-  public static final String TEST_GROUP_ID = "foo";
-  public static final String TEST_USERNAME = "user-a";
-  public static final String TEST_ROLE_ID = "test-role";
-  public static final String TEST_MAPPING_RULE_ID = "mapping-rule-a";
-  public static final String TEST_CLIENT_ID = "client-a";
+  private static final String TEST_GROUP_ID = "foo";
+  private static final String TEST_USERNAME = "user-a";
+  private static final String TEST_ROLE_ID = "test-role";
+  private static final String TEST_MAPPING_RULE_ID = "mapping-rule-a";
+  private static final String TEST_CLIENT_ID = "client-a";
 
   private static final ConfiguredGroup MISSING_GROUP_ID =
       new ConfiguredGroup(
