@@ -37,9 +37,7 @@ import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.PropertyBasedJobWorkerValueCustomizer;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -50,11 +48,7 @@ import org.springframework.context.annotation.Import;
  * available in Spring Boot 3.x.
  */
 @ConditionalOnCamundaClientEnabled
-@Import({
-  AnnotationProcessorConfiguration.class,
-  JsonMapperConfiguration.class,
-  CamundaBeanPostProcessorConfiguration.class
-})
+@Import({AnnotationProcessorConfiguration.class, JsonMapperConfiguration.class})
 @EnableConfigurationProperties({CamundaClientProperties.class})
 public class CamundaClientAllAutoConfiguration {
 
@@ -82,9 +76,8 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public ParameterResolverStrategy parameterResolverStrategy(
-      final JsonMapper jsonMapper, @Autowired(required = false) final ZeebeClient zeebeClient) {
-    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient);
+  public ParameterResolverStrategy parameterResolverStrategy(final JsonMapper jsonMapper) {
+    return new DefaultParameterResolverStrategy(jsonMapper);
   }
 
   @Bean

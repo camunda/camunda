@@ -21,7 +21,6 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
@@ -32,12 +31,6 @@ public class CamundaProcessTestDefaultConfiguration {
   @ConditionalOnMissingBean
   public JsonMapper camundaJsonMapper(final ObjectMapper objectMapper) {
     return new CamundaObjectMapper(objectMapper);
-  }
-
-  @Bean(name = "zeebeJsonMapper")
-  @ConditionalOnMissingBean
-  public io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper(final ObjectMapper objectMapper) {
-    return new ZeebeObjectMapper(objectMapper);
   }
 
   @Bean

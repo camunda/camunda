@@ -21,8 +21,6 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
-import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Proxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -40,19 +38,6 @@ public class CamundaProcessTestProxyConfiguration {
     return (CamundaClient)
         Proxy.newProxyInstance(
             getClass().getClassLoader(), new Class[] {CamundaClient.class}, camundaClientProxy);
-  }
-
-  @Bean
-  public ZeebeClientProxy zeebeClientProxy() {
-    return new ZeebeClientProxy();
-  }
-
-  @Bean(destroyMethod = "")
-  @Primary
-  public ZeebeClient proxiedZeebeClient(final ZeebeClientProxy zeebeClientProxy) {
-    return (ZeebeClient)
-        Proxy.newProxyInstance(
-            getClass().getClassLoader(), new Class[] {ZeebeClient.class}, zeebeClientProxy);
   }
 
   @Bean

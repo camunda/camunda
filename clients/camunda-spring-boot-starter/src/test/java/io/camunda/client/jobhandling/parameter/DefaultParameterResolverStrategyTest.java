@@ -29,32 +29,10 @@ import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class DefaultParameterResolverStrategyTest {
-
-  @Test
-  void shouldResolveLegacyParameter() {
-    final ZeebeClient zeebeClient = mock(ZeebeClient.class);
-    final CamundaClient camundaClient = mock(CamundaClient.class);
-    final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), zeebeClient);
-
-    final List<ParameterInfo> parameters = parameterInfos(this, "legacyMethod");
-    assertThat(parameters).hasSize(2);
-    final ParameterResolver jobClientResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
-    assertThat(jobClientResolver).isInstanceOf(CompatJobClientParameterResolver.class);
-    final ParameterResolver activatedJobResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(1), camundaClient));
-    assertThat(activatedJobResolver).isInstanceOf(CompatActivatedJobParameterResolver.class);
-    final Object resolvedJobClient = jobClientResolver.resolve(null, null);
-    assertThat(resolvedJobClient).isEqualTo(zeebeClient);
-  }
 
   @Test
   void shouldResolveCurrentParameter() {
@@ -165,5 +143,5 @@ public class DefaultParameterResolverStrategyTest {
 
   public void processInstanceKeyString(@ProcessInstanceKey final String processInstanceKey) {}
 
-  public void userTaskProperties(UserTaskProperties userTaskProperties) {}
+  public void userTaskProperties(final UserTaskProperties userTaskProperties) {}
 }

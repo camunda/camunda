@@ -55,8 +55,6 @@ import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
@@ -115,7 +113,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final CamundaManagementClient camundaManagementClient;
 
   private final JsonMapper jsonMapper;
-  private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
@@ -125,7 +122,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaManagementClient camundaManagementClient,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JsonMapper jsonMapper,
-      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper,
       final ConditionalBehaviorEngine conditionalBehaviorEngine) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
@@ -136,7 +132,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.camundaManagementClient = camundaManagementClient;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
-    this.zeebeJsonMapper = zeebeJsonMapper;
     this.conditionalBehaviorEngine = conditionalBehaviorEngine;
   }
 
@@ -160,32 +155,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     modifier.accept(builder);
 
     final CamundaClient client = builder.build();
-    clientCreationCallback.accept(client);
-
-    return client;
-  }
-
-  @Override
-  public ZeebeClient createZeebeClient() {
-    return createZeebeClient(
-        builder -> {
-          if (zeebeJsonMapper != null) {
-            builder.withJsonMapper(zeebeJsonMapper);
-          }
-        });
-  }
-
-  @Override
-  public ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier) {
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
-            .usePlaintext()
-            .grpcAddress(getCamundaGrpcAddress())
-            .restAddress(getCamundaRestAddress());
-
-    modifier.accept(builder);
-
-    final ZeebeClient client = builder.build();
     clientCreationCallback.accept(client);
 
     return client;

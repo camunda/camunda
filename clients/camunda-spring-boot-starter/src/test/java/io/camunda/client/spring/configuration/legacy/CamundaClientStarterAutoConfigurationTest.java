@@ -26,7 +26,6 @@ import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
 import io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration;
 import io.camunda.client.spring.configuration.JsonMapperConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -66,7 +65,6 @@ import org.springframework.test.util.ReflectionTestUtils;
     })
 public class CamundaClientStarterAutoConfigurationTest {
   @MockitoBean CamundaClient camundaClient;
-  @MockitoBean ZeebeClient zeebeClient;
   @Autowired private JsonMapper jsonMapper;
   @Autowired private CamundaClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;

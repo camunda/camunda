@@ -53,7 +53,7 @@ import java.util.function.Supplier;
  *   void shouldWork() {
  *     // given
  *     final ProcessInstanceEvent processInstance =
- *         zeebeClient
+ *         camundaClient
  *             .newCreateInstanceCommand()
  *             .bpmnProcessId("process")
  *             .latestVersion()
@@ -146,6 +146,16 @@ public class CamundaAssert {
   }
 
   /**
+   * Configures the await behavior for the assertions.
+   *
+   * @param awaitBehavior the behavior to use for waiting
+   * @see #DEFAULT_AWAIT_BEHAVIOR
+   */
+  public static void setAwaitBehavior(final CamundaAssertAwaitBehavior awaitBehavior) {
+    CamundaAssert.awaitBehavior = awaitBehavior;
+  }
+
+  /**
    * Executes the given invocation with a thread-local override for the await behavior. Assertions
    * created on this thread during the invocation will use the override instead of the global await
    * behavior. The override is automatically cleared when the invocation completes.
@@ -184,34 +194,12 @@ public class CamundaAssert {
   }
 
   /**
-   * Configures the await behavior for the assertions.
-   *
-   * @param awaitBehavior the behavior to use for waiting
-   * @see #DEFAULT_AWAIT_BEHAVIOR
-   */
-  public static void setAwaitBehavior(final CamundaAssertAwaitBehavior awaitBehavior) {
-    CamundaAssert.awaitBehavior = awaitBehavior;
-  }
-
-  /**
    * Configures the JSON mapper for the assertions.
    *
    * @param jsonMapper the JSON mapper to use
    * @see #DEFAULT_JSON_MAPPER
    */
   public static void setJsonMapper(final JsonMapper jsonMapper) {
-    CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
-  }
-
-  /**
-   * Configures the JSON mapper for the assertions.
-   *
-   * @param jsonMapper the JSON mapper to use
-   * @see #DEFAULT_JSON_MAPPER
-   * @deprecated for removal, use {@link #setJsonMapper(JsonMapper)} instead
-   */
-  @Deprecated
-  public static void setJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
     CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
   }
 
@@ -259,15 +247,6 @@ public class CamundaAssert {
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceEvent)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThatProcessInstance(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
-    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
-  }
-
-  /**
    * To verify a process instance.
    *
    * @param processInstanceEvent the event of the process instance to verify
@@ -278,15 +257,6 @@ public class CamundaAssert {
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceEvent)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThat(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
-    return assertThatProcessInstance(processInstanceEvent);
-  }
-
-  /**
    * To verify a process instance.
    *
    * @param processInstanceResult the result of the process instance to verify
@@ -298,15 +268,6 @@ public class CamundaAssert {
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceResult)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThatProcessInstance(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
-    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
-  }
-
-  /**
    * To verify a process instance.
    *
    * @param processInstanceResult the result of the process instance to verify
@@ -314,15 +275,6 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceResult processInstanceResult) {
-    return assertThatProcessInstance(processInstanceResult);
-  }
-
-  /**
-   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceEvent)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThat(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
     return assertThatProcessInstance(processInstanceResult);
   }
 

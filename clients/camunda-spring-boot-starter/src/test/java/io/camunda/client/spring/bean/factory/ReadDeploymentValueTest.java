@@ -23,7 +23,6 @@ import io.camunda.client.annotation.Deployment;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.SourceAware.Empty;
 import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
-import io.camunda.client.annotation.value.SourceAware.FromLegacy;
 import io.camunda.client.bean.BeanInfo;
 import java.util.Arrays;
 import java.util.Collections;
@@ -88,41 +87,6 @@ public class ReadDeploymentValueTest {
   }
 
   @Test
-  public void shouldReadSingleClassPathResourceTestLegacy() {
-    // given
-    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResourceLegacy());
-    final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(
-            Collections.singletonList("classpath*:/1.bpmn"), null, new FromLegacy<>(false), null);
-
-    // when
-    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
-
-    // then
-    assertThat(valueForClass).hasSize(1);
-    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
-  }
-
-  @Test
-  public void shouldReadMultipleClassPathResourcesTestLegacy() {
-    // given
-    final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResourceLegacy());
-    final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(
-            Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"),
-            null,
-            new FromLegacy<>(false),
-            null);
-
-    // when
-    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
-
-    // then
-    assertThat(valueForClass).hasSize(1);
-    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
-  }
-
-  @Test
   void shouldReadOwnJarOnly() {
     final BeanInfo classInfo = beanInfo(new WithOwnJarOnly());
     final DeploymentValue expectedDeploymentValue =
@@ -144,13 +108,6 @@ public class ReadDeploymentValueTest {
 
   @Deployment(resources = {"classpath*:/1.bpmn", "classpath*:/2.bpmn"})
   private static final class WithMultipleClassPathResource {}
-
-  @io.camunda.zeebe.spring.client.annotation.Deployment(resources = "classpath*:/1.bpmn")
-  private static final class WithSingleClassPathResourceLegacy {}
-
-  @io.camunda.zeebe.spring.client.annotation.Deployment(
-      resources = {"classpath*:/1.bpmn", "classpath*:/2.bpmn"})
-  private static final class WithMultipleClassPathResourceLegacy {}
 
   private static final class WithoutAnnotation {}
 

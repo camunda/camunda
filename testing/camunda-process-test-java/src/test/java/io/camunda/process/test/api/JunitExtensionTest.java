@@ -37,8 +37,6 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.process.test.utils.FakeChatModelAdapterProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
@@ -87,7 +85,6 @@ public class JunitExtensionTest {
 
   // to be injected
   private CamundaClient client;
-  private ZeebeClient zeebeClient;
   private CamundaProcessTestContext camundaProcessTestContext;
   private TestCaseRunner testCaseRunner;
 
@@ -111,7 +108,7 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldInjectCamundaClientAndZeebeClient() throws Exception {
+  void shouldInjectCamundaClient() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
@@ -122,14 +119,10 @@ public class JunitExtensionTest {
 
     // then
     assertThat(client).isNotNull();
-    assertThat(zeebeClient).isNotNull();
 
     final CamundaClientConfiguration configuration = client.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-    final ZeebeClientConfiguration zeebeClientConfiguration = zeebeClient.getConfiguration();
-    assertThat(zeebeClientConfiguration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(zeebeClientConfiguration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
   }
 
   @Test
@@ -188,25 +181,6 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldCreateZeebeClientFromContext() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // then
-    final ZeebeClient newZeebeClient = camundaProcessTestContext.createZeebeClient();
-    assertThat(newZeebeClient).isNotNull();
-
-    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
-    assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-  }
-
-  @Test
   void shouldCreateCustomCamundaClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
@@ -222,28 +196,6 @@ public class JunitExtensionTest {
     assertThat(newCamundaClient).isNotNull();
 
     final CamundaClientConfiguration configuration = newCamundaClient.getConfiguration();
-    assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-    assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");
-  }
-
-  @Test
-  void shouldCreateCustomZeebeClientFromContext() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // then
-    final ZeebeClient newZeebeClient =
-        camundaProcessTestContext.createZeebeClient(
-            builder -> builder.defaultJobWorkerName("test"));
-    assertThat(newZeebeClient).isNotNull();
-
-    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");
