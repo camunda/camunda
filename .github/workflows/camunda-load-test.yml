@@ -358,6 +358,16 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
+      - name: Prepare Optimize distball for Docker build
+        if: ${{ inputs.enable-optimize }}
+        run: |
+          image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+          src=$(ls optimize-distro/target/camunda-optimize-*-production.tar.gz 2>/dev/null | head -1)
+          if [[ -z "$src" ]]; then
+            echo "::error::No optimize distball found"
+            exit 1
+          fi
+          ln -sf "$(basename "$src")" "optimize-distro/target/camunda-optimize-${image_tag}-production.tar.gz"
       - uses: ./.github/actions/build-platform-docker
         name: Build Optimize Docker Image
         if: ${{ inputs.enable-optimize }}
@@ -366,7 +376,7 @@ jobs:
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          distball: 'optimize-distro/target/camunda-optimize-${{ needs.calculate-image-tag.outputs.image-tag }}-production.tar.gz'
           dockerfile: 'optimize.Dockerfile'
       - name: Observe build status
         if: always()
