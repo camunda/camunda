@@ -165,6 +165,78 @@ class FlowNodeInstanceMetadataBuilderTest {
   }
 
   @Test
+  void buildUserTaskMetadataWithEmbeddedFormKey() {
+    final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.USER_TASK);
+    fillStandardValues(flowNodeInstance);
+    final var userTask =
+        Optional.of(
+            new TaskEntity().setKey(42L).setFormKey("camunda-forms:bpmn:userTaskForm_0pjtr0l"));
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
+        .thenReturn(
+            Optional.of(
+                new MessageSubscriptionEntity()
+                    .setMetadata(
+                        new MessageSubscriptionMetadataEntity()
+                            .setMessageName("Last order")
+                            .setCorrelationKey("23-05"))));
+    when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
+        .thenReturn(userTask);
+    when(userTaskReader.getUserTaskVariables(userTask.get().getKey())).thenReturn(List.of());
+    final var metadata = (UserTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
+    assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.USER_TASK);
+    assertStandardValues(metadata);
+    assertThat(metadata.getFormKey()).isNull();
+  }
+
+  @Test
+  void buildUserTaskMetadataWithNullFormKey() {
+    final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.USER_TASK);
+    fillStandardValues(flowNodeInstance);
+    final var userTask = Optional.of(new TaskEntity().setKey(42L).setFormKey(null));
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
+        .thenReturn(
+            Optional.of(
+                new MessageSubscriptionEntity()
+                    .setMetadata(
+                        new MessageSubscriptionMetadataEntity()
+                            .setMessageName("Last order")
+                            .setCorrelationKey("23-05"))));
+    when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
+        .thenReturn(userTask);
+    when(userTaskReader.getUserTaskVariables(userTask.get().getKey())).thenReturn(List.of());
+    final var metadata = (UserTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
+    assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.USER_TASK);
+    assertStandardValues(metadata);
+    assertThat(metadata.getFormKey()).isNull();
+  }
+
+  @Test
+  void buildUserTaskMetadataWithNonNumericFormKey() {
+    final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.USER_TASK);
+    fillStandardValues(flowNodeInstance);
+    final var userTask =
+        Optional.of(new TaskEntity().setKey(42L).setFormKey("custom-external-form"));
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
+        .thenReturn(
+            Optional.of(
+                new MessageSubscriptionEntity()
+                    .setMetadata(
+                        new MessageSubscriptionMetadataEntity()
+                            .setMessageName("Last order")
+                            .setCorrelationKey("23-05"))));
+    when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
+        .thenReturn(userTask);
+    when(userTaskReader.getUserTaskVariables(userTask.get().getKey())).thenReturn(List.of());
+    final var metadata = (UserTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
+    assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.USER_TASK);
+    assertStandardValues(metadata);
+    assertThat(metadata.getFormKey()).isNull();
+  }
+
+  @Test
   void buildServiceTaskMetadata() {
     final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.SERVICE_TASK);
     fillStandardValues(flowNodeInstance);
