@@ -158,7 +158,7 @@ async function downloadDirectorySpec(version, config) {
 
 /**
  * Downloads the OpenAPI spec for a specific version.
- * @param {string} version - The API version (e.g., '8.8')
+ * @param {string} version - The API version (e.g., '8.9')
  * @param {DownloadConfig} config - The configuration for this version
  * @returns {Promise<void>}
  */
@@ -220,7 +220,7 @@ Available versions: ${availableVersions}
 Examples:
   node download-specs.js                    # Download all versions
   node download-specs.js --version 8.9      # Download only 8.9
-  node download-specs.js -v 8.8 -v 8.9      # Download 8.8 and 8.9
+  node download-specs.js -v 8.9 -v 8.10      # Download 8.9 and 8.10
 `);
 }
 
