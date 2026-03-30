@@ -42,6 +42,7 @@ type Props = {
   value: string;
   placeholder?: string;
   isTruncatedValue?: boolean;
+  shouldFocusOnMount?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
   onBlur?: () => void;
@@ -71,6 +72,7 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     readOnly,
     placeholder = 'Value',
     isTruncatedValue = false,
+    shouldFocusOnMount = false,
     maxLines = MAX_LINES,
     id,
     'data-testid': dataTestId,
@@ -130,12 +132,13 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
             readOnly={isReadOnly}
             height={`${height}px`}
             width="100%"
-            shouldFocusOnMount={false}
+            shouldFocusOnMount={!isReadOnly && shouldFocusOnMount}
             options={{
               formatOnType: false,
               lineNumbers: 'off',
               lineDecorationsWidth: isReadOnly ? 0 : EDITOR_DECORATION_WIDTH,
               renderLineHighlight: 'none',
+              overviewRulerLanes: 0,
               stickyScroll: {enabled: false},
               glyphMargin: false,
               folding: false,

@@ -11,7 +11,7 @@ import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
-import {type editor} from 'monaco-editor';
+import {type editor, KeyCode} from 'monaco-editor';
 
 type Props = {
   value: string;
@@ -63,6 +63,14 @@ const JSONEditor: React.FC<Props> = observer(
             if (shouldFocusOnMount) {
               editor.focus();
             }
+
+            editor.onKeyDown((e) => {
+              if (e.keyCode && e.keyCode === KeyCode.Escape) {
+                if (document.activeElement instanceof HTMLElement) {
+                  document.activeElement?.blur();
+                }
+              }
+            });
 
             onMount({
               showMarkers: () => {

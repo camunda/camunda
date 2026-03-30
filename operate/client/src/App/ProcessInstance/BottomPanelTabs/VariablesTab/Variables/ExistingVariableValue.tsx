@@ -81,6 +81,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 {...input}
                 id={variableEditor.fieldName}
                 data-testid="edit-variable-value"
+                shouldFocusOnMount
                 onBlur={() => {
                   variableEditor.createModification({
                     scopeId: variableEditor.variableScopeKey,

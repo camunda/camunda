@@ -214,15 +214,11 @@ test.describe('modifications', () => {
 
     await page.getByRole('link', {name: /variables/i}).click();
 
-    const firstVariableValueInput = page
-      .getByRole('textbox', {
-        name: /value/i,
-      })
-      .nth(0);
-
-    await firstVariableValueInput.clear();
-    await firstVariableValueInput.fill('"test"');
-    await page.keyboard.press('Tab');
+    const editor = processInstancePage.variablesEditor;
+    await editor.select();
+    await editor.clear();
+    await editor.fill('"test"');
+    await editor.blur();
 
     await page
       .getByRole('button', {
