@@ -7,71 +7,37 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+	clusterVariableResultSchema,
+	clusterVariableScopeEnumSchema,
+	clusterVariableSearchResultSchema,
+	clusterVariableSearchQueryRequestSchema,
+	clusterVariableSearchQueryResultSchema,
+	createClusterVariableRequestSchema,
+} from './gen';
 
-const clusterVariableScopeSchema = z.enum(['GLOBAL', 'TENANT']);
+const clusterVariableScopeSchema = clusterVariableScopeEnumSchema;
 type ClusterVariableScope = z.infer<typeof clusterVariableScopeSchema>;
 
-const clusterVariableSchema = z.object({
-	name: z.string(),
-	scope: clusterVariableScopeSchema,
-	tenantId: z.string().nullable(),
-	value: z.string(),
-});
+const clusterVariableSchema = clusterVariableResultSchema;
 type ClusterVariable = z.infer<typeof clusterVariableSchema>;
 
-const clusterVariableSearchResultSchema = clusterVariableSchema.extend({
-	isTruncated: z.boolean(),
-});
-type ClusterVariableSearchResult = z.infer<typeof clusterVariableSearchResultSchema>;
+const clusterVariableSearchItemSchema = clusterVariableSearchResultSchema;
+type ClusterVariableSearchItem = z.infer<typeof clusterVariableSearchItemSchema>;
 
-const createClusterVariableRequestBodySchema = z.object({
-	name: z.string(),
-	value: z.unknown(),
-});
+const createClusterVariableRequestBodySchema = createClusterVariableRequestSchema;
 type CreateClusterVariableRequestBody = z.infer<typeof createClusterVariableRequestBodySchema>;
 
-const updateClusterVariableRequestBodySchema = z.object({
-	value: z.unknown(),
-});
-type UpdateClusterVariableRequestBody = z.infer<typeof updateClusterVariableRequestBodySchema>;
-
-const queryClusterVariablesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'value', 'tenantId', 'scope'] as const,
-	filter: z.object({
-		name: advancedStringFilterSchema.optional(),
-		value: advancedStringFilterSchema.optional(),
-		scope: getEnumFilterSchema(clusterVariableScopeSchema).optional(),
-		tenantId: advancedStringFilterSchema.optional(),
-		isTruncated: z.boolean().optional(),
-	}),
-});
+const queryClusterVariablesRequestBodySchema = clusterVariableSearchQueryRequestSchema;
 type QueryClusterVariablesRequestBody = z.infer<typeof queryClusterVariablesRequestBodySchema>;
 
-const queryClusterVariablesResponseBodySchema = getQueryResponseBodySchema(clusterVariableSearchResultSchema);
+const queryClusterVariablesResponseBodySchema = clusterVariableSearchQueryResultSchema;
 type QueryClusterVariablesResponseBody = z.infer<typeof queryClusterVariablesResponseBodySchema>;
-
-const searchClusterVariables: Endpoint<{truncateValues?: boolean}> = {
-	method: 'POST',
-	getUrl: ({truncateValues} = {}) =>
-		`/${API_VERSION}/cluster-variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
-};
 
 const createGlobalClusterVariable: Endpoint = {
 	method: 'POST',
 	getUrl: () => `/${API_VERSION}/cluster-variables/global`,
-};
-
-const createTenantClusterVariable: Endpoint<{tenantId: string}> = {
-	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}`,
 };
 
 const getGlobalClusterVariable: Endpoint<{name: string}> = {
@@ -79,24 +45,25 @@ const getGlobalClusterVariable: Endpoint<{name: string}> = {
 	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}`,
 };
 
-const getTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
-	method: 'GET',
-	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}`,
-};
-
-const updateGlobalClusterVariable: Endpoint<{name: string}> = {
-	method: 'PUT',
-	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}`,
-};
-
-const updateTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
-	method: 'PUT',
-	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}`,
-};
-
 const deleteGlobalClusterVariable: Endpoint<{name: string}> = {
 	method: 'DELETE',
 	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}`,
+};
+
+const queryClusterVariables: Endpoint<{truncateValues?: boolean} | undefined> = {
+	method: 'POST',
+	getUrl: (params) =>
+		`/${API_VERSION}/cluster-variables/search${params?.truncateValues !== undefined ? `?truncateValues=${params.truncateValues}` : ''}`,
+};
+
+const createTenantClusterVariable: Endpoint<{tenantId: string}> = {
+	method: 'POST',
+	getUrl: ({tenantId}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}`,
+};
+
+const getTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
+	method: 'GET',
+	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}`,
 };
 
 const deleteTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
@@ -107,27 +74,24 @@ const deleteTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = 
 export {
 	clusterVariableScopeSchema,
 	clusterVariableSchema,
-	clusterVariableSearchResultSchema,
+	clusterVariableSearchItemSchema,
 	createClusterVariableRequestBodySchema,
-	updateClusterVariableRequestBodySchema,
 	queryClusterVariablesRequestBodySchema,
 	queryClusterVariablesResponseBodySchema,
-	searchClusterVariables,
 	createGlobalClusterVariable,
-	createTenantClusterVariable,
 	getGlobalClusterVariable,
-	getTenantClusterVariable,
-	updateGlobalClusterVariable,
-	updateTenantClusterVariable,
 	deleteGlobalClusterVariable,
+	queryClusterVariables,
+	createTenantClusterVariable,
+	getTenantClusterVariable,
 	deleteTenantClusterVariable,
 };
+
 export type {
 	ClusterVariableScope,
 	ClusterVariable,
-	ClusterVariableSearchResult,
+	ClusterVariableSearchItem,
 	CreateClusterVariableRequestBody,
-	UpdateClusterVariableRequestBody,
 	QueryClusterVariablesRequestBody,
 	QueryClusterVariablesResponseBody,
 };

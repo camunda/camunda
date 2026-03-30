@@ -7,15 +7,10 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from '../common';
+import {licenseResponseSchema} from './gen';
 
-const licenseSchema = z.object({
-	validLicense: z.boolean(),
-	licenseType: z.string(),
-	isCommercial: z.boolean(),
-	expiresAt: z.string().nullable(),
-});
-
+const licenseSchema = licenseResponseSchema;
 type License = z.infer<typeof licenseSchema>;
 
 const getLicense: Endpoint = {
