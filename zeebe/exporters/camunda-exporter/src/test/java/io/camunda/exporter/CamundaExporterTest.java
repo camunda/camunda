@@ -142,13 +142,13 @@ final class CamundaExporterTest {
     }
 
     @Override
-    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
-        final String decisionIndexName) {
+    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
       return k -> null;
     }
 
     @Override
-    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
+        final String decisionIndexName) {
       return k -> null;
     }
   }
@@ -401,7 +401,6 @@ final class CamundaExporterTest {
       // given
       final var clock = new MutableClock(1000);
       testContext.setClock(clock);
-      configuration.getBulk().setSize(1); // every export() triggers size-based flush
       configuration.getBulk().setDelay(1); // 1 second
       exporter =
           new CamundaExporter(
