@@ -99,13 +99,19 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
       final var failureMessage =
           String.format(
               "Failed to parse form JSON. '%s': %s",
-              resource.getResourceName(), e.getCause().getMessage());
+              resource.getResourceName(), getFailureExceptionMessage(e));
       return Either.left(new Failure(failureMessage));
     } catch (final IOException e) {
       final var failureMessage =
-          String.format("'%s': %s", resource.getResourceName(), e.getCause().getMessage());
+          String.format("'%s': %s", resource.getResourceName(), getFailureExceptionMessage(e));
       return Either.left(new Failure(failureMessage));
     }
+  }
+
+  private static String getFailureExceptionMessage(final Exception exception) {
+    return Optional.ofNullable(exception.getCause())
+        .map(Throwable::getMessage)
+        .orElse(exception.getMessage());
   }
 
   private Either<Failure, ?> checkForDuplicateFormId(
