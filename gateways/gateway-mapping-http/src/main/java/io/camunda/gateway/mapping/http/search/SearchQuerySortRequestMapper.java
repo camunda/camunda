@@ -973,6 +973,44 @@ public class SearchQuerySortRequestMapper {
     return validationErrors;
   }
 
+  public static List<
+          SearchQuerySortRequest<GlobalExecutionListenerSearchQuerySortRequest.FieldEnum>>
+      fromGlobalExecutionListenerSearchQuerySortRequest(
+          final List<GlobalExecutionListenerSearchQuerySortRequest> requests) {
+    final var requestsWithDefaultSorting = new ArrayList<>(requests != null ? requests : List.of());
+    requestsWithDefaultSorting.addAll(
+        List.of(
+            new GlobalExecutionListenerSearchQuerySortRequest(
+                GlobalExecutionListenerSearchQuerySortRequest.FieldEnum.AFTER_NON_GLOBAL),
+            new GlobalExecutionListenerSearchQuerySortRequest(
+                    GlobalExecutionListenerSearchQuerySortRequest.FieldEnum.PRIORITY)
+                .order(SortOrderEnum.DESC),
+            new GlobalExecutionListenerSearchQuerySortRequest(
+                GlobalExecutionListenerSearchQuerySortRequest.FieldEnum.ID)));
+    return requestsWithDefaultSorting.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .toList();
+  }
+
+  static List<String> applyGlobalExecutionListenerSortField(
+      final GlobalExecutionListenerSearchQuerySortRequest.FieldEnum field,
+      final GlobalListenerSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case ID -> builder.listenerId();
+        case TYPE -> builder.type();
+        case AFTER_NON_GLOBAL -> builder.afterNonGlobal();
+        case PRIORITY -> builder.priority();
+        case SOURCE -> builder.source();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>
       Either<List<String>, T> toSearchQuerySort(
           final List<SearchQuerySortRequest<F>> sorting,

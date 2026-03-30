@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -49,6 +50,61 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   // Set of all possible task listener event types as strings, to be used while validating records
   public static final Set<String> TASK_LISTENER_EVENT_TYPES =
       Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
+  // Set of valid execution listener event types
+  public static final Set<String> EXECUTION_LISTENER_EVENT_TYPES = Set.of("START", "END");
+
+  // Valid element types for global execution listeners
+  public static final Set<String> VALID_ELEMENT_TYPES =
+      Set.of(
+          "process",
+          "subProcess",
+          "eventSubProcess",
+          "serviceTask",
+          "userTask",
+          "sendTask",
+          "receiveTask",
+          "scriptTask",
+          "businessRuleTask",
+          "callActivity",
+          "multiInstanceBody",
+          "exclusiveGateway",
+          "parallelGateway",
+          "inclusiveGateway",
+          "eventBasedGateway",
+          "startEvent",
+          "endEvent",
+          "intermediateCatchEvent",
+          "intermediateThrowEvent",
+          "boundaryEvent");
+
+  // Valid categories for global execution listeners
+  public static final Set<String> VALID_CATEGORIES =
+      Set.of("all", "tasks", "gateways", "events", "containers");
+
+  // Category to element type expansion mapping
+  public static final java.util.Map<String, Set<String>> CATEGORY_ELEMENT_TYPES =
+      java.util.Map.of(
+          "tasks",
+              Set.of(
+                  "serviceTask",
+                  "userTask",
+                  "sendTask",
+                  "receiveTask",
+                  "scriptTask",
+                  "businessRuleTask",
+                  "callActivity"),
+          "gateways",
+              Set.of(
+                  "exclusiveGateway", "parallelGateway", "inclusiveGateway", "eventBasedGateway"),
+          "events",
+              Set.of(
+                  "startEvent",
+                  "endEvent",
+                  "intermediateCatchEvent",
+                  "intermediateThrowEvent",
+                  "boundaryEvent"),
+          "containers",
+              Set.of("subProcess", "eventSubProcess", "callActivity", "multiInstanceBody"));
 
   private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
   private final StringProperty idProp = new StringProperty("id", "");
@@ -65,8 +121,13 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
 
+  private final ArrayProperty<StringValue> elementTypesProp =
+      new ArrayProperty<>("elementTypes", StringValue::new);
+  private final ArrayProperty<StringValue> categoriesProp =
+      new ArrayProperty<>("categories", StringValue::new);
+
   public GlobalListenerRecord() {
-    super(10);
+    super(12);
     declareProperty(globalListenerKeyProp)
         .declareProperty(idProp)
         .declareProperty(typeProp)
@@ -76,7 +137,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
         .declareProperty(listenerTypeProp)
-        .declareProperty(configKeyProp);
+        .declareProperty(configKeyProp)
+        .declareProperty(elementTypesProp)
+        .declareProperty(categoriesProp);
   }
 
   @Override
@@ -186,5 +249,72 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   public GlobalListenerRecord addEventType(final String eventType) {
     eventTypesProp.add().wrap(BufferUtil.wrapString(eventType));
     return this;
+  }
+
+  @Override
+  public List<String> getElementTypes() {
+    return StreamSupport.stream(elementTypesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public GlobalListenerRecord setElementTypes(final List<String> elementTypes) {
+    elementTypesProp.reset();
+    if (elementTypes != null) {
+      elementTypes.forEach(et -> elementTypesProp.add().wrap(BufferUtil.wrapString(et)));
+    }
+    return this;
+  }
+
+  @Override
+  public List<String> getCategories() {
+    return StreamSupport.stream(categoriesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public GlobalListenerRecord setCategories(final List<String> categories) {
+    categoriesProp.reset();
+    if (categories != null) {
+      categories.forEach(cat -> categoriesProp.add().wrap(BufferUtil.wrapString(cat)));
+    }
+    return this;
+  }
+
+  /**
+   * Resolves all element types targeted by this listener, expanding categories to their constituent
+   * element types and combining with explicitly listed element types.
+   */
+  public Set<String> resolveTargetElementTypes() {
+    final var resolved = new java.util.HashSet<String>();
+
+    final var cats = getCategories();
+    if (cats != null) {
+      for (final String category : cats) {
+        if ("all".equals(category)) {
+          resolved.addAll(VALID_ELEMENT_TYPES);
+          return Collections.unmodifiableSet(resolved);
+        }
+        final var expanded = CATEGORY_ELEMENT_TYPES.get(category);
+        if (expanded != null) {
+          resolved.addAll(expanded);
+        }
+      }
+    }
+
+    final var elTypes = getElementTypes();
+    if (elTypes != null) {
+      for (final String et : elTypes) {
+        if ("all".equals(et)) {
+          resolved.addAll(VALID_ELEMENT_TYPES);
+          return Collections.unmodifiableSet(resolved);
+        }
+        resolved.add(et);
+      }
+    }
+
+    return Collections.unmodifiableSet(resolved);
   }
 }

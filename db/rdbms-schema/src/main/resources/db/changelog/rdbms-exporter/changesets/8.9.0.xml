@@ -2180,4 +2180,64 @@
     </createIndex>
   </changeSet>
 
+  <!-- Global Execution Listener element types join table -->
+  <changeSet id="create_global_listener_element_type_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE">
+      <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_ELEMENT_TYPE_GLOBAL_LISTENER"
+          referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID"
+          deleteCascade="true"/>
+      </column>
+      <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_global_listener_element_type_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_GLOBAL_LISTENER_ELEMENT_TYPE_ID"
+          tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE"
+      indexName="${prefix}IDX_GLOBAL_LISTENER_ELEMENT_TYPE_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Global Execution Listener categories join table -->
+  <changeSet id="create_global_listener_category_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}GLOBAL_LISTENER_CATEGORY"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}GLOBAL_LISTENER_CATEGORY">
+      <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_CATEGORY_GLOBAL_LISTENER"
+          referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID"
+          deleteCascade="true"/>
+      </column>
+      <column name="CATEGORY" type="VARCHAR(50)"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_global_listener_category_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_GLOBAL_LISTENER_CATEGORY_ID"
+          tableName="${prefix}GLOBAL_LISTENER_CATEGORY"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_CATEGORY"
+      indexName="${prefix}IDX_GLOBAL_LISTENER_CATEGORY_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>

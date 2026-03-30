@@ -20,6 +20,12 @@ public class GlobalListenersCfg implements ConfigurationEntry {
    */
   private List<GlobalListenerCfg> userTask = new ArrayList<>();
 
+  /**
+   * Configures global execution listeners that will be applied to all flow elements across all
+   * processes and will be triggered during element lifecycle events (start, end).
+   */
+  private List<GlobalListenerCfg> execution = new ArrayList<>();
+
   public List<GlobalListenerCfg> getUserTask() {
     return userTask;
   }
@@ -28,8 +34,19 @@ public class GlobalListenersCfg implements ConfigurationEntry {
     this.userTask = userTask;
   }
 
+  public List<GlobalListenerCfg> getExecution() {
+    return execution;
+  }
+
+  public void setExecution(final List<GlobalListenerCfg> execution) {
+    this.execution = execution;
+  }
+
   public GlobalListenersConfiguration createGlobalListenersConfiguration() {
     return new GlobalListenersConfiguration(
-        userTask.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList());
+        userTask.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList(),
+        execution.stream()
+            .map(GlobalListenerCfg::createGlobalExecutionListenerConfiguration)
+            .toList());
   }
 }

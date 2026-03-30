@@ -923,6 +923,23 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
+  public static Either<ProblemDetail, GlobalListenerQuery> toGlobalExecutionListenerQuery(
+      final GlobalExecutionListenerSearchQueryRequest request) {
+    final GlobalExecutionListenerSearchQueryRequest actualRequest =
+        request == null ? new GlobalExecutionListenerSearchQueryRequest() : request;
+
+    final var page = SearchQueryRequestMapper.toSearchQueryPage(actualRequest.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromGlobalExecutionListenerSearchQuerySortRequest(
+                actualRequest.getSort()),
+            SortOptionBuilders::globalListener,
+            SearchQuerySortRequestMapper::applyGlobalExecutionListenerSortField);
+    final var filter =
+        SearchQueryFilterMapper.toGlobalExecutionListenerFilter(actualRequest.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
+  }
+
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {
     if (requestedPage == null) {

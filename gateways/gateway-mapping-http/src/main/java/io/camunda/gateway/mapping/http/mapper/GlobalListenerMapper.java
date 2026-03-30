@@ -9,17 +9,25 @@ package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
+import io.camunda.gateway.protocol.model.CreateGlobalExecutionListenerRequest;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerBase;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerCategoryEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerElementTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalExecutionListenerResult;
 import io.camunda.gateway.protocol.model.GlobalListenerBase;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerBase;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
+import io.camunda.gateway.protocol.model.UpdateGlobalExecutionListenerRequest;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import org.springframework.http.ProblemDetail;
 
 public class GlobalListenerMapper {
@@ -134,5 +142,113 @@ public class GlobalListenerMapper {
         .afterNonGlobal(record.isAfterNonGlobal())
         .priority(record.getPriority())
         .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
+  }
+
+  //
+  // Execution listener request mapping
+  //
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerCreateRequest(
+      final CreateGlobalExecutionListenerRequest request) {
+    return RequestMapper.getResult(
+        requestValidator.validateCreateExecutionListenerRequest(request),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          fillDataFromGlobalExecutionListenerRequest(record, request);
+          record.setId(request.getId());
+          return record;
+        });
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerGetRequest(
+      final String id) {
+    return RequestMapper.getResult(
+        requestValidator.validateGetRequest(id),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          record.setListenerType(GlobalListenerType.EXECUTION_LISTENER);
+          record.setId(id);
+          return record;
+        });
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerUpdateRequest(
+      final String id, final UpdateGlobalExecutionListenerRequest request) {
+    return RequestMapper.getResult(
+        requestValidator.validateUpdateExecutionListenerRequest(id, request),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          fillDataFromGlobalExecutionListenerRequest(record, request);
+          record.setId(id);
+          return record;
+        });
+  }
+
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalExecutionListenerDeleteRequest(
+      final String id) {
+    return RequestMapper.getResult(
+        requestValidator.validateDeleteRequest(id),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          record.setListenerType(GlobalListenerType.EXECUTION_LISTENER);
+          record.setId(id);
+          return record;
+        });
+  }
+
+  private void fillDataFromGlobalExecutionListenerRequest(
+      final GlobalListenerRecord record, final GlobalExecutionListenerBase request) {
+    fillDataFromGlobalListenerRequest(record, request);
+    if (request.getEventTypes() != null) {
+      record.setEventTypes(
+          request.getEventTypes().stream()
+              .map(GlobalExecutionListenerEventTypeEnum::getValue)
+              .toList());
+    }
+    if (request.getElementTypes() != null) {
+      record.setElementTypes(
+          request.getElementTypes().stream()
+              .map(GlobalExecutionListenerElementTypeEnum::getValue)
+              .toList());
+    }
+    if (request.getCategories() != null) {
+      record.setCategories(
+          request.getCategories().stream()
+              .map(GlobalExecutionListenerCategoryEnum::getValue)
+              .toList());
+    }
+    record.setListenerType(GlobalListenerType.EXECUTION_LISTENER);
+  }
+
+  //
+  // Execution listener response mapping
+  //
+
+  public GlobalExecutionListenerResult toGlobalExecutionListenerResponse(
+      final GlobalListenerRecord record) {
+    final var result =
+        new GlobalExecutionListenerResult()
+            .id(record.getId())
+            .type(record.getType())
+            .retries(record.getRetries())
+            .afterNonGlobal(record.isAfterNonGlobal())
+            .priority(record.getPriority())
+            .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
+    final List<String> eventTypes = record.getEventTypes();
+    if (eventTypes != null && !eventTypes.isEmpty()) {
+      result.eventTypes(
+          eventTypes.stream().map(GlobalExecutionListenerEventTypeEnum::fromValue).toList());
+    }
+    final List<String> elementTypes = record.getElementTypes();
+    if (elementTypes != null && !elementTypes.isEmpty()) {
+      result.elementTypes(
+          elementTypes.stream().map(GlobalExecutionListenerElementTypeEnum::fromValue).toList());
+    }
+    final List<String> categories = record.getCategories();
+    if (categories != null && !categories.isEmpty()) {
+      result.categories(
+          categories.stream().map(GlobalExecutionListenerCategoryEnum::fromValue).toList());
+    }
+    return result;
   }
 }

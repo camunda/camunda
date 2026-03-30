@@ -23,6 +23,8 @@ public class GlobalListenerCfg implements ConfigurationEntry {
   private boolean afterNonGlobal = false;
   private int priority = GlobalListenerRecordValue.DEFAULT_PRIORITY;
   private GlobalListenerType listenerType = GlobalListenerType.USER_TASK;
+  private List<String> elementTypes = new ArrayList<>();
+  private List<String> categories = new ArrayList<>();
 
   public String getId() {
     return id;
@@ -80,8 +82,45 @@ public class GlobalListenerCfg implements ConfigurationEntry {
     this.listenerType = listenerType;
   }
 
+  public List<String> getElementTypes() {
+    return elementTypes;
+  }
+
+  public void setElementTypes(final List<String> elementTypes) {
+    this.elementTypes = elementTypes;
+  }
+
+  public List<String> getCategories() {
+    return categories;
+  }
+
+  public void setCategories(final List<String> categories) {
+    this.categories = categories;
+  }
+
   public GlobalListenerConfiguration createGlobalListenerConfiguration() {
     return new GlobalListenerConfiguration(
-        id, eventTypes, type, retries, afterNonGlobal, priority, listenerType);
+        id,
+        eventTypes,
+        type,
+        retries,
+        afterNonGlobal,
+        priority,
+        listenerType,
+        List.of(),
+        List.of());
+  }
+
+  public GlobalListenerConfiguration createGlobalExecutionListenerConfiguration() {
+    return new GlobalListenerConfiguration(
+        id,
+        eventTypes,
+        type,
+        retries,
+        afterNonGlobal,
+        priority,
+        GlobalListenerType.EXECUTION_LISTENER,
+        elementTypes,
+        categories);
   }
 }

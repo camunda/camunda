@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
+import io.camunda.gateway.protocol.model.CreateGlobalExecutionListenerRequest;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
+import io.camunda.gateway.protocol.model.UpdateGlobalExecutionListenerRequest;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.security.validation.IdentifierValidator;
 import java.util.ArrayList;
@@ -68,6 +70,42 @@ public class GlobalListenerRequestValidator {
         () -> {
           final List<String> violations = new ArrayList<>();
           identifierValidator.validateId(id, "id", violations);
+          return violations;
+        });
+  }
+
+  public Optional<ProblemDetail> validateCreateExecutionListenerRequest(
+      final CreateGlobalExecutionListenerRequest request) {
+    return validate(
+        () -> {
+          final List<String> violations = new ArrayList<>();
+          identifierValidator.validateId(request.getId(), "id", violations);
+          identifierValidator.validateId(request.getType(), "type", violations);
+          if (request.getEventTypes() == null || request.getEventTypes().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("eventTypes"));
+          }
+          if ((request.getElementTypes() == null || request.getElementTypes().isEmpty())
+              && (request.getCategories() == null || request.getCategories().isEmpty())) {
+            violations.add("At least one of 'elementTypes' or 'categories' must be provided");
+          }
+          return violations;
+        });
+  }
+
+  public Optional<ProblemDetail> validateUpdateExecutionListenerRequest(
+      final String id, final UpdateGlobalExecutionListenerRequest request) {
+    return validate(
+        () -> {
+          final List<String> violations = new ArrayList<>();
+          identifierValidator.validateId(id, "id", violations);
+          identifierValidator.validateId(request.getType(), "type", violations);
+          if (request.getEventTypes() == null || request.getEventTypes().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("eventTypes"));
+          }
+          if ((request.getElementTypes() == null || request.getElementTypes().isEmpty())
+              && (request.getCategories() == null || request.getCategories().isEmpty())) {
+            violations.add("At least one of 'elementTypes' or 'categories' must be provided");
+          }
           return violations;
         });
   }

@@ -10,8 +10,9 @@ package io.camunda.zeebe.engine;
 import java.util.Collections;
 import java.util.List;
 
-public record GlobalListenersConfiguration(List<GlobalListenerConfiguration> userTask) {
+public record GlobalListenersConfiguration(
+    List<GlobalListenerConfiguration> userTask, List<GlobalListenerConfiguration> execution) {
   public static GlobalListenersConfiguration empty() {
-    return new GlobalListenersConfiguration(Collections.emptyList());
+    return new GlobalListenersConfiguration(Collections.emptyList(), Collections.emptyList());
   }
 }

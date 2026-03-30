@@ -17,11 +17,19 @@ public interface GlobalListenerMapper {
 
   void insertEventTypes(GlobalListenerDbModel listener);
 
+  void insertElementTypes(GlobalListenerDbModel listener);
+
+  void insertCategories(GlobalListenerDbModel listener);
+
   void update(GlobalListenerDbModel listener);
 
   void delete(GlobalListenerDbModel listener);
 
   void deleteEventTypes(GlobalListenerDbModel listener);
+
+  void deleteElementTypes(GlobalListenerDbModel listener);
+
+  void deleteCategories(GlobalListenerDbModel listener);
 
   Long count(GlobalListenerDbQuery filter);
 

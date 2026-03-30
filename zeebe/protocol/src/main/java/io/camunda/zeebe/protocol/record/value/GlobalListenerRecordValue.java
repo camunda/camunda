@@ -88,6 +88,14 @@ public interface GlobalListenerRecordValue extends RecordValue {
    *   <li>"ALL": triggered by all of the above
    * </ul>
    *
+   * <p>For global execution listeners, valid event types include:
+   *
+   * <ul>
+   *   <li>"START": when a flow element is activated
+   *   <li>"END": when a flow element completes
+   *   <li>"ALL": triggered by all of the above
+   * </ul>
+   *
    * @return the list of event types
    */
   List<String> getEventTypes();
@@ -126,9 +134,33 @@ public interface GlobalListenerRecordValue extends RecordValue {
   GlobalListenerSource getSource();
 
   /**
-   * Returns the listener type of the global listener.
+   * Returns the list of BPMN element types this listener applies to.
    *
-   * <p>Currently only global "user task" listeners are supported.
+   * <p>For global execution listeners, this can include specific element types such as {@code
+   * serviceTask}, {@code userTask}, {@code process}, etc. Combined with {@link #getCategories()} as
+   * a union to determine the full set of targeted element types.
+   *
+   * <p>Not used for global user task listeners (always empty).
+   *
+   * @return the list of element types
+   */
+  List<String> getElementTypes();
+
+  /**
+   * Returns the list of element type categories this listener applies to.
+   *
+   * <p>Categories provide broad element type grouping: {@code all}, {@code tasks}, {@code
+   * gateways}, {@code events}, {@code containers}. Combined with {@link #getElementTypes()} as a
+   * union.
+   *
+   * <p>Not used for global user task listeners (always empty).
+   *
+   * @return the list of categories
+   */
+  List<String> getCategories();
+
+  /**
+   * Returns the listener type of the global listener.
    *
    * @return the listener type
    */

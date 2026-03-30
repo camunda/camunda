@@ -21,11 +21,15 @@ public record GlobalListenerEntity(
     Boolean afterNonGlobal,
     Integer priority,
     GlobalListenerSource source,
-    GlobalListenerType listenerType) {
+    GlobalListenerType listenerType,
+    List<String> elementTypes,
+    List<String> categories) {
   public GlobalListenerEntity {
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
     eventTypes = eventTypes != null ? eventTypes : new ArrayList<>();
+    elementTypes = elementTypes != null ? elementTypes : new ArrayList<>();
+    categories = categories != null ? categories : new ArrayList<>();
   }
 }

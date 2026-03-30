@@ -8,5 +8,6 @@
 package io.camunda.webapps.schema.entities.globallistener;
 
 public enum GlobalListenerType {
-  USER_TASK
+  USER_TASK,
+  EXECUTION_LISTENER
 }
