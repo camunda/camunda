@@ -134,6 +134,10 @@ zeebe:
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
       zeebe.broker.flowControl.write.limit: 4000
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max)
+    # to change settings like disabling consistency checks without duplicating the full application.yml content.
+    application-override.yml: "# no overrides"
 
   # Zeebe config
   extraVolumes:
@@ -167,7 +171,9 @@ zeebe:
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
-      value: "/usr/local/zeebe/config/application.yml"
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
+      value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
