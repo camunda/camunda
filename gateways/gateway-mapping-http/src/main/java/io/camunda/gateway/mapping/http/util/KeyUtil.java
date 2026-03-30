@@ -7,31 +7,20 @@
  */
 package io.camunda.gateway.mapping.http.util;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
-
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class KeyUtil {
 
   public static Long keyToLong(final String key) {
-    return key != null ? Long.parseLong(key) : null;
-  }
-
-  public static Function<String, Long> mapKeyToLong(
-      final String fieldName, final List<String> validationErrors) {
-    return key -> {
-      if (key == null) {
-        return null;
-      }
-      try {
-        return Long.parseLong(key);
-      } catch (final NumberFormatException e) {
-        validationErrors.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, key));
-        return null;
-      }
-    };
+    if (key == null) {
+      return null;
+    }
+    try {
+      return Long.parseLong(key);
+    } catch (final NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "The provided value '%s' is not a valid key.".formatted(key), e);
+    }
   }
 
   public static String keyToString(final Long value) {
@@ -41,7 +30,7 @@ public class KeyUtil {
   public static Optional<Long> tryParseLong(final String key) {
     try {
       return Optional.ofNullable(keyToLong(key));
-    } catch (final NumberFormatException e) {
+    } catch (final IllegalArgumentException e) {
       return Optional.empty();
     }
   }
