@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.engine.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CompleteJobCommandStep1;

@@ -113,9 +113,11 @@ public class ExecutionListenerJobTest {
     waitUntil(() -> elJobHandler.getHandledJobs().size() == 2);
 
     // then: start EL job completed
+    // Variables in job complete commands are wiped to avoid exceeded record batch size exceptions
+    // https://github.com/camunda/camunda/issues/14006
     ZeebeAssertHelper.assertJobCompleted(
         firstStartElJobType,
-        (job) -> assertThat(job.getVariables()).containsOnly(entry("el1_var_a", "value_a")));
+        (job) -> assertThat(job.getVariables()).doesNotContain(entry("el1_var_a", "value_a")));
 
     // service task job created
     ZeebeAssertHelper.assertJobCreated(secondStartElJobType);
