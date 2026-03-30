@@ -8,8 +8,8 @@
 package io.camunda.gateway.mcp.config;
 
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
-import io.camunda.gateway.mcp.config.server.RequestHandlerCustomizer;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
+import io.camunda.gateway.mcp.config.server.ToolRepositoryWebMvcStatelessServerTransport;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.zeebe.util.VersionUtil;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
@@ -129,12 +129,11 @@ public class CamundaMcpServersAutoConfiguration {
    * what Spring AI is using for tool schema definitions.
    */
   @Bean(name = "processesTransportProvider")
-  public WebMvcStatelessServerTransport processesTransportProvider(
-      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-    return WebMvcStatelessServerTransport.builder()
-        .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
-        .messageEndpoint("/mcp/processes")
-        .build();
+  public ToolRepositoryWebMvcStatelessServerTransport processesTransportProvider(
+      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper,
+      @Qualifier("processesToolRepository") final ToolRepository toolRepository) {
+    return new ToolRepositoryWebMvcStatelessServerTransport(
+        jsonMapper, toolRepository, "/mcp/processes");
   }
 
   /**
@@ -145,7 +144,7 @@ public class CamundaMcpServersAutoConfiguration {
   @Bean
   public RouterFunction<ServerResponse> processesRouterFunction(
       @Qualifier("processesTransportProvider")
-          final WebMvcStatelessServerTransport processesTransportProvider) {
+          final ToolRepositoryWebMvcStatelessServerTransport processesTransportProvider) {
     return processesTransportProvider.getRouterFunction();
   }
 
@@ -158,7 +157,6 @@ public class CamundaMcpServersAutoConfiguration {
   @Bean
   public McpStatelessSyncServer processesMcpServer(
       @Qualifier("processesTransportProvider") final McpStatelessServerTransport processesTransport,
-      @Qualifier("processesToolRepository") final ToolRepository toolRepository,
       @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
 
     final var capabilities =
@@ -168,12 +166,10 @@ public class CamundaMcpServersAutoConfiguration {
             .prompts(false)
             .build();
 
-    final McpStatelessSyncServer server =
-        McpServer.sync(processesTransport)
-            .serverInfo(
-                "Camunda 8 Orchestration API Processes MCP Server", VersionUtil.getVersion())
-            .instructions(
-                """
+    return McpServer.sync(processesTransport)
+        .serverInfo("Camunda 8 Orchestration API Processes MCP Server", VersionUtil.getVersion())
+        .instructions(
+            """
           This server exposes Camunda 8 processes as tools. All operations are scoped to the
           permissions of the authenticated user.
 
@@ -185,12 +181,8 @@ public class CamundaMcpServersAutoConfiguration {
           definition. The tool returns the internal key of the newly created instance for follow-up
           operations.
           """)
-            .capabilities(capabilities)
-            .immediateExecution(true)
-            .build();
-
-    RequestHandlerCustomizer.replaceToolHandlers(processesTransport, jsonMapper, toolRepository);
-
-    return server;
+        .capabilities(capabilities)
+        .immediateExecution(true)
+        .build();
   }
 }
