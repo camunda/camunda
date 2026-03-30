@@ -40,6 +40,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
+      codeowners-check: ${{ steps.filter.outputs.codeowners-check }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
@@ -65,7 +66,7 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
@@ -82,9 +83,9 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.12'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.66.0'
+      CONFTEST_VERSION: '0.67.1'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
@@ -119,11 +120,11 @@ jobs:
         id: depth
         run: |
           echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
-      - uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed # v6.2.1
+      - uses: wagoid/commitlint-github-action@v6
         with:
           commitDepth: ${{ github.event.pull_request.commits }}
           helpURL: https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines
@@ -148,7 +149,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: maven-spotless-linter
@@ -174,7 +175,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
       - name: Observe build status
@@ -186,7 +187,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          
+
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
     name: "Lint / Flattened POM Metadata"
@@ -195,7 +196,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-build
@@ -205,11 +206,41 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Bootstrap reactor modules
-        run: ./mvnw clean install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -PskipFrontendBuild
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -Dquickly=true install
       - name: Generate flattened POMs
         run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
       - name: Validate flattened POM metadata
         uses: ./.github/actions/validate-pom-metadata
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  codeowners-check:
+    if: needs.detect-changes.outputs.codeowners-check == 'true'
+    name: "Lint / Codeowners"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/codeowners-setup-cli
+      - name: Check for unowned files
+        run: |
+          set -euo pipefail
+          unowned="$(codeowners-cli unowned --root ./)"
+          if [[ -n "${unowned}" ]]; then
+            echo -e "::error::The following files have no owner in .codeowners:\n${unowned}\n\n"
+            echo "Please add ownership rules for these files in .codeowners"
+            exit 1
+          fi
+          echo "All files have owners."
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -228,7 +259,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: java-checks
@@ -247,6 +278,76 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  dependency-cycle-check:
+    # Temporarily disabling the dependency-cycle-check as too brittle
+    if: ${{ false }}
+    name: "Dependency Cycle Check"
+    needs: [ detect-changes ]
+    runs-on: gcp-core-16-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      # The matrix is necessary to run separate analyses
+      matrix:
+        project:
+        # Not necessary - this is a completely different module
+        # written in Go
+        # - name: c8run
+        #   path: ./c8run
+        - name: optimize
+          path: ./optimize
+          maven-config: |
+            -DskipQaBuild=true
+        - name: single-app
+          path: ./
+          maven-config: |
+            -Dquickly=true
+            -DskipQaBuild=true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: dependency-cycle-check
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        # These steps have been taken from check-licenses.yml workflow
+      - name: Adjust pom.xml files for FOSSA
+        # if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+        uses: ./.github/actions/adjust-pom-for-license-analysis
+      - name: Update Maven configs
+        if: matrix.project.maven-config != ''
+        env:
+          MAVEN_CONFIG: ${{ matrix.project.maven-config }}
+        run: |
+          echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+      - name: Check for dependency cycles
+        # Command here is the same used by fossa analyze
+        # and found by enabling the `-debug` flag
+        env:
+          POM_PATH: ${{ matrix.project.path}}/pom.xml
+        run: |
+          ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
+            -f "$POM_PATH" \
+            -DgraphFormat=text \
+            -DmergeScopes \
+            -DreduceEdges=false \
+            -DshowVersions=true \
+            -DshowGroupIds=true \
+            -DshowOptional=true \
+            -DrepeatTransitiveDependenciesInTextGraph=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "dependency-cycle-check/${{ matrix.project.name }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
@@ -254,7 +355,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -311,6 +412,7 @@ jobs:
       ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
+      INTEGRATION_TESTS_MATRIX: ${{ steps.integration-tests-matrix.outputs.matrix }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { }
@@ -374,6 +476,190 @@ jobs:
             echo "it_engine=${IT_ENGINE}"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Build integration tests matrix
+        id: integration-tests-matrix
+        env:
+          ZEEBE_IT_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.it_distributed }}
+          ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
+          ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
+          # Opt-in to stress testing the integration-tests job via the PR label "ci:stress-test".
+          STRESS_ENABLED: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
+        run: |
+          # The DOLLAR variable is necessary to avoid problems with escaping in jq.
+          DOLLAR='$'
+          base_matrix=$(cat <<EOF | jq -c '.'
+          [
+            {
+              "group": "root",
+              "name": "Root Acceptance Tests",
+              "maven-modules": "'qa/acceptance-tests'",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 3,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "QA",
+              "module": "QA",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-ds-modules",
+              "name": "Zeebe Distributed Platform Modules",
+              "maven-modules": "${ZEEBE_IT_DISTRIBUTED_MODULES}",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 7,
+              "runs-on": "gcp-perf-core-16-longrunning",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "Distributed Platform",
+              "module": "Zeebe",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-engine-modules",
+              "name": "Zeebe Engine Modules",
+              "maven-modules": "${ZEEBE_IT_ENGINE_MODULES}",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 7,
+              "runs-on": "gcp-perf-core-16-longrunning",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-exporter-modules",
+              "name": "Zeebe Exporter Modules",
+              "maven-modules": "${ZEEBE_IT_EXPORTER_MODULES}",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 7,
+              "runs-on": "gcp-perf-core-16-longrunning",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "DataLayer",
+              "module": "Zeebe",
+              "stressRun": 1
+            },
+            {
+              "group": "schema-manager",
+              "name": "Schema Manager",
+              "maven-modules": "schema-manager",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 3,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "Data Layer",
+              "module": "Schema Manager",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-engine-integration",
+              "name": "Zeebe Engine QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-16-default",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "test-filter": "io.camunda.zeebe.it.engine.**,!**/*${DOLLAR}*.java",
+              "allow-stress": true,
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-ds-integration",
+              "name": "Zeebe Cluster QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-16-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "Distributed Platform",
+              "module": "Zeebe",
+              "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
+              "allow-stress": true,
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-ds-integration-scaleup",
+              "name": "Zeebe Cluster ScaleUp QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 1,
+              "runs-on": "gcp-perf-core-8-default",
+              "owner": "Distributed Platform",
+              "module": "Zeebe",
+              "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-shared-integration",
+              "name": "Zeebe General QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-16-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "General",
+              "module": "Zeebe",
+              "test-filter": "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*${DOLLAR}*.java",
+              "stressRun": 1
+            },
+            {
+              "group": "qa-camunda-process-test",
+              "name": "Camunda Process",
+              "maven-modules": "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 3,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "CamundaEx",
+              "module": "Testing",
+              "stressRun": 1
+            },
+            {
+              "group": "qa-update",
+              "name": "Zeebe QA - Update",
+              "maven-modules": "zeebe/qa/update-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "stressRun": 1
+            }
+          ]
+          EOF
+          )
+
+          if [[ "${STRESS_ENABLED}" == "true" ]]; then
+            zeebe_engine_template=$(jq -c '.[] | select(.group == "zeebe-engine-integration") | del(.stressRun)' <<< "${base_matrix}")
+            for run in {2..10}; do
+              base_matrix=$(jq -c --argjson entry "${zeebe_engine_template}" --argjson run "${run}" '. + [
+                $entry + {"stressRun": $run}
+              ]' <<< "${base_matrix}")
+            done
+
+            zeebe_ds_template=$(jq -c '.[] | select(.group == "zeebe-ds-integration") | del(.stressRun)' <<< "${base_matrix}")
+            for run in {2..10}; do
+              base_matrix=$(jq -c --argjson entry "${zeebe_ds_template}" --argjson run "${run}" '. + [
+                $entry + {"stressRun": $run}
+              ]' <<< "${base_matrix}")
+            done
+          fi
+
+          {
+            echo "matrix<<EOF"
+            echo "${base_matrix}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -385,7 +671,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-general-unit-tests
@@ -479,7 +765,7 @@ jobs:
             suite: CamundaEx
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
         with:
@@ -526,7 +812,7 @@ jobs:
         with:
           name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suite}}"
       - name: Write matrix outputs for test analysis
-        uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-write@v1
         continue-on-error: true
         id: matrix-write
         with:
@@ -638,11 +924,17 @@ jobs:
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
+    strategy:
+      # In case of stress testing, we want the status from all jobs.
+      fail-fast: false
+      matrix:
+        # Opt-in to stress testing this job via the PR label "ci:stress-test".
+        include: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && fromJson('[{"stressRun":1},{"stressRun":2},{"stressRun":3},{"stressRun":4},{"stressRun":5},{"stressRun":6},{"stressRun":7},{"stressRun":8},{"stressRun":9},{"stressRun":10}]') || fromJson('[{"stressRun":1}]') }}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -663,7 +955,7 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -P rdbms,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
@@ -678,12 +970,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] RDBMS"
+          name: "[IT] RDBMS (${{ matrix.stressRun }})"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: ${{ format('rdbms-integration-tests{0}', matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
@@ -694,7 +987,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
+    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -702,119 +995,11 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     strategy:
+      # In case of stress testing, we want the status from all jobs.
       fail-fast: false
       matrix:
-        include:
-          - group: root
-            name: "Root Acceptance Tests"
-            maven-modules: "'qa/acceptance-tests'"
-            maven-build-threads: 2
-            maven-test-fork-count: 3
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "QA"
-            module: "QA"
-          - group: zeebe-ds-modules
-            name: "Zeebe Distributed Platform Modules"
-            maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_DISTRIBUTED_MODULES }}
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Distributed Platform"
-            module: "Zeebe"
-          - group: zeebe-engine-modules
-            name: "Zeebe Engine Modules"
-            maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_ENGINE_MODULES }}
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Core Features"
-            module: "Zeebe"
-          - group: zeebe-exporter-modules
-            name: "Zeebe Exporter Modules"
-            maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_EXPORTER_MODULES }}
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "DataLayer"
-            module: "Zeebe"
-          - group: schema-manager
-            name: "Schema Manager"
-            maven-modules: "schema-manager"
-            maven-build-threads: 1
-            maven-test-fork-count: 3
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/camunda
-            docker-file: camunda.Dockerfile
-            owner: "Data Layer"
-            module: "Schema Manager"
-          - group: zeebe-engine-integration
-            name: "Zeebe Engine QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            owner: "Core Features"
-            module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.engine.**,!**/*$*.java"
-          - group: zeebe-ds-integration
-            name: "Zeebe Cluster QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Distributed Platform"
-            module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
-          - group: zeebe-ds-integration-scaleup
-            name: "Zeebe Cluster ScaleUp QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 1
-            runs-on: gcp-perf-core-8-default
-            owner: "Distributed Platform"
-            module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
-          - group: zeebe-shared-integration
-            name: "Zeebe General QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "General"
-            module: "Zeebe"
-            test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*$*.java"
-          - group: qa-update
-            name: "Zeebe QA - Update"
-            maven-modules: "zeebe/qa/update-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Core Features"
-            module: "Zeebe"
-          - group: qa-camunda-process-test
-            name: "Camunda Process"
-            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
-            maven-build-threads: 1
-            maven-test-fork-count: 3
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/camunda
-            docker-file: camunda.Dockerfile
-            owner: "CamundaEx"
-            module: "Testing"
+        # Opt-in to stress testing this job via the PR label "ci:stress-test".
+        include: ${{ fromJson(needs.setup-tests.outputs.INTEGRATION_TESTS_MATRIX) }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
@@ -829,14 +1014,14 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Generate cache key with current hour
         if: matrix.group == 'qa-update'
         id: cache-key
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
         if: matrix.group == 'qa-update'
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@v5
         with:
           path: .cache/camunda
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
@@ -889,13 +1074,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
+          IS_STRESS_ENABLED: ${{ matrix.allow-stress == true && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ env.IS_STRESS_ENABLED == 'true' && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
@@ -916,14 +1102,14 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         continue-on-error: true
         with:
-          name: "[IT] ${{ matrix.name }}"
+          name: "[IT] ${{ matrix.name }} (${{ matrix.stressRun }})"
       - name: Write matrix outputs for test analysis
-        uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-write@v1
         id: matrix-write
         continue-on-error: true
         with:
           matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
+          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }} (${{ matrix.stressRun }})
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -932,7 +1118,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "integration-tests/${{ matrix.group }}"
+          job_name: ${{ format('integration-tests/{0}{1}', matrix.group, matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ matrix.owner }}
@@ -955,7 +1141,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -1029,8 +1215,8 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+      - uses: actions/checkout@v6
+      - uses: hadolint/hadolint-action@v3.3.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./camunda.Dockerfile
@@ -1041,7 +1227,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -1148,29 +1334,29 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Read Zeebe unit tests matrix outputs
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-read@v1
         id: zeebe-matrix-read
         with:
           matrix-step-name: zeebe-unit-tests
       - name: Read Integration tests matrix outputs
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-read@v1
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
       - name: Read Database integration tests matrix outputs
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-read@v1
         id: database-integration-matrix-read
         with:
           matrix-step-name: database-integration-tests
       - name: Read history tests matrix outputs
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-read@v1
         id: history-matrix-read
         with:
           matrix-step-name: history-tests
       - name: Read identity tests matrix outputs
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        uses: cloudposse/github-action-matrix-outputs-read@v1
         id: identity-matrix-read
         with:
           matrix-step-name: identity-tests
@@ -1201,7 +1387,7 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           branch-name: ${{ github.event.pull_request.head.ref }}
       - name: Delete matrix job generated artifacts
-        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: |
             zeebe-unit-tests-*
@@ -1218,8 +1404,8 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: 'npm'
@@ -1236,42 +1422,6 @@ jobs:
         run: npm run test:licenses
       - name: Build frontend
         run: npm run build
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          user_description: "Identity"
-
-  identity-frontend-sbom-snyk:
-    if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
-    name: "Identity / Tool - Front End - Snyk SBOM"
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    env:
-      TEST_OWNER: Identity
-      TEST_PRODUCT: Identity
-      TEST_TYPE: Tool
-    defaults:
-      run:
-        working-directory: identity/client
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-      - uses: ./.github/actions/frontend-sbom-snyk
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          directory: identity/client
-          sbom-file: identity/client/dist/cyclonedx/bom.json
-          project-name: Identity frontend
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1349,7 +1499,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - id: pr-body
         name: Fetch latest PR body
         if: github.event_name == 'pull_request'
@@ -1363,7 +1513,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         # by the default the action will compare against the base branch, or if on push, against the
         # previous commit
-      - uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1.4.0
+      - uses: bufbuild/buf-action@v1
         if: |
           !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
             contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
@@ -1397,9 +1547,9 @@ jobs:
       # renovate: datasource=npm depName=@stoplight/spectral-cli
       SPECTRAL_VERSION: '6.15.0'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Setup Node.js for Spectral
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@v6
         with:
           node-version: 24
       - name: Install Spectral CLI
@@ -1443,34 +1593,12 @@ jobs:
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
       - run: |
           npx --yes --package "renovate@latest" -c "renovate-config-validator"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  shell-script-tests:
-    name: "Shell / Script Tests"
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Install bats
-        run: sudo apt-get install -y bats
-      - name: Run ci-relevance tests
-        run: bats .github/scripts/ci-relevance/check.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1497,13 +1625,14 @@ jobs:
       - archunit-tests
       - build-platform-frontend
       - client-components
+      - codeowners-check
       - commitlint
       - database-integration-tests
+      - dependency-cycle-check
       - detect-changes
       - docker-checks
       - general-unit-tests
       - history-tests
-      - identity-frontend-sbom-snyk
       - identity-frontend-tests
       - identity-tests
       - integration-tests
@@ -1517,13 +1646,12 @@ jobs:
       - rdbms-integration-tests
       - renovatelint
       - setup-tests
-      - shell-script-tests
       - tasklist-ci
       - validate-pom-metadata
       - zeebe-ci
       - zeebe-unit-tests
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
@@ -1545,15 +1673,16 @@ jobs:
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
 
-  # Dynamically generate the concurrency group based on branch name
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
   utils-get-concurrency-group-for-maven-snapshot:
     needs: [ check-results ]
-    uses: ./.github/workflows/generate-concurrency-group.yml
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
     permissions:
       contents: read
     if: always() && needs.check-results.result == 'success'
     with:
+      job_to_run: 'concurrency-group'
       base_group_name: deploy-maven-snapshot
 
   deploy-snapshots:
@@ -1567,7 +1696,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
@@ -1604,19 +1733,10 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
-  utils-get-snapshot-docker-tag:
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  utils-get-snapshot-docker-tag-and-concurrency-group:
     needs: [ check-results ]
-    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
-    secrets: inherit
-    permissions:
-      contents: read
-    if: always() && needs.check-results.result == 'success'
-
-  # Dynamically generate the concurrency group based on branch name
-  utils-get-concurrency-group-for-docker-snapshot:
-    needs: [ check-results ]
-    uses: ./.github/workflows/generate-concurrency-group.yml
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
     permissions:
       contents: read
@@ -1626,16 +1746,16 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
+    needs: [ check-results, utils-get-snapshot-docker-tag-and-concurrency-group]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
+      group: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true
@@ -1666,7 +1786,9 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.snapshot_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
