@@ -54,11 +54,11 @@ orchestration:
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
         # History cleanup adjust batch sizes
-        camunda.data.secondary-storage.rdbms.history.history-cleanup-batch-size: 100000
-        camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 2000
+        camunda.data.secondary-storage.rdbms.history.history-cleanup-batch-size: 10000
+        camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 500
         # set to 2001 and not 2000 to directly see when queue is full in metrics dashboard
         camunda.data.secondary-storage.rdbms.queue-size: 2001
-        camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
+        camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT60H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
     # This file is loaded after application.yml (higher priority). It is empty by default,
@@ -89,28 +89,28 @@ postgresqlSharedPreloadLibraries: pg_stat_statements
 primary:
   resources:
     requests:
-      memory: 4Gi
-      cpu: 3000m
+      memory: 16Gi
+      cpu: 4000m
     limits:
-      cpu: 3000m
-      memory: 6Gi
+      cpu: 4000m
+      memory: 16Gi
 
   nodeSelector:
-    component: benchmark-n2-standard-4
+    component: benchmark-n2-standard-8
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
 
   persistence:
-    size: 128Gi
+    size: 512Gi
     storageClass: "ssd"
 
   extendedConfiguration: |-
     # WAL Performance Tuning
-    wal_buffers = 64MB
+    wal_buffers = 128MB
     max_wal_size = 4GB
     min_wal_size = 1GB
     checkpoint_timeout = 20min
@@ -119,10 +119,10 @@ primary:
     wal_writer_flush_after = 1MB
 
     # Memory Settings
-    shared_buffers = 2GB
-    effective_cache_size = 4500MB
-    work_mem = 32MB
-    maintenance_work_mem = 512MB
+    shared_buffers = 4GB
+    effective_cache_size = 10GB
+    work_mem = 64MB
+    maintenance_work_mem = 1GB
 
     # Autovacuum - Aggressive for high UPDATE/DELETE volume
     autovacuum_max_workers = 6
