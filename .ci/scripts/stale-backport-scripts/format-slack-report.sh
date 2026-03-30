@@ -119,9 +119,21 @@ while IFS= read -r repo_name; do
     # Build section text for this group in jq (safe from shell escaping)
     section_text=$(echo "$group" | jq -r --slurpfile slack_map "$TMPDIR_WORK/slack_user_map.json" '
       $slack_map[0] as $smap |
-      # Author display: <@USLACKID> if Slack match, @RealName if available, otherwise GitHub username
+      # Author display: for bot-authored PRs show bot name + approvers; otherwise <@USLACKID>, @RealName, or GitHub username
       (
-        if .original_pr_author_name and $smap[.original_pr_author_name] then
+        if (.original_pr_author // "") | test("^app/") then
+          # Bot-authored PR: show bot name and tag approvers
+          ("🤖 \(.original_pr_author)" +
+          (if (.original_pr_approver_names // []) | length > 0 then
+            ", reviewed by " + ([.original_pr_approver_names[] |
+              if .name and ($smap[.name] // null) then "<@\($smap[.name])>"
+              elif .name then "@\(.name)"
+              else "@\(.username)" end
+            ] | join(", "))
+          else
+            ""
+          end))
+        elif .original_pr_author_name and $smap[.original_pr_author_name] then
           "<@\($smap[.original_pr_author_name])>"
         elif .original_pr_author_name then
           "@\(.original_pr_author_name)"
