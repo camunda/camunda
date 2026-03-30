@@ -28,6 +28,8 @@ import {Container} from './styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {Navigate, useLocation} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
+import {useMemo} from 'react';
 
 const ROW_HEIGHT = 32;
 
@@ -93,6 +95,38 @@ const IncidentsTab: React.FC = observer(() => {
 
   const enhancedIncidents = useEnhancedIncidents(incidents);
 
+  const hasDecisionIncidents = useMemo(
+    () =>
+      incidents.some(
+        ({errorType}) =>
+          errorType === 'DECISION_EVALUATION_ERROR' ||
+          errorType === 'CALLED_DECISION_ERROR',
+      ),
+    [incidents],
+  );
+
+  const {data: decisionInstancesResult} = useDecisionInstancesSearch(
+    {filter: {processInstanceKey: processInstanceId}},
+    {enabled: hasDecisionIncidents},
+  );
+
+  const decisionInstancesByElementKey = useMemo(
+    () =>
+      (decisionInstancesResult?.items ?? []).reduce<
+        Record<
+          string,
+          {decisionInstanceKey: string; decisionDefinitionName: string}
+        >
+      >((acc, instance) => {
+        acc[instance.elementInstanceKey] = {
+          decisionInstanceKey: instance.decisionEvaluationInstanceKey,
+          decisionDefinitionName: instance.decisionDefinitionName,
+        };
+        return acc;
+      }, {}),
+    [decisionInstancesResult],
+  );
+
   if (processInstance?.hasIncident === false) {
     return (
       <Navigate
@@ -116,6 +150,7 @@ const IncidentsTab: React.FC = observer(() => {
         onVerticalScrollEndReach={handleScrollEndReach}
         processInstanceKey={processInstanceId}
         incidents={enhancedIncidents}
+        decisionInstancesByElementKey={decisionInstancesByElementKey}
       />
     </Container>
   );
