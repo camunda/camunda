@@ -131,7 +131,7 @@ class SetupControllerTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN,
             DefaultSetupServiceAdapter.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
-    expectedBody.setTitle("FORBIDDEN");
+    expectedBody.setTitle("Forbidden");
     expectedBody.setInstance(URI.create(USER_PATH));
 
     webClient
@@ -156,7 +156,7 @@ class SetupControllerTest extends RestControllerTest {
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN, DefaultSetupServiceAdapter.ADMIN_EXISTS_ERROR_MESSAGE);
-    expectedBody.setTitle("FORBIDDEN");
+    expectedBody.setTitle("Forbidden");
     expectedBody.setInstance(URI.create(USER_PATH));
 
     webClient
@@ -184,7 +184,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -204,7 +204,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -224,7 +224,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -244,7 +244,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -300,7 +300,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided email '%s' is not valid.",
               "instance": "%s"
             }"""
@@ -321,7 +321,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided username exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -347,7 +347,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""

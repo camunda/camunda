@@ -72,7 +72,7 @@ public class GroupControllerTest {
         {
           "type": "about:blank",
           "status": 403,
-          "title": "Access issue",
+          "title": "Forbidden",
           "detail": "%%s endpoint is not accessible: %s",
           "instance": "%%s"
         }"""
@@ -284,7 +284,7 @@ public class GroupControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No name provided.",
               "instance": "%s"
             }"""
@@ -313,7 +313,7 @@ public class GroupControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No groupId provided.",
               "instance": "%s"
             }"""
@@ -342,7 +342,7 @@ public class GroupControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No groupId provided.",
               "instance": "%s"
             }"""
@@ -374,7 +374,7 @@ public class GroupControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided groupId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -409,7 +409,7 @@ public class GroupControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -527,7 +527,7 @@ public class GroupControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No name provided.",
               "instance": "%s"
             }"""
@@ -624,7 +624,7 @@ public class GroupControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -840,7 +840,7 @@ public class GroupControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -871,7 +871,7 @@ public class GroupControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -1063,7 +1063,7 @@ public class GroupControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
@@ -1093,7 +1093,7 @@ public class GroupControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""

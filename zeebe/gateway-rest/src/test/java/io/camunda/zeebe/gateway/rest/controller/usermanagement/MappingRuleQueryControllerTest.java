@@ -110,7 +110,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "NOT_FOUND",
+              "title": "Not Found",
               "status": 404,
               "detail": "mapping rule not found",
               "instance": "%s"

@@ -96,7 +96,7 @@ public class IncidentControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 404,
-              "title": "NOT_FOUND",
+              "title": "Not Found",
               "detail": "Command 'RESOLVE' rejected with code 'NOT_FOUND': Incident not found",
               "instance": "%s"
             }"""

@@ -163,7 +163,7 @@ public class ExpressionControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "No expression provided.",
               "instance": "%s"
@@ -200,7 +200,7 @@ public class ExpressionControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
               "detail": "Expected to handle request Expression Evaluation with tenant identifier '$tenant1', but tenant identifier contains illegal characters.",
               "instance": "%s"

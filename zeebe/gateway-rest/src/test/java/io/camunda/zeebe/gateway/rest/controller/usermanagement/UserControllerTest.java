@@ -139,7 +139,7 @@ public class UserControllerTest {
 
       final var expectedBody =
           CamundaProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
-      expectedBody.setTitle(RejectionType.ALREADY_EXISTS.name());
+      expectedBody.setTitle("Conflict");
       expectedBody.setDetail("Command 'CREATE' rejected with code 'ALREADY_EXISTS': " + message);
       expectedBody.setInstance(URI.create(USER_BASE_URL));
 
@@ -169,7 +169,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -189,7 +189,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -209,7 +209,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -229,7 +229,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -285,7 +285,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided email '%s' is not valid.",
               "instance": "%s"
             }"""
@@ -306,7 +306,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided username exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -332,7 +332,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -436,7 +436,7 @@ public class UserControllerTest {
         {
           "type": "about:blank",
           "status": 403,
-          "title": "Access issue",
+          "title": "Forbidden",
           "detail": "%%s endpoint is not accessible: %s",
           "instance": "%%s"
         }"""

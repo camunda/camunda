@@ -470,7 +470,7 @@ public class UserTaskControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 400,
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value \
             for a supported attribute in the \\"changeset\\".",
                       "instance": "%s"
@@ -511,7 +511,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided due date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
               "instance": "%s"
             }"""
@@ -552,7 +552,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
               "instance": "%s"
             }"""
@@ -594,7 +594,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided due date '2023-11-11T10:10:10.1010+01:00[Europe/Paris]' \
             cannot be parsed as a date according to RFC 3339, section 5.6. The provided follow-up \
             date '2023-11-11T12:12:12.1234+0100' cannot be parsed as a date according to RFC 3339, \
@@ -639,7 +639,7 @@ public class UserTaskControllerTest extends RestControllerTest {
                         {
                           "type": "about:blank",
                           "status": 400,
-                          "title": "INVALID_ARGUMENT",
+                          "title": "Bad Request",
                           "detail": "The provided due date 'bar' cannot be parsed as a date according to \
             RFC 3339, section 5.6. The provided follow-up date 'foo' cannot be parsed as a date according to \
             RFC 3339, section 5.6.",
@@ -733,7 +733,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "%s",
               "instance": "%s"
             }"""
@@ -775,7 +775,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 404,
-              "title": "NOT_FOUND",
+              "title": "Not Found",
               "detail": "Command 'COMPLETE' rejected with code 'NOT_FOUND': Task not found",
               "instance": "%s"
             }"""
@@ -817,7 +817,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 409,
-              "title": "INVALID_STATE",
+              "title": "Conflict",
               "detail": "Command 'COMPLETE' rejected with code 'INVALID_STATE': Task is not in state CREATED",
               "instance": "%s"
             }"""
@@ -857,14 +857,11 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "%s",
+              "title": "Bad Request",
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
-            .formatted(
-                parameters.getLeft().name(),
-                parameters.getLeft(),
-                parameters.getRight() + "/1/completion");
+            .formatted(parameters.getLeft(), parameters.getRight() + "/1/completion");
 
     // when / then
     webClient
@@ -900,14 +897,11 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 409,
-              "title": "%s",
+              "title": "Conflict",
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
-            .formatted(
-                parameters.getLeft().name(),
-                parameters.getLeft(),
-                parameters.getRight() + "/1/completion");
+            .formatted(parameters.getLeft(), parameters.getRight() + "/1/completion");
 
     // when / then
     webClient
@@ -1133,7 +1127,7 @@ public class UserTaskControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No assignee provided",
               "instance": "%s"
             }"""

@@ -129,7 +129,7 @@ public class RoleControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No roleId provided.",
               "instance": "%s"
             }"""
@@ -162,7 +162,7 @@ public class RoleControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No roleId provided.",
               "instance": "%s"
             }"""
@@ -195,7 +195,7 @@ public class RoleControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No name provided.",
               "instance": "%s"
             }"""
@@ -227,7 +227,7 @@ public class RoleControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "The provided roleId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -262,7 +262,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -338,7 +338,7 @@ public class RoleControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "detail": "No name provided.",
               "instance": "%s"
             }"""
@@ -568,7 +568,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -599,7 +599,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -773,7 +773,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -804,7 +804,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -917,7 +917,7 @@ public class RoleControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
@@ -947,7 +947,7 @@ public class RoleControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
@@ -1061,7 +1061,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -1092,7 +1092,7 @@ public class RoleControllerTest {
               {
                 "type": "about:blank",
                 "status": 400,
-                "title": "INVALID_ARGUMENT",
+                "title": "Bad Request",
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
@@ -1205,7 +1205,7 @@ public class RoleControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
@@ -1235,7 +1235,7 @@ public class RoleControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""

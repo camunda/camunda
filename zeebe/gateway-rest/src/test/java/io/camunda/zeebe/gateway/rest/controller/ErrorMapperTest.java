@@ -7,13 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.service.exception.ServiceException.Status.ABORTED;
-import static io.camunda.service.exception.ServiceException.Status.DEADLINE_EXCEEDED;
-import static io.camunda.service.exception.ServiceException.Status.INTERNAL;
-import static io.camunda.service.exception.ServiceException.Status.INVALID_ARGUMENT;
-import static io.camunda.service.exception.ServiceException.Status.NOT_FOUND;
-import static io.camunda.service.exception.ServiceException.Status.RESOURCE_EXHAUSTED;
-import static io.camunda.service.exception.ServiceException.Status.UNAVAILABLE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -92,7 +85,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Just an error");
-    expectedBody.setTitle(NOT_FOUND.name());
+    expectedBody.setTitle("Not Found");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -121,7 +114,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
-    expectedBody.setTitle(ErrorCode.RESOURCE_EXHAUSTED.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -150,7 +143,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
-    expectedBody.setTitle(UNAVAILABLE.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -193,7 +186,7 @@ public class ErrorMapperTest extends RestControllerTest {
             "Unexpected error occurred between gateway and broker (code: "
                 + errorCode
                 + ") (message: Just an error)");
-    expectedBody.setTitle(INTERNAL.name());
+    expectedBody.setTitle("Internal Server Error");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -228,7 +221,7 @@ public class ErrorMapperTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "INTERNAL",
+              "title": "Internal Server Error",
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
@@ -269,7 +262,7 @@ public class ErrorMapperTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "UNKNOWN",
+              "title": "Internal Server Error",
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
@@ -306,7 +299,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
             NullPointerException.class.getName() + ": Just an error");
-    expectedBody.setTitle("INTERNAL");
+    expectedBody.setTitle("Internal Server Error");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -362,7 +355,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.GATEWAY_TIMEOUT,
             "Expected to handle request, but request timed out between gateway and broker");
-    expectedBody.setTitle(DEADLINE_EXCEEDED.name());
+    expectedBody.setTitle("Gateway Timeout");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -395,7 +388,7 @@ public class ErrorMapperTest extends RestControllerTest {
             HttpStatus.BAD_GATEWAY,
             "Expected to handle request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry.");
-    expectedBody.setTitle(ABORTED.name());
+    expectedBody.setTitle("Bad Gateway");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -428,7 +421,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
             "Expected to handle request, but a connection timeout exception occurred");
-    expectedBody.setTitle(UNAVAILABLE.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -460,7 +453,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
             "Expected to handle request, but there was a connection error with one of the brokers");
-    expectedBody.setTitle(UNAVAILABLE.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -492,7 +485,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
             "Expected to handle request, but request could not be delivered");
-    expectedBody.setTitle(UNAVAILABLE.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -524,7 +517,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST,
             "Expected to handle request, but messagepack property was invalid");
-    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -555,7 +548,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST, "Expected to handle request, but JSON property was invalid");
-    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -586,7 +579,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST, "Expected to handle request, but JSON property was invalid");
-    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -618,7 +611,7 @@ public class ErrorMapperTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
             "Expected to handle request, but all retries have been exhausted");
-    expectedBody.setTitle(RESOURCE_EXHAUSTED.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -649,7 +642,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
-    expectedBody.setTitle(UNAVAILABLE.name());
+    expectedBody.setTitle("Service Unavailable");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -678,7 +671,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "max size error");
-    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then

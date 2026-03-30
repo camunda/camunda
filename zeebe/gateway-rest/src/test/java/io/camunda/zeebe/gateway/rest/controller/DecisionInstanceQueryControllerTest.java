@@ -375,7 +375,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                           "type": "about:blank",
-                          "title": "NOT_FOUND",
+                          "title": "Not Found",
                           "status": 404,
                           "detail": "Decision instance with key 12345 was not found.",
                           "instance": "/v2/decision-instances/12345"
@@ -403,7 +403,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                   "type": "about:blank",
-                  "title": "java.lang.RuntimeException",
+                  "title": "Internal Server Error",
                   "status": 500,
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
                   "instance": "/v2/decision-instances/12345"
@@ -433,7 +433,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                   "type": "about:blank",
-                  "title": "FORBIDDEN",
+                  "title": "Forbidden",
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/12345"

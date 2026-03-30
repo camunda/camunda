@@ -615,7 +615,7 @@ public class LongPollingActivateJobsRestTest {
             obj -> {
               final var problemDetail = (ProblemDetail) obj;
               assertThat(problemDetail.getStatus()).isEqualTo(503);
-              assertThat(problemDetail.getTitle()).isEqualTo("RESOURCE_EXHAUSTED");
+              assertThat(problemDetail.getTitle()).isEqualTo("Service Unavailable");
               assertThat(problemDetail.getDetail())
                   .isEqualTo(
                       "Expected to activate jobs of type 'test', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.");
