@@ -51,7 +51,7 @@ function useAssignTask() {
           requestErrorSchema.safeParse(error);
 
         if (success && parsedError.variant === 'failed-response') {
-          if (isTaskTimeoutError(await parsedError.response.json())) {
+          if (isTaskTimeoutError(await parsedError.response.clone().json())) {
             const currentTask = client.getQueryData<UserTask>(
               getUseTaskQueryKey(params.userTaskKey),
             );
