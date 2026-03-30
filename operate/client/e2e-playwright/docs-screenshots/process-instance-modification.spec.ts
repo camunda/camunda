@@ -227,7 +227,8 @@ test.describe('process instance modification', () => {
     await addVariableButton.click();
 
     await processInstancePage.newVariableNameField.fill('test');
-    await processInstancePage.newVariableValueField.fill('"some value"');
+    await processInstancePage.variablesEditor.select();
+    await processInstancePage.variablesEditor.fill('"some value"');
 
     await page.getByTestId('variables-list').click();
 
@@ -278,8 +279,7 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    const editVariableValueField =
-      await processInstancePage.editVariableValueField;
+    const editVariableValueField = processInstancePage.variablesEditor.editor;
 
     await commonPage.addRightArrow(editVariableValueField);
 
@@ -289,7 +289,7 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    editVariableValueField.fill('1234');
+    await processInstancePage.variablesEditor.fill('1234');
 
     await page.getByTestId('variables-list').click();
 

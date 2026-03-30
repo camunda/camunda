@@ -10,20 +10,19 @@ import type {Locator, Page} from '@playwright/test';
 
 export class JSONEditor {
   private readonly page: Page;
-  private readonly editor: Locator;
+  readonly editor: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.editor = page.getByRole('code').nth(0);
   }
 
-  async waitForEditorReady() {
-    await this.editor.locator('textarea').waitFor({state: 'visible'});
+  async waitForEditor() {
+    await this.editor.locator('textarea').waitFor({state: 'attached'});
   }
 
   async select() {
     await this.editor.click();
-    await this.waitForEditorReady();
   }
 
   async fill(value: string) {

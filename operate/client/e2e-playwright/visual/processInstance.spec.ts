@@ -125,6 +125,7 @@ test.describe('process instance page', () => {
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await processInstancePage.addVariableButton.click();
+    await processInstancePage.variablesEditor.waitForEditor();
 
     await expect(page).toHaveScreenshot();
   });
@@ -155,6 +156,7 @@ test.describe('process instance page', () => {
         name: /edit/i,
       })
       .click();
+    await processInstancePage.variablesEditor.waitForEditor();
 
     await expect(page).toHaveScreenshot();
   });
