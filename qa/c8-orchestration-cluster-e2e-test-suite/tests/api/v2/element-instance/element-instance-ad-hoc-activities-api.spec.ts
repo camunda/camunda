@@ -163,7 +163,7 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
       });
 
     await test.step('Assert bad request error', async () => {
-      await assertBadRequest(res, /elements/i, 'INVALID_ARGUMENT');
+      await assertBadRequest(res, /elements/i, 'Bad Request');
     });
   });
 

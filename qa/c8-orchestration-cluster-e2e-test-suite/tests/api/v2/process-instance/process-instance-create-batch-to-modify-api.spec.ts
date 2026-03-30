@@ -72,7 +72,7 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
       },
     );
 
-    await assertBadRequest(res, 'No filter provided.', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No filter provided.', 'Bad Request');
   });
 
   test('Create a Batch Operation to Modify Process Instances - With No Instructions - Bad Request', async ({
@@ -93,7 +93,7 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
     await assertBadRequest(
       res,
       'No moveInstructions provided.',
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 

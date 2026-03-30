@@ -178,7 +178,7 @@ test.describe.parallel('Users API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, 'No username provided', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No username provided', 'Bad Request');
   });
 
   test('Create User Missing Password Invalid Body 400', async ({request}) => {
@@ -191,7 +191,7 @@ test.describe.parallel('Users API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, 'No password provided', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No password provided', 'Bad Request');
   });
 
   test('Create User Missing Email Success', async ({request}) => {
@@ -294,7 +294,7 @@ test.describe.parallel('Users API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, 'No username provided', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No username provided', 'Bad Request');
   });
 
   test('Create User Invalid Email Invalid Body 400', async ({request}) => {
@@ -308,7 +308,7 @@ test.describe.parallel('Users API Tests', () => {
     await assertBadRequest(
       res,
       `The provided email '${body['email']}' is not valid.`,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 

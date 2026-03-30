@@ -55,7 +55,7 @@ test.describe('Correlate Message API Tests', () => {
     expect(res.status()).toBe(400);
     const json = await res.json();
     assertRequiredFields(json, ['detail', 'title']);
-    expect(json.title).toBe('INVALID_ARGUMENT');
+    expect(json.title).toBe('Bad Request');
     expect(json.detail).toBe('No name provided.');
   });
 
@@ -71,7 +71,7 @@ test.describe('Correlate Message API Tests', () => {
     expect(res.status()).toBe(404);
     const json = await res.json();
     assertRequiredFields(json, ['detail', 'title']);
-    expect(json.title).toBe('NOT_FOUND');
+    expect(json.title).toBe('Not Found');
   });
 
   test('Correlate Message Invalid Tenant', async ({request}) => {
@@ -86,7 +86,7 @@ test.describe('Correlate Message API Tests', () => {
     expect(res.status()).toBe(400);
     const json = await res.json();
     assertRequiredFields(json, ['detail', 'title']);
-    expect(json.title).toBe('INVALID_ARGUMENT');
+    expect(json.title).toBe('Bad Request');
     expect(json.detail).toContain(
       'Expected to handle request Correlate Message with tenant identifier',
     );

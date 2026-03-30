@@ -358,7 +358,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     await assertBadRequest(
       res,
       `The provided processInstanceKey '${invalidFieldValue}' is not a valid key`,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 

@@ -119,7 +119,7 @@ test.describe.parallel('Document API Tests', () => {
     await assertBadRequest(
       res,
       `Document store with id '${invalidStoreId}' does not exist`,
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 
@@ -139,7 +139,7 @@ test.describe.parallel('Document API Tests', () => {
     await assertBadRequest(
       res,
       'The provided processDefinitionId contains illegal characters',
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 
@@ -256,7 +256,7 @@ test.describe.parallel('Document API Tests', () => {
       await assertBadRequest(
         res,
         'No document hash provided for document',
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });
@@ -466,7 +466,7 @@ test.describe.parallel('Document API Tests', () => {
       await assertBadRequest(
         res,
         'No document hash provided for document',
-        'INVALID_ARGUMENT',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });

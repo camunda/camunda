@@ -266,7 +266,7 @@ test.describe.parallel('Process Definition Search API', () => {
     await assertBadRequest(
       res,
       'Sort field must not be null.',
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 

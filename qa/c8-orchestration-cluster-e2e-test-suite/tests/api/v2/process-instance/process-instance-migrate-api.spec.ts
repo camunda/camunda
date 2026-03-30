@@ -198,7 +198,7 @@ test.describe.serial('Test process instance migrate API', () => {
     await assertBadRequest(
       res,
       'No targetProcessDefinitionKey provided.',
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 

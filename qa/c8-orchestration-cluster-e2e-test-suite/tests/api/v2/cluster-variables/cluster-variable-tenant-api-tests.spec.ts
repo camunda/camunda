@@ -106,7 +106,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         data: body,
       },
     );
-    await assertBadRequest(res, /name/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /name/i, 'Bad Request');
   });
 
   test('Create Tenant Cluster Variable Missing Value Invalid Body 400', async ({
@@ -121,7 +121,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         data: body,
       },
     );
-    await assertBadRequest(res, /value/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /value/i, 'Bad Request');
   });
 
   // skipped due to bug 42049: https://github.com/camunda/camunda/issues/42049

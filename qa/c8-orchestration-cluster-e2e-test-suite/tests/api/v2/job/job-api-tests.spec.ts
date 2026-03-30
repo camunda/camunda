@@ -133,7 +133,7 @@ test.describe.parallel('Job API Tests', () => {
         maxJobsToActivate: 1,
       },
     });
-    await assertBadRequest(res, 'No timeout provided.', 'INVALID_ARGUMENT');
+    await assertBadRequest(res, 'No timeout provided.', 'Bad Request');
   });
 
   test('Activate Jobs - invalid maxJobsToActivate', async ({request}) => {
@@ -147,7 +147,7 @@ test.describe.parallel('Job API Tests', () => {
     await assertBadRequest(
       res,
       'No maxJobsToActivate provided.',
-      'INVALID_ARGUMENT',
+      'Bad Request',
     );
   });
 

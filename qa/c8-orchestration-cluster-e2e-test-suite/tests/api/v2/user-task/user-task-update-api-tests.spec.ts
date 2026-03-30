@@ -270,7 +270,7 @@ test.describe.parallel('Update User Task Tests', () => {
         );
         await assertStatusCode(getRes, 200);
         const json = await getRes.json();
-        expect(json.dueDate).toBe(dueDate);
+        expect(new Date(json.dueDate).getTime()).toBe(new Date(dueDate).getTime());
         expect(json.candidateUsers).toEqual(['verifyUser']);
         expect(json.priority).toBe(90);
       }).toPass(defaultAssertionOptions);

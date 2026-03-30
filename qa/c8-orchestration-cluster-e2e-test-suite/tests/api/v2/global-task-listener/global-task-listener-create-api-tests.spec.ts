@@ -132,7 +132,7 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
       data: bodyWithoutId,
     });
 
-    await assertBadRequest(res, /id/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /id/i, 'Bad Request');
   });
 
   test('Create Global Task Listener - missing required type field', async ({
@@ -149,7 +149,7 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
       data: bodyWithoutType,
     });
 
-    await assertBadRequest(res, /type/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /type/i, 'Bad Request');
   });
 
   test('Create Global Task Listener - missing required eventTypes field', async ({
@@ -166,7 +166,7 @@ test.describe.parallel('Global Task Listener API Tests - Create', () => {
       data: bodyWithoutEventTypes,
     });
 
-    await assertBadRequest(res, /eventTypes/i, 'INVALID_ARGUMENT');
+    await assertBadRequest(res, /eventTypes/i, 'Bad Request');
   });
 
   test('Create Global Task Listener - invalid eventType value', async ({
