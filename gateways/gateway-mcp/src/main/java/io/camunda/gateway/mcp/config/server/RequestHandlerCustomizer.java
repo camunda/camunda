@@ -13,6 +13,7 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecifi
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -45,17 +46,33 @@ public final class RequestHandlerCustomizer {
   private static McpStatelessRequestHandler<McpSchema.ListToolsResult> toolsListRequestHandler(
       final ToolRepository toolRepository) {
     return (ctx, params) ->
-        Mono.just(new McpSchema.ListToolsResult(toolRepository.getTools(ctx), null));
+        Mono.fromCallable(() -> new McpSchema.ListToolsResult(toolRepository.getTools(ctx), null));
   }
 
   private static McpStatelessRequestHandler<CallToolResult> toolsCallRequestHandler(
       final ToolRepository toolRepository, final JsonMapper jsonMapper) {
     return (ctx, params) -> {
-      final McpSchema.CallToolRequest callToolRequest =
-          jsonMapper.convertValue(params, new TypeReference<>() {});
+      final McpSchema.CallToolRequest callToolRequest;
+      try {
+        callToolRequest = jsonMapper.convertValue(params, new TypeReference<>() {});
+      } catch (final Exception e) {
+        return Mono.error(
+            McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
+                .message("Invalid parameters for tool call")
+                .data(e.getMessage())
+                .build());
+      }
 
-      final Either<String, SyncToolSpecification> toolSpecification =
-          toolRepository.findTool(ctx, callToolRequest.name());
+      final Either<String, SyncToolSpecification> toolSpecification;
+      try {
+        toolSpecification = toolRepository.findTool(ctx, callToolRequest.name());
+      } catch (final Exception e) {
+        return Mono.error(
+            McpError.builder(ErrorCodes.INTERNAL_ERROR)
+                .message("Error on finding tool")
+                .data(e.getMessage())
+                .build());
+      }
 
       return toolSpecification.fold(
           errorMessage ->
