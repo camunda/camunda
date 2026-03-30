@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.network;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.container.cluster.CamundaCluster.newClientBuilder;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -15,11 +15,14 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
 import io.camunda.client.api.response.Topology;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.container.cluster.CamundaPort;
 import io.camunda.container.cluster.GatewayNode;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +57,7 @@ final class Ipv6IntegrationTest {
           .build();
   private final CamundaCluster cluster =
       CamundaCluster.builder()
+          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withPartitionsCount(1)
           .withReplicationFactor(1)
           .withBrokersCount(1)
@@ -87,7 +91,7 @@ final class Ipv6IntegrationTest {
     cluster.start();
 
     // when
-    try (final var client = newClientBuilder(cluster).build(); ) {
+    try (final var client = newClientBuilder(cluster).build()) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       // then - can find each other
       TopologyAssert.assertThat(topology).isComplete(1, 1, 1);
@@ -100,9 +104,13 @@ final class Ipv6IntegrationTest {
     broker
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
-        .withProperty("zeebe.broker.network.host", INADDR6_ANY)
-        .withProperty("zeebe.broker.network.advertised-host", hostName)
-        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+              cfg.getCluster().getNetwork().setAdvertisedHost(hostName);
+              cfg.getCluster().getNetwork().setHost(INADDR6_ANY);
+            })
+        .withEnv(UNPROTECTED_API_ENV_VAR, "true")
         .withProperty("camunda.security.authentication.unprotected-api", true)
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, BROKER_IP));
   }
@@ -120,13 +128,18 @@ final class Ipv6IntegrationTest {
     gateway
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
-        .withProperty(
-            "zeebe.gateway.cluster.contact-point",
-            String.format("[%s]:%d", BROKER_IP, CamundaPort.INTERNAL.getPort()))
-        .withProperty("zeebe.gateway.network.host", INADDR6_ANY)
-        .withProperty("zeebe.gateway.cluster.host", hostName)
-        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getCluster()
+                  .setInitialContactPoints(
+                      List.of(String.format("[%s]:%d", BROKER_IP, CamundaPort.INTERNAL.getPort())));
+              cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+              cfg.getCluster().getNetwork().setAdvertisedHost(hostName);
+              cfg.getCluster().getNetwork().setHost(INADDR6_ANY);
+              cfg.getApi().getGrpc().setAddress(hostName);
+            })
         .withProperty("camunda.security.authentication.unprotectedapi", true)
+        .withEnv(UNPROTECTED_API_ENV_VAR, "true")
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, GATEWAY_IP));
   }
 }
