@@ -36,7 +36,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail())
           .isEqualTo("At least one of [processDefinitionId, processDefinitionKey] is required.");
     }
@@ -56,7 +56,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail())
           .isEqualTo("Only one of [processDefinitionId, processDefinitionKey] is allowed.");
     }
@@ -76,7 +76,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail())
           .isEqualTo("processDefinitionVersion can only be set when using processDefinitionId.");
     }
@@ -97,7 +97,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail())
           .isEqualTo(
               "The provided processDefinitionKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.");
@@ -125,7 +125,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail())
           .isEqualTo(
               "Expected to handle request Create Process Instance with tenant identifier 'tenant-a', but multi-tenancy is disabled");
@@ -152,7 +152,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail())
           .isEqualTo(
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
@@ -248,7 +248,7 @@ class SimpleRequestMapperTest {
       // then
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
-      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getTitle()).isEqualTo("Bad Request");
       assertThat(result.getLeft().getDetail()).contains("businessId").contains("256");
     }
   }

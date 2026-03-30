@@ -69,7 +69,7 @@ public final class VariableContractAdapter {
                 truncateValues && entity.isPreview(),
                 GeneratedVariableSearchStrictContract.Fields.IS_TRUNCATED,
                 entity))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
         .build();
   }
 
@@ -102,7 +102,7 @@ public final class VariableContractAdapter {
                     entity.value(), entity.fullValue(), entity.isPreview()),
                 GeneratedVariableStrictContract.Fields.VALUE,
                 entity))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
         .build();
   }
 }

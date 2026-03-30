@@ -338,6 +338,10 @@ public class GenerateContractMappingPoc {
     Files.writeString(flatPageFile, renderFlatPageRequestDto(), StandardCharsets.UTF_8);
     System.out.println("generated: " + ROOT.relativize(flatPageFile));
 
+    final var offsetPageFile = packagePath.resolve("GeneratedOffsetPaginationStrictContract.java");
+    Files.writeString(offsetPageFile, renderOffsetPaginationDto(), StandardCharsets.UTF_8);
+    System.out.println("generated: " + ROOT.relativize(offsetPageFile));
+
     int searchRequestDtoCount = 0;
     for (var sqe : searchQuerySchemas) {
       final var requestDtoName = sqe.requestDtoName();
@@ -347,7 +351,7 @@ public class GenerateContractMappingPoc {
           ? TARGET_PACKAGE + "." + dtoClassName(sqe.filterSchemaName()) : null;
       final var requestDtoFile = packagePath.resolve(requestDtoName + ".java");
       Files.writeString(requestDtoFile, renderSearchQueryRequestDto(
-          requestDtoName, sortContractClass, filterContractFqn), StandardCharsets.UTF_8);
+          requestDtoName, sortContractClass, filterContractFqn, sqe.paginationType()), StandardCharsets.UTF_8);
       System.out.println("generated: " + ROOT.relativize(requestDtoFile));
 
       // Populate the override map so resolveSchemaType() routes this schema to the request DTO.
@@ -603,16 +607,25 @@ public class GenerateContractMappingPoc {
 
   // -- Search query schema discovery (spec-driven) --
 
+  /** Pagination type for a search query schema. */
+  private enum PaginationType {
+    /** Full pagination: offset + cursor (inherited from SearchQueryRequest). */
+    FULL,
+    /** Offset-only pagination: limit + from (references OffsetPagination directly). */
+    OFFSET_ONLY
+  }
+
   /**
    * A search query request schema discovered from the spec. Contains only spec-derived data:
-   * the schema name, entity name (for the request DTO class name), and the sort/filter schema
-   * names extracted from the schema's properties.
+   * the schema name, entity name (for the request DTO class name), the sort/filter schema
+   * names extracted from the schema's properties, and the pagination type.
    */
   private record SearchQuerySchemaEntry(
       String schemaName,
       String entityName,
       String sortSchemaName,
-      String filterSchemaName) {
+      String filterSchemaName,
+      PaginationType paginationType) {
 
     String requestDtoName() {
       return "Generated" + entityName + "SearchQueryRequestStrictContract";
@@ -620,9 +633,16 @@ public class GenerateContractMappingPoc {
   }
 
   /**
-   * Discovers all search query request schemas by walking allSchemas for schemas whose allOfRefs
-   * include SearchQueryRequest. For each, extracts the sort and filter schema names from the
-   * schema's own properties (sort.items.$ref and filter.allOfRefs).
+   * Discovers all search query request schemas from the spec. A schema is a search query request
+   * if it either:
+   * <ul>
+   *   <li>extends {@code SearchQueryRequest} via allOf (full pagination: offset + cursor), or</li>
+   *   <li>defines its own {@code page}, {@code sort}, and {@code filter} properties where
+   *       {@code page} references {@code OffsetPagination} (offset-only pagination).</li>
+   * </ul>
+   *
+   * <p>For each, extracts the sort and filter schema names from the schema's own properties
+   * (sort.items.$ref and filter.allOfRefs).
    *
    * <p>This replaces the hand-maintained REQUEST_ENTRIES table — the spec is the single source
    * of truth for which schemas are search query requests and what their sort/filter types are.
@@ -634,10 +654,26 @@ public class GenerateContractMappingPoc {
     for (var schemaDef : allSchemas.values()) {
       final var node = schemaDef.node();
 
-      // A search query request schema extends SearchQueryRequest via allOf.
+      // Pattern 1: extends SearchQueryRequest via allOf (full pagination).
       boolean extendsSearchQueryRequest = node.allOfRefs().stream()
           .anyMatch(ref -> ref.contains("/schemas/SearchQueryRequest"));
-      if (!extendsSearchQueryRequest) continue;
+
+      // Pattern 2: has page→OffsetPagination + sort + filter (offset-only pagination).
+      boolean isOffsetOnlySearchQuery = false;
+      if (!extendsSearchQueryRequest) {
+        final var pageProp = node.properties().get("page");
+        final var hasSortProp = node.properties().containsKey("sort");
+        final var hasFilterProp = node.properties().containsKey("filter");
+        if (pageProp != null && hasSortProp && hasFilterProp) {
+          isOffsetOnlySearchQuery = pageProp.allOfRefs().stream()
+              .anyMatch(ref -> ref.contains("/schemas/OffsetPagination"));
+        }
+      }
+
+      if (!extendsSearchQueryRequest && !isOffsetOnlySearchQuery) continue;
+
+      final var paginationType = extendsSearchQueryRequest
+          ? PaginationType.FULL : PaginationType.OFFSET_ONLY;
 
       final var schemaName = schemaDef.schemaName();
 
@@ -652,6 +688,11 @@ public class GenerateContractMappingPoc {
       if (sortProp != null && sortProp.items() != null && sortProp.items().ref() != null) {
         sortSchemaName = toSchemaKey(sortProp.items().ref(), schemaDef.fileName()).schemaName();
       }
+      if (sortProp != null && sortSchemaName == null) {
+        System.err.println("WARNING: search query schema '" + schemaName
+            + "' has a 'sort' property but sort type could not be resolved"
+            + " (items.$ref missing — check YAML indentation). Generated DTO will use List<Object>.");
+      }
 
       // Extract filter schema from properties.filter.allOfRefs or properties.filter.$ref
       String filterSchemaName = null;
@@ -664,7 +705,8 @@ public class GenerateContractMappingPoc {
         }
       }
 
-      entries.add(new SearchQuerySchemaEntry(schemaName, entityName, sortSchemaName, filterSchemaName));
+      entries.add(new SearchQuerySchemaEntry(
+          schemaName, entityName, sortSchemaName, filterSchemaName, paginationType));
     }
 
     entries.sort(Comparator.comparing(SearchQuerySchemaEntry::schemaName));
@@ -712,9 +754,17 @@ public class GenerateContractMappingPoc {
    * Returns true if this filter property schema represents a LongKey type.
    * LongKey filter properties accept both JSON strings ("12345") and JSON numbers (12345)
    * for the plain value branch. Detected by schema name ending in "KeyFilterProperty".
+   * Compound keys (in COMPOUND_KEY_EXCLUSIONS) are excluded because their values are
+   * non-numeric strings (e.g. "1-149") that must not be validated as Long.
    */
   private static boolean isLongKeyFilterProperty(String schemaName) {
-    return schemaName.endsWith("KeyFilterProperty");
+    if (!schemaName.endsWith("KeyFilterProperty")) {
+      return false;
+    }
+    // Extract the key schema name: e.g. "DecisionEvaluationInstanceKeyFilterProperty"
+    // → "DecisionEvaluationInstanceKey"
+    final var keySchemaName = schemaName.substring(0, schemaName.length() - "FilterProperty".length());
+    return !COMPOUND_KEY_EXCLUSIONS.contains(keySchemaName);
   }
 
   /**
@@ -993,9 +1043,20 @@ public record %s(%s value) implements %s {
           }"""
         .formatted(wrapperName, wrapperName);
     } else if (isLongKey) {
-      // LongKey: accept strings AND numbers (numbers converted to string)
+      // LongKey: accept strings AND numbers (numbers converted to string).
+      // Validate that string values are parseable as Long to fail fast with
+      // INVALID_ARGUMENT instead of a generic Bad Request from downstream parsing.
       plainValueCase = """
-          case VALUE_STRING -> new %s(p.getText());
+          case VALUE_STRING -> {
+            try {
+              Long.parseLong(p.getText());
+            } catch (NumberFormatException e) {
+              throw InvalidFormatException.from(p,
+                "The provided " + p.currentName() + " '" + p.getText() + "' is not a valid key. Expected a numeric value.",
+                p.getText(), Long.class);
+            }
+            yield new %s(p.getText());
+          }
           case VALUE_NUMBER_INT -> new %s(String.valueOf(p.getLongValue()));"""
         .formatted(wrapperName, wrapperName);
     } else if (enumSchemaName != null) {
@@ -3174,9 +3235,38 @@ public record GeneratedSearchQueryPageRequestStrictContract(
 """.formatted(TARGET_PACKAGE);
   }
 
+  private static String renderOffsetPaginationDto() {
+    return """
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ */
+package %s;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.annotation.Generated;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@NullMarked
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public record GeneratedOffsetPaginationStrictContract(
+    @Nullable Integer limit,
+    @Nullable Integer from
+) {}
+""".formatted(TARGET_PACKAGE);
+  }
+
 
   private static String renderSearchQueryRequestDto(
-      String className, String sortContractClass, String filterContractClass) {
+      String className, String sortContractClass, String filterContractClass,
+      PaginationType paginationType) {
     var sb = new StringBuilder();
 
     // Build import block
@@ -3184,6 +3274,10 @@ public record GeneratedSearchQueryPageRequestStrictContract(
     if (filterContractClass != null && filterContractClass.contains(".")) {
       filterImport = "\nimport " + filterContractClass + ";";
     }
+
+    final var pageType = paginationType == PaginationType.OFFSET_ONLY
+        ? "GeneratedOffsetPaginationStrictContract"
+        : "GeneratedSearchQueryPageRequestStrictContract";
 
     sb.append("""
 /*
@@ -3207,8 +3301,8 @@ import org.jspecify.annotations.Nullable;%s
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record %s(
-    @Nullable GeneratedSearchQueryPageRequestStrictContract page,
-""".formatted(TARGET_PACKAGE, filterImport, className));
+    @Nullable %s page,
+""".formatted(TARGET_PACKAGE, filterImport, className, pageType));
 
     if (sortContractClass != null) {
       sb.append("    @Nullable List<").append(sortContractClass).append("> sort,\n");
@@ -3430,7 +3524,8 @@ public record %s(
   /** Reads keys.yaml and returns the set of schema names that derive from LongKey via allOf. */
   // Compound keys that extend LongKey in the spec but use non-numeric values at runtime
   // (e.g. "2251799813691760-1"). Must remain String in Java path parameters.
-  private static final Set<String> COMPOUND_KEY_EXCLUSIONS = Set.of("DecisionEvaluationInstanceKey");
+  private static final Set<String> COMPOUND_KEY_EXCLUSIONS =
+      Set.of("DecisionEvaluationInstanceKey", "AuditLogKey");
 
   private static Set<String> loadLongKeySchemas(Path specDir) throws IOException {
     var keysFile = specDir.resolve("keys.yaml");
