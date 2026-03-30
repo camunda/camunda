@@ -33,7 +33,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class InitializeEntityRelationsIT {
 
-  public static final String DEFAULT_ROLE_CONNECTORS = "connectors";
+  private static final String DEFAULT_ROLE_CONNECTORS = "connectors";
   private static final String TEST_ROLE_ID = "role1";
   private static final String TEST_TENANT_ID = "tenant1";
   private static final String USERNAME_ADMIN = "admin";
