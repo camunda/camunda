@@ -24,7 +24,7 @@ on:
         type: string
       clusterPlan:
         description: 'Cluster plan used by testbench to create the test cluster'
-        default: 'Production - M'
+        default: 'G3-M'
         required: false
         type: string
       fault:
