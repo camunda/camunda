@@ -11,7 +11,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -167,7 +167,8 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionInstanceVersionStatistics(
-      final GeneratedProcessDefinitionInstanceVersionStatisticsQueryStrictContract queryStrict,
+      final GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract
+          queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionInstanceVersionStatisticsQuery(queryStrict)
         .fold(
