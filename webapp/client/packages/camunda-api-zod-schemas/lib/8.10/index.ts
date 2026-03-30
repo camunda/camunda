@@ -26,6 +26,7 @@ import {
 } from './batch-operation';
 import {pinClock, resetClock} from './clock';
 import {getTopology} from './cluster';
+import {evaluateConditionals} from './conditional';
 import {
 	queryDecisionDefinitions,
 	getDecisionDefinition,
@@ -46,6 +47,7 @@ import {
 	queryElementInstanceIncidents,
 } from './element-instance';
 import {queryElementInstanceInspection} from './element-instance-inspection';
+import {evaluateExpression} from './expression';
 import {
 	createGroup,
 	getGroup,
@@ -138,6 +140,7 @@ import {
 	queryMappingRulesByRole,
 } from './role';
 import {broadcastSignal} from './signal';
+import {createAdminUser} from './setup';
 import {
 	createTenant,
 	getTenant,
@@ -213,6 +216,7 @@ const endpoints = {
 	pinClock,
 	resetClock,
 	getTopology,
+	evaluateConditionals,
 	queryDecisionDefinitions,
 	getDecisionDefinition,
 	getDecisionDefinitionXml,
@@ -233,6 +237,7 @@ const endpoints = {
 	queryElementInstanceInspection,
 	getElementInstance,
 	updateElementInstanceVariables,
+	evaluateExpression,
 	createGroup,
 	getGroup,
 	updateGroup,
@@ -318,6 +323,7 @@ const endpoints = {
 	unassignMappingFromRole,
 	queryMappingRulesByRole,
 	broadcastSignal,
+	createAdminUser,
 	createTenant,
 	getTenant,
 	updateTenant,
@@ -543,6 +549,13 @@ export {
 	type GetTopologyResponseBody,
 } from './cluster';
 export {
+	evaluateConditionalsRequestBodySchema,
+	evaluateConditionalsResponseBodySchema,
+	evaluateConditionals,
+	type EvaluateConditionalsRequestBody,
+	type EvaluateConditionalsResponseBody,
+} from './conditional';
+export {
 	decisionDefinitionSchema,
 	queryDecisionDefinitionsRequestBodySchema,
 	queryDecisionDefinitionsResponseBodySchema,
@@ -632,6 +645,13 @@ export {
 	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
 export {
+	evaluateExpressionRequestBodySchema,
+	evaluateExpressionResponseBodySchema,
+	evaluateExpression,
+	type EvaluateExpressionRequestBody,
+	type EvaluateExpressionResponseBody,
+} from './expression';
+export {
 	waitStateTypeSchema,
 	waitStateDetailsSchema,
 	elementInstanceInspectionSchema,
@@ -643,6 +663,12 @@ export {
 	type QueryElementInstanceInspectionRequestBody,
 	type QueryElementInstanceInspectionResponseBody,
 } from './element-instance-inspection';
+export {
+	createAdminUserRequestBodySchema,
+	createAdminUserResponseBodySchema,
+	type CreateAdminUserRequestBody,
+	type CreateAdminUserResponseBody,
+} from './setup';
 export {
 	createGroupRequestBodySchema,
 	createGroupResponseBodySchema,
