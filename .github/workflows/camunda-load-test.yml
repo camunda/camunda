@@ -40,7 +40,7 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. When not set to "custom", this will override the load-test-load input.'
+        description: 'Choose the variant of workload to use for the load test.'
         required: false
         type: choice
         options:
@@ -237,6 +237,7 @@ jobs:
     permissions: { }
     outputs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
+      platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -254,16 +255,23 @@ jobs:
           case "$scenario" in
             latency)
               echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             realistic)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)
               # Output typical configuration directly to avoid quote escaping issues
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
+              # We inject the overrides via --set-file into extraConfiguration (application-override.yml),
+              # which is loaded after (and thus takes priority over) the base application.yml.
+              echo "platform-additional-config=--set-file 'zeebe.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -413,7 +421,7 @@ jobs:
         run: |
           cd zeebe/benchmarks/setup/${{ env.NAMESPACE }}
 
-          # Build additional load test configuration
+          # Build load test configuration
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
@@ -424,10 +432,33 @@ jobs:
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
+          # Build platform configuration matching stable/8.7 helm chart keys
+          image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+          image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+          zeebe_repo="${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
+
+          additional_platform_config="--set global.image.tag=${image_tag} \
+            --set zeebe.image.registry=${image_registry} \
+            --set zeebe.image.repository=${zeebe_repo} \
+            --set zeebe.image.tag=${image_tag} \
+            --set zeebeGateway.image.registry=${image_registry} \
+            --set zeebeGateway.image.repository=${zeebe_repo} \
+            --set zeebeGateway.image.tag=${image_tag}"
+
+          # Append user-provided helm values if present
+          if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
+            additional_platform_config+=" ${{ inputs.platform-helm-values }}"
+          fi
+
+          # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
+            additional_platform_config+=" ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
+          fi
+
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }} --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }} --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()
