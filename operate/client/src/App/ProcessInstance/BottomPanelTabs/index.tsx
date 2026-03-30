@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Outlet} from 'react-router-dom';
+import {Navigate, Outlet, useLocation} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
@@ -30,16 +30,18 @@ function useSelectionAwareIncidentsCount(
     resolvedElementInstanceKey !== undefined &&
     resolvedElementInstanceKey !== processInstanceKey;
 
-  const processIncidentsCount = useProcessInstanceIncidentsCount(
+  const {data: processIncidentsCount} = useProcessInstanceIncidentsCount(
     processInstanceKey ?? '',
     {
       enabled: hasIncident && !isElementInstanceSelected && !isFetchingElement,
       filter: {elementId: selectedElementId ?? undefined},
     },
   );
-  const elementIncidentsCount = useElementInstanceIncidentsCount(
+  const {data: elementIncidentsCount} = useElementInstanceIncidentsCount(
     resolvedElementInstanceKey ?? '',
-    {enabled: hasIncident && isElementInstanceSelected},
+    {
+      enabled: hasIncident && isElementInstanceSelected,
+    },
   );
 
   return isElementInstanceSelected
@@ -52,6 +54,7 @@ const BottomPanelTabs: React.FC = () => {
   const {data: processInstance} = useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
+  const location = useLocation();
   const hasIncident = processInstance?.hasIncident === true;
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
@@ -65,8 +68,9 @@ const BottomPanelTabs: React.FC = () => {
       key: 'incidents',
       selected: currentPage === 'process-details-incidents',
       title: 'Incidents',
-      visible: hasIncident,
-      tagText: incidentsCount,
+      visible:
+        hasIncident && (incidentsCount === undefined || incidentsCount > 0),
+      tagText: incidentsCount ?? 0,
     },
     {
       label: 'Details',
@@ -120,12 +124,23 @@ const BottomPanelTabs: React.FC = () => {
     },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 
+  const selectedTab = tabItems.find((tab) => tab.selected);
+
   return (
     <Container>
       <TabListNav label="Process Instance Bottom Panel Tabs" items={tabItems} />
       <TabContent>
         <Outlet />
       </TabContent>
+      {selectedTab?.visible === false && (
+        <Navigate
+          to={{
+            ...location,
+            pathname: Paths.processInstanceVariables({processInstanceId}),
+          }}
+          replace
+        />
+      )}
     </Container>
   );
 };

@@ -87,9 +87,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
-  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceKey, {
-    enabled: hasIncident,
-  });
+  const {data: incidentsCount = 0} = useProcessInstanceIncidentsCount(
+    processInstanceKey,
+    {
+      enabled: hasIncident,
+    },
+  );
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
