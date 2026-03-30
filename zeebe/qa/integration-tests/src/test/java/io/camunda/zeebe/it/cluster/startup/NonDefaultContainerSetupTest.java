@@ -9,16 +9,17 @@ package io.camunda.zeebe.it.cluster.startup;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -73,20 +74,23 @@ public class NonDefaultContainerSetupTest {
   void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
     try (final BrokerContainer broker =
             new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+                .withUnifiedConfig(
+                    cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none))
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
                 .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
                 .withCreateContainerCmdModifier(containerModifier);
         final GatewayContainer gateway =
             new GatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
                 .withNetwork(broker.getNetwork())
+                .withUnifiedConfig(
+                    cfg -> {
+                      cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                      cfg.getCluster()
+                          .setInitialContactPoints(List.of(broker.getInternalClusterAddress()));
+                    })
                 .withCreateContainerCmdModifier(containerModifier)
                 .dependsOn(broker)
-                .withEnv(
-                    "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
-                    broker.getInternalClusterAddress())
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
                 .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")) {
       // given
       broker.start();
