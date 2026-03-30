@@ -135,6 +135,39 @@ public interface GlobalListenerRecordValue extends RecordValue {
   GlobalListenerType getListenerType();
 
   /**
+   * Returns the list of BPMN element type names this execution listener targets.
+   *
+   * <p>Only applicable to execution listeners ({@link GlobalListenerType#EXECUTION}). Element types
+   * allow fine-grained targeting of specific BPMN element types (e.g., "SERVICE_TASK", "USER_TASK",
+   * "EXCLUSIVE_GATEWAY", "PROCESS"). Used together with {@link #getCategories()} as a union — the
+   * listener applies to any element matching either field.
+   *
+   * @return the list of BPMN element type names, or an empty list if not set
+   */
+  List<String> getElementTypes();
+
+  /**
+   * Returns the list of element categories this execution listener targets.
+   *
+   * <p>Only applicable to execution listeners ({@link GlobalListenerType#EXECUTION}). Categories
+   * group BPMN element types:
+   *
+   * <ul>
+   *   <li>"all": matches all supported BPMN element types
+   *   <li>"tasks": service, receive, user, manual, task, call activity, business rule, script, send
+   *       tasks
+   *   <li>"gateways": exclusive, parallel, event-based, inclusive gateways
+   *   <li>"events": start, intermediate catch/throw, boundary, end events
+   *   <li>"containers": sub-process, event sub-process, ad-hoc sub-process, multi-instance body
+   * </ul>
+   *
+   * Used together with {@link #getElementTypes()} as a union.
+   *
+   * @return the list of category names, or an empty list if not set
+   */
+  List<String> getCategories();
+
+  /**
    * When this value is set, it indicates that the record is part of the changes necessary to define
    * a global listeners configuration with this key.
    */

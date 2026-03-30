@@ -73,7 +73,9 @@ public class GlobalListenerCreatedUpdatedHandler
         .setAfterNonGlobal(listener.isAfterNonGlobal())
         .setPriority(listener.getPriority())
         .setSource(GlobalListenerSource.valueOf(listener.getSource().name()))
-        .setListenerType(GlobalListenerType.valueOf(listener.getListenerType().name()));
+        .setListenerType(GlobalListenerType.valueOf(listener.getListenerType().name()))
+        .setElementTypes(listener.getElementTypes())
+        .setCategories(listener.getCategories());
   }
 
   @Override

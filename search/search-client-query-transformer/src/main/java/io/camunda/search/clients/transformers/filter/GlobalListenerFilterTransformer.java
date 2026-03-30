@@ -42,6 +42,9 @@ public final class GlobalListenerFilterTransformer
     queries.addAll(stringOperations(GlobalListenerIndex.SOURCE, filter.sourceOperations()));
     queries.addAll(
         stringOperations(GlobalListenerIndex.LISTENER_TYPE, filter.listenerTypeOperations()));
+    queries.addAll(
+        stringOperations(GlobalListenerIndex.ELEMENT_TYPES, filter.elementTypeOperations()));
+    queries.addAll(stringOperations(GlobalListenerIndex.CATEGORIES, filter.categoryOperations()));
     return and(queries);
   }
 

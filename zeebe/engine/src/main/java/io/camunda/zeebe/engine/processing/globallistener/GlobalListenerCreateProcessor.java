@@ -112,7 +112,10 @@ public final class GlobalListenerCreateProcessor
             record -> globalListenerValidator.listenerDoesNotExist(record, globalListenersState))
         .flatMap(globalListenerValidator::typeProvided)
         .flatMap(globalListenerValidator::eventTypesProvided)
-        .flatMap(globalListenerValidator::validEventTypes);
+        .flatMap(globalListenerValidator::validEventTypes)
+        .flatMap(globalListenerValidator::elementTypesOrCategoriesProvided)
+        .flatMap(globalListenerValidator::validElementTypes)
+        .flatMap(globalListenerValidator::validCategories);
   }
 
   private void emitChangeEvents(final GlobalListenerRecord record) {

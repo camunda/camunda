@@ -76,6 +76,9 @@ public final class GlobalListenersInitializer implements StreamProcessorLifecycl
     listeners.userTask().stream()
         .map(GlobalListenerConfiguration::toRecord)
         .forEach(record::addListener);
+    listeners.execution().stream()
+        .map(GlobalListenerConfiguration::toRecord)
+        .forEach(record::addListener);
     return record;
   }
 }

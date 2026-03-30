@@ -1146,6 +1146,30 @@
       <column name="GLOBAL_LISTENER_ID"/>
     </createIndex>
 
+    <!-- Global listener element type table: manages collection of element types for global execution listeners -->
+    <createTable tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE">
+      <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_ELEMENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+      </column>
+      <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_ELEMENT_TYPE" indexName="${prefix}IDX_GLOBAL_LISTENER_ELEMENT_TYPE_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+
+    <!-- Global listener category table: manages collection of categories for global execution listeners -->
+    <createTable tableName="${prefix}GLOBAL_LISTENER_CATEGORY">
+      <column name="GLOBAL_LISTENER_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_CATEGORY_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+      </column>
+      <column name="CATEGORY" type="VARCHAR(50)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_CATEGORY" indexName="${prefix}IDX_GLOBAL_LISTENER_CATEGORY_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+
   </changeSet>
 
   <changeSet id="create_variable_name_index" author="camunda">

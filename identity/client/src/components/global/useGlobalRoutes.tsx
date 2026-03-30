@@ -17,6 +17,7 @@ import Authorizations from "src/pages/authorizations";
 import ClusterVariables from "src/pages/cluster-variables";
 import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
+import GlobalExecutionListeners from "src/pages/global-execution-listeners";
 import {
   isCamundaGroupsEnabled,
   isOIDC,
@@ -92,6 +93,12 @@ export const useGlobalRoutes = () => {
       key: Paths.globalTaskListeners(),
       label: t("globalTaskListeners"),
       element: <GlobalTaskListeners />,
+    },
+    {
+      path: `${Paths.globalExecutionListeners()}/*`,
+      key: Paths.globalExecutionListeners(),
+      label: t("globalExecutionListeners"),
+      element: <GlobalExecutionListeners />,
     },
     {
       path: `${Paths.clusterVariables()}/*`,

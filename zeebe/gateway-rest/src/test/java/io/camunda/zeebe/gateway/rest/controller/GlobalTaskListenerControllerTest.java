@@ -70,7 +70,9 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             true,
             10,
             GlobalListenerSource.API,
-            GlobalListenerType.USER_TASK);
+            GlobalListenerType.USER_TASK,
+            List.of(),
+            List.of());
 
     when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class), any()))
         .thenReturn(entity);
@@ -132,7 +134,9 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             true,
             10,
             GlobalListenerSource.API,
-            GlobalListenerType.USER_TASK);
+            GlobalListenerType.USER_TASK,
+            List.of(),
+            List.of());
 
     final var entity2 =
         new GlobalListenerEntity(
@@ -144,7 +148,9 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             true,
             10,
             GlobalListenerSource.CONFIGURATION,
-            GlobalListenerType.USER_TASK);
+            GlobalListenerType.USER_TASK,
+            List.of(),
+            List.of());
 
     final var searchResult =
         new SearchQueryResult.Builder<GlobalListenerEntity>()

@@ -69,6 +69,50 @@
     WHERE GLOBAL_LISTENER_ID = #{id}
   </delete>
 
+  <insert id="insertElementTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    INSERT INTO ${prefix}GLOBAL_LISTENER_ELEMENT_TYPE (GLOBAL_LISTENER_ID, ELEMENT_TYPE)
+    VALUES
+    <foreach collection="elementTypes" item="elementType" separator=", ">
+      (#{id}, #{elementType})
+    </foreach>
+  </insert>
+
+  <insert id="insertElementTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="elementTypes" item="elementType">
+      INTO ${prefix}GLOBAL_LISTENER_ELEMENT_TYPE (GLOBAL_LISTENER_ID, ELEMENT_TYPE) VALUES (#{id}, #{elementType})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <delete id="deleteElementTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    DELETE
+    FROM ${prefix}GLOBAL_LISTENER_ELEMENT_TYPE
+    WHERE GLOBAL_LISTENER_ID = #{id}
+  </delete>
+
+  <insert id="insertCategories" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    INSERT INTO ${prefix}GLOBAL_LISTENER_CATEGORY (GLOBAL_LISTENER_ID, CATEGORY)
+    VALUES
+    <foreach collection="categories" item="category" separator=", ">
+      (#{id}, #{category})
+    </foreach>
+  </insert>
+
+  <insert id="insertCategories" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="categories" item="category">
+      INTO ${prefix}GLOBAL_LISTENER_CATEGORY (GLOBAL_LISTENER_ID, CATEGORY) VALUES (#{id}, #{category})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <delete id="deleteCategories" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    DELETE
+    FROM ${prefix}GLOBAL_LISTENER_CATEGORY
+    WHERE GLOBAL_LISTENER_ID = #{id}
+  </delete>
+
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
     <constructor>
       <idArg column="ID" javaType="java.lang.String"/>
@@ -83,11 +127,17 @@
     <collection property="eventTypes" ofType="java.lang.String" javaType="java.util.List">
       <id column="EVENT_TYPE"/>
     </collection>
+    <collection property="elementTypes" ofType="java.lang.String" javaType="java.util.List">
+      <id column="ELEMENT_TYPE"/>
+    </collection>
+    <collection property="categories" ofType="java.lang.String" javaType="java.util.List">
+      <id column="CATEGORY"/>
+    </collection>
   </resultMap>
 
   <select id="get" parameterType="java.lang.String"
     resultMap="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchResultMap">
-    SELECT gl.*, et.EVENT_TYPE
+    SELECT gl.*, et.EVENT_TYPE, elt.ELEMENT_TYPE, cat.CATEGORY
     FROM (
       SELECT
         gl.ID,
@@ -102,6 +152,8 @@
       WHERE ID = #{id}
     ) gl
     LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.GLOBAL_LISTENER_ID = gl.ID)
+    LEFT JOIN ${prefix}GLOBAL_LISTENER_ELEMENT_TYPE elt ON (elt.GLOBAL_LISTENER_ID = gl.ID)
+    LEFT JOIN ${prefix}GLOBAL_LISTENER_CATEGORY cat ON (cat.GLOBAL_LISTENER_ID = gl.ID)
   </select>
 
   <select id="search"
@@ -110,7 +162,9 @@
     SELECT * FROM (
       SELECT
         gl.*,
-        et.EVENT_TYPE
+        et.EVENT_TYPE,
+        elt.ELEMENT_TYPE,
+        cat.CATEGORY
       FROM (
         SELECT * FROM (
           SELECT
@@ -130,6 +184,8 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
       ) gl
       LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.GLOBAL_LISTENER_ID = gl.ID)
+      LEFT JOIN ${prefix}GLOBAL_LISTENER_ELEMENT_TYPE elt ON (elt.GLOBAL_LISTENER_ID = gl.ID)
+      LEFT JOIN ${prefix}GLOBAL_LISTENER_CATEGORY cat ON (cat.GLOBAL_LISTENER_ID = gl.ID)
     ) sorted
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
@@ -192,6 +248,28 @@
         AND EXISTS (Select * from ${prefix}GLOBAL_LISTENER_EVENT_TYPE et where et.GLOBAL_LISTENER_ID = gl.ID
         <foreach collection="filter.eventTypeOperations" item="operation">
           AND et.EVENT_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+        )
+      </if>
+
+      <!-- element types -->
+      <if
+        test="filter.elementTypeOperations != null and !filter.elementTypeOperations.isEmpty()">
+        AND EXISTS (Select * from ${prefix}GLOBAL_LISTENER_ELEMENT_TYPE elt where elt.GLOBAL_LISTENER_ID = gl.ID
+        <foreach collection="filter.elementTypeOperations" item="operation">
+          AND elt.ELEMENT_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+        )
+      </if>
+
+      <!-- categories -->
+      <if
+        test="filter.categoryOperations != null and !filter.categoryOperations.isEmpty()">
+        AND EXISTS (Select * from ${prefix}GLOBAL_LISTENER_CATEGORY cat where cat.GLOBAL_LISTENER_ID = gl.ID
+        <foreach collection="filter.categoryOperations" item="operation">
+          AND cat.CATEGORY
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
         )

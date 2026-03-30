@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @ExcludeAuthorizationCheck
 public final class GlobalListenerBatchConfigureProcessor
@@ -97,17 +98,24 @@ public final class GlobalListenerBatchConfigureProcessor
 
   private void fillConfigurationChangeMetadata(
       final GlobalListenerBatchRecord listenerBatchRecord) {
-    // Retrieve existing listeners from state, mapped by ID
+    // Retrieve existing listeners from state, mapped by composite key (type:id)
     final GlobalListenerBatchRecord currentConfig = globalListenersState.getCurrentConfig();
     final Map<String, GlobalListenerRecord> existingListeners =
         currentConfig == null
             ? Collections.emptyMap()
-            : currentConfig.getTaskListeners().stream()
-                .collect(Collectors.toMap(GlobalListenerRecordValue::getId, Function.identity()));
-    // Retrieve new requested listeners from command, mapped by ID
+            : Stream.concat(
+                    currentConfig.getTaskListeners().stream(),
+                    currentConfig.getExecutionListeners().stream())
+                .collect(
+                    Collectors.toMap(
+                        l -> l.getListenerType() + ":" + l.getId(), Function.identity()));
+    // Retrieve new requested listeners from command, mapped by composite key (type:id)
     final Map<String, GlobalListenerRecord> newListeners =
-        listenerBatchRecord.getTaskListeners().stream()
-            .collect(Collectors.toMap(GlobalListenerRecordValue::getId, Function.identity()));
+        Stream.concat(
+                listenerBatchRecord.getTaskListeners().stream(),
+                listenerBatchRecord.getExecutionListeners().stream())
+            .collect(
+                Collectors.toMap(l -> l.getListenerType() + ":" + l.getId(), Function.identity()));
 
     // The new configuration should completely replace the old one.
     // This means that any existing configuration-defined listener which is no longer present in the
@@ -116,7 +124,7 @@ public final class GlobalListenerBatchConfigureProcessor
         // only consider configuration-defined listeners
         .filter(l -> l.getSource() == GlobalListenerSource.CONFIGURATION)
         // filter out listeners which are still present in the new configuration
-        .filter(l -> !newListeners.containsKey(l.getId()))
+        .filter(l -> !newListeners.containsKey(l.getListenerType() + ":" + l.getId()))
         .forEach(
             listener -> {
               listenerBatchRecord.addDeletedListener(listener);
@@ -128,11 +136,12 @@ public final class GlobalListenerBatchConfigureProcessor
         .values()
         .forEach(
             listener -> {
+              final var compositeKey = listener.getListenerType() + ":" + listener.getId();
               // Note: the old listener is replaced even if it was API-defined
-              if (existingListeners.containsKey(listener.getId())) {
+              if (existingListeners.containsKey(compositeKey)) {
                 // Ensure the old key is kept for updated listeners to correlate with existing state
                 listener.setGlobalListenerKey(
-                    existingListeners.get(listener.getId()).getGlobalListenerKey());
+                    existingListeners.get(compositeKey).getGlobalListenerKey());
                 listenerBatchRecord.addUpdatedListener(listener);
               } else {
                 // Generate a new key for created listeners
@@ -144,7 +153,9 @@ public final class GlobalListenerBatchConfigureProcessor
 
   private void emitChangeEvents(final GlobalListenerBatchRecord listenerBatchRecord) {
     final Map<Long, GlobalListenerRecord> listenersByKey =
-        listenerBatchRecord.getTaskListeners().stream()
+        Stream.concat(
+                listenerBatchRecord.getTaskListeners().stream(),
+                listenerBatchRecord.getExecutionListeners().stream())
             .collect(
                 Collectors.toMap(
                     GlobalListenerRecordValue::getGlobalListenerKey, Function.identity()));
