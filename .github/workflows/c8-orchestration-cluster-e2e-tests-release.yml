@@ -116,7 +116,8 @@ jobs:
           else
             echo "Updating unified camunda service image"
             # Replace the camunda image tag in docker-compose.yml
-            sed -i.bak "s|image: camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
+            # Match both direct image references and variable-default syntax
+            sed -i.bak "s|image:.*camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
 
             echo "Updated docker-compose.yml with unified service:"
             grep "image: camunda/camunda:" "$compose_file"
@@ -700,23 +701,23 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
-      - name: Send Slack notification
-        uses: slackapi/slack-github-action@v3.0.1
-        with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
-                  }
-                }
-              ]
-            }
+#      - name: Send Slack notification
+#        uses: slackapi/slack-github-action@v3.0.1
+#        with:
+#          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+#          webhook-type: incoming-webhook
+#          payload: |
+#            {
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
+#                  }
+#                }
+#              ]
+#            }
 
       - name: Observe build status
         if: always()
