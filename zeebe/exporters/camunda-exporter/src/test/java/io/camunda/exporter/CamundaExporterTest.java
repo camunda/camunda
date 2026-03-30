@@ -142,13 +142,13 @@ final class CamundaExporterTest {
     }
 
     @Override
-    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
-        final String decisionIndexName) {
+    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
       return k -> null;
     }
 
     @Override
-    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
+        final String decisionIndexName) {
       return k -> null;
     }
   }
@@ -233,7 +233,7 @@ final class CamundaExporterTest {
   final class FlushTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       configuration.getBulk().setDelay(1);
 
@@ -291,7 +291,7 @@ final class CamundaExporterTest {
     @Test
     void shouldNotFlushBeforeDelayElapses() {
       // given — use a controllable clock so we can verify timing
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       // bulk size = 1 so that export() triggers an immediate size-based flush,
       // which sets lastFlushTimestamp without needing the scheduled task to flush
@@ -320,7 +320,7 @@ final class CamundaExporterTest {
     @Test
     void shouldFlushWhenExportIfDelayElapsed() {
       // given — use a controllable clock so we can verify timing
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       // bulk size = 10 so that a single export does NOT trigger a size-based flush;
       // flushing only happens via the scheduled task
@@ -368,7 +368,7 @@ final class CamundaExporterTest {
       // repeated flush cycles and not degrade to zero.
 
       // given
-      final var clock = new MutableClock(0);
+      final var clock = new MutableClock(1000);
       testContext.setClock(clock);
       configuration.getBulk().setSize(1); // every export() triggers size-based flush
       configuration.getBulk().setDelay(1); // 1 second
@@ -390,6 +390,32 @@ final class CamundaExporterTest {
         assertThat(tasks.getLast().getDelay())
             .as("Rescheduled delay in cycle %d must not degrade", cycle)
             .isEqualTo(Duration.ofMillis(500));
+      }
+    }
+
+    @Test
+    void shouldKeepStableDelayAcrossMultipleFlushCyclesWhenBatchIsEmpty() {
+      // Regression test: the rescheduled flush delay must remain stable across
+      // repeated flush cycles and not degrade to zero.
+
+      // given
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1); // 1 second
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when
+      for (int cycle = 0; cycle < 4; cycle++) {
+        testController.runScheduledTasks(Duration.ofSeconds(2));
+        clock.advance(1000);
+
+        // then
+        final var tasks = testController.getScheduledTasks();
+        assertThat(tasks.getLast().getDelay()).isEqualTo(Duration.ofMillis(1000));
       }
     }
   }
