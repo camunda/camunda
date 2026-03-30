@@ -10,8 +10,12 @@ import {IncidentsTable} from '..';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
+import {
+  createEnhancedIncident,
+  createProcessInstance,
+  createUser,
+} from 'modules/testUtils';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {createProcessInstance, createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
@@ -221,5 +225,97 @@ describe('IncidentsTable', () => {
     expect(
       secondIncidentRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should provide a link to root cause decision instance for DECISION_EVALUATION_ERROR', () => {
+    const decisionIncident = createEnhancedIncident({
+      errorType: 'DECISION_EVALUATION_ERROR',
+      processInstanceKey: '1',
+      errorMessage: 'Decision failed',
+      elementId: 'businessRuleTask_1',
+      elementInstanceKey: 'elementKey_123',
+    });
+
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        decisionInstancesByElementKey={{
+          elementKey_123: {
+            decisionInstanceKey: 'decisionKey_456',
+            decisionDefinitionName: 'MyDecision',
+          },
+        }}
+        incidents={[decisionIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const withinRow = within(
+      screen.getByRole('row', {
+        name: /Decision evaluation error/i,
+      }),
+    );
+
+    expect(
+      withinRow.getByRole('link', {
+        name: 'MyDecision - decisionKey_456',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('should provide a link to root cause decision instance for CALLED_DECISION_ERROR', () => {
+    const decisionIncident = createEnhancedIncident({
+      errorType: 'CALLED_DECISION_ERROR',
+      processInstanceKey: '1',
+      errorMessage: 'Decision not found',
+      elementId: 'businessRuleTask_2',
+      elementInstanceKey: 'elementKey_789',
+    });
+
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        decisionInstancesByElementKey={{
+          elementKey_789: {
+            decisionInstanceKey: 'decisionKey_101',
+            decisionDefinitionName: 'AnotherDecision',
+          },
+        }}
+        incidents={[decisionIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const withinRow = within(
+      screen.getByRole('row', {
+        name: /Called decision error/i,
+      }),
+    );
+
+    expect(
+      withinRow.getByRole('link', {
+        name: 'AnotherDecision - decisionKey_101',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('should show plain element name for decision incidents without matching decision instance', () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[secondIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const withinRow = within(
+      screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
+    );
+
+    expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
+    expect(withinRow.queryByRole('link')).not.toBeInTheDocument();
   });
 });
