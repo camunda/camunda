@@ -31,14 +31,11 @@ import org.springframework.context.ApplicationContext;
  * <ol>
  *   <li>If exactly one {@link EmbeddingModelAdapter} bean exists and no provider is configured, use
  *       it.
- *   <li>If a provider is configured and a bean named {@code "similarity.<provider>"} exists, use
- *       that bean.
+ *   <li>If a provider is configured and a bean named {@code "<provider>"} exists, use that bean.
  *   <li>Otherwise, fall back to SPI-based resolution via {@link EmbeddingModelAdapterResolver}.
  * </ol>
  */
 public final class SemanticSimilarityConfigResolver {
-
-  static final String BEAN_NAME_PREFIX = "similarity.";
 
   private SemanticSimilarityConfigResolver() {}
 
@@ -97,10 +94,10 @@ public final class SemanticSimilarityConfigResolver {
       return beans.values().iterator().next();
     }
 
-    // Provider configured: match by prefixed bean name ("similarity.<provider>")
+    // Provider configured: match by provider bean name
     if (similarityConfiguration.hasProviderConfigured()) {
       final String provider = similarityConfiguration.getEmbeddingModel().getProvider().trim();
-      return beans.get(BEAN_NAME_PREFIX + provider);
+      return beans.get(provider);
     }
 
     return null;
