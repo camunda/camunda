@@ -358,7 +358,6 @@ final class CamundaExporterTest {
       // given
       final var clock = new MutableClock(1000);
       testContext.setClock(clock);
-      configuration.getBulk().setSize(1); // every export() triggers size-based flush
       configuration.getBulk().setDelay(1); // 1 second
       configuration.getIndex().setShouldWaitForImporters(false); // do not wait for importers
       exporter =
