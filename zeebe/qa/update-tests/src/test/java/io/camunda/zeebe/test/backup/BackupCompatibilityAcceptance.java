@@ -18,6 +18,7 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeTopologyWaitStrategy;
@@ -134,6 +135,49 @@ public interface BackupCompatibilityAcceptance {
   }
 
   /**
+   * Verifies that checkpoint state written by the previous version can be deserialized after
+   * restore. This is a regression test for <a
+   * href="https://github.com/camunda/camunda/issues/49812">a bug</a> where the {@code timestamp}
+   * property was added to {@code CheckpointInfo} without a default value, causing deserialization
+   * to fail when reading old-format data that lacks the property.
+   *
+   * <p>The existing {@link #shouldRestoreBackupFromPreviousVersion()} test does not catch this
+   * because its snapshot predates the checkpoint record — the checkpoint info is only ever written
+   * by the current version during log replay. This test forces the scenario where the snapshot
+   * already contains checkpoint state from the previous version.
+   */
+  @RegressionTest("https://github.com/camunda/camunda/issues/49812")
+  default void shouldRestoreBackupWhenSnapshotContainsCheckpointFromPreviousVersion() {
+    // given -- two backups: the first writes checkpoint info to RocksDB, and the
+    // second's snapshot captures that old-format checkpoint state
+    final var firstBackupId = 1L;
+    final var secondBackupId = 2L;
+    try (final var broker = createOldBroker()) {
+      broker.start();
+      createProcessInstanceWithJob(broker);
+      takeBackup(broker, firstBackupId);
+
+      // Checkpoint info from backup #1 is now persisted in RocksDB.
+      // Take a second backup whose snapshot includes that state.
+      takeBackupWithFreshSnapshot(broker, secondBackupId);
+    }
+
+    // when -- restore the second backup using the current version
+    final Path restoredDataDir;
+    try (final var restoreApp =
+        new TestRestoreApp()
+            .withUnifiedConfig(this::configureCurrentBackupStore)
+            .withBackupId(secondBackupId)
+            .start()) {
+      restoredDataDir = restoreApp.getWorkingDirectory();
+    }
+
+    // then -- the current-version broker must deserialize old checkpoint state from the
+    // snapshot without errors and replay the remaining log successfully
+    verifyRestoredJobCanBeCompleted(restoredDataDir);
+  }
+
+  /**
    * Starts a current-version broker on the restored data directory and verifies that the service
    * task job created before the backup can be activated and completed.
    */
@@ -196,11 +240,44 @@ public interface BackupCompatibilityAcceptance {
         .atMost(Duration.ofSeconds(60))
         .until(() -> partitionsActuator.query().get(1).snapshotId(), Objects::nonNull);
 
-    // Use the 8.8 actuator path (/actuator/backups) rather than the current
-    // /actuator/backupRuntime
-    final var backupActuator =
-        BackupActuator.of(
-            String.format("http://%s/actuator/backups", broker.getExternalMonitoringAddress()));
+    // Initiate additional processing to progress logstream so that backup doesn't fail
+    createProcessInstanceWithJob(broker);
+
+    final var backupActuator = BackupActuator.of(broker);
+    backupActuator.take(backupId);
+
+    Awaitility.await("until backup is completed")
+        .atMost(Duration.ofSeconds(120))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var status = backupActuator.status(backupId);
+              assertThat(status)
+                  .describedAs("Backup status (failureReason=%s)", status.getFailureReason())
+                  .returns(StateCode.COMPLETED, BackupInfo::getState);
+            });
+  }
+
+  /**
+   * Takes a backup after forcing a fresh snapshot, ensuring the snapshot captures the current
+   * RocksDB state (including any checkpoint info written by prior backups). Unlike {@link
+   * #takeBackup}, this waits for the snapshot ID to actually change before proceeding.
+   */
+  private void takeBackupWithFreshSnapshot(final ZeebeContainer broker, final long backupId) {
+    final var partitionsActuator = PartitionsActuator.of(broker);
+    final var previousSnapshotId = partitionsActuator.query().get(1).snapshotId();
+
+    partitionsActuator.takeSnapshot();
+    Awaitility.await("Fresh snapshot capturing checkpoint state")
+        .atMost(Duration.ofSeconds(60))
+        .until(
+            () -> partitionsActuator.query().get(1).snapshotId(),
+            id -> id != null && !id.equals(previousSnapshotId));
+
+    // Progress the logstream past the snapshot position
+    createProcessInstanceWithJob(broker);
+
+    final var backupActuator = BackupActuator.of(broker);
     backupActuator.take(backupId);
 
     Awaitility.await("until backup is completed")
