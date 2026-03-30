@@ -229,7 +229,7 @@ public class FlowNodeInstanceMetadataBuilder {
     try {
       return Long.parseLong(formKey);
     } catch (final NumberFormatException e) {
-      LOGGER.warn("Failed to parse formKey '{}' as Long, returning null", formKey);
+      LOGGER.debug("Failed to parse formKey '{}' as Long, returning null", formKey);
       return null;
     }
   }
