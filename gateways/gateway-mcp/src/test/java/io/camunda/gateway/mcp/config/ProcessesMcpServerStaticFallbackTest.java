@@ -85,13 +85,12 @@ class ProcessesMcpServerStaticFallbackTest extends ToolsTest {
                     .build());
 
         @Override
-        public @NonNull List<@NonNull Tool> getTools(
-            @NonNull final McpTransportContext transportContext) {
+        public @NonNull List<Tool> getTools(@NonNull final McpTransportContext transportContext) {
           return tools.values().stream().map(SyncToolSpecification::tool).toList();
         }
 
         @Override
-        public @NonNull Either<@NonNull String, @NonNull SyncToolSpecification> findTool(
+        public @NonNull Either<String, SyncToolSpecification> findTool(
             @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
           return Either.right(tools.get(toolName));
         }

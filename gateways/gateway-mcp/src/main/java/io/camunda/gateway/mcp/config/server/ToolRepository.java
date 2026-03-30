@@ -23,7 +23,7 @@ public interface ToolRepository {
    * <p>Implementations may inspect the transport context to scope tools to the authenticated user
    * or request-specific data.
    */
-  @NonNull List<@NonNull Tool> getTools(@NonNull McpTransportContext transportContext);
+  @NonNull List<Tool> getTools(@NonNull McpTransportContext transportContext);
 
   /**
    * Finds the executable tool specification for the given request context and tool name.
@@ -31,6 +31,6 @@ public interface ToolRepository {
    * <p>If a tool exists, it is returned as a {@link io.camunda.zeebe.util.Either.Right}. Otherwise,
    * an error message is returned as a {@link io.camunda.zeebe.util.Either.Left}.
    */
-  @NonNull Either<@NonNull String, @NonNull SyncToolSpecification> findTool(
+  @NonNull Either<String, SyncToolSpecification> findTool(
       @NonNull McpTransportContext transportContext, @NonNull String toolName);
 }
