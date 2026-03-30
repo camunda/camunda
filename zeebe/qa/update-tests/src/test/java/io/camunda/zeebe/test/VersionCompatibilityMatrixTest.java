@@ -121,10 +121,45 @@ class VersionCompatibilityMatrixTest {
             .map(args -> Stream.of(args.get()).map(Object::toString).toList())
             .toList();
 
-    // Should include all patches of the highest released minor (8.8.x), not be empty
-    assertThat(paths)
-        .containsExactlyInAnyOrder(
-            List.of("8.8.0", "CURRENT"), List.of("8.8.1", "CURRENT"), List.of("8.8.2", "CURRENT"));
+    // Should be empty — rolling updates only support consecutive minors (N -> N+1).
+    // 8.8 -> 8.10 skips a minor, so cross-minor tests are not valid.
+    assertThat(paths).isEmpty();
+  }
+
+  @Test
+  void testFromPreviousPatchesToCurrentWithTwoMinorGapIncludesIntraMinorPatches() {
+    // Simulates the case where the dev version is 8.10.1-SNAPSHOT, 8.9 was skipped,
+    // but 8.10.0 has already been released. The method should still return the intra-minor
+    // upgrade path 8.10.0 -> CURRENT, while excluding cross-minor paths (8.8.x -> CURRENT).
+    final var snapshotMatrix =
+        new VersionCompatibilityMatrix(
+            () ->
+                Stream.of(
+                    VersionInfo.of("8.7.0"),
+                    VersionInfo.of("8.8.0"),
+                    VersionInfo.of("8.8.1"),
+                    VersionInfo.of("8.8.2"),
+                    VersionInfo.of("8.10.0")),
+            new VersionCompatibilityConfig() {
+              @Override
+              public SemanticVersion getCurrentVersion() {
+                return SemanticVersion.parse("8.10.1-SNAPSHOT").orElseThrow();
+              }
+
+              @Override
+              public Optional<SemanticVersion> getPreviousMinorVersion() {
+                return SemanticVersion.parse("8.10.0");
+              }
+            });
+
+    final var paths =
+        snapshotMatrix
+            .fromPreviousPatchesToCurrent()
+            .map(args -> Stream.of(args.get()).map(Object::toString).toList())
+            .toList();
+
+    // Only the intra-minor patch upgrade should be returned
+    assertThat(paths).containsExactly(List.of("8.10.0", "CURRENT"));
   }
 
   @Test
