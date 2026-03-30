@@ -521,10 +521,19 @@ public final class EventAppliers implements EventApplier {
   private void registerProcessEventAppliers(final MutableProcessingState state) {
     register(
         ProcessEventIntent.TRIGGERING,
+        1,
         new ProcessEventTriggeringApplier(
             state.getEventScopeInstanceState(),
             state.getElementInstanceState(),
             state.getProcessState()));
+    register(
+        ProcessEventIntent.TRIGGERING,
+        2,
+        new ProcessEventTriggeringV2Applier(
+            state.getEventScopeInstanceState(),
+            state.getElementInstanceState(),
+            state.getProcessState(),
+            state.getUsageMetricState()));
     register(
         ProcessEventIntent.TRIGGERED,
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
