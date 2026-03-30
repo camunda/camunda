@@ -28,7 +28,14 @@ const getSuccessMessage = (
   completedCount: number,
 ): string => {
   if (type === 'RESOLVE_INCIDENT') {
-    return `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`;
+    switch (completedCount) {
+      case 0:
+        return 'Completed — No incidents to retry';
+      case 1:
+        return '1 retry succeeded';
+      default:
+        return `${completedCount} retries succeeded`;
+    }
   }
 
   return `${pluralSuffix(completedCount, 'operation')} succeeded`;
@@ -59,12 +66,15 @@ const OperationEntryStatus: React.FC<Props> = ({
   completedCount = 0,
   state,
 }) => {
+  const isEmptyCompletion =
+    state === 'COMPLETED' && completedCount === 0 && failedCount === 0;
+
   return (
     <Stack gap={3}>
       {state === 'PARTIALLY_COMPLETED' && <PartiallyCompleted />}
       {state === 'FAILED' && <Failed />}
       <StatusContainer>
-        {completedCount > 0 ? (
+        {completedCount > 0 || isEmptyCompletion ? (
           <>
             <CheckmarkFilled />
             <Text>{getSuccessMessage(type, completedCount)}</Text>

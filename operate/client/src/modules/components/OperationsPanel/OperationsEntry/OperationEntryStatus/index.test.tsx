@@ -125,4 +125,20 @@ describe('OperationEntryStatus', () => {
     expect(screen.getByText(/4 retries succeeded/i)).toBeInTheDocument();
     expect(screen.getByText(/2 rejected/i)).toBeInTheDocument();
   });
+
+  it('should render success instance status count when all counts are 0', () => {
+    render(
+      <OperationEntryStatus
+        type="RESOLVE_INCIDENT"
+        failedCount={0}
+        completedCount={0}
+        state="COMPLETED"
+      />,
+    );
+
+    expect(
+      screen.getByText(/Completed — No incidents to retry/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(rejected)/i)).not.toBeInTheDocument();
+  });
 });

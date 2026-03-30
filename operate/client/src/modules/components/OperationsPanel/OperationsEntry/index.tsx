@@ -49,10 +49,10 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     state,
   } = operation;
 
-  const {fakeProgressPercentage, isComplete} = useLoadingProgress({
+  const {fakeProgressPercentage, isVisuallyCompleted} = useLoadingProgress({
     totalCount: operationsTotalCount,
     processedCount: operationsCompletedCount + operationsFailedCount,
-    isFinished: endDate !== undefined,
+    isCompleted: state !== 'CREATED' && state !== 'ACTIVE',
   });
 
   const label = TYPE_LABELS[batchOperationType];
@@ -85,7 +85,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
       >
         {batchOperationKey}
       </Link>
-      {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
+      {!isVisuallyCompleted && (
+        <ProgressBar label="" value={fakeProgressPercentage} />
+      )}
       <Details>
         <OperationEntryStatus
           type={batchOperationType}
@@ -93,7 +95,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           completedCount={operationsCompletedCount}
           state={state}
         />
-        {endDate !== undefined && isComplete && (
+        {endDate !== undefined && isVisuallyCompleted && (
           <div>{formatDate(endDate)}</div>
         )}
       </Details>
