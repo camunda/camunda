@@ -264,8 +264,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       }
     } catch (final IOException | ElasticsearchException ex) {
       if (isRequestEntityTooLarge(ex)) {
-        LOGGER.error("The entities in the payload to ES are too large", ex);
-        logPayloadTooLarge(bulkRequest, ex);
+        LOGGER.error("The entities in the payload to ES are too large, cannot write batch", ex);
       } else if (LOGGER.isTraceEnabled()) {
         logBulkFailureTrace(bulkRequest, ex);
       }
