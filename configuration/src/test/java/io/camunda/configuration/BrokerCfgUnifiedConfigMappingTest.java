@@ -88,6 +88,11 @@ class BrokerCfgUnifiedConfigMappingTest {
     final Set<String> unmappedProperties = new HashSet<>(allBrokerCfgProperties);
     unmappedProperties.removeAll(mappedProperties);
 
+    // Also remove properties whose parent path is mapped
+    // (e.g., if "data.backup.retention" is mapped via setRetention(), then
+    // "data.backup.retention.window" is also effectively mapped)
+    unmappedProperties.removeIf(prop -> hasParentMapped(prop, mappedProperties));
+
     // Sort properties by section for easier reading and add prefix for clarity
     final List<String> sortedUnmappedProperties =
         unmappedProperties.stream()
@@ -107,6 +112,29 @@ class BrokerCfgUnifiedConfigMappingTest {
 
             Unmapped properties (sorted by section)""")
         .isEmpty();
+  }
+
+  /**
+   * Checks if any parent path of the given property is in the mapped set. For example, if
+   * "data.backup.retention" is mapped (meaning the entire retention object was set), then
+   * "data.backup.retention.window" should be considered mapped too.
+   */
+  private boolean hasParentMapped(final String propertyPath, final Set<String> mappedProperties) {
+    final String[] parts = propertyPath.split("\\.");
+    final StringBuilder parentPath = new StringBuilder();
+
+    // Check each parent path level
+    for (int i = 0; i < parts.length - 1; i++) {
+      if (i > 0) {
+        parentPath.append(".");
+      }
+      parentPath.append(parts[i]);
+
+      if (mappedProperties.contains(parentPath.toString())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
