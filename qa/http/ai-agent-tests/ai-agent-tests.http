@@ -6,7 +6,7 @@
 
 ### Step 1: Get Bearer token (Keycloak client_credentials)
 # @name get-bearer-token
-POST {{HOST}}/auth/realms/camunda-platform/protocol/openid-connect/token
+POST {{CAMUNDA_OAUTH_URL}}
 Content-Type: application/x-www-form-urlencoded
 
     client_id={{CLIENT_ID}}
@@ -16,7 +16,7 @@ Content-Type: application/x-www-form-urlencoded
 > {%
   client.test("Get token should be successful", function () {
     client.assert(response.status === 200, "Expected 200, got " + response.status);
-    client.global.set("TOKEN", response.body.access_token);
+    client.global.set("AUTH_TOKEN", response.body.access_token);
   });
 %}
 
@@ -27,8 +27,8 @@ Content-Type: application/x-www-form-urlencoded
   import {wait} from "../js/wait"
   wait(2)
 %}
-POST {{HOST}}/core/v2/deployments
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/deployments
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Accept: application/json
 Content-Type: multipart/form-data; boundary=boundary123
 
@@ -80,8 +80,8 @@ Content-Type: application/octet-stream
   import {wait} from "../js/wait"
   wait(2)
 %}
-POST {{HOST}}/core/v2/process-instances
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -110,8 +110,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(20)
 %}
-POST {{HOST}}/core/v2/user-tasks/search
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -151,8 +151,8 @@ Accept: application/json
     wait(20)
   }
 %}
-POST {{HOST}}/core/v2/user-tasks/search
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -199,8 +199,8 @@ Accept: application/json
     wait(20)
   }
 %}
-POST {{HOST}}/core/v2/user-tasks/search
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -243,8 +243,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(2)
 %}
-GET {{HOST}}/core/v2/user-tasks/{{USER_TASK_KEY}}
-Authorization: Bearer {{TOKEN}}
+GET {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY}}
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -263,8 +263,8 @@ Accept: application/json
 
 ### Step 6: Search for agent variable to get its key
 # @name search-agent-variable
-POST {{HOST}}/core/v2/variables/search
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/variables/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -294,8 +294,8 @@ Accept: application/json
 
 ### Step 6b: Fetch full agent variable value and validate AI response
 # @name get-agent-variable-details
-GET {{HOST}}/core/v2/variables/{{AGENT_VARIABLE_KEY}}
-Authorization: Bearer {{TOKEN}}
+GET {{ZEEBE_REST_ADDRESS}}/v2/variables/{{AGENT_VARIABLE_KEY}}
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -317,8 +317,8 @@ Accept: application/json
 
 ### Step 7: Assign user task
 # @name assign-user-task
-POST {{HOST}}/core/v2/user-tasks/{{USER_TASK_KEY}}/assignment
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY}}/assignment
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -341,8 +341,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(2)
 %}
-POST {{HOST}}/core/v2/user-tasks/{{USER_TASK_KEY}}/completion
-Authorization: Bearer {{TOKEN}}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY}}/completion
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
@@ -366,8 +366,8 @@ Accept: application/json
   import {wait} from "../js/wait"
   wait(10)
 %}
-GET {{HOST}}/core/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
-Authorization: Bearer {{TOKEN}}
+GET {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
