@@ -91,7 +91,7 @@ class ClusterToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+      assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
 
       assertTextContentFallback(result);
     }
@@ -209,7 +209,7 @@ class ClusterToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+      assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
 
       assertTextContentFallback(result);
     }

@@ -7,20 +7,10 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.model.McpIncidentFilter;
-import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
 import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
-import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
-import io.camunda.gateway.mcp.model.McpUserTaskFilter;
-import io.camunda.gateway.mcp.model.McpVariableFilter;
-import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
-import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
@@ -38,13 +28,8 @@ public class CamundaMcpJackson3Module extends SimpleModule {
 
   public CamundaMcpJackson3Module() {
     super(MODULE_NAME);
-    setMixInAnnotation(IncidentFilter.class, McpIncidentFilter.class);
-    setMixInAnnotation(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class);
     setMixInAnnotation(
         ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class);
-    setMixInAnnotation(ProcessInstanceFilter.class, McpProcessInstanceFilter.class);
     setMixInAnnotation(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
-    setMixInAnnotation(UserTaskFilter.class, McpUserTaskFilter.class);
-    setMixInAnnotation(VariableFilter.class, McpVariableFilter.class);
   }
 }

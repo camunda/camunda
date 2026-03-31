@@ -11,15 +11,34 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIntegerFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQuerySortRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.mcp.model.McpDateRange;
+import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
+import io.camunda.gateway.mcp.model.McpProcessInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -27,8 +46,10 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -53,9 +74,11 @@ public class ProcessInstanceTools {
       description = "Search for process instances. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessInstances(
-      @McpToolParamsUnwrapped @Valid final ProcessInstanceSearchQuery query) {
+      @McpToolParamsUnwrapped @Valid final McpProcessInstanceSearchQuery query) {
     try {
-      final var processInstanceQuery = SearchQueryRequestMapper.toProcessInstanceQuery(query);
+      final var strictRequest = toStrictContract(query);
+      final var processInstanceQuery =
+          SearchQueryRequestMapper.toProcessInstanceQueryStrict(strictRequest);
       if (processInstanceQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(processInstanceQuery.getLeft());
       }
@@ -64,6 +87,10 @@ public class ProcessInstanceTools {
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
               processInstanceServices.search(
                   processInstanceQuery.get(), authenticationProvider.getCamundaAuthentication())));
+    } catch (final IllegalArgumentException e) {
+      return CallToolResultMapper.mapProblemToResult(
+          GatewayErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST, e.getMessage(), "INVALID_ARGUMENT"));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -127,5 +154,119 @@ public class ProcessInstanceTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
+  }
+
+  // -- Facade → Strict contract conversion --
+
+  private static GeneratedProcessInstanceSearchQueryRequestStrictContract toStrictContract(
+      final McpProcessInstanceSearchQuery query) {
+    return new GeneratedProcessInstanceSearchQueryRequestStrictContract(
+        toStrictPage(query.page()), toStrictSort(query.sort()), toStrictFilter(query.filter()));
+  }
+
+  private static GeneratedProcessInstanceFilterStrictContract toStrictFilter(
+      final McpProcessInstanceFilter filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new GeneratedProcessInstanceFilterStrictContract(
+        toStrictDateRange(filter.startDate()),
+        toStrictDateRange(filter.endDate()),
+        filter.state() != null
+            ? new GeneratedProcessInstanceStateFilterPropertyPlainValueStrictContract(
+                filter.state().getValue())
+            : null,
+        filter.hasIncident(),
+        null, // tenantId — not exposed in MCP
+        toStrictVariableValueFilters(filter.variables()),
+        filter.processInstanceKey() != null
+            ? new GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract(
+                filter.processInstanceKey())
+            : null,
+        null, // parentProcessInstanceKey — not exposed in MCP
+        null, // parentElementInstanceKey — not exposed in MCP
+        null, // batchOperationId — not exposed in MCP
+        null, // batchOperationKey — not exposed in MCP
+        null, // errorMessage — not exposed in MCP
+        null, // hasRetriesLeft — not exposed in MCP
+        null, // elementInstanceState — not exposed in MCP
+        null, // elementId — not exposed in MCP
+        null, // hasElementInstanceIncident — not exposed in MCP
+        null, // incidentErrorHashCode — not exposed in MCP
+        filter.tags(),
+        wrapString(filter.businessId()),
+        wrapString(filter.processDefinitionId()),
+        wrapString(filter.processDefinitionName()),
+        filter.processDefinitionVersion() != null
+            ? new GeneratedIntegerFilterPropertyPlainValueStrictContract(
+                filter.processDefinitionVersion())
+            : null,
+        null, // processDefinitionVersionTag — not exposed in MCP
+        filter.processDefinitionKey() != null
+            ? new GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract(
+                filter.processDefinitionKey())
+            : null,
+        null // $or — not exposed in MCP
+        );
+  }
+
+  private static List<GeneratedVariableValueFilterPropertyStrictContract>
+      toStrictVariableValueFilters(final List<VariableValueFilterProperty> variables) {
+    if (variables == null || variables.isEmpty()) {
+      return null;
+    }
+    return variables.stream()
+        .map(
+            v ->
+                new GeneratedVariableValueFilterPropertyStrictContract(
+                    v.getName(), wrapString(v.getValue())))
+        .toList();
+  }
+
+  private static GeneratedSearchQueryPageRequestStrictContract toStrictPage(
+      final SearchQueryPageRequest page) {
+    if (page == null) {
+      return null;
+    }
+    return new GeneratedSearchQueryPageRequestStrictContract(
+        page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
+  }
+
+  private static List<GeneratedProcessInstanceSearchQuerySortRequestStrictContract> toStrictSort(
+      final List<ProcessInstanceSearchQuerySortRequest> sort) {
+    if (sort == null || sort.isEmpty()) {
+      return null;
+    }
+    return sort.stream()
+        .map(
+            s ->
+                new GeneratedProcessInstanceSearchQuerySortRequestStrictContract(
+                    GeneratedProcessInstanceSearchQuerySortRequestStrictContract.FieldEnum
+                        .fromValue(s.getField().getValue()),
+                    s.getOrder() != null
+                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
+                        : null))
+        .toList();
+  }
+
+  private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
+    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  }
+
+  private static GeneratedAdvancedDateTimeFilterStrictContract toStrictDateRange(
+      final McpDateRange dateRange) {
+    if (dateRange == null) {
+      return null;
+    }
+    return new GeneratedAdvancedDateTimeFilterStrictContract(
+        null, // $eq
+        null, // $neq
+        null, // $exists
+        null, // $gt
+        dateRange.from(), // $gte (from is inclusive)
+        dateRange.to(), // $lt (to is exclusive)
+        null, // $lte
+        null // $in
+        );
   }
 }

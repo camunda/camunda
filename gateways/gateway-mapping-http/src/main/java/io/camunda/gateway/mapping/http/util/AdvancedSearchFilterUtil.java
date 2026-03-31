@@ -7,6 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.util;
 
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
+
 import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -28,6 +31,77 @@ public class AdvancedSearchFilterUtil {
 
   public static <T> Function<Object, List<Operation<T>>> mapToOperations(final Class<T> tClass) {
     return (final Object filter) -> mapToOperations(filter, tClass);
+  }
+
+  /**
+   * Returns a function that converts a filter property object to a list of {@link Operation}s of
+   * type {@link Long}. Invalid values are collected into the provided {@code validationErrors} list
+   * instead of throwing.
+   */
+  public static Function<Object, List<Operation<Long>>> mapToKeyOperations(
+      final String fieldName, final List<String> validationErrors) {
+    return mapToOperations(
+        Long.class,
+        new CustomConverter<>() {
+          @Override
+          public boolean canConvert(final Object value) {
+            return true;
+          }
+
+          @Override
+          public Long convertValue(final Object value) {
+            if (value instanceof final Long l) {
+              return l;
+            }
+            if (value instanceof final Number n) {
+              return n.longValue();
+            }
+            if (value instanceof final String s) {
+              try {
+                return Long.valueOf(s);
+              } catch (final NumberFormatException e) {
+                validationErrors.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, s));
+                return null;
+              }
+            }
+            validationErrors.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, value));
+            return null;
+          }
+        });
+  }
+
+  /**
+   * Returns a function that converts a filter property object to a list of {@link Operation}s of
+   * type {@link OffsetDateTime}. Invalid values are collected into the provided {@code
+   * validationErrors} list instead of throwing.
+   */
+  public static Function<Object, List<Operation<OffsetDateTime>>> mapToOffsetDateTimeOperations(
+      final String fieldName, final List<String> validationErrors) {
+    return mapToOperations(
+        OffsetDateTime.class,
+        new CustomConverter<>() {
+          @Override
+          public boolean canConvert(final Object value) {
+            return true;
+          }
+
+          @Override
+          public OffsetDateTime convertValue(final Object value) {
+            if (value instanceof final OffsetDateTime odt) {
+              return odt;
+            }
+            if (value instanceof final String s) {
+              try {
+                return OffsetDateTime.parse(s);
+              } catch (final DateTimeParseException e) {
+                validationErrors.add(ERROR_MESSAGE_DATE_PARSING.formatted(fieldName, s));
+                return null;
+              }
+            }
+            validationErrors.add(ERROR_MESSAGE_DATE_PARSING.formatted(fieldName, value));
+            return null;
+          }
+        });
   }
 
   public static <T> Function<Object, List<Operation<T>>> mapToOperations(
