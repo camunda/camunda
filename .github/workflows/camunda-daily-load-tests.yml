@@ -1,4 +1,6 @@
-# description: Deploys new load test daily.
+# description: Runs a daily max-load stress test against main.
+#              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
+# calls: camunda-load-test.yml (scenario: max)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Daily Camunda Platform Load Tests

@@ -1,6 +1,7 @@
 # description: Verifies a load test deployment is healthy and cleans up the namespace.
 #              Waits for all pods to be ready and checks gateway connectivity via gRPC Topology metric,
 #              then deletes the namespace regardless of verification outcome.
+# called-by: camunda-scheduled-release-load-tests.yml
 # type: CI
 # owner: @camunda/reliability-testing
 name: Verify and cleanup load test

@@ -1,4 +1,7 @@
-# description: Deploys new Camunda load tests weekly. Multiple kinds of load tests are created - realistic, latency
+# description: Runs parallel endurance tests weekly against main (TTL: 28 days).
+#              Variants: realistic, rdbms-realistic (PostgreSQL), latency.
+#              Naming pattern: medic-y-YYYY-cw-WW-<sha>
+# calls: camunda-load-test.yml (4 parallel calls, one per scenario)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda weekly medic load test

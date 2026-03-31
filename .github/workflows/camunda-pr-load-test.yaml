@@ -1,6 +1,9 @@
-# description: Create a Camunda load test for an individual PR. When a PR is closed, the test is cleaned up and removed
+# description: Creates a load test when a PR is labeled with 'benchmark'. Deploys with
+#              scenario 'max', waits 15 minutes, then profiles via async-profiler and
+#              posts flamegraph results as a PR comment. Cleans up on label removal or PR close.
+# calls: camunda-load-test.yml (scenario: max), profile-load-test.yml
 # type: CI
-# owner @camunda/reliability-testing
+# owner: @camunda/reliability-testing
 name: Camunda Pull Request Benchmark
 on:
   pull_request:
