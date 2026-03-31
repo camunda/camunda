@@ -228,6 +228,35 @@ public final class OAuthCredentialsCacheTest {
   }
 
   @Test
+  public void shouldForceRefreshAndReturnTrueWhenCredentialsChanged() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.readCache();
+    final CamundaClientCredentials newCredentials =
+        new CamundaClientCredentials("newToken", EXPIRY, "Bearer");
+
+    // when — forceRefreshIfChanged replaces the wombat credentials with new ones
+    final boolean changed = cache.forceRefreshIfChanged(WOMBAT_CLIENT_ID, () -> newCredentials);
+
+    // then
+    assertThat(changed).isTrue();
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).isNotEmpty().contains(newCredentials);
+  }
+
+  @Test
+  public void shouldForceRefreshAndReturnFalseWhenCredentialsUnchanged() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.readCache();
+
+    // when — forceRefreshIfChanged returns the same token
+    final boolean changed = cache.forceRefreshIfChanged(WOMBAT_CLIENT_ID, () -> WOMBAT);
+
+    // then
+    assertThat(changed).isFalse();
+  }
+
+  @Test
   public void shouldBeThreadSafe() throws InterruptedException {
     // given
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
