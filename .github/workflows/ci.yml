@@ -184,6 +184,42 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+<<<<<<< HEAD
+=======
+          
+  validate-pom-metadata:
+    if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
+    name: "Lint / Flattened POM Metadata"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: validate-pom-metadata
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Bootstrap reactor modules
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -Dquickly=true install
+      - name: Generate flattened POMs
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+      - name: Validate flattened POM metadata
+        uses: ./.github/actions/validate-pom-metadata
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+>>>>>>> bb31cfab (fix: bootstrap full reactor to resolve unpublished SNAPSHOTs)
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
