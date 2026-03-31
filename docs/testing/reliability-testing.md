@@ -288,7 +288,9 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 #### Weekly load tests
 
-In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have four variants per week times four weeks running at the same time (makes 16 weekly load tests running concurrently).
+In addition to our release tests, we ran weekly load tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
+
+The weekly tests cover two [realistic load](#realistic-load) variants (one with Elasticsearch secondary storage and one with PostgreSQL secondary storage) plus the [latency test](#latency-load-test).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
@@ -299,16 +301,12 @@ As an example, we have the following tests running:
 * medic-y-2025-cw-22-a60d64da-test-latency
 * medic-y-2025-cw-22-a60d64da-test-realistic
 * medic-y-2025-cw-22-a60d64da-test-rdbms-realistic
-* medic-y-2025-cw-22-a60d64da-test-typical
-* medic-y-2025-cw-23-a799b041-test-typical
 * medic-y-2025-cw-23-a799b041-test-latency
 * medic-y-2025-cw-23-a799b041-test-realistic
 * medic-y-2025-cw-23-a799b041-test-rdbms-realistic
-* medic-y-2025-cw-24-0c3f2664-test-typical
 * medic-y-2025-cw-24-0c3f2664-test-latency
 * medic-y-2025-cw-24-0c3f2664-test-realistic
 * medic-y-2025-cw-24-0c3f2664-test-rdbms-realistic
-* medic-y-2025-cw-25-59a095c4-test-typical
 * medic-y-2025-cw-25-59a095c4-test-latency
 * medic-y-2025-cw-25-59a095c4-test-realistic
 * medic-y-2025-cw-25-59a095c4-test-rdbms-realistic
