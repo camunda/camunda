@@ -650,6 +650,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
+  //Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
   test.skip('Migrated tasks', async ({
     operateFiltersPanelPage,
     operateProcessesPage,
@@ -760,7 +761,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-//Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
+  //Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
   test.skip('Migrated gateways', async ({
     operateFiltersPanelPage,
     operateProcessesPage,
@@ -797,7 +798,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated signal elements', async ({
+  //Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
+  test.skip('Migrated signal elements', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
@@ -829,7 +831,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated multi instance elements', async ({
+  //Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
+  test.skip('Migrated multi instance elements', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
@@ -868,7 +871,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Verify migrated tag on process instance', async ({
+  //Skipped due to bug 49095: https://github.com/camunda/camunda/issues/49095
+  test.skip('Verify migrated tag on process instance', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
