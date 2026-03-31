@@ -152,10 +152,7 @@ public final class PartitionManagerImpl
   public void start() {
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
-    final var memberPartitions =
-        clusterConfigurationService.getPartitionDistribution().partitions().stream()
-            .filter(p -> p.members().contains(localMemberId))
-            .toList();
+    final var memberPartitions = clusterConfigurationService.getMemberPartitions(localMemberId);
 
     healthCheckService.registerBootstrapPartitions(memberPartitions);
     for (final var partitionMetadata : memberPartitions) {
