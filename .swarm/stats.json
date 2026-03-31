@@ -1,12 +1,13 @@
 {
   "agents": {
     "pm": {
-      "invocations": 2,
-      "totalElapsedMs": 280383,
+      "invocations": 10,
+      "totalElapsedMs": 2040576,
       "totalInputTokens": 0,
       "totalOutputTokens": 0,
       "models": {
-        "claude-haiku-4.5": 2
+        "claude-haiku-4.5": 3,
+        "claude-opus-4-6": 7
       }
     },
     "Engineer": {
@@ -44,8 +45,62 @@
       "models": {
         "claude-haiku-4.5": 1
       }
+    },
+    "reviewer": {
+      "invocations": 6,
+      "totalElapsedMs": 273470,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 6
+      }
+    },
+    "plan-eng-clarify-3": {
+      "invocations": 1,
+      "totalElapsedMs": 231021,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "reviser": {
+      "invocations": 7,
+      "totalElapsedMs": 3689277,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 7
+      }
+    },
+    "plan-design-clarify-5": {
+      "invocations": 1,
+      "totalElapsedMs": 186315,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "analyst": {
+      "invocations": 1,
+      "totalElapsedMs": 298641,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "claude-opus-4-6": 1
+      }
+    },
+    "cross-reviewer": {
+      "invocations": 3,
+      "totalElapsedMs": 912094,
+      "totalInputTokens": 0,
+      "totalOutputTokens": 0,
+      "models": {
+        "gpt-5.3-codex": 3
+      }
     }
   },
   "totalRuns": 0,
-  "lastUpdated": "2026-03-19T10:27:00.121Z"
+  "lastUpdated": "2026-03-31T12:00:40.265Z"
 }
