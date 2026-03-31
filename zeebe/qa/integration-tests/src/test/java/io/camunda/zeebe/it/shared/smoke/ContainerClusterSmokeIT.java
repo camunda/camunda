@@ -18,6 +18,7 @@ import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.testcontainers.junit.jupiter.Container;
@@ -29,6 +30,7 @@ final class ContainerClusterSmokeIT {
   @Container
   private final CamundaCluster cluster =
       CamundaCluster.builder()
+          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withBrokersCount(1)
           .withBrokerConfig(
               zeebeBrokerNode -> {
