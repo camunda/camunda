@@ -12,6 +12,7 @@ import io.camunda.configuration.Exporter;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaPort;
 import io.camunda.container.cluster.GatewayNode;
+import io.camunda.zeebe.test.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,6 +41,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
   public static final String DEFAULT_CAMUNDA_LOGS_PATH = "/usr/local/camunda/logs";
   public static final String DEFAULT_CAMUNDA_TMP_PATH = "/tmp";
   private static final String CONFIG_PATH = "/usr/local/camunda/config/application.yml";
+  private static final int DEBUG_PORT = 5005;
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
 
   protected final ExtendedConfigurationBuilder configurationBuilder;
@@ -103,8 +105,6 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     return DockerImageName.parse(getDefaultImage()).withTag(getDefaultVersion());
   }
 
-  abstract void applyDefaultConfiguration();
-
   /**
    * Supply a configuration property outside the Unified Config scope. This is useful for properties
    * that are not part of the unified config exposed model or internal overrides. Properties
@@ -136,6 +136,13 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
         .forStatusCodeMatching(status -> status >= 200 && status < 300)
         .withReadTimeout(Duration.ofSeconds(10));
   }
+
+  public SELF withDebugPort() {
+    RemoteDebugger.configureContainer(this, DEBUG_PORT);
+    return self();
+  }
+
+  abstract void applyDefaultConfiguration();
 
   /**
    * Resolves the JAR file containing the given class. If the class is loaded from a {@code
@@ -190,7 +197,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     void applyDefaultConfiguration() {
       withNetwork(Network.SHARED)
           .withTopologyCheck(ZeebeTopologyWaitStrategy.newDefaultTopologyCheck())
-          .withEnv("SPRING_PROFILES_ACTIVE", "broker")
+          .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
           .addExposedPorts(
