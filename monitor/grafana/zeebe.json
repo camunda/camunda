@@ -824,7 +824,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -1006,7 +1006,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -1455,7 +1455,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -1800,7 +1800,7 @@
             "showValue": "auto",
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "repeat": "partition",
@@ -2097,7 +2097,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2198,7 +2198,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2316,7 +2316,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2437,7 +2437,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -3231,7 +3231,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -3836,7 +3836,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -3937,7 +3937,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4255,7 +4255,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4365,7 +4365,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4466,7 +4466,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4568,7 +4568,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -5275,7 +5275,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6057,7 +6057,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6165,7 +6165,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6260,7 +6260,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6603,7 +6603,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -7275,7 +7275,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -7385,7 +7385,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -8341,7 +8341,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -8533,7 +8533,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "11.4.0",
@@ -8629,7 +8629,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "11.4.0",
@@ -8826,7 +8826,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -9058,7 +9058,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -9480,7 +9480,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -10654,7 +10654,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -11177,7 +11177,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -11298,7 +11298,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -11992,7 +11992,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12270,7 +12270,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12483,7 +12483,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12588,7 +12588,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -13318,7 +13318,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -13616,7 +13616,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -14283,7 +14283,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -14392,7 +14392,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -14668,7 +14668,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15050,7 +15050,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15149,7 +15149,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15248,7 +15248,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15347,7 +15347,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15448,7 +15448,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15933,7 +15933,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -16005,7 +16005,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -16078,7 +16078,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -17051,7 +17051,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -17546,7 +17546,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -17743,7 +17743,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18297,7 +18297,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18370,7 +18370,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18472,7 +18472,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18573,7 +18573,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18924,7 +18924,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -19278,7 +19278,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -19479,7 +19479,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -19661,7 +19661,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -20043,7 +20043,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -20343,7 +20343,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -20546,7 +20546,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -21587,7 +21587,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -21920,7 +21920,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -22220,7 +22220,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -22406,7 +22406,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -23386,7 +23386,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -23544,7 +23544,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "7.4.5",
@@ -24129,7 +24129,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24242,7 +24242,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24649,7 +24649,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24765,7 +24765,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24867,7 +24867,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24969,7 +24969,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25093,7 +25093,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25194,7 +25194,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25295,7 +25295,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25428,7 +25428,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25558,7 +25558,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25676,7 +25676,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25783,7 +25783,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25880,7 +25880,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "targets": [
@@ -25991,7 +25991,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26099,7 +26099,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26206,7 +26206,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26304,7 +26304,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26413,7 +26413,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26508,7 +26508,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26604,7 +26604,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -27226,7 +27226,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
