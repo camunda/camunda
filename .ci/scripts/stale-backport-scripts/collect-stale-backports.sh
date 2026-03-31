@@ -126,7 +126,7 @@ for repo in "${REPO_LIST[@]}"; do
 
     if [[ "$is_draft" == "true" && "$has_conflict" == "false" ]]; then
       has_bc=$(gh pr view "$bp_num" --repo "$repo" --json commits \
-        --jq '[.commits[].messageHeadline] | any(. == "BACKPORT-CONFLICT")' 2>/dev/null || echo "false")
+        --jq '[.commits[].messageHeadline] | any(test("BACKPORT-CONFLICT"))' 2>/dev/null || echo "false")
       echo "$bp" | jq -c --argjson bc "$has_bc" '.has_conflict = (.has_conflict or $bc)'
     else
       echo "$bp"

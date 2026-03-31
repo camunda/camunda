@@ -287,10 +287,18 @@ jobs:
             pinned_response=$(curl -s \
               -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
               "https://slack.com/api/pins.list?channel=${SLACK_CHANNEL}")
-            is_pinned=$(echo "$pinned_response" | jq -r --arg ts "$message_ts" '
-              [(.items // [])[] | select(.type == "message" and .message.ts == $ts)] | length | . > 0')
-            echo "Message is already pinned: $is_pinned" >&2
-            echo "is_pinned=$is_pinned" >> "$GITHUB_OUTPUT"
+            pins_ok=$(echo "$pinned_response" | jq -r '.ok')
+            pins_error=$(echo "$pinned_response" | jq -r '.error // "none"')
+            echo "pins.list ok: $pins_ok, error: $pins_error" >&2
+            if [[ "$pins_ok" != "true" ]]; then
+              echo "pins.list failed — defaulting is_pinned=false" >&2
+              echo "is_pinned=false" >> "$GITHUB_OUTPUT"
+            else
+              is_pinned=$(echo "$pinned_response" | jq -r --arg ts "$message_ts" '
+                [(.items // [])[] | select(.type == "message" and .message.ts == $ts)] | length | . > 0')
+              echo "Message is already pinned: $is_pinned" >&2
+              echo "is_pinned=$is_pinned" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "No existing message found — will post new" >&2
             echo "found=false" >> "$GITHUB_OUTPUT"
@@ -318,10 +326,14 @@ jobs:
           SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
           MESSAGE_TS: ${{ steps.find-message.outputs.message_ts }}
         run: |
-          curl -sf -X POST "https://slack.com/api/pins.add" \
+          response=$(curl -s -X POST "https://slack.com/api/pins.add" \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}"
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}") 
+          ok=$(echo "$response" | jq -r '.ok')
+          err=$(echo "$response" | jq -r '.error // "none"')
+          echo "pins.add ok: $ok, error: $err" >&2
+          [[ "$ok" == "true" || "$err" == "already_pinned" ]]
 
       - name: Unpin previous day's Slack message
         if: steps.find-message.outputs.found != 'true'
@@ -330,10 +342,15 @@ jobs:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
         run: |
-          pinned=$(curl -sf \
+          pinned=$(curl -s \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             "https://slack.com/api/pins.list?channel=${SLACK_CHANNEL}")
-          echo "pins.list ok: $(echo "$pinned" | jq -r '.ok')" >&2
+          pins_ok=$(echo "$pinned" | jq -r '.ok')
+          echo "pins.list ok: $pins_ok, error: $(echo "$pinned" | jq -r '.error // "none"')" >&2
+          if [[ "$pins_ok" != "true" ]]; then
+            echo "pins.list failed — skipping unpin" >&2
+            exit 0
+          fi
           echo "$pinned" | jq -r '
             [(.items // [])[] | select(
               .type == "message" and
@@ -341,10 +358,11 @@ jobs:
               (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
             ) | .message.ts] | .[]' | while read -r ts; do
             echo "Unpinning old message: $ts" >&2
-            curl -sf -X POST "https://slack.com/api/pins.remove" \
+            resp=$(curl -s -X POST "https://slack.com/api/pins.remove" \
               -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}"
+              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}") 
+            echo "pins.remove ok: $(echo "$resp" | jq -r '.ok'), error: $(echo "$resp" | jq -r '.error // "none"')" >&2
           done
 
       - name: Post new Slack message
@@ -373,16 +391,14 @@ jobs:
             echo "No message ts in response, skipping pin" >&2
             exit 0
           fi
-          curl -sf -X POST "https://slack.com/api/pins.add" \
+          response=$(curl -s -X POST "https://slack.com/api/pins.add" \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}"
-
-      - name: Log notification status
-        if: always()
-        run: |
-          total="${{ needs.collect-stale-backports.outputs.total_stale }}"
-          echo "::notice::Stale backport report: ${total} stale PR(s) posted to #top-monorepo-ci"
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}") 
+          ok=$(echo "$response" | jq -r '.ok')
+          err=$(echo "$response" | jq -r '.error // "none"')
+          echo "pins.add ok: $ok, error: $err" >&2
+          [[ "$ok" == "true" || "$err" == "already_pinned" ]]
 
       - name: Observe build status
         if: always()
