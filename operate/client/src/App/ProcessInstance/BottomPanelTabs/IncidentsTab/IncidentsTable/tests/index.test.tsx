@@ -318,4 +318,56 @@ describe('IncidentsTable', () => {
     expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
     expect(withinRow.queryByRole('link')).not.toBeInTheDocument();
   });
+
+  it('should show child process instance message when incident comes from called process', () => {
+    render(
+      <IncidentsTable
+        state="empty"
+        processInstanceKey="1"
+        incidents={[]}
+        childInstanceWithIncident={{
+          type: 'process',
+          key: '123456',
+          name: 'ChildProcess',
+        }}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByText(/The incident may originate from a called instance/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {
+        name: 'View in ChildProcess',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('should show child decision instance message when incident comes from called decision', () => {
+    render(
+      <IncidentsTable
+        state="empty"
+        processInstanceKey="1"
+        incidents={[]}
+        childInstanceWithIncident={{
+          type: 'decision',
+          key: '789012',
+          name: 'MyDecision',
+        }}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByText(/The incident may originate from a called instance/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {
+        name: 'View in MyDecision',
+      }),
+    ).toBeInTheDocument();
+  });
 });

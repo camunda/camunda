@@ -37,10 +37,20 @@ const FlexContainer = styled.div`
   align-items: center;
 `;
 
+const ChildIncidentContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: var(--cds-spacing-05);
+  background-color: var(--cds-layer);
+`;
+
 export {
   ExpandedContent,
   ExpandedField,
   FieldLabel,
   ErrorMessageCell,
   FlexContainer,
+  ChildIncidentContainer,
 };
