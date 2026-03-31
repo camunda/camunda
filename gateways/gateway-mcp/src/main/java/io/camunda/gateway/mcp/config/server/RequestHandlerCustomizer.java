@@ -10,13 +10,15 @@ package io.camunda.gateway.mcp.config.server;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.server.McpStatelessRequestHandler;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerHandler;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
-import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.Optional;
+import org.springframework.util.ReflectionUtils;
 import reactor.core.publisher.Mono;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -36,15 +38,21 @@ public final class RequestHandlerCustomizer {
       final McpStatelessServerTransport transport,
       final JsonMapper jsonMapper,
       final ToolRepository toolRepository) {
-    final var requestHandlers = getRequestHandlers(transport);
-
-    requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler(toolRepository));
-    requestHandlers.put(
-        McpSchema.METHOD_TOOLS_CALL, toolsCallRequestHandler(toolRepository, jsonMapper));
+    try {
+      // extract the modifiable request handler map from the transport
+      final var requestHandlers = getRequestHandlers(transport);
+      // replace the handlers for tool list and call with repository-based ones
+      requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler(toolRepository));
+      requestHandlers.put(
+          McpSchema.METHOD_TOOLS_CALL, toolsCallRequestHandler(toolRepository, jsonMapper));
+    } catch (final Exception e) {
+      throw new IllegalStateException("Cannot replace request handlers in MCP transport", e);
+    }
   }
 
   private static McpStatelessRequestHandler<McpSchema.ListToolsResult> toolsListRequestHandler(
       final ToolRepository toolRepository) {
+    // load tools via repository and wrap in callable to pass exceptions in a non-blocking way
     return (ctx, params) ->
         Mono.fromCallable(() -> new McpSchema.ListToolsResult(toolRepository.getTools(ctx), null));
   }
@@ -52,6 +60,7 @@ public final class RequestHandlerCustomizer {
   private static McpStatelessRequestHandler<CallToolResult> toolsCallRequestHandler(
       final ToolRepository toolRepository, final JsonMapper jsonMapper) {
     return (ctx, params) -> {
+      // convert the tool call parameters
       final McpSchema.CallToolRequest callToolRequest;
       try {
         callToolRequest = jsonMapper.convertValue(params, new TypeReference<>() {});
@@ -63,6 +72,7 @@ public final class RequestHandlerCustomizer {
                 .build());
       }
 
+      // find the respective tool spec in the repository
       final Either<String, SyncToolSpecification> toolSpecification;
       try {
         toolSpecification = toolRepository.findTool(ctx, callToolRequest.name());
@@ -74,13 +84,16 @@ public final class RequestHandlerCustomizer {
                 .build());
       }
 
+      // invoke the identified tool spec, if found
       return toolSpecification.fold(
+          // error during tool lookup
           errorMessage ->
               Mono.error(
                   McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
                       .message("Unknown tool: invalid_tool_name")
                       .data(errorMessage)
                       .build()),
+          // no tool found
           spec -> {
             if (spec == null) {
               return Mono.error(
@@ -89,6 +102,7 @@ public final class RequestHandlerCustomizer {
                       .data("Tool not found: " + callToolRequest.name())
                       .build());
             }
+            // tool found, execute it
             return Mono.fromCallable(() -> spec.callHandler().apply(ctx, callToolRequest));
           });
     };
@@ -97,20 +111,26 @@ public final class RequestHandlerCustomizer {
   @SuppressWarnings("unchecked")
   private static Map<String, McpStatelessRequestHandler<?>> getRequestHandlers(
       final McpStatelessServerTransport transport) {
-    try {
-      final Object mcpHandler = fieldValue(transport, MCP_HANDLER_FIELD);
-      return (Map<String, McpStatelessRequestHandler<?>>)
-          fieldValue(mcpHandler, REQUEST_HANDLERS_FIELD);
-    } catch (final ReflectiveOperationException e) {
-      throw new IllegalStateException(
-          "Failed to replace MCP tool request handlers via reflection", e);
-    }
+    final McpStatelessServerHandler mcpHandler =
+        fieldValue(transport, MCP_HANDLER_FIELD, McpStatelessServerHandler.class);
+    return (Map<String, McpStatelessRequestHandler<?>>)
+        fieldValue(mcpHandler, REQUEST_HANDLERS_FIELD, Map.class);
   }
 
-  private static Object fieldValue(final Object target, final String fieldName)
-      throws ReflectiveOperationException {
-    final Field field = target.getClass().getDeclaredField(fieldName);
-    field.setAccessible(true);
-    return field.get(target);
+  private static <T> T fieldValue(
+      final Object target, final String fieldName, final Class<T> expectedType) {
+    try {
+      return Optional.ofNullable(
+              ReflectionUtils.findField(target.getClass(), fieldName, expectedType))
+          .map(
+              field -> {
+                ReflectionUtils.makeAccessible(field);
+                final var fieldValue = ReflectionUtils.getField(field, target);
+                return expectedType.cast(fieldValue);
+              })
+          .orElseThrow(() -> new IllegalStateException("Field '" + fieldName + "' not found"));
+    } catch (final Exception ex) {
+      throw new IllegalStateException("Field '" + fieldName + "' cannot be fetched", ex);
+    }
   }
 }
