@@ -46,11 +46,16 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
   @JsonIgnore
   public OffsetDateTime getDateForDueDate() {
+    if (dueDate == null || dueDate.isBlank()) {
+      return null;
+    }
     return DateFormatterUtil.getOffsetDateTimeFromIsoZoneDateTimeString(dueDate)
         .orElseGet(
             () -> {
-              LOG.info(
-                  "Unable to parse due date of userTask record: {}. UserTask will be imported without dueDate data.",
+              LOG.debug(
+                  "Unable to parse due date of userTask record with elementId '{}' and userTaskKey '{}': {}. UserTask will be imported without dueDate data.",
+                  elementId,
+                  userTaskKey,
                   dueDate);
               return null;
             });
