@@ -307,13 +307,163 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  c8-orchestration-cluster-api-tests-rdbms:
-    name: C8 Orchestration Cluster API Tests (H2/RDBMS)
-    needs: validate-release
+  build-rdbms-dist:
     if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    name: "Build Camunda distribution"
+    runs-on: gcp-perf-core-16-default
+    permissions:
+      contents: read
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ stable/8.9, main ]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.validate-release.outputs.base }}
+
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: "api-tests-rdbms-build"
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build Camunda distribution
+        run: ./mvnw install -Dquickly -T1C -PskipFrontendBuild
+
+      - name: Extract distribution
+        run: |
+          mkdir -p dev-dist
+          exploded="dist/target/camunda-zeebe"
+          if [ -d "$exploded/bin" ]; then
+            cp -a "$exploded"/. dev-dist/
+          else
+            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+            tar xzf "$tarball" --strip-components=1 -C dev-dist
+          fi
+
+      - name: Sanitize branch name
+        id: sanitize
+        run: |
+          safe_branch="${{ matrix.branch }}"
+          safe_branch="${safe_branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
+          path: dev-dist/
+          retention-days: 1
+
+  c8-orchestration-cluster-api-tests-rdbms:
+    name: API Tests (RDBMS) (${{ matrix.branch }} / ${{ matrix.database.database-name }})
+    needs: [validate-release, build-rdbms-dist]
+    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    runs-on: gcp-perf-core-16-default
+    timeout-minutes: 60
     permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ needs.validate-release.outputs.base ]
+        database:
+          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
+          - database-name: "Postgres 14"
+            database-type: "postgres"
+            database-image-version: "14-alpine"
+            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "Postgres 15"
+            database-type: "postgres"
+            database-image-version: "15-alpine"
+            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "Postgres 16"
+            database-type: "postgres"
+            database-image-version: "16-alpine"
+            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "Postgres 17"
+            database-type: "postgres"
+            database-image-version: "17-alpine"
+            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "Postgres 18"
+            database-type: "postgres"
+            database-image-version: "18-alpine"
+            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          # MySQL - Supported version: 8.4
+          - database-name: "MySQL 8.4"
+            database-type: "mysql"
+            database-image-version: "8.4"
+            jdbc-url: "jdbc:mysql://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          # MariaDB - Supported versions: 10.11, 11.4, 11.8
+          - database-name: "MariaDB 10.11"
+            database-type: "mariadb"
+            database-image-version: "10.11"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "MariaDB 11.4"
+            database-type: "mariadb"
+            database-image-version: "11.4"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "MariaDB 11.8"
+            database-type: "mariadb"
+            database-image-version: "11.8"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
+          - database-name: "MSSQL 2019"
+            database-type: "mssql"
+            database-image-version: "2019-latest"
+            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+            jdbc-username: "sa"
+            jdbc-password: "Camunda#8_demo"
+          - database-name: "MSSQL 2022"
+            database-type: "mssql"
+            database-image-version: "2022-latest"
+            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+            jdbc-username: "sa"
+            jdbc-password: "Camunda#8_demo"
+          - database-name: "MSSQL 2025"
+            database-type: "mssql"
+            database-image-version: "2025-latest"
+            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+            jdbc-username: "sa"
+            jdbc-password: "Camunda#8_demo"
+          # Oracle - Supported versions: 21c, 23ai
+          - database-name: "Oracle 23ai"
+            database-type: "oracle"
+            database-image-version: "23-slim-faststart"
+            jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          - database-name: "Oracle 21c"
+            database-type: "oracle-21"
+            database-image-version: "21-slim-faststart"
+            jdbc-url: "jdbc:oracle:thin:@localhost:1521/xepdb1"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+    env:
+      IMAGE_VERSION: ${{ matrix.database.database-image-version }}
     steps:
       - name: Print release info
         shell: bash
@@ -321,9 +471,13 @@ jobs:
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
 
-      - uses: actions/checkout@v6
+      - name: Resolve database container name
+        run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
+
+      - name: Checkout Code
+        uses: actions/checkout@v6
         with:
-          ref: ${{ needs.validate-release.outputs.base }}
+          ref: ${{ matrix.branch }}
 
       # If this job needs the docker-compose image tag changed too, keep this step
       - name: Update docker-compose with release version
@@ -343,39 +497,117 @@ jobs:
             sed -i.bak "s|image:.*camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
           fi
 
-      - uses: ./.github/actions/setup-build
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
-          maven-cache-key-modifier: e2e-h2-api-tests
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
-      - name: Build Camunda distribution
-        run: ./mvnw install -Dquickly -T1C
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
-      - name: Extract distribution
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Sanitize branch name
+        id: sanitize
         run: |
-          mkdir -p dev-dist
-          exploded="dist/target/camunda-zeebe"
-          if [ -d "$exploded/bin" ]; then
-            cp -a "$exploded"/. dev-dist/
-          else
-            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
-            if [ -z "$tarball" ]; then
-              echo "ERROR: No dist build output found."
-              exit 1
+          safe_branch="${{ matrix.branch }}"
+          safe_branch="${safe_branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Download distribution artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
+          path: dev-dist/
+
+      - name: Restore distribution permissions
+        run: chmod +x dev-dist/bin/camunda
+
+      # ── Database ────────────────────────────────────────────────────────────
+      - name: Start database service
+        run: |
+          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
+            docker compose -f db/docker-compose.yml logs
+            exit 1
+          }
+
+      - name: Wait for database readiness
+        run: |
+          case "${{ matrix.database.database-type }}" in
+            postgres) PORT=5432 ;;
+            mysql|mariadb) PORT=3306 ;;
+            mssql) PORT=1433 ;;
+            oracle*) PORT=1521 ;;
+          esac
+
+          echo "Waiting for DB on port $PORT..."
+
+          for i in {1..90}; do
+            if (echo > "/dev/tcp/localhost/$PORT") >/dev/null 2>&1; then
+              echo "DB port open"
+              break
             fi
-            tar xzf "$tarball" --strip-components=1 -C dev-dist
-          fi
+            echo "Attempt $i: DB not ready"
+            sleep 2
+          done
 
-      - name: Start Camunda with H2/RDBMS
+          sleep 10
+
+      - name: Install JDBC driver
         run: |
-          chmod +x dev-dist/bin/camunda
+          mkdir -p dev-dist/lib
 
-          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin"
+          case "${{ matrix.database.database-type }}" in
+            mysql)
+              echo "Installing MySQL driver"
+              curl -L -o dev-dist/lib/mysql-connector.jar \
+                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+              ;;
+
+            mariadb)
+              echo "Installing MariaDB driver"
+              curl -L -o dev-dist/lib/mariadb.jar \
+                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.4.1/mariadb-java-client-3.4.1.jar
+              ;;
+
+            mssql)
+              echo "Installing SQL Server driver"
+              curl -L -o dev-dist/lib/mssql-jdbc.jar \
+                https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.6.3.jre11/mssql-jdbc-12.6.3.jre11.jar
+              ;;
+
+            oracle*)
+              echo "Installing Oracle driver"
+              curl -L -o dev-dist/lib/ojdbc11.jar \
+                https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/ojdbc11-23.3.0.23.09.jar
+              ;;
+
+            *)
+              echo "No JDBC driver mapping for ${{ matrix.database.database-type }}"
+              ;;
+          esac
+
+      # ── Start Camunda wired to the matrix DB ────────────────────────────────
+      - name: Start Camunda with ${{ matrix.branch }} / ${{ matrix.database.database-name }}
+        run: |
+          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
           export ZEEBE_CLOCK_CONTROLLED="true"
-
-          # Auth configuration
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
           export CAMUNDA_SECURITY_AUTHENTICATION_METHOD="BASIC"
@@ -391,11 +623,11 @@ jobs:
           export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL="lisa@example.com"
           export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
 
-          # H2 in-memory database with RDBMS secondary storage
+          # RDBMS secondary storage — wired to the matrix database
           export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
-          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
-          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="sa"
-          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD=""
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="${{ matrix.database.jdbc-url }}"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="${{ matrix.database.jdbc-username }}"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD="${{ matrix.database.jdbc-password }}"
           export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
           export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
           export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL="PT60S"
@@ -458,6 +690,8 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          DB_NAME: ${{ matrix.database.database-name }}
+          VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
         run: npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
