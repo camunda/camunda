@@ -48,7 +48,7 @@ public final class ExportersState {
           this.exporterId.wrapString(exporterId);
 
           final var exporterStateEntry =
-              findExporterStateEntry(exporterId).orElse(new ExporterStateEntry());
+              findExporterStateEntry(exporterId).orElseGet(ExporterStateEntry::new);
           exporterStateEntry.setPosition(position);
           if (metadata != null) {
             exporterStateEntry.setMetadata(metadata);
