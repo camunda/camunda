@@ -17,8 +17,8 @@ type CountQueryOptions = {
 function useElementInstanceIncidentsCount(
   elementInstanceKey: string,
   options?: CountQueryOptions,
-): number {
-  const {data} = useQuery({
+) {
+  return useQuery({
     queryKey:
       queryKeys.incidents.elementInstanceIncidentsCount(elementInstanceKey),
     enabled: options?.enabled ?? !!elementInstanceKey,
@@ -36,8 +36,6 @@ function useElementInstanceIncidentsCount(
       throw error;
     },
   });
-
-  return data ?? 0;
 }
 
 export {useElementInstanceIncidentsCount};

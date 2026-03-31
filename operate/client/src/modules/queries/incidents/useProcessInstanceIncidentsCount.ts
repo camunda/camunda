@@ -19,13 +19,13 @@ type CountQueryOptions = {
 function useProcessInstanceIncidentsCount(
   processInstanceKey: string,
   options?: CountQueryOptions,
-): number {
+) {
   const filter: QueryProcessInstanceIncidentsRequestBody['filter'] = {
     state: 'ACTIVE',
     ...options?.filter,
   };
 
-  const {data} = useQuery({
+  return useQuery({
     queryKey: queryKeys.incidents.processInstanceIncidentsCount(
       processInstanceKey,
       filter,
@@ -45,8 +45,6 @@ function useProcessInstanceIncidentsCount(
       throw error;
     },
   });
-
-  return data ?? 0;
 }
 
 export {useProcessInstanceIncidentsCount};
