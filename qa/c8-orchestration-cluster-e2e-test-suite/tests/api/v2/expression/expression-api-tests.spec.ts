@@ -8,25 +8,13 @@
 
 import {test, expect, APIRequestContext} from '@playwright/test';
 import {
-  buildUrl,
-  jsonHeaders,
   assertStatusCode,
   assertInvalidArgument,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
+import {evaluateExpression, EXPRESSION_URL} from '@requestHelpers'
 
-const EXPRESSION_URL = '/expression/evaluation';
 
-async function evaluateExpression(
-  request: APIRequestContext,
-  expression: string,
-  variables: Record<string, unknown>,
-) {
-  return request.post(buildUrl(EXPRESSION_URL), {
-    headers: jsonHeaders(),
-    data: {expression, variables},
-  });
-}
 
 type ExpressionTestCase = {
   description: string;
