@@ -9,6 +9,7 @@ package io.camunda.exporter.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -46,5 +47,24 @@ final class CamundaExporterMetricsTest {
     assertThat(buckets[1].count())
         .as("then all values are in the next bucket <= 10ms")
         .isEqualTo(4);
+  }
+
+  @Test
+  void shouldRemoveAllRegisteredMetersOnClose() {
+    // given
+    final var metrics = new CamundaExporterMetrics(registry, Instant::now);
+
+    // this will dynamically create meters
+    metrics.recordFlushFailureType("failure1");
+    metrics.recordFlushFailureType("failure2");
+
+    assertThat(registry.getMeters()).isNotEmpty();
+
+    // when
+    metrics.close();
+
+    // then
+    final var meterIds = registry.getMeters().stream().map(Meter::getId).toList();
+    assertThat(meterIds).isEmpty();
   }
 }
