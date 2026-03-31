@@ -235,7 +235,8 @@ public final class ZeebeRocksDbFactory<
 
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
-    final var blockCacheMemory = totalMemoryBudgetPerPartition / 3;
+    final var blockCacheMemory =
+        totalMemoryBudgetPerPartition / SharedRocksDbResources.CACHE_RATIO_OF_MEMORY_LIMIT;
     // flushing the memtables is done asynchronously, so there may be multiple memtables in memory,
     // although only a single one is writable. once we have too many memtables, writes will stop.
     // since prefix iteration is our bread n butter, we will build an additional filter for each
@@ -370,6 +371,15 @@ public final class ZeebeRocksDbFactory<
       LRUCache sharedCache, WriteBufferManager sharedWbm, long reservedMemory)
       implements AutoCloseable {
 
+    // memoryLimit represents the total memory budget we expect RocksDB to use on this node.
+    // We follow the recommended heuristic where roughly 1/3 of that total budget is assigned to
+    // the block cache (cacheSize). This ratio can be tuned if needed.
+    // When sizing memoryLimit, remember that RocksDB's total memory footprint includes block
+    // cache, index and bloom filters, memtables, and blocks pinned by iterators. See:
+    // https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
+    // https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB
+    public static final long CACHE_RATIO_OF_MEMORY_LIMIT = 3;
+
     static {
       RocksDB.loadLibrary();
     }
@@ -378,13 +388,7 @@ public final class ZeebeRocksDbFactory<
       // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM
       // limit, with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
       // zeebeRocksDBFactory.
-      // We use the recommended 1/3 as the ratio between the total expected memory utilized and
-      // cache, this could be tweaked; keep in mind we're also caching the total Rocks DB memory
-      // footprint should take into consideration block cache, index and bloom filters, memtables
-      // and blocks pinned by iterators. See:
-      // https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
-      // https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB
-      final long cacheSize = memoryLimit / 3;
+      final long cacheSize = memoryLimit / CACHE_RATIO_OF_MEMORY_LIMIT;
       final LRUCache sharedCache = new LRUCache(cacheSize, 8, false, 0.15);
       final WriteBufferManager sharedWbm = new WriteBufferManager(cacheSize / 4, sharedCache);
       return new SharedRocksDbResources(sharedCache, sharedWbm, memoryLimit);
