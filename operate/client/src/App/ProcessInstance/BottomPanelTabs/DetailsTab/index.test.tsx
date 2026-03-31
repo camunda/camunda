@@ -20,7 +20,6 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {searchResult} from 'modules/testUtils';
-import {LocationLog} from 'modules/utils/LocationLog';
 import type {
   ElementInstance,
   Job,
@@ -171,10 +170,6 @@ function getWrapper(initialSearchParams?: string) {
               path: Paths.processInstanceDetails({isRelative: true}),
               element: children,
             },
-            {
-              path: Paths.processInstanceVariables({isRelative: true}),
-              element: <LocationLog />,
-            },
           ],
         },
       ],
@@ -200,18 +195,6 @@ describe('<DetailsTab />', () => {
     mockSearchJobs().withSuccess(searchResult([]));
     mockSearchProcessInstances().withSuccess(searchResult([]));
     mockSearchDecisionInstances().withSuccess(searchResult([]));
-  });
-
-  it('should redirect to variables when no element is selected', () => {
-    render(<DetailsTab />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceVariables({
-        processInstanceId: PROCESS_INSTANCE_ID,
-      }),
-    );
   });
 
   it('should show multi-instance message when multiple instances exist', async () => {
