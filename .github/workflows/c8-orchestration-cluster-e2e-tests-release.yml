@@ -310,6 +310,7 @@ jobs:
   build-rdbms-dist:
     if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
     name: "Build Camunda distribution"
+    needs: [validate-release]
     runs-on: gcp-perf-core-16-default
     permissions:
       contents: read
@@ -318,7 +319,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ stable/8.9, main ]
+        branch: [ needs.validate-release.outputs.base ]
 
     steps:
       - name: Checkout Code
