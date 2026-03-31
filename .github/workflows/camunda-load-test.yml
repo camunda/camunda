@@ -1,10 +1,13 @@
-# description: This workflow deploys a load test with a camunda cluster under test.
-# We use this workflow to start ad-hoc load tests or weekly medic load tests.
-# The health of the cluster and results of the load tests are monitored by Core team's regularly.
-# https://dashboard.benchmark.camunda.cloud/
-# called by: camunda-weekly-load-tests.yml, camunda-pr-load-test.yaml
+# description: Central reusable workflow for deploying load tests. All load test creation
+#              routes through this workflow. Builds Docker images (or reuses existing ones),
+#              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
+# called-by: camunda-daily-load-tests.yml, camunda-weekly-load-tests.yml,
+#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml,
+#            zeebe-update-long-running-migrating-benchmark.yaml
+# also: triggerable manually via workflow_dispatch for ad-hoc load tests
+# monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
-# owner: camunda/orchestration-cluster-team
+# owner: @camunda/reliability-testing
 #
 # Infos from Infra:
 # - Using the infra benchmark prod cluster requires to use Teleport to authenticate.
