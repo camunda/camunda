@@ -181,6 +181,11 @@ jobs:
     outputs:
       image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
     steps:
+      - name: Validate official images require explicit tag
+        if: ${{ inputs.use-official-docker-images == true && inputs.reuse-tag == '' }}
+        run: |
+          echo "::error::Invalid input combination: 'use-official-docker-images' is enabled but 'reuse-tag' is empty. Official Camunda Docker images require an explicit tag (e.g., '8.9.0-rc2') to pull from Docker Hub. Either provide a 'reuse-tag' or disable 'use-official-docker-images'."
+          exit 1
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
