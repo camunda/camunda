@@ -66,19 +66,30 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
           },
           res,
         );
-        localState['response'] = res;
-        const json = await (localState['response'] as APIResponse).json();
+
+        const json = await res.json();
+
         expect(json.items).toHaveLength(2);
-        expect(json.items[0].elementId).toEqual('Activity_1xci2nh');
-        expect(json.items[0].active).toBe(1);
-        expect(json.items[0].canceled).toBe(0);
-        expect(json.items[0].completed).toBe(0);
-        expect(json.items[0].incidents).toBe(0);
-        expect(json.items[1].elementId).toEqual('StartEvent_1');
-        expect(json.items[1].active).toBe(0);
-        expect(json.items[1].canceled).toBe(0);
-        expect(json.items[1].completed).toBe(1);
-        expect(json.items[1].incidents).toBe(0);
+
+        const userTask = json.items.find(
+            (item: any) => item.elementId === 'Activity_1xci2nh',
+        );
+        const startEvent = json.items.find(
+            (item: any) => item.elementId === 'StartEvent_1',
+        );
+
+        expect(userTask).toBeDefined();
+        expect(startEvent).toBeDefined();
+
+        expect(userTask.active).toBe(1);
+        expect(userTask.canceled).toBe(0);
+        expect(userTask.completed).toBe(0);
+        expect(userTask.incidents).toBe(0);
+
+        expect(startEvent.active).toBe(0);
+        expect(startEvent.canceled).toBe(0);
+        expect(startEvent.completed).toBe(1);
+        expect(startEvent.incidents).toBe(0);
       }).toPass(defaultAssertionOptions);
       await cancelProcessInstance(localState.processInstanceKey as string);
     });
