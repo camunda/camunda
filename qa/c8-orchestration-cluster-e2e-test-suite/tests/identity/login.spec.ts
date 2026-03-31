@@ -26,13 +26,13 @@ test.describe.parallel('login page', () => {
     await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
 
     await loginPage.login('demo', 'wrong-password');
-    await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
+    await expect(page).toHaveURL(`${relativizePath(Paths.login('admin'))}`);
 
     await expect(loginPage.errorMessage).toContainText(
       "Username and password don't match",
     );
 
-    await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
+    await expect(page).toHaveURL(`${relativizePath(Paths.login('admin'))}`);
   });
 
   test('Log in with valid user account', async ({loginPage, page}) => {
@@ -46,15 +46,15 @@ test.describe.parallel('login page', () => {
     await expect(page).toHaveURL(`${relativizePath(Paths.users())}`);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=/admin/`,
+      `${relativizePath(Paths.login('admin'))}?next=/admin/`,
     );
   });
 
   test('Redirect to initial page after login', async ({loginPage, page}) => {
-    await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
+    await expect(page).toHaveURL(`${relativizePath(Paths.login('admin'))}`);
     await page.goto(`${relativizePath(Paths.users())}`);
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=${Paths.users()}`,
+      `${relativizePath(Paths.login('admin'))}?next=${Paths.users()}`,
     );
 
     await loginPage.login('demo', 'demo');
