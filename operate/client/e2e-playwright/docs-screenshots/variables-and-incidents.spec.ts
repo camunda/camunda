@@ -156,6 +156,7 @@ test.describe('variables and incidents', () => {
     await editVariableButton.click();
 
     const editableField = processInstancePage.variablesEditor;
+    await editableField.getLastWrapper().click();
     await editableField.clear();
     await editableField.fill('99');
 

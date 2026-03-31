@@ -39,7 +39,7 @@ describe('<InlineJsonEditor />', () => {
 
     render(<InlineJsonEditor value={compactJson} readOnly />, {wrapper});
 
-    const pre = screen.getByTestId('variable-value-readonly');
+    const pre = screen.getByTestId('json-editor-readonly');
     expect(pre.textContent).toBe(expectedFormatted);
   });
 
@@ -62,8 +62,7 @@ describe('<InlineJsonEditor />', () => {
 
     const {user} = render(<TestWrapper />, {wrapper});
 
-    // The editor is lazy — it only mounts after the user focuses/clicks the field.
-    await user.click(screen.getByTestId('inline-json-editor'));
+    await user.click(screen.getByTestId('json-editor-wrapper'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
@@ -83,14 +82,13 @@ describe('<InlineJsonEditor />', () => {
           value={value}
           onChange={setValue}
           onValidate={mockOnValidate}
-          data-testid="inline-json-editor"
         />
       );
     };
 
     const {user} = render(<TestWrapper />, {wrapper});
 
-    await user.click(screen.getByTestId('inline-json-editor'));
+    await user.click(screen.getByTestId('json-editor-wrapper'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
@@ -116,14 +114,13 @@ describe('<InlineJsonEditor />', () => {
           value={value}
           onChange={setValue}
           onValidate={mockOnValidate}
-          data-testid="inline-json-editor"
         />
       );
     };
 
     const {user} = render(<TestWrapper />, {wrapper});
 
-    await user.click(screen.getByTestId('inline-json-editor'));
+    await user.click(screen.getByTestId('json-editor-wrapper'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);

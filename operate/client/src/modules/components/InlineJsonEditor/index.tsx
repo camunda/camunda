@@ -93,15 +93,11 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
 
     const debouncedValidate = useMemo(() => {
       return debounce((val: string) => {
-        if (!onValidate) {
-          return;
-        }
-
         try {
           JSON.parse(val);
-          onValidate(true);
+          onValidate?.(true);
         } catch {
-          onValidate(false);
+          onValidate?.(false);
         }
       }, 300);
     }, [onValidate]);
@@ -118,11 +114,6 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
       debouncedValidate(newValue);
     };
 
-    const handleClick = () => {
-      setIsEditing(true);
-      onFocus?.();
-    };
-
     return (
       <EditorWrapper
         tabIndex={0}
@@ -136,7 +127,6 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
           setIsEditing(true);
           onFocus?.();
         }}
-        onClick={handleClick}
         $invalid={!!fieldError}
       >
         {isReadOnly || !isEditing ? (
