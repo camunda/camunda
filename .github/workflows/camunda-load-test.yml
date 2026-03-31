@@ -7,7 +7,7 @@
 # also: triggerable manually via workflow_dispatch for ad-hoc load tests
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
-# owner: camunda/orchestration-cluster-team
+# owner: @camunda/reliability-testing
 #
 # Infos from Infra:
 # - Using the infra benchmark prod cluster requires to use Teleport to authenticate.
