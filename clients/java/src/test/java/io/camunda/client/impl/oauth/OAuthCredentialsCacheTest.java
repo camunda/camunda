@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -254,6 +255,44 @@ public final class OAuthCredentialsCacheTest {
 
     // then
     assertThat(changed).isFalse();
+  }
+
+  @Test
+  public void shouldInvokeProactiveRefreshCallbackWhenTokenIsNearingExpiry() throws IOException {
+    // given — a token that is within the proactive refresh window (expires in 45s: valid but
+    // past the 60s proactive threshold)
+    final ZonedDateTime nearExpiry = ZonedDateTime.now().plusSeconds(45);
+    final CamundaClientCredentials nearExpiryCredentials =
+        new CamundaClientCredentials("nearExpiry", nearExpiry, "Bearer");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.put(WOMBAT_CLIENT_ID, nearExpiryCredentials).writeCache();
+    final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+
+    // when
+    final CamundaClientCredentials result =
+        cache.computeIfMissingOrInvalid(
+            WOMBAT_CLIENT_ID, () -> WOMBAT, () -> callbackInvoked.set(true));
+
+    // then — returns the still-valid token but triggers the callback
+    assertThat(result.getAccessToken()).isEqualTo("nearExpiry");
+    assertThat(callbackInvoked).isTrue();
+  }
+
+  @Test
+  public void shouldNotInvokeProactiveRefreshCallbackWhenTokenIsFarFromExpiry() throws IOException {
+    // given — a token far from expiry
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.readCache();
+    final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+
+    // when — WOMBAT has expiry in year 3020, far from any threshold
+    final CamundaClientCredentials result =
+        cache.computeIfMissingOrInvalid(
+            WOMBAT_CLIENT_ID, () -> WOMBAT, () -> callbackInvoked.set(true));
+
+    // then — returns the token without triggering the callback
+    assertThat(result.getAccessToken()).isEqualTo("wombat");
+    assertThat(callbackInvoked).isFalse();
   }
 
   @Test
