@@ -313,7 +313,7 @@ jobs:
         name: Build Zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Zeebe Docker Image
         with:
@@ -323,6 +323,26 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'Dockerfile'
+      - name: Prepare Optimize distball for Docker build
+        if: ${{ inputs.enable-optimize }}
+        run: |
+          image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+          src=$(find optimize-distro/target -maxdepth 1 -name 'camunda-optimize-*-production.tar.gz' | head -1)
+          if [[ -z "$src" ]]; then
+            echo "::error::No optimize distball found"
+            exit 1
+          fi
+          ln -sf "$(basename "$src")" "optimize-distro/target/camunda-optimize-${image_tag}-production.tar.gz"
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-${{ needs.calculate-image-tag.outputs.image-tag }}-production.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -436,6 +456,7 @@ jobs:
           image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
           image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
           zeebe_repo="${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
+          optimize_repo="${{ inputs.use-official-docker-images && 'camunda/optimize' || 'team-zeebe/optimize' }}"
 
           additional_platform_config="--set global.image.tag=${image_tag} \
             --set zeebe.image.registry=${image_registry} \
@@ -444,6 +465,14 @@ jobs:
             --set zeebeGateway.image.registry=${image_registry} \
             --set zeebeGateway.image.repository=${zeebe_repo} \
             --set zeebeGateway.image.tag=${image_tag}"
+
+          # Append optimize image config if enabled
+          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+            additional_platform_config+=" \
+              --set optimize.image.registry=${image_registry} \
+              --set optimize.image.repository=${optimize_repo} \
+              --set optimize.image.tag=${image_tag}"
+          fi
 
           # Append user-provided helm values if present
           if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
