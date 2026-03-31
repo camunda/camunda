@@ -362,7 +362,7 @@ jobs:
         if: ${{ inputs.enable-optimize }}
         run: |
           image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
-          src=$(ls optimize-distro/target/camunda-optimize-*-production.tar.gz 2>/dev/null | head -1)
+          src=$(find optimize-distro/target -maxdepth 1 -name 'camunda-optimize-*-production.tar.gz' | head -1)
           if [[ -z "$src" ]]; then
             echo "::error::No optimize distball found"
             exit 1
