@@ -157,6 +157,11 @@
       <artifactId>jsonschema-module-swagger-2</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

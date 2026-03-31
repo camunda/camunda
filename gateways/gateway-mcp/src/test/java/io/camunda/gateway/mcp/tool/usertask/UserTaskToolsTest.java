@@ -18,7 +18,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
@@ -70,7 +70,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {UserTaskTools.class})
-class UserTaskToolsTest extends ToolsTest {
+class UserTaskToolsTest extends OperationalToolsTest {
 
   static final UserTaskEntity USER_TASK_ENTITY =
       new UserTaskEntity(

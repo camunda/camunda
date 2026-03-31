@@ -16,7 +16,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
@@ -68,7 +68,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {ProcessInstanceTools.class})
-class ProcessInstanceToolsTest extends ToolsTest {
+class ProcessInstanceToolsTest extends OperationalToolsTest {
 
   static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
