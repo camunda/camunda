@@ -282,9 +282,19 @@ jobs:
             echo "Found existing message: $message_ts — will update" >&2
             echo "message_ts=$message_ts" >> "$GITHUB_OUTPUT"
             echo "found=true" >> "$GITHUB_OUTPUT"
+
+            # Check if the existing message is already pinned
+            pinned_response=$(curl -s \
+              -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+              "https://slack.com/api/pins.list?channel=${SLACK_CHANNEL}")
+            is_pinned=$(echo "$pinned_response" | jq -r --arg ts "$message_ts" '
+              [(.items // [])[] | select(.type == "message" and .message.ts == $ts)] | length | . > 0')
+            echo "Message is already pinned: $is_pinned" >&2
+            echo "is_pinned=$is_pinned" >> "$GITHUB_OUTPUT"
           else
             echo "No existing message found — will post new" >&2
             echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "is_pinned=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Update existing Slack message
@@ -299,6 +309,19 @@ jobs:
             ts: "${{ steps.find-message.outputs.message_ts }}"
             text: "Stale backport report"
             blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+
+      - name: Pin existing Slack message if not already pinned
+        if: steps.find-message.outputs.found == 'true' && steps.find-message.outputs.is_pinned == 'false'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
+          MESSAGE_TS: ${{ steps.find-message.outputs.message_ts }}
+        run: |
+          curl -sf -X POST "https://slack.com/api/pins.add" \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}"
 
       - name: Unpin previous day's Slack message
         if: steps.find-message.outputs.found != 'true'
