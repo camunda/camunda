@@ -44,7 +44,7 @@ R2 – External IdP integration
 R3 – Fine‑grained authorizations
 : Resource‑based permissions evaluated uniformly across UIs and APIs.
 
-R4 – Multi‑tenancy (Self‑Managed)
+R4 – Multi‑tenancy
 : Tenants created, assigned, and enforced at Orchestration Cluster level. Management Identity is no longer a source of truth for runtime tenants.
 
 R5 – Migration from Management Identity
@@ -136,7 +136,6 @@ title: Identity - Technical Context
 flowchart TB
   WEB_UI("Camunda Web UI (Browser)")
   CLIENT_APP("Client Application")
-  CAMUNDA_CLIENT("Camunda Client")
   IDP[["Enterprise IdP"]]
   PRIMARY_DB[("Primary Database (RocksDB)")]
   SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
@@ -147,14 +146,14 @@ flowchart TB
 
   WEB_UI -->|"rest"| SAAS_OR_SM
   CLIENT_APP -->|"rest/gRPC"| SAAS_OR_SM
-  CLIENT_APP -->|"rest/gRPC"| CAMUNDA_CLIENT -->|"rest/gRPC"| SAAS_OR_SM
   SAAS_OR_SM -->|"history data, identity data"| SECONDARY_DB
   SAAS_OR_SM -->|"runtime data, identity data"| PRIMARY_DB
   SAAS_OR_SM -->|"authentication, tokens"| IDP
 ```
 
 Entities:
-- Clients: Web applications, Camunda clients, and other services interacting with the Orchestration Cluster
+- Camunda Web UI: Operate, Tasklist, Admin UI
+- Client Application: A client, either using the Camunda Client or REST/gRPC API.
 - Camunda 8 OC (Orchestration Cluster): runtime deployment containing the Zeebe Processing engine, Zeebe gRPC API, Orchestration Cluster API  as well ad the Operate, Tasklist, Identity Web Applications along with their deprecated V1 APIs.
 - Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).
 - Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.
@@ -252,7 +251,7 @@ The Authentication building block provides configuration classes, converters, an
 Spring Security itself manages the filter chains, token exchange, and IdP communication.
 Authentication classes enrich the resulting principal with Camunda-specific claims (groups, roles, tenants) and persist sessions.
 
-To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components such as `TokenClaimsConverter`, `MappingRuleMatcher`, `DefaultCamundaAuthenticationProvider` and `WebSessionRepository`.
+To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components such as `DefaultCamundaAuthenticationProvider` and `WebSessionRepository`.
 
 ##### Basic Auth flow
 
@@ -261,31 +260,30 @@ To keep it simple, we describe the Basic Auth and OIDC flows separately, but the
 title: Authentication - Basic Auth
 ---
 flowchart TB
-  SPRING_SECURITY -->|"configured by"| WEB_SEC_CFG
+  AUTH_CONSUMER["Authentication consumer</br> (Controller, ...)"] -->|"getCamundaAuthentication"| AUTH_PROVIDER
+
+  subgraph SPRING_SECURITY["Spring Security"]
+    SPRING_FILTER["Spring Security</br>(UsernamePasswordAuthenticationFilter)"]
+    SPRING_SESSION["Spring Session</br>(SessionRepositoryFilter)"]
+  end
 
   subgraph AUTHENTICATION_BASIC["Authentication (Basic Auth)"]
     WEB_SEC_CFG["Spring Security Configuration</br>(WebSecurityConfig.BasicConfiguration)"]
     BASIC_CONV["Basic Auth Converter</br>(UsernamePasswordAuthenticationTokenConverter)"]
-    CLAIMS_CONV["Claims Converter</br>(TokenClaimsConverter)"]
-    MAPPING_RULES_PROC["Mapping Rules Processor</br>(MappingRuleMatcher)"]
-    AUTH_PROVIDER["Authentication Provider</br>(DefaultCamundaAuthenticationProvider)"]
     SESSION_MGR["Session Repository</br>(WebSessionRepository)"]
+    AUTH_PROVIDER["Authentication Provider</br>(DefaultCamundaAuthenticationProvider)"]
 
     WEB_SEC_CFG --> BASIC_CONV
-    BASIC_CONV --> CLAIMS_CONV
-    CLAIMS_CONV --> MAPPING_RULES_PROC
-    MAPPING_RULES_PROC --> AUTH_PROVIDER
-    AUTH_PROVIDER --> SESSION_MGR
   end
 
-  SPRING_SECURITY["Spring Security</br>(UsernamePasswordAuthenticationFilter)"]
-  CAMUNDA_SERVICES["Camunda Services"]
   CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
   SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
 
+  SPRING_FILTER -->|"configured by"| WEB_SEC_CFG
+  SPRING_SESSION -->|"accesses"| SESSION_MGR
+
   BASIC_CONV -->|"load user, roles, tenants"| CAMUNDA_SERVICES
-  MAPPING_RULES_PROC -->|"load mapping rules"| CAMUNDA_SERVICES
-  CAMUNDA_SERVICES --> CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
+  CAMUNDA_SERVICES["Camunda Services</br>(e.g. UserServices, RoleServices, ...)"] --> CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
   SESSION_MGR -->|"store session"| CAMUNDA_SEARCH_CLIENT
 ```
 
@@ -293,10 +291,8 @@ Key responsibilities:
 
 - Spring Security Configuration (`WebSecurityConfig.BasicConfiguration`): Spring `@Configuration` subclass of `WebSecurityConfig`, activated by `camunda.security.authentication.method=basic`. It is responsible for configuring the Spring Security filter chains for Basic auth and registering the `UsernamePasswordAuthenticationTokenConverter` bean. The `@ConditionalOnProtectedApi` annotation on individual filter chain beans controls whether API endpoints require authentication (based on the `camunda.security.api.unprotected` property).
 - Basic Auth Converter (`UsernamePasswordAuthenticationTokenConverter`): converts Basic auth credentials (username/password or clientId/secret) into a `CamundaAuthentication` by loading the user entity and its roles and tenants via Camunda Services.
-- Claims Converter (`TokenClaimsConverter`): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via `MembershipService`.
-- Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.
-- Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
-- Session Repository (`WebSessionRepository`): creates and invalidates server‑side sessions backed by secondary storage.
+- Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`. It reads the current Spring `Authentication` from `SecurityContextHolder`, checks the `CamundaAuthenticationHolder` cache for an existing `CamundaAuthentication`, and only on a cache miss delegates conversion to the `UsernamePasswordAuthenticationTokenConverter`.
+- Session Repository (`WebSessionRepository`): implements Spring's `SessionRepository<WebSession>` interface and manages server‑side sessions backed by secondary storage via `PersistentWebSessionClient`.
 
 External responsibilities:
 
@@ -328,8 +324,8 @@ flowchart TB
 
     CLAIMS_CONV["Claims Converter</br>(TokenClaimsConverter)"]
     MAPPING_RULES_PROC["Mapping Rules Processor</br>(MappingRuleMatcher)"]
-    AUTH_PROVIDER["Authentication Provider</br>(DefaultCamundaAuthenticationProvider)"]
     SESSION_MGR["Session Repository</br>(WebSessionRepository)"]
+    AUTH_PROVIDER["Authentication Provider</br>(DefaultCamundaAuthenticationProvider)"]
 
     WEB_SEC_CFG -.->|"configures"| OIDC_CONV
     WEB_SEC_CFG -.->|"configures"| REPOSITORIES
@@ -337,9 +333,9 @@ flowchart TB
 
     OIDC_CONV --> CLAIMS_CONV
     CLAIMS_CONV --> MAPPING_RULES_PROC
-    MAPPING_RULES_PROC --> AUTH_PROVIDER
-    AUTH_PROVIDER --> SESSION_MGR
   end
+
+  AUTH_CONSUMER["Authentication consumer</br> (Controller, ...)"] -->|"getCamundaAuthentication"| AUTH_PROVIDER
 
   SPRING_SECURITY["Spring Security"]
 
@@ -349,7 +345,7 @@ flowchart TB
   SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
 
   WEB_SEC_CFG -.->|"configures"| SPRING_SECURITY
-  SPRING_SECURITY -->|"OIDC / JWKS validation"| IDP
+  SPRING_SECURITY -->|"OIDC / JWKS validation"| IDP & SESSION_MGR
   MAPPING_RULES_PROC -->|"load mapping rules"| CAMUNDA_SERVICES
   CAMUNDA_SERVICES --> SECONDARY_DB
   SESSION_MGR -->|"store session"| CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
@@ -365,7 +361,7 @@ Key responsibilities:
 - Claims Converter (`TokenClaimsConverter`): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via `MembershipService`.
 - Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.
 - Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
-- Session Repository (`WebSessionRepository`): creates and invalidates server‑side sessions backed by secondary storage.
+- Session Repository (`WebSessionRepository`): implements Spring's `SessionRepository<WebSession>` interface and manages server‑side sessions backed by secondary storage via `PersistentWebSessionClient`.
 
 Extern responsibilities:
 
@@ -464,14 +460,15 @@ Key responsibilities:
 
 #### 6.1.1 Basic Auth
 
-Scenario: human user logs into Operate or Tasklist using username and password (Basic Auth).
+Scenario: human user logs into Operate or Tasklist using username and password (Form Login).
 
 1. Browser navigates to a cluster UI (for example Operate).
 2. Spring Security redirects the browser to the built-in login form.
 3. User submits credentials; Spring Security delegates to Token Converter (`UsernamePasswordAuthenticationTokenConverter`).
 4. The converter loads the user entity, roles, and tenants via Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.
-5. `TokenClaimsConverter` and `DefaultCamundaAuthenticationProvider` build a `CamundaAuthentication` and store it in the session.
-6. Subsequent requests are authenticated via the session.
+5. `DefaultCamundaAuthenticationProvider` creates a `CamundaAuthentication` object
+6. `WebSessionRepository` stores the session in secondary storage
+7.  Subsequent requests are authenticated via the session.
 
 ```mermaid
 sequenceDiagram
@@ -512,7 +509,7 @@ sequenceDiagram
 Participants:
 
 * Spring Security: Manages the authentication process and redirects to the login form. (`UsernamePasswordAuthenticationFilter`)
-* Auth Converter: Converts credentials and resolves claims to build a `CamundaAuthentication`. (`UsernamePasswordAuthenticationTokenConverter` -> `TokenClaimsConverter`)
+* Auth Converter: Converts credentials and resolves claims to build a `CamundaAuthentication`. (`UsernamePasswordAuthenticationTokenConverter`)
 * Authentication Provider: Bridges Spring Security to the Camunda authentication context. (`DefaultCamundaAuthenticationProvider`)
 * Camunda Services: Service that provides access to Camunda Search Client (secondary database). (via UserServices, RoleServices, GroupServices, TenantServices )
 
@@ -526,7 +523,7 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
 5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](references/rp-initiated-logout.md).
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -676,7 +673,7 @@ Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Tok
 3. Spring Security (`BearerTokenAuthenticationFilter`) validates the token signature via the IdP's JWKS endpoint — no local credential storage needed.
 4. `OidcTokenAuthenticationConverter` and `TokenClaimsConverter` extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -721,12 +718,12 @@ Participants:
 * Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims. (`MappingRuleMatcher`)
 * Camunda Services: Provides access to mapping rule data. (`RoleServices`, `GroupServices`, `TenantServices`, `MappingRuleServices`)
 
-#### 6.3.2 Client ID + Secret / Basic Auth
+#### 6.3.2 Basic Auth
 
-Scenario: worker or backend service calls REST APIs using a Client ID and Secret via HTTP Basic authentication.
+Scenario: worker or backend service calls REST APIs using a username and password via HTTP Basic authentication.
 No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.
 
-1. Service sends a `Basic <base64(clientId:secret)>` header on each REST request.
+1. Service sends a `Basic <base64(username:password)>` header on each REST request.
 2. Spring Security (`UsernamePasswordAuthenticationFilter`) delegates to `UsernamePasswordAuthenticationTokenConverter`.
 3. The converter loads the client entity and its roles and tenants from the Secondary Database via Camunda Services.
 4. `TokenClaimsConverter` and `DefaultCamundaAuthenticationProvider` build a `CamundaAuthentication` and the request is authorized.
@@ -778,7 +775,7 @@ Scenario: a client starts a process instance via the REST API; the Zeebe Engine 
 6. If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.
 7. Camunda Services returns a `CreateProcessInstanceResponse` and the REST API responds with `200 OK` containing the process instance key.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -830,7 +827,7 @@ Scenario: a client queries process instances via the REST API; the Camunda Searc
 8. The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.
 9. Camunda Services returns a `SearchProcessInstancesResponse` and the REST API responds with `200 OK` containing the filtered process instances.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -886,7 +883,7 @@ Scenario: an administrator creates a new user via the REST API; the command is a
 6. The Engine returns a command acknowledgement and `UserServices` returns the created user to the REST API, which responds with `201 Created` and the new user key.
 7. Asynchronously, the Camunda or Rdbms Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -945,7 +942,7 @@ Scenario: an administrator creates a new authorization (permission grant) via th
 6. The Engine returns a command acknowledgement and `AuthorizationServices` returns the created authorization to the REST API, which responds with `201 Created` and the new authorization key.
 7. Asynchronously, the Camunda or RDBMS Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
 
 ```mermaid
 sequenceDiagram
@@ -1004,12 +1001,6 @@ Identity‑specific aspects:
 
   - Primary storage: RocksDB.
   - Secondary storage: the configured search database (ES/OS/RDBMS).
-- Self‑Managed deployments
-  - Typically deployed on Kubernetes using the Camunda 8 Helm charts.
-  - Identity runs within the Orchestration Cluster pods; no separate identity database or service is required for runtime.
-- SaaS deployments
-  - Orchestration Clusters are hosted by Camunda.
-  - Identity is included per cluster and integrated with Camunda's SaaS control plane and IdP setup.
 
 For detailed infrastructure topologies, see the Camunda 8 reference architectures listed in the sources appendix.
 
