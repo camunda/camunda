@@ -155,10 +155,10 @@ test.describe('variables and incidents', () => {
 
     await editVariableButton.click();
 
-    const editableField = processInstancePage.variablesEditor;
-    await editableField.getLastWrapper().click();
-    await editableField.clear();
-    await editableField.fill('99');
+    await processInstancePage.variablesEditor.getLastWrapper().click();
+    await processInstancePage.variablesEditor.waitForEditor();
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('99');
 
     const saveVariableButton = await page.getByRole('button', {
       name: 'Save',

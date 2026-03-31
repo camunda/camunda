@@ -159,7 +159,7 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
           </EditorReadonly>
         ) : (
           <>
-            <label htmlFor="value" className="cds--visually-hidden">
+            <label htmlFor={id} className="cds--visually-hidden">
               Value
             </label>
             {!Editor ? (

@@ -85,6 +85,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 id={variableEditor.fieldName}
                 data-testid="edit-variable-value"
                 autoFocus={!isModificationModeEnabled || meta.active}
+                readOnly={meta.submitting}
                 onBlur={() => {
                   variableEditor.createModification({
                     scopeId: variableEditor.variableScopeKey,

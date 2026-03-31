@@ -40,7 +40,7 @@ export class JSONEditor {
   }
 
   async clear() {
-    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 
