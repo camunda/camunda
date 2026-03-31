@@ -28,16 +28,16 @@ import {cleanupUsers} from 'utils/usersCleanup';
 test.describe.serial('Delete Decision Instances API Tests', () => {
   let decisionInstances: DecisionInstance[] = [];
   let userWithResourcesAuthorizationToSendRequest: {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    } = {} as {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    };
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  } = {} as {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
 
   test.beforeAll(async ({request}) => {
     const result =
@@ -61,7 +61,7 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     });
   });
 
-    test('Delete Decision Instance - Forbidden', async ({request}) => {
+  test('Delete Decision Instance - Forbidden', async ({request}) => {
     await test.step('Attempt to Delete Decision Instance with insufficient permissions', async () => {
       const decisionInstanceToDelete = decisionInstances[0];
       const decisionEvaluationKeyToDelete =
@@ -87,7 +87,7 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
 
   test('Delete Decision Instance - Success', async ({request}) => {
     const decisionInstanceToDelete =
-        decisionInstances[decisionInstances.length - 1];
+      decisionInstances[decisionInstances.length - 1];
     const decisionEvaluationKeyToDelete =
       decisionInstanceToDelete.decisionEvaluationKey;
 
@@ -107,7 +107,8 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     });
 
     await test.step('Verify Decision Instance is Deleted', async () => {
-      const decisionEvaluationInstanceKeyToGet = decisionInstanceToDelete.decisionEvaluationInstanceKey;
+      const decisionEvaluationInstanceKeyToGet =
+        decisionInstanceToDelete.decisionEvaluationInstanceKey;
       await expect(async () => {
         const res = await request.get(
           buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet}`),
