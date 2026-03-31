@@ -184,7 +184,7 @@ public class RecordFixtures {
             ImmutableProcess.builder()
                 .from((Process) recordValueRecord.getValue())
                 .withResource(resource)
-                .withBpmnProcessId("Process_11hxie4")
+                .withBpmnProcessId("processStartForm")
                 .withVersion(1)
                 .build())
         .build();
