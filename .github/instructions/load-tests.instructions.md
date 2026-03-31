@@ -19,7 +19,7 @@ When modifying load test infrastructure, workflows, or setup scripts, always che
 if related documentation needs updating:
 
 - `load-tests/README.md` — main entry point and workflow overview
-- `load-tests/docs/workflows.md` — detailed workflow reference
+- Workflow YAML header comments (`.github/workflows/*load-test*`, etc.) — detailed per-workflow reference
 - `load-tests/docs/directory-structure.md` — branch-specific path differences
 - `docs/testing/reliability-testing.md` — goals, test variants, observability, chaos engineering
 - This file (`.github/instructions/load-tests.instructions.md`) — AI-facing guidance

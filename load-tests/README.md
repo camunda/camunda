@@ -1,6 +1,6 @@
 # Camunda Load Tests
 
-Load tests validate the reliability and performance of Camunda 8 across releases and development branches. They run as automated GitHub Actions workflows on a GKE cluster (`camunda-benchmark-prod`), deploying via the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm) and a custom [load test Helm chart](https://github.com/camunda/camunda-load-tests-helm).
+Load tests validate the reliability and performance of Camunda 8 across releases and development branches. They can be created via automated GitHub Actions workflows or manually (via Makefiles) on a GKE cluster (`camunda-benchmark-prod`), deploying the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm) and a custom [load test Helm chart](https://github.com/camunda/camunda-load-tests-helm).
 
 For background on goals, test variants, and observability, see the [reliability testing documentation](../docs/testing/reliability-testing.md).
 
@@ -10,7 +10,7 @@ For background on goals, test variants, and observability, see the [reliability 
 |----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                                                                                             |
 | `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                                                                                                       |
-| `docs/`        | Additional documentation: [workflow reference](docs/workflows.md), [directory structure history](docs/directory-structure.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
+| `docs/`        | Additional documentation: [directory structure history](docs/directory-structure.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
 
 ## Quick Start
 
@@ -93,4 +93,4 @@ graph TD
 | 04:00 UTC        | `camunda-daily-load-tests.yml`                       | Daily     |
 | 04:00 UTC        | `camunda-load-test-clean-up.yml`                     | Daily     |
 
-For detailed workflow inputs, job chains, and branch availability, see the [workflow reference](docs/workflows.md).
+For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/). For branch-specific path differences, see [directory structure history](docs/directory-structure.md).
