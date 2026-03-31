@@ -241,9 +241,7 @@ public final class ZeebePartitionFactory {
 
     if (partitionDistribution != null) {
       final long partitionCount =
-          partitionDistribution.partitions().stream()
-              .filter(p -> p.members().contains(localMemberId))
-              .count();
+          clusterConfigurationService.getMemberPartitions(localMemberId).size();
       if (partitionCount > 0) {
         return (int) partitionCount;
       } else {

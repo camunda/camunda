@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
+import java.util.List;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
@@ -114,6 +117,18 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   public void removeInconsistentConfigurationListener() {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeTopologyChangedListener();
+    }
+  }
+
+  @Override
+  public List<PartitionMetadata> getMemberPartitions(final MemberId memberId) {
+    if (partitionDistribution != null) {
+      return partitionDistribution.partitions().stream()
+          .filter(p -> p.members().contains(memberId))
+          .toList();
+    } else {
+      throw new IllegalStateException(
+          "Cannot get member partitions before the topology manager is started");
     }
   }
 
