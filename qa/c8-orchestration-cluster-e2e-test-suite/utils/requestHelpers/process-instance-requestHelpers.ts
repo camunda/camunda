@@ -12,7 +12,7 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions, isOracle} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
-import {validateResponse} from 'json-body-assertions';
+import {validateResponse, validateResponseShape} from 'json-body-assertions';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -122,13 +122,13 @@ export async function searchJobKeysForProcessInstance(
         }
       });
     }
-    await validateResponse(
+    validateResponseShape(
       {
         path: '/jobs/search',
         method: 'POST',
         status: '200',
       },
-      res,
+      json,
     );
     expect(json.page.totalItems).toBeGreaterThan(0);
     localState['jobKeys'] = json.items.map(

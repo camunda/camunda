@@ -12,7 +12,7 @@ import {expect} from '@playwright/test';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {cancelProcessInstance, createInstances, deploy} from '../zeebeClient';
 import {defaultAssertionOptions, isOracle} from '../constants';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse, validateResponseShape} from 'json-body-assertions';
 
 export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
@@ -63,13 +63,13 @@ export async function searchJobKey(
         }
       });
     }
-    await validateResponse(
+    validateResponseShape(
       {
         path: '/jobs/search',
         method: 'POST',
         status: '200',
       },
-      searchRes,
+      searchJson,
     );
     expect(searchJson.items.length).toBeGreaterThan(0);
     result.jobKey = searchJson.items[0].jobKey;

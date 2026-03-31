@@ -210,13 +210,13 @@ test.describe.parallel('Job API Tests', () => {
             }
           });
         }
-        await validateResponse(
+        validateResponseShape(
           {
             path: '/jobs/search',
             method: 'POST',
             status: '200',
           },
-          res,
+          json,
         );
         const actualTypeList = json.items.map(
           (item: {type: string}) => item.type,
