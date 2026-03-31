@@ -43,7 +43,7 @@ global:
           existingSecretKey: identity-optimize-client-token
   security:
     authentication:
-      type: oidc
+      method: oidc
 
 identity:
   enabled: true
@@ -206,7 +206,6 @@ orchestration:
       # We moved the archiver configuration under retention at some point, but still need to support the previous
       # versions for now, so the configurations for retention are duplicated
       zeebe.broker.exporters.camundaexporter.args.history.retention.enabled: "true"
-      zeebe.broker.exporters.camundaexporter.args.history.retention.minimumAge: "1d"
       zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
@@ -218,7 +217,6 @@ orchestration:
       camunda.operate.elasticsearch.numberOfShards: 3
       # Schema management has been moved out of exporter - to be bootstrap at start; once
       camunda.database.retention.enabled: "true"
-      camunda.database.retention.minimumAge: "1d"
       camunda.database.retention.policyName: "camunda-retention-policy"
       #Metrics:
       camunda.flags.jfr.metrics: "true"
