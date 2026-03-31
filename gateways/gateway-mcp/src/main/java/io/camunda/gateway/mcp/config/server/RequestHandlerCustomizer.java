@@ -87,20 +87,22 @@ public final class RequestHandlerCustomizer {
 
       // invoke the identified tool spec, if found
       return toolSpecification.fold(
-          // no tool found, further details in the message
           errorMessage ->
+              // no tool found, further details in the message
               Mono.error(
                   McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
                       .message("Unknown tool: invalid_tool_name")
-                      .data(errorMessage)
+                      .data(
+                          "Tool not found: %s. Message: %s"
+                              .formatted(callToolRequest.name(), errorMessage))
                       .build()),
-          // no tool found, no further details
           spec -> {
             if (spec == null) {
+              // no tool found, no further details
               return Mono.error(
                   McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
                       .message("Unknown tool: invalid_tool_name")
-                      .data("Tool not found: " + callToolRequest.name())
+                      .data("Tool not found: %s".formatted(callToolRequest.name()))
                       .build());
             }
             // tool found, execute it
