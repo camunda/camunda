@@ -30,7 +30,6 @@ public class CamundaMcpJackson3Module extends SimpleModule {
     super(MODULE_NAME);
     setMixInAnnotation(
         ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class);
-    setMixInAnnotation(
-        UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
+    setMixInAnnotation(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
   }
 }
