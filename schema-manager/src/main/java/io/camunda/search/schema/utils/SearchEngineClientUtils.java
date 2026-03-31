@@ -27,14 +27,14 @@ import org.slf4j.LoggerFactory;
 
 public class SearchEngineClientUtils {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
-
   /**
    * Maximum length of a comma-delimited index-pattern string passed in a URL request. Requests
-   * exceeding this limit may be rejected by the search engine.
+   * exceeding this limit may be rejected by the search engine. ES/OS limit this to 4096, but we use
+   * a lower value to be conservative
    */
-  public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
+  public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 3500;
 
+  private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
   private final ObjectMapper objectMapper;
 
   public SearchEngineClientUtils(final ObjectMapper objectMapper) {
