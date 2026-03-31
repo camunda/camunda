@@ -1,4 +1,4 @@
-# ADR-0001: Support Multiple JWKS Endpoints per OIDC Issuer
+# ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer
 
 ## Status
 
