@@ -51,7 +51,7 @@ class ProcessesMcpServerEmptyToolRepositoryTest extends ProcessesToolsTest {
                     .containsExactly(
                         ErrorCodes.INVALID_PARAMS,
                         "Unknown tool: invalid_tool_name",
-                        "There are no tools"));
+                        "Tool not found: anyTool. Message: There are no tools"));
   }
 
   @Configuration
