@@ -520,18 +520,16 @@ public class CamundaExporter implements Exporter {
   void waitForPendingFlush() {
     if (pendingFlush != null) {
       pendingFlush.waitForCompletion();
-    }
-  }
-
-  private void flush() {
-    if (pendingFlush != null) {
-      pendingFlush.waitForCompletion();
       // Update the record counters only after the flush was successful. If the asynchronous flush
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition(pendingFlush.getLastPosition());
       updateLastFlushTimestamp(pendingFlush);
       pendingFlush = null;
     }
+  }
+
+  private void flush() {
+    waitForPendingFlush();
 
     final var currentWriter = writer;
     pendingFlush =
