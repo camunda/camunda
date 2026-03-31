@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
+import io.camunda.authentication.ConditionalOnCamundaGroupsEnabled;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -39,6 +40,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnCamundaGroupsEnabled
 public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
 
   private final GroupServices groupServices;

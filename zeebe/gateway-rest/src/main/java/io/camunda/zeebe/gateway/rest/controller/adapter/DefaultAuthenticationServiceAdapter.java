@@ -11,12 +11,16 @@ import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.t
 
 import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.controller.generated.AuthenticationServiceAdapter;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("consolidated-auth")
+@ConditionalOnSecondaryStorageEnabled
 public class DefaultAuthenticationServiceAdapter implements AuthenticationServiceAdapter {
 
   private final CamundaUserService camundaUserService;
