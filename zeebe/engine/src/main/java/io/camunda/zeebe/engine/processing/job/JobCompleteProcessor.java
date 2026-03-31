@@ -132,13 +132,16 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
 
+  private final boolean eventVariablesDisabled;
+
   public JobCompleteProcessor(
       final ProcessingState state,
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final boolean eventVariablesDisabled) {
     processState = state;
     userTaskState = state.getUserTaskState();
     jobState = state.getJobState();
@@ -147,6 +150,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    this.eventVariablesDisabled = eventVariablesDisabled;
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
@@ -189,20 +193,25 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
     preCompleteActions(job, session);
 
+    // If job completed variables are disabled, Emit the COMPLETED event without variables to avoid
+    // ExceededBatchRecordSizeException. Variables are not needed in the COMPLETED event; exporters
+    // can read them from JobIntent.COMPLETE command or the follow-up ProcessEvent.TRIGGERING event.
+    if (!eventVariablesDisabled) {
+      job.setVariables(command.getValue().getVariablesBuffer());
+    }
     job.setResult(command.getValue().getResult());
 
-    // Emit the COMPLETED event without variables to avoid ExceededBatchRecordSizeException when
-    // follow-up events (e.g. ProcessEvent.TRIGGERING) also carry the same variables in the same
-    // batch. Variables are not needed in the COMPLETED event; exporters can read them from the
-    // JobIntent.COMPLETE command or the follow-up ProcessEvent.TRIGGERING event.
     stateWriter.appendFollowUpEvent(command.getKey(), JobIntent.COMPLETED, job);
     responseWriter.writeEventOnCommand(command.getKey(), JobIntent.COMPLETED, job, command);
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
 
-    // Set variables on the job for postCompleteActions; these are passed to follow-up events
-    // such as ProcessEvent.TRIGGERING so that the process instance receives the job output.
-    job.setVariables(command.getValue().getVariablesBuffer());
+    // If the job completed variables are disabled, set variables on the job for
+    // postCompleteActions, passed to follow-up events e.g., ProcessEvent.TRIGGERING so that the
+    // process instance receives the job output.
+    if (eventVariablesDisabled) {
+      job.setVariables(command.getValue().getVariablesBuffer());
+    }
     postCompleteActions(job);
   }
 

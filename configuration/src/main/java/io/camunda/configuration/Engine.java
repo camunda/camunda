@@ -18,6 +18,8 @@ public class Engine {
   @NestedConfigurationProperty
   private EngineBatchOperation batchOperations = new EngineBatchOperation();
 
+  @NestedConfigurationProperty private EngineJob job = new EngineJob();
+
   public Distribution getDistribution() {
     return distribution;
   }
@@ -32,5 +34,13 @@ public class Engine {
 
   public void setBatchOperations(final EngineBatchOperation batchOperations) {
     this.batchOperations = batchOperations;
+  }
+
+  public EngineJob getJob() {
+    return job;
+  }
+
+  public void setJob(final EngineJob job) {
+    this.job = job;
   }
 }

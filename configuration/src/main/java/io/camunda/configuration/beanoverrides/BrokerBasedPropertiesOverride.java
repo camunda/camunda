@@ -217,6 +217,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromBatchOperations(override);
     populateFromExpression(override);
     populateFromProcessInstanceCreation(override);
+    populateFromJobs(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -1063,5 +1064,19 @@ public class BrokerBasedPropertiesOverride {
                 .getCamunda()
                 .getProcessInstanceCreation()
                 .isBusinessIdUniquenessEnabled());
+  }
+
+  private void populateFromJobs(final BrokerBasedProperties override) {
+    override
+        .getExperimental()
+        .getEngine()
+        .getJobs()
+        .setJobsCompletedEventVariablesDisabled(
+            unifiedConfiguration
+                .getCamunda()
+                .getProcessing()
+                .getEngine()
+                .getJob()
+                .isCompletedEventVariablesDisabled());
   }
 }

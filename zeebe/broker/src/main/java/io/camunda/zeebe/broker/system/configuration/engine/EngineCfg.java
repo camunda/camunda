@@ -204,6 +204,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMaxProcessDepth(getMaxProcessDepth())
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
-        .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled());
+        .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
+        .setJobsCompletedEventVariablesDisabled(jobs.isJobsCompletedEventVariablesDisabled());
   }
 }
