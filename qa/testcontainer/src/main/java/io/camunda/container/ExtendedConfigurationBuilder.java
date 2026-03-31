@@ -9,7 +9,6 @@ package io.camunda.container;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -73,8 +72,6 @@ public class ExtendedConfigurationBuilder {
         .registerModule(springTypesModule)
         .disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
         .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
-        .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
-        .setDefaultPropertyInclusion(Include.NON_DEFAULT)
         .setVisibility(PropertyAccessor.ALL, Visibility.NONE)
         .setVisibility(PropertyAccessor.GETTER, Visibility.ANY)
         .setVisibility(PropertyAccessor.IS_GETTER, Visibility.ANY);

@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.util.unit.DataSize;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Validates that a broker can recover from running out of disk space after compaction.
@@ -62,7 +63,7 @@ final class DiskSpaceRecoveryIT {
                     .getPrimaryStorage()
                     .getDisk()
                     .getFreeSpace()
-                    .setProcessing(DataSize.ofMegabytes(4));
+                    .setProcessing(DataSize.ofMegabytes(8));
                 cfg.getData()
                     .getPrimaryStorage()
                     .getDisk()
@@ -168,8 +169,8 @@ final class DiskSpaceRecoveryIT {
   final class WithAlreadyDiskFullTest {
     @Container
     private final BrokerContainer broker =
-        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withCamundaData(volume)
+        new BrokerContainer(DockerImageName.parse("camunda/zeebe:8.10-SNAPSHOT"))
+            .withZeebeData(volume)
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getData()
