@@ -290,7 +290,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 In addition to our release tests, we ran weekly load tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
 
-The weekly tests cover the [realistic load](#realistic-load) (with both Elasticsearch and PostgreSQL secondary storage) and the [latency test](#latency-load-test).
+The weekly tests cover two [realistic load](#realistic-load) variants (one with Elasticsearch secondary storage and one with PostgreSQL secondary storage) plus the [latency test](#latency-load-test).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
