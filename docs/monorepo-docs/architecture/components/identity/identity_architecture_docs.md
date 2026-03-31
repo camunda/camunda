@@ -367,7 +367,7 @@ Extern responsibilities:
 
 - Spring Security (`OAuth2LoginAuthenticationFilter`, `BearerTokenAuthenticationFilter`): manages the OIDC authorization code flow and Bearer token validation. Important components there (not shown in the diagram):
   - Jwt Decoder (`SupplierJwtDecoder`): decodes and validates Bearer JWT tokens; uses a single-provider decoder or an issuer-aware multi-provider decoder depending on the number of registered providers.
-  - Authorized Client Manager (`DefaultOAuth2AuthorizedClientManager`): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including `private_key_jwt` client authentication).
+  - Authorized Client Manager (`DefaultOAuth2AuthorizedClientManager`): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including `private_key_jwt` client authentication; see section 6.3.2 for customer-side client usage and section 6.3.3 for OC server-side OAuth client usage).
   - OIDC User Service (`OidcUserService`): loads OIDC user details from the IdP's userinfo endpoint during browser login.
 - OIDC IdP: issues ID tokens, access tokens, and JWKS for signature verification.
 - Camunda Services: provide access to role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices` (via `DefaultMembershipService`).
@@ -477,7 +477,7 @@ sequenceDiagram
     participant UI as Camunda Web UI<br/>(Operate / Tasklist)
   end
   box Orchestration Cluster
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant AUTH_CONVERTERS as Auth Converters
     participant AUTHN_PROVIDER as Authentication Provider
     participant SESSION as WebSessionRepository
@@ -488,10 +488,10 @@ sequenceDiagram
   end
 
   USER->>UI: Navigate to UI
-  UI->>SS: Unauthenticated <br>request
-  SS-->>USER: Redirect to login form
-  USER->>SS: Submit username + password
-  SS->>AUTH_CONVERTERS: Convert to <br>CamundaAuthentication
+  UI->>SPRING_SECURITY: Unauthenticated <br>request
+  SPRING_SECURITY-->>USER: Redirect to login form
+  USER->>SPRING_SECURITY: Submit username + password
+  SPRING_SECURITY->>AUTH_CONVERTERS: Convert to <br>CamundaAuthentication
   AUTH_CONVERTERS->>CAMUNDA_SERVICES: Load user by username (roles, tenants)
   CAMUNDA_SERVICES->>SECONDARY_DB: Query user entity,<br> roles, tenants
   SECONDARY_DB-->>CAMUNDA_SERVICES: User entity,<br> roles, tenants
@@ -501,8 +501,8 @@ sequenceDiagram
   SESSION->>CAMUNDA_SERVICES: Store session
   CAMUNDA_SERVICES->>SECONDARY_DB: Persist session
   SECONDARY_DB-->>AUTHN_PROVIDER: Session persisted
-  SESSION-->>SS: Session established
-  SS-->>UI: Authenticated session
+  SESSION-->>SPRING_SECURITY: Session established
+  SPRING_SECURITY-->>UI: Authenticated session
   UI-->>USER: Dashboard rendered
 ```
 
@@ -532,7 +532,7 @@ sequenceDiagram
     participant UI as Camunda Web UI<br/>(Operate / Tasklist)
   end
   box Orchestration Cluster
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant CONVERTER as User & Claims Converter
     participant MAPPING as Mapping Rules Processor
     participant AUTHN_PROVIDER as Authentication Provider
@@ -545,14 +545,14 @@ sequenceDiagram
   end
 
   USER->>UI: Navigate to UI
-  UI->>SS: Unauthenticated<br>request
-  SS-->>USER: Redirect to IdP login page<br>(OAuth2AuthorizationRequestRedirectFilter)
+  UI->>SPRING_SECURITY: Unauthenticated<br>request
+  SPRING_SECURITY-->>USER: Redirect to IdP login page<br>(OAuth2AuthorizationRequestRedirectFilter)
   USER->>IDP: Enter credentials
   IDP-->>USER: Redirect with authorization code
-  USER->>SS: Authorization code callback
-  SS->>IDP: Exchange code for tokens<br>(token endpoint)
-  IDP-->>SS: ID token + access token
-  SS->>CONVERTER: Post-process <br>OIDC user token
+  USER->>SPRING_SECURITY: Authorization code callback
+  SPRING_SECURITY->>IDP: Exchange code for tokens<br>(token endpoint)
+  IDP-->>SPRING_SECURITY: ID token + access token
+  SPRING_SECURITY->>CONVERTER: Post-process <br>OIDC user token
   CONVERTER->>CAMUNDA_SERVICES: Load user and<br>membership data
   CAMUNDA_SERVICES->>SECONDARY_DB: Query user entity,<br>roles, tenants
   SECONDARY_DB-->>CAMUNDA_SERVICES: User entity,<br>roles, tenants
@@ -568,8 +568,8 @@ sequenceDiagram
   SESSION->>CAMUNDA_SERVICES: Store session
   CAMUNDA_SERVICES->>SECONDARY_DB: Persist session
   SECONDARY_DB-->>AUTHN_PROVIDER: Session persisted
-  SESSION-->>SS: Session established
-  SS-->>UI: Authenticated session
+  SESSION-->>SPRING_SECURITY: Session established
+  SPRING_SECURITY-->>UI: Authenticated session
   UI-->>USER: Dashboard rendered
 ```
 
@@ -602,15 +602,15 @@ sequenceDiagram
     participant UI as Camunda Web UI<br/>(Operate / Tasklist)
   end
   box Orchestration Cluster
-    participant SS as Spring Security<br/>(LogoutFilter)
+    participant SPRING_SECURITY as Spring Security<br/>(LogoutFilter)
     participant SESSION as WebSessionRepository
   end
 
   USER->>UI: Click Logout
-  UI->>SS: Logout<br>request
-  SS->>SESSION: Invalidate local<br>session
-  SESSION-->>SS: Session removed
-  SS-->>USER: Redirect to login form
+  UI->>SPRING_SECURITY: Logout<br>request
+  SPRING_SECURITY->>SESSION: Invalidate local<br>session
+  SESSION-->>SPRING_SECURITY: Session removed
+  SPRING_SECURITY-->>USER: Redirect to login form
 ```
 
 #### 6.2.2 OIDC
@@ -632,7 +632,7 @@ sequenceDiagram
     participant UI as Camunda Web UI<br/>(Operate / Tasklist)
   end
   box Orchestration Cluster
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant LOGOUT_HANDLER as Logout Handler
     participant SESSION as Session Repository
     participant POST_LOGOUT as Post-Logout Controller
@@ -642,10 +642,10 @@ sequenceDiagram
   end
 
   USER->>UI: Click Logout
-  UI->>SS: Logout request
-  SS->>SESSION: Invalidate local session
-  SESSION-->>SS: Session removed
-  SS->>LOGOUT_HANDLER: Handle logout success<br>(RP-initiated logout)
+  UI->>SPRING_SECURITY: Logout request
+  SPRING_SECURITY->>SESSION: Invalidate local session
+  SESSION-->>SPRING_SECURITY: Session removed
+  SPRING_SECURITY->>LOGOUT_HANDLER: Handle logout success<br>(RP-initiated logout)
   LOGOUT_HANDLER-->>USER: Redirect to IdP<br>end-session endpoint
   USER->>IDP: End-session request<br>with logout_hint
   IDP->>IDP: Invalidate SSO session
@@ -667,7 +667,6 @@ Participants:
 #### 6.3.1 Bearer Token / OIDC
 
 Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Token acquired via the OAuth2 client credentials grant.
-
 1. Service acquires a JWT from the external IdP via the client credentials grant.
 2. It sends the token as a `Bearer` header on each REST request.
 3. Spring Security (`BearerTokenAuthenticationFilter`) validates the token signature via the IdP's JWKS endpoint — no local credential storage needed.
@@ -685,7 +684,7 @@ sequenceDiagram
   end
   box Orchestration Cluster
     participant REST as Gateway Rest
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant AUTH_CONVERTERS as Auth Converters
     participant MAPPING as Mapping Rules Processor
     participant CAMUNDA_SERVICES as Camunda Services
@@ -697,18 +696,18 @@ sequenceDiagram
   WORKER->>IDP: Request token<br>(client credentials grant)
   IDP-->>WORKER: JWT access token
   WORKER->>REST: API request +<br>Bearer token
-  REST->>SS: Authenticate<br>Bearer token
-  SS->>IDP: Validate token signature<br>(JWKS endpoint)
-  IDP-->>SS: Token valid
-  SS->>AUTH_CONVERTERS: Convert JWT to<br>CamundaAuthentication
+  REST->>SPRING_SECURITY: Authenticate<br>Bearer token
+  SPRING_SECURITY->>IDP: Validate token signature<br>(JWKS endpoint)
+  IDP-->>SPRING_SECURITY: Token valid
+  SPRING_SECURITY->>AUTH_CONVERTERS: Convert JWT to<br>CamundaAuthentication
   AUTH_CONVERTERS->>MAPPING: Apply mapping rules
   MAPPING->>CAMUNDA_SERVICES: Load mapping<br>rules
   CAMUNDA_SERVICES->>SECONDARY_DB: Query mapping<br>rule entries
   SECONDARY_DB-->>CAMUNDA_SERVICES: Mapping rule<br>entries
   CAMUNDA_SERVICES-->>MAPPING: Mapping rule<br>entries
   MAPPING-->>AUTH_CONVERTERS: Resolved roles /<br>groups / tenants
-  AUTH_CONVERTERS-->>SS: Client principal<br>authenticated
-  SS-->>REST: Authorized request<br>continues
+  AUTH_CONVERTERS-->>SPRING_SECURITY: Client principal<br>authenticated
+  SPRING_SECURITY-->>REST: Authorized request<br>continues
 ```
 
 Participants:
@@ -718,7 +717,108 @@ Participants:
 * Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims. (`MappingRuleMatcher`)
 * Camunda Services: Provides access to mapping rule data. (`RoleServices`, `GroupServices`, `TenantServices`, `MappingRuleServices`)
 
-#### 6.3.2 Basic Auth
+#### 6.3.2 OIDC with private_key_jwt client authentication (customer-side Camunda client)
+
+> **Available since**: Camunda 8.8 clients (issue [#36971](https://github.com/camunda/camunda/issues/36971)).
+
+Scenario: a customer-side Camunda client (for example a Java worker) requests an access token from the IdP using OAuth2 client credentials and authenticates with `private_key_jwt` (`client_assertion`) instead of `client_secret`. The resulting access token is then used as a Bearer token when calling OC APIs.
+
+**OC Configuration**: OC must run in OIDC mode (`camunda.security.authentication.method=oidc`) so that incoming Bearer tokens are validated via OIDC/JWKS as described in [6.3.1](#631-bearer-token--oidc). No additional OC setting is required specifically for the customer client's `private_key_jwt` choice.
+
+Important distinction: the JWT sent to the IdP token endpoint here is the OAuth **client assertion** (`client_assertion`), signed by the client's private key. The private key itself is never transmitted. This client assertion is separate from the access token that is later sent to OC as `Authorization: Bearer ...`.
+
+Flow:
+
+1. A worker/service in the customer system uses the Camunda client OAuth credentials provider to request a token from the IdP token endpoint.
+2. The client builds a signed JWT client assertion and includes it in the token request as `client_assertion=<signed JWT>` + `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer` (plus `client_id` and `grant_type=client_credentials`).
+3. The IdP validates the assertion signature using the registered public key / certificate for that OAuth client.
+4. The IdP returns an access token to the client.
+5. The worker sends API requests to OC with `Authorization: Bearer <access_token>`.
+6. OC (`Gateway Rest` + Spring Security) validates the Bearer token and continues with the normal OIDC conversion and mapping flow from [6.3.1](#631-bearer-token--oidc).
+
+```mermaid
+sequenceDiagram
+  box Customer System
+    participant WORKER as Worker / Service
+    participant CLIENT as Camunda Client<br/>(OAuthCredentialsProvider)
+  end
+  box External
+    participant IDP as OIDC IdP
+  end
+  box Orchestration Cluster
+    participant REST as Gateway Rest
+    participant SPRING_SECURITY as Spring Security
+  end
+
+  WORKER->>CLIENT: Request API call credentials
+  CLIENT->>IDP: Token request (client_credentials)<br>+ client_assertion (signed JWT)
+  IDP->>IDP: Validate assertion signature<br>against registered public key
+  IDP-->>CLIENT: Access token
+  CLIENT-->>WORKER: Bearer access token
+  WORKER->>REST: API request + Bearer token
+  REST->>SPRING_SECURITY: Validate Bearer token
+  SPRING_SECURITY->>IDP: Validate token signature<br>(JWKS endpoint)
+  IDP-->>SPRING_SECURITY: Token valid
+  SPRING_SECURITY-->>REST: Request authenticated
+  REST-->>WORKER: Request proceeds
+```
+
+Participants:
+
+* `Worker / Service`: initiates API calls and gets access tokens via the client credentials provider in the customer system.
+* `Camunda Client` (`OAuthCredentialsProvider`): requests tokens from the IdP and, for `private_key_jwt`, sends `client_assertion` and `client_assertion_type` instead of `client_secret`.
+* OIDC IdP: validates the client assertion signature against the registered public key/certificate and issues access tokens.
+* `Gateway Rest`: receives the API request with Bearer token and delegates authentication/authorization to Spring Security.
+* Spring Security: validates incoming Bearer tokens and continues with standard OIDC-to-`CamundaAuthentication` conversion and mapping.
+
+#### 6.3.3 OIDC with private_key_jwt client authentication (OC server-side OAuth client)
+
+Scenario: OC itself acts as an OAuth client in OIDC mode for token-endpoint interactions (for example, authorization code exchange, refresh token flow, or OC-initiated client credentials flow). For this OC-side client authentication to the IdP, OC can use either `client_secret_basic` or `private_key_jwt`.
+
+This is independent of the customer-side Camunda client setting in [6.3.2](#632-oidc-with-private_key_jwt-client-authentication-customer-side-camunda-client). In many enterprise environments both are configured to `private_key_jwt`, but technically they are separate OAuth clients and can be configured differently.
+
+Configured via (OC-side):
+
+- `camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt`
+- `camunda.security.authentication.oidc.assertion.keystore.*` (path, password, keyAlias, keyPassword)
+- Optional `assertion.kidSource`, `assertion.kidDigestAlgorithm`, `assertion.kidEncoding`, `assertion.kidCase`
+
+Flow:
+
+1. OC (Spring Security OAuth client stack) needs to call the IdP token endpoint.
+2. `AssertionJwkProvider` loads the OC private key and certificate and builds a JSON Web Key (JWK) (including `kid` and `x5t#S256`).
+3. `NimbusJwtClientAuthenticationParametersConverter` creates a signed `client_assertion` JWT.
+4. OC sends token request with `client_assertion` and `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
+5. IdP validates the assertion and returns tokens.
+
+```mermaid
+sequenceDiagram
+  box Orchestration Cluster
+    participant SPRING_SECURITY as Spring Security
+    participant ASSERTION as AssertionJwkProvider
+    participant CONV as NimbusJwtClientAuthenticationParametersConverter
+  end
+  box External
+    participant IDP as OIDC IdP
+  end
+
+  SPRING_SECURITY->>ASSERTION: Load private key/cert from keystore
+  ASSERTION-->>SPRING_SECURITY: JSON Web Key (JWK)
+  SPRING_SECURITY->>CONV: Build signed client_assertion JWT
+  CONV-->>SPRING_SECURITY: client_assertion
+  SPRING_SECURITY->>IDP: Token request + client_assertion
+  IDP->>IDP: Validate client assertion
+  IDP-->>SPRING_SECURITY: Token response
+```
+
+Participants:
+
+* Spring Security: orchestrates OC-side OAuth client calls to the IdP token endpoint.
+* `AssertionJwkProvider`: loads key material and builds a JSON Web Key (JWK) for signing assertions.
+* `NimbusJwtClientAuthenticationParametersConverter`: builds and injects the signed `client_assertion`.
+* OIDC IdP: validates OC's client assertion and issues tokens.
+
+#### 6.3.4 Basic Auth
 
 Scenario: worker or backend service calls REST APIs using a username and password via HTTP Basic authentication.
 No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.
@@ -735,7 +835,7 @@ sequenceDiagram
   end
   box Orchestration Cluster
     participant REST as Gateway Rest
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant AUTH_CONVERTERS as Auth Converters
     participant AUTHN_PROVIDER as Authentication Provider
     participant CAMUNDA_SERVICES as Camunda Services
@@ -745,15 +845,15 @@ sequenceDiagram
   end
 
   WORKER->>REST: API request + Basic auth<br>(clientId:secret)
-  REST->>SS: Authenticate Basic<br>credentials
-  SS->>AUTH_CONVERTERS: Convert credentials to<br>CamundaAuthentication
+  REST->>SPRING_SECURITY: Authenticate Basic<br>credentials
+  SPRING_SECURITY->>AUTH_CONVERTERS: Convert credentials to<br>CamundaAuthentication
   AUTH_CONVERTERS->>CAMUNDA_SERVICES: Load client entity by<br>clientId (roles, tenants)
   CAMUNDA_SERVICES->>SECONDARY_DB: Query client entity,<br>roles, tenants
   SECONDARY_DB-->>CAMUNDA_SERVICES: Client entity,<br>roles, tenants
   CAMUNDA_SERVICES-->>AUTH_CONVERTERS: Client entity,<br>roles, tenants
   AUTH_CONVERTERS->>AUTHN_PROVIDER: Build<br>CamundaAuthentication
-  AUTHN_PROVIDER-->>SS: Client principal<br>authenticated
-  SS-->>REST: Authorized request<br>continues
+  AUTHN_PROVIDER-->>SPRING_SECURITY: Client principal<br>authenticated
+  SPRING_SECURITY-->>REST: Authorized request<br>continues
 ```
 
 Participants:
@@ -784,7 +884,7 @@ sequenceDiagram
   end
   box Orchestration Cluster
     participant REST as Gateway Rest
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant CAMUNDA_SERVICES as Camunda Services
     participant ENGINE as Engine
     participant ENGINE_AUTHZ as Engine Authorization
@@ -794,8 +894,8 @@ sequenceDiagram
   end
 
   CLIENT->>REST: POST /v2/process-instances<br>(start process)
-  REST->>SS: Authenticate and<br>authorize request
-  SS-->>REST: CamundaAuthentication principal
+  REST->>SPRING_SECURITY: Authenticate and<br>authorize request
+  SPRING_SECURITY-->>REST: CamundaAuthentication principal
   REST->>CAMUNDA_SERVICES: CreateProcessInstance command +<br>CamundaAuthentication context
   CAMUNDA_SERVICES->>ENGINE: Issue command + authentication<br>claims/context
   ENGINE->>ENGINE_AUTHZ: Check PROCESS_DEFINITION:<br>CREATE_PROCESS_INSTANCE (AuthorizationRequest)
@@ -836,7 +936,7 @@ sequenceDiagram
   end
   box Orchestration Cluster
     participant REST as Gateway Rest
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant CAMUNDA_SERVICES as Camunda Services
     participant SC_PROVIDER as Security Context Provider
     participant CAMUNDA_SEARCH_CLIENT as Camunda Search Client
@@ -847,8 +947,8 @@ sequenceDiagram
   end
 
   CLIENT->>REST: GET /v2/process-instances<br>(search)
-  REST->>SS: Authenticate and<br>authorize request
-  SS-->>REST: CamundaAuthentication principal
+  REST->>SPRING_SECURITY: Authenticate and<br>authorize request
+  SPRING_SECURITY-->>REST: CamundaAuthentication principal
   REST->>CAMUNDA_SERVICES: SearchProcessInstances query
   CAMUNDA_SERVICES->>SC_PROVIDER: Build SecurityContext<br>for principal
   SC_PROVIDER-->>CAMUNDA_SERVICES: SecurityContext<br>(CamundaAuthentication + authorization)
@@ -892,7 +992,7 @@ sequenceDiagram
   end
   box Orchestration Cluster
     participant REST as Gateway Rest
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant CAMUNDA_SERVICES as Camunda Services
     participant ENGINE as Engine
     participant ENGINE_AUTHZ as Engine Authorization
@@ -904,8 +1004,8 @@ sequenceDiagram
   end
 
   CLIENT->>REST: POST /v2/users<br>(create user)
-  REST->>SS: Authenticate and<br>authorize request
-  SS-->>REST: CamundaAuthentication principal
+  REST->>SPRING_SECURITY: Authenticate and<br>authorize request
+  SPRING_SECURITY-->>REST: CamundaAuthentication principal
   REST->>CAMUNDA_SERVICES: CreateUser<br>command
   CAMUNDA_SERVICES->>ENGINE: Issue CreateUser<br>command
   ENGINE->>ENGINE_AUTHZ: Check USER:CREATE<br>(AuthorizationRequest)
@@ -951,7 +1051,7 @@ sequenceDiagram
   end
   box Orchestration Cluster
     participant REST as Gateway Rest
-    participant SS as Spring Security
+    participant SPRING_SECURITY as Spring Security
     participant CAMUNDA_SERVICES as Camunda Services
     participant ENGINE as Engine
     participant ENGINE_AUTHZ as Engine Authorization
@@ -963,8 +1063,8 @@ sequenceDiagram
   end
 
   CLIENT->>REST: POST /v2/authorizations<br>(create authorization)
-  REST->>SS: Authenticate and<br>authorize request
-  SS-->>REST: CamundaAuthentication principal
+  REST->>SPRING_SECURITY: Authenticate and<br>authorize request
+  SPRING_SECURITY-->>REST: CamundaAuthentication principal
   REST->>CAMUNDA_SERVICES: CreateAuthorization<br>command
   CAMUNDA_SERVICES->>ENGINE: Issue CreateAuthorization<br>command
   ENGINE->>ENGINE_AUTHZ: Check AUTHORIZATION:CREATE<br>(AuthorizationRequest)
