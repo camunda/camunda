@@ -139,21 +139,19 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
   /**
    * Returns true if the request failed because it was unauthenticated or unauthorized, and a new
-   * access token could be fetched; otherwise returns false.
+   * access token could be fetched; otherwise returns false. Delegates to {@link
+   * OAuthCredentialsCache#forceRefreshIfChanged} which is synchronized on the same monitor as
+   * {@link OAuthCredentialsCache#computeIfMissingOrInvalid}, ensuring that concurrent 401 retries
+   * coalesce into a single token refresh call.
    */
   @Override
   public boolean shouldRetryRequest(final StatusCode statusCode) {
+    if (!statusCode.isUnauthorized()) {
+      return false;
+    }
+
     try {
-      return statusCode.isUnauthorized()
-          && credentialsCache
-              .withCache(
-                  clientId,
-                  value -> {
-                    final CamundaClientCredentials fetchedCredentials = fetchCredentials();
-                    credentialsCache.put(clientId, fetchedCredentials).writeCache();
-                    return !fetchedCredentials.equals(value);
-                  })
-              .orElse(false);
+      return credentialsCache.forceRefreshIfChanged(clientId, this::fetchCredentials);
     } catch (final IOException e) {
       LOG.error("Failed while fetching credentials: ", e);
       return false;

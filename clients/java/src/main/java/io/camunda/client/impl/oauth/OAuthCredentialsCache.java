@@ -126,6 +126,21 @@ public final class OAuthCredentialsCache {
     }
   }
 
+  /**
+   * Unconditionally fetches new credentials from the supplier, updates the cache, and returns true
+   * if the new credentials differ from the previously cached ones. This method is synchronized on
+   * the same monitor as {@link #computeIfMissingOrInvalid}, so concurrent calls will coalesce: only
+   * one thread fetches while the others wait and then see the already-refreshed token.
+   */
+  public synchronized boolean forceRefreshIfChanged(
+      final String clientId, final SupplierWithIO<CamundaClientCredentials> credentialsSupplier)
+      throws IOException {
+    final CamundaClientCredentials previous = readCache().get(clientId).orElse(null);
+    final CamundaClientCredentials fresh = credentialsSupplier.get();
+    put(clientId, fresh).writeCache();
+    return !fresh.equals(previous);
+  }
+
   public <T> Optional<T> withCache(
       final String clientId, final FunctionWithIO<CamundaClientCredentials, T> function)
       throws IOException {
