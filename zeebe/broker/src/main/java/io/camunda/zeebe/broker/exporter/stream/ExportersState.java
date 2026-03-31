@@ -46,8 +46,6 @@ public final class ExportersState {
       final String exporterId, final long position, final DirectBuffer metadata) {
     transactionContext.runInTransaction(
         () -> {
-          this.exporterId.wrapString(exporterId);
-
           final var exporterStateEntry =
               findExporterStateEntry(exporterId).orElseGet(ExporterStateEntry::new);
           exporterStateEntry.setPosition(position);
