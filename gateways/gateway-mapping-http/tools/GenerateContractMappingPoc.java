@@ -1314,6 +1314,7 @@ public enum %s {
           isUniqueItemsArray(node, contextFile, allSchemas);
       final var fieldConstraints = resolveConstraints(node, contextFile, allSchemas);
       final var fieldDefault = resolveDefaultValue(node, contextFile, allSchemas);
+      final var fieldDescription = resolveDescription(node, contextFile, allSchemas);
       final var identifier = uniqueIdentifier(toJavaIdentifier(propertyName), usedIdentifiers);
       final var mapperMethod = toJavaMethodName(propertyName);
       // Generate a nested enum in the DTO for sort request fields with inline enum values.
@@ -1335,7 +1336,8 @@ public enum %s {
               typeInfo,
               fieldConstraints,
               useNestedEnum ? node.enumValues() : List.of(),
-              fieldDefault));
+              fieldDefault,
+              fieldDescription));
     }
     return fields;
   }
@@ -1379,6 +1381,7 @@ public enum %s {
     final boolean hasListCoercion = fields.stream().anyMatch(ContractField::hasStrictListType);
     final boolean hasJsonProperty = fields.stream().anyMatch(f -> !f.name().equals(f.identifier()));
     final boolean hasInlineEnumValues = fields.stream().anyMatch(f -> !f.inlineEnumValues().isEmpty());
+    final boolean hasSchema = fields.stream().anyMatch(f -> f.description() != null || f.defaultValue() != null);
     final String imports =
       "import com.fasterxml.jackson.annotation.JsonInclude;\n"
         + (hasInlineEnumValues
@@ -1392,6 +1395,7 @@ public enum %s {
             : "")
         + "import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;\n"
         + (hasLongKeyCoercion ? "import io.camunda.gateway.mapping.http.util.KeyUtil;\n" : "")
+        + (hasSchema ? "import io.swagger.v3.oas.annotations.media.Schema;\n" : "")
         + "import jakarta.annotation.Generated;\n"
         + (hasListCoercion || hasRequiredNonNullable ? "import java.util.ArrayList;\n" : "")
         + "import org.jspecify.annotations.NullMarked;\n"
@@ -1401,9 +1405,19 @@ public enum %s {
         fields.stream()
             .map(
                 f -> {
+                    final var schemaParts = new ArrayList<String>();
+                    if (f.description() != null) {
+                      schemaParts.add("description = \"" + escapeJavaString(f.description()) + "\"");
+                    }
+                    if (f.defaultValue() != null) {
+                      schemaParts.add("defaultValue = \"" + escapeJavaString(f.defaultValue()) + "\"");
+                    }
+                    final var schemaAnnotation = schemaParts.isEmpty() ? ""
+                        : "@Schema(" + String.join(", ", schemaParts) + ") ";
                     final var jsonProp = "@JsonProperty(\"" + f.name() + "\") ";
                     final var fieldType = f.effectiveJavaType();
                     return "    "
+                        + schemaAnnotation
                         + jsonProp
                         + (f.nullable() ? annotateNullable(fieldType) : fieldType)
                         + " "
@@ -2332,6 +2346,7 @@ public record %s(
     Integer minItems = null;
     Integer maxItems = null;
     String defaultValue = null;
+    String description = null;
 
     for (int i = start; i < end; i++) {
       final var line = lines.get(i);
@@ -2477,13 +2492,31 @@ public record %s(
           final var raw = value.contains(" #") ? value.substring(0, value.indexOf(" #")).trim() : value;
           defaultValue = unquote(raw);
         }
+        case "description" -> {
+          if (value.startsWith(">") || value.startsWith("|")) {
+            // Folded (>) or literal (|) scalar — collect continuation lines.
+            final var sb = new StringBuilder();
+            final int contIndent = baseIndent + 2;
+            for (int j = i + 1; j < end; j++) {
+              final var contLine = lines.get(j);
+              if (isIgnorable(contLine)) continue;
+              if (indent(contLine) < contIndent) break;
+              if (sb.length() > 0) sb.append(' ');
+              sb.append(trimmed(contLine));
+              i = j;
+            }
+            description = sb.toString();
+          } else if (!value.isEmpty()) {
+            description = unquote(value);
+          }
+        }
         default -> {
           // Ignore unsupported YAML keys for this generator.
         }
       }
     }
 
-    return new Node(type, format, nullable, ref, items, required, enumValues, allOfRefs, oneOfRefs, oneOfInlineType, oneOfInlineFormat, oneOfInlineAllOfRefs, properties, uniqueItems, additionalProperties, minimum, maximum, minLength, maxLength, pattern, minItems, maxItems, defaultValue);
+    return new Node(type, format, nullable, ref, items, required, enumValues, allOfRefs, oneOfRefs, oneOfInlineType, oneOfInlineFormat, oneOfInlineAllOfRefs, properties, uniqueItems, additionalProperties, minimum, maximum, minLength, maxLength, pattern, minItems, maxItems, defaultValue, description);
   }
 
   private static PropertiesParseResult parseProperties(
@@ -2827,6 +2860,11 @@ public record %s(
     return trimmed;
   }
 
+  /** Escapes a string for use inside a Java string literal (double-quoted). */
+  private static String escapeJavaString(String value) {
+    return value.replace("\\", "\\\\").replace("\"", "\\\"");
+  }
+
   /**
    * Converts a raw spec default value to a Java literal string suitable for code emission.
    * Returns null if the default cannot be represented for the given Java type.
@@ -2951,7 +2989,8 @@ public record %s(
       String pattern,
       Integer minItems,
       Integer maxItems,
-      String defaultValue) {}
+      String defaultValue,
+      String description) {}
 
   private record Constraints(
       Long minimum,
@@ -3054,6 +3093,32 @@ public record %s(
     return null;
   }
 
+  /**
+   * Resolves the description for a property node, following $ref and single-element allOf chains.
+   * Returns the description string from the spec, or null if no description is declared.
+   */
+  private static String resolveDescription(
+      Node node, String currentFile, Map<SchemaKey, SchemaDef> allSchemas) {
+    if (node.description() != null) {
+      return node.description();
+    }
+    if (node.ref() != null) {
+      final var key = toSchemaKey(node.ref(), currentFile);
+      final var target = allSchemas.get(key);
+      if (target != null) {
+        return resolveDescription(target.node(), target.fileName(), allSchemas);
+      }
+    }
+    if (!node.allOfRefs().isEmpty() && node.allOfRefs().size() == 1) {
+      final var key = toSchemaKey(node.allOfRefs().getFirst(), currentFile);
+      final var target = allSchemas.get(key);
+      if (target != null) {
+        return resolveDescription(target.node(), target.fileName(), allSchemas);
+      }
+    }
+    return null;
+  }
+
   private record ContractField(
       String name,
       String identifier,
@@ -3067,7 +3132,8 @@ public record %s(
       TypeInfo typeInfo,
       Constraints constraints,
       List<String> inlineEnumValues,
-      String defaultValue) {
+      String defaultValue,
+      String description) {
 
     /** Returns the effective Java type, using the nested enum name if inline enum values exist. */
     String effectiveJavaType() {
