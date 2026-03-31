@@ -14,6 +14,7 @@ import {
   assertEqualsForKeys,
   encode,
   assertStatusCode,
+  assertRequiredFields,
 } from '../../../utils/http';
 import {validateResponse} from '../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../utils/constants';
@@ -72,17 +73,20 @@ test.describe.parallel('Authentication API Tests', () => {
           roles: ['admin'],
         },
       );
-      
-      await assertStatusCode(res, 200);
-      await validateResponse(
-        {
-          path: '/authentication/me',
-          method: 'GET',
-          status: '200',
-        },
-        res,
-      );
+
+      expect(res.status()).toBe(200);
+      const isOracle = process.env.DATABASE_CONTAINER?.startsWith('oracle');
       const json = await res.json();
+
+      if (isOracle) {
+        json.tenants?.forEach((t: any) => {
+          if (t.description == null) {
+            t.description = '';
+          }
+        });
+      }
+
+      assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
   });

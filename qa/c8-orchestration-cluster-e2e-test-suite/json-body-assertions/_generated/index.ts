@@ -584,6 +584,11 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/user-tasks/{userTaskKey}/effective-variables/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/user-tasks/{userTaskKey}/form': {
     GET: {
       '200': 1,
