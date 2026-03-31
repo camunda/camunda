@@ -61,13 +61,12 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
   public ToolRepository processesToolRepository() {
     return new ToolRepository() {
       @Override
-      public @NonNull List<@NonNull Tool> getTools(
-          @NonNull final McpTransportContext transportContext) {
+      public @NonNull List<Tool> getTools(@NonNull final McpTransportContext transportContext) {
         return List.of();
       }
 
       @Override
-      public @NonNull Either<@NonNull String, @NonNull SyncToolSpecification> findTool(
+      public @NonNull Either<String, SyncToolSpecification> findTool(
           @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
         return Either.left("Not implemented yet");
       }
