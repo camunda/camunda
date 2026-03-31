@@ -687,6 +687,7 @@ jobs:
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           DB_NAME: ${{ matrix.database.database-name }}
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
+          DATABASE: "RDBMS"
         run: npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
