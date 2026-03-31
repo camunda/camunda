@@ -546,6 +546,19 @@
       "prBodyNotes": [
         "**Manual verification required before merging:** Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) is fixed in this version. Do **not** merge until confirmed."
       ]
+    },
+    {
+      "description": "maven-failsafe-plugin must be updated together with maven-surefire-plugin as they share a common codebase. See the surefire rule above for known issues blocking updates.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.maven.plugins:maven-failsafe-plugin"
+      ],
+      "automerge": false,
+      "prBodyNotes": [
+        "**Manual verification required before merging:** maven-failsafe-plugin must be updated together with maven-surefire-plugin. Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) and the ArchUnit issue in 3.5.3 are fixed before updating both plugins."
+      ]
     }
   ],
   "dockerfile": {
