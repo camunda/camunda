@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
@@ -18,7 +18,7 @@ import {validateResponse} from '../../../../json-body-assertions';
 const EXPRESSION_URL = '/expression/evaluation';
 
 async function evaluateExpression(
-  request: any,
+  request: APIRequestContext,
   expression: string,
   variables: Record<string, unknown>,
 ) {
@@ -61,7 +61,7 @@ const successTestCases: ExpressionTestCase[] = [
   //     description: 'Should evaluate null literal - Success',
   //     expression: '=x',
   //     variables: {x: null},
-  //     result: 'null',
+  //     result: null,
   //   },
   {
     description: 'Should evaluate simple variable read - Success',
@@ -206,13 +206,13 @@ const warningTestCases: ExpressionTestCase[] = [
 const errorTestCases: ExpressionTestCase[] = [
   {
     description:
-      'Should reject invalid FEEL syntax (trailing operator) - Error',
+      'Should return warning when invalid FEEL syntax (trailing operator) - Error',
     expression: '=x +',
     variables: {x: 1},
     errorDetail: 'Failed to parse expression',
   },
   {
-    description: 'Should reject invalid FEEL syntax (missing else) - Error',
+    description: 'Should return warning when invalid FEEL syntax (missing else) - Error',
     expression: '=if x > 5 then "big"',
     variables: {x: 10},
     errorDetail: 'Failed to parse expression',
