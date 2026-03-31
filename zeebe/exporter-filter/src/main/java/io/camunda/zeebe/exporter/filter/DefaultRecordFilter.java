@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.filter;
 import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.ENDS_WITH;
 import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.EXACT;
 import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.STARTS_WITH;
-import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
 
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
@@ -40,17 +39,56 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
 
     final var index = configuration.filterIndexConfig();
 
-    final var variableNameInclusionRules = getVariableNameInclusionRules(index);
-    final var variableNameExclusionRules = getVariableNameExclusionRules(index);
+    final var variableNameInclusionRules =
+        buildNameRules(
+            index.getVariableNameInclusionExact(),
+            index.getVariableNameInclusionStartWith(),
+            index.getVariableNameInclusionEndWith());
+    final var variableNameExclusionRules =
+        buildNameRules(
+            index.getVariableNameExclusionExact(),
+            index.getVariableNameExclusionStartWith(),
+            index.getVariableNameExclusionEndWith());
 
     final Set<VariableValueType> valueTypeInclusion =
         VariableTypeFilter.parseTypes(index.getVariableValueTypeInclusion());
     final Set<VariableValueType> valueTypeExclusion =
         VariableTypeFilter.parseTypes(index.getVariableValueTypeExclusion());
 
-    final List<ExporterRecordFilter> filters = new ArrayList<>();
+    final var localVariableNameInclusionRules =
+        buildNameRules(
+            index.getLocalVariableNameInclusionExact(),
+            index.getLocalVariableNameInclusionStartWith(),
+            index.getLocalVariableNameInclusionEndWith());
+    final var localVariableNameExclusionRules =
+        buildNameRules(
+            index.getLocalVariableNameExclusionExact(),
+            index.getLocalVariableNameExclusionStartWith(),
+            index.getLocalVariableNameExclusionEndWith());
+    final var rootVariableNameInclusionRules =
+        buildNameRules(
+            index.getRootVariableNameInclusionExact(),
+            index.getRootVariableNameInclusionStartWith(),
+            index.getRootVariableNameInclusionEndWith());
+    final var rootVariableNameExclusionRules =
+        buildNameRules(
+            index.getRootVariableNameExclusionExact(),
+            index.getRootVariableNameExclusionStartWith(),
+            index.getRootVariableNameExclusionEndWith());
 
-    // Just add filters if configured
+    final Set<VariableValueType> localValueTypeInclusion =
+        VariableTypeFilter.parseTypes(index.getLocalVariableValueTypeInclusion());
+    final Set<VariableValueType> localValueTypeExclusion =
+        VariableTypeFilter.parseTypes(index.getLocalVariableValueTypeExclusion());
+    final Set<VariableValueType> rootValueTypeInclusion =
+        VariableTypeFilter.parseTypes(index.getRootVariableValueTypeInclusion());
+    final Set<VariableValueType> rootValueTypeExclusion =
+        VariableTypeFilter.parseTypes(index.getRootVariableValueTypeExclusion());
+
+    // Filters are added in order of cheapness/selectivity: the chain short-circuits on the first
+    // rejection, so higher-selectivity and lower-cost filters are placed first to avoid unnecessary
+    // work for slower filters later in the chain.
+    final List<ExporterRecordFilter> filters = new ArrayList<>();
 
     if (index.isOptimizeModeEnabled()) {
       LOG.info(
@@ -58,6 +96,14 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
               + "acceptType, acceptValue, and acceptIntent. If you want to customize the filtering, "
               + "please disable optimize mode and use the other filter configuration options.");
       filters.add(new OptimizeModeFilter());
+    }
+
+    // Placed before VariableNameFilter: a single long comparison is cheaper than string matching,
+    // so local variables are rejected before any name or type work runs.
+    if (!index.isExportLocalVariablesEnabled()) {
+      LOG.info(
+          "Export local variables disabled. Local (sub-element scoped) variables will be filtered out.");
+      filters.add(new ExportLocalVariablesFilter(false));
     }
 
     if (!variableNameInclusionRules.isEmpty() || !variableNameExclusionRules.isEmpty()) {
@@ -76,6 +122,46 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
       filters.add(new VariableTypeFilter(valueTypeInclusion, valueTypeExclusion));
     }
 
+    if (!localVariableNameInclusionRules.isEmpty()
+        || !localVariableNameExclusionRules.isEmpty()
+        || !rootVariableNameInclusionRules.isEmpty()
+        || !rootVariableNameExclusionRules.isEmpty()) {
+      LOG.info(
+          "Variable name scope filters configured. "
+              + "Local inclusion rules: {}, Local exclusion rules: {}, "
+              + "Root inclusion rules: {}, Root exclusion rules: {}.",
+          localVariableNameInclusionRules,
+          localVariableNameExclusionRules,
+          rootVariableNameInclusionRules,
+          rootVariableNameExclusionRules);
+      filters.add(
+          new VariableNameScopeFilter(
+              localVariableNameInclusionRules,
+              localVariableNameExclusionRules,
+              rootVariableNameInclusionRules,
+              rootVariableNameExclusionRules));
+    }
+
+    if (!localValueTypeInclusion.isEmpty()
+        || !localValueTypeExclusion.isEmpty()
+        || !rootValueTypeInclusion.isEmpty()
+        || !rootValueTypeExclusion.isEmpty()) {
+      LOG.info(
+          "Variable type scope filters configured. "
+              + "Local inclusion types: {}, Local exclusion types: {}, "
+              + "Root inclusion types: {}, Root exclusion types: {}.",
+          localValueTypeInclusion,
+          localValueTypeExclusion,
+          rootValueTypeInclusion,
+          rootValueTypeExclusion);
+      filters.add(
+          new VariableTypeScopeFilter(
+              localValueTypeInclusion,
+              localValueTypeExclusion,
+              rootValueTypeInclusion,
+              rootValueTypeExclusion));
+    }
+
     if (!index.getBpmnProcessIdInclusion().isEmpty()
         || !index.getBpmnProcessIdExclusion().isEmpty()) {
       LOG.info(
@@ -90,22 +176,17 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
     return List.copyOf(filters);
   }
 
-  private static List<NameFilterRule> getVariableNameInclusionRules(
-      final FilterConfiguration.IndexConfig index) {
+  /**
+   * Builds a flat list of {@link NameFilterRule}s from three raw string lists — one per match type.
+   * Returns a mutable list; callers own the result.
+   */
+  private static List<NameFilterRule> buildNameRules(
+      final List<String> exact, final List<String> startWith, final List<String> endWith) {
     final List<NameFilterRule> rules = new ArrayList<>();
-    rules.addAll(parseRules(index.getVariableNameInclusionExact(), EXACT));
-    rules.addAll(parseRules(index.getVariableNameInclusionStartWith(), STARTS_WITH));
-    rules.addAll(parseRules(index.getVariableNameInclusionEndWith(), ENDS_WITH));
-    return List.copyOf(rules);
-  }
-
-  private static List<NameFilterRule> getVariableNameExclusionRules(
-      final FilterConfiguration.IndexConfig index) {
-    final List<NameFilterRule> rules = new ArrayList<>();
-    rules.addAll(parseRules(index.getVariableNameExclusionExact(), EXACT));
-    rules.addAll(parseRules(index.getVariableNameExclusionStartWith(), STARTS_WITH));
-    rules.addAll(parseRules(index.getVariableNameExclusionEndWith(), ENDS_WITH));
-    return List.copyOf(rules);
+    rules.addAll(NameFilterRule.parseRules(exact, EXACT));
+    rules.addAll(NameFilterRule.parseRules(startWith, STARTS_WITH));
+    rules.addAll(NameFilterRule.parseRules(endWith, ENDS_WITH));
+    return rules;
   }
 
   @Override
