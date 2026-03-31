@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -15,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.List;
 
 public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
@@ -30,6 +33,8 @@ public interface ClusterConfigurationService extends AsyncClosable {
   void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 
   void removeInconsistentConfigurationListener();
+
+  List<PartitionMetadata> getMemberPartitions(final MemberId memberId);
 
   ClusterConfiguration getInitialClusterConfiguration();
 
