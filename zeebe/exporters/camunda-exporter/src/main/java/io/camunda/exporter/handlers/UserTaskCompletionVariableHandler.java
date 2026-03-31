@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
@@ -108,7 +110,7 @@ public class UserTaskCompletionVariableHandler
     final var variableName = e.getKey();
     final var variableValue = e.getValue();
 
-    final var variableValueAsString = toJsonString(variableValue);
+    final var variableValueAsBytes = toJsonBytes(variableValue);
     final var snapshotVariableEntity =
         new SnapshotTaskVariableEntity()
             .setId(String.format(ID_PATTERN, userTaskKey, variableName))
@@ -119,14 +121,17 @@ public class UserTaskCompletionVariableHandler
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
             .setTaskId(String.valueOf(record.getValue().getUserTaskKey()));
 
-    if (variableValueAsString.length() > variableSizeThreshold) {
+    if (variableValueAsBytes.length > variableSizeThreshold) {
       // store preview
       snapshotVariableEntity
-          .setValue(variableValueAsString.substring(0, variableSizeThreshold))
-          .setFullValue(variableValueAsString)
+          .setValue(new String(variableValueAsBytes, 0, variableSizeThreshold, UTF_8))
+          .setFullValue(new String(variableValueAsBytes, UTF_8))
           .setIsPreview(true);
     } else {
-      snapshotVariableEntity.setValue(variableValueAsString).setFullValue(null).setIsPreview(false);
+      snapshotVariableEntity
+          .setValue(new String(variableValueAsBytes, UTF_8))
+          .setFullValue(null)
+          .setIsPreview(false);
     }
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
@@ -135,12 +140,12 @@ public class UserTaskCompletionVariableHandler
     return snapshotVariableEntity;
   }
 
-  private String toJsonString(final Object value) {
+  private byte[] toJsonBytes(final Object value) {
     try {
-      return objectMapper.writeValueAsString(value);
+      return objectMapper.writeValueAsBytes(value);
     } catch (final JsonProcessingException e) {
       LOGGER.error("Failed to parse variable value '{}'", value, e);
-      return "";
+      return new byte[0];
     }
   }
 
