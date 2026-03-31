@@ -131,6 +131,7 @@ public final class ExporterBatchWriter {
     }
 
     batchRequest.execute(customErrorHandler);
+    metrics.recordBulkMemorySize(totalMemoryEstimate);
     observeRecordTimestamps();
     reset();
   }
