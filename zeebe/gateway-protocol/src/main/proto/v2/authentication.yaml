@@ -46,7 +46,6 @@ components:
           description: The username of the user.
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/Username"
-          nullable: true
         displayName:
           description: The display name of the user.
           type: string
