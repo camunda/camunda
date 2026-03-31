@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-fix-8.9-failures]
+        branch: [test-fix-rdbms-failures]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -229,7 +229,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ test-fix-8.9-failures ]
+        branch: [ test-fix-rdbms-failures ]
 
     steps:
       - name: Checkout Code
@@ -282,7 +282,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ test-fix-8.9-failures ]
+        branch: [ test-fix-rdbms-failures ]
         database:
           # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
           - database-name: "Postgres 14"
@@ -633,7 +633,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-fix-8.9-failures]
+        branch: [test-fix-rdbms-failures]
         tasklist_mode: [v1, v2]
     runs-on: ubuntu-latest
     steps:
