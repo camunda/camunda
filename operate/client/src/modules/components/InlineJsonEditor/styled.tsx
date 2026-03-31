@@ -68,10 +68,10 @@ const EditorReadonly = styled.pre<{
   $height: number;
   $empty: boolean;
   $editMode: boolean;
+  $scrollable: boolean;
 }>`
   display: block;
   text-wrap: wrap;
-  overflow-y: auto;
   width: 100%;
   min-height: ${EDITOR_MIN_HEIGHT}px;
   font-size: ${EDITOR_FONT_SIZE}px;
@@ -82,9 +82,22 @@ const EditorReadonly = styled.pre<{
   tab-size: 2;
   background-color: var(--cds-field);
 
-  ${({$height}) => css`
-    max-height: ${$height}px;
-  `}
+  ${({$scrollable, $height}) =>
+    $scrollable
+      ? css`
+          max-height: ${$height}px;
+          overflow-y: auto;
+        `
+      : css`
+          height: auto;
+          overflow: visible;
+        `}
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-focus, #0f62fe);
+    outline-offset: -2px;
+  }
+
   ${({$empty}) =>
     $empty &&
     css`

@@ -80,6 +80,14 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     const [isEditing, setIsEditing] = useState(false);
     const height = computeHeight(displayValue, maxLines);
 
+    const lineCount = useMemo(() => {
+      return Math.max(1, (displayValue || '').split('\n').length);
+    }, [displayValue]);
+
+    const isScrollable = useMemo(() => {
+      return lineCount > maxLines;
+    }, [lineCount, maxLines]);
+
     const debouncedValidate = useMemo(() => {
       return debounce((val: string) => {
         try {
@@ -132,7 +140,6 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
 
     return (
       <EditorWrapper
-        tabIndex={0}
         id={id}
         data-testid="json-editor-wrapper"
         onBlur={handleBlur}
@@ -145,6 +152,8 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
             $height={height}
             $empty={displayValue === ''}
             $editMode={!isReadOnly}
+            $scrollable={isScrollable}
+            tabIndex={0}
           >
             {displayValue || placeholder}
           </EditorReadonly>

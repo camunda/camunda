@@ -62,7 +62,7 @@ describe('<InlineJsonEditor />', () => {
 
     const {user} = render(<TestWrapper />, {wrapper});
 
-    await user.click(screen.getByTestId('json-editor-wrapper'));
+    await user.click(screen.getByTestId('json-editor-readonly'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
@@ -88,7 +88,7 @@ describe('<InlineJsonEditor />', () => {
 
     const {user} = render(<TestWrapper />, {wrapper});
 
-    await user.click(screen.getByTestId('json-editor-wrapper'));
+    await user.click(screen.getByTestId('json-editor-readonly'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
@@ -120,7 +120,7 @@ describe('<InlineJsonEditor />', () => {
 
     const {user} = render(<TestWrapper />, {wrapper});
 
-    await user.click(screen.getByTestId('json-editor-wrapper'));
+    await user.click(screen.getByTestId('json-editor-readonly'));
 
     const editor = await screen.findByTestId('monaco-editor');
     await user.clear(editor);
