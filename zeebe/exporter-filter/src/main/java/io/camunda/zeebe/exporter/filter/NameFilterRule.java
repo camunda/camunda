@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,6 +29,22 @@ public record NameFilterRule(Type type, String pattern) {
     if (pattern == null || pattern.isBlank()) {
       throw new IllegalArgumentException("pattern must not be null or blank");
     }
+  }
+
+  /**
+   * Converts a list of raw strings into {@link NameFilterRule}s of the given type. Null and blank
+   * entries are silently ignored.
+   */
+  public static List<NameFilterRule> parseRules(final List<String> rawList, final Type type) {
+    if (rawList == null || rawList.isEmpty()) {
+      return Collections.emptyList();
+    }
+    return rawList.stream()
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .map(pattern -> new NameFilterRule(type, pattern))
+        .toList();
   }
 
   public enum Type {
