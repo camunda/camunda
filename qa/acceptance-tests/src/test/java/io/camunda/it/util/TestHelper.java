@@ -8,7 +8,6 @@
 package io.camunda.it.util;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
-import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -1684,37 +1683,69 @@ public final class TestHelper {
   }
 
   /**
-   * Asserts that the given search responses are sorted either in a case-insensitive way or in a
-   * Java natural order way. This flexibility is needed because different databases might sort
-   * strings differently. To not make the assertion depend on a specific database behavior, we allow
-   * both sorting methods.
+   * Asserts that the given search responses are sorted according to one of the string orders we see
+   * across the databases used in acceptance tests. Different database collations sort punctuation
+   * and case differently, so this assertion intentionally accepts multiple valid orders.
    */
   public static <T> void assertSortedFlexible(
       final SearchResponse<T> resultAsc,
       final SearchResponse<T> resultDesc,
       final Function<T, String> propertyExtractor) {
 
-    // The AWS Aurora instances we test against use a collation based on Thai locale.
-    final var locale = Locale.of("th");
-    final Collator collator = Collator.getInstance(locale);
-    collator.setStrength(Collator.SECONDARY); // case-insensitive, accent-sensitive
-    final Comparator<String> stringComparator = collator::compare;
+    assertSortedFlexible(
+        resultAsc.items().stream().map(propertyExtractor).filter(Objects::nonNull).toList(), false);
+    assertSortedFlexible(
+        resultDesc.items().stream().map(propertyExtractor).filter(Objects::nonNull).toList(), true);
+  }
 
-    assertThat(resultAsc)
-        .satisfiesAnyOf(
-            result ->
-                assertThatIsSortedBy(result.items(), propertyExtractor, CASE_INSENSITIVE_ORDER),
-            result -> assertThatIsAscSorted(result.items(), propertyExtractor),
-            result -> assertThatIsSortedBy(result.items(), propertyExtractor, stringComparator));
-    assertThat(resultDesc)
-        .satisfiesAnyOf(
-            result ->
-                assertThatIsSortedBy(
-                    result.items(), propertyExtractor, CASE_INSENSITIVE_ORDER.reversed()),
-            result -> assertThatIsDescSorted(result.items(), propertyExtractor),
-            result ->
-                assertThatIsSortedBy(
-                    result.items(), propertyExtractor, stringComparator.reversed()));
+  /**
+   * Asserts that the given list of strings is sorted according to one of the string orders we see
+   * across the databases used in acceptance tests. Different database collations sort punctuation
+   * and case differently, so this assertion intentionally accepts multiple valid orders.
+   *
+   * @param values the list of strings to check
+   * @param reversed {@code true} to check descending order, {@code false} for ascending
+   */
+  public static void assertSortedFlexible(final List<String> values, final boolean reversed) {
+
+    // The AWS Aurora instances we test against use a collation based on Thai locale.
+    final var thaiLocale = Locale.of("th");
+    final Collator thaiCollator = Collator.getInstance(thaiLocale);
+    thaiCollator.setStrength(Collator.SECONDARY); // case-insensitive, accent-sensitive
+    final Comparator<String> thaiComparator = thaiCollator::compare;
+
+    // Some database collations sort '_' after letters and digits while remaining case-insensitive.
+    final Comparator<String> underscoreLastComparator =
+        TestHelper::compareCaseInsensitiveUnderscoreLast;
+
+    final Comparator<String> caseInsensitive = String.CASE_INSENSITIVE_ORDER;
+    final Comparator<String> natural = Comparator.naturalOrder();
+
+    if (reversed) {
+      assertThat(values)
+          .satisfiesAnyOf(
+              list -> assertThatIsSortedBy(list, s -> s, caseInsensitive.reversed()),
+              list -> assertThatIsSortedBy(list, s -> s, underscoreLastComparator.reversed()),
+              list -> assertThatIsSortedBy(list, s -> s, natural.reversed()),
+              list -> assertThatIsSortedBy(list, s -> s, thaiComparator.reversed()));
+    } else {
+      assertThat(values)
+          .satisfiesAnyOf(
+              list -> assertThatIsSortedBy(list, s -> s, caseInsensitive),
+              list -> assertThatIsSortedBy(list, s -> s, underscoreLastComparator),
+              list -> assertThatIsSortedBy(list, s -> s, natural),
+              list -> assertThatIsSortedBy(list, s -> s, thaiComparator));
+    }
+  }
+
+  private static int compareCaseInsensitiveUnderscoreLast(final String left, final String right) {
+    final var normalizedLeft = normalizeCaseInsensitiveUnderscoreLast(left);
+    final var normalizedRight = normalizeCaseInsensitiveUnderscoreLast(right);
+    return normalizedLeft.compareTo(normalizedRight);
+  }
+
+  private static String normalizeCaseInsensitiveUnderscoreLast(final String value) {
+    return value.toLowerCase(Locale.ROOT).replace('_', Character.MAX_VALUE);
   }
 
   public static <T, U extends Comparable<U>> void assertThatIsAscSorted(

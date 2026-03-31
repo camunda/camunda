@@ -19,6 +19,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
@@ -596,29 +597,6 @@ public class ProcessDefinitionSearchIT {
   }
 
   @Test
-  void shouldRetrieveProcessDefinitionsWithReverseSorting() {
-    // given
-    final var expectedProcessDefinitionIds =
-        DEPLOYED_PROCESSES.stream()
-            .map(Process::getBpmnProcessId)
-            .sorted(Comparator.reverseOrder())
-            .toList();
-
-    // when
-    final var result =
-        camundaClient
-            .newProcessDefinitionSearchRequest()
-            .sort(s -> s.processDefinitionId().desc())
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(9);
-    assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(expectedProcessDefinitionIds);
-  }
-
-  @Test
   void shouldSortProcessDefinitionsByKey() {
     // when
     final var resultAsc =
@@ -662,16 +640,8 @@ public class ProcessDefinitionSearchIT {
             .send()
             .join();
 
-    final var all =
-        resultAsc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList();
-    final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    TestHelper.assertSortedFlexible(
+        resultAsc, resultDesc, ProcessDefinition::getProcessDefinitionId);
   }
 
   @Test
