@@ -316,11 +316,6 @@ jobs:
       contents: read
     timeout-minutes: 30
 
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: [ needs.validate-release.outputs.base ]
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -351,7 +346,7 @@ jobs:
       - name: Sanitize branch name
         id: sanitize
         run: |
-          safe_branch="${{ matrix.branch }}"
+          safe_branch="${{ needs.validate-release.outputs.base }}"
           safe_branch="${safe_branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
@@ -363,7 +358,7 @@ jobs:
           retention-days: 1
 
   c8-orchestration-cluster-api-tests-rdbms:
-    name: API Tests (RDBMS) (${{ matrix.branch }} / ${{ matrix.database.database-name }})
+    name: API Tests (RDBMS) (${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }})
     needs: [validate-release, build-rdbms-dist]
     if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
     runs-on: gcp-perf-core-16-default
@@ -372,7 +367,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ needs.validate-release.outputs.base ]
         database:
           # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
           - database-name: "Postgres 14"
@@ -478,7 +472,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
         with:
-          ref: ${{ matrix.branch }}
+          ref: ${{ needs.validate-release.outputs.base }}
 
       # If this job needs the docker-compose image tag changed too, keep this step
       - name: Update docker-compose with release version
@@ -527,7 +521,7 @@ jobs:
       - name: Sanitize branch name
         id: sanitize
         run: |
-          safe_branch="${{ matrix.branch }}"
+          safe_branch="${{ needs.validate-release.outputs.base }}"
           safe_branch="${safe_branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
@@ -605,7 +599,7 @@ jobs:
           esac
 
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
-      - name: Start Camunda with ${{ matrix.branch }} / ${{ matrix.database.database-name }}
+      - name: Start Camunda with ${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }}
         run: |
           export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
           export ZEEBE_CLOCK_CONTROLLED="true"
