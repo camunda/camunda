@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {
   beautifyJSON,
@@ -33,7 +33,7 @@ type Props = {
   value: string;
   placeholder?: string;
   isTruncatedValue?: boolean;
-  shouldFocusOnMount?: boolean;
+  autoFocus?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
   onBlur?: () => void;
@@ -65,7 +65,7 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     maxLines = MAX_LINES,
     id,
     fieldError,
-    shouldFocusOnMount,
+    autoFocus,
   }) => {
     const Editor = useEditor();
     const isReadOnly = readOnly === true || onChange === undefined;
@@ -80,17 +80,6 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     const [isEditing, setIsEditing] = useState(false);
     const height = computeHeight(displayValue, maxLines);
 
-    // Sync the external `value` into `displayValue` in two cases:
-    // 1. Read-only mode: always reflect the latest value (e.g. after saving).
-    // 2. Edit mode: only when `value` diverges from `displayValue`, meaning the
-    //    change came from outside (e.g. modal apply) and not from the user typing
-    //    (handleChange keeps them in sync, so keystrokes never trigger this).
-    useEffect(() => {
-      if (isReadOnly || value !== displayValue) {
-        setDisplayValue(formattedValue);
-      }
-    }, [isReadOnly, value, displayValue, formattedValue]);
-
     const debouncedValidate = useMemo(() => {
       return debounce((val: string) => {
         try {
@@ -102,31 +91,52 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
       }, 300);
     }, [onValidate]);
 
-    useEffect(() => {
-      return () => {
-        debouncedValidate.cancel();
-      };
-    }, [debouncedValidate]);
-
     const handleChange = (newValue: string) => {
       onChange?.(newValue);
       setDisplayValue(newValue);
       debouncedValidate(newValue);
     };
 
+    const handleFocus = useCallback(() => {
+      setIsEditing(true);
+      onFocus?.();
+    }, [onFocus]);
+
+    const handleBlur = useCallback(() => {
+      setIsEditing(false);
+      onBlur?.();
+    }, [onBlur]);
+
+    // Sync the external `value` into `displayValue` in two cases:
+    // 1. Read-only mode: always reflect the latest value (e.g. after saving).
+    // 2. Edit mode: only when `value` diverges from `displayValue`, meaning the
+    //    change came from outside (e.g. modal apply) and not from the user typing
+    //    (handleChange keeps them in sync, so keystrokes never trigger this).
+    useEffect(() => {
+      if (isReadOnly || value !== displayValue) {
+        setDisplayValue(formattedValue);
+      }
+    }, [isReadOnly, value, displayValue, formattedValue]);
+
+    useEffect(() => {
+      return () => {
+        debouncedValidate.cancel();
+      };
+    }, [debouncedValidate]);
+
+    useEffect(() => {
+      if (autoFocus) {
+        handleFocus();
+      }
+    }, [autoFocus, handleFocus]);
+
     return (
       <EditorWrapper
         tabIndex={0}
         id={id}
         data-testid="json-editor-wrapper"
-        onBlur={() => {
-          setIsEditing(false);
-          onBlur?.();
-        }}
-        onFocus={() => {
-          setIsEditing(true);
-          onFocus?.();
-        }}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
         $invalid={!!fieldError}
       >
         {isReadOnly || !isEditing ? (
@@ -151,7 +161,6 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
                 onChange={isReadOnly ? undefined : handleChange}
                 readOnly={isReadOnly}
                 height={`${height}px`}
-                shouldFocusOnMount={shouldFocusOnMount}
                 options={{
                   formatOnType: false,
                   lineNumbers: 'off',

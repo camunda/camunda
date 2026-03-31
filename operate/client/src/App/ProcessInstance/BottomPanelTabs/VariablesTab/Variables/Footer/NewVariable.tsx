@@ -66,13 +66,7 @@ const NewVariable: React.FC = () => {
           validate={mergeValidators(validateValueComplete, validateValueValid)}
           parse={(value) => value}
         >
-          {({input}) => (
-            <InlineJsonEditor
-              {...input}
-              id="value"
-              shouldFocusOnMount={false}
-            />
-          )}
+          {({input}) => <InlineJsonEditor {...input} id="value" />}
         </Field>
         <Operations>
           <MaximizeButton

@@ -20,6 +20,7 @@ import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
+import {modificationsStore} from 'modules/stores/modifications';
 
 type Props = {
   id?: string;
@@ -30,6 +31,8 @@ type Props = {
 
 const ExistingVariableValue: React.FC<Props> = observer(
   ({id, variableName, variableValue, isPreview}) => {
+    const {isModificationModeEnabled} = modificationsStore;
+
     const variableEditor = useExistingVariableEditor(
       variableName,
       variableValue,
@@ -72,7 +75,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
           }
           parse={(value) => value}
         >
-          {({input}) => (
+          {({input, meta}) => (
             <>
               {isLoading && (
                 <Loading small data-testid="full-variable-loader" />
@@ -81,6 +84,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 {...input}
                 id={variableEditor.fieldName}
                 data-testid="edit-variable-value"
+                autoFocus={!isModificationModeEnabled || meta.active}
                 onBlur={() => {
                   variableEditor.createModification({
                     scopeId: variableEditor.variableScopeKey,

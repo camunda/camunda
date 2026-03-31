@@ -24,7 +24,6 @@ type Props = {
   }) => void;
   height?: string;
   width?: string;
-  shouldFocusOnMount?: boolean;
   options?: editor.IStandaloneEditorConstructionOptions;
 };
 
@@ -37,7 +36,6 @@ const JSONEditor: React.FC<Props> = observer(
     onMount = () => {},
     height = '60vh',
     width = '100%',
-    shouldFocusOnMount = true,
     options = {},
   }) => {
     const editorOptions = {
@@ -60,9 +58,7 @@ const JSONEditor: React.FC<Props> = observer(
             onChange?.(value ?? '');
           }}
           onMount={(editor) => {
-            if (shouldFocusOnMount) {
-              editor.focus();
-            }
+            editor.focus();
 
             editor.onKeyDown((e) => {
               if (e.keyCode && e.keyCode === KeyCode.Escape) {
