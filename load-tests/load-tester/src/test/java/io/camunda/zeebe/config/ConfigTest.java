@@ -30,6 +30,7 @@ public class ConfigTest {
     assertThat(appCfg.isMonitorDataAvailability()).isTrue();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
     assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
+    assertThat(appCfg.getDisabledQueriesList()).isEmpty();
 
     // authentication
     final var authCfg = appCfg.getAuth();
@@ -87,6 +88,8 @@ public class ConfigTest {
     assertThat(appCfg.isMonitorDataAvailability()).isFalse();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(50);
     assertThat(appCfg.isPerformReadBenchmarks()).isTrue();
+    assertThat(appCfg.getDisabledQueriesList())
+        .containsExactlyInAnyOrder("process_instances_active", "audit_log_by_category");
 
     // authentication
     final var authCfg = appCfg.getAuth();
@@ -168,5 +171,31 @@ public class ConfigTest {
 
     // then
     assertThat(ratePerSecond).isEqualTo(0.5);
+  }
+
+  @Test
+  public void shouldParseDisabledQueriesFromCommaSeparatedString() {
+    // given
+    final var appCfg = new AppCfg();
+    appCfg.setDisabledQueries("query_a, query_b ,query_c");
+
+    // when
+    final var result = appCfg.getDisabledQueriesList();
+
+    // then
+    assertThat(result).containsExactly("query_a", "query_b", "query_c");
+  }
+
+  @Test
+  public void shouldReturnEmptyListForBlankDisabledQueries() {
+    // given
+    final var appCfg = new AppCfg();
+    appCfg.setDisabledQueries(",,");
+
+    // when
+    final var result = appCfg.getDisabledQueriesList();
+
+    // then
+    assertThat(result).isEmpty();
   }
 }

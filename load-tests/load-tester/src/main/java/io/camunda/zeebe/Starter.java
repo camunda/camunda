@@ -176,7 +176,7 @@ public class Starter extends App {
             registry,
             Executors.newScheduledThreadPool(2),
             client,
-            DataReadMeterQueryProvider.getDefaultQueries());
+            DataReadMeterQueryProvider.getDefaultQueries(config.getDisabledQueriesList()));
     dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
     dataReadMeter.setContextBusinessKeySupplier(
         () ->
