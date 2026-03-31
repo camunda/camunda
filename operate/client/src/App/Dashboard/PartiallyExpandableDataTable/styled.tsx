@@ -41,8 +41,9 @@ const TableExpandRow = styled(BaseTableExpandRow)<Props>`
       }
 
       // override the background color of the expandable row when child rows are hovered.
+      &.cds--expandable-row:hover td,
       &.cds--expandable-row--hover td {
-        background-color: var(--cds-layer-01) !important;
+        background-color: var(--cds-layer) !important;
       }
 
       ${!$isExpandable &&
