@@ -805,9 +805,8 @@ components:
         priority:
           type: integer
           format: int32
-          description: The priority of the task.
+          description: The priority of the task. Default for new tasks is 50.
           minimum: 0
-          default: 50
           maximum: 100
           nullable: true
 
