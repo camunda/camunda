@@ -54,7 +54,7 @@
     "eslint": "eslint .",
     "lint": "npm run ts-check && npm run eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
-    "test:a11y": "playwright test --project=a11y",
+    "test:a11y": "playwright test --project=a11y --project=a11y-dark",
     "test:visual": "cross-env CONTAINERIZED_BROWSER=true playwright test --project=visual-light --project=visual-dark",
     "generate-screenshots": "playwright test --project=screenshot-generator",
     "coverage": "npm run test -- --coverage --changed",
