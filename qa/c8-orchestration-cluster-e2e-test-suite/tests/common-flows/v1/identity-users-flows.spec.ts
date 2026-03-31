@@ -64,7 +64,7 @@ test.describe('Identity User Flows', () => {
       `${relativizePath(Paths.login('admin'))}?next=/admin/`,
     );
 
-    await test.step(`Deleted user cannot access Identity`, async () => {
+    await test.step(`Deleted user cannot access Admin`, async () => {
       await navigateToApp(page, `admin`);
       await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`admin`));
