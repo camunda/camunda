@@ -265,7 +265,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -411,7 +411,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(problemDetail.getDetail())
           .isEqualTo("The BPMN XML for this process definition is not available.");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }

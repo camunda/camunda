@@ -218,7 +218,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -564,7 +564,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -586,9 +586,10 @@ class UserTaskToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
-          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
+          .contains("processInstanceKey")
+          .contains("illegal characters");
 
       assertTextContentFallback(result);
     }
@@ -610,7 +611,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided creationDate 'not-a-date' cannot be parsed as a date");
 
@@ -769,7 +770,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -996,7 +997,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }

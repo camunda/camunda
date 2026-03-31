@@ -18,17 +18,34 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIV
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIntegerFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQuerySortRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.mcp.model.McpDateRange;
+import io.camunda.gateway.mcp.model.McpUserTaskFilter;
+import io.camunda.gateway.mcp.model.McpUserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.OffsetPagination;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
+import io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -38,6 +55,7 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -60,9 +78,10 @@ public class UserTaskTools {
           "Search for user tasks. " + VARIABLE_FILTER_FORMAT_NOTE + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTasks(
-      @McpToolParamsUnwrapped @Valid final UserTaskSearchQuery query) {
+      @McpToolParamsUnwrapped @Valid final McpUserTaskSearchQuery query) {
     try {
-      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQuery(query);
+      final var strictRequest = toStrictContract(query);
+      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQueryStrict(strictRequest);
 
       if (userTaskSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(userTaskSearchQuery.getLeft());
@@ -72,6 +91,10 @@ public class UserTaskTools {
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(
               userTaskServices.search(
                   userTaskSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
+    } catch (final IllegalArgumentException e) {
+      return CallToolResultMapper.mapProblemToResult(
+          GatewayErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST, e.getMessage(), "INVALID_ARGUMENT"));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -199,5 +222,106 @@ public class UserTaskTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
+  }
+
+  // -- Facade → Strict contract conversion --
+
+  private static GeneratedUserTaskSearchQueryRequestStrictContract toStrictContract(
+      final McpUserTaskSearchQuery query) {
+    return new GeneratedUserTaskSearchQueryRequestStrictContract(
+        toStrictPage(query.page()), toStrictSort(query.sort()), toStrictFilter(query.filter()));
+  }
+
+  private static GeneratedUserTaskFilterStrictContract toStrictFilter(
+      final McpUserTaskFilter filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new GeneratedUserTaskFilterStrictContract(
+        filter.state() != null
+            ? new GeneratedUserTaskStateFilterPropertyPlainValueStrictContract(
+                filter.state().getValue())
+            : null,
+        wrapString(filter.assignee()),
+        filter.priority() != null
+            ? new GeneratedIntegerFilterPropertyPlainValueStrictContract(filter.priority())
+            : null,
+        filter.elementId(),
+        wrapString(filter.name()),
+        null, // candidateGroup — not exposed in MCP
+        null, // candidateUser — not exposed in MCP
+        null, // tenantId — not exposed in MCP
+        filter.processDefinitionId(),
+        toStrictDateRange(filter.creationDate()),
+        toStrictDateRange(filter.completionDate()),
+        toStrictDateRange(filter.followUpDate()),
+        toStrictDateRange(filter.dueDate()),
+        toStrictVariableValueFilters(filter.processInstanceVariables()),
+        toStrictVariableValueFilters(filter.localVariables()),
+        filter.userTaskKey(),
+        filter.processDefinitionKey(),
+        filter.processInstanceKey(),
+        filter.elementInstanceKey(),
+        filter.tags());
+  }
+
+  private static List<GeneratedVariableValueFilterPropertyStrictContract>
+      toStrictVariableValueFilters(final List<VariableValueFilterProperty> variables) {
+    if (variables == null || variables.isEmpty()) {
+      return null;
+    }
+    return variables.stream()
+        .map(
+            v ->
+                new GeneratedVariableValueFilterPropertyStrictContract(
+                    v.getName(), wrapString(v.getValue())))
+        .toList();
+  }
+
+  private static GeneratedSearchQueryPageRequestStrictContract toStrictPage(
+      final SearchQueryPageRequest page) {
+    if (page == null) {
+      return null;
+    }
+    return new GeneratedSearchQueryPageRequestStrictContract(
+        page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
+  }
+
+  private static List<GeneratedUserTaskSearchQuerySortRequestStrictContract> toStrictSort(
+      final List<UserTaskSearchQuerySortRequest> sort) {
+    if (sort == null || sort.isEmpty()) {
+      return null;
+    }
+    return sort.stream()
+        .map(
+            s ->
+                new GeneratedUserTaskSearchQuerySortRequestStrictContract(
+                    GeneratedUserTaskSearchQuerySortRequestStrictContract.FieldEnum.fromValue(
+                        s.getField().getValue()),
+                    s.getOrder() != null
+                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
+                        : null))
+        .toList();
+  }
+
+  private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
+    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  }
+
+  private static GeneratedAdvancedDateTimeFilterStrictContract toStrictDateRange(
+      final McpDateRange dateRange) {
+    if (dateRange == null) {
+      return null;
+    }
+    return new GeneratedAdvancedDateTimeFilterStrictContract(
+        null, // $eq
+        null, // $neq
+        null, // $exists
+        null, // $gt
+        dateRange.from(), // $gte (from is inclusive)
+        dateRange.to(), // $lt (to is exclusive)
+        null, // $lte
+        null // $in
+        );
   }
 }

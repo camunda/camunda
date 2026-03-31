@@ -7,7 +7,10 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
@@ -334,22 +337,23 @@ public class SearchQueryFilterMapper {
     return Enum.valueOf(targetEnumType, sourceEnum.name());
   }
 
-  static VariableFilter toVariableFilter(
+  static Either<List<String>, VariableFilter> toVariableFilter(
       final io.camunda.gateway.protocol.model.VariableFilter filter) {
     if (filter == null) {
-      return FilterBuilders.variable().build();
+      return Either.right(FilterBuilders.variable().build());
     }
 
     final var builder = FilterBuilders.variable();
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.getProcessInstanceKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
     ofNullable(filter.getScopeKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("scopeKey", validationErrors))
         .ifPresent(builder::scopeKeyOperations);
     ofNullable(filter.getVariableKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("variableKey", validationErrors))
         .ifPresent(builder::variableKeyOperations);
     ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
@@ -360,7 +364,9 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::valueOperations);
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static ClusterVariableFilter toClusterVariableFilter(
@@ -580,15 +586,16 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static ProcessDefinitionFilter toProcessDefinitionFilter(
+  static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
+    final List<String> validationErrors = new ArrayList<>();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
               Optional.ofNullable(f.getProcessDefinitionKey())
-                  .map(KeyUtil::keyToLong)
+                  .map(mapKeyToLong("processDefinitionKey", validationErrors))
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getName())
                   .map(mapToOperations(String.class))
@@ -602,7 +609,9 @@ public class SearchQueryFilterMapper {
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
               Optional.ofNullable(f.getHasStartForm()).ifPresent(builder::hasStartForm);
             });
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static OffsetDateTime toOffsetDateTime(final String text) {
@@ -675,7 +684,7 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
@@ -690,19 +699,19 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionVersionTagOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getParentProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentProcessInstanceKey", validationErrors))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.getParentElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentElementInstanceKey", validationErrors))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("startDate", validationErrors))
           .ifPresent(builder::startDateOperations);
       ofNullable(filter.getEndDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("endDate", validationErrors))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
           .map(mapToOperations(String.class, new ProcessInstanceStateConverter()))
@@ -896,7 +905,7 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       Optional.ofNullable(filter.getUserTaskKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("userTaskKey", validationErrors))
           .ifPresent(builder::userTaskKeys);
       Optional.ofNullable(filter.getState())
           .map(mapToOperations(String.class))
@@ -919,16 +928,16 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::candidateUserOperations);
       Optional.ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       Optional.ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
       Optional.ofNullable(filter.getElementInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("elementInstanceKey", validationErrors))
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.getProcessInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
@@ -949,16 +958,16 @@ public class SearchQueryFilterMapper {
         }
       }
       Optional.ofNullable(filter.getCreationDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationDate", validationErrors))
           .ifPresent(builder::creationDateOperations);
       Optional.ofNullable(filter.getCompletionDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("completionDate", validationErrors))
           .ifPresent(builder::completionDateOperations);
       Optional.ofNullable(filter.getDueDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("dueDate", validationErrors))
           .ifPresent(builder::dueDateOperations);
       Optional.ofNullable(filter.getFollowUpDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("followUpDate", validationErrors))
           .ifPresent(builder::followUpDateOperations);
 
       if (!CollectionUtils.isEmpty(filter.getTags())) {
@@ -993,22 +1002,23 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static IncidentFilter toIncidentFilter(
+  static Either<List<String>, IncidentFilter> toIncidentFilter(
       final io.camunda.gateway.protocol.model.IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getIncidentKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("incidentKey", validationErrors))
           .ifPresent(builder::incidentKeyOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getErrorType())
           .map(mapToOperations(String.class))
@@ -1020,22 +1030,24 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getCreationTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
           .ifPresent(builder::creationTimeOperations);
       ofNullable(filter.getState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getJobKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("jobKey", validationErrors))
           .ifPresent(builder::jobKeyOperations);
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
     }
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static MessageSubscriptionFilter toMessageSubscriptionFilter(
@@ -1508,21 +1520,23 @@ public class SearchQueryFilterMapper {
   }
 
   // Strict-contract overload for toVariableFilter
-  static VariableFilter toVariableFilter(final GeneratedVariableFilterStrictContract filter) {
+  static Either<List<String>, VariableFilter> toVariableFilter(
+      final GeneratedVariableFilterStrictContract filter) {
     if (filter == null) {
-      return FilterBuilders.variable().build();
+      return Either.right(FilterBuilders.variable().build());
     }
 
     final var builder = FilterBuilders.variable();
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.processInstanceKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
     ofNullable(filter.scopeKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("scopeKey", validationErrors))
         .ifPresent(builder::scopeKeyOperations);
     ofNullable(filter.variableKey())
-        .map(mapToOperations(Long.class))
+        .map(mapToKeyOperations("variableKey", validationErrors))
         .ifPresent(builder::variableKeyOperations);
     ofNullable(filter.tenantId()).ifPresent(builder::tenantIds);
     ofNullable(filter.isTruncated()).ifPresent(builder::isTruncated);
@@ -1531,7 +1545,9 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::valueOperations);
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   // Strict-contract overload for toClusterVariableFilter
@@ -1753,7 +1769,7 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.processInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.processDefinitionId())
           .map(mapToOperations(String.class))
@@ -1768,19 +1784,19 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionVersionTagOperations);
       ofNullable(filter.processDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.parentProcessInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentProcessInstanceKey", validationErrors))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.parentElementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("parentElementInstanceKey", validationErrors))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.startDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("startDate", validationErrors))
           .ifPresent(builder::startDateOperations);
       ofNullable(filter.endDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("endDate", validationErrors))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.state())
           .map(mapToOperations(String.class, new ProcessInstanceStateConverter()))
@@ -1906,14 +1922,15 @@ public class SearchQueryFilterMapper {
   }
 
   // Strict-contract overload for toProcessDefinitionFilter
-  static ProcessDefinitionFilter toProcessDefinitionFilter(
+  static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
       final GeneratedProcessDefinitionFilterStrictContract filter) {
     final var builder = FilterBuilders.processDefinition();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.isLatestVersion()).ifPresent(builder::isLatestVersion);
       ofNullable(filter.processDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.name())
           .map(mapToOperations(String.class))
@@ -1928,7 +1945,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.hasStartForm()).ifPresent(builder::hasStartForm);
     }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   // Strict-contract overload for toDecisionRequirementsFilter
@@ -1960,7 +1979,7 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       Optional.ofNullable(filter.userTaskKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("userTaskKey", validationErrors))
           .ifPresent(builder::userTaskKeys);
       Optional.ofNullable(filter.state())
           .map(mapToOperations(String.class))
@@ -1983,16 +2002,16 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::candidateUserOperations);
       Optional.ofNullable(filter.processDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       Optional.ofNullable(filter.processInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       Optional.ofNullable(filter.tenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
       Optional.ofNullable(filter.elementInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("elementInstanceKey", validationErrors))
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.processInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
@@ -2013,16 +2032,16 @@ public class SearchQueryFilterMapper {
         }
       }
       Optional.ofNullable(filter.creationDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationDate", validationErrors))
           .ifPresent(builder::creationDateOperations);
       Optional.ofNullable(filter.completionDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("completionDate", validationErrors))
           .ifPresent(builder::completionDateOperations);
       Optional.ofNullable(filter.dueDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("dueDate", validationErrors))
           .ifPresent(builder::dueDateOperations);
       Optional.ofNullable(filter.followUpDate())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("followUpDate", validationErrors))
           .ifPresent(builder::followUpDateOperations);
 
       if (!CollectionUtils.isEmpty(filter.tags())) {
@@ -2059,21 +2078,23 @@ public class SearchQueryFilterMapper {
   }
 
   // Strict-contract overload for toIncidentFilter
-  static IncidentFilter toIncidentFilter(final GeneratedIncidentFilterStrictContract filter) {
+  static Either<List<String>, IncidentFilter> toIncidentFilter(
+      final GeneratedIncidentFilterStrictContract filter) {
     final var builder = FilterBuilders.incident();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.incidentKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("incidentKey", validationErrors))
           .ifPresent(builder::incidentKeyOperations);
       ofNullable(filter.processDefinitionKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.processDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.processInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.errorType())
           .map(mapToOperations(String.class))
@@ -2085,22 +2106,24 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.elementInstanceKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.creationTime())
-          .map(mapToOperations(OffsetDateTime.class))
+          .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
           .ifPresent(builder::creationTimeOperations);
       ofNullable(filter.state())
           .map(mapToOperations(String.class))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.jobKey())
-          .map(mapToOperations(Long.class))
+          .map(mapToKeyOperations("jobKey", validationErrors))
           .ifPresent(builder::jobKeyOperations);
       ofNullable(filter.tenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
     }
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   // Strict-contract overload for toMessageSubscriptionFilter

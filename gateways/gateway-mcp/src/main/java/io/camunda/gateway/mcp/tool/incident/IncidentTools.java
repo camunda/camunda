@@ -15,11 +15,26 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_POSITIVE
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQuerySortRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.mcp.model.McpDateRange;
+import io.camunda.gateway.mcp.model.McpIncidentFilter;
+import io.camunda.gateway.mcp.model.McpIncidentSearchQuery;
+import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
-import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
@@ -33,6 +48,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -59,9 +75,10 @@ public class IncidentTools {
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
-      @McpToolParamsUnwrapped @Valid final IncidentSearchQuery query) {
+      @McpToolParamsUnwrapped @Valid final McpIncidentSearchQuery query) {
     try {
-      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(query);
+      final var strictRequest = toStrictContract(query);
+      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQueryStrict(strictRequest);
 
       if (incidentSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());
@@ -147,5 +164,94 @@ public class IncidentTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
+  }
+
+  // -- Facade → Strict contract conversion --
+
+  private static GeneratedIncidentSearchQueryRequestStrictContract toStrictContract(
+      final McpIncidentSearchQuery query) {
+    return new GeneratedIncidentSearchQueryRequestStrictContract(
+        toStrictPage(query.page()), toStrictSort(query.sort()), toStrictFilter(query.filter()));
+  }
+
+  private static GeneratedIncidentFilterStrictContract toStrictFilter(
+      final McpIncidentFilter filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new GeneratedIncidentFilterStrictContract(
+        wrapString(filter.processDefinitionId()),
+        filter.errorType() != null
+            ? new GeneratedIncidentErrorTypeFilterPropertyPlainValueStrictContract(
+                filter.errorType().getValue())
+            : null,
+        null, // errorMessage — not exposed in MCP
+        wrapString(filter.elementId()),
+        toStrictDateRange(filter.creationTime()),
+        filter.state() != null
+            ? new GeneratedIncidentStateFilterPropertyPlainValueStrictContract(
+                filter.state().getValue())
+            : null,
+        null, // tenantId — not exposed in MCP
+        null, // incidentKey — not exposed in MCP
+        filter.processDefinitionKey() != null
+            ? new GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract(
+                filter.processDefinitionKey())
+            : null,
+        filter.processInstanceKey() != null
+            ? new GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract(
+                filter.processInstanceKey())
+            : null,
+        null, // elementInstanceKey — not exposed in MCP
+        null // jobKey — not exposed in MCP
+        );
+  }
+
+  private static GeneratedSearchQueryPageRequestStrictContract toStrictPage(
+      final SearchQueryPageRequest page) {
+    if (page == null) {
+      return null;
+    }
+    return new GeneratedSearchQueryPageRequestStrictContract(
+        page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
+  }
+
+  private static List<GeneratedIncidentSearchQuerySortRequestStrictContract> toStrictSort(
+      final List<IncidentSearchQuerySortRequest> sort) {
+    if (sort == null || sort.isEmpty()) {
+      return null;
+    }
+    return sort.stream()
+        .map(
+            s ->
+                new GeneratedIncidentSearchQuerySortRequestStrictContract(
+                    GeneratedIncidentSearchQuerySortRequestStrictContract.FieldEnum.fromValue(
+                        s.getField().getValue()),
+                    s.getOrder() != null
+                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
+                        : null))
+        .toList();
+  }
+
+  private static GeneratedStringFilterPropertyPlainValueStrictContract wrapString(
+      final String value) {
+    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  }
+
+  private static GeneratedAdvancedDateTimeFilterStrictContract toStrictDateRange(
+      final McpDateRange dateRange) {
+    if (dateRange == null) {
+      return null;
+    }
+    return new GeneratedAdvancedDateTimeFilterStrictContract(
+        null, // $eq
+        null, // $neq
+        null, // $exists
+        null, // $gt
+        dateRange.from(), // $gte (from is inclusive)
+        dateRange.to(), // $lt (to is exclusive)
+        null, // $lte
+        null // $in
+        );
   }
 }

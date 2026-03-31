@@ -88,11 +88,13 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "Date of incident creation."
+                "description": "Date of incident creation.",
+                "default": "##default"
               },
               "elementId": {
                 "type": "string",
-                "description": "The element ID associated to this incident."
+                "description": "The element ID associated to this incident.",
+                "default": "##default"
               },
               "errorType": {
                 "type": "string",
@@ -114,19 +116,23 @@
                   "UNKNOWN",
                   "UNSPECIFIED"
                 ],
-                "description": "Incident error type with a defined set of values."
+                "description": "Incident error type with a defined set of values.",
+                "default": "##default"
               },
               "processDefinitionId": {
                 "type": "string",
-                "description": "The process definition ID associated to this incident."
+                "description": "The process definition ID associated to this incident.",
+                "default": "##default"
               },
               "processDefinitionKey": {
                 "type": "string",
-                "description": "The process definition key associated to this incident."
+                "description": "The process definition key associated to this incident.",
+                "default": "##default"
               },
               "processInstanceKey": {
                 "type": "string",
-                "description": "The process instance key associated to this incident."
+                "description": "The process instance key associated to this incident.",
+                "default": "##default"
               },
               "state": {
                 "type": "string",
@@ -137,37 +143,45 @@
                   "RESOLVED",
                   "UNKNOWN"
                 ],
-                "description": "State of this incident with a defined set of values."
+                "description": "State of this incident with a defined set of values.",
+                "default": "##default"
               }
             },
-            "description": "The incident search filters."
+            "description": "The incident search filters.",
+            "default": "##default"
           },
           "page": {
             "type": "object",
             "properties": {
               "after": {
                 "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
+                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
+                "default": "##default"
               },
               "before": {
                 "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
+                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
+                "default": "##default"
               },
               "from": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The index of items to start searching from."
+                "description": "The index of items to start searching from.",
+                "default": "##default"
               },
               "limit": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The maximum number of items to return in one request."
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
               }
             },
-            "description": "Pagination criteria."
+            "description": "Pagination criteria.",
+            "default": "##default"
           },
           "sort": {
             "description": "Sort field criteria.",
+            "default": "##default",
             "type": "array",
             "items": {
               "type": "object",
@@ -187,14 +201,16 @@
                     "jobKey",
                     "tenantId"
                   ],
-                  "description": "The field to sort by."
+                  "description": "The field to sort by.",
+                  "default": "##default"
                 },
                 "order": {
                   "type": "string",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "default": "##default"
                 }
               },
               "required": [
@@ -263,66 +279,81 @@
             "properties": {
               "hasStartForm": {
                 "type": "boolean",
-                "description": "Indicates whether the start event of the process has an associated Form Key."
+                "description": "Filter by whether the process definition has a start form.",
+                "default": "##default"
               },
               "isLatestVersion": {
                 "type": "boolean",
-                "description": "Whether to only return the latest version of each process definition. When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`. The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`. When using this filter, sorting is limited to `processDefinitionId` and `tenantId` fields only. "
+                "description": "Filter by whether it is the latest version. When set, pagination is forward-only (use `after`/`limit`), and sorting is limited to `processDefinitionId` and `tenantId`.",
+                "default": "##default"
               },
               "name": {
                 "type": "string",
-                "description": "Name of this process definition."
+                "description": "Filter by process definition name.",
+                "default": "##default"
               },
               "processDefinitionId": {
                 "type": "string",
-                "description": "Process definition ID of this process definition."
+                "description": "Filter by process definition ID (BPMN process ID).",
+                "default": "##default"
               },
               "processDefinitionKey": {
                 "type": "string",
-                "description": "The key for this process definition."
+                "description": "Filter by process definition key.",
+                "default": "##default"
               },
               "resourceName": {
                 "type": "string",
-                "description": "Resource name of this process definition."
+                "description": "Filter by resource name.",
+                "default": "##default"
               },
               "version": {
                 "type": "integer",
                 "format": "int32",
-                "description": "Version of this process definition."
+                "description": "Filter by version number.",
+                "default": "##default"
               },
               "versionTag": {
                 "type": "string",
-                "description": "Version tag of this process definition."
+                "description": "Filter by version tag.",
+                "default": "##default"
               }
             },
-            "description": "The process definition search filters."
+            "description": "The process definition search filters.",
+            "default": "##default"
           },
           "page": {
             "type": "object",
             "properties": {
               "after": {
                 "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
+                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
+                "default": "##default"
               },
               "before": {
                 "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
+                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
+                "default": "##default"
               },
               "from": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The index of items to start searching from."
+                "description": "The index of items to start searching from.",
+                "default": "##default"
               },
               "limit": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The maximum number of items to return in one request."
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
               }
             },
-            "description": "Pagination criteria."
+            "description": "Pagination criteria.",
+            "default": "##default"
           },
           "sort": {
             "description": "Sort field criteria.",
+            "default": "##default",
             "type": "array",
             "items": {
               "type": "object",
@@ -338,14 +369,16 @@
                     "processDefinitionId",
                     "tenantId"
                   ],
-                  "description": "The field to sort by."
+                  "description": "The field to sort by.",
+                  "default": "##default"
                 },
                 "order": {
                   "type": "string",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "default": "##default"
                 }
               },
               "required": [
@@ -369,14 +402,17 @@
         "properties": {
           "awaitCompletion": {
             "type": "boolean",
-            "description": "Wait for the process instance to complete. If the process instance does not complete within the request timeout limit, a 504 response status will be returned. The process instance will continue to run in the background regardless of the timeout. Disabled by default. "
+            "description": "Wait for the process instance to complete. If the process instance does not complete within the request timeout limit, a 504 response status will be returned. The process instance will continue to run in the background regardless of the timeout. Disabled by default. ",
+            "default": "##default"
           },
           "businessId": {
             "type": "string",
-            "description": "An optional, user-defined string identifier that identifies the process instance within the scope of a process definition (scoped by tenant). If provided and uniqueness enforcement is enabled, the engine will reject creation if another root process instance with the same business id is already active for the same process definition. Note that any active child process instances with the same business id are not taken into account. "
+            "description": "An optional, user-defined string identifier that identifies the process instance within the scope of a process definition (scoped by tenant). If provided and uniqueness enforcement is enabled, the engine will reject creation if another root process instance with the same business id is already active for the same process definition. Note that any active child process instances with the same business id are not taken into account. ",
+            "default": "##default"
           },
           "fetchVariables": {
             "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned. ",
+            "default": "##default",
             "type": "array",
             "items": {
               "type": "string"
@@ -384,24 +420,29 @@
           },
           "processDefinitionId": {
             "type": "string",
-            "description": "The BPMN process id of the process definition to start an instance of. "
+            "description": "The BPMN process id of the process definition to start an instance of. ",
+            "default": "##default"
           },
           "processDefinitionKey": {
             "type": "string",
-            "description": "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint. "
+            "description": "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint. ",
+            "default": "##default"
           },
           "processDefinitionVersion": {
             "type": "integer",
             "format": "int32",
-            "description": "The version of the process. By default, the latest version of the process is used. "
+            "description": "The version of the process. By default, the latest version of the process is used. ",
+            "default": "##default"
           },
           "requestTimeout": {
             "type": "integer",
             "format": "int64",
-            "description": "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied. "
+            "description": "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied. ",
+            "default": "##default"
           },
           "tags": {
-            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
+            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
+            "default": "##default",
             "type": "array",
             "items": {
               "type": "string"
@@ -409,11 +450,13 @@
           },
           "tenantId": {
             "type": "string",
-            "description": "The tenant id of the process definition. If multi-tenancy is enabled, provide the tenant id of the process definition to start a process instance of. If multi-tenancy is disabled, don't provide this parameter. "
+            "description": "The tenant id of the process definition. If multi-tenancy is enabled, provide the tenant id of the process definition to start a process instance of. If multi-tenancy is disabled, don't provide this parameter. ",
+            "default": "##default"
           },
           "variables": {
             "type": "object",
-            "description": "JSON object that will instantiate the variables for the root variable scope of the process instance. "
+            "description": "JSON object that will instantiate the variables for the root variable scope of the process instance. ",
+            "default": "##default"
           }
         },
         "required": []
@@ -453,7 +496,8 @@
             "properties": {
               "businessId": {
                 "type": "string",
-                "description": "The business id associated with the process instance."
+                "description": "Filter by business ID.",
+                "default": "##default"
               },
               "endDate": {
                 "type": "object",
@@ -467,32 +511,39 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The end date."
+                "description": "Filter by end date of the process instance.",
+                "default": "##default"
               },
               "hasIncident": {
                 "type": "boolean",
-                "description": "Whether this process instance has a related incident or not."
+                "description": "Filter by whether the process instance has an incident.",
+                "default": "##default"
               },
               "processDefinitionId": {
                 "type": "string",
-                "description": "The process definition id."
+                "description": "Filter by process definition ID (BPMN process ID).",
+                "default": "##default"
               },
               "processDefinitionKey": {
                 "type": "string",
-                "description": "The process definition key."
+                "description": "Filter by process definition key.",
+                "default": "##default"
               },
               "processDefinitionName": {
                 "type": "string",
-                "description": "The process definition name."
+                "description": "Filter by process definition name.",
+                "default": "##default"
               },
               "processDefinitionVersion": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The process definition version."
+                "description": "Filter by process definition version.",
+                "default": "##default"
               },
               "processInstanceKey": {
                 "type": "string",
-                "description": "The key of this process instance."
+                "description": "Filter by process instance key.",
+                "default": "##default"
               },
               "startDate": {
                 "type": "object",
@@ -506,7 +557,8 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The start date."
+                "description": "Filter by start date of the process instance.",
+                "default": "##default"
               },
               "state": {
                 "type": "string",
@@ -515,28 +567,33 @@
                   "COMPLETED",
                   "TERMINATED"
                 ],
-                "description": "The process instance state."
+                "description": "Filter by process instance state.",
+                "default": "##default"
               },
               "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
+                "description": "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.",
+                "default": "##default",
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
               "variables": {
-                "description": "The process instance variables.",
+                "description": "Filter by variable values. Each item has a 'name' and 'value' field.",
+                "default": "##default",
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
                     "name": {
                       "type": "string",
-                      "description": "Name of the variable."
+                      "description": "Name of the variable.",
+                      "default": "##default"
                     },
                     "value": {
                       "type": "string",
-                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. "
+                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. ",
+                      "default": "##default"
                     }
                   },
                   "required": [
@@ -546,34 +603,41 @@
                 }
               }
             },
-            "description": "The process instance search filters."
+            "description": "The process instance search filters.",
+            "default": "##default"
           },
           "page": {
             "type": "object",
             "properties": {
               "after": {
                 "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
+                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
+                "default": "##default"
               },
               "before": {
                 "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
+                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
+                "default": "##default"
               },
               "from": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The index of items to start searching from."
+                "description": "The index of items to start searching from.",
+                "default": "##default"
               },
               "limit": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The maximum number of items to return in one request."
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
               }
             },
-            "description": "Pagination criteria."
+            "description": "Pagination criteria.",
+            "default": "##default"
           },
           "sort": {
             "description": "Sort field criteria.",
+            "default": "##default",
             "type": "array",
             "items": {
               "type": "object",
@@ -596,14 +660,16 @@
                     "tenantId",
                     "businessId"
                   ],
-                  "description": "The field to sort by."
+                  "description": "The field to sort by.",
+                  "default": "##default"
                 },
                 "order": {
                   "type": "string",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "default": "##default"
                 }
               },
               "required": [
@@ -639,11 +705,13 @@
             "properties": {
               "action": {
                 "type": "string",
-                "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"assign\". "
+                "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"assign\". ",
+                "default": "##default"
               },
               "allowOverride": {
                 "type": "boolean",
-                "description": "By default, the task is reassigned if it was already assigned. Set this to `false` to return an error in such cases. The task must then first be unassigned to be assigned again. Use this when you have users picking from group task queues to prevent race conditions. "
+                "description": "By default, the task is reassigned if it was already assigned. Set this to `false` to return an error in such cases. The task must then first be unassigned to be assigned again. Use this when you have users picking from group task queues to prevent race conditions. ",
+                "default": "##default"
               }
             },
             "description": "Assignment options."
@@ -693,7 +761,8 @@
             "properties": {
               "name": {
                 "type": "string",
-                "description": "Name of the variable."
+                "description": "Name of the variable.",
+                "default": "##default"
               }
             },
             "description": "Filter search by the given fields"
@@ -713,14 +782,16 @@
                     "scopeKey",
                     "processInstanceKey"
                   ],
-                  "description": "The field to sort by."
+                  "description": "The field to sort by.",
+                  "default": "##default"
                 },
                 "order": {
                   "type": "string",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "default": "##default"
                 }
               },
               "required": [
@@ -735,12 +806,14 @@
               "from": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The index of items to start searching from."
+                "description": "The index of items to start searching from.",
+                "default": "##default"
               },
               "limit": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The maximum number of items to return in one request."
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
               }
             },
             "description": "Pagination criteria"
@@ -770,7 +843,8 @@
             "properties": {
               "assignee": {
                 "type": "string",
-                "description": "The assignee of the user task."
+                "description": "Filter by assignee.",
+                "default": "##default"
               },
               "completionDate": {
                 "type": "object",
@@ -784,7 +858,8 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The user task completion date."
+                "description": "Filter by completion date.",
+                "default": "##default"
               },
               "creationDate": {
                 "type": "object",
@@ -798,7 +873,8 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The user task creation date."
+                "description": "Filter by creation date.",
+                "default": "##default"
               },
               "dueDate": {
                 "type": "object",
@@ -812,15 +888,18 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The user task due date."
+                "description": "Filter by due date.",
+                "default": "##default"
               },
               "elementId": {
                 "type": "string",
-                "description": "The element ID of the user task."
+                "description": "Filter by element ID.",
+                "default": "##default"
               },
               "elementInstanceKey": {
                 "type": "string",
-                "description": "The key of the element instance."
+                "description": "Filter by element instance key.",
+                "default": "##default"
               },
               "followUpDate": {
                 "type": "object",
@@ -834,21 +913,25 @@
                     "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
                   }
                 },
-                "description": "The user task follow-up date."
+                "description": "Filter by follow-up date.",
+                "default": "##default"
               },
               "localVariables": {
-                "description": "The local variables of the user task.",
+                "description": "Filter by local variables. Each item has a 'name' and 'value' field.",
+                "default": "##default",
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
                     "name": {
                       "type": "string",
-                      "description": "Name of the variable."
+                      "description": "Name of the variable.",
+                      "default": "##default"
                     },
                     "value": {
                       "type": "string",
-                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. "
+                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. ",
+                      "default": "##default"
                     }
                   },
                   "required": [
@@ -859,38 +942,46 @@
               },
               "name": {
                 "type": "string",
-                "description": "The task name. This only works for data created with 8.8 and onwards. Instances from prior versions don't contain this data and cannot be found. "
+                "description": "Filter by user task name. Only matches data created with Camunda 8.8 and later.",
+                "default": "##default"
               },
               "priority": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The priority of the user task."
+                "description": "Filter by priority.",
+                "default": "##default"
               },
               "processDefinitionId": {
                 "type": "string",
-                "description": "The ID of the process definition."
+                "description": "Filter by process definition ID.",
+                "default": "##default"
               },
               "processDefinitionKey": {
                 "type": "string",
-                "description": "The key of the process definition."
+                "description": "Filter by process definition key.",
+                "default": "##default"
               },
               "processInstanceKey": {
                 "type": "string",
-                "description": "The key of the process instance."
+                "description": "Filter by process instance key.",
+                "default": "##default"
               },
               "processInstanceVariables": {
-                "description": "The variables of the process instance.",
+                "description": "Filter by process instance variables. Each item has a 'name' and 'value' field.",
+                "default": "##default",
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
                     "name": {
                       "type": "string",
-                      "description": "Name of the variable."
+                      "description": "Name of the variable.",
+                      "default": "##default"
                     },
                     "value": {
                       "type": "string",
-                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. "
+                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. ",
+                      "default": "##default"
                     }
                   },
                   "required": [
@@ -912,10 +1003,12 @@
                   "CANCELED",
                   "FAILED"
                 ],
-                "description": "The user task state."
+                "description": "Filter by user task state.",
+                "default": "##default"
               },
               "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
+                "description": "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.",
+                "default": "##default",
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -923,37 +1016,45 @@
               },
               "userTaskKey": {
                 "type": "string",
-                "description": "The key for this user task."
+                "description": "Filter by user task key.",
+                "default": "##default"
               }
             },
-            "description": "The user task search filters."
+            "description": "The user task search filters.",
+            "default": "##default"
           },
           "page": {
             "type": "object",
             "properties": {
               "after": {
                 "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
+                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
+                "default": "##default"
               },
               "before": {
                 "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
+                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
+                "default": "##default"
               },
               "from": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The index of items to start searching from."
+                "description": "The index of items to start searching from.",
+                "default": "##default"
               },
               "limit": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The maximum number of items to return in one request."
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
               }
             },
-            "description": "Pagination criteria."
+            "description": "Pagination criteria.",
+            "default": "##default"
           },
           "sort": {
             "description": "Sort field criteria.",
+            "default": "##default",
             "type": "array",
             "items": {
               "type": "object",
@@ -968,14 +1069,16 @@
                     "priority",
                     "name"
                   ],
-                  "description": "The field to sort by."
+                  "description": "The field to sort by.",
+                  "default": "##default"
                 },
                 "order": {
                   "type": "string",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "default": "##default"
                 }
               },
               "required": [
@@ -1023,30 +1126,37 @@
             "properties": {
               "isTruncated": {
                 "type": "boolean",
-                "description": "Whether the value is truncated or not."
+                "description": "Filter by whether the value is truncated.",
+                "default": "##default"
               },
               "name": {
                 "type": "string",
-                "description": "Name of the variable."
+                "description": "Filter by variable name.",
+                "default": "##default"
               },
               "processInstanceKey": {
                 "type": "string",
-                "description": "The key of the process instance of this variable."
+                "description": "Filter by process instance key.",
+                "default": "##default"
               },
               "scopeKey": {
                 "type": "string",
-                "description": "The key of the scope that defines where this variable is directly defined. This can be a process instance key (for process-level variables) or an element instance key (for local variables scoped to tasks, subprocesses, gateways, events, etc.). Use this filter to find variables directly defined in specific scopes. Note that this does not include variables from parent scopes that would be visible through the scope hierarchy. "
+                "description": "Filter by scope key. The scope key identifies where a variable is directly defined: a process instance key for process-level variables, or an element instance key for local variables (tasks, subprocesses, etc.). Does not match variables inherited from parent scopes.",
+                "default": "##default"
               },
               "value": {
                 "type": "string",
-                "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. "
+                "description": "Filter by variable value. Values must be in serialized JSON format (e.g., `\"myValue\"` for string value `myValue`). Escape special JSON characters appropriately.",
+                "default": "##default"
               },
               "variableKey": {
                 "type": "string",
-                "description": "The key for this variable."
+                "description": "Filter by variable key.",
+                "default": "##default"
               }
             },
-            "description": "Filter search by the given fields"
+            "description": "The variable search filters.",
+            "default": "##default"
           },
           "sort": {
             "type": "array",
@@ -1063,49 +1173,58 @@
                     "scopeKey",
                     "processInstanceKey"
                   ],
-                  "description": "The field to sort by."
+                  "description": "The field to sort by.",
+                  "default": "##default"
                 },
                 "order": {
                   "type": "string",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "default": "##default"
                 }
               },
               "required": [
                 "field"
               ]
             },
-            "description": "Sort criteria"
+            "description": "Sort field criteria.",
+            "default": "##default"
           },
           "page": {
             "type": "object",
             "properties": {
               "after": {
                 "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
+                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
+                "default": "##default"
               },
               "before": {
                 "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
+                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
+                "default": "##default"
               },
               "from": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The index of items to start searching from."
+                "description": "The index of items to start searching from.",
+                "default": "##default"
               },
               "limit": {
                 "type": "integer",
                 "format": "int32",
-                "description": "The maximum number of items to return in one request."
+                "description": "The maximum number of items to return in one request.",
+                "default": "##default"
               }
             },
-            "description": "Pagination criteria"
+            "description": "Pagination criteria.",
+            "default": "##default"
           },
           "truncateValues": {
             "type": "boolean",
-            "description": "When true (default), long variable values in the response are truncated. When false, full variable values are returned."
+            "description": "If true (default), variable values longer than 8191 characters will be truncated. Set to false to return full values.",
+            "default": "##default"
           }
         },
         "required": []
