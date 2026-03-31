@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool;
 
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.gateway.mcp.tool.incident.IncidentTools;
 import io.camunda.gateway.mcp.tool.process.definition.ProcessDefinitionTools;
@@ -58,7 +59,7 @@ import tools.jackson.databind.node.ObjectNode;
       UserTaskTools.class,
       VariableTools.class
     })
-class ToolsSchemaRegressionTest extends ToolsTest {
+class ToolsSchemaRegressionTest extends OperationalToolsTest {
 
   private static final String SNAPSHOT_PATH = "schema/tools-schema-snapshot.json";
 

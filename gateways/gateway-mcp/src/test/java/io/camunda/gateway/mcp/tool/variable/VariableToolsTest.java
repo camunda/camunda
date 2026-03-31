@@ -15,7 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -53,7 +53,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {VariableTools.class})
-class VariableToolsTest extends ToolsTest {
+class VariableToolsTest extends OperationalToolsTest {
 
   static final String TRUNCATED_VALUE = "\\\"Lorem ipsum";
   static final String FULL_VALUE = "\\\"Lorem ipsum dolor sit amet\\\"";

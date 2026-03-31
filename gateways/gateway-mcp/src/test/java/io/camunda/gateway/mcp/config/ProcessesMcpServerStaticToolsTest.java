@@ -9,8 +9,8 @@ package io.camunda.gateway.mcp.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.mcp.ProcessesToolsTest;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
-import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
@@ -27,13 +27,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = ProcessesMcpServerStaticFallbackTest.StaticToolsConfiguration.class)
-class ProcessesMcpServerStaticFallbackTest extends ToolsTest {
-
-  @Override
-  protected String endpoint() {
-    return "/mcp/processes";
-  }
+@ContextConfiguration(classes = ProcessesMcpServerStaticToolsTest.StaticToolsConfiguration.class)
+class ProcessesMcpServerStaticToolsTest extends ProcessesToolsTest {
 
   @Test
   void shouldListStaticallyConfiguredTools() {

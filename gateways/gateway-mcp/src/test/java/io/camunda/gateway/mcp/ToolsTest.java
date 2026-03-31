@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.tool;
+package io.camunda.gateway.mcp;
 
 import static org.mockito.Mockito.when;
 
@@ -23,7 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @EnableAutoConfiguration
-public abstract class ToolsTest {
+abstract class ToolsTest {
 
   public static final CamundaAuthentication AUTHENTICATION_WITH_DEFAULT_TENANT =
       CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("<default>"));
@@ -41,9 +41,7 @@ public abstract class ToolsTest {
     mcpClient = createMcpClient();
   }
 
-  protected String endpoint() {
-    return "/mcp/cluster";
-  }
+  protected abstract String endpoint();
 
   private McpSyncClient createMcpClient() {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =

@@ -19,6 +19,7 @@ import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse.JSONRPCError;
+import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
 import org.jspecify.annotations.NonNull;
@@ -28,24 +29,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(
-    classes = ProcessesMcpServerFailingToolRepositoryTest.FailingToolsConfiguration.class)
-class ProcessesMcpServerFailingToolRepositoryTest extends ProcessesToolsTest {
+    classes = ProcessesMcpServerEmptyToolRepositoryTest.EmptyToolsConfiguration.class)
+class ProcessesMcpServerEmptyToolRepositoryTest extends ProcessesToolsTest {
 
   @Test
-  void shouldCreateMcpErrorForToolListException() {
+  void shouldReturnEmptyListForToolList() {
     // when/then
-    assertThatThrownBy(() -> mcpClient.listTools())
-        .isInstanceOfSatisfying(
-            McpError.class,
-            exception ->
-                assertThat(exception.getJsonRpcError())
-                    .extracting(JSONRPCError::code, JSONRPCError::message, JSONRPCError::data)
-                    .containsExactly(
-                        ErrorCodes.INTERNAL_ERROR, "Simulated failure in getTools", null));
+    final ListToolsResult listToolsResult = mcpClient.listTools();
+    assertThat(listToolsResult.tools()).isEmpty();
   }
 
   @Test
-  void shouldCreateMcpErrorForToolFindException() {
+  void shouldCreateMcpErrorForToolFind() {
     // when/then
     assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder().name("anyTool").build()))
         .isInstanceOfSatisfying(
@@ -54,13 +49,13 @@ class ProcessesMcpServerFailingToolRepositoryTest extends ProcessesToolsTest {
                 assertThat(exception.getJsonRpcError())
                     .extracting(JSONRPCError::code, JSONRPCError::message, JSONRPCError::data)
                     .containsExactly(
-                        ErrorCodes.INTERNAL_ERROR,
-                        "Error on finding tool",
-                        "Simulated failure in findTool"));
+                        ErrorCodes.INVALID_PARAMS,
+                        "Unknown tool: invalid_tool_name",
+                        "There are no tools"));
   }
 
   @Configuration
-  static class FailingToolsConfiguration {
+  static class EmptyToolsConfiguration {
 
     @Bean(name = "processesToolRepository")
     ToolRepository processesToolRepository() {
@@ -68,13 +63,13 @@ class ProcessesMcpServerFailingToolRepositoryTest extends ProcessesToolsTest {
 
         @Override
         public @NonNull List<Tool> getTools(@NonNull final McpTransportContext transportContext) {
-          throw new NullPointerException("Simulated failure in getTools");
+          return List.of();
         }
 
         @Override
         public @NonNull Either<String, SyncToolSpecification> findTool(
             @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
-          throw new NullPointerException("Simulated failure in findTool");
+          return Either.left("There are no tools");
         }
       };
     }
