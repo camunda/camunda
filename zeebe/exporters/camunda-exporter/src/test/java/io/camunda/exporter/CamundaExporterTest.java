@@ -468,7 +468,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -481,6 +483,9 @@ final class CamundaExporterTest {
       // advance clock to trigger scheduled flush task at t=1000
       clock.advance(500);
       testController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // wait for exporter to update positions
+      exporter.waitForPendingFlush();
 
       // then — validate record1 was exported (position updated after timed flush)
       assertThat(testController.getPosition())
@@ -495,6 +500,9 @@ final class CamundaExporterTest {
       final var record2 =
           protocolFactory.generateRecord(ValueType.VARIABLE, b -> b.withPosition(2L));
       exporter.export(record2);
+
+      // wait for exporter to update positions
+      exporter.waitForPendingFlush();
 
       // then — validate record2 was exported (position updated after flush)
       assertThat(testController.getPosition())
@@ -546,7 +554,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1); // 1 second
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -696,6 +706,9 @@ final class CamundaExporterTest {
           .when(() -> ClientAdapter.of(configuration.getConnect()))
           .thenReturn(failingAdapter);
 
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
       // don't flush immediately on export, so we can verify scheduled flush behavior
       configuration.getBulk().setSize(100);
       exporter =
@@ -708,13 +721,13 @@ final class CamundaExporterTest {
       exporter.export(stubRecord());
 
       // then
+      clock.advance(1001);
       final var initialPosition = testController.getPosition();
       testController.runScheduledTasks(Duration.ofHours(1));
       assertThat(testController.getPosition()).isEqualTo(initialPosition);
 
-      waitForPendingFlush();
-
       // verify flush was attempted
+      waitForPendingFlushToFail();
       verify(failingAdapter).createBatchRequest();
     }
 
@@ -739,7 +752,7 @@ final class CamundaExporterTest {
       // then
 
       // verify flush was attempted
-      waitForPendingFlush();
+      waitForPendingFlushToFail();
       verify(failingAdapter).createBatchRequest();
 
       // and exception thrown for next export attempt
@@ -751,12 +764,10 @@ final class CamundaExporterTest {
       verify(failingAdapter, times(2)).createBatchRequest();
     }
 
-    private void waitForPendingFlush() {
-      try {
-        exporter.waitForPendingFlush();
-      } catch (final ExporterException expected) {
-        assertThat(expected).hasRootCauseInstanceOf(PersistenceException.class);
-      }
+    private void waitForPendingFlushToFail() {
+      assertThatThrownBy(() -> exporter.waitForPendingFlush())
+          .isInstanceOf(ExporterException.class)
+          .hasRootCauseInstanceOf(PersistenceException.class);
     }
   }
 }
