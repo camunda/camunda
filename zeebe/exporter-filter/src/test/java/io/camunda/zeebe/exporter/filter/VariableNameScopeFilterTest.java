@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
+import static io.camunda.zeebe.exporter.filter.NameFilterRule.parseRules;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
