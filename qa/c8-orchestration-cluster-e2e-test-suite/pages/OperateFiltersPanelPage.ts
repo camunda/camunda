@@ -183,6 +183,12 @@ export class OperateFiltersPanelPage {
     if (await this.processNameClearButton.isVisible()) {
       await this.processNameClearButton.click();
       await expect(this.processVersionFilter).toBeDisabled();
+      await expect
+        .poll(() => this.page.url())
+        .not.toContain('processDefinitionId');
+      await expect
+        .poll(() => this.page.url())
+        .not.toContain('processDefinitionVersion');
     }
     await this.processNameFilter.click();
     await this.getOptionByName(option).click({timeout: 30000});
