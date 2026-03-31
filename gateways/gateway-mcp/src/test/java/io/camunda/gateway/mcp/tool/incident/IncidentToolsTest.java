@@ -19,7 +19,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
@@ -67,7 +67,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {IncidentTools.class})
-class IncidentToolsTest extends ToolsTest {
+class IncidentToolsTest extends OperationalToolsTest {
 
   static final IncidentEntity INCIDENT_ENTITY =
       new IncidentEntity(
