@@ -10,8 +10,8 @@ package io.camunda.gateway.mcp.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.gateway.mcp.ProcessesToolsTest;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
-import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.util.Either;
@@ -38,14 +38,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(classes = ProcessesMcpServerDynamicToolsTest.DynamicToolsConfiguration.class)
-class ProcessesMcpServerDynamicToolsTest extends ToolsTest {
+class ProcessesMcpServerDynamicToolsTest extends ProcessesToolsTest {
 
   @Autowired private MutableToolRepository toolRepository;
-
-  @Override
-  protected String endpoint() {
-    return "/mcp/processes";
-  }
 
   @Test
   void shouldListToolsFromRepositoryOnEveryRequest() {
