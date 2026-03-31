@@ -55,7 +55,6 @@ describe('<InlineJsonEditor />', () => {
             setValue(v);
             mockOnChange(v);
           }}
-          data-testid="inline-json-editor"
         />
       );
     };

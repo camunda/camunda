@@ -214,12 +214,15 @@ test.describe('modifications', () => {
 
     await page.getByRole('link', {name: /variables/i}).click();
 
-    const editor = processInstancePage.variablesEditor;
-    await editor.getFirstWrapper().click();
-    await editor.waitForEditor();
-    await editor.clear();
-    await editor.fill('"test"');
-    await editor.blur();
+    await processInstancePage.variablesEditor
+      .getEditor('edit-variable-value')
+      .first()
+      .click();
+    await processInstancePage.variablesEditor.waitForLoaded();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('"test"');
+    await processInstancePage.variablesEditor.blur();
 
     await page
       .getByRole('button', {

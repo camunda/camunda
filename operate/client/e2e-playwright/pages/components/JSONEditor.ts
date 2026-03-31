@@ -12,27 +12,23 @@ export class JSONEditor {
   private readonly page: Page;
   private readonly readOnlyEditor: Locator;
   private readonly codeEditor: Locator;
-  readonly editorWrapper: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.editorWrapper = page.getByTestId('json-editor-wrapper');
-    this.readOnlyEditor = this.editorWrapper.getByTestId(
-      'json-editor-readonly',
-    );
-    this.codeEditor = page.getByRole('code').first();
+    this.readOnlyEditor = this.page.getByTestId('json-editor-readonly');
+    this.codeEditor = this.page.getByRole('code').first();
   }
 
-  getFirstWrapper(): Locator {
-    return this.editorWrapper.first();
+  getEditor(testId: string = "'json-editor-wrapper'") {
+    return this.page.getByTestId(testId);
   }
 
-  getLastWrapper(): Locator {
-    return this.editorWrapper.last();
-  }
-
-  async waitForEditor() {
+  async waitForLoaded() {
     await this.codeEditor.waitFor({state: 'visible'});
+    await this.page
+      .locator('.monaco-editor .cursor')
+      .first()
+      .waitFor({state: 'visible'});
   }
 
   async fill(value: string) {
@@ -40,7 +36,7 @@ export class JSONEditor {
   }
 
   async clear() {
-    await this.page.keyboard.press('ControlOrMeta+A');
+    await this.page.keyboard.press('Control+A');
     await this.page.keyboard.press('Backspace');
   }
 

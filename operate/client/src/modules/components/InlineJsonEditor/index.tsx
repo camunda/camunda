@@ -41,6 +41,7 @@ type Props = {
   readOnly?: boolean;
   maxLines?: number;
   id?: string;
+  'data-testid'?: string;
 };
 
 function computeHeight(text: string, maxLines: number): number {
@@ -66,6 +67,7 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     id,
     fieldError,
     autoFocus,
+    'data-testid': dataTestId,
   }) => {
     const Editor = useEditor();
     const isReadOnly = readOnly === true || onChange === undefined;
@@ -141,14 +143,16 @@ const InlineJsonEditorInner: React.FC<InnerProps> = observer(
     return (
       <EditorWrapper
         id={id}
-        data-testid="json-editor-wrapper"
+        data-testid={dataTestId ?? 'json-editor-wrapper'}
         onBlur={handleBlur}
         onFocus={handleFocus}
         $invalid={!!fieldError}
       >
         {isReadOnly || !isEditing ? (
           <EditorReadonly
-            data-testid="json-editor-readonly"
+            data-testid={
+              dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
+            }
             $height={height}
             $empty={displayValue === ''}
             $editMode={!isReadOnly}
