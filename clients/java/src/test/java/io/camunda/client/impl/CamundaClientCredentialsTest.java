@@ -78,4 +78,52 @@ public final class CamundaClientCredentialsTest {
     // then
     assertThat(valid).isTrue();
   }
+
+  @Test
+  void shouldRefreshProactivelyWhenTokenIsInSoftExpiryWindow() {
+    // given — token expires in 45 seconds: within the 60s proactive window, but beyond the 30s
+    // grace period, so isValid()=true but shouldRefreshProactively()=true
+    final ZonedDateTime expiresInFortyFiveSeconds = ZonedDateTime.now().plusSeconds(45);
+    final CamundaClientCredentials credentials =
+        new CamundaClientCredentials("token", expiresInFortyFiveSeconds, "Bearer");
+
+    // when
+    final boolean valid = credentials.isValid();
+    final boolean shouldRefresh = credentials.shouldRefreshProactively();
+
+    // then
+    assertThat(valid).isTrue();
+    assertThat(shouldRefresh).isTrue();
+  }
+
+  @Test
+  void shouldNotRefreshProactivelyWhenTokenIsFarFromExpiry() {
+    // given — token expires in 120 seconds: well beyond the 60s proactive window
+    final ZonedDateTime expiresInTwoMinutes = ZonedDateTime.now().plusSeconds(120);
+    final CamundaClientCredentials credentials =
+        new CamundaClientCredentials("token", expiresInTwoMinutes, "Bearer");
+
+    // when
+    final boolean shouldRefresh = credentials.shouldRefreshProactively();
+
+    // then
+    assertThat(shouldRefresh).isFalse();
+  }
+
+  @Test
+  void shouldNotRefreshProactivelyWhenTokenIsAlreadyInGracePeriod() {
+    // given — token expires in 15 seconds: already past the grace period threshold,
+    // so isValid()=false and shouldRefreshProactively()=false
+    final ZonedDateTime expiresInFifteenSeconds = ZonedDateTime.now().plusSeconds(15);
+    final CamundaClientCredentials credentials =
+        new CamundaClientCredentials("token", expiresInFifteenSeconds, "Bearer");
+
+    // when
+    final boolean valid = credentials.isValid();
+    final boolean shouldRefresh = credentials.shouldRefreshProactively();
+
+    // then — not valid, so proactive refresh is irrelevant (synchronous refresh will happen)
+    assertThat(valid).isFalse();
+    assertThat(shouldRefresh).isFalse();
+  }
 }
