@@ -307,7 +307,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickMoveAllButtononPopup(): Promise<void> {
-    await this.moveAllButtononPopup.click({force: true});
+    await this.moveAllButtononPopup.click();
   }
 
   async clickMoveInstanceButtononPopup(): Promise<void> {
