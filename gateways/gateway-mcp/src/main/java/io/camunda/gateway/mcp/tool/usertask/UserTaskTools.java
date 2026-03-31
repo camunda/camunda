@@ -24,14 +24,18 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIntegerFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedOffsetPaginationStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQuerySortRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQuerySortRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
@@ -204,8 +208,11 @@ public class UserTaskTools {
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
+      final var strictRequest =
+          new GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract(
+              toStrictOffsetPage(page), toStrictVariableSort(sort), toStrictVariableFilter(filter));
       final var variableSearchQuery =
-          SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(filter, page, sort);
+          SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(strictRequest);
 
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
@@ -323,5 +330,40 @@ public class UserTaskTools {
         null, // $lte
         null // $in
         );
+  }
+
+  // -- Variable search: facade → strict contract conversion --
+
+  private static GeneratedUserTaskVariableFilterStrictContract toStrictVariableFilter(
+      final UserTaskVariableFilter filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new GeneratedUserTaskVariableFilterStrictContract(wrapString(filter.getName()));
+  }
+
+  private static GeneratedOffsetPaginationStrictContract toStrictOffsetPage(
+      final OffsetPagination page) {
+    if (page == null) {
+      return null;
+    }
+    return new GeneratedOffsetPaginationStrictContract(page.getLimit(), page.getFrom());
+  }
+
+  private static List<GeneratedUserTaskVariableSearchQuerySortRequestStrictContract>
+      toStrictVariableSort(final List<UserTaskVariableSearchQuerySortRequest> sort) {
+    if (sort == null || sort.isEmpty()) {
+      return null;
+    }
+    return sort.stream()
+        .map(
+            s ->
+                new GeneratedUserTaskVariableSearchQuerySortRequestStrictContract(
+                    GeneratedUserTaskVariableSearchQuerySortRequestStrictContract.FieldEnum
+                        .fromValue(s.getField().getValue()),
+                    s.getOrder() != null
+                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
+                        : null))
+        .toList();
   }
 }

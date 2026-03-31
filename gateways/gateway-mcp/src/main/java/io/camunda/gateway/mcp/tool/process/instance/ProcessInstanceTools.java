@@ -12,13 +12,16 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIntegerFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByIdStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByKeyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
@@ -29,6 +32,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOr
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
@@ -131,9 +135,16 @@ public class ProcessInstanceTools {
   public CallToolResult createProcessInstance(
       @McpToolParamsUnwrapped @Valid final ProcessInstanceCreationInstruction creationInstruction) {
     try {
+      final var validationError =
+          ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(
+              creationInstruction);
+      if (validationError.isPresent()) {
+        return CallToolResultMapper.mapProblemToResult(validationError.get());
+      }
+
+      final var strict = toStrictCreationInstruction(creationInstruction);
       final var request =
-          SimpleRequestMapper.toCreateProcessInstance(
-              creationInstruction, multiTenancyCfg.isChecksEnabled());
+          RequestMapper.toCreateProcessInstance(strict, multiTenancyCfg.isChecksEnabled());
       if (request.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(request.getLeft());
       }
@@ -268,5 +279,40 @@ public class ProcessInstanceTools {
         null, // $lte
         null // $in
         );
+  }
+
+  // -- Process instance creation: facade → strict contract conversion --
+
+  private static GeneratedProcessInstanceCreationInstructionStrictContract
+      toStrictCreationInstruction(final ProcessInstanceCreationInstruction instruction) {
+    final var defId = instruction.getProcessDefinitionId();
+    if (defId != null && !defId.isBlank()) {
+      return new GeneratedProcessInstanceCreationInstructionByIdStrictContract(
+          defId,
+          instruction.getProcessDefinitionVersion(),
+          instruction.getVariables(),
+          instruction.getTenantId(),
+          null, // operationReference — not exposed in MCP
+          null, // startInstructions — not exposed in MCP
+          null, // runtimeInstructions — not exposed in MCP
+          instruction.getAwaitCompletion(),
+          instruction.getFetchVariables(),
+          instruction.getRequestTimeout(),
+          instruction.getTags(),
+          instruction.getBusinessId());
+    }
+    return new GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
+        instruction.getProcessDefinitionKey(),
+        instruction.getProcessDefinitionVersion(),
+        instruction.getVariables(),
+        null, // startInstructions — not exposed in MCP
+        null, // runtimeInstructions — not exposed in MCP
+        instruction.getTenantId(),
+        null, // operationReference — not exposed in MCP
+        instruction.getAwaitCompletion(),
+        instruction.getRequestTimeout(),
+        instruction.getFetchVariables(),
+        instruction.getTags(),
+        instruction.getBusinessId());
   }
 }
