@@ -9,12 +9,12 @@
 # Optional env vars:
 #   REPOSITORIES          - Comma-separated list of owner/repo to scan (default: $GITHUB_REPOSITORY)
 #   GITHUB_REPOSITORY     - Fallback when REPOSITORIES is not set
-#   STALE_HOURS_THRESHOLD - Hours after which a backport PR is considered stale (default: 24)
+#   STALE_HOURS_THRESHOLD - Hours after which a backport PR is considered stale (default: 6)
 #   TARGET_BRANCH         - Filter to a specific stable branch (e.g. "stable/8.8"), empty = all
 
 set -euo pipefail
 
-STALE_HOURS_THRESHOLD="${STALE_HOURS_THRESHOLD:-24}"
+STALE_HOURS_THRESHOLD="${STALE_HOURS_THRESHOLD:-6}"
 TARGET_BRANCH="${TARGET_BRANCH:-}"
 
 # Build list of repositories to scan

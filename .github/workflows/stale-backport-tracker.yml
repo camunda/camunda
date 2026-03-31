@@ -35,10 +35,10 @@ on:
       stale_hours_threshold:
         description: 'Hours after which a backport PR is considered stale'
         required: false
-        default: '24'
+        default: '6'
         type: string
       slack_channel_id:
-        description: 'Slack channel ID to post the report to. Required for manual runs — the default #top-monorepo-release channel is only used by the scheduled cron trigger.'
+        description: 'Slack channel ID to post the report to. Required for manual runs — the default #top-monorepo-ci channel is only used by the scheduled cron trigger.'
         required: false
         default: ''
         type: string
@@ -67,10 +67,10 @@ on:
       stale_hours_threshold:
         description: 'Hours after which a backport PR is considered stale'
         required: false
-        default: '24'
+        default: '6'
         type: string
       slack_channel_id:
-        description: 'Slack channel ID to post the report to. Required when notify_slack is true — the default #top-monorepo-release channel is only used by the scheduled cron trigger.'
+        description: 'Slack channel ID to post the report to. Required when notify_slack is true — the default #top-monorepo-ci channel is only used by the scheduled cron trigger.'
         required: false
         default: ''
         type: string
@@ -114,7 +114,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
-          STALE_HOURS_THRESHOLD: ${{ inputs.stale_hours_threshold || '3' }}
+          STALE_HOURS_THRESHOLD: ${{ inputs.stale_hours_threshold || '6' }}
           TARGET_BRANCH: ${{ inputs.target_branch || '' }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/collect-stale-backports.sh
@@ -212,7 +212,7 @@ jobs:
           exportEnv: false
           secrets: |
              secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
-             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_CHANNEL_ID;
+             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_CHANNEL_ID;
 
       - name: Resolve Slack user IDs
         id: slack-users
@@ -258,7 +258,7 @@ jobs:
         continue-on-error: true
         env:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
-          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
         run: |
           # Look for the bot's most recent "Stale Backport PRs" message posted today (since midnight UTC)
           oldest=$(date -u -d 'today 00:00:00' +%s 2>/dev/null || date -u -v0H -v0M -v0S +%s)
@@ -295,28 +295,71 @@ jobs:
           method: chat.update
           token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           payload: |
-            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}"
+            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             ts: "${{ steps.find-message.outputs.message_ts }}"
             text: "Stale backport report"
             blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
 
+      - name: Unpin previous day's Slack message
+        if: steps.find-message.outputs.found != 'true'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
+        run: |
+          pinned=$(curl -sf \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            "https://slack.com/api/pins.list?channel=${SLACK_CHANNEL}")
+          echo "pins.list ok: $(echo "$pinned" | jq -r '.ok')" >&2
+          echo "$pinned" | jq -r '
+            [(.items // [])[] | select(
+              .type == "message" and
+              .message.bot_id != null and
+              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+            ) | .message.ts] | .[]' | while read -r ts; do
+            echo "Unpinning old message: $ts" >&2
+            curl -sf -X POST "https://slack.com/api/pins.remove" \
+              -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}"
+          done
+
       - name: Post new Slack message
         if: steps.find-message.outputs.found != 'true'
+        id: post-message
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         continue-on-error: true
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           payload: |
-            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_CHANNEL_ID }}"
+            channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             text: "Stale backport report"
             blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+
+      - name: Pin new Slack message
+        if: steps.find-message.outputs.found != 'true'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
+          POST_RESPONSE: ${{ steps.post-message.outputs.response }}
+        run: |
+          message_ts=$(echo "$POST_RESPONSE" | jq -r '.ts // empty')
+          if [[ -z "$message_ts" ]]; then
+            echo "No message ts in response, skipping pin" >&2
+            exit 0
+          fi
+          curl -sf -X POST "https://slack.com/api/pins.add" \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}"
 
       - name: Log notification status
         if: always()
         run: |
           total="${{ needs.collect-stale-backports.outputs.total_stale }}"
-          echo "::notice::Stale backport report: ${total} stale PR(s) posted to #top-monorepo-release"
+          echo "::notice::Stale backport report: ${total} stale PR(s) posted to #top-monorepo-ci"
 
       - name: Observe build status
         if: always()
