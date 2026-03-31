@@ -227,7 +227,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   public List<Long> getFlowNodeInstanceKeysByIdAndStates(
       final Long processInstanceId, final String flowNodeId, final List<FlowNodeState> states) {
     final var searchRequestBuilder =
-        searchRequestBuilder(flowNodeInstanceTemplate.getAlias())
+        searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
                 withTenantCheck(
                     and(
@@ -238,7 +238,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
     record Result(String id) {}
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).stream()
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class).stream()
         .map(r -> Long.parseLong(r.id()))
         .toList();
   }

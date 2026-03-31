@@ -49,6 +49,7 @@ public class PropertiesIT {
     assertThat(operateProperties.getOperationExecutor().getWorkerId()).isEqualTo("someWorker");
     assertThat(operateProperties.getOperationExecutor().getLockTimeout()).isEqualTo(15000);
     assertThat(operateProperties.getOperationExecutor().isExecutorEnabled()).isFalse();
+    assertThat(operateProperties.getOperationExecutor().getMaxModifyTokensLimit()).isEqualTo(1000);
     assertThat(operateProperties.getIdentity().getIssuerUrl()).isEqualTo("https://issueUrl:555");
     assertThat(operateProperties.getIdentity().getIssuerBackendUrl())
         .isEqualTo("https://issuerBackendUrl:555");

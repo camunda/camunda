@@ -20,6 +20,7 @@ camunda.operate:
     workerId: someWorker
     lockTimeout: 15000
     executorEnabled: false
+    maxModifyTokensLimit: 1000
   identity:
     issuerUrl: https://issueUrl:555
     issuerBackendUrl: https://issuerBackendUrl:555

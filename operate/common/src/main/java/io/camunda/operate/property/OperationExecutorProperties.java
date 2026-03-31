@@ -21,6 +21,7 @@ public class OperationExecutorProperties {
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
 
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 10;
+  private static final int DEFAULT_MODIFY_TOKENS_LIMIT = 500;
 
   /**
    * Amount of process instances, that will be processed by one run of operation executor. This
@@ -42,11 +43,18 @@ public class OperationExecutorProperties {
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
 
+  /**
+   * Maximum number of flow node instances (tokens) that can be canceled or moved in a single
+   * process-instance modification for one element ID. Requests above this limit are truncated to
+   * avoid Zeebe command timeouts.
+   */
+  private int maxModifyTokensLimit = DEFAULT_MODIFY_TOKENS_LIMIT;
+
   public int getBatchSize() {
     return batchSize;
   }
 
-  public void setBatchSize(int batchSize) {
+  public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -54,7 +62,7 @@ public class OperationExecutorProperties {
     return deletionBatchSize;
   }
 
-  public void setDeletionBatchSize(int deletionBatchSize) {
+  public void setDeletionBatchSize(final int deletionBatchSize) {
     this.deletionBatchSize = deletionBatchSize;
   }
 
@@ -62,7 +70,7 @@ public class OperationExecutorProperties {
     return workerId;
   }
 
-  public void setWorkerId(String workerId) {
+  public void setWorkerId(final String workerId) {
     this.workerId = workerId;
   }
 
@@ -70,7 +78,7 @@ public class OperationExecutorProperties {
     return lockTimeout;
   }
 
-  public void setLockTimeout(long lockTimeout) {
+  public void setLockTimeout(final long lockTimeout) {
     this.lockTimeout = lockTimeout;
   }
 
@@ -78,7 +86,7 @@ public class OperationExecutorProperties {
     return executorEnabled;
   }
 
-  public void setExecutorEnabled(boolean executorEnabled) {
+  public void setExecutorEnabled(final boolean executorEnabled) {
     this.executorEnabled = executorEnabled;
   }
 
@@ -86,7 +94,7 @@ public class OperationExecutorProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 
@@ -94,7 +102,15 @@ public class OperationExecutorProperties {
     return queueSize;
   }
 
-  public void setQueueSize(int queueSize) {
+  public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
+  }
+
+  public int getMaxModifyTokensLimit() {
+    return maxModifyTokensLimit;
+  }
+
+  public void setMaxModifyTokensLimit(final int maxModifyTokensLimit) {
+    this.maxModifyTokensLimit = maxModifyTokensLimit;
   }
 }
