@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +28,13 @@ import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class CamundaClientCredentials {
+
+  /**
+   * Grace period before actual token expiry during which the token is considered invalid,
+   * triggering a proactive refresh. This prevents a race where a token that is valid at check time
+   * expires before the request reaches the server.
+   */
+  private static final Duration EXPIRY_GRACE_PERIOD = Duration.ofSeconds(30);
 
   @JsonAlias({"accesstoken", "access_token"})
   private String accessToken;
@@ -70,7 +78,7 @@ public final class CamundaClientCredentials {
 
   @JsonIgnore
   public boolean isValid() {
-    return expiry.toInstant().isAfter(Instant.now());
+    return expiry.toInstant().minus(EXPIRY_GRACE_PERIOD).isAfter(Instant.now());
   }
 
   @Override
