@@ -12,7 +12,6 @@
   "devDependencies": {
     "@inquirer/prompts": "^8.0.0",
     "@playwright/test": "^1.51.0",
-    "@types/axios": "^0.14.4",
     "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "8.56.1",
     "@typescript-eslint/parser": "8.56.1",
@@ -24,7 +23,7 @@
     "eslint-plugin-prettier": "5.5.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
-    "playwright-slack-report": "^1.1.89",
+    "playwright-slack-report": "1.1.89",
     "prettier": "3.8.1",
     "typescript": "5.9.3",
     "valibot": "1.2.0",
@@ -38,7 +37,6 @@
   "dependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@camunda8/sdk": "^8.7.29",
-    "axios": "^1.8.1",
     "dotenv": "^17.0.0",
     "mailslurp-client": "^16.0.0"
   }
