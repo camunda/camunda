@@ -241,6 +241,7 @@ components:
         - resourceName
         - processDefinitionKey
         - tenantId
+        - processName
       properties:
         processDefinitionId:
           allOf:
