@@ -26,15 +26,12 @@ import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {Navigate, useLocation} from 'react-router-dom';
-import {Paths} from 'modules/Routes';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {useMemo} from 'react';
 
 const ROW_HEIGHT = 32;
 
 const IncidentsTab: React.FC = observer(() => {
-  const location = useLocation();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstance} = useProcessInstance();
   const {selectedElementId, resolvedElementInstance, isFetchingElement} =
@@ -126,18 +123,6 @@ const IncidentsTab: React.FC = observer(() => {
       }, {}),
     [decisionInstancesResult],
   );
-
-  if (processInstance?.hasIncident === false) {
-    return (
-      <Navigate
-        to={{
-          ...location,
-          pathname: Paths.processInstanceVariables({processInstanceId}),
-        }}
-        replace
-      />
-    );
-  }
 
   return (
     <Container>
