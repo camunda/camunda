@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "72529dcafca5e4c47605610fe7cf5bab38f6d26d",
-    "generatedAt": "2026-03-13T11:24:14.534Z",
+    "commit": "a622c619c0dbbbe115fd1525d8b7ecf79ba49aad",
+    "generatedAt": "2026-03-31T11:58:42.393Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "3fe2619211d2991ca03d24a1b6e965553143f53118d702b2365fdca8741232e2"
+    "specSha256": "70cff54862f8c0054a8601f80c980dcea2cf7eb70bf059dbe1ecdd893d47fad3"
   },
   "responses": [
     {
@@ -3065,7 +3065,16 @@
           },
           {
             "name": "warnings",
-            "type": "array<string>"
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "message",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
           }
         ],
         "optional": []
@@ -7884,6 +7893,85 @@
                   "name": "userTaskKey",
                   "type": "string",
                   "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/user-tasks/{userTaskKey}/effective-variables/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<0>",
+            "children": {
+              "required": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "scopeKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
+                  "name": "variableKey",
+                  "type": "string"
                 }
               ],
               "optional": []
