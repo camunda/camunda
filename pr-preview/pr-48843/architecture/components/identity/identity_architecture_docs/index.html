@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-48843/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-48843/architecture/components/identity/identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-48843/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.856d1326.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-48843/assets/js/main.07cdbc9f.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/runtime~main.9c713bf1.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-48843/assets/js/main.c1733c23.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -114,7 +114,8 @@ No separate identity database; Identity entities reuse Zeebe primary and seconda
 <!-- -->
 <p>Entities:</p>
 <ul>
-<li class="">Clients: Web applications, Camunda clients, and other services interacting with the Orchestration Cluster</li>
+<li class="">Camunda Web UI: Operate, Tasklist, Admin UI</li>
+<li class="">Client Application: A client, either using the Camunda Client or REST/gRPC API.</li>
 <li class="">Camunda 8 OC (Orchestration Cluster): runtime deployment containing the Zeebe Processing engine, Zeebe gRPC API, Orchestration Cluster API  as well ad the Operate, Tasklist, Identity Web Applications along with their deprecated V1 APIs.</li>
 <li class="">Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).</li>
 <li class="">Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.</li>
@@ -182,8 +183,8 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 <ul>
 <li class="">Spring Security Configuration (<code>WebSecurityConfig.BasicConfiguration</code>): Spring <code>@Configuration</code> subclass of <code>WebSecurityConfig</code>, activated by <code>camunda.security.authentication.method=basic</code>. It is responsible for configuring the Spring Security filter chains for Basic auth and registering the <code>UsernamePasswordAuthenticationTokenConverter</code> bean. The <code>@ConditionalOnProtectedApi</code> annotation on individual filter chain beans controls whether API endpoints require authentication (based on the <code>camunda.security.api.unprotected</code> property).</li>
 <li class="">Basic Auth Converter (<code>UsernamePasswordAuthenticationTokenConverter</code>): converts Basic auth credentials (username/password or clientId/secret) into a <code>CamundaAuthentication</code> by loading the user entity and its roles and tenants via Camunda Services.</li>
-<li class="">Authentication Provider (<code>DefaultCamundaAuthenticationProvider</code>): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>.</li>
-<li class="">Session Repository (<code>WebSessionRepository</code>): creates and invalidates server‑side sessions backed by secondary storage.</li>
+<li class="">Authentication Provider (<code>DefaultCamundaAuthenticationProvider</code>): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>. It reads the current Spring <code>Authentication</code> from <code>SecurityContextHolder</code>, checks the <code>CamundaAuthenticationHolder</code> cache for an existing <code>CamundaAuthentication</code>, and only on a cache miss delegates conversion to the <code>UsernamePasswordAuthenticationTokenConverter</code>.</li>
+<li class="">Session Repository (<code>WebSessionRepository</code>): implements Spring&#x27;s <code>SessionRepository&lt;WebSession&gt;</code> interface and manages server‑side sessions backed by secondary storage via <code>PersistentWebSessionClient</code>.</li>
 </ul>
 <p>External responsibilities:</p>
 <ul>
@@ -206,7 +207,7 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 <li class="">Claims Converter (<code>TokenClaimsConverter</code>): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via <code>MembershipService</code>.</li>
 <li class="">Mapping Rules Processor (<code>MappingRuleMatcher</code>): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.</li>
 <li class="">Authentication Provider (<code>DefaultCamundaAuthenticationProvider</code>): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>.</li>
-<li class="">Session Repository (<code>WebSessionRepository</code>): creates and invalidates server‑side sessions backed by secondary storage.</li>
+<li class="">Session Repository (<code>WebSessionRepository</code>): implements Spring&#x27;s <code>SessionRepository&lt;WebSession&gt;</code> interface and manages server‑side sessions backed by secondary storage via <code>PersistentWebSessionClient</code>.</li>
 </ul>
 <p>Extern responsibilities:</p>
 <ul>
@@ -275,7 +276,7 @@ It does not communicate with the external IdP directly.</p>
 <li class="">Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.</li>
 <li class="">Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in <a class="" href="/camunda/pr-preview/pr-48843/architecture/components/identity/references/rp-initiated-logout/">RP‑initiated logout</a>.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -326,7 +327,7 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 <li class="">Spring Security (<code>BearerTokenAuthenticationFilter</code>) validates the token signature via the IdP&#x27;s JWKS endpoint — no local credential storage needed.</li>
 <li class=""><code>OidcTokenAuthenticationConverter</code> and <code>TokenClaimsConverter</code> extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -363,7 +364,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.</li>
 <li class="">Camunda Services returns a <code>CreateProcessInstanceResponse</code> and the REST API responds with <code>200 OK</code> containing the process instance key.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -382,7 +383,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.</li>
 <li class="">Camunda Services returns a <code>SearchProcessInstancesResponse</code> and the REST API responds with <code>200 OK</code> containing the filtered process instances.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -400,7 +401,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">The Engine returns a command acknowledgement and <code>UserServices</code> returns the created user to the REST API, which responds with <code>201 Created</code> and the new user key.</li>
 <li class="">Asynchronously, the Camunda or Rdbms Exporter picks up the <code>UserCreated</code> event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
@@ -419,7 +420,7 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">The Engine returns a command acknowledgement and <code>AuthorizationServices</code> returns the created authorization to the REST API, which responds with <code>201 Created</code> and the new authorization key.</li>
 <li class="">Asynchronously, the Camunda or RDBMS Exporter picks up the <code>AuthorizationCreated</code> event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much easier to view diagrams directly on GitHub: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
+<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
