@@ -29,7 +29,10 @@ public interface ToolRepository {
    * Finds the executable tool specification for the given request context and tool name.
    *
    * <p>If a tool exists, it is returned as a {@link io.camunda.zeebe.util.Either.Right}. Otherwise,
-   * an error message is returned as a {@link io.camunda.zeebe.util.Either.Left}.
+   * an error message is returned as a {@link io.camunda.zeebe.util.Either.Left}, with details on
+   * the tool that couldn't be found.
+   *
+   * <p>Internal errors are thrown as runtime exceptions, which are handled by the consumer.
    */
   @NonNull Either<String, SyncToolSpecification> findTool(
       @NonNull McpTransportContext transportContext, @NonNull String toolName);

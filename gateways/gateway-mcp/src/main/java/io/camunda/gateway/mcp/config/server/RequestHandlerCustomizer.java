@@ -77,6 +77,7 @@ public final class RequestHandlerCustomizer {
       try {
         toolSpecification = toolRepository.findTool(ctx, callToolRequest.name());
       } catch (final Exception e) {
+        // internal error in the tool finding
         return Mono.error(
             McpError.builder(ErrorCodes.INTERNAL_ERROR)
                 .message("Error on finding tool")
@@ -86,14 +87,14 @@ public final class RequestHandlerCustomizer {
 
       // invoke the identified tool spec, if found
       return toolSpecification.fold(
-          // error during tool lookup
+          // no tool found, further details in the message
           errorMessage ->
               Mono.error(
                   McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
                       .message("Unknown tool: invalid_tool_name")
                       .data(errorMessage)
                       .build()),
-          // no tool found
+          // no tool found, no further details
           spec -> {
             if (spec == null) {
               return Mono.error(
