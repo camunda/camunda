@@ -17,6 +17,8 @@ export const generateUniqueId = () => {
   return Math.random().toString(36).substring(2, 10);
 };
 
+export const isOracle = process.env.DATABASE_CONTAINER?.startsWith('oracle');
+
 export function generateRandomStringAsync(length: number): Promise<string> {
   return new Promise<string>((resolve) => {
     setTimeout(() => {

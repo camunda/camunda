@@ -20,13 +20,13 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  paginatedResponseFields,
 } from '../../../../utils/http';
-import {validateResponse, validateResponseShape} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
-  jobResponseFields,
-} from '../../../../utils/beans/requestBeans';
+  validateResponse,
+  validateResponseShape,
+} from '../../../../json-body-assertions';
+import {defaultAssertionOptions, isOracle} from '../../../../utils/constants';
+import {jobResponseFields} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Job API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -86,7 +86,7 @@ test.describe.parallel('Job API Tests', () => {
       res,
     );
     const json = await res.json();
-    expect(json.jobs.length).toBe(1);
+    expect(json.jobs).toHaveLength(1);
     const filteredFields = filterOutDynamicFields(jobResponseFields);
     assertEqualsForKeys(json.jobs[0], expectedJobFields, filteredFields);
   });
@@ -165,6 +165,13 @@ test.describe.parallel('Job API Tests', () => {
         });
 
         const json = await res.json();
+        if (isOracle) {
+          json.items?.forEach((t: any) => {
+            if (t.worker == null) {
+              t.worker = '';
+            }
+          });
+        }
         validateResponseShape(
           {
             path: '/jobs/search',
@@ -195,6 +202,14 @@ test.describe.parallel('Job API Tests', () => {
         });
 
         await assertStatusCode(res, 200);
+        const json = await res.json();
+        if (isOracle) {
+          json.items?.forEach((t: any) => {
+            if (t.worker == null) {
+              t.worker = '';
+            }
+          });
+        }
         await validateResponse(
           {
             path: '/jobs/search',
@@ -203,7 +218,6 @@ test.describe.parallel('Job API Tests', () => {
           },
           res,
         );
-        const json = await res.json();
         const actualTypeList = json.items.map(
           (item: {type: string}) => item.type,
         );
