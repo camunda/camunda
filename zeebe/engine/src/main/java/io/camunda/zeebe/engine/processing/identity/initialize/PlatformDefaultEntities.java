@@ -19,6 +19,10 @@ import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +42,28 @@ public class PlatformDefaultEntities {
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
     setupAppIntegrationsRole(setupRecord);
+  }
+
+  static List<RoleRecord> setupRoleMemberships(
+      final Map<String, Map<String, Collection<String>>> defaultRoles) {
+
+    final List<RoleRecord> roleRecords = new ArrayList<>();
+    // this is not using an immutable stream/map/toList approach by trail and choice,
+    // as iterating maps through streams required using EntrySets and is much less readable.
+    defaultRoles.forEach(
+        (defaultRole, groupedMembers) ->
+            groupedMembers.forEach(
+                (memberType, members) ->
+                    members.stream()
+                        .map(
+                            entityId ->
+                                new RoleRecord()
+                                    .setRoleId(defaultRole)
+                                    .setEntityType(getEntityType(memberType))
+                                    .setEntityId(entityId))
+                        .forEach(roleRecords::add)));
+
+    return roleRecords;
   }
 
   private static void setupReadOnlyAdminRole(final IdentitySetupRecord setupRecord) {
@@ -190,5 +216,20 @@ public class PlatformDefaultEntities {
                 .setTenantId(DEFAULT_TENANT_ID)
                 .setEntityType(EntityType.ROLE)
                 .setEntityId(rpaRoleId));
+  }
+
+  private static EntityType getEntityType(final String key) {
+    return switch (key.toLowerCase()) {
+      case "users" -> EntityType.USER;
+      case "clients" -> EntityType.CLIENT;
+      // when using config via env variables,
+      // spring will convert MAPPING_RULES to mapping.rules
+      case "mappingrules", "mapping-rules", "mapping.rules" -> EntityType.MAPPING_RULE;
+      case "groups" -> EntityType.GROUP;
+      case "roles" -> EntityType.ROLE;
+      default ->
+          throw new IllegalStateException(
+              "Unexpected entity type for role membership: %s".formatted(key));
+    };
   }
 }
