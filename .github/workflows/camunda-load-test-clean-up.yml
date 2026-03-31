@@ -1,4 +1,6 @@
-# description: This workflow deletes eligible load tests that reached or passed their deadline
+# description: Deletes expired load test namespaces based on TTL deadline labels.
+#              Runs two parallel cleanup jobs: one for legacy GKE infra (Google Cloud auth),
+#              one for new infra (Teleport auth). Posts deleted namespaces to Slack.
 # type: CI
 # owner: camunda/orchestration-cluster-team
 name: camunda-load-test-clean-up.yml

@@ -1,6 +1,9 @@
-# description: Run weekly benchmark test on a long running migration
+# description: Updates the rolling release benchmark weekly with the latest release tag.
+#              Fetches the latest GitHub release, then deploys as 'release-rolling' with
+#              a realistic workload via custom Helm values.
+# calls: camunda-load-test.yml
 # type: CI
-# owner @camunda/core-features
+# owner: @camunda/core-features
 name: Zeebe Long Running Migrating Benchmark
 on:
   workflow_dispatch:

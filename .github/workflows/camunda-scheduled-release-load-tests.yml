@@ -1,6 +1,9 @@
-# description: Runs release load tests daily on main and all active stable branches.
-#              Each stable branch has a hardcoded release tag that must be updated when new releases are published.
-#              Replaces the scheduled trigger previously in camunda-release-load-test.yaml.
+# description: Orchestrates daily release load tests across all active stable branches and main.
+#              Each branch has a hardcoded release tag. Patch releases do NOT require updates —
+#              only new minor versions or deprecated branches need changes.
+# calls: camunda-release-load-test.yaml (one call per branch),
+#        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace per branch)
+# notifications: Slack (#reliability-testing-alerts) with per-branch results
 # type: CI
 # owner: @camunda/reliability-testing
 name: Scheduled Camunda Release Load Tests
