@@ -2180,4 +2180,22 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_audit_log_actor_id_index" author="camunda">
+    <!-- Index for ACTOR_ID - optimizes querying audit log entries by actor -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_ACTOR_ID" tableName="${prefix}AUDIT_LOG"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql,mariadb,h2,oracle">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_ACTOR_ID
+        ON ${prefix}AUDIT_LOG (ACTOR_ID)
+    </sql>
+    <!-- Since actor_id is sparse (nullable), we allow Postgres and MSSQL to exclude null values -->
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_ACTOR_ID
+        ON ${prefix}AUDIT_LOG (ACTOR_ID) WHERE ACTOR_ID IS NOT NULL
+    </sql>
+  </changeSet>
+
 </databaseChangeLog>
