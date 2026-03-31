@@ -903,7 +903,7 @@ jobs:
           shopt -u nocasematch # reset it
           echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
-        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd
+        uses: ncipollo/release-action@e8998be2b17923c3291d578fe182ba04c16fc023
         if: ${{ !inputs.dryRun }}
         with:
           name: ${{ env.RELEASE_TAG }}
@@ -917,7 +917,7 @@ jobs:
           tag: ${{ env.RELEASE_TAG }}
       - name: Update Github release body from changelog file
         id: update-github-release-body
-        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd
+        uses: ncipollo/release-action@e8998be2b17923c3291d578fe182ba04c16fc023
         if: ${{ !inputs.dryRun }}
         continue-on-error: true
         with:
