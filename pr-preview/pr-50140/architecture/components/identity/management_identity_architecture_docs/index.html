@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Management Identity architecture documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-50140/architecture/components/identity/management_identity_architecture_docs/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Management Identity architecture documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-50140/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-50140/architecture/components/identity/management_identity_architecture_docs/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-50140/architecture/components/identity/management_identity_architecture_docs/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-50140/architecture/components/identity/management_identity_architecture_docs/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Management Identity architecture documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-50140/architecture/components/identity/management_identity_architecture_docs"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-50140/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-50140/assets/js/runtime~main.6139fa30.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-50140/assets/js/main.fe495dd3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-50140/assets/js/runtime~main.b92f7835.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-50140/assets/js/main.a9983aea.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -16,23 +16,32 @@
 <p>This documentation is based on <a href="https://arc42.org/overview" target="_blank" rel="noopener noreferrer" class="">arc42</a>, a common architecture documentation template for software systems. It covers constraints, system context, solution strategy, building blocks, runtime view, deployment, crosscutting concepts, and risks.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="11-overview">1.1 Overview<a href="#11-overview" class="hash-link" aria-label="Direct link to 1.1 Overview" title="Direct link to 1.1 Overview" translate="no">​</a></h3>
 <p>The Management Identity component in Camunda 8 Self-Managed is used to manage authentication, access, and authorization for components outside the Orchestration Cluster. Historically, the Identity service (now called Management Identity) existed before Orchestration Cluster Identity and was also used for runtime identity; Orchestration Cluster Identity was introduced later and now owns runtime IAM:</p>
+<p>It provides:</p>
+<ul>
+<li class="">Unified access management for platform applications:<!-- -->
 <ul>
 <li class="">Console</li>
 <li class="">Web Modeler</li>
 <li class="">Optimize</li>
 </ul>
-<p>It is responsible for:</p>
+</li>
+<li class="">Flexible authentication:<!-- -->
 <ul>
-<li class="">User and machine authentication via OIDC or the bundled Keycloak.</li>
-<li class="">Role-based access control (RBAC) for Console, Web Modeler, and Optimize.</li>
-<li class="">Managing users, groups, roles, permissions, clients (OAuth2 applications), tenants (Optimize), and mapping rules.</li>
+<li class="">OIDC with the bundled Keycloak (default Self-Managed setup)</li>
+<li class="">OIDC with Keycloak brokering to an external enterprise IdP</li>
+<li class="">OIDC directly against an external enterprise IdP</li>
 </ul>
-<p>The legacy <code>saas</code> Spring profile still exists in parts of the codebase, but it is deprecated and no longer used for current Management Identity deployments, although for SaaS extended support we need to support it until April 2028.</p>
-<p>By design, Management Identity does not control access to the Orchestration Cluster. That is handled by Orchestration Cluster Identity, described in the Orchestration Cluster Identity architecture documentation:</p>
+</li>
+<li class="">Role-based access control (RBAC) for platform applications.</li>
+<li class="">Management of users, groups, roles, permissions, OAuth2 clients, Optimize tenants, and mapping rules, depending on the active Spring profile.</li>
+</ul>
+<p>Historically, the original Identity service covered both platform and runtime access control. With the introduction of Orchestration Cluster Identity, runtime IAM moved into the cluster. Management Identity now owns only platform IAM; it is not the source of truth for runtime access to Zeebe, Operate, Tasklist, or Orchestration Cluster APIs.</p>
+<p>The legacy <code>saas</code> Spring profile still exists in parts of the codebase, but it is deprecated and no longer used for current Management Identity deployments, although for SaaS extended support it must remain supported until April 2028.</p>
+<p>By design, Management Identity does not control access to the Orchestration Cluster. That is handled by Orchestration Cluster Identity, described in:</p>
 <ul>
 <li class=""><a class="" href="/camunda/pr-preview/pr-50140/architecture/components/identity/identity_architecture_docs/">Orchestration Cluster Identity architecture</a></li>
 </ul>
-<p>Where concepts (users, groups, roles, mapping rules, tenants, RBAC) overlap between Management Identity and Orchestration Cluster Identity, the Orchestration Cluster Identity document is the primary reference. This document describes only the specifics of Management Identity.</p>
+<p>Where concepts such as users, groups, roles, mapping rules, tenants, and RBAC overlap between both systems, the Orchestration Cluster Identity document is the primary reference for the shared conceptual model. This document focuses on the specifics of Management Identity.</p>
 <p>The user guide for Management Identity is available here:</p>
 <ul>
 <li class=""><a href="https://docs.camunda.io/docs/self-managed/components/management-identity/overview/" target="_blank" rel="noopener noreferrer" class="">User Guide</a></li>
@@ -79,37 +88,18 @@
 <li class="">Keycloak DB: PostgreSQL database used by Keycloak for users, groups, sessions, and realm configuration when the <code>keycloak</code> profile is active.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-solution-strategy">4. Solution strategy<a href="#4-solution-strategy" class="hash-link" aria-label="Direct link to 4. Solution strategy" title="Direct link to 4. Solution strategy" translate="no">​</a></h2>
-<ul>
-<li class="">
 <p>Separate management plane for platform apps
-Management Identity provides an independent authentication/authorization surface for Console, Web Modeler, and Optimize, without coupling cluster runtime IAM to platform app availability.</p>
-</li>
-<li class="">
+: Management Identity provides an independent authentication and authorization surface for Console, Web Modeler, and Optimize, without coupling platform IAM to Orchestration Cluster runtime availability.</p>
 <p>OIDC-based SSO via Keycloak or external IdPs
-Keycloak is provided as a default IdP and broker, with support for external enterprise IdPs via OIDC. Interactive users authenticate via authorization code flow; applications use client credentials.</p>
-</li>
-<li class="">
+: Keycloak is provided as a default IdP and broker, with support for external enterprise IdPs via OIDC. Interactive users authenticate via authorization code flow; applications use client credentials.</p>
 <p>RBAC for platform resources
-A role-based access model is used to protect:</p>
-<ul>
-<li class="">Console features (cluster registration, license, user management, etc.).</li>
-<li class="">Web Modeler workspaces, projects, and collaboration features.</li>
-<li class="">Optimize dashboards, reports, and data access.</li>
-</ul>
-</li>
-<li class="">
-<p>Mapping rules and tenants for Optimize
-Mapping rules connect IdP claims (for example groups, attributes) to roles and tenants in Management Identity. Optimize uses these tenants to segment data and access for different business units or customers.</p>
-</li>
-<li class="">
+: A role-based access model protects Console features, Web Modeler workspaces and collaboration, and Optimize dashboards, reports, and data access.</p>
+<p>Mapping rules and Optimize tenants
+: Mapping rules connect IdP claims (for example groups and attributes) to roles and tenants in Management Identity. Optimize uses these tenants for data and access segmentation.</p>
 <p>Spring profile-based deployment modes
-The active Management Identity deployment modes are selected via Spring profiles (<code>keycloak</code>, <code>oidc</code>). A legacy <code>saas</code> profile remains in code for backward compatibility but is deprecated and no longer used.</p>
-</li>
-<li class="">
-<p>Alignment with Orchestration Cluster Identity model
-Where consistent and possible, Management Identity uses naming and concepts aligned with Orchestration Cluster Identity (users, groups, roles, tenants, mapping rules, authorizations). Details of the shared model and runtime behavior are defined in the Orchestration Cluster Identity architecture doc.</p>
-</li>
-</ul>
+: The active deployment modes are selected via Spring profiles (<code>keycloak</code>, <code>oidc</code>). The legacy <code>saas</code> profile remains in code for backward compatibility but is deprecated and no longer used in current deployments.</p>
+<p>Alignment with Orchestration Cluster Identity concepts
+: Where consistent and useful, Management Identity uses concepts aligned with Orchestration Cluster Identity (users, groups, roles, tenants, mapping rules, authorizations). Runtime-specific semantics remain defined by Orchestration Cluster Identity.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-building-block-view">5. Building block view<a href="#5-building-block-view" class="hash-link" aria-label="Direct link to 5. Building block view" title="Direct link to 5. Building block view" translate="no">​</a></h2>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="51-whitebox-overall-system">5.1 Whitebox overall system<a href="#51-whitebox-overall-system" class="hash-link" aria-label="Direct link to 5.1 Whitebox overall system" title="Direct link to 5.1 Whitebox overall system" translate="no">​</a></h3>
 <!-- -->
@@ -194,8 +184,22 @@ Token validation is handled in the same way as in the <code>keycloak</code> prof
 <li class="">Management Identity API evaluates mapping rules to assign platform roles and tenants based on the claims in the Keycloak token.</li>
 </ol>
 <!-- -->
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="63-machine-to-machine-access-via-keycloak-client-credentials">6.3 Machine-to-machine access via Keycloak (client credentials)<a href="#63-machine-to-machine-access-via-keycloak-client-credentials" class="hash-link" aria-label="Direct link to 6.3 Machine-to-machine access via Keycloak (client credentials)" title="Direct link to 6.3 Machine-to-machine access via Keycloak (client credentials)" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="63-user-login-via-direct-external-oidc-provider-profile-oidc">6.3 User login via direct external OIDC provider (profile <code>oidc</code>)<a href="#63-user-login-via-direct-external-oidc-provider-profile-oidc" class="hash-link" aria-label="Direct link to 63-user-login-via-direct-external-oidc-provider-profile-oidc" title="Direct link to 63-user-login-via-direct-external-oidc-provider-profile-oidc" translate="no">​</a></h3>
+<p>Scenario: a platform user logs into Console, Web Modeler, or Optimize when Management Identity is configured directly against an external OIDC provider (no Keycloak involved).</p>
+<ol>
+<li class="">Browser navigates to Console, Web Modeler, or Optimize.</li>
+<li class="">The application redirects the browser directly to the external OIDC provider.</li>
+<li class="">The user authenticates with the enterprise IdP.</li>
+<li class="">The external OIDC provider issues an authorization code and the application exchanges it for tokens.</li>
+<li class="">The application calls the Management Identity API with the resulting token.</li>
+<li class=""><code>SmJwtFilter</code> validates the token via the Identity SDK against the configured issuer and JWKS endpoint.</li>
+<li class="">Management Identity evaluates mapping rules and stored assignments in the Management Identity database to resolve platform roles and Optimize tenants.</li>
+<li class="">A session is established and the requested view is rendered.</li>
+</ol>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="64-machine-to-machine-access-via-keycloak-client-credentials">6.4 Machine-to-machine access via Keycloak (client credentials)<a href="#64-machine-to-machine-access-via-keycloak-client-credentials" class="hash-link" aria-label="Direct link to 6.4 Machine-to-machine access via Keycloak (client credentials)" title="Direct link to 6.4 Machine-to-machine access via Keycloak (client credentials)" translate="no">​</a></h3>
 <p>Scenario: an automated service calls the Management Identity API using client credentials against the default Keycloak IdP.</p>
+<p>This is not a typical use case; typical M2M integrations are carried out via orchestration cluster APIs, so OC Identity.</p>
 <ol>
 <li class="">The service requests a JWT access token from Keycloak using the OAuth2 client credentials grant.</li>
 <li class="">Keycloak validates the client credentials and issues an access token.</li>
@@ -204,8 +208,9 @@ Token validation is handled in the same way as in the <code>keycloak</code> prof
 <li class="">Management Identity API resolves the client&#x27;s roles and permissions from the database and processes the authorized request.</li>
 </ol>
 <!-- -->
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="64-machine-to-machine-access-via-external-oidc-provider-client-credentials">6.4 Machine-to-machine access via external OIDC provider (client credentials)<a href="#64-machine-to-machine-access-via-external-oidc-provider-client-credentials" class="hash-link" aria-label="Direct link to 6.4 Machine-to-machine access via external OIDC provider (client credentials)" title="Direct link to 6.4 Machine-to-machine access via external OIDC provider (client credentials)" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="65-machine-to-machine-access-via-external-oidc-provider-client-credentials">6.5 Machine-to-machine access via external OIDC provider (client credentials)<a href="#65-machine-to-machine-access-via-external-oidc-provider-client-credentials" class="hash-link" aria-label="Direct link to 6.5 Machine-to-machine access via external OIDC provider (client credentials)" title="Direct link to 6.5 Machine-to-machine access via external OIDC provider (client credentials)" translate="no">​</a></h3>
 <p>Scenario: an automated service calls the Management Identity API using a token issued directly by an external OIDC provider (no Keycloak involved).</p>
+<p>Note: unlike the Orchestration Cluster-side client support introduced in Camunda 8.8, <code>private_key_jwt</code> client authentication has not yet been ported to Management Identity. The flow described here therefore assumes standard client-credentials authentication at the external IdP.</p>
 <ol>
 <li class="">The service requests a JWT access token directly from the external OIDC provider using the OAuth2 client credentials grant.</li>
 <li class="">The external OIDC provider validates the client credentials and issues an access token.</li>
@@ -214,7 +219,7 @@ Token validation is handled in the same way as in the <code>keycloak</code> prof
 <li class="">Management Identity API evaluates <code>MappingRule</code> entities to resolve the client&#x27;s roles from the database and processes the authorized request.</li>
 </ol>
 <!-- -->
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="65-admin-operations-managing-users-and-roles-keycloak-profile">6.5 Admin operations: managing users and roles (Keycloak profile)<a href="#65-admin-operations-managing-users-and-roles-keycloak-profile" class="hash-link" aria-label="Direct link to 6.5 Admin operations: managing users and roles (Keycloak profile)" title="Direct link to 6.5 Admin operations: managing users and roles (Keycloak profile)" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="66-admin-operations-managing-users-and-roles-keycloak-profile">6.6 Admin operations: managing users and roles (Keycloak profile)<a href="#66-admin-operations-managing-users-and-roles-keycloak-profile" class="hash-link" aria-label="Direct link to 6.6 Admin operations: managing users and roles (Keycloak profile)" title="Direct link to 6.6 Admin operations: managing users and roles (Keycloak profile)" translate="no">​</a></h3>
 <p>Scenario: a platform administrator uses the Management Identity UI to create a new user and assign a role to that user (keycloak profile only).</p>
 <ol>
 <li class="">Administrator logs into the Management Identity UI via the standard OIDC login flow (see 6.1). The <code>AuthController</code> handles the OIDC callback and issues session cookies via <code>CookieService</code>.</li>
@@ -227,23 +232,44 @@ Token validation is handled in the same way as in the <code>keycloak</code> prof
 </ol>
 <!-- -->
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-deployment-view">7. Deployment view<a href="#7-deployment-view" class="hash-link" aria-label="Direct link to 7. Deployment view" title="Direct link to 7. Deployment view" translate="no">​</a></h2>
-<p>Management Identity is a standalone service deployed alongside (but separate from) the Orchestration Cluster in Self-Managed Camunda 8 installations.</p>
+<p>Management Identity-specific aspects:</p>
+<ul>
+<li class="">
+<p>Standalone service
+Management Identity is deployed separately from the Orchestration Cluster in Self-Managed setups.</p>
+</li>
+<li class="">
+<p>Profile-based IdP integration
+Deployment topology depends on the active profile (<code>keycloak</code> or <code>oidc</code>).</p>
+</li>
+<li class="">
+<p>Storage
+Management Identity uses its own PostgreSQL database. In the <code>keycloak</code> profile, Keycloak uses a separate PostgreSQL database for users, sessions, and realm config.</p>
+</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="71-default-self-managed-deployment">7.1 Default Self-Managed deployment<a href="#71-default-self-managed-deployment" class="hash-link" aria-label="Direct link to 7.1 Default Self-Managed deployment" title="Direct link to 7.1 Default Self-Managed deployment" translate="no">​</a></h3>
-<p>In the default configuration, Management Identity is deployed with a bundled Keycloak and a PostgreSQL database. All platform apps (Console, Web Modeler, Optimize) are configured to use this Keycloak instance for OIDC login.</p>
+<p>In the default setup (<code>keycloak</code> profile), Management Identity runs with bundled Keycloak.
+Platform apps authenticate via Keycloak and resolve platform RBAC via Management Identity.</p>
 <!-- -->
 <p>Key points:</p>
 <ul>
-<li class="">Management Identity (Spring Boot API + React UI) and Keycloak are deployed as separate pods/containers; they communicate via the Keycloak Admin REST API.</li>
-<li class="">The Orchestration Cluster (Zeebe, Operate, Tasklist, Orchestration Cluster Identity) is an independent stack that does not depend on Management Identity at runtime.</li>
-<li class="">The Management Identity DB stores tenants, authorizations, and access rules. User, group, role, and client data in the keycloak profile is stored in Keycloak&#x27;s own database.</li>
+<li class="">Management Identity and Keycloak are separate services.</li>
+<li class="">Management Identity stores tenants, authorizations, and access rules in its own DB.</li>
+<li class="">Keycloak stores users, groups, roles, clients, sessions, and realm configuration in its own DB.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="72-external-keycloak-or-oidc-provider">7.2 External Keycloak or OIDC provider<a href="#72-external-keycloak-or-oidc-provider" class="hash-link" aria-label="Direct link to 7.2 External Keycloak or OIDC provider" title="Direct link to 7.2 External Keycloak or OIDC provider" translate="no">​</a></h3>
-<p>Management Identity supports two alternative IdP configurations for enterprise environments:</p>
+<p>For enterprise setups, Management Identity can use:</p>
 <ul>
-<li class="">External Keycloak (still profile <code>keycloak</code>): an existing Keycloak instance is connected instead of the bundled one. Management Identity configures realms and clients in the external Keycloak via the Keycloak Admin REST API.</li>
-<li class="">Direct OIDC mode (profile <code>oidc</code>): Management Identity is connected directly to a generic OIDC provider (for example Okta or Microsoft Entra ID) without Keycloak acting as an intermediary. Users and clients are managed only in the Management Identity DB; role resolution relies on mapping rules.</li>
+<li class="">External Keycloak (profile <code>keycloak</code>), or</li>
+<li class="">Direct external OIDC provider (profile <code>oidc</code>).</li>
 </ul>
+<p>The deployment below shows the direct external OIDC mode (<code>oidc</code> profile).</p>
 <!-- -->
+<p>Key points:</p>
+<ul>
+<li class="">In <code>oidc</code> profile, groups, roles, permissions, mapping rules, and tenants are stored in the Management Identity DB.</li>
+<li class="">There is no Keycloak Admin API synchronization path in direct external OIDC mode.</li>
+</ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-crosscutting-concepts">8. Crosscutting concepts<a href="#8-crosscutting-concepts" class="hash-link" aria-label="Direct link to 8. Crosscutting concepts" title="Direct link to 8. Crosscutting concepts" translate="no">​</a></h2>
 <p>This section only highlights differences or specifics for Management Identity. For shared concepts (RBAC model, mapping rules, tenants, authorization checks), see the <a class="" href="/camunda/pr-preview/pr-50140/architecture/components/identity/identity_architecture_docs/">Orchestration Cluster Identity architecture doc</a>.</p>
 <ul>
@@ -253,6 +279,7 @@ Token validation is handled in the same way as in the <code>keycloak</code> prof
 <li class="">OIDC via Keycloak or external IdP.</li>
 <li class="">Authorization code flow for human users; <code>AuthController</code> handles the OIDC callback and <code>CookieService</code> manages session cookies for browser-based UI access.</li>
 <li class="">Client credentials for platform services and external tools.</li>
+<li class=""><code>private_key_jwt</code> client authentication support introduced for Orchestration Cluster-side clients has not yet been ported to Management Identity.</li>
 <li class="">Token validation in active profiles is performed by <code>SmJwtFilter</code> (a <code>JwtFilter</code> subclass) using the Identity SDK.</li>
 </ul>
 </li>
@@ -341,6 +368,6 @@ Mitigation: mapping rule validation; comprehensive integration tests for common 
 </li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="11-glossary">11. Glossary<a href="#11-glossary" class="hash-link" aria-label="Direct link to 11. Glossary" title="Direct link to 11. Glossary" translate="no">​</a></h2>
-<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td>Management Identity</td><td>Standalone identity service (Self-Managed) for platform-level apps: Console, Web Modeler, and Optimize.</td></tr><tr><td>Orchestration Cluster Identity</td><td>Cluster-embedded identity service for runtime IAM (Zeebe, Operate, Tasklist, Orchestration Cluster APIs). See <a class="" href="/camunda/pr-preview/pr-50140/architecture/components/identity/identity_architecture_docs/">identity_architecture_docs.md</a>.</td></tr><tr><td>Keycloak</td><td>Open-source IdP bundled with Management Identity by default (Spring profile <code>keycloak</code>); also supports external Keycloak or direct OIDC providers.</td></tr><tr><td>Spring profile</td><td>Mechanism used to select deployment mode. Active profiles are <code>keycloak</code> (default) and <code>oidc</code> (external OIDC).</td></tr><tr><td>Platform app</td><td>Applications managed by Management Identity: Console, Web Modeler, Optimize.</td></tr><tr><td>User</td><td>Human principal managed in Keycloak (keycloak profile) or referenced by ID from an external IdP (oidc profile).</td></tr><tr><td>Group</td><td>Named collection of users; stored in Keycloak (keycloak profile) or in <code>GroupRepository</code> (oidc profile).</td></tr><tr><td>Role</td><td>Set of permissions controlling what operations a user or service can perform in platform apps; stored in Keycloak (keycloak profile) or in <code>RoleRepository</code> (oidc profile).</td></tr><tr><td>Client</td><td>OAuth2 client registered in Management Identity representing a platform or external app (for example Optimize backend, Web Modeler backend).</td></tr><tr><td>Tenant (Optimize)</td><td>Logical partition for reporting and data isolation in Optimize. Stored in <code>TenantRepository</code>. Distinct from runtime tenants in Orchestration Cluster Identity.</td></tr><tr><td>Mapping rule</td><td>Entity mapping IdP token claims (for example group names, attributes) to Management Identity roles or Optimize tenants; evaluated by mapping rule services in the <code>oidc</code> profile.</td></tr><tr><td>OIDC</td><td>OpenID Connect; the protocol used for authentication and token issuance between platform apps, IdP, and Management Identity.</td></tr><tr><td>Client credentials grant</td><td>OAuth2 flow for machine-to-machine access; a service authenticates with its client ID and secret to obtain a token.</td></tr><tr><td>Authorization code flow</td><td>OAuth2/OIDC flow for interactive user login via a browser redirect to the IdP.</td></tr><tr><td>JWKS</td><td>JSON Web Key Set; the public key endpoint exposed by Keycloak/IdP, used by JWT filters to validate incoming JWT signatures.</td></tr><tr><td>WebSecurityConfig</td><td>Spring configuration class that defines the security filter chain for the Management Identity API.</td></tr><tr><td>SmJwtFilter</td><td>Self-Managed JWT filter; validates tokens and handles session cookie refresh for browser flows.</td></tr><tr><td>JwtAuthenticationToken</td><td>Spring Security Authentication object set on the <code>SecurityContext</code> after JWT validation.</td></tr></tbody></table></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/../docs/monorepo-docs/architecture/components/identity/management_identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/camunda/pr-preview/pr-50140/architecture/components/identity/references/rp-initiated-logout/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">RP (Relying Party)-initiated logout</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#1-introduction-and-goals" class="table-of-contents__link toc-highlight">1. Introduction and goals</a><ul><li><a href="#11-overview" class="table-of-contents__link toc-highlight">1.1 Overview</a></li><li><a href="#goals" class="table-of-contents__link toc-highlight">Goals</a></li></ul></li><li><a href="#2-constraints" class="table-of-contents__link toc-highlight">2. Constraints</a></li><li><a href="#3-system-context-and-scope" class="table-of-contents__link toc-highlight">3. System context and scope</a><ul><li><a href="#31-business-context" class="table-of-contents__link toc-highlight">3.1 Business context</a></li><li><a href="#32-technical-context" class="table-of-contents__link toc-highlight">3.2 Technical context</a></li></ul></li><li><a href="#4-solution-strategy" class="table-of-contents__link toc-highlight">4. Solution strategy</a></li><li><a href="#5-building-block-view" class="table-of-contents__link toc-highlight">5. Building block view</a><ul><li><a href="#51-whitebox-overall-system" class="table-of-contents__link toc-highlight">5.1 Whitebox overall system</a></li><li><a href="#52-building-blocks-by-deployment-mode" class="table-of-contents__link toc-highlight">5.2 Building blocks by deployment mode</a><ul><li><a href="#521-default-keycloak-deployment-profile-keycloak" class="table-of-contents__link toc-highlight">5.2.1 Default Keycloak deployment (profile <code>keycloak</code>)</a></li><li><a href="#522-external-oidc-deployment-profile-oidc" class="table-of-contents__link toc-highlight">5.2.2 External OIDC deployment (profile <code>oidc</code>)</a></li></ul></li></ul></li><li><a href="#6-runtime-view" class="table-of-contents__link toc-highlight">6. Runtime view</a><ul><li><a href="#61-user-login-via-keycloak-default" class="table-of-contents__link toc-highlight">6.1 User login via Keycloak (default)</a></li><li><a href="#62-user-login-via-external-oidc-idp-keycloak-as-broker" class="table-of-contents__link toc-highlight">6.2 User login via external OIDC IdP (Keycloak as broker)</a></li><li><a href="#63-machine-to-machine-access-via-keycloak-client-credentials" class="table-of-contents__link toc-highlight">6.3 Machine-to-machine access via Keycloak (client credentials)</a></li><li><a href="#64-machine-to-machine-access-via-external-oidc-provider-client-credentials" class="table-of-contents__link toc-highlight">6.4 Machine-to-machine access via external OIDC provider (client credentials)</a></li><li><a href="#65-admin-operations-managing-users-and-roles-keycloak-profile" class="table-of-contents__link toc-highlight">6.5 Admin operations: managing users and roles (Keycloak profile)</a></li></ul></li><li><a href="#7-deployment-view" class="table-of-contents__link toc-highlight">7. Deployment view</a><ul><li><a href="#71-default-self-managed-deployment" class="table-of-contents__link toc-highlight">7.1 Default Self-Managed deployment</a></li><li><a href="#72-external-keycloak-or-oidc-provider" class="table-of-contents__link toc-highlight">7.2 External Keycloak or OIDC provider</a></li></ul></li><li><a href="#8-crosscutting-concepts" class="table-of-contents__link toc-highlight">8. Crosscutting concepts</a></li><li><a href="#9-architectural-decisions" class="table-of-contents__link toc-highlight">9. Architectural decisions</a></li><li><a href="#10-risks-and-technical-debt" class="table-of-contents__link toc-highlight">10. Risks and technical debt</a></li><li><a href="#11-glossary" class="table-of-contents__link toc-highlight">11. Glossary</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td>Management Identity</td><td>Standalone identity service (Self-Managed) for platform-level apps: Console, Web Modeler, and Optimize.</td></tr><tr><td>Orchestration Cluster Identity</td><td>Cluster-embedded identity service for runtime IAM (Zeebe, Operate, Tasklist, Orchestration Cluster APIs). See <a class="" href="/camunda/pr-preview/pr-50140/architecture/components/identity/identity_architecture_docs/">identity_architecture_docs.md</a>.</td></tr><tr><td>Keycloak</td><td>Open-source IdP bundled with Management Identity by default (Spring profile <code>keycloak</code>); also supports external Keycloak or direct OIDC providers.</td></tr><tr><td>Spring profile</td><td>Mechanism used to select deployment mode. Active profiles are <code>keycloak</code> (default) and <code>oidc</code> (external OIDC).</td></tr><tr><td>Platform app</td><td>Applications managed by Management Identity: Console, Web Modeler, Optimize.</td></tr><tr><td>User</td><td>Human principal managed in Keycloak (keycloak profile) or referenced by ID from an external IdP (oidc profile).</td></tr><tr><td>Group</td><td>Named collection of users; stored in Keycloak (keycloak profile) or in <code>GroupRepository</code> (oidc profile).</td></tr><tr><td>Role</td><td>Set of permissions controlling what operations a user or service can perform in platform apps; stored in Keycloak (keycloak profile) or in <code>RoleRepository</code> (oidc profile).</td></tr><tr><td>Client</td><td>OAuth2 client registered in Management Identity representing a platform or external app (for example Optimize backend, Web Modeler backend).</td></tr><tr><td>Tenant (Optimize)</td><td>Logical partition for reporting and data isolation in Optimize. Stored in <code>TenantRepository</code>. Distinct from runtime tenants in Orchestration Cluster Identity.</td></tr><tr><td>Mapping rule</td><td>Entity mapping IdP token claims (for example group names, attributes) to Management Identity roles or Optimize tenants; evaluated by mapping rule services in the <code>oidc</code> profile.</td></tr><tr><td>OIDC</td><td>OpenID Connect; the protocol used for authentication and token issuance between platform apps, IdP, and Management Identity.</td></tr><tr><td>Client credentials grant</td><td>OAuth2 flow for machine-to-machine access; a service authenticates with its client ID and secret to obtain a token.</td></tr><tr><td>Authorization code flow</td><td>OAuth2/OIDC flow for interactive user login via a browser redirect to the IdP.</td></tr><tr><td>JWKS</td><td>JSON Web Key Set; the public key endpoint exposed by Keycloak/IdP, used by JWT filters to validate incoming JWT signatures.</td></tr><tr><td>WebSecurityConfig</td><td>Spring configuration class that defines the security filter chain for the Management Identity API.</td></tr><tr><td>SmJwtFilter</td><td>Self-Managed JWT filter; validates tokens and handles session cookie refresh for browser flows.</td></tr><tr><td>JwtAuthenticationToken</td><td>Spring Security Authentication object set on the <code>SecurityContext</code> after JWT validation.</td></tr></tbody></table></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/../docs/monorepo-docs/architecture/components/identity/management_identity_architecture_docs.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/camunda/pr-preview/pr-50140/architecture/components/identity/references/rp-initiated-logout/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">RP (Relying Party)-initiated logout</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#1-introduction-and-goals" class="table-of-contents__link toc-highlight">1. Introduction and goals</a><ul><li><a href="#11-overview" class="table-of-contents__link toc-highlight">1.1 Overview</a></li><li><a href="#goals" class="table-of-contents__link toc-highlight">Goals</a></li></ul></li><li><a href="#2-constraints" class="table-of-contents__link toc-highlight">2. Constraints</a></li><li><a href="#3-system-context-and-scope" class="table-of-contents__link toc-highlight">3. System context and scope</a><ul><li><a href="#31-business-context" class="table-of-contents__link toc-highlight">3.1 Business context</a></li><li><a href="#32-technical-context" class="table-of-contents__link toc-highlight">3.2 Technical context</a></li></ul></li><li><a href="#4-solution-strategy" class="table-of-contents__link toc-highlight">4. Solution strategy</a></li><li><a href="#5-building-block-view" class="table-of-contents__link toc-highlight">5. Building block view</a><ul><li><a href="#51-whitebox-overall-system" class="table-of-contents__link toc-highlight">5.1 Whitebox overall system</a></li><li><a href="#52-building-blocks-by-deployment-mode" class="table-of-contents__link toc-highlight">5.2 Building blocks by deployment mode</a><ul><li><a href="#521-default-keycloak-deployment-profile-keycloak" class="table-of-contents__link toc-highlight">5.2.1 Default Keycloak deployment (profile <code>keycloak</code>)</a></li><li><a href="#522-external-oidc-deployment-profile-oidc" class="table-of-contents__link toc-highlight">5.2.2 External OIDC deployment (profile <code>oidc</code>)</a></li></ul></li></ul></li><li><a href="#6-runtime-view" class="table-of-contents__link toc-highlight">6. Runtime view</a><ul><li><a href="#61-user-login-via-keycloak-default" class="table-of-contents__link toc-highlight">6.1 User login via Keycloak (default)</a></li><li><a href="#62-user-login-via-external-oidc-idp-keycloak-as-broker" class="table-of-contents__link toc-highlight">6.2 User login via external OIDC IdP (Keycloak as broker)</a></li><li><a href="#63-user-login-via-direct-external-oidc-provider-profile-oidc" class="table-of-contents__link toc-highlight">6.3 User login via direct external OIDC provider (profile <code>oidc</code>)</a></li><li><a href="#64-machine-to-machine-access-via-keycloak-client-credentials" class="table-of-contents__link toc-highlight">6.4 Machine-to-machine access via Keycloak (client credentials)</a></li><li><a href="#65-machine-to-machine-access-via-external-oidc-provider-client-credentials" class="table-of-contents__link toc-highlight">6.5 Machine-to-machine access via external OIDC provider (client credentials)</a></li><li><a href="#66-admin-operations-managing-users-and-roles-keycloak-profile" class="table-of-contents__link toc-highlight">6.6 Admin operations: managing users and roles (Keycloak profile)</a></li></ul></li><li><a href="#7-deployment-view" class="table-of-contents__link toc-highlight">7. Deployment view</a><ul><li><a href="#71-default-self-managed-deployment" class="table-of-contents__link toc-highlight">7.1 Default Self-Managed deployment</a></li><li><a href="#72-external-keycloak-or-oidc-provider" class="table-of-contents__link toc-highlight">7.2 External Keycloak or OIDC provider</a></li></ul></li><li><a href="#8-crosscutting-concepts" class="table-of-contents__link toc-highlight">8. Crosscutting concepts</a></li><li><a href="#9-architectural-decisions" class="table-of-contents__link toc-highlight">9. Architectural decisions</a></li><li><a href="#10-risks-and-technical-debt" class="table-of-contents__link toc-highlight">10. Risks and technical debt</a></li><li><a href="#11-glossary" class="table-of-contents__link toc-highlight">11. Glossary</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
 </body>
 </html>
