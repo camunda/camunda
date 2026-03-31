@@ -61,11 +61,11 @@ test.describe('Identity User Flows', () => {
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=/admin/`,
+      `${relativizePath(Paths.login('admin'))}?next=/admin/`,
     );
 
-    await test.step(`Deleted user cannot access Identity`, async () => {
-      await navigateToApp(page, `identity`);
+    await test.step(`Deleted user cannot access Admin`, async () => {
+      await navigateToApp(page, `admin`);
       await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`admin`));
       await loginPage.expectInvalidCredentialsError();
