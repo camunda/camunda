@@ -46,7 +46,30 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private String externalFormReference;
   private Map<String, String> customHeaders;
   private long creationTimestamp;
+<<<<<<< HEAD:tasklist/importer-850/src/main/java/io/camunda/tasklist/zeebeimport/v850/record/value/UserTaskRecordValueImpl.java
   private int priority;
+=======
+  private Set<String> tags;
+
+  public ZeebeUserTaskDataDto() {}
+
+  @JsonIgnore
+  public OffsetDateTime getDateForDueDate() {
+    if (dueDate == null || dueDate.isBlank()) {
+      return null;
+    }
+    return DateFormatterUtil.getOffsetDateTimeFromIsoZoneDateTimeString(dueDate)
+        .orElseGet(
+            () -> {
+              LOG.debug(
+                  "Unable to parse due date of userTask record with elementId '{}' and userTaskKey '{}': {}. UserTask will be imported without dueDate data.",
+                  elementId,
+                  userTaskKey,
+                  dueDate);
+              return null;
+            });
+  }
+>>>>>>> 6b6ae8f7 (fix: silence log spam for user tasks without due date):optimize/backend/src/main/java/io/camunda/optimize/dto/zeebe/usertask/ZeebeUserTaskDataDto.java
 
   @Override
   public long getUserTaskKey() {
