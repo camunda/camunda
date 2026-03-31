@@ -949,7 +949,7 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
-    void shouldRunDelayedFlushIfNotWaitingForImportersRegardlessOfImporterIndexState(
+    void shouldFlushIfNotWaitingForImportersRegardlessOfImporterIndexState(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
@@ -958,8 +958,7 @@ final class CamundaExporterIT {
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
 
-      // increase bulk size so we flush via delayed flush, adding fewer records than bulk size
-      config.getBulk().setSize(5);
+      config.getBulk().setSize(1);
       // ignore importer state, to export regardless of the importer state
       config.getIndex().setShouldWaitForImporters(false);
 
@@ -976,11 +975,6 @@ final class CamundaExporterIT {
               UserIntent.CREATED);
 
       camundaExporter.export(record);
-
-      // as the importer state is ignored, this should trigger a flush still resulting in the
-      // record being visible in ES/OS
-      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
-
       camundaExporter.close();
 
       // then
