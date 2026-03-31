@@ -984,6 +984,23 @@ class OperateProcessInstancePage {
   getOperationsLogTableProcessInstanceCellCount(): Promise<number> {
     return this.operationsLogTableProcessInstanceCell.count();
   }
+
+  async verifyIncidents(errorTypes: string[], elementId?: string) {
+    if (elementId) {
+      await this.clickOnElementInDiagram(elementId);
+    }
+    await this.clickIncidentsTab();
+    await expect(this.incidentsTab).toContainText(
+      `Incidents${errorTypes.length}`,
+      {
+        timeout: 30000,
+      },
+    );
+    for (const errorType of errorTypes) {
+      const incidentRow = await this.getIncidentRowByErrorType(errorType);
+      await expect(incidentRow).toBeVisible({timeout: 30000});
+    }
+  }
 }
 
 export {OperateProcessInstancePage};

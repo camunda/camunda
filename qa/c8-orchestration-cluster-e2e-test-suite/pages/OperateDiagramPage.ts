@@ -252,7 +252,7 @@ export class OperateDiagramPage {
 
   async verifyStateOverlay(
     flowNodeName: string,
-    state: 'active' | 'canceled' | 'completedEndEvents',
+    state: 'active' | 'incidents' | 'canceled' | 'completedEndEvents',
     tokenAmount?: number,
   ): Promise<void> {
     const stateOverlayFlowNode =
