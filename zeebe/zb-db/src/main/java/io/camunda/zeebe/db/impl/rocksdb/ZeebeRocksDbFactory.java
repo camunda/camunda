@@ -374,14 +374,20 @@ public final class ZeebeRocksDbFactory<
       RocksDB.loadLibrary();
     }
 
-    public static SharedRocksDbResources allocate(final long cacheSize) {
+    public static SharedRocksDbResources allocate(final long memoryLimit) {
       // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM
-      // limit,
-      // with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
+      // limit, with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
       // zeebeRocksDBFactory.
+      // We use the recommended 1/3 as the ratio between the total expected memory utilized and
+      // cache, this could be tweaked; keep in mind we're also caching the total Rocks DB memory
+      // footprint should take into consideration block cache, index and bloom filters, memtables
+      // and blocks pinned by iterators. See:
+      // https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
+      // https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB
+      final long cacheSize = memoryLimit / 3;
       final LRUCache sharedCache = new LRUCache(cacheSize, 8, false, 0.15);
       final WriteBufferManager sharedWbm = new WriteBufferManager(cacheSize / 4, sharedCache);
-      return new SharedRocksDbResources(sharedCache, sharedWbm, cacheSize);
+      return new SharedRocksDbResources(sharedCache, sharedWbm, memoryLimit);
     }
 
     @Override
