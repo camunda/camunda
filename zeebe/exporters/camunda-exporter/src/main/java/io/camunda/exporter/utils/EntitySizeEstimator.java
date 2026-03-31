@@ -31,6 +31,7 @@ public class EntitySizeEstimator {
         final Output output = new Output(countingStream, 8192)) { // 8KB buffer
 
       kryo.writeObject(output, entity);
+      output.flush();
 
       // Optionally reset Kryo to clear internal references after large objects
       kryo.reset();

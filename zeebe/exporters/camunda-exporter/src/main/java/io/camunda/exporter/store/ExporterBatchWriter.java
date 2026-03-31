@@ -42,7 +42,7 @@ public final class ExporterBatchWriter {
   private final Map<ValueType, List<ExportHandler>> handlers;
   private final BiConsumer<String, Error> customErrorHandler;
   private final CamundaExporterMetrics metrics;
-  private long memoryEstimation = 0L;
+  private long totalMemoryEstimate = 0L;
 
   private ExporterBatchWriter(
       final Map<ValueType, List<ExportHandler>> handlers,
@@ -76,13 +76,9 @@ public final class ExporterBatchWriter {
       final Record<?> record, final ExportHandler handler, final String id, final long length) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
+    totalMemoryEstimate += length;
     final ExporterEntity entity =
-        cachedEntities.computeIfAbsent(
-            cacheKey,
-            (k) -> {
-              memoryEstimation += length;
-              return handler.createNewEntity(id);
-            });
+        cachedEntities.computeIfAbsent(cacheKey, (k) -> handler.createNewEntity(id));
 
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
@@ -116,7 +112,7 @@ public final class ExporterBatchWriter {
   }
 
   public int getBatchMemoryEstimateInMb() {
-    return (int) (memoryEstimation / (1024 * 1024));
+    return (int) (totalMemoryEstimate / (1024 * 1024));
   }
 
   private void observeRecordTimestamps() {
@@ -134,10 +130,15 @@ public final class ExporterBatchWriter {
     return cachedEntitiesToFlush.size();
   }
 
+  @VisibleForTesting
+  long getMemoryEstimateInBytes() {
+    return totalMemoryEstimate;
+  }
+
   private void reset() {
     cachedEntities.clear();
     cachedEntitiesToFlush.clear();
-    memoryEstimation = 0;
+    totalMemoryEstimate = 0L;
   }
 
   private long recordSize(final Record<?> record) {
