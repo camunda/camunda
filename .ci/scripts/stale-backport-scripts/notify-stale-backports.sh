@@ -13,10 +13,12 @@
 # Optional env vars:
 #   DRY_RUN            - "true" to skip actual GitHub writes (default: "false")
 #   NOTIFY_ORIGINAL    - "true" to also comment on the original PR (default: "false")
+#   WORKFLOW_RUN_URL   - Full URL of the workflow run that triggered this notification (optional)
 
 set -euo pipefail
 
 DRY_RUN="${DRY_RUN:-false}"
+WORKFLOW_RUN_URL="${WORKFLOW_RUN_URL:-}"
 NOTIFY_ORIGINAL="${NOTIFY_ORIGINAL:-false}"
 RENOTIFY_AFTER_DAYS="${RENOTIFY_AFTER_DAYS:-2}"
 STALE_LABEL="stale-backport"
@@ -70,19 +72,25 @@ while IFS= read -r entry; do
     bp_age_hours=$(jq -r ".[$group_idx].backport_prs[$bp_idx].age_hours" "$TMPDIR_WORK/stale_data.json")
     bp_age_days=$(jq -r ".[$group_idx].backport_prs[$bp_idx].age_days" "$TMPDIR_WORK/stale_data.json")
     bp_is_draft=$(jq -r ".[$group_idx].backport_prs[$bp_idx].is_draft" "$TMPDIR_WORK/stale_data.json")
+    bp_has_conflict=$(jq -r ".[$group_idx].backport_prs[$bp_idx].has_conflict" "$TMPDIR_WORK/stale_data.json")
 
     # Get assignees as space-separated list
     bp_assignees=$(jq -r ".[$group_idx].backport_prs[$bp_idx].assignees // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
     orig_assignees=$(jq -r ".[$group_idx].original_pr_assignees // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
+    orig_approvers=$(jq -r ".[$group_idx].original_pr_approvers // [] | .[]" "$TMPDIR_WORK/stale_data.json" 2>/dev/null || true)
 
-    # Determine who to mention: backport PR assignees > original PR author > original PR assignees
+    # Determine who to mention: backport PR assignees > original PR author (if not bot) > original PR approvers (for bot authors) > original PR assignees
     mentions=""
     if [[ -n "$bp_assignees" ]]; then
       while IFS= read -r assignee; do
         [[ -n "$assignee" ]] && mentions="${mentions}@${assignee} "
       done <<< "$bp_assignees"
-    elif [[ "$orig_author" != "unknown" && ! "$orig_author" =~ ^(backport-action|app/.*)$ ]]; then
+    elif [[ "$orig_author" != "unknown" && ! "$orig_author" =~ ^(backport-action|app/.*) ]]; then
       mentions="@${orig_author} "
+    elif [[ -n "$orig_approvers" ]]; then
+      while IFS= read -r approver; do
+        [[ -n "$approver" ]] && mentions="${mentions}@${approver} "
+      done <<< "$orig_approvers"
     elif [[ -n "$orig_assignees" ]]; then
       while IFS= read -r assignee; do
         [[ -n "$assignee" ]] && mentions="${mentions}@${assignee} "
@@ -98,10 +106,14 @@ while IFS= read -r entry; do
       age_display="${bp_age_hours}h"
     fi
 
-    # Build draft warning
-    draft_note=""
-    if [[ "$bp_is_draft" == "true" ]]; then
-      draft_note=$'\n\n⚠️ This PR is in **draft** state, likely due to merge conflicts that need manual resolution.'
+    # Build state and conflict notes
+    state_note=""
+    if [[ "$bp_has_conflict" == "true" && "$bp_is_draft" == "true" ]]; then
+      state_note=$'\n\n⚠️ This PR is in **draft** state due to merge conflicts — the backport-action could not apply the changes cleanly and manual conflict resolution is required.'
+    elif [[ "$bp_has_conflict" == "true" ]]; then
+      state_note=$'\n\n⚠️ This PR has **merge conflicts** that need to be resolved before it can be merged.'
+    elif [[ "$bp_is_draft" == "true" ]]; then
+      state_note=$'\n\n⚠️ This PR is in **draft** state, likely due to merge conflicts that need manual resolution.'
     fi
 
     # Check for existing bot comment — delete and recreate if older than RENOTIFY_AFTER_DAYS
@@ -142,16 +154,27 @@ ${mentions:+Hey ${mentions}! }This backport PR targeting \`${bp_target}\` has be
 - ✅ **Merge** this PR if it's ready
 - 🔧 **Resolve conflicts** if it's in draft/conflicted state
 - ❌ **Close** this PR if the backport is no longer needed
-${draft_note}
+${state_note}
 
 ---
-<sub>🤖 This comment was added automatically by the stale backport tracker. • <a href=\"https://github.com/${repo}/actions\">View workflow</a></sub>"
+<sub>🤖 This comment was added automatically by the stale backport tracker. • <a href="${WORKFLOW_RUN_URL}">View workflow run</a></sub>"
 
     if [[ "$DRY_RUN" == "true" ]]; then
       echo "🔍 DRY-RUN: Would comment on PR #${bp_num} (${bp_target}, open ${age_display})" >&2
       echo "--- comment body ---" >&2
       echo "$comment_body" >&2
       echo "--- end ---" >&2
+      if [[ "$orig_author" =~ ^app/ && -n "$orig_approvers" ]]; then
+        existing_reviewers=$(gh pr view "$bp_num" --repo "$repo" --json reviewRequests --jq '[.reviewRequests[].login] | join(" ")' 2>/dev/null || true)
+        while IFS= read -r approver; do
+          [[ -n "$approver" ]] || continue
+          if echo " $existing_reviewers " | grep -qF " $approver "; then
+            echo "🔍 DRY-RUN: $approver is already a reviewer on PR #${bp_num}, would skip" >&2
+          else
+            echo "🔍 DRY-RUN: Would add $approver as reviewer on PR #${bp_num}" >&2
+          fi
+        done <<< "$orig_approvers"
+      fi
     else
       echo "💬 Commenting on PR #${bp_num} (${bp_target}, open ${age_display})..." >&2
 
@@ -163,6 +186,20 @@ ${draft_note}
 
       # Add stale-backport label
       gh pr edit "$bp_num" --add-label "$STALE_LABEL" --repo "$repo" 2>/dev/null || true
+
+      # If original PR was authored by a bot, add original PR approvers as reviewers
+      if [[ "$orig_author" =~ ^app/ && -n "$orig_approvers" ]]; then
+        existing_reviewers=$(gh pr view "$bp_num" --repo "$repo" --json reviewRequests --jq '[.reviewRequests[].login] | join(" ")' 2>/dev/null || true)
+        while IFS= read -r approver; do
+          [[ -n "$approver" ]] || continue
+          if echo " $existing_reviewers " | grep -qF " $approver "; then
+            echo "  ⏭️  $approver is already a reviewer on PR #${bp_num}, skipping" >&2
+          else
+            echo "  👥 Adding $approver as reviewer on PR #${bp_num}..." >&2
+            gh pr edit "$bp_num" --add-reviewer "$approver" --repo "$repo" 2>/dev/null || true
+          fi
+        done <<< "$orig_approvers"
+      fi
     fi
 
     notified_count=$((notified_count + 1))
@@ -187,7 +224,7 @@ ${bp_summary}
 Please review and merge/close these backport PRs.
 
 ---
-<sub>🤖 Auto-generated by the stale backport tracker.</sub>"
+<sub>🤖 Auto-generated by the stale backport tracker. • <a href="${WORKFLOW_RUN_URL}">View workflow run</a></sub>"
 
     # Check for existing comment on original PR
     existing_orig_comment=$(gh api --paginate "repos/${repo}/issues/${orig_num}/comments" \
