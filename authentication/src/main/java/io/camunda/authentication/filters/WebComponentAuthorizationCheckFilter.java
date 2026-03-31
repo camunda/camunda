@@ -28,8 +28,7 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(WebComponentAuthorizationCheckFilter.class);
-  private static final List<String> WEB_COMPONENTS =
-      List.of("identity", "admin", "operate", "tasklist");
+  private static final List<String> WEB_COMPONENTS = List.of("admin", "operate", "tasklist");
   private static final List<String> STATIC_RESOURCES =
       List.of(".css", ".js", ".js.map", ".jpg", ".png", "woff2", ".ico", ".svg");
   final UrlPathHelper urlPathHelper = new UrlPathHelper();
@@ -88,7 +87,6 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     // We want to temporarily support both "admin" and "identity" as components for the
     // authorization check, for backwards compatibility.
-    // TODO(#46027): Drop support for "identity" component for 8.10
     if ("admin".equals(component) || "identity".equals(component)) {
       return resourceAccessProvider
               .hasResourceAccessByResourceId(

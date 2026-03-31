@@ -93,31 +93,6 @@ class WebComponentAuthorizationCheckFilterTest {
   }
 
   @Test
-  void shouldAllowAccessToIdentityWithAdminPermission() throws ServletException, IOException {
-    // given
-    when(request.getRequestURI()).thenReturn("/identity/user");
-    when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/identity/user"));
-
-    final var adminAccess = mock(ResourceAccess.class);
-    when(adminAccess.allowed()).thenReturn(true);
-    when(resourceAccessProvider.hasResourceAccessByResourceId(
-            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION), eq("admin")))
-        .thenReturn(adminAccess);
-
-    final var identityAccess = mock(ResourceAccess.class);
-    when(identityAccess.allowed()).thenReturn(false);
-    when(resourceAccessProvider.hasResourceAccessByResourceId(
-            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION), eq("identity")))
-        .thenReturn(identityAccess);
-
-    // when
-    filter.doFilterInternal(request, response, filterChain);
-
-    // then
-    verify(filterChain).doFilter(request, response);
-  }
-
-  @Test
   void shouldDenyAccessToAdminWithoutEitherPermission() throws ServletException, IOException {
     // given
     when(request.getRequestURI()).thenReturn("/admin/user");
@@ -143,10 +118,10 @@ class WebComponentAuthorizationCheckFilterTest {
   }
 
   @Test
-  void shouldDenyAccessToIdentityWithoutEitherPermission() throws ServletException, IOException {
+  void shouldAllowAccessToAdminWithAdminPermission() throws ServletException, IOException {
     // given
-    when(request.getRequestURI()).thenReturn("/identity/user");
-    when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/identity/user"));
+    when(request.getRequestURI()).thenReturn("/admin/user");
+    when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/admin/user"));
 
     final var identityAccess = mock(ResourceAccess.class);
     when(identityAccess.allowed()).thenReturn(false);
@@ -155,7 +130,7 @@ class WebComponentAuthorizationCheckFilterTest {
         .thenReturn(identityAccess);
 
     final var adminAccess = mock(ResourceAccess.class);
-    when(adminAccess.allowed()).thenReturn(false);
+    when(adminAccess.allowed()).thenReturn(true);
     when(resourceAccessProvider.hasResourceAccessByResourceId(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION), eq("admin")))
         .thenReturn(adminAccess);
@@ -164,6 +139,6 @@ class WebComponentAuthorizationCheckFilterTest {
     filter.doFilterInternal(request, response, filterChain);
 
     // then
-    verify(response).sendRedirect("/identity/forbidden");
+    verify(filterChain).doFilter(request, response);
   }
 }
