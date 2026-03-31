@@ -28,6 +28,7 @@ import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -479,18 +480,16 @@ class BackupMultiPartitionTest {
     Awaitility.await()
         .until(
             () -> {
-              client
-                  .getClient()
-                  .newCreateInstanceCommand()
-                  .processDefinitionKey(processKey)
-                  .variables(Map.of(CORRELATION_KEY, CORRELATION_KEY_VALUE_FOR_PARTITION_2))
-                  .send()
-                  .join();
+              final var createInstanceResult =
+                  client
+                      .getClient()
+                      .newCreateInstanceCommand()
+                      .processDefinitionKey(processKey)
+                      .variables(Map.of(CORRELATION_KEY, CORRELATION_KEY_VALUE_FOR_PARTITION_2))
+                      .send()
+                      .join();
               // Ensure process instance is created on partition 1
-              return RecordingExporter.processInstanceCreationRecords()
-                  .withPartitionId(1)
-                  .findFirst()
-                  .isPresent();
+              return 1 == Protocol.decodePartitionId(createInstanceResult.getProcessInstanceKey());
             });
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
