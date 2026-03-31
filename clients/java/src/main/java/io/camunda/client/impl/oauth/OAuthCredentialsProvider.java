@@ -50,6 +50,8 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
 import net.jcip.annotations.ThreadSafe;
@@ -94,6 +96,14 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final String clientAssertionKeystoreKeyAlias;
   private final String clientAssertionKeystoreKeyPassword;
 
+  /**
+   * Tracks an in-flight background token refresh. Uses an AtomicReference to ensure only one
+   * background refresh runs at a time — subsequent requests that see the token is nearing expiry
+   * will observe an existing future and skip triggering another refresh.
+   */
+  private final AtomicReference<CompletableFuture<Void>> backgroundRefresh =
+      new AtomicReference<>();
+
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
     keystorePath = builder.getKeystorePath();
@@ -124,7 +134,8 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   @Override
   public void applyCredentials(final CredentialsApplier applier) throws IOException {
     final CamundaClientCredentials camundaClientCredentials =
-        credentialsCache.computeIfMissingOrInvalid(clientId, this::fetchCredentials);
+        credentialsCache.computeIfMissingOrInvalid(
+            clientId, this::fetchCredentials, this::triggerProactiveRefresh);
 
     String type = camundaClientCredentials.getTokenType();
     if (type == null || type.isEmpty()) {
@@ -156,6 +167,35 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       LOG.error("Failed while fetching credentials: ", e);
       return false;
     }
+  }
+
+  /**
+   * Triggers a background token refresh if one is not already in progress. The refresh runs
+   * asynchronously on a daemon thread, so it does not block the calling thread. If the refresh
+   * fails, the error is logged and the next call to {@link #applyCredentials} will fall back to the
+   * synchronized path when the grace period eventually kicks in.
+   */
+  private void triggerProactiveRefresh() {
+    final CompletableFuture<Void> existing = backgroundRefresh.get();
+    if (existing != null && !existing.isDone()) {
+      // A refresh is already in progress, skip
+      return;
+    }
+
+    final CompletableFuture<Void> refresh =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                LOG.debug("Proactively refreshing OAuth token for client '{}'", clientId);
+                credentialsCache.forceRefreshIfChanged(clientId, this::fetchCredentials);
+              } catch (final IOException e) {
+                LOG.warn(
+                    "Background OAuth token refresh failed for client '{}': {}",
+                    clientId,
+                    e.getMessage());
+              }
+            });
+    backgroundRefresh.set(refresh);
   }
 
   private String createPayload() {

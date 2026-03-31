@@ -106,6 +106,20 @@ public final class OAuthCredentialsCache {
       final String clientId,
       final SupplierWithIO<CamundaClientCredentials> zeebeClientCredentialsConsumer)
       throws IOException {
+    return computeIfMissingOrInvalid(clientId, zeebeClientCredentialsConsumer, null);
+  }
+
+  /**
+   * Returns a valid cached token, or fetches a new one if missing/invalid. When a {@code
+   * proactiveRefreshCallback} is provided and the cached token is valid but nearing expiry (as
+   * determined by {@link CamundaClientCredentials#shouldRefreshProactively()}), the callback is
+   * invoked to trigger a background refresh while the still-valid token is returned immediately.
+   */
+  public synchronized CamundaClientCredentials computeIfMissingOrInvalid(
+      final String clientId,
+      final SupplierWithIO<CamundaClientCredentials> zeebeClientCredentialsConsumer,
+      final Runnable proactiveRefreshCallback)
+      throws IOException {
     final Optional<CamundaClientCredentials> optionalCredentials =
         readCache()
             .get(clientId)
@@ -118,7 +132,12 @@ public final class OAuthCredentialsCache {
                   }
                 });
     if (optionalCredentials.isPresent()) {
-      return optionalCredentials.get();
+      final CamundaClientCredentials credentials = optionalCredentials.get();
+      // Token is valid but nearing expiry — trigger background refresh
+      if (proactiveRefreshCallback != null && credentials.shouldRefreshProactively()) {
+        proactiveRefreshCallback.run();
+      }
+      return credentials;
     } else {
       final CamundaClientCredentials credentials = zeebeClientCredentialsConsumer.get();
       put(clientId, credentials).writeCache();
