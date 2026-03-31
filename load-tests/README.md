@@ -6,10 +6,10 @@ For background on goals, test variants, and observability, see the [reliability 
 
 ## Directory Layout
 
-|   Directory    |                                                                                                Description                                                                                                 |
-|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                                                                                             |
-| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                                                                                                       |
+|   Directory    |                                                                            Description                                                                            |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                                                    |
+| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                                                              |
 | `docs/`        | Additional documentation: [directory structure history](docs/directory-structure.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
 
 ## Quick Start
