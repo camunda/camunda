@@ -16,7 +16,6 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
-import {useIsDesktop} from 'modules/hooks/useIsDesktop';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -50,7 +49,9 @@ function useSelectionAwareIncidentsCount(
     : processIncidentsCount;
 }
 
-const BottomPanelTabs: React.FC = () => {
+const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
+  isHistoryTabVisible,
+}) => {
   const {hasSelection} = useProcessInstanceElementSelection();
   const {data: processInstance} = useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
@@ -61,7 +62,6 @@ const BottomPanelTabs: React.FC = () => {
     processInstanceId ?? '',
     hasIncident,
   );
-  const isDesktop = useIsDesktop();
 
   const tabItems = [
     {
@@ -132,7 +132,7 @@ const BottomPanelTabs: React.FC = () => {
       key: 'instance-history',
       selected: currentPage === 'process-details-instance-history',
       title: 'Instance History',
-      visible: !isDesktop,
+      visible: isHistoryTabVisible,
     },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 

@@ -50,7 +50,10 @@ import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
-import {useIsDesktop} from 'modules/hooks/useIsDesktop';
+import {
+  useMatchMedia,
+  isWidthAboveBreakpoint,
+} from 'modules/hooks/useMatchMedia';
 
 const onProcessInstanceTabTransition = ({
   currentLocation,
@@ -79,7 +82,7 @@ const onProcessInstanceTabTransition = ({
 
 const BottomPanelContent: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const isDesktop = useIsDesktop();
+  const isDesktop = useMatchMedia(isWidthAboveBreakpoint('lg'));
 
   if (isDesktop) {
     const panelMinWidth =
@@ -97,7 +100,7 @@ const BottomPanelContent: React.FC = () => {
           }
         >
           <ElementInstanceLog isPanel />
-          <BottomPanelTabs />
+          <BottomPanelTabs isHistoryTabVisible={false} />
         </ResizablePanel>
       </BottomPanel>
     );
@@ -105,7 +108,7 @@ const BottomPanelContent: React.FC = () => {
 
   return (
     <BottomPanelStacked>
-      <BottomPanelTabs />
+      <BottomPanelTabs isHistoryTabVisible />
     </BottomPanelStacked>
   );
 };
