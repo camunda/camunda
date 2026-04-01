@@ -1,1237 +1,1009 @@
 {
-  "tools": [
-    {
-      "name": "getClusterStatus",
-      "title": "getClusterStatus",
-      "description": "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "getTopology",
-      "title": "getTopology",
-      "description": "Obtains the current topology of the cluster the gateway is part of.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "getIncident",
-      "title": "getIncident",
-      "description": "Get incident by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "incidentKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The assigned key of the incident, which acts as a unique identifier for this incident."
-          }
+  "tools" : [ {
+    "name" : "assignUserTask",
+    "title" : "assignUserTask",
+    "description" : "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "userTaskKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The user task key."
         },
-        "required": [
-          "incidentKey"
-        ]
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "resolveIncident",
-      "title": "resolveIncident",
-      "description": "Resolve incident by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "incidentKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Key of the incident to resolve."
-          }
+        "assignee" : {
+          "type" : "string",
+          "description" : "The assignee for the user task. Provide a value to assign the task to that user, or omit/provide null to unassign the task."
         },
-        "required": [
-          "incidentKey"
-        ]
-      },
-      "annotations": {}
-    },
-    {
-      "name": "searchIncidents",
-      "title": "searchIncidents",
-      "description": "Search for incidents. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "filter": {
-            "type": "object",
-            "properties": {
-              "creationTime": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Date of incident creation.",
-                "default": "##default"
-              },
-              "elementId": {
-                "type": "string",
-                "description": "The element ID associated to this incident.",
-                "default": "##default"
-              },
-              "errorType": {
-                "type": "string",
-                "enum": [
-                  "AD_HOC_SUB_PROCESS_NO_RETRIES",
-                  "CALLED_DECISION_ERROR",
-                  "CALLED_ELEMENT_ERROR",
-                  "CONDITION_ERROR",
-                  "DECISION_EVALUATION_ERROR",
-                  "EXECUTION_LISTENER_NO_RETRIES",
-                  "EXTRACT_VALUE_ERROR",
-                  "FORM_NOT_FOUND",
-                  "IO_MAPPING_ERROR",
-                  "JOB_NO_RETRIES",
-                  "MESSAGE_SIZE_EXCEEDED",
-                  "RESOURCE_NOT_FOUND",
-                  "TASK_LISTENER_NO_RETRIES",
-                  "UNHANDLED_ERROR_EVENT",
-                  "UNKNOWN",
-                  "UNSPECIFIED"
-                ],
-                "description": "Incident error type with a defined set of values.",
-                "default": "##default"
-              },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "The process definition ID associated to this incident.",
-                "default": "##default"
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "The process definition key associated to this incident.",
-                "default": "##default"
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "The process instance key associated to this incident.",
-                "default": "##default"
-              },
-              "state": {
-                "type": "string",
-                "enum": [
-                  "ACTIVE",
-                  "MIGRATED",
-                  "PENDING",
-                  "RESOLVED",
-                  "UNKNOWN"
-                ],
-                "description": "State of this incident with a defined set of values.",
-                "default": "##default"
-              }
+        "assignmentOptions" : {
+          "type" : "object",
+          "properties" : {
+            "action" : {
+              "type" : "string",
+              "description" : "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"assign\"."
             },
-            "description": "The incident search filters.",
-            "default": "##default"
-          },
-          "page": {
-            "type": "object",
-            "properties": {
-              "after": {
-                "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
-                "default": "##default"
-              },
-              "before": {
-                "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
-                "default": "##default"
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from.",
-                "default": "##default"
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request.",
-                "default": "##default"
-              }
-            },
-            "description": "Pagination criteria.",
-            "default": "##default"
-          },
-          "sort": {
-            "description": "Sort field criteria.",
-            "default": "##default",
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "enum": [
-                    "incidentKey",
-                    "processDefinitionKey",
-                    "processDefinitionId",
-                    "processInstanceKey",
-                    "errorType",
-                    "elementId",
-                    "elementInstanceKey",
-                    "creationTime",
-                    "state",
-                    "jobKey",
-                    "tenantId"
-                  ],
-                  "description": "The field to sort by.",
-                  "default": "##default"
-                },
-                "order": {
-                  "type": "string",
-                  "enum": [
-                    "ASC",
-                    "DESC"
-                  ],
-                  "default": "##default"
-                }
-              },
-              "required": [
-                "field"
-              ]
-            }
-          }
-        },
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "getProcessDefinition",
-      "title": "getProcessDefinition",
-      "description": "Get process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "processDefinitionKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The assigned key of the process definition, which acts as a unique identifier for this process definition."
-          }
-        },
-        "required": [
-          "processDefinitionKey"
-        ]
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "getProcessDefinitionXml",
-      "title": "getProcessDefinitionXml",
-      "description": "Get the BPMN XML of a process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "processDefinitionKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The assigned key of the process definition, which acts as a unique identifier for this process definition."
-          }
-        },
-        "required": [
-          "processDefinitionKey"
-        ]
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "searchProcessDefinitions",
-      "title": "searchProcessDefinitions",
-      "description": "Search for process definitions. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "filter": {
-            "type": "object",
-            "properties": {
-              "hasStartForm": {
-                "type": "boolean",
-                "description": "Filter by whether the process definition has a start form.",
-                "default": "##default"
-              },
-              "isLatestVersion": {
-                "type": "boolean",
-                "description": "Filter by whether it is the latest version. When set, pagination is forward-only (use `after`/`limit`), and sorting is limited to `processDefinitionId` and `tenantId`.",
-                "default": "##default"
-              },
-              "name": {
-                "type": "string",
-                "description": "Filter by process definition name.",
-                "default": "##default"
-              },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "Filter by process definition ID (BPMN process ID).",
-                "default": "##default"
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "Filter by process definition key.",
-                "default": "##default"
-              },
-              "resourceName": {
-                "type": "string",
-                "description": "Filter by resource name.",
-                "default": "##default"
-              },
-              "version": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Filter by version number.",
-                "default": "##default"
-              },
-              "versionTag": {
-                "type": "string",
-                "description": "Filter by version tag.",
-                "default": "##default"
-              }
-            },
-            "description": "The process definition search filters.",
-            "default": "##default"
-          },
-          "page": {
-            "type": "object",
-            "properties": {
-              "after": {
-                "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
-                "default": "##default"
-              },
-              "before": {
-                "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
-                "default": "##default"
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from.",
-                "default": "##default"
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request.",
-                "default": "##default"
-              }
-            },
-            "description": "Pagination criteria.",
-            "default": "##default"
-          },
-          "sort": {
-            "description": "Sort field criteria.",
-            "default": "##default",
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "enum": [
-                    "processDefinitionKey",
-                    "name",
-                    "resourceName",
-                    "version",
-                    "versionTag",
-                    "processDefinitionId",
-                    "tenantId"
-                  ],
-                  "description": "The field to sort by.",
-                  "default": "##default"
-                },
-                "order": {
-                  "type": "string",
-                  "enum": [
-                    "ASC",
-                    "DESC"
-                  ],
-                  "default": "##default"
-                }
-              },
-              "required": [
-                "field"
-              ]
-            }
-          }
-        },
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "createProcessInstance",
-      "title": "createProcessInstance",
-      "description": "Create a new process instance of the given process definition. Either a processDefinitionKey or\na processDefinitionId (with an optional processDefinitionVersion) need to be passed.\n\nWhen using the awaitCompletion flag, the tool will wait for the process instance to complete\nand return its result variables. When using awaitCompletion, always include a unique tag\n`mcp-tool:<uniqueId>` which can be used to search for the started process instance in case\nof timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,\nare more likely to time out. You can increase the timeout to wait for completion by defining\na longer requestTimeout.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "awaitCompletion": {
-            "type": "boolean",
-            "description": "Wait for the process instance to complete. If the process instance does not complete within the request timeout limit, a 504 response status will be returned. The process instance will continue to run in the background regardless of the timeout. Disabled by default. ",
-            "default": "##default"
-          },
-          "businessId": {
-            "type": "string",
-            "description": "An optional, user-defined string identifier that identifies the process instance within the scope of a process definition (scoped by tenant). If provided and uniqueness enforcement is enabled, the engine will reject creation if another root process instance with the same business id is already active for the same process definition. Note that any active child process instances with the same business id are not taken into account. ",
-            "default": "##default"
-          },
-          "fetchVariables": {
-            "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned. ",
-            "default": "##default",
-            "type": "array",
-            "items": {
-              "type": "string"
+            "allowOverride" : {
+              "type" : "boolean",
+              "description" : "By default, the task is reassigned if it was already assigned. Set this to false to return an error in such cases. The task must then first be unassigned to be assigned again. Use this when you have users picking from group task queues to prevent race conditions."
             }
           },
-          "processDefinitionId": {
-            "type": "string",
-            "description": "The BPMN process id of the process definition to start an instance of. ",
-            "default": "##default"
-          },
-          "processDefinitionKey": {
-            "type": "string",
-            "description": "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint. ",
-            "default": "##default"
-          },
-          "processDefinitionVersion": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The version of the process. By default, the latest version of the process is used. ",
-            "default": "##default"
-          },
-          "requestTimeout": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied. ",
-            "default": "##default"
-          },
-          "tags": {
-            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
-            "default": "##default",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "tenantId": {
-            "type": "string",
-            "description": "The tenant id of the process definition. If multi-tenancy is enabled, provide the tenant id of the process definition to start a process instance of. If multi-tenancy is disabled, don't provide this parameter. ",
-            "default": "##default"
-          },
-          "variables": {
-            "type": "object",
-            "description": "JSON object that will instantiate the variables for the root variable scope of the process instance. ",
-            "default": "##default"
-          }
-        },
-        "required": []
+          "description" : "Assignment options."
+        }
       },
-      "annotations": {}
+      "required" : [ "userTaskKey" ]
     },
-    {
-      "name": "getProcessInstance",
-      "title": "getProcessInstance",
-      "description": "Get process instance by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "processInstanceKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The assigned key of the process instance, which acts as a unique identifier for this process instance."
+    "annotations" : { }
+  }, {
+    "name" : "createProcessInstance",
+    "title" : "createProcessInstance",
+    "description" : "Create a new process instance of the given process definition. Either a processDefinitionKey or\na processDefinitionId (with an optional processDefinitionVersion) need to be passed.\n\nWhen using the awaitCompletion flag, the tool will wait for the process instance to complete\nand return its result variables. When using awaitCompletion, always include a unique tag\n`mcp-tool:<uniqueId>` which can be used to search for the started process instance in case\nof timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,\nare more likely to time out. You can increase the timeout to wait for completion by defining\na longer requestTimeout.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "awaitCompletion" : {
+          "type" : "boolean",
+          "description" : "Wait for the process instance to complete. If the process instance does not complete within the request timeout limit, a 504 response status will be returned. Disabled by default."
+        },
+        "businessId" : {
+          "type" : "string",
+          "description" : "An optional, user-defined string identifier that identifies the process instance within the scope of a process definition."
+        },
+        "fetchVariables" : {
+          "description" : "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
+          "type" : "array",
+          "items" : {
+            "type" : "string"
           }
         },
-        "required": [
-          "processInstanceKey"
-        ]
+        "processDefinitionId" : {
+          "type" : "string",
+          "description" : "The BPMN process id of the process definition to start an instance of."
+        },
+        "processDefinitionKey" : {
+          "type" : "string",
+          "description" : "The unique key identifying the process definition, for example, returned for a process in the deploy resources endpoint."
+        },
+        "processDefinitionVersion" : {
+          "type" : "integer",
+          "format" : "int32",
+          "description" : "The version of the process. By default, the latest version of the process is used."
+        },
+        "requestTimeout" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied."
+        },
+        "tags" : {
+          "description" : "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length <= 100.",
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "tenantId" : {
+          "type" : "string",
+          "description" : "The tenant id of the process definition. If multi-tenancy is enabled, provide the tenant id of the process definition to start a process instance of."
+        },
+        "variables" : {
+          "type" : "object",
+          "description" : "JSON object that will instantiate the variables for the root variable scope of the process instance."
+        }
       },
-      "annotations": {
-        "readOnlyHint": true
-      }
+      "required" : [ ]
     },
-    {
-      "name": "searchProcessInstances",
-      "title": "searchProcessInstances",
-      "description": "Search for process instances. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "filter": {
-            "type": "object",
-            "properties": {
-              "businessId": {
-                "type": "string",
-                "description": "Filter by business ID.",
-                "default": "##default"
-              },
-              "endDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Filter by end date of the process instance.",
-                "default": "##default"
-              },
-              "hasIncident": {
-                "type": "boolean",
-                "description": "Filter by whether the process instance has an incident.",
-                "default": "##default"
-              },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "Filter by process definition ID (BPMN process ID).",
-                "default": "##default"
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "Filter by process definition key.",
-                "default": "##default"
-              },
-              "processDefinitionName": {
-                "type": "string",
-                "description": "Filter by process definition name.",
-                "default": "##default"
-              },
-              "processDefinitionVersion": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Filter by process definition version.",
-                "default": "##default"
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "Filter by process instance key.",
-                "default": "##default"
-              },
-              "startDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Filter by start date of the process instance.",
-                "default": "##default"
-              },
-              "state": {
-                "type": "string",
-                "enum": [
-                  "ACTIVE",
-                  "COMPLETED",
-                  "TERMINATED"
-                ],
-                "description": "Filter by process instance state.",
-                "default": "##default"
-              },
-              "tags": {
-                "description": "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.",
-                "default": "##default",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "variables": {
-                "description": "Filter by variable values. Each item has a 'name' and 'value' field.",
-                "default": "##default",
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "description": "Name of the variable.",
-                      "default": "##default"
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. ",
-                      "default": "##default"
-                    }
-                  },
-                  "required": [
-                    "name",
-                    "value"
-                  ]
-                }
-              }
-            },
-            "description": "The process instance search filters.",
-            "default": "##default"
-          },
-          "page": {
-            "type": "object",
-            "properties": {
-              "after": {
-                "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
-                "default": "##default"
-              },
-              "before": {
-                "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
-                "default": "##default"
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from.",
-                "default": "##default"
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request.",
-                "default": "##default"
-              }
-            },
-            "description": "Pagination criteria.",
-            "default": "##default"
-          },
-          "sort": {
-            "description": "Sort field criteria.",
-            "default": "##default",
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "enum": [
-                    "processInstanceKey",
-                    "processDefinitionId",
-                    "processDefinitionName",
-                    "processDefinitionVersion",
-                    "processDefinitionVersionTag",
-                    "processDefinitionKey",
-                    "parentProcessInstanceKey",
-                    "parentElementInstanceKey",
-                    "startDate",
-                    "endDate",
-                    "state",
-                    "hasIncident",
-                    "tenantId",
-                    "businessId"
-                  ],
-                  "description": "The field to sort by.",
-                  "default": "##default"
-                },
-                "order": {
-                  "type": "string",
-                  "enum": [
-                    "ASC",
-                    "DESC"
-                  ],
-                  "default": "##default"
-                }
-              },
-              "required": [
-                "field"
-              ]
-            }
-          }
-        },
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
+    "annotations" : { }
+  }, {
+    "name" : "getClusterStatus",
+    "title" : "getClusterStatus",
+    "description" : "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : { },
+      "required" : [ ]
     },
-    {
-      "name": "assignUserTask",
-      "title": "assignUserTask",
-      "description": "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "userTaskKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The user task key."
-          },
-          "assignee": {
-            "type": "string",
-            "description": "The assignee for the user task. Provide a value to assign the task to that user, or omit/provide null to unassign the task."
-          },
-          "assignmentOptions": {
-            "type": "object",
-            "properties": {
-              "action": {
-                "type": "string",
-                "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"assign\". ",
-                "default": "##default"
-              },
-              "allowOverride": {
-                "type": "boolean",
-                "description": "By default, the task is reassigned if it was already assigned. Set this to `false` to return an error in such cases. The task must then first be unassigned to be assigned again. Use this when you have users picking from group task queues to prevent race conditions. ",
-                "default": "##default"
-              }
-            },
-            "description": "Assignment options."
-          }
-        },
-        "required": [
-          "userTaskKey"
-        ]
-      },
-      "annotations": {}
-    },
-    {
-      "name": "getUserTask",
-      "title": "getUserTask",
-      "description": "Get user task by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "userTaskKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The user task key."
-          }
-        },
-        "required": [
-          "userTaskKey"
-        ]
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "searchUserTaskVariables",
-      "title": "searchUserTaskVariables",
-      "description": "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "userTaskKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The user task key."
-          },
-          "filter": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Name of the variable.",
-                "default": "##default"
-              }
-            },
-            "description": "Filter search by the given fields"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "enum": [
-                    "value",
-                    "name",
-                    "tenantId",
-                    "variableKey",
-                    "scopeKey",
-                    "processInstanceKey"
-                  ],
-                  "description": "The field to sort by.",
-                  "default": "##default"
-                },
-                "order": {
-                  "type": "string",
-                  "enum": [
-                    "ASC",
-                    "DESC"
-                  ],
-                  "default": "##default"
-                }
-              },
-              "required": [
-                "field"
-              ]
-            },
-            "description": "Sort criteria"
-          },
-          "page": {
-            "type": "object",
-            "properties": {
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from.",
-                "default": "##default"
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request.",
-                "default": "##default"
-              }
-            },
-            "description": "Pagination criteria"
-          },
-          "truncateValues": {
-            "type": "boolean",
-            "description": "When true (default), long variable values in the response are truncated. When false, full variable values are returned."
-          }
-        },
-        "required": [
-          "userTaskKey"
-        ]
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "searchUserTasks",
-      "title": "searchUserTasks",
-      "description": "Search for user tasks. Variable values in filters need to be in serialized JSON format. Example string value: `\\\"myValue\\\"`. Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "filter": {
-            "type": "object",
-            "properties": {
-              "assignee": {
-                "type": "string",
-                "description": "Filter by assignee.",
-                "default": "##default"
-              },
-              "completionDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Filter by completion date.",
-                "default": "##default"
-              },
-              "creationDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Filter by creation date.",
-                "default": "##default"
-              },
-              "dueDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Filter by due date.",
-                "default": "##default"
-              },
-              "elementId": {
-                "type": "string",
-                "description": "Filter by element ID.",
-                "default": "##default"
-              },
-              "elementInstanceKey": {
-                "type": "string",
-                "description": "Filter by element instance key.",
-                "default": "##default"
-              },
-              "followUpDate": {
-                "type": "object",
-                "properties": {
-                  "from": {
-                    "type": "string",
-                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  },
-                  "to": {
-                    "type": "string",
-                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
-                  }
-                },
-                "description": "Filter by follow-up date.",
-                "default": "##default"
-              },
-              "localVariables": {
-                "description": "Filter by local variables. Each item has a 'name' and 'value' field.",
-                "default": "##default",
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "description": "Name of the variable.",
-                      "default": "##default"
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. ",
-                      "default": "##default"
-                    }
-                  },
-                  "required": [
-                    "name",
-                    "value"
-                  ]
-                }
-              },
-              "name": {
-                "type": "string",
-                "description": "Filter by user task name. Only matches data created with Camunda 8.8 and later.",
-                "default": "##default"
-              },
-              "priority": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Filter by priority.",
-                "default": "##default"
-              },
-              "processDefinitionId": {
-                "type": "string",
-                "description": "Filter by process definition ID.",
-                "default": "##default"
-              },
-              "processDefinitionKey": {
-                "type": "string",
-                "description": "Filter by process definition key.",
-                "default": "##default"
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "Filter by process instance key.",
-                "default": "##default"
-              },
-              "processInstanceVariables": {
-                "description": "Filter by process instance variables. Each item has a 'name' and 'value' field.",
-                "default": "##default",
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "description": "Name of the variable.",
-                      "default": "##default"
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`. Consider appropriate escaping for special characters in JSON strings when constructing filter values. ",
-                      "default": "##default"
-                    }
-                  },
-                  "required": [
-                    "name",
-                    "value"
-                  ]
-                }
-              },
-              "state": {
-                "type": "string",
-                "enum": [
-                  "CREATING",
-                  "CREATED",
-                  "ASSIGNING",
-                  "UPDATING",
-                  "COMPLETING",
-                  "COMPLETED",
-                  "CANCELING",
-                  "CANCELED",
-                  "FAILED"
-                ],
-                "description": "Filter by user task state.",
-                "default": "##default"
-              },
-              "tags": {
-                "description": "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.",
-                "default": "##default",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "userTaskKey": {
-                "type": "string",
-                "description": "Filter by user task key.",
-                "default": "##default"
-              }
-            },
-            "description": "The user task search filters.",
-            "default": "##default"
-          },
-          "page": {
-            "type": "object",
-            "properties": {
-              "after": {
-                "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
-                "default": "##default"
-              },
-              "before": {
-                "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
-                "default": "##default"
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from.",
-                "default": "##default"
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request.",
-                "default": "##default"
-              }
-            },
-            "description": "Pagination criteria.",
-            "default": "##default"
-          },
-          "sort": {
-            "description": "Sort field criteria.",
-            "default": "##default",
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "enum": [
-                    "creationDate",
-                    "completionDate",
-                    "followUpDate",
-                    "dueDate",
-                    "priority",
-                    "name"
-                  ],
-                  "description": "The field to sort by.",
-                  "default": "##default"
-                },
-                "order": {
-                  "type": "string",
-                  "enum": [
-                    "ASC",
-                    "DESC"
-                  ],
-                  "default": "##default"
-                }
-              },
-              "required": [
-                "field"
-              ]
-            }
-          }
-        },
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "getVariable",
-      "title": "getVariable",
-      "description": "Get variable by key. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "variableKey": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The variable key."
-          }
-        },
-        "required": [
-          "variableKey"
-        ]
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
-    },
-    {
-      "name": "searchVariables",
-      "title": "searchVariables",
-      "description": "Search for variables. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "filter": {
-            "type": "object",
-            "properties": {
-              "isTruncated": {
-                "type": "boolean",
-                "description": "Filter by whether the value is truncated.",
-                "default": "##default"
-              },
-              "name": {
-                "type": "string",
-                "description": "Filter by variable name.",
-                "default": "##default"
-              },
-              "processInstanceKey": {
-                "type": "string",
-                "description": "Filter by process instance key.",
-                "default": "##default"
-              },
-              "scopeKey": {
-                "type": "string",
-                "description": "Filter by scope key. The scope key identifies where a variable is directly defined: a process instance key for process-level variables, or an element instance key for local variables (tasks, subprocesses, etc.). Does not match variables inherited from parent scopes.",
-                "default": "##default"
-              },
-              "value": {
-                "type": "string",
-                "description": "Filter by variable value. Values must be in serialized JSON format (e.g., `\"myValue\"` for string value `myValue`). Escape special JSON characters appropriately.",
-                "default": "##default"
-              },
-              "variableKey": {
-                "type": "string",
-                "description": "Filter by variable key.",
-                "default": "##default"
-              }
-            },
-            "description": "The variable search filters.",
-            "default": "##default"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "enum": [
-                    "value",
-                    "name",
-                    "tenantId",
-                    "variableKey",
-                    "scopeKey",
-                    "processInstanceKey"
-                  ],
-                  "description": "The field to sort by.",
-                  "default": "##default"
-                },
-                "order": {
-                  "type": "string",
-                  "enum": [
-                    "ASC",
-                    "DESC"
-                  ],
-                  "default": "##default"
-                }
-              },
-              "required": [
-                "field"
-              ]
-            },
-            "description": "Sort field criteria.",
-            "default": "##default"
-          },
-          "page": {
-            "type": "object",
-            "properties": {
-              "after": {
-                "type": "string",
-                "description": "Use the `endCursor` value from the previous response to fetch the next page of results.",
-                "default": "##default"
-              },
-              "before": {
-                "type": "string",
-                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results.",
-                "default": "##default"
-              },
-              "from": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The index of items to start searching from.",
-                "default": "##default"
-              },
-              "limit": {
-                "type": "integer",
-                "format": "int32",
-                "description": "The maximum number of items to return in one request.",
-                "default": "##default"
-              }
-            },
-            "description": "Pagination criteria.",
-            "default": "##default"
-          },
-          "truncateValues": {
-            "type": "boolean",
-            "description": "If true (default), variable values longer than 8191 characters will be truncated. Set to false to return full values.",
-            "default": "##default"
-          }
-        },
-        "required": []
-      },
-      "annotations": {
-        "readOnlyHint": true
-      }
+    "annotations" : {
+      "readOnlyHint" : true
     }
-  ]
+  }, {
+    "name" : "getIncident",
+    "title" : "getIncident",
+    "description" : "Get incident by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "incidentKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The assigned key of the incident, which acts as a unique identifier for this incident."
+        }
+      },
+      "required" : [ "incidentKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "getProcessDefinition",
+    "title" : "getProcessDefinition",
+    "description" : "Get process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "processDefinitionKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The assigned key of the process definition, which acts as a unique identifier for this process definition."
+        }
+      },
+      "required" : [ "processDefinitionKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "getProcessDefinitionXml",
+    "title" : "getProcessDefinitionXml",
+    "description" : "Get the BPMN XML of a process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "processDefinitionKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The assigned key of the process definition, which acts as a unique identifier for this process definition."
+        }
+      },
+      "required" : [ "processDefinitionKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "getProcessInstance",
+    "title" : "getProcessInstance",
+    "description" : "Get process instance by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "processInstanceKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The assigned key of the process instance, which acts as a unique identifier for this process instance."
+        }
+      },
+      "required" : [ "processInstanceKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "getTopology",
+    "title" : "getTopology",
+    "description" : "Obtains the current topology of the cluster the gateway is part of.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : { },
+      "required" : [ ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "getUserTask",
+    "title" : "getUserTask",
+    "description" : "Get user task by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "userTaskKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The user task key."
+        }
+      },
+      "required" : [ "userTaskKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "getVariable",
+    "title" : "getVariable",
+    "description" : "Get variable by key. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "variableKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The variable key."
+        }
+      },
+      "required" : [ "variableKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "resolveIncident",
+    "title" : "resolveIncident",
+    "description" : "Resolve incident by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "incidentKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "Key of the incident to resolve."
+        }
+      },
+      "required" : [ "incidentKey" ]
+    },
+    "annotations" : { }
+  }, {
+    "name" : "searchIncidents",
+    "title" : "searchIncidents",
+    "description" : "Search for incidents. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "filter" : {
+          "type" : "object",
+          "properties" : {
+            "creationTime" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Date of incident creation.",
+              "default" : "##default"
+            },
+            "elementId" : {
+              "type" : "string",
+              "description" : "The element ID associated to this incident.",
+              "default" : "##default"
+            },
+            "errorType" : {
+              "type" : "string",
+              "enum" : [ "AD_HOC_SUB_PROCESS_NO_RETRIES", "CALLED_DECISION_ERROR", "CALLED_ELEMENT_ERROR", "CONDITION_ERROR", "DECISION_EVALUATION_ERROR", "EXECUTION_LISTENER_NO_RETRIES", "EXTRACT_VALUE_ERROR", "FORM_NOT_FOUND", "IO_MAPPING_ERROR", "JOB_NO_RETRIES", "MESSAGE_SIZE_EXCEEDED", "RESOURCE_NOT_FOUND", "TASK_LISTENER_NO_RETRIES", "UNHANDLED_ERROR_EVENT", "UNKNOWN", "UNSPECIFIED" ],
+              "description" : "Incident error type with a defined set of values.",
+              "default" : "##default"
+            },
+            "processDefinitionId" : {
+              "type" : "string",
+              "description" : "The process definition ID associated to this incident.",
+              "default" : "##default"
+            },
+            "processDefinitionKey" : {
+              "type" : "string",
+              "description" : "The process definition key associated to this incident.",
+              "default" : "##default"
+            },
+            "processInstanceKey" : {
+              "type" : "string",
+              "description" : "The process instance key associated to this incident.",
+              "default" : "##default"
+            },
+            "state" : {
+              "type" : "string",
+              "enum" : [ "ACTIVE", "MIGRATED", "PENDING", "RESOLVED", "UNKNOWN" ],
+              "description" : "State of this incident with a defined set of values.",
+              "default" : "##default"
+            }
+          },
+          "description" : "The incident search filters.",
+          "default" : "##default"
+        },
+        "page" : {
+          "type" : "object",
+          "properties" : {
+            "after" : {
+              "type" : "string"
+            },
+            "before" : {
+              "type" : "string"
+            },
+            "from" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "limit" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "required" : [ "after", "before", "from", "limit" ],
+          "description" : "Pagination criteria.",
+          "default" : "##default"
+        },
+        "sort" : {
+          "description" : "Sort field criteria.",
+          "default" : "##default",
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "field" : {
+                "type" : "string",
+                "enum" : [ "incidentKey", "processDefinitionKey", "processDefinitionId", "processInstanceKey", "errorType", "elementId", "elementInstanceKey", "creationTime", "state", "jobKey", "tenantId" ],
+                "description" : "The field to sort by.",
+                "default" : "##default"
+              },
+              "order" : {
+                "type" : "string",
+                "enum" : [ "ASC", "DESC" ],
+                "description" : "The order in which to sort the related field.",
+                "default" : "ASC"
+              }
+            }
+          }
+        }
+      },
+      "required" : [ ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "searchProcessDefinitions",
+    "title" : "searchProcessDefinitions",
+    "description" : "Search for process definitions. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "filter" : {
+          "type" : "object",
+          "properties" : {
+            "hasStartForm" : {
+              "type" : "boolean",
+              "description" : "Filter by whether the process definition has a start form.",
+              "default" : "##default"
+            },
+            "isLatestVersion" : {
+              "type" : "boolean",
+              "description" : "Filter by whether it is the latest version. When set, pagination is forward-only (use `after`/`limit`), and sorting is limited to `processDefinitionId` and `tenantId`.",
+              "default" : "##default"
+            },
+            "name" : {
+              "type" : "string",
+              "description" : "Filter by process definition name.",
+              "default" : "##default"
+            },
+            "processDefinitionId" : {
+              "type" : "string",
+              "description" : "Filter by process definition ID (BPMN process ID).",
+              "default" : "##default"
+            },
+            "processDefinitionKey" : {
+              "type" : "string",
+              "description" : "Filter by process definition key.",
+              "default" : "##default"
+            },
+            "resourceName" : {
+              "type" : "string",
+              "description" : "Filter by resource name.",
+              "default" : "##default"
+            },
+            "version" : {
+              "type" : "integer",
+              "format" : "int32",
+              "description" : "Filter by version number.",
+              "default" : "##default"
+            },
+            "versionTag" : {
+              "type" : "string",
+              "description" : "Filter by version tag.",
+              "default" : "##default"
+            }
+          },
+          "description" : "The process definition search filters.",
+          "default" : "##default"
+        },
+        "page" : {
+          "type" : "object",
+          "properties" : {
+            "after" : {
+              "type" : "string"
+            },
+            "before" : {
+              "type" : "string"
+            },
+            "from" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "limit" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "required" : [ "after", "before", "from", "limit" ],
+          "description" : "Pagination criteria.",
+          "default" : "##default"
+        },
+        "sort" : {
+          "description" : "Sort field criteria.",
+          "default" : "##default",
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "field" : {
+                "type" : "string",
+                "enum" : [ "processDefinitionKey", "name", "resourceName", "version", "versionTag", "processDefinitionId", "tenantId" ],
+                "description" : "The field to sort by.",
+                "default" : "##default"
+              },
+              "order" : {
+                "type" : "string",
+                "enum" : [ "ASC", "DESC" ],
+                "description" : "The order in which to sort the related field.",
+                "default" : "ASC"
+              }
+            }
+          }
+        }
+      },
+      "required" : [ ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "searchProcessInstances",
+    "title" : "searchProcessInstances",
+    "description" : "Search for process instances. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "filter" : {
+          "type" : "object",
+          "properties" : {
+            "businessId" : {
+              "type" : "string",
+              "description" : "Filter by business ID.",
+              "default" : "##default"
+            },
+            "endDate" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Filter by end date of the process instance.",
+              "default" : "##default"
+            },
+            "hasIncident" : {
+              "type" : "boolean",
+              "description" : "Filter by whether the process instance has an incident.",
+              "default" : "##default"
+            },
+            "processDefinitionId" : {
+              "type" : "string",
+              "description" : "Filter by process definition ID (BPMN process ID).",
+              "default" : "##default"
+            },
+            "processDefinitionKey" : {
+              "type" : "string",
+              "description" : "Filter by process definition key.",
+              "default" : "##default"
+            },
+            "processDefinitionName" : {
+              "type" : "string",
+              "description" : "Filter by process definition name.",
+              "default" : "##default"
+            },
+            "processDefinitionVersion" : {
+              "type" : "integer",
+              "format" : "int32",
+              "description" : "Filter by process definition version.",
+              "default" : "##default"
+            },
+            "processInstanceKey" : {
+              "type" : "string",
+              "description" : "Filter by process instance key.",
+              "default" : "##default"
+            },
+            "startDate" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Filter by start date of the process instance.",
+              "default" : "##default"
+            },
+            "state" : {
+              "type" : "string",
+              "enum" : [ "ACTIVE", "COMPLETED", "TERMINATED" ],
+              "description" : "Filter by process instance state.",
+              "default" : "##default"
+            },
+            "tags" : {
+              "description" : "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.",
+              "default" : "##default",
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            },
+            "variables" : {
+              "description" : "Filter by variable values. Each item has a 'name' and 'value' field.",
+              "default" : "##default",
+              "type" : "array",
+              "items" : {
+                "type" : "object",
+                "properties" : {
+                  "name" : {
+                    "type" : "string",
+                    "description" : "Name of the variable."
+                  },
+                  "value" : {
+                    "type" : "string",
+                    "description" : "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`."
+                  }
+                }
+              }
+            }
+          },
+          "description" : "The process instance search filters.",
+          "default" : "##default"
+        },
+        "page" : {
+          "type" : "object",
+          "properties" : {
+            "after" : {
+              "type" : "string"
+            },
+            "before" : {
+              "type" : "string"
+            },
+            "from" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "limit" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "required" : [ "after", "before", "from", "limit" ],
+          "description" : "Pagination criteria.",
+          "default" : "##default"
+        },
+        "sort" : {
+          "description" : "Sort field criteria.",
+          "default" : "##default",
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "field" : {
+                "type" : "string",
+                "enum" : [ "processInstanceKey", "processDefinitionId", "processDefinitionName", "processDefinitionVersion", "processDefinitionVersionTag", "processDefinitionKey", "parentProcessInstanceKey", "parentElementInstanceKey", "startDate", "endDate", "state", "hasIncident", "tenantId", "businessId" ],
+                "description" : "The field to sort by.",
+                "default" : "##default"
+              },
+              "order" : {
+                "type" : "string",
+                "enum" : [ "ASC", "DESC" ],
+                "description" : "The order in which to sort the related field.",
+                "default" : "ASC"
+              }
+            }
+          }
+        }
+      },
+      "required" : [ ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "searchUserTaskVariables",
+    "title" : "searchUserTaskVariables",
+    "description" : "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "userTaskKey" : {
+          "type" : "integer",
+          "format" : "int64",
+          "description" : "The user task key."
+        },
+        "filter" : {
+          "type" : "object",
+          "properties" : {
+            "name" : {
+              "type" : "string",
+              "description" : "Name of the variable."
+            }
+          },
+          "description" : "Filter search by the given fields"
+        },
+        "sort" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "field" : {
+                "type" : "string",
+                "enum" : [ "value", "name", "tenantId", "variableKey", "scopeKey", "processInstanceKey" ],
+                "description" : "The field to sort by.",
+                "default" : "##default"
+              },
+              "order" : {
+                "type" : "string",
+                "enum" : [ "ASC", "DESC" ],
+                "description" : "The order in which to sort the related field.",
+                "default" : "ASC"
+              }
+            }
+          },
+          "description" : "Sort criteria"
+        },
+        "page" : {
+          "type" : "object",
+          "properties" : {
+            "from" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "limit" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "required" : [ "from", "limit" ],
+          "description" : "Pagination criteria"
+        },
+        "truncateValues" : {
+          "type" : "boolean",
+          "description" : "When true (default), long variable values in the response are truncated. When false, full variable values are returned."
+        }
+      },
+      "required" : [ "userTaskKey" ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "searchUserTasks",
+    "title" : "searchUserTasks",
+    "description" : "Search for user tasks. Variable values in filters need to be in serialized JSON format. Example string value: `\\\"myValue\\\"`. Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "filter" : {
+          "type" : "object",
+          "properties" : {
+            "assignee" : {
+              "type" : "string",
+              "description" : "Filter by assignee.",
+              "default" : "##default"
+            },
+            "completionDate" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Filter by completion date.",
+              "default" : "##default"
+            },
+            "creationDate" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Filter by creation date.",
+              "default" : "##default"
+            },
+            "dueDate" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Filter by due date.",
+              "default" : "##default"
+            },
+            "elementId" : {
+              "type" : "string",
+              "description" : "Filter by element ID.",
+              "default" : "##default"
+            },
+            "elementInstanceKey" : {
+              "type" : "string",
+              "description" : "Filter by element instance key.",
+              "default" : "##default"
+            },
+            "followUpDate" : {
+              "type" : "object",
+              "properties" : {
+                "from" : {
+                  "type" : "string",
+                  "description" : "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                },
+                "to" : {
+                  "type" : "string",
+                  "description" : "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                }
+              },
+              "description" : "Filter by follow-up date.",
+              "default" : "##default"
+            },
+            "localVariables" : {
+              "description" : "Filter by local variables. Each item has a 'name' and 'value' field.",
+              "default" : "##default",
+              "type" : "array",
+              "items" : {
+                "type" : "object",
+                "properties" : {
+                  "name" : {
+                    "type" : "string",
+                    "description" : "Name of the variable."
+                  },
+                  "value" : {
+                    "type" : "string",
+                    "description" : "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`."
+                  }
+                }
+              }
+            },
+            "name" : {
+              "type" : "string",
+              "description" : "Filter by user task name. Only matches data created with Camunda 8.8 and later.",
+              "default" : "##default"
+            },
+            "priority" : {
+              "type" : "integer",
+              "format" : "int32",
+              "description" : "Filter by priority.",
+              "default" : "##default"
+            },
+            "processDefinitionId" : {
+              "type" : "string",
+              "description" : "Filter by process definition ID.",
+              "default" : "##default"
+            },
+            "processDefinitionKey" : {
+              "type" : "string",
+              "description" : "Filter by process definition key.",
+              "default" : "##default"
+            },
+            "processInstanceKey" : {
+              "type" : "string",
+              "description" : "Filter by process instance key.",
+              "default" : "##default"
+            },
+            "processInstanceVariables" : {
+              "description" : "Filter by process instance variables. Each item has a 'name' and 'value' field.",
+              "default" : "##default",
+              "type" : "array",
+              "items" : {
+                "type" : "object",
+                "properties" : {
+                  "name" : {
+                    "type" : "string",
+                    "description" : "Name of the variable."
+                  },
+                  "value" : {
+                    "type" : "string",
+                    "description" : "The value of the variable. Variable values in filters need to be in serialized JSON format. For example, a variable with string value `myValue` can be found with the filter value `\"myValue\"`."
+                  }
+                }
+              }
+            },
+            "state" : {
+              "type" : "string",
+              "enum" : [ "CREATING", "CREATED", "ASSIGNING", "UPDATING", "COMPLETING", "COMPLETED", "CANCELING", "CANCELED", "FAILED" ],
+              "description" : "Filter by user task state.",
+              "default" : "##default"
+            },
+            "tags" : {
+              "description" : "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.",
+              "default" : "##default",
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            },
+            "userTaskKey" : {
+              "type" : "string",
+              "description" : "Filter by user task key.",
+              "default" : "##default"
+            }
+          },
+          "description" : "The user task search filters.",
+          "default" : "##default"
+        },
+        "page" : {
+          "type" : "object",
+          "properties" : {
+            "after" : {
+              "type" : "string"
+            },
+            "before" : {
+              "type" : "string"
+            },
+            "from" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "limit" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "required" : [ "after", "before", "from", "limit" ],
+          "description" : "Pagination criteria.",
+          "default" : "##default"
+        },
+        "sort" : {
+          "description" : "Sort field criteria.",
+          "default" : "##default",
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "field" : {
+                "type" : "string",
+                "enum" : [ "creationDate", "completionDate", "followUpDate", "dueDate", "priority", "name" ],
+                "description" : "The field to sort by.",
+                "default" : "##default"
+              },
+              "order" : {
+                "type" : "string",
+                "enum" : [ "ASC", "DESC" ],
+                "description" : "The order in which to sort the related field.",
+                "default" : "ASC"
+              }
+            }
+          }
+        }
+      },
+      "required" : [ ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  }, {
+    "name" : "searchVariables",
+    "title" : "searchVariables",
+    "description" : "Search for variables. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+    "inputSchema" : {
+      "type" : "object",
+      "properties" : {
+        "filter" : {
+          "type" : "object",
+          "properties" : {
+            "isTruncated" : {
+              "type" : "boolean",
+              "description" : "Filter by whether the value is truncated.",
+              "default" : "##default"
+            },
+            "name" : {
+              "type" : "string",
+              "description" : "Filter by variable name.",
+              "default" : "##default"
+            },
+            "processInstanceKey" : {
+              "type" : "string",
+              "description" : "Filter by process instance key.",
+              "default" : "##default"
+            },
+            "scopeKey" : {
+              "type" : "string",
+              "description" : "Filter by scope key. The scope key identifies where a variable is directly defined: a process instance key for process-level variables, or an element instance key for local variables (tasks, subprocesses, etc.). Does not match variables inherited from parent scopes.",
+              "default" : "##default"
+            },
+            "value" : {
+              "type" : "string",
+              "description" : "Filter by variable value. Values must be in serialized JSON format (e.g., `\"myValue\"` for string value `myValue`). Escape special JSON characters appropriately.",
+              "default" : "##default"
+            },
+            "variableKey" : {
+              "type" : "string",
+              "description" : "Filter by variable key.",
+              "default" : "##default"
+            }
+          },
+          "description" : "The variable search filters.",
+          "default" : "##default"
+        },
+        "page" : {
+          "type" : "object",
+          "properties" : {
+            "after" : {
+              "type" : "string"
+            },
+            "before" : {
+              "type" : "string"
+            },
+            "from" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "limit" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "required" : [ "after", "before", "from", "limit" ],
+          "description" : "Pagination criteria.",
+          "default" : "##default"
+        },
+        "sort" : {
+          "description" : "Sort field criteria.",
+          "default" : "##default",
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "field" : {
+                "type" : "string",
+                "enum" : [ "value", "name", "tenantId", "variableKey", "scopeKey", "processInstanceKey" ],
+                "description" : "The field to sort by.",
+                "default" : "##default"
+              },
+              "order" : {
+                "type" : "string",
+                "enum" : [ "ASC", "DESC" ],
+                "description" : "The order in which to sort the related field.",
+                "default" : "ASC"
+              }
+            }
+          }
+        },
+        "truncateValues" : {
+          "type" : "boolean",
+          "description" : "If true (default), variable values longer than 8191 characters will be truncated. Set to false to return full values.",
+          "default" : "##default"
+        }
+      },
+      "required" : [ ]
+    },
+    "annotations" : {
+      "readOnlyHint" : true
+    }
+  } ]
 }

@@ -17,9 +17,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQuerySortRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
@@ -27,8 +24,6 @@ import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionSearchQuery;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ServiceException;
@@ -37,7 +32,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.http.HttpStatus;
@@ -133,7 +127,7 @@ public class ProcessDefinitionTools {
   private static GeneratedProcessDefinitionSearchQueryRequestStrictContract toStrictContract(
       final McpProcessDefinitionSearchQuery query) {
     return new GeneratedProcessDefinitionSearchQueryRequestStrictContract(
-        toStrictPage(query.page()), toStrictSort(query.sort()), toStrictFilter(query.filter()));
+        query.page(), query.sort(), toStrictFilter(query.filter()));
   }
 
   private static GeneratedProcessDefinitionFilterStrictContract toStrictFilter(
@@ -151,32 +145,6 @@ public class ProcessDefinitionTools {
         null, // tenantId — not exposed in MCP
         filter.processDefinitionKey(),
         filter.hasStartForm());
-  }
-
-  private static GeneratedSearchQueryPageRequestStrictContract toStrictPage(
-      final SearchQueryPageRequest page) {
-    if (page == null) {
-      return null;
-    }
-    return new GeneratedSearchQueryPageRequestStrictContract(
-        page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
-  }
-
-  private static List<GeneratedProcessDefinitionSearchQuerySortRequestStrictContract> toStrictSort(
-      final List<ProcessDefinitionSearchQuerySortRequest> sort) {
-    if (sort == null || sort.isEmpty()) {
-      return null;
-    }
-    return sort.stream()
-        .map(
-            s ->
-                new GeneratedProcessDefinitionSearchQuerySortRequestStrictContract(
-                    GeneratedProcessDefinitionSearchQuerySortRequestStrictContract.FieldEnum
-                        .fromValue(s.getField().getValue()),
-                    s.getOrder() != null
-                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
-                        : null))
-        .toList();
   }
 
   private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {

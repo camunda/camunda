@@ -13,9 +13,6 @@ import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.gateway.mcp.config.CamundaMcpJackson3Module;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -82,10 +79,6 @@ public class CustomMcpModelPropertiesTest {
             Set.of(
                 "isTruncated", "name", "processInstanceKey", "scopeKey", "value", "variableKey")),
         Arguments.argumentSet(
-            "SearchQueryPageRequest",
-            SearchQueryPageRequest.class,
-            Set.of("after", "before", "from", "limit")),
-        Arguments.argumentSet(
             "McpUserTaskFilter",
             McpUserTaskFilter.class,
             Set.of(
@@ -107,12 +100,12 @@ public class CustomMcpModelPropertiesTest {
                 "userTaskKey",
                 "tags")),
         Arguments.argumentSet(
-            "UserTaskAssignmentRequest",
-            UserTaskAssignmentRequest.class,
+            "McpUserTaskAssignmentOptions",
+            McpUserTaskAssignmentOptions.class,
             Set.of("action", "allowOverride")),
         Arguments.argumentSet(
-            "ProcessInstanceCreationInstruction",
-            ProcessInstanceCreationInstruction.class,
+            "McpProcessInstanceCreation",
+            McpProcessInstanceCreation.class,
             Set.of(
                 "awaitCompletion",
                 "fetchVariables",

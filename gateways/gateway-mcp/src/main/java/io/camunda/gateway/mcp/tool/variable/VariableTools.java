@@ -16,28 +16,22 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableKeyFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQuerySortRequestStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpVariableFilter;
 import io.camunda.gateway.mcp.model.McpVariableSearchQuery;
-import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.http.HttpStatus;
@@ -110,7 +104,7 @@ public class VariableTools {
   private static GeneratedVariableSearchQueryRequestStrictContract toStrictContract(
       final McpVariableSearchQuery query) {
     return new GeneratedVariableSearchQueryRequestStrictContract(
-        toStrictPage(query.page()), toStrictSort(query.sort()), toStrictFilter(query.filter()));
+        query.page(), query.sort(), toStrictFilter(query.filter()));
   }
 
   private static GeneratedVariableFilterStrictContract toStrictFilter(
@@ -135,32 +129,6 @@ public class VariableTools {
                 .GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract(
                 filter.processInstanceKey())
             : null);
-  }
-
-  private static GeneratedSearchQueryPageRequestStrictContract toStrictPage(
-      final SearchQueryPageRequest page) {
-    if (page == null) {
-      return null;
-    }
-    return new GeneratedSearchQueryPageRequestStrictContract(
-        page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
-  }
-
-  private static List<GeneratedVariableSearchQuerySortRequestStrictContract> toStrictSort(
-      final List<VariableSearchQuerySortRequest> sort) {
-    if (sort == null || sort.isEmpty()) {
-      return null;
-    }
-    return sort.stream()
-        .map(
-            s ->
-                new GeneratedVariableSearchQuerySortRequestStrictContract(
-                    GeneratedVariableSearchQuerySortRequestStrictContract.FieldEnum.fromValue(
-                        s.getField().getValue()),
-                    s.getOrder() != null
-                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
-                        : null))
-        .toList();
   }
 
   private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
