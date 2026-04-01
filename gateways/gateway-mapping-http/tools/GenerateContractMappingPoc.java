@@ -360,6 +360,39 @@ public class GenerateContractMappingPoc {
     }
     System.out.println(searchRequestDtoCount + " search query request DTOs generated.");
 
+    // Phase 3.7: Generate filter mappers for search query entities.
+    // For each search query with a filter schema, generate a mapper that converts
+    // the generated strict-contract filter DTO to the domain filter object.
+    //
+    // Only entities whose domain filter builders follow the Operations convention
+    // (filter property → builder::fieldOperations) are generated here. Entities
+    // with naming mismatches, old-style list builders, or custom validation needs
+    // are handled by hand-written validator/mapper files (Phase 2 of slice 5).
+    int filterMapperCount = 0;
+    for (var sqe : searchQuerySchemas) {
+      if (sqe.filterSchemaName() == null) continue;
+      if (FILTER_MAPPER_SKIP.contains(sqe.filterSchemaName())) continue;
+
+      final var filterSchema = findSchemaByName(allSchemas, sqe.filterSchemaName());
+      if (filterSchema == null) {
+        System.err.println("WARNING: filter schema '" + sqe.filterSchemaName()
+            + "' not found, skipping filter mapper generation");
+        continue;
+      }
+
+      final var filterFields = toContractFields(filterSchema, allSchemas);
+      final var filterDtoClass = dtoClassName(sqe.filterSchemaName());
+      final var mapperClassName = "Generated" + sqe.filterSchemaName() + "Mapper";
+      final var mapperFile = packagePath.resolve(mapperClassName + ".java");
+      Files.writeString(mapperFile, renderFilterMapper(
+          mapperClassName, sqe, filterSchema, filterDtoClass, filterFields, allSchemas),
+          StandardCharsets.UTF_8);
+      System.out.println("generated: " + ROOT.relativize(mapperFile));
+      filterMapperCount++;
+    }
+    System.out.println(filterMapperCount + " filter mapper(s) generated.");
+    System.out.println(FILTER_MAPPER_SKIP.size() + " filter mapper(s) skipped (need hand-written mappers).");
+
     // Phase 4: Generate universal controllers + ServiceAdapter interfaces.
     // Controllers delegate directly to the service adapter; semantic validation
     // (business rules not expressible in the spec) lives in the hand-written
@@ -4544,5 +4577,217 @@ package %s;
 
     sb.append("}\n");
     return sb.toString();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Phase 3.7 — Filter mapper generation
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /** Known entity name → builder factory method overrides (when naming conventions differ). */
+  private static final Map<String, String> ENTITY_BUILDER_OVERRIDES = Map.of(
+      "ElementInstance", "flowNodeInstance",
+      "GlobalTaskListener", "globalListener"
+  );
+
+  /** Filter schema name → domain filter class name overrides. */
+  private static final Map<String, String> DOMAIN_FILTER_OVERRIDES = Map.of(
+      "ElementInstanceFilter", "FlowNodeInstanceFilter",
+      "GlobalTaskListenerFilter", "GlobalListenerFilter"
+  );
+
+  /**
+   * Filter schema names for which mapper generation is skipped. These entities need hand-written
+   * mapper/validator files because:
+   * <ul>
+   *   <li>The domain builder method names don't match the schema field names (naming mismatch)</li>
+   *   <li>The domain builder uses old-style list methods instead of Operations methods</li>
+   *   <li>No corresponding FilterBuilders factory method exists (statistics/specialized)</li>
+   *   <li>Custom validation logic is required ($Or, variables, tags, enum converters)</li>
+   * </ul>
+   */
+  private static final Set<String> FILTER_MAPPER_SKIP = Set.of(
+      // No FilterBuilders factory method exists
+      "UserTaskVariableFilter",
+      "UserTaskAuditLogFilter",
+      "ClusterVariableSearchQueryFilterRequest",
+      "GlobalTaskListenerSearchQueryFilterRequest",
+      "IncidentProcessInstanceStatisticsByDefinitionFilter",
+      "ProcessDefinitionInstanceVersionStatisticsFilter",
+      // Old-style builders (list methods, no Operations)
+      "DecisionDefinitionFilter",
+      "DecisionInstanceFilter",
+      "DecisionRequirementsFilter",
+      "ProcessDefinitionFilter",
+      // Builder name mismatches + custom validation needed
+      "AuthorizationFilter",
+      "ProcessInstanceFilter",
+      "UserTaskFilter",
+      "IncidentFilter",
+      "VariableFilter",
+      "ElementInstanceFilter",
+      "AuditLogFilter",
+      // Builder method naming mismatches
+      "BatchOperationFilter",
+      "BatchOperationItemFilter",
+      "CorrelatedMessageSubscriptionFilter",
+      "MessageSubscriptionFilter"
+  );
+
+  private static SchemaDef findSchemaByName(
+      Map<SchemaKey, SchemaDef> allSchemas, String schemaName) {
+    for (var entry : allSchemas.entrySet()) {
+      if (entry.getKey().schemaName().equals(schemaName)) {
+        return entry.getValue();
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Determines the Java operation type for a filter property field. This is the type T in
+   * {@code mapToOperations(T.class)} and the type parameter of {@code List<Operation<T>>}
+   * in the domain filter builder method.
+   */
+  private static String determineFilterOperationType(
+      ContractField field, Map<SchemaKey, SchemaDef> allSchemas) {
+    final var protocolType = field.typeInfo() != null ? field.typeInfo().protocolJavaType() : null;
+    if (protocolType == null) return "String";
+
+    final var schemaName = protocolType.substring(protocolType.lastIndexOf('.') + 1);
+
+    // LongKey filter properties (e.g., ProcessInstanceKeyFilterProperty) → Long
+    if (isLongKeyFilterProperty(schemaName)) return "Long";
+
+    // Look up the filter property schema for format detection
+    final var schema = findSchemaByName(allSchemas, schemaName);
+    if (schema != null && "date-time".equals(schema.node().oneOfInlineFormat())) {
+      return "java.time.OffsetDateTime";
+    }
+
+    // Use the primitive type for everything else
+    if (schema != null) {
+      return switch (filterPropertyPrimitiveJavaType(schema.node())) {
+        case "Integer" -> "Integer";
+        case "Long" -> "Long";
+        case "Double" -> "Double";
+        default -> "String";
+      };
+    }
+    return "String";
+  }
+
+  /**
+   * Renders a filter mapper class for a search query entity. The mapper converts a generated
+   * strict-contract filter DTO to the corresponding domain filter object using FilterBuilders.
+   *
+   * <p>Simple scalar and filter property fields are mapped mechanically. Complex fields (nested
+   * object lists, collections of structured types) are skipped with a TODO comment — these are
+   * handled by hand-written validators for entities that need custom mapping logic.
+   */
+  private static String renderFilterMapper(
+      String mapperClassName,
+      SearchQuerySchemaEntry sqe,
+      SchemaDef filterSchema,
+      String filterDtoClass,
+      List<ContractField> filterFields,
+      Map<SchemaKey, SchemaDef> allSchemas) {
+
+    // Domain filter type (e.g., "JobFilter", "FlowNodeInstanceFilter")
+    final var domainFilterName =
+        DOMAIN_FILTER_OVERRIDES.getOrDefault(sqe.filterSchemaName(), sqe.filterSchemaName());
+    final var domainFilterFqn = "io.camunda.search.filter." + domainFilterName;
+
+    // Builder factory method (e.g., "job", "processInstance", "flowNodeInstance")
+    final var builderFactoryMethod =
+        ENTITY_BUILDER_OVERRIDES.getOrDefault(sqe.entityName(), lowerFirst(sqe.entityName()));
+
+    // Method name (e.g., "toJobFilter")
+    final var methodName = "to" + domainFilterName;
+
+    // Build field mapping lines
+    final var fieldMappings = new ArrayList<String>();
+    boolean needsOffsetDateTime = false;
+
+    for (var f : filterFields) {
+      final var id = f.identifier();
+      final var typeInfo = f.typeInfo();
+
+      if (typeInfo != null && typeInfo.selfDeserializing()) {
+        // Filter property field → mapToOperations(Type.class) → builder::fieldOperations
+        final var opType = determineFilterOperationType(f, allSchemas);
+        if (opType.contains("OffsetDateTime")) needsOffsetDateTime = true;
+        fieldMappings.add(
+            "    ofNullable(filter." + id + "())"
+                + ".map(mapToOperations(" + simpleTypeName(opType) + ".class))"
+                + ".ifPresent(builder::" + id + "Operations);");
+      } else if ("Boolean".equals(f.javaType())) {
+        // Boolean field → direct
+        fieldMappings.add(
+            "    ofNullable(filter." + id + "()).ifPresent(builder::" + id + ");");
+      } else if (typeInfo != null
+          && (typeInfo.strictObjectType() || typeInfo.strictListType())) {
+        // Complex nested type (e.g., $or, variables) — requires hand-written validator
+        fieldMappings.add(
+            "    // TODO: " + id + " — complex type, requires validator");
+      } else if (f.javaType().startsWith("java.util.List")
+          || f.javaType().startsWith("java.util.Set")) {
+        // Collection type — requires hand-written validator
+        fieldMappings.add(
+            "    // TODO: " + id + " — collection type, requires validator");
+      } else {
+        // Simple scalar (String, Integer, etc.) — direct value
+        fieldMappings.add(
+            "    ofNullable(filter." + id + "()).ifPresent(builder::" + id + ");");
+      }
+    }
+
+    // Render the class
+    final var sb = new StringBuilder();
+    sb.append("/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n");
+    sb.append(" * one or more contributor license agreements. See the NOTICE file distributed\n");
+    sb.append(" * with this work for additional information regarding copyright ownership.\n");
+    sb.append(" * Licensed under the Camunda License 1.0. You may not use this file\n");
+    sb.append(" * except in compliance with the Camunda License 1.0.\n */\n");
+    sb.append("package ").append(TARGET_PACKAGE).append(";\n\n");
+
+    // Imports
+    sb.append("import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;\n");
+    sb.append("import static java.util.Optional.ofNullable;\n\n");
+    sb.append("import ").append(domainFilterFqn).append(";\n");
+    sb.append("import io.camunda.search.filter.FilterBuilders;\n");
+    sb.append("import jakarta.annotation.Generated;\n");
+    if (needsOffsetDateTime) {
+      sb.append("import java.time.OffsetDateTime;\n");
+    }
+    sb.append("import org.jspecify.annotations.NullMarked;\n");
+    sb.append("import org.jspecify.annotations.Nullable;\n\n");
+
+    // Class
+    sb.append("@Generated(value = \"GenerateContractMappingPoc\")\n");
+    sb.append("@NullMarked\n");
+    sb.append("public final class ").append(mapperClassName).append(" {\n\n");
+    sb.append("  private ").append(mapperClassName).append("() {}\n\n");
+
+    // Mapper method
+    sb.append("  public static ").append(domainFilterName).append(" ").append(methodName).append("(\n");
+    sb.append("      @Nullable final ").append(filterDtoClass).append(" filter) {\n");
+    sb.append("    if (filter == null) {\n");
+    sb.append("      return FilterBuilders.").append(builderFactoryMethod).append("().build();\n");
+    sb.append("    }\n");
+    sb.append("    final var builder = FilterBuilders.").append(builderFactoryMethod).append("();\n");
+    for (var mapping : fieldMappings) {
+      sb.append(mapping).append("\n");
+    }
+    sb.append("    return builder.build();\n");
+    sb.append("  }\n");
+    sb.append("}\n");
+
+    return sb.toString();
+  }
+
+  /** Returns the simple (unqualified) class name from a potentially qualified type name. */
+  private static String simpleTypeName(String type) {
+    final int lastDot = type.lastIndexOf('.');
+    return lastDot >= 0 ? type.substring(lastDot + 1) : type;
   }
 }
