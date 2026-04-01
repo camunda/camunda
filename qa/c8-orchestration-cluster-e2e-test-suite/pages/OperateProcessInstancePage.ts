@@ -990,12 +990,7 @@ class OperateProcessInstancePage {
       await this.clickOnElementInDiagram(elementId);
     }
     await this.clickIncidentsTab();
-    await expect(this.incidentsTab).toContainText(
-      `Incidents${errorTypes.length}`,
-      {
-        timeout: 30000,
-      },
-    );
+    await this.verifyIncidentCount(errorTypes.length);
     for (const errorType of errorTypes) {
       const incidentRow = await this.getIncidentRowByErrorType(errorType);
       await expect(incidentRow).toBeVisible({timeout: 30000});
