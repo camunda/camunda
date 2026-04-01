@@ -1,7 +1,8 @@
 ### =============================================
 ### AI Agent Connector E2E Tests (OpenAI)
 ### =============================================
-### Flow: Auth -> Deploy -> Start -> Wait for AI -> Assign -> Complete -> Assert COMPLETED
+### Test 1: Auth -> Deploy -> Start -> Wait for AI -> Validate -> Assign -> Complete (satisfied) -> Assert COMPLETED
+### Test 2: Start -> Wait for AI -> Reject (not satisfied + feedback) -> Wait for AI (re-process) -> Accept -> Assert COMPLETED
 
 
 ### Step 1: Get Bearer token (Keycloak client_credentials)
@@ -380,5 +381,448 @@ Accept: application/json
     client.assert(response.body.state === "COMPLETED",
       "Expected state COMPLETED but got " + response.body.state);
     client.log("Process instance " + response.body.processInstanceKey + " completed successfully");
+  });
+%}
+
+
+### =============================================
+### TEST 2: Feedback Loop - User Rejects AI Response
+### =============================================
+### Flow: Start -> Wait for AI -> Reject (not satisfied) -> Wait for AI (re-process) -> Accept -> Assert COMPLETED
+
+
+### Step 10: Start new process instance (feedback loop test)
+# @name start-process-instance-2
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionKey": "{{PROCESS_DEFINITION_KEY}}",
+  "variables": {},
+  "tenantId": "<default>"
+}
+
+> {%
+  client.test("Process instance 2 creation is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response contains process instance key (test 2)", function () {
+    client.assert(response.body.processInstanceKey !== undefined, "processInstanceKey not found");
+    client.global.set("PROCESS_INSTANCE_KEY_2", response.body.processInstanceKey);
+    client.log("Process instance key (test 2): " + response.body.processInstanceKey);
+  });
+%}
+
+
+### Step 11a: Wait for AI Agent + Search user tasks (attempt 1)
+# @name search-user-task-2-attempt-1
+< {%
+  import {wait} from "../js/wait"
+  wait(20)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  client.test("User task search 2 (attempt 1) is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  if (response.body.items && response.body.items.length > 0) {
+    client.global.set("TASK_FOUND_2", "true");
+    client.global.set("USER_TASK_KEY_2", response.body.items[0].userTaskKey);
+    client.log("Task found on attempt 1: " + response.body.items[0].userTaskKey);
+  } else {
+    client.global.set("TASK_FOUND_2", "false");
+    client.log("No task found on attempt 1, will retry...");
+  }
+%}
+
+
+### Step 11b: Wait + Search user tasks (attempt 2 - skip if found)
+# @name search-user-task-2-attempt-2
+< {%
+  import {wait} from "../js/wait"
+  const found = client.global.get("TASK_FOUND_2");
+  if (found !== "true") {
+    wait(20)
+  }
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  const alreadyFound = client.global.get("TASK_FOUND_2");
+  if (alreadyFound === "true") {
+    client.test("User task search 2 (attempt 2) - skipped, already found", function () {
+      client.assert(true, "Skipped");
+    });
+  } else {
+    client.test("User task search 2 (attempt 2) is successful", function () {
+      client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+
+    if (response.body.items && response.body.items.length > 0) {
+      client.global.set("TASK_FOUND_2", "true");
+      client.global.set("USER_TASK_KEY_2", response.body.items[0].userTaskKey);
+      client.log("Task found on attempt 2: " + response.body.items[0].userTaskKey);
+    } else {
+      client.global.set("TASK_FOUND_2", "false");
+      client.log("No task found on attempt 2, will retry...");
+    }
+  }
+%}
+
+
+### Step 11c: Wait + Search user tasks (attempt 3 - final)
+# @name search-user-task-2-attempt-3
+< {%
+  import {wait} from "../js/wait"
+  const found = client.global.get("TASK_FOUND_2");
+  if (found !== "true") {
+    wait(20)
+  }
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  const alreadyFound = client.global.get("TASK_FOUND_2");
+  if (alreadyFound === "true") {
+    client.test("User task search 2 (attempt 3) - skipped, already found", function () {
+      client.assert(true, "Skipped");
+    });
+  } else {
+    client.test("User task search 2 (attempt 3) is successful", function () {
+      client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+
+    client.test("User task 2 should exist after 3 attempts", function () {
+      client.assert(response.body.items && response.body.items.length > 0,
+        "No user task found after 3 search attempts (~60s). The AI Agent connector may have failed or timed out.");
+      client.global.set("TASK_FOUND_2", "true");
+      client.global.set("USER_TASK_KEY_2", response.body.items[0].userTaskKey);
+      client.log("Task found on attempt 3: " + response.body.items[0].userTaskKey);
+    });
+  }
+%}
+
+
+### Step 12: Assign first user task (feedback loop test)
+# @name assign-user-task-2
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY_2}}/assignment
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "assignee": "demo",
+  "allowOverride": true,
+  "action": "assign"
+}
+
+> {%
+  client.test("Assign user task 2 is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+
+### Step 13: Reject AI response - complete with userSatisfied=false and follow-up feedback
+# @name reject-ai-response
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY_2}}/completion
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "variables": {
+    "userSatisfied": false,
+    "followUpInput": "The response is too vague. Please provide more specific details and include concrete examples."
+  },
+  "action": "complete"
+}
+
+> {%
+  client.test("Reject AI response is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+
+### Step 14a: Wait for AI Agent to re-process + Search new user task (attempt 1)
+# @name search-user-task-loop-attempt-1
+< {%
+  import {wait} from "../js/wait"
+  wait(20)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  client.test("User task search loop (attempt 1) is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  if (response.body.items && response.body.items.length > 0) {
+    const newTaskKey = response.body.items[0].userTaskKey;
+    const previousTaskKey = client.global.get("USER_TASK_KEY_2");
+    if (String(newTaskKey) !== String(previousTaskKey)) {
+      client.global.set("TASK_FOUND_LOOP", "true");
+      client.global.set("USER_TASK_KEY_LOOP", newTaskKey);
+      client.log("New task found on attempt 1 after feedback loop: " + newTaskKey);
+    } else {
+      client.global.set("TASK_FOUND_LOOP", "false");
+      client.log("Found same task key as before, AI still processing...");
+    }
+  } else {
+    client.global.set("TASK_FOUND_LOOP", "false");
+    client.log("No task found on attempt 1, will retry...");
+  }
+%}
+
+
+### Step 14b: Wait + Search new user task after loop (attempt 2 - skip if found)
+# @name search-user-task-loop-attempt-2
+< {%
+  import {wait} from "../js/wait"
+  const found = client.global.get("TASK_FOUND_LOOP");
+  if (found !== "true") {
+    wait(20)
+  }
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  const alreadyFound = client.global.get("TASK_FOUND_LOOP");
+  if (alreadyFound === "true") {
+    client.test("User task search loop (attempt 2) - skipped, already found", function () {
+      client.assert(true, "Skipped");
+    });
+  } else {
+    client.test("User task search loop (attempt 2) is successful", function () {
+      client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+
+    if (response.body.items && response.body.items.length > 0) {
+      const newTaskKey = response.body.items[0].userTaskKey;
+      const previousTaskKey = client.global.get("USER_TASK_KEY_2");
+      if (String(newTaskKey) !== String(previousTaskKey)) {
+        client.global.set("TASK_FOUND_LOOP", "true");
+        client.global.set("USER_TASK_KEY_LOOP", newTaskKey);
+        client.log("New task found on attempt 2 after feedback loop: " + newTaskKey);
+      } else {
+        client.global.set("TASK_FOUND_LOOP", "false");
+        client.log("Found same task key as before, AI still processing...");
+      }
+    } else {
+      client.global.set("TASK_FOUND_LOOP", "false");
+      client.log("No task found on attempt 2, will retry...");
+    }
+  }
+%}
+
+
+### Step 14c: Wait + Search new user task after loop (attempt 3 - final)
+# @name search-user-task-loop-attempt-3
+< {%
+  import {wait} from "../js/wait"
+  const found = client.global.get("TASK_FOUND_LOOP");
+  if (found !== "true") {
+    wait(20)
+  }
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "CREATED"
+  },
+  "page": {
+    "from": 0,
+    "limit": 10
+  }
+}
+
+> {%
+  const alreadyFound = client.global.get("TASK_FOUND_LOOP");
+  if (alreadyFound === "true") {
+    client.test("User task search loop (attempt 3) - skipped, already found", function () {
+      client.assert(true, "Skipped");
+    });
+  } else {
+    client.test("User task search loop (attempt 3) is successful", function () {
+      client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+
+    client.test("New user task should exist after feedback loop (3 attempts)", function () {
+      client.assert(response.body.items && response.body.items.length > 0,
+        "No new user task found after feedback loop (~60s). The AI Agent may have failed to re-process after rejection.");
+      const newTaskKey = response.body.items[0].userTaskKey;
+      const previousTaskKey = client.global.get("USER_TASK_KEY_2");
+      client.assert(String(newTaskKey) !== String(previousTaskKey),
+        "Expected a NEW user task after feedback loop, but got the same task key: " + newTaskKey);
+      client.global.set("TASK_FOUND_LOOP", "true");
+      client.global.set("USER_TASK_KEY_LOOP", newTaskKey);
+      client.log("New task found on attempt 3 after feedback loop: " + newTaskKey);
+    });
+  }
+%}
+
+
+### Step 15: Assign new user task after feedback loop
+# @name assign-user-task-loop
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY_LOOP}}/assignment
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "assignee": "demo",
+  "allowOverride": true,
+  "action": "assign"
+}
+
+> {%
+  client.test("Assign user task after feedback loop is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+
+### Step 16: Accept AI response - complete with userSatisfied=true
+# @name accept-ai-response-after-loop
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/user-tasks/{{USER_TASK_KEY_LOOP}}/completion
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "variables": {
+    "userSatisfied": true
+  },
+  "action": "complete"
+}
+
+> {%
+  client.test("Accept AI response after feedback loop is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+
+### Step 17: Assert process instance 2 is COMPLETED
+# @name assert-process-2-completed
+< {%
+  import {wait} from "../js/wait"
+  wait(20)
+%}
+GET {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_2}}
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Get process instance 2 is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Process instance 2 is COMPLETED after feedback loop", function () {
+    client.assert(response.body.state === "COMPLETED",
+      "Expected state COMPLETED but got " + response.body.state);
+    client.log("Process instance " + response.body.processInstanceKey + " completed successfully after feedback loop");
   });
 %}
