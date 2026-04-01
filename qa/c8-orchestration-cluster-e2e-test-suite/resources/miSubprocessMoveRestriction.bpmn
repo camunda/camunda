@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_miRestriction" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="1.0">
+  <bpmn:process id="miSubprocessRestriction" name="MI Subprocess Move Restriction" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_restriction">
+      <bpmn:outgoing>Flow_r_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="ForkGW_restriction" name="Fork">
+      <bpmn:incoming>Flow_r_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_r_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_r_3</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="OuterTask_restriction" name="Outer Task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="miRestrictionOuterTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_r_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_r_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:subProcess id="MISubprocess_restriction" name="MI Subprocess">
+      <bpmn:incoming>Flow_r_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_r_5</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="SubStart_restriction">
+        <bpmn:outgoing>SubFlow_r_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="SubTaskA_restriction" name="Inner Task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="miRestrictionInnerTask" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_r_1</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_r_2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SubEnd_restriction">
+        <bpmn:incoming>SubFlow_r_2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SubFlow_r_1" sourceRef="SubStart_restriction" targetRef="SubTaskA_restriction" />
+      <bpmn:sequenceFlow id="SubFlow_r_2" sourceRef="SubTaskA_restriction" targetRef="SubEnd_restriction" />
+    </bpmn:subProcess>
+    <bpmn:parallelGateway id="JoinGW_restriction" name="Join">
+      <bpmn:incoming>Flow_r_4</bpmn:incoming>
+      <bpmn:incoming>Flow_r_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_r_6</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="EndEvent_restriction">
+      <bpmn:incoming>Flow_r_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_r_1" sourceRef="StartEvent_restriction" targetRef="ForkGW_restriction" />
+    <bpmn:sequenceFlow id="Flow_r_2" sourceRef="ForkGW_restriction" targetRef="OuterTask_restriction" />
+    <bpmn:sequenceFlow id="Flow_r_3" sourceRef="ForkGW_restriction" targetRef="MISubprocess_restriction" />
+    <bpmn:sequenceFlow id="Flow_r_4" sourceRef="OuterTask_restriction" targetRef="JoinGW_restriction" />
+    <bpmn:sequenceFlow id="Flow_r_5" sourceRef="MISubprocess_restriction" targetRef="JoinGW_restriction" />
+    <bpmn:sequenceFlow id="Flow_r_6" sourceRef="JoinGW_restriction" targetRef="EndEvent_restriction" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_restriction">
+    <bpmndi:BPMNPlane id="BPMNPlane_restriction" bpmnElement="miSubprocessRestriction">
+      <bpmndi:BPMNShape id="StartEvent_restriction_di" bpmnElement="StartEvent_restriction">
+        <dc:Bounds x="152" y="272" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ForkGW_restriction_di" bpmnElement="ForkGW_restriction" isMarkerVisible="true">
+        <dc:Bounds x="252" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="259" y="241" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OuterTask_restriction_di" bpmnElement="OuterTask_restriction">
+        <dc:Bounds x="370" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MISubprocess_restriction_di" bpmnElement="MISubprocess_restriction" isExpanded="true">
+        <dc:Bounds x="370" y="360" width="420" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_restriction_di" bpmnElement="SubStart_restriction">
+        <dc:Bounds x="402" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubTaskA_restriction_di" bpmnElement="SubTaskA_restriction">
+        <dc:Bounds x="500" y="420" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_restriction_di" bpmnElement="SubEnd_restriction">
+        <dc:Bounds x="662" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="JoinGW_restriction_di" bpmnElement="JoinGW_restriction" isMarkerVisible="true">
+        <dc:Bounds x="852" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="860" y="241" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_restriction_di" bpmnElement="EndEvent_restriction">
+        <dc:Bounds x="962" y="272" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_r_1_di" bpmnElement="Flow_r_1">
+        <di:waypoint x="188" y="290" />
+        <di:waypoint x="252" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_2_di" bpmnElement="Flow_r_2">
+        <di:waypoint x="277" y="265" />
+        <di:waypoint x="277" y="160" />
+        <di:waypoint x="370" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_3_di" bpmnElement="Flow_r_3">
+        <di:waypoint x="277" y="315" />
+        <di:waypoint x="277" y="460" />
+        <di:waypoint x="370" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_r_1_di" bpmnElement="SubFlow_r_1">
+        <di:waypoint x="438" y="460" />
+        <di:waypoint x="500" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_r_2_di" bpmnElement="SubFlow_r_2">
+        <di:waypoint x="600" y="460" />
+        <di:waypoint x="662" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_4_di" bpmnElement="Flow_r_4">
+        <di:waypoint x="470" y="160" />
+        <di:waypoint x="877" y="160" />
+        <di:waypoint x="877" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_5_di" bpmnElement="Flow_r_5">
+        <di:waypoint x="790" y="460" />
+        <di:waypoint x="877" y="460" />
+        <di:waypoint x="877" y="315" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_6_di" bpmnElement="Flow_r_6">
+        <di:waypoint x="902" y="290" />
+        <di:waypoint x="962" y="290" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
