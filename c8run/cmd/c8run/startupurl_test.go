@@ -2,23 +2,47 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
+	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 )
 
 // We test getBaseCommandSettings indirectly by constructing args and invoking parsing logic.
 
-func TestDefaultStartupUrlUsesDocsForEightNineAndLater(t *testing.T) {
-	settings := buildSettingsWithVersion(t, []string{"c8run", "start"}, "8.9.0")
+func TestShouldUseQuickstartUrlForFirstStartupOnEightNineAndLater(t *testing.T) {
+	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
+
+	settings := buildSettingsWithVersion(t, []string{"c8run", "start"}, "8.9.0", baseDir)
 
 	if settings.StartupUrl != docsStartupURL {
 		t.Fatalf("expected StartupUrl to be docs URL, got %s", settings.StartupUrl)
 	}
 }
 
-func TestDefaultStartupUrlUsesOperateForOlderVersions(t *testing.T) {
-	settings := buildSettingsWithVersion(t, []string{"c8run", "start", "--port", "9090"}, "8.8.0")
+func TestShouldUseOperateUrlAfterQuickstartWasSeen(t *testing.T) {
+	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
+	markerPath := startupurl.MarkerPath(baseDir)
+	if err := startupurl.MarkSeen(markerPath); err != nil {
+		t.Fatalf("failed to create quickstart marker: %v", err)
+	}
+
+	settings := buildSettingsWithVersion(t, []string{"c8run", "start"}, "8.9.0", baseDir)
+
+	expected := "http://localhost:8080/operate"
+	if settings.StartupUrl != expected {
+		t.Fatalf("expected StartupUrl to be %s, got %s", expected, settings.StartupUrl)
+	}
+}
+
+func TestShouldUseOperateUrlForOlderVersions(t *testing.T) {
+	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
+
+	settings := buildSettingsWithVersion(t, []string{"c8run", "start", "--port", "9090"}, "8.8.0", baseDir)
 
 	expected := "http://localhost:9090/operate"
 	if settings.StartupUrl != expected {
@@ -26,17 +50,20 @@ func TestDefaultStartupUrlUsesOperateForOlderVersions(t *testing.T) {
 	}
 }
 
-func TestStartupUrlNotRecomputedWhenProvided(t *testing.T) {
+func TestShouldKeepCustomStartupUrlWhenProvided(t *testing.T) {
+	baseDir := t.TempDir()
+	setUserConfigEnv(t, t.TempDir())
+
 	settings := buildSettingsWithVersion(t, []string{
 		"c8run", "start", "--port", "9090", "--startup-url", "http://example.test/custom",
-	}, "8.9.0")
+	}, "8.9.0", baseDir)
 
 	if settings.StartupUrl != "http://example.test/custom" {
 		t.Fatalf("expected StartupUrl to remain custom value, got %s", settings.StartupUrl)
 	}
 }
 
-func buildSettingsWithVersion(t *testing.T, args []string, camundaVersion string) types.C8RunSettings {
+func buildSettingsWithVersion(t *testing.T, args []string, camundaVersion string, baseDir string) types.C8RunSettings {
 	t.Helper()
 
 	oldArgs := os.Args
@@ -47,8 +74,23 @@ func buildSettingsWithVersion(t *testing.T, args []string, camundaVersion string
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
 	if !startupURLProvided {
 		settings.StartupUrl = createDefaultStartupUrl(&settings, camundaVersion)
 	}
 	return settings
+}
+
+func setUserConfigEnv(t *testing.T, dir string) {
+	t.Helper()
+
+	switch runtime.GOOS {
+	case "windows":
+		t.Setenv("APPDATA", dir)
+	case "darwin":
+		t.Setenv("HOME", dir)
+	default:
+		t.Setenv("XDG_CONFIG_HOME", dir)
+		t.Setenv("HOME", dir)
+	}
 }
