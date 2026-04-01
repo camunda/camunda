@@ -1790,6 +1790,13 @@ jobs:
           since_minutes: "5"
           source_repo: ${{ github.repository }}
           source_sha: ${{ github.sha }}
+          correlation_id: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          c8_version: "8.10"
+          zeebe_version: ${{ needs.alwaysgreen-build-and-push.outputs.image-tag }}
+          operate_version: "SNAPSHOT"
+          tasklist_version: "SNAPSHOT"
+          connectors_version: "SNAPSHOT"
+          optimize_version: "8-SNAPSHOT"
 
       - name: Observe build status
         if: always()

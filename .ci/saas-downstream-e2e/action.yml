@@ -25,6 +25,33 @@ inputs:
     description: "Buffer window in minutes when searching for the new run (clock skew protection)"
     required: false
     default: "5"
+  correlation_id:
+    description: "Correlation id used to trace the downstream run"
+    required: true
+  c8_version:
+    description: "c8Version passed to downstream workflow"
+    required: false
+    default: "8.10"
+  operate_version:
+    description: "operateVersion passed to downstream workflow"
+    required: false
+    default: "SNAPSHOT"
+  tasklist_version:
+    description: "tasklistVersion passed to downstream workflow"
+    required: false
+    default: "SNAPSHOT"
+  connectors_version:
+    description: "connectorsVersion passed to downstream workflow"
+    required: false
+    default: "SNAPSHOT"
+  optimize_version:
+    description: "optimizeVersion passed to downstream workflow"
+    required: false
+    default: "8-SNAPSHOT"
+
+  zeebe_version:
+    description: "zeebeVersion passed to downstream workflow"
+    required: true
 
 outputs:
   dispatch_time:
