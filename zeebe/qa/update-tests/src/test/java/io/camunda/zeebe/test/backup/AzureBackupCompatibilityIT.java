@@ -7,15 +7,11 @@
  */
 package io.camunda.zeebe.test.backup;
 
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import java.util.Map;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.Network;
@@ -31,8 +27,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance, AfterAllCallback {
-  private static final String CONTAINER_NAME =
-      RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
   private static final Network NETWORK = Network.newNetwork();
 
   @Container
@@ -45,44 +39,28 @@ final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance,
   }
 
   @Override
-  public Map<String, String> oldBrokerBackupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars(final String storeBasePath) {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE",
         "AZURE",
         "ZEEBE_BROKER_DATA_BACKUP_AZURE_CONNECTIONSTRING",
         AZURITE.internalConnectionString(),
         "ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH",
-        CONTAINER_NAME);
+        storeBasePath);
   }
 
   @Override
-  public void configureCurrentBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg, final String storeBasePath) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE);
 
     final var azure = backup.getAzure();
     azure.setConnectionString(AZURITE.externalConnectionString());
-    azure.setBasePath(CONTAINER_NAME);
+    azure.setBasePath(storeBasePath);
   }
 
   @Override
   public void afterAll(final ExtensionContext context) {
     NETWORK.close();
-  }
-
-  @AfterEach
-  void cleanUp() {
-    // Clean up blobs from the Azurite container after each test
-    final BlobServiceClient blobServiceClient =
-        new BlobServiceClientBuilder()
-            .connectionString(AZURITE.externalConnectionString())
-            .buildClient();
-
-    final var containerClient = blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
-    if (containerClient.exists()) {
-      containerClient
-          .listBlobs()
-          .forEach(blob -> containerClient.getBlobClient(blob.getName()).delete());
-    }
   }
 }

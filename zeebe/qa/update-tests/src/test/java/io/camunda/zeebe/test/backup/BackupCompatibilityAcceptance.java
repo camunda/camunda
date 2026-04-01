@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
@@ -62,14 +63,14 @@ public interface BackupCompatibilityAcceptance {
    * compatible with 8.8 and earlier. Endpoints should use internal (container-to-container)
    * addresses.
    */
-  Map<String, String> oldBrokerBackupStoreEnvVars();
+  Map<String, String> oldBrokerBackupStoreEnvVars(final String storeBasePath);
 
   /**
    * Configures the backup store on the current version's {@link TestRestoreApp} and {@link
    * TestStandaloneBroker} via the unified {@link Camunda} config. Endpoints should use external
    * (host-accessible) addresses.
    */
-  void configureCurrentBackupStore(Camunda cfg);
+  void configureCurrentBackupStore(Camunda cfg, final String storeBasePath);
 
   /**
    * Optional hook to further customize the old broker container beyond env vars. Implementations
@@ -83,7 +84,8 @@ public interface BackupCompatibilityAcceptance {
   default void shouldRestoreBackupFromPreviousVersion() {
     // given
     final var backupId = 1L;
-    try (final var broker = createOldBroker()) {
+    final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
+    try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
       takeBackup(broker, backupId);
@@ -93,7 +95,7 @@ public interface BackupCompatibilityAcceptance {
     final Path restoredDataDir;
     try (final var restoreApp =
         new TestRestoreApp()
-            .withUnifiedConfig(this::configureCurrentBackupStore)
+            .withUnifiedConfig(cfg -> configureCurrentBackupStore(cfg, storeBasePath))
             .withBackupId(backupId)
             .start()) {
       restoredDataDir = restoreApp.getWorkingDirectory();
@@ -104,21 +106,23 @@ public interface BackupCompatibilityAcceptance {
         .isNotNull();
 
     // then -- start a current-version broker on the restored data and verify the job is available
-    verifyRestoredJobCanBeCompleted(restoredDataDir);
+    verifyRestoredJobCanBeCompleted(restoredDataDir, storeBasePath);
   }
 
   @Test
   default void shouldDeleteBackupFromPreviousVersion() {
     // given
     final var backupId = 1L;
-    try (final var broker = createOldBroker()) {
+    final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
+    try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
       takeBackup(broker, backupId);
     }
 
     try (final var broker =
-        new TestStandaloneBroker().withUnifiedConfig(this::configureCurrentBackupStore)) {
+        new TestStandaloneBroker()
+            .withUnifiedConfig(cfg -> configureCurrentBackupStore(cfg, storeBasePath))) {
       broker.start();
       final var backupActuator = BackupActuator.of(broker);
       Awaitility.await("until backup from previous version is visible")
@@ -159,7 +163,8 @@ public interface BackupCompatibilityAcceptance {
     // second's snapshot captures that old-format checkpoint state
     final var firstBackupId = 1L;
     final var secondBackupId = 2L;
-    try (final var broker = createOldBroker()) {
+    final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
+    try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
       takeBackup(broker, firstBackupId);
@@ -173,7 +178,7 @@ public interface BackupCompatibilityAcceptance {
     final Path restoredDataDir;
     try (final var restoreApp =
         new TestRestoreApp()
-            .withUnifiedConfig(this::configureCurrentBackupStore)
+            .withUnifiedConfig(cfg -> configureCurrentBackupStore(cfg, storeBasePath))
             .withBackupId(secondBackupId)
             .start()) {
       restoredDataDir = restoreApp.getWorkingDirectory();
@@ -181,15 +186,16 @@ public interface BackupCompatibilityAcceptance {
 
     // then -- the current-version broker must deserialize old checkpoint state from the
     // snapshot without errors and replay the remaining log successfully
-    verifyRestoredJobCanBeCompleted(restoredDataDir);
+    verifyRestoredJobCanBeCompleted(restoredDataDir, storeBasePath);
   }
 
   /**
    * Starts a current-version broker on the restored data directory and verifies that the service
    * task job created before the backup can be activated and completed.
    */
-  private void verifyRestoredJobCanBeCompleted(final Path restoredDataDir) {
-    try (final var broker = createCurrentBroker(restoredDataDir)) {
+  private void verifyRestoredJobCanBeCompleted(
+      final Path restoredDataDir, final String storeBasePath) {
+    try (final var broker = createCurrentBroker(restoredDataDir, storeBasePath)) {
       broker.start();
       try (final var client = broker.newClientBuilder().build()) {
         // The broker needs time to replay the log after starting on restored data,
@@ -299,7 +305,7 @@ public interface BackupCompatibilityAcceptance {
             });
   }
 
-  private ZeebeContainer createOldBroker() {
+  private ZeebeContainer createOldBroker(final String storeBasePath) {
     final var broker =
         new ZeebeContainer(
                 DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion()))
@@ -310,7 +316,7 @@ public interface BackupCompatibilityAcceptance {
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     // Apply backup store specific env vars
-    oldBrokerBackupStoreEnvVars().forEach(broker::withEnv);
+    oldBrokerBackupStoreEnvVars(storeBasePath).forEach(broker::withEnv);
 
     // Allow implementations to add bind mounts, dependencies, etc.
     customizeOldBroker(broker);
@@ -319,9 +325,9 @@ public interface BackupCompatibilityAcceptance {
   }
 
   @SuppressWarnings("resource")
-  private TestStandaloneBroker createCurrentBroker(final Path dataDir) {
+  private TestStandaloneBroker createCurrentBroker(final Path dataDir, final String storeBasePath) {
     return new TestStandaloneBroker()
-        .withUnifiedConfig(this::configureCurrentBackupStore)
+        .withUnifiedConfig(cfg -> configureCurrentBackupStore(cfg, storeBasePath))
         .withUnifiedConfig(cfg -> cfg.getSystem().getUpgrade().setEnableVersionCheck(false))
         .withWorkingDirectory(dataDir);
   }

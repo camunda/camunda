@@ -16,15 +16,12 @@ import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import java.time.Duration;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
-import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Testcontainers
 @ZeebeIntegration
@@ -59,10 +56,11 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   }
 
   @Override
-  public Map<String, String> oldBrokerBackupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars(final String storeBasePath) {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE", "S3",
         "ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME,
+        "ZEEBE_BROKER_DATA_BACKUP_S3_BASEPATH", storeBasePath,
         "ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint(),
         "ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region(),
         "ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", MINIO.accessKey(),
@@ -74,11 +72,12 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   }
 
   @Override
-  public void configureCurrentBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg, final String storeBasePath) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.S3);
 
     final var s3 = backup.getS3();
+    s3.setBasePath(storeBasePath);
     s3.setRegion(MINIO.region());
     s3.setSecretKey(MINIO.secretKey());
     s3.setBucketName(BUCKET_NAME);
@@ -90,33 +89,5 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   @Override
   public void afterAll(final ExtensionContext context) {
     NETWORK.close();
-  }
-
-  @AfterEach
-  void cleanupS3Data() {
-    // Clean up objects from the S3 bucket after each test
-    final var config =
-        new Builder()
-            .withBucketName(BUCKET_NAME)
-            .withEndpoint(MINIO.externalEndpoint())
-            .withRegion(MINIO.region())
-            .withCredentials(MINIO.accessKey(), MINIO.secretKey())
-            .withApiCallTimeout(Duration.ofSeconds(25))
-            .forcePathStyleAccess(true)
-            .build();
-
-    try (final var client = S3BackupStore.buildClient(config)) {
-      final var blobs =
-          client.listObjectsV2(req -> req.bucket(BUCKET_NAME)).join().contents().stream()
-              .map(S3Object::key)
-              .map(key -> ObjectIdentifier.builder().key(key).build())
-              .toList();
-
-      if (!blobs.isEmpty()) {
-        client
-            .deleteObjects(req -> req.bucket(BUCKET_NAME).delete(delete -> delete.objects(blobs)))
-            .join();
-      }
-    }
   }
 }
