@@ -2,7 +2,7 @@
 
 This guide provides practical development guidelines for contributors working on the `db/rdbms`
 module. For high-level architectural decisions (ADRs) and a component overview, see the
-[architecture documentation](../../docs/rdbms.md).
+[architecture documentation](../../docs/monorepo-docs/architecture/components/rdbms/rdbms_architecture_docs.md).
 
 ## Table of Contents
 

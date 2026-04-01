@@ -697,7 +697,7 @@ ORDER BY history_cleanup_date LIMIT 1000;
 
 |             Resource              |                                      Location                                       |
 |-----------------------------------|-------------------------------------------------------------------------------------|
-| RDBMS module documentation        | `docs/rdbms.md`                                                                     |
+| RDBMS module documentation        | `docs/monorepo-docs/architecture/components/rdbms/rdbms_architecture_docs.md`       |
 | Testing strategy                  | `docs/testing.md`                                                                   |
 | Reliability testing (load tests)  | `docs/testing/reliability-testing.md`                                               |
 | ES/OS index templates (source)    | `webapps-schema/src/main/resources/schema/`                                         |

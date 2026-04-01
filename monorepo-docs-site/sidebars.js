@@ -31,6 +31,21 @@ const sidebars = {
           items: [
             {
               type: 'category',
+              label: 'RDBMS',
+              items: [
+                'architecture/components/rdbms/rdbms_architecture_docs',
+                {
+                  type: 'category',
+                  label: 'ADRs',
+                  items: [
+                    'architecture/components/rdbms/adr/use-mybatis-as-orm-framework',
+                    'architecture/components/rdbms/adr/use-liquibase-for-schema-management',
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'category',
               label: 'Orchestration Cluster Identity',
               items: [
                 'architecture/components/identity/identity_architecture_docs',
