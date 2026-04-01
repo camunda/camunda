@@ -1,76 +1,54 @@
-name: "Trigger and watch downstream SaaS E2E workflow"
-description: "Dispatch a repository_dispatch event and wait for the downstream workflow run to complete; writes a link to job summary."
-# See the inputs/outputs definitions below for documentation of purpose, configuration, and usage.
+name: "Trigger + watch SaaS downstream E2E workflow"
+description: "Dispatches repository_dispatch to a downstream repo and waits for the workflow run to complete."
 
 inputs:
   github_token:
-    description: "GitHub token (GitHub App token) with access to dispatch and read Actions runs in the target repo"
+    description: "GitHub token used for dispatch + GH API polling"
     required: true
   target_repo:
-    description: "Owner/repo of the downstream repository (e.g. camunda/c8-cross-component-e2e-tests)"
+    description: "Target repository in owner/repo format"
     required: true
   event_type:
-    description: "repository_dispatch event_type to send"
+    description: "repository_dispatch event_type"
     required: true
   workflow_file:
-    description: "Downstream workflow filename (e.g. playwright_saas_int_deployment_trigger.yml)"
-    required: true
-  source_repo:
-    description: "Source repository (for payload / traceability)"
-    required: true
-  source_sha:
-    description: "Source sha (for payload / traceability)"
+    description: "Downstream workflow file name to watch (e.g. playwright_saas_pr_trigger_monorepo.yml)"
     required: true
   since_minutes:
-    description: "Buffer window in minutes when searching for the new run (clock skew protection)"
-    required: false
-    default: "5"
-  correlation_id:
-    description: "Correlation id used to trace the downstream run"
+    description: "How many minutes back to search for a downstream run"
     required: true
-  c8_version:
-    description: "c8Version passed to downstream workflow"
-    required: false
-    default: "8.10"
-  operate_version:
-    description: "operateVersion passed to downstream workflow"
-    required: false
-    default: "SNAPSHOT"
-  tasklist_version:
-    description: "tasklistVersion passed to downstream workflow"
-    required: false
-    default: "SNAPSHOT"
-  connectors_version:
-    description: "connectorsVersion passed to downstream workflow"
-    required: false
-    default: "SNAPSHOT"
-  optimize_version:
-    description: "optimizeVersion passed to downstream workflow"
-    required: false
-    default: "8-SNAPSHOT"
+  source_repo:
+    description: "Source repository (owner/repo) for correlation payload"
+    required: true
+  source_sha:
+    description: "Source commit sha for correlation payload"
+    required: true
+  correlation_id:
+    description: "Correlation ID used to link dispatch <-> downstream run"
+    required: true
 
+  c8_version:
+    required: true
   zeebe_version:
-    description: "zeebeVersion passed to downstream workflow"
+    required: true
+  operate_version:
+    required: true
+  tasklist_version:
+    required: true
+  connectors_version:
+    required: true
+  optimize_version:
     required: true
 
 outputs:
-  dispatch_time:
-    description: "UTC dispatch timestamp"
-    value: ${{ steps.trigger.outputs.dispatch_time }}
-  since_time:
-    description: "UTC since timestamp used for discovery"
-    value: ${{ steps.trigger.outputs.since_time }}
-  run_id:
-    description: "Downstream Actions run id"
-    value: ${{ steps.discover.outputs.run_id }}
-  run_url:
-    description: "Downstream Actions run url"
-    value: ${{ steps.discover.outputs.run_url }}
+  downstream_run_url:
+    description: "URL of the downstream workflow run"
+    value: ${{ steps.wait.outputs.downstream_run_url }}
 
 runs:
   using: "composite"
   steps:
-    - name: Trigger downstream repository_dispatch
+    - name: Trigger repository_dispatch
       id: trigger
       shell: bash
       env:
@@ -79,33 +57,28 @@ runs:
         EVENT_TYPE: ${{ inputs.event_type }}
         SOURCE_REPO: ${{ inputs.source_repo }}
         SOURCE_SHA: ${{ inputs.source_sha }}
+        CORRELATION_ID: ${{ inputs.correlation_id }}
+        C8_VERSION: ${{ inputs.c8_version }}
+        ZEEBE_VERSION: ${{ inputs.zeebe_version }}
+        OPERATE_VERSION: ${{ inputs.operate_version }}
+        TASKLIST_VERSION: ${{ inputs.tasklist_version }}
+        CONNECTORS_VERSION: ${{ inputs.connectors_version }}
+        OPTIMIZE_VERSION: ${{ inputs.optimize_version }}
         SINCE_MINUTES: ${{ inputs.since_minutes }}
-      run: bash "${{ github.action_path }}/trigger-dispatch.sh"
+      run: |
+        set -euo pipefail
+        ./.ci/saas-downstream-e2e/trigger-dispatch.sh
 
-    - name: Discover downstream run id
-      id: discover
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.github_token }}
-        TARGET_REPO: ${{ inputs.target_repo }}
-        WORKFLOW_FILE: ${{ inputs.workflow_file }}
-        SINCE_TIME: ${{ steps.trigger.outputs.since_time }}
-      run: bash "${{ github.action_path }}/discover-run.sh"
-
-    - name: Wait for downstream completion
+    - name: Wait for downstream workflow to finish
       id: wait
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
         TARGET_REPO: ${{ inputs.target_repo }}
-        RUN_ID: ${{ steps.discover.outputs.run_id }}
-      run: bash "${{ github.action_path }}/wait-run.sh"
-
-    - name: Write summary (always)
-      if: always()
-      shell: bash
-      env:
+        WORKFLOW_FILE: ${{ inputs.workflow_file }}
+        CORRELATION_ID: ${{ inputs.correlation_id }}
         DISPATCH_TIME: ${{ steps.trigger.outputs.dispatch_time }}
         SINCE_TIME: ${{ steps.trigger.outputs.since_time }}
-        RUN_URL: ${{ steps.discover.outputs.run_url }}
-      run: bash "${{ github.action_path }}/write-summary.sh"
+      run: |
+        set -euo pipefail
+        ./.ci/saas-downstream-e2e/wait-downstream.sh
