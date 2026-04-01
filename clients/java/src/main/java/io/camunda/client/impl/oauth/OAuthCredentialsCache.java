@@ -160,6 +160,18 @@ public final class OAuthCredentialsCache {
     return !fresh.equals(previous);
   }
 
+  /**
+   * Atomically puts credentials into the cache and writes to disk. This method is synchronized on
+   * the same monitor as {@link #computeIfMissingOrInvalid}, ensuring that a concurrent {@code
+   * readCache()} cannot clobber the in-memory state between the put and the write. This is designed
+   * for the background proactive refresh: the caller fetches the token outside any lock (the slow
+   * HTTP call), then calls this method to briefly acquire the monitor for the fast put+write.
+   */
+  public synchronized void putAndWrite(
+      final String clientId, final CamundaClientCredentials credentials) throws IOException {
+    put(clientId, credentials).writeCache();
+  }
+
   public <T> Optional<T> withCache(
       final String clientId, final FunctionWithIO<CamundaClientCredentials, T> function)
       throws IOException {
