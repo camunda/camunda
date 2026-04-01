@@ -171,13 +171,12 @@ class FlowNodeInstanceMetadataBuilderTest {
     final var userTask =
         Optional.of(
             new TaskEntity().setKey(42L).setFormKey("camunda-forms:bpmn:userTaskForm_0pjtr0l"));
-    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
-            flowNodeInstance.getId()))
+    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
             Optional.of(
-                new MessageSubscriptionEntity()
+                new EventEntity()
                     .setMetadata(
-                        new MessageSubscriptionMetadataEntity()
+                        new EventMetadataEntity()
                             .setMessageName("Last order")
                             .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
@@ -194,13 +193,12 @@ class FlowNodeInstanceMetadataBuilderTest {
     final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.USER_TASK);
     fillStandardValues(flowNodeInstance);
     final var userTask = Optional.of(new TaskEntity().setKey(42L).setFormKey(null));
-    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
-            flowNodeInstance.getId()))
+    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
             Optional.of(
-                new MessageSubscriptionEntity()
+                new EventEntity()
                     .setMetadata(
-                        new MessageSubscriptionMetadataEntity()
+                        new EventMetadataEntity()
                             .setMessageName("Last order")
                             .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
@@ -218,13 +216,12 @@ class FlowNodeInstanceMetadataBuilderTest {
     fillStandardValues(flowNodeInstance);
     final var userTask =
         Optional.of(new TaskEntity().setKey(42L).setFormKey("custom-external-form"));
-    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
-            flowNodeInstance.getId()))
+    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
             Optional.of(
-                new MessageSubscriptionEntity()
+                new EventEntity()
                     .setMetadata(
-                        new MessageSubscriptionMetadataEntity()
+                        new EventMetadataEntity()
                             .setMessageName("Last order")
                             .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
