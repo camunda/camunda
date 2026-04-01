@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -88,7 +89,21 @@ final class StandaloneGatewaySecurityTest {
                 gateway = buildGateway(cfg);
                 gateway.gateway();
               })
-          .hasRootCauseInstanceOf(BindException.class);
+          .satisfies(
+              throwable -> {
+                final var rootCause = throwable.getCause();
+                assertThat(rootCause)
+                    .isNotNull()
+                    .matches(
+                        cause ->
+                            cause instanceof BindException
+                                || cause
+                                    .getClass()
+                                    .getName()
+                                    .equals("io.netty.channel.unix.Errors$NativeIoException"),
+                        "is a bind-related exception")
+                    .hasMessageContaining("Address already in use");
+              });
     }
   }
 
