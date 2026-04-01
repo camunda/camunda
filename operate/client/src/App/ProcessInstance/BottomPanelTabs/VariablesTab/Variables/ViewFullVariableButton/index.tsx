@@ -14,21 +14,32 @@ import type {ViewFullVariableWrapperProps} from './types';
 const ViewFullVariableButton: React.FC<ViewFullVariableWrapperProps> = (
   props,
 ) => {
+  const shouldSubmitOnApply = props.shouldSubmitOnApply ?? true;
+
   if (props.mode === 'add') {
     return (
       <ViewFullVariableButtonAdd
-        mode="add"
-        scopeId={props.scopeId}
-        variableName={props.variableName}
+        {...props}
+        shouldSubmitOnApply={shouldSubmitOnApply}
       />
     );
   }
 
   if (props.mode === 'edit') {
-    return <ViewFullVariableButtonEdit {...props} />;
+    return (
+      <ViewFullVariableButtonEdit
+        {...props}
+        shouldSubmitOnApply={shouldSubmitOnApply}
+      />
+    );
   }
 
-  return <ViewFullVariableButtonShow {...props} />;
+  return (
+    <ViewFullVariableButtonShow
+      {...props}
+      shouldSubmitOnApply={shouldSubmitOnApply}
+    />
+  );
 };
 
 export {ViewFullVariableButton};
