@@ -34,6 +34,7 @@ global:
 
 identity:
   enabled: false
+  fullnameOverride: identity # we override the names for simplicity of the deployment
   nodeSelector:
     component: benchmark-n2-standard-4
   tolerations:
@@ -44,6 +45,7 @@ identity:
 
 identityKeycloak:
   enabled: false
+  fullnameOverride: keycloak # we override the names for simplicity of the deployment
   nodeSelector:
     component: benchmark-n2-standard-4
   tolerations:
@@ -51,9 +53,12 @@ identityKeycloak:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
+  postgresql:
+    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
 
 optimize:
   enabled: false
+  fullnameOverride: optimize # we override the names for simplicity of the deployment
   nodeSelector:
     component: benchmark-n2-standard-4
   tolerations:
@@ -64,9 +69,11 @@ optimize:
 
 connectors:
   enabled: false
+  fullnameOverride: connectors # we override the names for simplicity of the deployment
 
 webModeler:
   enabled: false
+  fullnameOverride: web-modeler # we override the names for simplicity of the deployment
 
 postgresql:
   enabled: false

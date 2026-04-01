@@ -126,8 +126,8 @@
     <version.archunit>1.3.2</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
-    <version.jnr-ffi>2.2.18</version.jnr-ffi>
-    <version.jnr-posix>3.1.21</version.jnr-posix>
+    <version.jnr-ffi>2.2.19</version.jnr-ffi>
+    <version.jnr-posix>3.1.22</version.jnr-posix>
     <version.jnr-constants>0.10.4</version.jnr-constants>
     <version.zpt>8.5.25</version.zpt>
     <version.feign>13.5</version.feign>
@@ -139,7 +139,7 @@
     <version.jackson-databind-nullable>0.2.10</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.17.3</version.jackson-annotations>
-    <version.swagger-annotations>2.2.45</version.swagger-annotations>
+    <version.swagger-annotations>2.2.46</version.swagger-annotations>
     <version.checker-qual>3.47.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
@@ -213,7 +213,8 @@
     <plugin.version.dependency>3.8.1</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
     <plugin.version.exec>3.4.1</plugin.version.exec>
-    <plugin.version.failsafe>3.5.5</plugin.version.failsafe>
+    <!-- Keep failsafe aligned with surefire -->
+    <plugin.version.failsafe>3.5.2</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.14</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
@@ -224,7 +225,7 @@
     <plugin.version.shade>3.6.2</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.6.8</plugin.version.spotbugs>
-    <plugin.version.surefire>3.5.5</plugin.version.surefire>
+    <plugin.version.surefire>3.5.2</plugin.version.surefire>
     <plugin.version.versions>2.17.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.4</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
