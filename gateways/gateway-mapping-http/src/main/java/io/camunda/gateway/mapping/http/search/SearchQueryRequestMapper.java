@@ -25,16 +25,19 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisi
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupClientSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorStatisticsQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTimeSeriesStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTypeStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
@@ -44,13 +47,16 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProces
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleClientSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleGroupSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantClientSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantGroupSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUserSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAuditLogSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract;
@@ -1821,7 +1827,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::group,
             SearchQuerySortRequestMapper::applyGroupSortField);
-    final var filter = SearchQueryFilterMapper.toGroupFilter(request.filter());
+    final var filter = GeneratedGroupFilterMapper.toGroupFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
@@ -1903,7 +1909,7 @@ public final class SearchQueryRequestMapper {
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests, SortOptionBuilders::job, SearchQuerySortRequestMapper::applyJobSortField);
-    final var filter = SearchQueryFilterMapper.toJobFilter(request.filter());
+    final var filter = GeneratedJobFilterMapper.toJobFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::jobSearchQuery);
   }
 
@@ -1931,7 +1937,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::mappingRule,
             SearchQuerySortRequestMapper::applyMappingRuleSortField);
-    final var filter = SearchQueryFilterMapper.toMappingRuleFilter(request.filter());
+    final var filter = GeneratedMappingRuleFilterMapper.toMappingRuleFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingRuleSearchQuery);
   }
 
@@ -2107,7 +2113,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::role,
             SearchQuerySortRequestMapper::applyRoleSortField);
-    final var filter = SearchQueryFilterMapper.toRoleFilter(request.filter());
+    final var filter = GeneratedRoleFilterMapper.toRoleFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
@@ -2219,7 +2225,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::tenant,
             SearchQuerySortRequestMapper::applyTenantSortField);
-    final var filter = SearchQueryFilterMapper.toTenantFilter(request.filter());
+    final var filter = GeneratedTenantFilterMapper.toTenantFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
@@ -2275,7 +2281,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::user,
             SearchQuerySortRequestMapper::applyUserSortField);
-    final var filter = SearchQueryFilterMapper.toUserFilter(request.filter());
+    final var filter = GeneratedUserFilterMapper.toUserFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
   }
 
