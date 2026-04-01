@@ -8,11 +8,13 @@
 package io.camunda;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -59,6 +61,13 @@ public class VisibleForTestingArchTest {
           .areAnnotatedWith(VisibleForTesting.class)
           .should(beFieldAccessedBySelfOrTest());
 
+  @ArchTest
+  static final ArchRule CONSTRUCTOR_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
+      constructors()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should(beConstructorAccessedBySelfOrTest());
+
   private static ArchCondition<JavaClass> beClassAccessedBySelfOrTest() {
     return new ArchCondition<>("be accessed from test or self") {
       @Override
@@ -91,6 +100,19 @@ public class VisibleForTestingArchTest {
             element.getAccessesToSelf(),
             element.getOwner(),
             "Field " + element.getFullName());
+      }
+    };
+  }
+
+  private static ArchCondition<JavaConstructor> beConstructorAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
+      @Override
+      public void check(final JavaConstructor element, final ConditionEvents events) {
+        validateAccessViolations(
+            events,
+            element.getAccessesToSelf(),
+            element.getOwner(),
+            "Constructor " + element.getFullName());
       }
     };
   }
