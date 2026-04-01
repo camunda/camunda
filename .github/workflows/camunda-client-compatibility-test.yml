@@ -447,13 +447,22 @@ jobs:
     permissions: {}
     steps:
       - uses: actions/checkout@v6
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Notify failure
         uses: slackapi/slack-github-action@v3.0.1
-        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-        env:
-          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+        if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
-          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
            {
