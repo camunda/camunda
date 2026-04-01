@@ -62,7 +62,7 @@ final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance, A
   }
 
   @Override
-  public Map<String, String> oldBrokerBackupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars(final String storeBasePath) {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE",
         "GCS",
@@ -71,17 +71,20 @@ final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance, A
         "ZEEBE_BROKER_DATA_BACKUP_GCS_HOST",
         GCS.internalEndpoint(),
         "ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH",
-        "NONE");
+        "NONE",
+        "ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH",
+        storeBasePath);
   }
 
   @Override
-  public void configureCurrentBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg, final String storeBasePath) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.GCS);
 
     final var gcs = backup.getGcs();
     gcs.setAuth(Gcs.GcsBackupStoreAuth.NONE);
     gcs.setBucketName(BUCKET_NAME);
+    gcs.setBasePath(storeBasePath);
     gcs.setHost(GCS.externalEndpoint());
   }
 

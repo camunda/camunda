@@ -56,10 +56,11 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   }
 
   @Override
-  public Map<String, String> oldBrokerBackupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars(final String storeBasePath) {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE", "S3",
         "ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME,
+        "ZEEBE_BROKER_DATA_BACKUP_S3_BASEPATH", storeBasePath,
         "ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint(),
         "ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region(),
         "ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", MINIO.accessKey(),
@@ -71,11 +72,12 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   }
 
   @Override
-  public void configureCurrentBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg, final String storeBasePath) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.S3);
 
     final var s3 = backup.getS3();
+    s3.setBasePath(storeBasePath);
     s3.setRegion(MINIO.region());
     s3.setSecretKey(MINIO.secretKey());
     s3.setBucketName(BUCKET_NAME);
