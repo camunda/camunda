@@ -1,0 +1,343 @@
+# description: Runs forward compatibility tests for C8 REST API endpoints.
+# Tests a server built from one branch against API tests from another branch
+# to ensure forward compatibility of REST endpoints across versions.
+# Scheduled nightly and supports manual dispatch for custom branch combinations.
+# type: CI
+# owner: @camunda/camunda-ex
+---
+name: C8 REST API Forward Compatibility Tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # Daily at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      server_branch:
+        description: "Branch to build the server from (e.g., main, stable/8.9). Leave empty for default matrix."
+        required: false
+        type: string
+      test_branch:
+        description: "Branch to run the API tests from (e.g., stable/8.8, stable/8.9). Leave empty for default matrix."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare-matrix:
+    name: Prepare Version Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate matrix
+        id: matrix
+        run: |
+          # Resolve the public Docker image for a branch.
+          # - stable/X.Y → camunda/camunda:X.Y-SNAPSHOT
+          # - main       → camunda/camunda:SNAPSHOT
+          resolve_image() {
+            local branch="$1"
+            if [[ "$branch" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
+              echo "camunda/camunda:${BASH_REMATCH[1]}-SNAPSHOT"
+            else
+              echo "camunda/camunda:SNAPSHOT"
+            fi
+          }
+
+          SERVER_BRANCH="${{ inputs.server_branch }}"
+          TEST_BRANCH="${{ inputs.test_branch }}"
+
+          if [[ -n "$SERVER_BRANCH" || -n "$TEST_BRANCH" ]]; then
+            # Manual trigger: require both inputs to avoid surprising fallback behavior
+            if [[ -z "$SERVER_BRANCH" || -z "$TEST_BRANCH" ]]; then
+              echo "::error::Both 'server_branch' and 'test_branch' must be provided for manual dispatch. Got server_branch='$SERVER_BRANCH', test_branch='$TEST_BRANCH'."
+              exit 1
+            fi
+            echo "Manual trigger: Testing Server=$SERVER_BRANCH with Tests=$TEST_BRANCH"
+            SERVER_IMAGE=$(resolve_image "$SERVER_BRANCH")
+            echo "Resolved server image: $SERVER_IMAGE"
+            MATRIX_JSON=$(jq -nc \
+              --arg server "$SERVER_BRANCH" \
+              --arg test "$TEST_BRANCH" \
+              --arg image "$SERVER_IMAGE" \
+              '{"include": [{"server_branch": $server, "test_branch": $test, "server_image": $image}]}')
+          else
+            echo "Discovering stable branches from remote..."
+            # List remote stable/X.Y branches, extract version, sort ascending by version
+            # Only include branches >= 8.8 (forward compatibility tests start from 8.8)
+            STABLE_BRANCHES=$(git ls-remote --heads origin 'refs/heads/stable/*' \
+              | sed -n 's|.*refs/heads/\(stable/[0-9]\+\.[0-9]\+\)$|\1|p' \
+              | sort -t/ -k2 -V \
+              | awk -F/ '{ split($2, v, "."); if (v[1] > 8 || (v[1] == 8 && v[2] >= 8)) print }')
+
+            mapfile -t BRANCHES <<< "$STABLE_BRANCHES"
+            echo "Discovered stable branches (ascending): ${BRANCHES[*]}"
+
+            if [[ ${#BRANCHES[@]} -lt 2 ]]; then
+              echo "::error::Need at least 2 stable branches for forward compatibility testing, found ${#BRANCHES[@]}"
+              exit 1
+            fi
+
+            NEWEST="${BRANCHES[-1]}"
+            echo "Newest stable: $NEWEST"
+
+            # Build matrix:
+            #   1. main → newest stable
+            #   2. Consecutive stable pairs only (e.g. 8.8→8.9, 8.9→8.10, NOT 8.8→8.10)
+            MATRIX_ITEMS="[]"
+
+            # main tested against newest stable only
+            MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c \
+              --arg server "main" \
+              --arg test "$NEWEST" \
+              --arg image "$(resolve_image "main")" \
+              '. += [{"server_branch": $server, "test_branch": $test, "server_image": $image}]')
+
+            # Consecutive stable pairs: each branch tested against its next minor
+            for (( i=0; i < ${#BRANCHES[@]} - 1; i++ )); do
+              OLDER="${BRANCHES[$i]}"
+              NEWER="${BRANCHES[$((i + 1))]}"
+              echo "Adding consecutive pair: server=$NEWER, tests=$OLDER"
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c \
+                --arg server "$NEWER" \
+                --arg test "$OLDER" \
+                --arg image "$(resolve_image "$NEWER")" \
+                '. += [{"server_branch": $server, "test_branch": $test, "server_image": $image}]')
+            done
+
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+          fi
+
+          echo "Matrix: $MATRIX_JSON"
+          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+
+  forward-compatibility-api-tests:
+    name: "Server: ${{ matrix.server_branch }} / Tests: ${{ matrix.test_branch }}"
+    needs: prepare-matrix
+    if: needs.prepare-matrix.outputs.matrix != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+    steps:
+      - name: Print test configuration
+        run: |
+          echo "===== Forward Compatibility Test Configuration ====="
+          echo "Server branch: ${{ matrix.server_branch }}"
+          echo "Server image:  ${{ matrix.server_image }}"
+          echo "Test branch:   ${{ matrix.test_branch }}"
+          echo "===================================================="
+
+      # Checkout test branch at root — provides composite actions, docker-compose config, and tests
+      - name: Checkout test branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.test_branch }}
+
+      - name: Pull server Docker image
+        run: |
+          echo "Pulling image: ${{ matrix.server_image }}"
+          docker pull ${{ matrix.server_image }}
+
+      - name: Start Camunda
+        run: CAMUNDA_DOCKER_IMAGE=${{ matrix.server_image }} DATABASE=elasticsearch docker compose up -d camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            # Use curl -sf to fail on non-2xx HTTP responses (e.g. 404, 503).
+            # Probe /v2/topology with basic auth as a reliable readiness signal:
+            # it only returns 200 once the broker and gateway are fully operational.
+            if curl -sf -u demo:demo -m 5 http://localhost:8080/v2/topology > /dev/null 2>&1; then
+              echo "Camunda is ready! (topology endpoint returned 200)"
+              ready=true
+              break
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            sleep 10
+          done
+
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: docker compose logs camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Run API tests
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          INCLUDE_SLACK_REPORTER: "false"
+          VERSION: "Forward Compat - Server: ${{ matrix.server_branch }} / Tests: ${{ matrix.test_branch }}"
+          API_TESTS_ONLY: "true"
+          DATABASE: "Elasticsearch"
+          AJB_ALLOW_EXTRA_FIELDS: "true"
+        run: |
+          echo "Running forward compatibility API tests"
+          echo "Server built from: ${{ matrix.server_branch }}"
+          echo "Tests checked out from: ${{ matrix.test_branch }}"
+          npm run test -- --project=api-tests --retries=2
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Sanitize branch names for artifact names
+        id: sanitize
+        if: always()
+        run: |
+          server="${{ matrix.server_branch }}"
+          test="${{ matrix.test_branch }}"
+          safe_server="${server//\//-}"
+          safe_test="${test//\//-}"
+          echo "safe_server=$safe_server" >> "$GITHUB_OUTPUT"
+          echo "safe_test=$safe_test" >> "$GITHUB_OUTPUT"
+
+      - name: Upload JSON report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: json-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          if-no-files-found: ignore
+          retention-days: 60
+
+      - name: Upload HTML report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: html-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          if-no-files-found: ignore
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "forward-compatibility-api-tests/server-${{ matrix.server_branch }}/tests-${{ matrix.test_branch }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify-failure:
+     name: Notify on failure
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+     needs: [prepare-matrix, forward-compatibility-api-tests]
+     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+     permissions:
+       contents: read
+     steps:
+       - uses: actions/checkout@v6
+
+       - name: Import Secrets
+         id: secrets
+         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+         with:
+           url: ${{ secrets.VAULT_ADDR }}
+           method: approle
+           roleId: ${{ secrets.VAULT_ROLE_ID }}
+           secretId: ${{ secrets.VAULT_SECRET_ID }}
+           exportEnv: false
+           secrets: |
+             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
+
+       - name: Notify failure
+         uses: slackapi/slack-github-action@v3.0.1
+         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+         with:
+           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+           webhook-type: incoming-webhook
+           payload: |
+            {
+               "blocks": [
+                 {
+                   "type": "section",
+                   "text": {
+                     "type": "mrkdwn",
+                     "text": ":alarm: *REST API Forward Compatibility Tests Failed*"
+                   }
+                 },
+                 {
+                   "type": "section",
+                   "text": {
+                     "type": "mrkdwn",
+                     "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                   }
+                 }
+               ]
+             }
+
+       - name: Observe build status
+         if: always()
+         continue-on-error: true
+         uses: ./.github/actions/observe-build-status
+         with:
+           build_status: ${{ job.status }}
+           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
