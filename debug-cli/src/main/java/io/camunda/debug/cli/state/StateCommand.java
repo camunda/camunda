@@ -34,7 +34,7 @@ public class StateCommand {
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            new RocksDbResources.Shared(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT, 3));
+            new RocksDbResources.Shared(DEFAULT_MEMORY_LIMIT, 3));
   }
 
   public ZeebeDbFactory getZeebeDbFactory() {

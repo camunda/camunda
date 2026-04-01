@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.util.Either.Left;
 import io.camunda.zeebe.util.Either.Right;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -18,6 +19,7 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public class AuthenticationInterceptor implements ServerInterceptor {
   private static final Metadata.Key<String> AUTH_KEY =
@@ -28,7 +30,9 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
   @VisibleForTesting
   AuthenticationInterceptor(final AuthenticationHandler authenticationHandler) {
-    this(authenticationHandler, new AuthenticationMetrics());
+    this(
+        authenticationHandler,
+        new AuthenticationMetrics(new SimpleMeterRegistry(), AuthenticationMethod.BASIC));
   }
 
   public AuthenticationInterceptor(
