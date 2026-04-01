@@ -926,8 +926,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                             address,
                             rootCause);
                       } else {
-                        log.error(
-                            "Failed to bind TCP server to port {} due to {}", address, cause);
+                        log.error("Failed to bind TCP server to port {} due to {}", address, cause);
                       }
                       future.completeExceptionally(cause);
                     }
