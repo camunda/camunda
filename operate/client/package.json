@@ -82,7 +82,7 @@
     "@vitest/browser-playwright": "4.1.2",
     "@vitest/coverage-istanbul": "4.1.2",
     "@vitest/coverage-v8": "4.1.2",
-    "@vitest/eslint-plugin": "1.6.13",
+    "@vitest/eslint-plugin": "1.6.14",
     "@vitest/ui": "4.1.2",
     "cross-env": "10.1.0",
     "eslint": "9.39.4",
