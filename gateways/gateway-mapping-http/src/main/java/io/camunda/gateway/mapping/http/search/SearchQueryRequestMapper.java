@@ -23,6 +23,10 @@ import io.camunda.gateway.mapping.http.search.contract.ElementInstanceFilterMapp
 import io.camunda.gateway.mapping.http.search.contract.GlobalTaskListenerFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.IncidentFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.IncidentProcessInstanceStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.JobErrorStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.JobTimeSeriesStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.JobTypeStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.JobWorkerStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionInstanceVersionStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
@@ -1266,7 +1270,7 @@ public final class SearchQueryRequestMapper {
         p != null
             ? toSearchQueryPage(p.limit(), null, p.after(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = SearchQueryFilterMapper.toJobTypeStatisticsFilter(request.filter());
+    final var filter = JobTypeStatisticsFilterMapper.toJobTypeStatisticsFilter(request.filter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
   }
@@ -1281,7 +1285,8 @@ public final class SearchQueryRequestMapper {
         p != null
             ? toSearchQueryPage(p.limit(), null, p.after(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = SearchQueryFilterMapper.toJobWorkerStatisticsFilter(request.filter());
+    final var filter =
+        JobWorkerStatisticsFilterMapper.toJobWorkerStatisticsFilter(request.filter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobWorkerStatisticsSearchQuery);
   }
@@ -1297,7 +1302,8 @@ public final class SearchQueryRequestMapper {
         p != null
             ? toSearchQueryPage(p.limit(), null, p.after(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = SearchQueryFilterMapper.toJobTimeSeriesStatisticsFilter(request.filter());
+    final var filter =
+        JobTimeSeriesStatisticsFilterMapper.toJobTimeSeriesStatisticsFilter(request.filter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTimeSeriesStatisticsSearchQuery);
   }
@@ -1312,7 +1318,7 @@ public final class SearchQueryRequestMapper {
         p != null
             ? toSearchQueryPage(p.limit(), null, p.after(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = SearchQueryFilterMapper.toJobErrorStatisticsFilter(request.filter());
+    final var filter = JobErrorStatisticsFilterMapper.toJobErrorStatisticsFilter(request.filter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobErrorStatisticsSearchQuery);
   }
