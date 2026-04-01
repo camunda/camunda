@@ -4592,7 +4592,44 @@ package %s;
   /** Filter schema name → domain filter class name overrides. */
   private static final Map<String, String> DOMAIN_FILTER_OVERRIDES = Map.of(
       "ElementInstanceFilter", "FlowNodeInstanceFilter",
-      "GlobalTaskListenerFilter", "GlobalListenerFilter"
+      "GlobalTaskListenerFilter", "GlobalListenerFilter",
+      "ClusterVariableSearchQueryFilterRequest", "ClusterVariableFilter"
+  );
+
+  /**
+   * Per-entity field overrides for filter mapper generation. Each override specifies a builder
+   * base name (for name mismatches) and/or an operation type override (when the spec type
+   * differs from the domain builder's expected type).
+   *
+   * @param builderBase builder method base name (null = use field identifier)
+   * @param opType operation type override (null = use detected type from schema)
+   */
+  private record FilterFieldOverride(String builderBase, String opType) {
+    static FilterFieldOverride name(String builderBase) {
+      return new FilterFieldOverride(builderBase, null);
+    }
+    static FilterFieldOverride type(String opType) {
+      return new FilterFieldOverride(null, opType);
+    }
+    static FilterFieldOverride nameAndType(String builderBase, String opType) {
+      return new FilterFieldOverride(builderBase, opType);
+    }
+  }
+
+  private static final Map<String, Map<String, FilterFieldOverride>> FILTER_FIELD_OVERRIDES = Map.of(
+      "CorrelatedMessageSubscriptionFilter", Map.of(
+          "elementId", FilterFieldOverride.name("flowNodeId"),
+          "elementInstanceKey", FilterFieldOverride.name("flowNodeInstanceKey"),
+          "messageKey", FilterFieldOverride.type("Long")
+      ),
+      "MessageSubscriptionFilter", Map.of(
+          "elementId", FilterFieldOverride.name("flowNodeId"),
+          "elementInstanceKey", FilterFieldOverride.name("flowNodeInstanceKey"),
+          "lastUpdatedDate", FilterFieldOverride.name("dateTime")
+      ),
+      "BatchOperationItemFilter", Map.of(
+          "itemKey", FilterFieldOverride.type("Long")
+      )
   );
 
   /**
@@ -4606,14 +4643,13 @@ package %s;
    * </ul>
    */
   private static final Set<String> FILTER_MAPPER_SKIP = Set.of(
-      // No FilterBuilders factory method exists
+      // No FilterBuilders factory method / specialized domain mapping
       "UserTaskVariableFilter",
       "UserTaskAuditLogFilter",
-      "ClusterVariableSearchQueryFilterRequest",
       "GlobalTaskListenerSearchQueryFilterRequest",
       "IncidentProcessInstanceStatisticsByDefinitionFilter",
       "ProcessDefinitionInstanceVersionStatisticsFilter",
-      // Old-style builders (list methods, no Operations)
+      // Old-style builders (list methods, no Operations) + naming mismatches
       "DecisionDefinitionFilter",
       "DecisionInstanceFilter",
       "DecisionRequirementsFilter",
@@ -4626,11 +4662,8 @@ package %s;
       "VariableFilter",
       "ElementInstanceFilter",
       "AuditLogFilter",
-      // Builder method naming mismatches
-      "BatchOperationFilter",
-      "BatchOperationItemFilter",
-      "CorrelatedMessageSubscriptionFilter",
-      "MessageSubscriptionFilter"
+      // Enum getValue pattern (not Operations)
+      "BatchOperationFilter"
   );
 
   private static SchemaDef findSchemaByName(
@@ -4708,22 +4741,32 @@ package %s;
     final var fieldMappings = new ArrayList<String>();
     boolean needsOffsetDateTime = false;
 
+    // Look up per-entity field overrides (builder name and/or type overrides)
+    final var fieldOverrides = FILTER_FIELD_OVERRIDES
+        .getOrDefault(sqe.filterSchemaName(), Map.of());
+
     for (var f : filterFields) {
       final var id = f.identifier();
       final var typeInfo = f.typeInfo();
+      // Resolve builder base name and type override from per-field overrides
+      final var override = fieldOverrides.get(id);
+      final var builderBase = (override != null && override.builderBase() != null)
+          ? override.builderBase() : id;
 
       if (typeInfo != null && typeInfo.selfDeserializing()) {
         // Filter property field → mapToOperations(Type.class) → builder::fieldOperations
-        final var opType = determineFilterOperationType(f, allSchemas);
+        final var detectedType = determineFilterOperationType(f, allSchemas);
+        final var opType = (override != null && override.opType() != null)
+            ? override.opType() : detectedType;
         if (opType.contains("OffsetDateTime")) needsOffsetDateTime = true;
         fieldMappings.add(
             "    ofNullable(filter." + id + "())"
                 + ".map(mapToOperations(" + simpleTypeName(opType) + ".class))"
-                + ".ifPresent(builder::" + id + "Operations);");
+                + ".ifPresent(builder::" + builderBase + "Operations);");
       } else if ("Boolean".equals(f.javaType())) {
         // Boolean field → direct
         fieldMappings.add(
-            "    ofNullable(filter." + id + "()).ifPresent(builder::" + id + ");");
+            "    ofNullable(filter." + id + "()).ifPresent(builder::" + builderBase + ");");
       } else if (typeInfo != null
           && (typeInfo.strictObjectType() || typeInfo.strictListType())) {
         // Complex nested type (e.g., $or, variables) — requires hand-written validator
@@ -4737,7 +4780,7 @@ package %s;
       } else {
         // Simple scalar (String, Integer, etc.) — direct value
         fieldMappings.add(
-            "    ofNullable(filter." + id + "()).ifPresent(builder::" + id + ");");
+            "    ofNullable(filter." + id + "()).ifPresent(builder::" + builderBase + ");");
       }
     }
 

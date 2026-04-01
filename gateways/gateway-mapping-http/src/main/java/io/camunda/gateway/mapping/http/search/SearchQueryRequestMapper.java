@@ -13,11 +13,31 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.*;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
+import io.camunda.gateway.mapping.http.search.contract.AuditLogFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.AuthorizationFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.BatchOperationFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.DecisionDefinitionFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.DecisionRequirementsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ElementInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.GlobalTaskListenerFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.IncidentFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.IncidentProcessInstanceStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionInstanceVersionStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.UserTaskAuditLogFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.UserTaskFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.UserTaskVariableFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.VariableFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchQueryFilterRequestMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceSearchQueryRequestStrictContract;
@@ -39,6 +59,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTyp
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract;
@@ -657,7 +678,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
-    final var filter = SearchQueryFilterMapper.toUserTaskVariableFilter(request.filter());
+    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -1311,7 +1332,8 @@ public final class SearchQueryRequestMapper {
         p != null
             ? toSearchQueryPage(p.limit(), null, p.after(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.filter());
+    final var filter =
+        GeneratedMessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
     return buildSearchQuery(
         filter,
         Either.right(null),
@@ -1387,8 +1409,8 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::processDefinitionInstanceVersionStatistics,
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceVersionStatisticsSortField);
     final var filter =
-        SearchQueryFilterMapper.toProcessDefinitionInstanceVersionStatisticsFilter(
-            request.filter());
+        ProcessDefinitionInstanceVersionStatisticsFilterMapper
+            .toProcessDefinitionInstanceVersionStatisticsFilter(request.filter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
   }
@@ -1452,8 +1474,8 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper
                 ::applyIncidentProcessInstanceStatisticsByDefinitionSortField);
     final var filter =
-        SearchQueryFilterMapper.toIncidentProcessInstanceStatisticsByDefinitionFilter(
-            request.filter());
+        IncidentProcessInstanceStatisticsFilterMapper
+            .toIncidentProcessInstanceStatisticsByDefinitionFilter(request.filter());
     return buildSearchQuery(
         filter,
         sort,
@@ -1487,7 +1509,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::auditLog,
             SearchQuerySortRequestMapper::applyAuditLogSortField);
-    final var filter = SearchQueryFilterMapper.toAuditLogFilter(request.filter());
+    final var filter = AuditLogFilterMapper.toAuditLogFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
@@ -1515,7 +1537,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::authorization,
             SearchQuerySortRequestMapper::applyAuthorizationSortField);
-    final var filter = SearchQueryFilterMapper.toAuthorizationFilter(request.filter());
+    final var filter = AuthorizationFilterMapper.toAuthorizationFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
   }
 
@@ -1543,7 +1565,8 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::batchOperationItem,
             SearchQuerySortRequestMapper::applyBatchOperationItemSortField);
-    final var filter = SearchQueryFilterMapper.toBatchOperationItemFilter(request.filter());
+    final var filter =
+        GeneratedBatchOperationItemFilterMapper.toBatchOperationItemFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationItemQuery);
   }
 
@@ -1571,7 +1594,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::batchOperation,
             SearchQuerySortRequestMapper::applyBatchOperationSortField);
-    final var filter = SearchQueryFilterMapper.toBatchOperationFilter(request.filter());
+    final var filter = BatchOperationFilterMapper.toBatchOperationFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationQuery);
   }
 
@@ -1599,7 +1622,9 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::clusterVariable,
             SearchQuerySortRequestMapper::applyClusterVariableSortField);
-    final var filter = SearchQueryFilterMapper.toClusterVariableFilter(request.filter());
+    final var filter =
+        GeneratedClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(
+            request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
   }
 
@@ -1629,7 +1654,8 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::correlatedMessageSubscription,
             SearchQuerySortRequestMapper::applyCorrelatedMessageSubscriptionSortField);
     final var filter =
-        SearchQueryFilterMapper.toCorrelatedMessageSubscriptionFilter(request.filter());
+        GeneratedCorrelatedMessageSubscriptionFilterMapper.toCorrelatedMessageSubscriptionFilter(
+            request.filter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::correlatedMessageSubscriptionSearchQuery);
   }
@@ -1658,7 +1684,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::decisionDefinition,
             SearchQuerySortRequestMapper::applyDecisionDefinitionSortField);
-    final var filter = SearchQueryFilterMapper.toDecisionDefinitionFilter(request.filter());
+    final var filter = DecisionDefinitionFilterMapper.toDecisionDefinitionFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionDefinitionSearchQuery);
   }
 
@@ -1686,7 +1712,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::decisionInstance,
             SearchQuerySortRequestMapper::applyDecisionInstanceSortField);
-    final var filter = SearchQueryFilterMapper.toDecisionInstanceFilter(request.filter());
+    final var filter = DecisionInstanceFilterMapper.toDecisionInstanceFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
   }
 
@@ -1714,7 +1740,8 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::decisionRequirements,
             SearchQuerySortRequestMapper::applyDecisionRequirementsSortField);
-    final var filter = SearchQueryFilterMapper.toDecisionRequirementsFilter(request.filter());
+    final var filter =
+        DecisionRequirementsFilterMapper.toDecisionRequirementsFilter(request.filter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
@@ -1743,7 +1770,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::flowNodeInstance,
             SearchQuerySortRequestMapper::applyElementInstanceSortField);
-    final var filter = SearchQueryFilterMapper.toElementInstanceFilter(request.filter());
+    final var filter = ElementInstanceFilterMapper.toElementInstanceFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
   }
 
@@ -1771,7 +1798,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::globalListener,
             SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
-    final var filter = SearchQueryFilterMapper.toGlobalTaskListenerFilter(request.filter());
+    final var filter = GlobalTaskListenerFilterMapper.toGlobalTaskListenerFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
@@ -1883,7 +1910,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::incident,
             SearchQuerySortRequestMapper::applyIncidentSortField);
-    final var filter = SearchQueryFilterMapper.toIncidentFilter(request.filter());
+    final var filter = IncidentFilterMapper.toIncidentFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
@@ -1965,7 +1992,8 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::messageSubscription,
             SearchQuerySortRequestMapper::applyMessageSubscriptionSortField);
-    final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.filter());
+    final var filter =
+        GeneratedMessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
@@ -2001,7 +2029,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::processDefinition,
             SearchQuerySortRequestMapper::applyProcessDefinitionSortField);
-    final var filter = SearchQueryFilterMapper.toProcessDefinitionFilter(request.filter());
+    final var filter = ProcessDefinitionFilterMapper.toProcessDefinitionFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processDefinitionSearchQuery);
   }
 
@@ -2029,7 +2057,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::processInstance,
             SearchQuerySortRequestMapper::applyProcessInstanceSortField);
-    final var filter = SearchQueryFilterMapper.toProcessInstanceFilter(request.filter());
+    final var filter = ProcessInstanceFilterMapper.toProcessInstanceFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
   }
 
@@ -2301,7 +2329,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::auditLog,
             SearchQuerySortRequestMapper::applyAuditLogSortField);
-    final var filter = SearchQueryFilterMapper.toUserTaskAuditLogFilter(request.filter());
+    final var filter = UserTaskAuditLogFilterMapper.toUserTaskAuditLogFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
@@ -2329,7 +2357,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::userTask,
             SearchQuerySortRequestMapper::applyUserTaskSortField);
-    final var filter = SearchQueryFilterMapper.toUserTaskFilter(request.filter());
+    final var filter = UserTaskFilterMapper.toUserTaskFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
@@ -2357,7 +2385,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
-    final var filter = SearchQueryFilterMapper.toUserTaskVariableFilter(request.filter());
+    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -2385,7 +2413,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyVariableSortField);
-    final var filter = SearchQueryFilterMapper.toVariableFilter(request.filter());
+    final var filter = VariableFilterMapper.toVariableFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
