@@ -31,7 +31,7 @@ saas:
     # Saas.credentials.zeebeRestAddress to define the rest address of the cluster (including port)
     zeebeRestAddress: "http://camunda-gateway:8080"
     # SaaS.credentials.authServer to define the authentication server to retrieve JWT tokens
-    authServer: "http://__NAMESPACE__-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+    authServer: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
     # Saas.credentials.authType to define the authentication type for the starter and workers
     authType: "OAUTH"
     # Saas.credentials.zeebeGrpcAddress to define the grpc address of the cluster (including port)
