@@ -751,6 +751,15 @@ class OperateProcessInstancePage {
       .click();
   }
 
+  async navigateToFailingElementForIncident(
+    incidentType: string | RegExp,
+    failingElement: string,
+  ): Promise<void> {
+    await this.getIncidentRow(incidentType)
+      .getByRole('link', {name: failingElement})
+      .click();
+  }
+
   async cancelInstance(instanceId: string): Promise<void> {
     await this.cancelInstanceButton(instanceId).click();
     await this.applyButton.click();
