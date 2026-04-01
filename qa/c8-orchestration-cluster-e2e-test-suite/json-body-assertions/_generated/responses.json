@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "4a9387e557d532f18cc2aef991d4200b1ffb0728",
-    "generatedAt": "2026-03-06T14:11:56.210Z",
+    "commit": "e38d429c97ca87e759d9614739523afae7376a09",
+    "generatedAt": "2026-04-01T12:18:23.901Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/rest-api.yaml",
-    "specSha256": "da784944251407898959f8480da72c40d0c14330fc4625a8a9014b330dcbe633"
+    "specSha256": "6d82d9fb4c4e5f5702b3915361809d84d894abc09be013c054f92475c1f1a4a8"
   },
   "responses": [
     {
@@ -90,13 +90,7 @@
             "type": "number"
           }
         ],
-        "optional": [
-          {
-            "name": "clusterId",
-            "type": "string",
-            "nullable": true
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -151,8 +145,7 @@
           },
           {
             "name": "salesPlanType",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "tenants",
@@ -162,8 +155,7 @@
               "optional": [
                 {
                   "name": "description",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
@@ -347,8 +339,7 @@
                       },
                       {
                         "name": "formKey",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "priority",
@@ -361,13 +352,7 @@
                         "nullable": true
                       }
                     ]
-                  },
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  }
                 }
               ]
             }
@@ -393,8 +378,7 @@
                 },
                 {
                   "name": "elementId",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "elementInstanceKey",
@@ -500,8 +484,7 @@
                 },
                 {
                   "name": "endTime",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "errorCode",
@@ -516,21 +499,6 @@
                 {
                   "name": "isDenied",
                   "type": "boolean",
-                  "nullable": true
-                },
-                {
-                  "name": "creationTime",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "lastUpdateTime",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
                   "nullable": true
                 }
               ]
@@ -549,8 +517,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -558,8 +525,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -577,8 +543,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
@@ -603,8 +568,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
@@ -629,8 +593,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
@@ -665,8 +628,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -674,8 +636,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -720,8 +681,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -729,8 +689,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -772,8 +731,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -781,8 +739,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -824,8 +781,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -833,8 +789,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -849,8 +804,7 @@
               "optional": [
                 {
                   "name": "description",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
@@ -885,8 +839,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -894,8 +847,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -949,8 +901,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -958,8 +909,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -974,8 +924,7 @@
               "optional": [
                 {
                   "name": "description",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
@@ -1008,8 +957,7 @@
         "optional": [
           {
             "name": "assignee",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "candidateGroups",
@@ -1021,8 +969,7 @@
           },
           {
             "name": "completionDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "creationDate",
@@ -1034,8 +981,7 @@
           },
           {
             "name": "dueDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "elementId",
@@ -1047,23 +993,19 @@
           },
           {
             "name": "externalFormReference",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "followUpDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "formKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "priority",
@@ -1087,8 +1029,7 @@
           },
           {
             "name": "processName",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "state",
@@ -1114,16 +1055,6 @@
             "underlyingPrimitive": "string",
             "rawRefName": "TenantId",
             "wrapper": true
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "tags",
-            "type": "array<string>",
-            "rawRefName": "tags"
           }
         ]
       }
@@ -1177,8 +1108,7 @@
               "optional": [
                 {
                   "name": "assignee",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "candidateGroups",
@@ -1190,8 +1120,7 @@
                 },
                 {
                   "name": "completionDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "creationDate",
@@ -1203,8 +1132,7 @@
                 },
                 {
                   "name": "dueDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "elementId",
@@ -1216,23 +1144,19 @@
                 },
                 {
                   "name": "externalFormReference",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "followUpDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "formKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "priority",
@@ -1256,8 +1180,7 @@
                 },
                 {
                   "name": "processName",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "state",
@@ -1283,16 +1206,6 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "TenantId",
                   "wrapper": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tags",
-                  "type": "array<string>",
-                  "rawRefName": "tags"
                 }
               ]
             }
@@ -1310,8 +1223,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -1319,8 +1231,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -1369,13 +1280,7 @@
                   "type": "string"
                 }
               ],
-              "optional": [
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -1391,8 +1296,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -1400,8 +1304,80 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/user-tasks/{userTaskKey}/effective-variables/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<VariableResultBase>",
+            "children": {
+              "required": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "scopeKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
+                  "name": "variableKey",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
                 }
               ]
             }
@@ -1450,13 +1426,7 @@
                   "type": "string"
                 }
               ],
-              "optional": [
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -1472,8 +1442,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -1481,8 +1450,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -1522,13 +1490,7 @@
             "type": "string"
           }
         ],
-        "optional": [
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -1550,8 +1512,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -1559,8 +1520,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -1579,8 +1539,7 @@
                 },
                 {
                   "name": "name",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionId",
@@ -1604,8 +1563,7 @@
                 },
                 {
                   "name": "versionTag",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -1626,8 +1584,7 @@
           },
           {
             "name": "name",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "processDefinitionId",
@@ -1651,8 +1608,7 @@
           },
           {
             "name": "versionTag",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         ]
       }
@@ -1762,11 +1718,6 @@
             "name": "tags",
             "type": "array<string>",
             "rawRefName": "TagSet"
-          },
-          {
-            "name": "businessId",
-            "type": "string",
-            "nullable": true
           }
         ]
       }
@@ -1794,8 +1745,7 @@
           },
           {
             "name": "processDefinitionName",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "processDefinitionVersion",
@@ -1832,38 +1782,24 @@
         "optional": [
           {
             "name": "endDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "parentElementInstanceKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "parentProcessInstanceKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "processDefinitionVersionTag",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "tags",
             "type": "array<string>",
             "rawRefName": "TagSet"
-          },
-          {
-            "name": "businessId",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
           }
         ]
       }
@@ -1907,11 +1843,6 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "TenantId",
                   "wrapper": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -1986,8 +1917,7 @@
                 },
                 {
                   "name": "processDefinitionName",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionVersion",
@@ -2024,38 +1954,24 @@
               "optional": [
                 {
                   "name": "endDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "parentElementInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "parentProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionVersionTag",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "tags",
                   "type": "array<string>",
                   "rawRefName": "TagSet"
-                },
-                {
-                  "name": "businessId",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -2073,8 +1989,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -2082,8 +1997,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2111,8 +2025,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -2120,8 +2033,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2178,8 +2090,7 @@
                 },
                 {
                   "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionId",
@@ -2206,11 +2117,6 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -2374,8 +2280,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -2383,8 +2288,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2473,18 +2377,11 @@
               "optional": [
                 {
                   "name": "endDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "incidentKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2575,18 +2472,11 @@
         "optional": [
           {
             "name": "endDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "incidentKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         ]
       }
@@ -2610,8 +2500,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -2619,8 +2508,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2659,14 +2547,6 @@
                 },
                 {
                   "name": "version",
-                  "type": "number"
-                },
-                {
-                  "name": "decisionRequirementsName",
-                  "type": "string"
-                },
-                {
-                  "name": "decisionRequirementsVersion",
                   "type": "number"
                 }
               ]
@@ -2709,14 +2589,6 @@
           {
             "name": "version",
             "type": "number"
-          },
-          {
-            "name": "decisionRequirementsName",
-            "type": "string"
-          },
-          {
-            "name": "decisionRequirementsVersion",
-            "type": "number"
           }
         ]
       }
@@ -2740,8 +2612,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -2749,8 +2620,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2846,8 +2716,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -2855,8 +2724,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -2911,8 +2779,7 @@
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "evaluationDate",
@@ -2920,18 +2787,15 @@
                 },
                 {
                   "name": "evaluationFailure",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "result",
@@ -2953,15 +2817,6 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
-                {
-                  "name": "rootDecisionDefinitionKey",
-                  "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -3018,8 +2873,7 @@
           },
           {
             "name": "elementInstanceKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "evaluatedInputs",
@@ -3048,8 +2902,7 @@
           },
           {
             "name": "evaluationFailure",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "matchedRules",
@@ -3074,16 +2927,6 @@
                       {
                         "name": "outputValue",
                         "type": "string"
-                      },
-                      {
-                        "name": "ruleId",
-                        "type": "string",
-                        "nullable": true
-                      },
-                      {
-                        "name": "ruleIndex",
-                        "type": "number",
-                        "nullable": true
                       }
                     ]
                   }
@@ -3101,13 +2944,11 @@
           },
           {
             "name": "processDefinitionKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "processInstanceKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "result",
@@ -3129,15 +2970,6 @@
           {
             "name": "tenantId",
             "type": "string"
-          },
-          {
-            "name": "rootDecisionDefinitionKey",
-            "type": "string"
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
           }
         ]
       }
@@ -3250,16 +3082,6 @@
                             {
                               "name": "outputValue",
                               "type": "string"
-                            },
-                            {
-                              "name": "ruleId",
-                              "type": "string",
-                              "nullable": true
-                            },
-                            {
-                              "name": "ruleIndex",
-                              "type": "number",
-                              "nullable": true
                             }
                           ]
                         }
@@ -3288,13 +3110,11 @@
           },
           {
             "name": "failedDecisionDefinitionId",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "failureMessage",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "output",
@@ -3363,17 +3183,11 @@
           },
           {
             "name": "resourceId",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "resourceType",
             "type": "string"
-          },
-          {
-            "name": "resourcePropertyName",
-            "type": "string",
-            "nullable": true
           }
         ]
       }
@@ -3397,8 +3211,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3406,8 +3219,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3449,17 +3261,11 @@
                 },
                 {
                   "name": "resourceId",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "resourceType",
                   "type": "string"
-                },
-                {
-                  "name": "resourcePropertyName",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -3476,8 +3282,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
@@ -3499,8 +3304,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
@@ -3522,8 +3326,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
@@ -3555,8 +3358,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3564,8 +3366,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3610,8 +3411,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3619,8 +3419,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3662,8 +3461,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3671,8 +3469,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3687,8 +3484,7 @@
               "optional": [
                 {
                   "name": "description",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
@@ -3723,8 +3519,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3732,8 +3527,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3775,8 +3569,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3784,8 +3577,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3829,8 +3621,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "groupId",
@@ -3852,8 +3643,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "groupId",
@@ -3875,8 +3665,7 @@
         "optional": [
           {
             "name": "description",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "groupId",
@@ -3908,8 +3697,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3917,8 +3705,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -3963,8 +3750,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3972,8 +3758,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4027,8 +3812,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4036,8 +3820,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4052,8 +3835,7 @@
               "optional": [
                 {
                   "name": "description",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
@@ -4088,8 +3870,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4097,8 +3878,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4140,8 +3920,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4149,8 +3928,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4165,8 +3943,7 @@
               "optional": [
                 {
                   "name": "description",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "groupId",
@@ -4279,8 +4056,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4288,8 +4064,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4383,8 +4158,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4392,8 +4166,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4407,8 +4180,7 @@
               "required": [
                 {
                   "name": "correlationKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "correlationTime",
@@ -4450,17 +4222,11 @@
               "optional": [
                 {
                   "name": "elementInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionKey",
                   "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -4487,8 +4253,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4496,8 +4261,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4512,8 +4276,7 @@
               "optional": [
                 {
                   "name": "correlationKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "elementId",
@@ -4521,8 +4284,7 @@
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "lastUpdatedDate",
@@ -4555,13 +4317,11 @@
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "tenantId",
@@ -4569,11 +4329,6 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "TenantId",
                   "wrapper": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -4597,8 +4352,7 @@
           },
           {
             "name": "contentHash",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "documentId",
@@ -4621,8 +4375,7 @@
                 },
                 {
                   "name": "expiresAt",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "fileName",
@@ -4630,13 +4383,11 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "size",
@@ -4674,8 +4425,7 @@
                 },
                 {
                   "name": "contentHash",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "documentId",
@@ -4698,8 +4448,7 @@
                       },
                       {
                         "name": "expiresAt",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "fileName",
@@ -4707,13 +4456,11 @@
                       },
                       {
                         "name": "processDefinitionId",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "processInstanceKey",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "size",
@@ -4741,14 +4488,6 @@
                 },
                 {
                   "name": "fileName",
-                  "type": "string"
-                },
-                {
-                  "name": "status",
-                  "type": "number"
-                },
-                {
-                  "name": "title",
                   "type": "string"
                 }
               ]
@@ -4779,8 +4518,7 @@
                 },
                 {
                   "name": "contentHash",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "documentId",
@@ -4803,8 +4541,7 @@
                       },
                       {
                         "name": "expiresAt",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "fileName",
@@ -4812,13 +4549,11 @@
                       },
                       {
                         "name": "processDefinitionId",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "processInstanceKey",
-                        "type": "string",
-                        "nullable": true
+                        "type": "string"
                       },
                       {
                         "name": "size",
@@ -4846,14 +4581,6 @@
                 },
                 {
                   "name": "fileName",
-                  "type": "string"
-                },
-                {
-                  "name": "status",
-                  "type": "number"
-                },
-                {
-                  "name": "title",
                   "type": "string"
                 }
               ]
@@ -4889,13 +4616,11 @@
         "optional": [
           {
             "name": "email",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "username",
@@ -4921,13 +4646,11 @@
               "optional": [
                 {
                   "name": "email",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "name",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "username",
@@ -4952,8 +4675,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4961,8 +4683,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -4980,13 +4701,11 @@
         "optional": [
           {
             "name": "email",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "username",
@@ -5007,13 +4726,11 @@
         "optional": [
           {
             "name": "email",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "username",
@@ -5034,13 +4751,11 @@
         "optional": [
           {
             "name": "email",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "name",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "username",
@@ -5071,8 +4786,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -5080,8 +4794,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -5138,8 +4851,7 @@
                 },
                 {
                   "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processDefinitionId",
@@ -5166,11 +4878,6 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -5229,8 +4936,7 @@
           },
           {
             "name": "jobKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "processDefinitionId",
@@ -5257,11 +4963,6 @@
           {
             "name": "tenantId",
             "type": "string"
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
           }
         ]
       }
@@ -5348,8 +5049,7 @@
                         "type": "number"
                       }
                     ]
-                  },
-                  "nullable": true
+                  }
                 },
                 {
                   "name": "decisionRequirements",
@@ -5383,8 +5083,7 @@
                         "type": "number"
                       }
                     ]
-                  },
-                  "nullable": true
+                  }
                 },
                 {
                   "name": "form",
@@ -5417,8 +5116,7 @@
                         "type": "number"
                       }
                     ]
-                  },
-                  "nullable": true
+                  }
                 },
                 {
                   "name": "processDefinition",
@@ -5448,8 +5146,7 @@
                       }
                     ],
                     "optional": []
-                  },
-                  "nullable": true
+                  }
                 },
                 {
                   "name": "resource",
@@ -5482,8 +5179,7 @@
                         "type": "number"
                       }
                     ]
-                  },
-                  "nullable": true
+                  }
                 }
               ]
             }
@@ -5525,8 +5221,7 @@
           },
           {
             "name": "versionTag",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         ]
       }
@@ -5589,8 +5284,7 @@
           },
           {
             "name": "endDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "errors",
@@ -5631,8 +5325,7 @@
           },
           {
             "name": "startDate",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "state",
@@ -5646,16 +5339,6 @@
               "PARTIALLY_COMPLETED",
               "SUSPENDED"
             ]
-          },
-          {
-            "name": "actorId",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "actorType",
-            "type": "string",
-            "nullable": true
           }
         ]
       }
@@ -5679,8 +5362,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -5688,8 +5370,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -5726,8 +5407,7 @@
                 },
                 {
                   "name": "endDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "errors",
@@ -5768,8 +5448,7 @@
                 },
                 {
                   "name": "startDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "state",
@@ -5783,16 +5462,6 @@
                     "PARTIALLY_COMPLETED",
                     "SUSPENDED"
                   ]
-                },
-                {
-                  "name": "actorId",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "actorType",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }
@@ -5819,8 +5488,7 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -5828,8 +5496,7 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 }
               ]
             }
@@ -5848,8 +5515,7 @@
                 },
                 {
                   "name": "errorMessage",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "itemKey",
@@ -5875,8 +5541,7 @@
                 },
                 {
                   "name": "processedDate",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "processInstanceKey",
@@ -5892,11 +5557,6 @@
                     "CANCELED",
                     "FAILED"
                   ]
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
                 }
               ]
             }

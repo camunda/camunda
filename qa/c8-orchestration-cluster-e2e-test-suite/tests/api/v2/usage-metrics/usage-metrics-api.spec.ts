@@ -231,12 +231,7 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
           headers: jsonHeaders(token), // overrides default demo:demo
         },
       );
-      await assertStatusCode(res, 200);
-      const body = await res.json();
-      expect(body.activeTenants).toBe(0);
-      expect(body.processInstances).toBe(0);
-      expect(body.decisionInstances).toBe(0);
-      expect(body.assignees).toBe(0);
+      await assertUnauthorizedRequest(res);
     }).toPass(defaultAssertionOptions);
   });
 });
