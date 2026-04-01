@@ -100,7 +100,7 @@ function getWrapper(initialPath?: string) {
 
 const SELECTED_PATH = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement`;
 
-describe('<BottomPanelTabs isHistoryTabVisible />', () => {
+describe('<BottomPanelTabs />', () => {
   it('should render always visible tabs', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
