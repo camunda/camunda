@@ -16,9 +16,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.VariableResult;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
-import io.camunda.gateway.protocol.model.VariableSearchResult;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableStrictContract;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -85,21 +85,21 @@ class VariableToolsTest extends OperationalToolsTest {
 
   @Captor private ArgumentCaptor<VariableQuery> queryCaptor;
 
-  private void assertExampleVariable(final VariableResult variable) {
-    assertThat(variable.getVariableKey()).isEqualTo("123");
-    assertThat(variable.getName()).isEqualTo("demoVar");
-    assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
-    assertThat(variable.getProcessInstanceKey()).isEqualTo("789");
-    assertThat(variable.getTenantId()).isEqualTo("tenantId");
-    assertThat(variable.getScopeKey()).isEqualTo("333");
+  private void assertExampleVariable(final GeneratedVariableStrictContract variable) {
+    assertThat(variable.variableKey()).isEqualTo("123");
+    assertThat(variable.name()).isEqualTo("demoVar");
+    assertThat(variable.value()).isEqualTo(FULL_VALUE);
+    assertThat(variable.processInstanceKey()).isEqualTo("789");
+    assertThat(variable.tenantId()).isEqualTo("tenantId");
+    assertThat(variable.scopeKey()).isEqualTo("333");
   }
 
-  private void assertExampleVariable(final VariableSearchResult variable) {
-    assertThat(variable.getVariableKey()).isEqualTo("123");
-    assertThat(variable.getName()).isEqualTo("demoVar");
-    assertThat(variable.getProcessInstanceKey()).isEqualTo("789");
-    assertThat(variable.getTenantId()).isEqualTo("tenantId");
-    assertThat(variable.getScopeKey()).isEqualTo("333");
+  private void assertExampleVariable(final GeneratedVariableSearchStrictContract variable) {
+    assertThat(variable.variableKey()).isEqualTo("123");
+    assertThat(variable.name()).isEqualTo("demoVar");
+    assertThat(variable.processInstanceKey()).isEqualTo("789");
+    assertThat(variable.tenantId()).isEqualTo("tenantId");
+    assertThat(variable.scopeKey()).isEqualTo("333");
   }
 
   @Nested
@@ -123,7 +123,8 @@ class VariableToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var variable =
-          objectMapper.convertValue(result.structuredContent(), VariableResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(), GeneratedVariableStrictContract.class);
       assertExampleVariable(variable);
 
       verify(variableServices).getByKey(eq(123L), any());
@@ -255,20 +256,28 @@ class VariableToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var variables =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(variables.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<GeneratedVariableSearchStrictContract> variables =
+          (StrictSearchQueryResult<GeneratedVariableSearchStrictContract>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class,
+                          GeneratedVariableSearchStrictContract.class));
+      assertThat(variables.page().totalItems()).isEqualTo(1L);
+      assertThat(variables.page().hasMoreTotalItems()).isFalse();
+      assertThat(variables.page().startCursor()).isEqualTo("f");
+      assertThat(variables.page().endCursor()).isEqualTo("v");
+      assertThat(variables.items())
           .hasSize(1)
           .first()
           .satisfies(
               variable -> {
                 assertExampleVariable(variable);
-                assertThat(variable.getIsTruncated()).isFalse();
-                assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
+                assertThat(variable.isTruncated()).isFalse();
+                assertThat(variable.value()).isEqualTo(FULL_VALUE);
               });
 
       assertTextContentFallback(result);
@@ -300,20 +309,28 @@ class VariableToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var variables =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(variables.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<GeneratedVariableSearchStrictContract> variables =
+          (StrictSearchQueryResult<GeneratedVariableSearchStrictContract>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class,
+                          GeneratedVariableSearchStrictContract.class));
+      assertThat(variables.page().totalItems()).isEqualTo(1L);
+      assertThat(variables.page().hasMoreTotalItems()).isFalse();
+      assertThat(variables.page().startCursor()).isEqualTo("f");
+      assertThat(variables.page().endCursor()).isEqualTo("v");
+      assertThat(variables.items())
           .hasSize(1)
           .first()
           .satisfies(
               variable -> {
                 assertExampleVariable(variable);
-                assertThat(variable.getIsTruncated()).isTrue();
-                assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
+                assertThat(variable.isTruncated()).isTrue();
+                assertThat(variable.value()).isEqualTo(TRUNCATED_VALUE);
               });
 
       verify(variableServices).search(queryCaptor.capture(), any());

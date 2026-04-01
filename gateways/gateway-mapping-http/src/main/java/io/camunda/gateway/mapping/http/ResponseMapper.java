@@ -17,12 +17,14 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBrokerInfoStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPartitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
-import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
@@ -55,8 +57,6 @@ import io.camunda.gateway.protocol.model.MappingRuleUpdateResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageCorrelationResult;
 import io.camunda.gateway.protocol.model.MessagePublicationResult;
-import io.camunda.gateway.protocol.model.Partition.HealthEnum;
-import io.camunda.gateway.protocol.model.Partition.RoleEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
@@ -64,7 +64,6 @@ import io.camunda.gateway.protocol.model.RoleUpdateResult;
 import io.camunda.gateway.protocol.model.SignalBroadcastResult;
 import io.camunda.gateway.protocol.model.TenantCreateResult;
 import io.camunda.gateway.protocol.model.TenantUpdateResult;
-import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.gateway.protocol.model.UserUpdateResult;
@@ -772,48 +771,30 @@ public final class ResponseMapper {
                 .toList());
   }
 
-  public static TopologyResponse toTopologyResponse(final Topology topology) {
-    final var response = new TopologyResponse();
-    response
-        .clusterId(topology.clusterId())
-        .clusterSize(topology.clusterSize())
-        .gatewayVersion(topology.gatewayVersion())
-        .partitionsCount(topology.partitionsCount())
-        .replicationFactor(topology.replicationFactor())
-        .lastCompletedChangeId(KeyUtil.keyToString(topology.lastCompletedChangeId()));
-
-    topology
-        .brokers()
-        .forEach(
-            broker -> {
-              final var brokerInfo = new BrokerInfo();
-              addBrokerInfo(brokerInfo, broker);
-              addPartitionInfoToBrokerInfo(brokerInfo, broker.partitions());
-
-              response.addBrokersItem(brokerInfo);
-            });
-
-    return response;
+  public static GeneratedTopologyResponseStrictContract toTopologyResponse(
+      final Topology topology) {
+    return new GeneratedTopologyResponseStrictContract(
+        topology.brokers().stream().map(ResponseMapper::toBrokerInfo).toList(),
+        topology.clusterId(),
+        topology.clusterSize(),
+        topology.partitionsCount(),
+        topology.replicationFactor(),
+        topology.gatewayVersion(),
+        KeyUtil.keyToString(topology.lastCompletedChangeId()));
   }
 
-  private static void addBrokerInfo(final BrokerInfo brokerInfo, final Broker broker) {
-    brokerInfo.setNodeId(broker.nodeId());
-    brokerInfo.setHost(broker.host());
-    brokerInfo.setPort(broker.port());
-    brokerInfo.setVersion(broker.version());
+  private static GeneratedBrokerInfoStrictContract toBrokerInfo(final Broker broker) {
+    return new GeneratedBrokerInfoStrictContract(
+        broker.nodeId(),
+        broker.host(),
+        broker.port(),
+        broker.partitions().stream().map(ResponseMapper::toPartition).toList(),
+        broker.version());
   }
 
-  private static void addPartitionInfoToBrokerInfo(
-      final BrokerInfo brokerInfo, final List<Partition> partitions) {
-    partitions.forEach(
-        partition -> {
-          final var partitionDto = new io.camunda.gateway.protocol.model.Partition();
-
-          partitionDto.setPartitionId(partition.partitionId());
-          partitionDto.setRole(EnumUtil.convert(partition.role(), RoleEnum.class));
-          partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
-          brokerInfo.addPartitionsItem(partitionDto);
-        });
+  private static GeneratedPartitionStrictContract toPartition(final Partition partition) {
+    return new GeneratedPartitionStrictContract(
+        partition.partitionId(), partition.role().name(), partition.health().name());
   }
 
   private static String emptyToNull(final String value) {
