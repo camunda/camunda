@@ -31,12 +31,14 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {
+  instanceHistoryModificationStore,
+  type ElementInstancePlaceholder,
+} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
-import type {ElementInstancePlaceholder} from 'modules/types/operate';
 import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
