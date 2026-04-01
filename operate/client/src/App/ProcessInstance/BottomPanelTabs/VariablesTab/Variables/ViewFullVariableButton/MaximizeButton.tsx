@@ -18,8 +18,8 @@ const MaximizeButton: React.FC<MaximizeButtonProps> = ({onClick, label}) => {
       renderIcon={Maximize}
       size="sm"
       aria-label={label}
-      iconDescription={label}
-      tooltipPosition="left"
+      iconDescription="Expand"
+      tooltipPosition="top"
       onClick={onClick}
     />
   );

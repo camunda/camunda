@@ -73,7 +73,7 @@ describe('<ViewFullVariableButton />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: `View full value of ${mockVariableName}`,
+        name: `Expand`,
       }),
     );
 
@@ -119,7 +119,7 @@ describe('<ViewFullVariableButton />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Open JSON editor',
+        name: 'Expand',
       }),
     );
 
@@ -145,7 +145,7 @@ describe('<ViewFullVariableButton />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Open JSON editor',
+        name: 'Expand',
       }),
     );
 

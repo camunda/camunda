@@ -79,7 +79,7 @@ describe('VariablesTab notifications', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
@@ -98,7 +98,7 @@ describe('VariablesTab notifications', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     );
 
@@ -155,7 +155,7 @@ describe('VariablesTab notifications', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
@@ -174,7 +174,7 @@ describe('VariablesTab notifications', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     );
 

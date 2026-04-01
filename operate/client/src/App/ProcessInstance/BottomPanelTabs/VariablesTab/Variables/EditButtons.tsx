@@ -30,9 +30,9 @@ const EditButtons: React.FC = () => {
       <Button
         kind="ghost"
         size="sm"
-        iconDescription="Exit edit mode"
+        iconDescription="Exit"
         aria-label="Exit edit mode"
-        tooltipPosition="left"
+        tooltipPosition="top"
         onClick={() => {
           form.reset({});
         }}
@@ -47,9 +47,9 @@ const EditButtons: React.FC = () => {
         <Button
           kind="ghost"
           size="sm"
-          iconDescription="Save variable"
+          iconDescription="Save"
           aria-label="Save variable"
-          tooltipPosition="left"
+          tooltipPosition="top"
           disabled={
             initialValues?.value === values?.value ||
             validating ||

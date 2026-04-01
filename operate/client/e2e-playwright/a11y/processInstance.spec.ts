@@ -108,12 +108,11 @@ test.describe('process detail', () => {
       .disableRules(['aria-required-parent', 'list'])
       .analyze();
 
-    await page
-      .getByRole('button', {name: /edit variable loopCounter/i})
-      .click();
+    const row = page.getByRole('row', {name: 'loopCounter'});
+    await row.getByRole('button', {name: /edit/i}).click();
 
     validateResults(resultsWithEditVariableState);
-    await page.getByRole('button', {name: /exit edit mode/i}).click();
+    await page.getByRole('button', {name: /exit/i}).click();
 
     // add variable state
     const resultsWithAddVariableState = await makeAxeBuilder()
