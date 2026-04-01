@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,7 +89,9 @@ public class GatewayModuleConfiguration implements CloseableSilently {
         configuration.config().getCluster().getMemberId(),
         VersionUtil.getVersion());
 
-    atomixCluster.start();
+    // doing it async as potentially slow (messagingService → unicastService →
+    // membershipService → communicationService → eventService).
+    final CompletableFuture<Void> atomixClusterStartFuture = atomixCluster.start();
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
@@ -112,6 +115,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
                 .map(BrokerTopologyManager::getTopology));
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
+    atomixClusterStartFuture.join();
     gateway.start().join(30, TimeUnit.SECONDS);
     LOGGER.info("Standalone gateway is started!");
 
