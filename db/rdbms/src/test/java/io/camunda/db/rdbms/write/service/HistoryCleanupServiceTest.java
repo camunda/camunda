@@ -23,8 +23,12 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class HistoryCleanupServiceTest {
@@ -50,6 +54,9 @@ class HistoryCleanupServiceTest {
   private UsageMetricWriter usageMetricWriter;
   private UsageMetricTUWriter usageMetricTUWriter;
   private AuditLogWriter auditLogWriter;
+
+  private RdbmsWriterConfig.HistoryConfig historyConfig;
+  private RdbmsWriters rdbmsWriters;
 
   private HistoryCleanupService historyCleanupService;
 
@@ -96,7 +103,7 @@ class HistoryCleanupServiceTest {
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
-    final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
+    historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
     when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
     when(historyConfig.batchOperationCancelProcessInstanceHistoryTTL())
@@ -113,8 +120,10 @@ class HistoryCleanupServiceTest {
         .thenReturn(PROCESS_INSTANCE_BATCH_SIZE);
     when(historyConfig.usageMetricsCleanup()).thenReturn(Duration.ofDays(1));
     when(historyConfig.usageMetricsTTL()).thenReturn(Duration.ofDays(730));
+    when(historyConfig.maxHistoryCleanupUsage())
+        .thenReturn(RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_USAGE);
 
-    final var rdbmsWriters = mock(RdbmsWriters.class);
+    rdbmsWriters = mock(RdbmsWriters.class);
     when(rdbmsWriters.getProcessInstanceWriter()).thenReturn(processInstanceWriter);
     when(rdbmsWriters.getIncidentWriter()).thenReturn(incidentWriter);
     when(rdbmsWriters.getFlowNodeInstanceWriter()).thenReturn(flowNodeInstanceWriter);
@@ -335,7 +344,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then
     assertThat(nextDuration)
@@ -352,7 +361,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then
     assertThat(nextDuration)
@@ -369,7 +378,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then
     assertThat(nextDuration)
@@ -386,7 +395,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then
     assertThat(nextDuration)
@@ -444,7 +453,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then - should halve the interval because standalone decisions hit limit
     assertThat(nextDuration).isEqualTo(Duration.ofHours(2));
@@ -460,7 +469,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then - should halve the interval because audit logs hit limit
     assertThat(nextDuration).isEqualTo(Duration.ofHours(2));
@@ -480,7 +489,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then - should double the interval (both PIs and other entities below half threshold)
     assertThat(nextDuration).isEqualTo(Duration.ofHours(8));
@@ -499,7 +508,7 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then - should keep interval unchanged (PIs above half threshold but not at limit)
     assertThat(nextDuration).isEqualTo(Duration.ofHours(4));
@@ -519,9 +528,124 @@ class HistoryCleanupServiceTest {
 
     // when
     final Duration nextDuration =
-        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords, null);
 
     // then - should keep interval unchanged (other entities above half threshold but not at limit)
     assertThat(nextDuration).isEqualTo(Duration.ofHours(4));
+  }
+
+  @Test
+  void testCalculateNewDurationUsageLimitEnforcedWhenCleanupTookTooLong() {
+    // given - cleanup hit max records (interval would be halved) but cleanup also took too long
+    // lastDuration=40s, PIs hit limit -> halved to 20s (min interval overridden to 1s)
+    // cleanupDuration=12s, maxUsage=25% -> required = 12s / 0.25 = 48s > 20s
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("rootProcessInstance", PROCESS_INSTANCE_BATCH_SIZE); // hit limit
+
+    // when
+    when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofSeconds(1));
+    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(
+            Duration.ofSeconds(40), numDeletedRecords, Duration.ofSeconds(12));
+
+    // then - usage limit (25%) requires interval >= 36s, larger than the halved interval 20s
+    assertThat(nextDuration).isEqualTo(Duration.ofSeconds(36));
+  }
+
+  @Test
+  void testCalculateNewDurationUsageLimitNotEnforcedWhenCleanupWasFast() {
+    // given - cleanup hit max records (interval would be halved) but cleanup was fast
+    // lastDuration=40s, PIs hit limit -> halved to 20s (min interval overridden to 1s)
+    // cleanupDuration=1s, maxUsage=25% -> required = 1s / 0.25 = 4s < 20s (halved interval wins)
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("rootProcessInstance", PROCESS_INSTANCE_BATCH_SIZE); // hit limit
+
+    // when
+    when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofSeconds(1));
+    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(
+            Duration.ofSeconds(40), numDeletedRecords, Duration.ofSeconds(1));
+
+    // then - halved interval (20s) is larger than usage-limited interval (4s)
+    assertThat(nextDuration).isEqualTo(Duration.ofSeconds(20));
+  }
+
+  @Test
+  void testCalculateNewDurationUsageLimitCappedAtMaxCleanupInterval() {
+    // given - tiny maxUsage makes required interval exceed maxCleanupInterval
+    // maxCleanupInterval = 1 day = 86400s
+    // cleanupDuration=12s, maxUsage=0.0001 -> required = 12s / 0.0001 = 120000s > 86400s
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("rootProcessInstance", PROCESS_INSTANCE_BATCH_SIZE); // hit limit
+
+    // when
+    when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofSeconds(1));
+    when(historyConfig.maxHistoryCleanupUsage()).thenReturn(0.0001);
+    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(
+            Duration.ofSeconds(40), numDeletedRecords, Duration.ofSeconds(12));
+
+    // then - capped at maxCleanupInterval = 1 day
+    assertThat(nextDuration).isEqualTo(Duration.ofDays(1));
+  }
+
+  static Stream<Arguments> ensureWithinMaxHistoryCleanupUsageTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "enforces limit when cleanup took too long",
+            Duration.ofSeconds(20),
+            Duration.ofSeconds(12),
+            0.25,
+            Duration.ofSeconds(36)), // 12s / 0.25 - 12s = 36s
+        Arguments.of(
+            "does not reduce interval when cleanup was fast",
+            Duration.ofSeconds(20),
+            Duration.ofSeconds(1),
+            0.25,
+            Duration.ofSeconds(20)), // 1s / 0.25 - 1s = 3s < 20s, proposed wins
+        Arguments.of(
+            "applies stricter usage limit",
+            Duration.ofSeconds(20),
+            Duration.ofSeconds(12),
+            0.10,
+            Duration.ofSeconds(108)), // 12s / 0.10 - 12s = 108s
+        Arguments.of(
+            "returns proposed when usage limit is disabled",
+            Duration.ofSeconds(20),
+            Duration.ofSeconds(12),
+            0.0,
+            Duration.ofSeconds(20)),
+        Arguments.of(
+            "returns proposed when cleanupDuration is null",
+            Duration.ofSeconds(20),
+            null,
+            0.25,
+            Duration.ofSeconds(20)),
+        Arguments.of(
+            "returns proposed when cleanupDuration is zero",
+            Duration.ofSeconds(20),
+            Duration.ZERO,
+            0.25,
+            Duration.ofSeconds(20)));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("ensureWithinMaxHistoryCleanupUsageTestCases")
+  void testEnsureWithinMaxHistoryCleanupUsage(
+      final String description,
+      final Duration proposedDuration,
+      final Duration cleanupDuration,
+      final double maxHistoryCleanupUsage,
+      final Duration expectedDuration) {
+    when(historyConfig.maxHistoryCleanupUsage()).thenReturn(maxHistoryCleanupUsage);
+    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
+
+    final Duration result =
+        historyCleanupService.ensureWithinMaxHistoryCleanupUsage(proposedDuration, cleanupDuration);
+
+    assertThat(result).isEqualTo(expectedDuration);
   }
 }

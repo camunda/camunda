@@ -219,6 +219,7 @@ public class ExporterConfiguration {
             .usageMetricsTTL(history.getUsageMetricsTTL())
             .jobBatchMetricsCleanupInterval(history.getJobBatchMetricsCleanup())
             .jobBatchMetricsTTL(history.getJobBatchMetricsTTL())
+            .maxHistoryCleanupUsage(history.getMaxHistoryCleanupUsage())
             .build();
 
     return new RdbmsWriterConfig.Builder()
@@ -415,6 +416,8 @@ public class ExporterConfiguration {
     private Duration jobBatchMetricsCleanup =
         HistoryConfig.DEFAULT_JOB_METRICS_BATCH_CLEANUP_INTERVAL;
     private Duration jobBatchMetricsTTL = HistoryConfig.DEFAULT_HISTORY_TTL;
+    private double maxHistoryCleanupUsage =
+        RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_USAGE;
 
     public Duration getDefaultHistoryTTL() {
       return defaultHistoryTTL;
@@ -578,6 +581,15 @@ public class ExporterConfiguration {
                 historyCleanupBatchSize));
       }
 
+      if (!Double.isFinite(maxHistoryCleanupUsage)
+          || maxHistoryCleanupUsage <= 0
+          || maxHistoryCleanupUsage > 1) {
+        errors.add(
+            String.format(
+                "maxHistoryCleanupUsage must be between 0 (exclusive) and 1 (inclusive) but was %s",
+                maxHistoryCleanupUsage));
+      }
+
       return errors;
     }
 
@@ -588,6 +600,14 @@ public class ExporterConfiguration {
     public void setHistoryCleanupProcessInstanceBatchSize(
         final int historyCleanupProcessInstanceBatchSize) {
       this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
+    }
+
+    public double getMaxHistoryCleanupUsage() {
+      return maxHistoryCleanupUsage;
+    }
+
+    public void setMaxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
+      this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
     }
   }
 }
