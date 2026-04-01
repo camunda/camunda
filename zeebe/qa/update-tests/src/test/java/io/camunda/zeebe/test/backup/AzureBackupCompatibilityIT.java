@@ -79,8 +79,10 @@ final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance,
             .buildClient();
 
     final var containerClient = blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
-    containerClient
-        .listBlobs()
-        .forEach(blob -> containerClient.getBlobClient(blob.getName()).delete());
+    if (containerClient.exists()) {
+      containerClient
+          .listBlobs()
+          .forEach(blob -> containerClient.getBlobClient(blob.getName()).delete());
+    }
   }
 }

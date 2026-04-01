@@ -112,9 +112,11 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
               .map(key -> ObjectIdentifier.builder().key(key).build())
               .toList();
 
-      client
-          .deleteObjects(req -> req.bucket(BUCKET_NAME).delete(delete -> delete.objects(blobs)))
-          .join();
+      if (!blobs.isEmpty()) {
+        client
+            .deleteObjects(req -> req.bucket(BUCKET_NAME).delete(delete -> delete.objects(blobs)))
+            .join();
+      }
     }
   }
 }
