@@ -81,4 +81,4 @@ runs:
         SINCE_TIME: ${{ steps.trigger.outputs.since_time }}
       run: |
         set -euo pipefail
-        ./.ci/saas-downstream-e2e/wait-downstream.sh
+        ./.ci/saas-downstream-e2e/wait-run.sh
