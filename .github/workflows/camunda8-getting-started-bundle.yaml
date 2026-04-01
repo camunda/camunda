@@ -771,9 +771,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_DEVELOPER_PORTAL_WEBHOOK;
+
       - name: Send Slack notification
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVELOPER_PORTAL_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DEVELOPER_PORTAL_WEBHOOK }}
         run: |
           RELEASE_BASE_URL="https://github.com/camunda/camunda/releases/download/${C8RUN_VERSION}"
           
@@ -841,6 +853,17 @@ jobs:
     if: ${{ !inputs.dry_run && needs.upload-to-release.result == 'success' }}
     permissions: {}
     steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_RELEASE_WEBHOOK;
       - name: Send release announcement to Slack
         env:
           C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
@@ -862,7 +885,7 @@ jobs:
           
           PAYLOAD=$(jq -n --argjson blocks "$BLOCKS" '{blocks: $blocks}')
           
-          curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_RELEASE_WEBHOOK }}" \
+          curl -X POST "${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_RELEASE_WEBHOOK }}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
 
