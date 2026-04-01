@@ -49,7 +49,9 @@ function useSelectionAwareIncidentsCount(
     : processIncidentsCount;
 }
 
-const BottomPanelTabs: React.FC = () => {
+const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
+  isHistoryTabVisible,
+}) => {
   const {hasSelection} = useProcessInstanceElementSelection();
   const {data: processInstance} = useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
@@ -121,6 +123,16 @@ const BottomPanelTabs: React.FC = () => {
       selected: currentPage === 'process-details-operations-log',
       title: 'Operations Log',
       visible: true,
+    },
+    {
+      label: 'Instance History',
+      to: {
+        pathname: Paths.processInstanceHistory({processInstanceId}),
+      },
+      key: 'instance-history',
+      selected: currentPage === 'process-details-instance-history',
+      title: 'Instance History',
+      visible: isHistoryTabVisible,
     },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 
