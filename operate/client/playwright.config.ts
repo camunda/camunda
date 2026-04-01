@@ -90,7 +90,12 @@ const config = defineConfig({
     {
       name: 'a11y',
       testMatch: 'a11y/**/*.spec.ts',
-      use: {...devices['Desktop Chrome']},
+      use: {...devices['Desktop Chrome'], colorScheme: 'light'},
+    },
+    {
+      name: 'a11y-dark',
+      testMatch: 'a11y/**/*.spec.ts',
+      use: {...devices['Desktop Chrome'], colorScheme: 'dark'},
     },
     {
       name: 'screenshot-generator',
