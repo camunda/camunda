@@ -74,6 +74,7 @@ import io.netty.util.concurrent.Future;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
@@ -938,8 +939,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       serverChannel = f.channel();
                       bind(bootstrap, addressIterator, future);
                     } else {
-                      log.warn(
-                          "Failed to bind TCP server to port {} due to {}", address, f.cause());
+                      if (f.cause() instanceof BindException) {
+                        log.error(
+                            "Failed to bind TCP server to port {}. The port is already in use. "
+                                + "Either free the port or configure a different value.",
+                            address,
+                            f.cause());
+                      } else {
+                        log.error(
+                            "Failed to bind TCP server to port {} due to {}", address, f.cause());
+                      }
                       future.completeExceptionally(f.cause());
                     }
                   });
