@@ -105,7 +105,7 @@ install-load-test:
 	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
 		--install \
 		--namespace $(namespace) \
-		--reuse-values \
+		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--set global.connect.serviceName=zeebe-gateway \
 		$(additional_load_test_configuration)
