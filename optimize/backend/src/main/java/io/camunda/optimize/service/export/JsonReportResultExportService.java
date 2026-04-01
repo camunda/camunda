@@ -7,9 +7,11 @@
  */
 package io.camunda.optimize.service.export;
 
+import static io.camunda.optimize.ErrorType.SEARCH_CONTEXT_MISSING;
 import static io.camunda.optimize.service.db.DatabaseConstants.SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -97,7 +99,11 @@ public class JsonReportResultExportService {
                 assert pag.type() != null;
                 return pag.type().contains(SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE);
               })
-          .map(pag -> (Exception) new BadRequestException(pag.reason()))
+          .map(
+              pag -> {
+                OptimizeMetrics.recordError(SEARCH_CONTEXT_MISSING);
+                return (Exception) new BadRequestException(pag.reason());
+              })
           // In case the exception happened for another reason, just return it as is
           .orElse(e);
     } else if (e instanceof final OpenSearchException openSearchExc) {
@@ -107,7 +113,11 @@ public class JsonReportResultExportService {
                 assert pag.type() != null;
                 return pag.type().contains(SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE);
               })
-          .map(pag -> (Exception) new BadRequestException(pag.reason()))
+          .map(
+              pag -> {
+                OptimizeMetrics.recordError(SEARCH_CONTEXT_MISSING);
+                return (Exception) new BadRequestException(pag.reason());
+              })
           // In case the exception happened for another reason, just return it as is
           .orElse(e);
     } else {

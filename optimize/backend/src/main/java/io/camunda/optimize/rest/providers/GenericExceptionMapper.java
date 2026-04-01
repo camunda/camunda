@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.providers;
 
+import io.camunda.optimize.ErrorType;
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.security.AuthCookieService;
@@ -64,6 +66,8 @@ public class GenericExceptionMapper {
 
     final String localizedMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+
+    OptimizeMetrics.recordError(ErrorType.fromException(throwable));
 
     final ErrorResponseDto errorResponseDto =
         new ErrorResponseDto(errorCode, localizedMessage, throwable.getMessage());
