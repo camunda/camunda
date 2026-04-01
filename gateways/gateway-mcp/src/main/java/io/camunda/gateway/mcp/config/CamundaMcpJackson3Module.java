@@ -7,18 +7,16 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
-import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
- * Jackson 3 module that registers MCP-specific mixins to hide internal fields (e.g., {@code
- * tenantId}) from tool schemas and parameter deserialization.
+ * Jackson 3 module for MCP-specific type customizations.
  *
- * <p>This module is the single source of truth for MCP mixin registrations. It is auto-discovered
- * by Spring AI's {@code JsonParser} via the service loader mechanism ({@code
+ * <p>Previously registered mixins to hide internal fields from old protocol model types. Those
+ * types have been replaced by MCP-local records that inherently exclude hidden fields, so no mixins
+ * are needed. This module is retained for future MCP-specific Jackson customizations.
+ *
+ * <p>Auto-discovered by Spring AI's {@code JsonParser} via the service loader mechanism ({@code
  * META-INF/services/tools.jackson.databind.JacksonModule}), and the same mapper is used by the
  * schema generator (victools).
  */
@@ -28,8 +26,5 @@ public class CamundaMcpJackson3Module extends SimpleModule {
 
   public CamundaMcpJackson3Module() {
     super(MODULE_NAME);
-    setMixInAnnotation(
-        ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class);
-    setMixInAnnotation(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
   }
 }

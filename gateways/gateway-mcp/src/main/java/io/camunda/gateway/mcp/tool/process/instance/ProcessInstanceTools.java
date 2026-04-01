@@ -25,24 +25,18 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProces
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQuerySortRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSortOrderEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
-import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpDateRange;
+import io.camunda.gateway.mcp.model.McpProcessInstanceCreation;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpProcessInstanceSearchQuery;
-import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
-import io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty;
+import io.camunda.gateway.mcp.model.McpVariableValue;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -133,13 +127,11 @@ public class ProcessInstanceTools {
           are more likely to time out. You can increase the timeout to wait for completion by defining
           a longer requestTimeout.""")
   public CallToolResult createProcessInstance(
-      @McpToolParamsUnwrapped @Valid final ProcessInstanceCreationInstruction creationInstruction) {
+      @McpToolParamsUnwrapped @Valid final McpProcessInstanceCreation creationInstruction) {
     try {
-      final var validationError =
-          ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(
-              creationInstruction);
-      if (validationError.isPresent()) {
-        return CallToolResultMapper.mapProblemToResult(validationError.get());
+      final var validationError = validateCreationInstruction(creationInstruction);
+      if (validationError != null) {
+        return CallToolResultMapper.mapProblemToResult(validationError);
       }
 
       final var strict = toStrictCreationInstruction(creationInstruction);
@@ -172,7 +164,7 @@ public class ProcessInstanceTools {
   private static GeneratedProcessInstanceSearchQueryRequestStrictContract toStrictContract(
       final McpProcessInstanceSearchQuery query) {
     return new GeneratedProcessInstanceSearchQueryRequestStrictContract(
-        toStrictPage(query.page()), toStrictSort(query.sort()), toStrictFilter(query.filter()));
+        query.page(), query.sort(), toStrictFilter(query.filter()));
   }
 
   private static GeneratedProcessInstanceFilterStrictContract toStrictFilter(
@@ -222,7 +214,7 @@ public class ProcessInstanceTools {
   }
 
   private static List<GeneratedVariableValueFilterPropertyStrictContract>
-      toStrictVariableValueFilters(final List<VariableValueFilterProperty> variables) {
+      toStrictVariableValueFilters(final List<McpVariableValue> variables) {
     if (variables == null || variables.isEmpty()) {
       return null;
     }
@@ -230,33 +222,7 @@ public class ProcessInstanceTools {
         .map(
             v ->
                 new GeneratedVariableValueFilterPropertyStrictContract(
-                    v.getName(), wrapString(v.getValue())))
-        .toList();
-  }
-
-  private static GeneratedSearchQueryPageRequestStrictContract toStrictPage(
-      final SearchQueryPageRequest page) {
-    if (page == null) {
-      return null;
-    }
-    return new GeneratedSearchQueryPageRequestStrictContract(
-        page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
-  }
-
-  private static List<GeneratedProcessInstanceSearchQuerySortRequestStrictContract> toStrictSort(
-      final List<ProcessInstanceSearchQuerySortRequest> sort) {
-    if (sort == null || sort.isEmpty()) {
-      return null;
-    }
-    return sort.stream()
-        .map(
-            s ->
-                new GeneratedProcessInstanceSearchQuerySortRequestStrictContract(
-                    GeneratedProcessInstanceSearchQuerySortRequestStrictContract.FieldEnum
-                        .fromValue(s.getField().getValue()),
-                    s.getOrder() != null
-                        ? GeneratedSortOrderEnum.fromValue(s.getOrder().getValue())
-                        : null))
+                    v.name(), wrapString(v.value())))
         .toList();
   }
 
@@ -281,38 +247,60 @@ public class ProcessInstanceTools {
         );
   }
 
-  // -- Process instance creation: facade → strict contract conversion --
+  // -- Process instance creation: validation + facade → strict contract conversion --
+
+  private static org.springframework.http.ProblemDetail validateCreationInstruction(
+      final McpProcessInstanceCreation instruction) {
+    final var byIdSet =
+        instruction.processDefinitionId() != null && !instruction.processDefinitionId().isBlank();
+    final var byKeySet =
+        instruction.processDefinitionKey() != null && !instruction.processDefinitionKey().isBlank();
+
+    if (!byIdSet && !byKeySet) {
+      return GatewayErrorMapper.createProblemDetail(
+          HttpStatus.BAD_REQUEST,
+          "At least one of [processDefinitionId, processDefinitionKey] is required.",
+          "INVALID_ARGUMENT");
+    }
+    if (byIdSet && byKeySet) {
+      return GatewayErrorMapper.createProblemDetail(
+          HttpStatus.BAD_REQUEST,
+          "Only one of [processDefinitionId, processDefinitionKey] is allowed.",
+          "INVALID_ARGUMENT");
+    }
+    return null;
+  }
 
   private static GeneratedProcessInstanceCreationInstructionStrictContract
-      toStrictCreationInstruction(final ProcessInstanceCreationInstruction instruction) {
-    final var defId = instruction.getProcessDefinitionId();
+      toStrictCreationInstruction(final McpProcessInstanceCreation instruction) {
+    final var defId = instruction.processDefinitionId();
     if (defId != null && !defId.isBlank()) {
       return new GeneratedProcessInstanceCreationInstructionByIdStrictContract(
           defId,
-          instruction.getProcessDefinitionVersion(),
-          instruction.getVariables(),
-          instruction.getTenantId(),
+          instruction.processDefinitionVersion(),
+          instruction.variables(),
+          instruction.tenantId(),
           null, // operationReference — not exposed in MCP
           null, // startInstructions — not exposed in MCP
           null, // runtimeInstructions — not exposed in MCP
-          instruction.getAwaitCompletion(),
-          instruction.getFetchVariables(),
-          instruction.getRequestTimeout(),
-          instruction.getTags(),
-          instruction.getBusinessId());
+          instruction.awaitCompletion(),
+          instruction.fetchVariables(),
+          instruction.requestTimeout(),
+          instruction.tags(),
+          instruction.businessId());
     }
     return new GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
-        instruction.getProcessDefinitionKey(),
-        instruction.getProcessDefinitionVersion(),
-        instruction.getVariables(),
+        instruction.processDefinitionKey(),
+        instruction.processDefinitionVersion(),
+        instruction.variables(),
         null, // startInstructions — not exposed in MCP
         null, // runtimeInstructions — not exposed in MCP
-        instruction.getTenantId(),
+        instruction.tenantId(),
         null, // operationReference — not exposed in MCP
-        instruction.getAwaitCompletion(),
-        instruction.getRequestTimeout(),
-        instruction.getFetchVariables(),
-        instruction.getTags(),
-        instruction.getBusinessId());
+        instruction.awaitCompletion(),
+        instruction.requestTimeout(),
+        instruction.fetchVariables(),
+        instruction.tags(),
+        instruction.businessId());
   }
 }

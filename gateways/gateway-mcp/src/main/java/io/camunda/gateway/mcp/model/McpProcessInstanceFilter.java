@@ -10,8 +10,7 @@ package io.camunda.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
-import io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import java.util.List;
@@ -35,7 +34,7 @@ public record McpProcessInstanceFilter(
     @JsonProperty
         @JsonPropertyDescription("Filter by process instance state.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        ProcessInstanceStateEnum state,
+        GeneratedProcessInstanceStateEnum state,
     @JsonProperty
         @JsonPropertyDescription("Filter by whether the process instance has an incident.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
@@ -64,7 +63,7 @@ public record McpProcessInstanceFilter(
         @JsonPropertyDescription(
             "Filter by variable values. Each item has a 'name' and 'value' field.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        List<VariableValueFilterProperty> variables,
+        List<McpVariableValue> variables,
     @JsonProperty
         @JsonPropertyDescription(
             "Filter by tags. Tags must start with a letter, followed by alphanumerics, `_`, `-`, `:`, or `.`; max length 100.")
