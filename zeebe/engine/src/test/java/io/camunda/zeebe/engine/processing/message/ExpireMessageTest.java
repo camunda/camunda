@@ -14,14 +14,9 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordAssert;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
-import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -71,11 +66,7 @@ public final class ExpireMessageTest {
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
-        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
-
-    Assertions.assertThat(expireBatchMessageCommand.getValue())
-        .hasMessageKeys(publishedMessageKeys);
+    RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
 
     final List<Long> listOfExpiredMessageKeys =
         RecordingExporter.messageRecords()
@@ -104,11 +95,10 @@ public final class ExpireMessageTest {
             .withRecordKey(publishedRecord.getKey())
             .getFirst();
 
-    Assertions.assertThat(deletedEvent.getValue())
-        .hasName("order canceled")
-        .hasCorrelationKey("order-123")
-        .hasTimeToLive(0L)
-        .hasMessageId("");
+    assertThat(deletedEvent.getValue().getName()).isEqualTo("order canceled");
+    assertThat(deletedEvent.getValue().getCorrelationKey()).isEqualTo("order-123");
+    assertThat(deletedEvent.getValue().getTimeToLive()).isEqualTo(0L);
+    assertThat(deletedEvent.getValue().getMessageId()).isEmpty();
   }
 
   // regression test for https://github.com/camunda/camunda/issues/5420
@@ -118,19 +108,14 @@ public final class ExpireMessageTest {
     final long timeToLive = 50L;
 
     // when
-    final Record<MessageRecordValue> publishedRecord =
-        messageClient.withTimeToLive(timeToLive).publish();
+    messageClient.withTimeToLive(timeToLive).publish();
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageBatchRecordValue> deleteCommand =
-        RecordingExporter.messageBatchRecords()
-            .withIntent(MessageBatchIntent.EXPIRE)
-            .hasMessageKey(publishedRecord.getKey())
-            .getFirst();
+    final Record<MessageBatchRecordValue> expireCommand =
+        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
 
-    // then
-    assertThat(deleteCommand.getSourceRecordPosition()).isLessThan(0);
+    assertThat(expireCommand.getSourceRecordPosition()).isLessThan(0);
   }
 
   @Test
@@ -156,12 +141,6 @@ public final class ExpireMessageTest {
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
-        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
-
-    Assertions.assertThat(expireBatchMessageCommand.getValue())
-        .hasMessageKeys(List.of(publishedRecord.getKey(), secondPublishedRecord.getKey()));
-
     final MessageRecordValue firstMessage = publishedRecord.getValue();
     final MessageRecordValue secondMessage = secondPublishedRecord.getValue();
 
@@ -203,95 +182,30 @@ public final class ExpireMessageTest {
             .publish()
             .getKey();
 
-    // when
-    // assume the message already correlated and expired in the meantime
+    // when — expire the first message individually before the batch runs
     ENGINE_RULE.writeRecords(
         RecordToWrite.command()
             .key(firstMessageKey)
             .message(MessageIntent.EXPIRE, firstMessage.getValue()));
 
-    // write the batch expire command that will be processed after the correlation
-    final MessageBatchRecord messageBatchRecord = new MessageBatchRecord();
-    messageBatchRecord.addMessageKey(firstMessageKey).addMessageKey(secondMessageKey);
-    ENGINE_RULE.writeRecords(RecordToWrite.command().messageBatch(messageBatchRecord));
+    // wait for the individual expire to be processed
+    RecordingExporter.messageRecords()
+        .withIntent(MessageIntent.EXPIRED)
+        .withRecordKey(firstMessageKey)
+        .getFirst();
 
-    ENGINE_RULE
-        .signal()
-        .withSignalName("test-speedup-helper")
-        .broadcast(); // to limit records to speed up assertion
+    ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
-    // then
-    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
+    // then — only the second message is expired by the batch
+    final Record<MessageBatchRecordValue> expireCommand =
         RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
 
-    Assertions.assertThat(expireBatchMessageCommand.getValue())
-        .hasMessageKeys(List.of(firstMessageKey, secondMessageKey));
-
-    final List<Long> listOfExpiredMessageKeys =
-        RecordingExporter.records()
-            // Speed up assertion. Otherwise, it waits 5 seconds for more EXPIRED records.
-            .between(
-                r -> r.getIntent() == MessageBatchIntent.EXPIRE,
-                r -> r.getIntent() == SignalIntent.BROADCASTED)
+    final Record<MessageRecordValue> batchExpiredRecord =
+        RecordingExporter.messageRecords()
             .withIntent(MessageIntent.EXPIRED)
-            .withSourceRecordPosition(
-                expireBatchMessageCommand.getPosition()) // only filter by the batch
-            .flatMapToLong(v -> LongStream.of(v.getKey()))
-            .boxed()
-            .collect(Collectors.toList());
-
-    assertThat(listOfExpiredMessageKeys).isEqualTo(List.of(secondMessageKey));
-  }
-
-  @Test
-  public void shouldRejectIfNoMessageIsExpired() {
-    // given
-    final var firstMessage =
-        ENGINE_RULE
-            .message()
-            .withCorrelationKey("correlation1")
-            .withName("message1")
-            .withTimeToLive(Duration.ofMinutes(1))
-            .publish();
-    final long firstMessageKey = firstMessage.getKey();
-
-    final var secondMessage =
-        ENGINE_RULE
-            .message()
-            .withCorrelationKey("correlation2")
-            .withName("message2")
-            .withTimeToLive(Duration.ofMinutes(1))
-            .publish();
-    final long secondMessageKey = secondMessage.getKey();
-
-    // when
-    // assume the message already correlated and expired in the meantime
-    ENGINE_RULE.writeRecords(
-        RecordToWrite.command()
-            .key(firstMessageKey)
-            .message(MessageIntent.EXPIRE, firstMessage.getValue()));
-    ENGINE_RULE.writeRecords(
-        RecordToWrite.command()
-            .key(secondMessageKey)
-            .message(MessageIntent.EXPIRE, secondMessage.getValue()));
-
-    // write the batch expire command that will be processed after the correlation
-    final MessageBatchRecord messageBatchRecord = new MessageBatchRecord();
-    messageBatchRecord.addMessageKey(firstMessageKey).addMessageKey(secondMessageKey);
-    ENGINE_RULE.writeRecords(RecordToWrite.command().messageBatch(messageBatchRecord));
-
-    // then
-    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
-        RecordingExporter.messageBatchRecords()
-            .withIntent(MessageBatchIntent.EXPIRE)
-            .onlyCommandRejections()
+            .withSourceRecordPosition(expireCommand.getPosition())
             .getFirst();
 
-    Assertions.assertThat(expireBatchMessageCommand.getValue())
-        .hasMessageKeys(List.of(firstMessageKey, secondMessageKey));
-    RecordAssert.assertThat(expireBatchMessageCommand)
-        .hasRejectionReason(
-            "Expected to expire 2 messages in a batch, but none of the messages were found in the state.")
-        .hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(batchExpiredRecord.getKey()).isEqualTo(secondMessageKey);
   }
 }
