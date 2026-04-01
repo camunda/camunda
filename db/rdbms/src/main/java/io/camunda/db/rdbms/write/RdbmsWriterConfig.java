@@ -125,7 +125,8 @@ public record RdbmsWriterConfig(
       Duration usageMetricsCleanup,
       Duration usageMetricsTTL,
       Duration jobBatchMetricsCleanup,
-      Duration jobBatchMetricsTTL) {
+      Duration jobBatchMetricsTTL,
+      double maxHistoryCleanupUsage) {
 
     public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
     public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
@@ -139,6 +140,9 @@ public record RdbmsWriterConfig(
     // Keep this smaller to avoid Oracle IN-clause limit (1000)
     // when passing PI keys to deleteRootProcessInstanceRelatedData()
     public static final int DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
+
+    /** Default maximum percentage usage of the exporter for history cleanup (25%). */
+    public static final double DEFAULT_MAX_HISTORY_CLEANUP_USAGE = 0.25;
 
     public static HistoryConfig.Builder builder() {
       return new HistoryConfig.Builder();
@@ -165,6 +169,7 @@ public record RdbmsWriterConfig(
       private Duration usageMetricsTTL = DEFAULT_USAGE_METRICS_TTL;
       private Duration jobBatchMetricsCleanupInterval = DEFAULT_JOB_METRICS_BATCH_CLEANUP_INTERVAL;
       private Duration jobBatchMetricsTTL = DEFAULT_HISTORY_TTL;
+      private double maxHistoryCleanupUsage = DEFAULT_MAX_HISTORY_CLEANUP_USAGE;
 
       public HistoryConfig.Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
         this.defaultHistoryTTL = defaultHistoryTTL;
@@ -247,6 +252,11 @@ public record RdbmsWriterConfig(
         return this;
       }
 
+      public HistoryConfig.Builder maxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
+        this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
+        return this;
+      }
+
       @Override
       public HistoryConfig build() {
         return new HistoryConfig(
@@ -263,7 +273,8 @@ public record RdbmsWriterConfig(
             usageMetricsCleanup,
             usageMetricsTTL,
             jobBatchMetricsCleanupInterval,
-            jobBatchMetricsTTL);
+            jobBatchMetricsTTL,
+            maxHistoryCleanupUsage);
       }
     }
   }
