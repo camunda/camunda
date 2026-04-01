@@ -73,20 +73,6 @@ if (( TEST_COUNT > 0 )); then
   echo ""
 fi
 
-# List steps grouped by phase (auto-parsed from .http file)
-echo -e "${BLUE}Execution Plan:${NC}"
-current_phase=""
-while IFS= read -r line; do
-  if [[ "$line" =~ ^###\ PHASE\ [0-9]+:\ (.*) ]]; then
-    current_phase="${BASH_REMATCH[1]}"
-    echo ""
-    echo -e "  ${BOLD}${current_phase}${NC}"
-  elif [[ "$line" =~ ^###\ Step\ (.*) ]]; then
-    echo -e "    ${DIM}→${NC} ${BASH_REMATCH[1]}"
-  fi
-done < "$HTTP_FILE"
-echo ""
-
 # ── Run ijhttp (output suppressed — we show our own results) ───
 
 echo -e "${YELLOW}▶ Starting test execution...${NC}"
@@ -135,22 +121,33 @@ if ijhttp "$HTTP_FILE" \
     printf "${BLUE}│${NC} ${RED}%s${NC}%*s${BLUE}│${NC}\n" "$fail_line" $((WIDTH - ${#fail_line} - 1)) ""
     printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
 
-    # Show failed test details from ijhttp output
-    printf "${BLUE}│${NC}%*s${BLUE}│${NC}\n" $WIDTH ""
-    while IFS= read -r fline; do
-      printf "${BLUE}│${NC} ${RED}  %s${NC}%*s${BLUE}│${NC}\n" "$fline" $((WIDTH - ${#fline} - 3)) ""
-    done < <(grep -i "FAIL\|AssertionError\|Expected" "$TMPOUT" | head -20 || true)
-
     printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
     req_line=" HTTP Requests: $TOTAL_REQUESTS"
     printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$req_line" $((WIDTH - ${#req_line})) ""
     printf "${BLUE}└%${WIDTH}s┘${NC}\n" "" | tr ' ' '─'
     echo ""
-    echo -e "${RED}E2E validation failed${NC}"
-    echo -e "${YELLOW}Full output saved to: $TMPOUT${NC}"
-    # Print full output for CI log inspection
+
+    # Show execution steps grouped by phase so we can see where it failed
+    echo -e "${BLUE}Execution Steps:${NC}"
+    while IFS= read -r sline; do
+      if [[ "$sline" =~ ^###\ PHASE\ [0-9]+:\ (.*) ]]; then
+        echo ""
+        echo -e "  ${BOLD}${BASH_REMATCH[1]}${NC}"
+      elif [[ "$sline" =~ ^###\ Step\ (.*) ]]; then
+        echo -e "    → ${BASH_REMATCH[1]}"
+      fi
+    done < "$HTTP_FILE"
     echo ""
-    echo -e "${DIM}── ijhttp output ──${NC}"
+
+    # Show failed assertion details from ijhttp output
+    echo -e "${RED}Failed Assertions:${NC}"
+    grep -i "FAIL\|AssertionError\|Expected" "$TMPOUT" | head -20 || true
+    echo ""
+
+    echo -e "${RED}E2E validation failed${NC}"
+    # Print full ijhttp output for CI log inspection
+    echo ""
+    echo -e "${DIM}── Full ijhttp output ──${NC}"
     cat "$TMPOUT"
     exit 1
   fi
