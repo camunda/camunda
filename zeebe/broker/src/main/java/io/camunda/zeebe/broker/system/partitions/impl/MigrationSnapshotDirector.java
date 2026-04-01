@@ -64,14 +64,14 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
     }
   }
 
-  public void scheduleSnapshot() {
+  private void scheduleSnapshot() {
     if (!snapshotTaken) {
       LOG.debug("Scheduling snapshot for migration.");
       forceSnapshotUntilSuccessful();
     }
   }
 
-  public void cancelScheduledSnapshot() {
+  private void cancelScheduledSnapshot() {
     if (runningSnapshot != null) {
       runningSnapshot.cancel();
       runningSnapshot = null;
