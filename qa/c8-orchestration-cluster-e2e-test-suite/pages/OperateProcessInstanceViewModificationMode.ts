@@ -91,7 +91,9 @@ export class OperateProcessInstanceViewModificationModePage {
     this.addModificationButtononPopup = page.getByRole('button', {
       name: /Add single (flow node|element) instance/i,
     });
-    this.moveAllButtononPopup = page.getByRole('button', {name: /Move all/i});
+    this.moveAllButtononPopup = page
+      .getByTestId('popover')
+      .getByRole('button', {name: /Move all/i});
     this.cancelButtonPopup = page.getByRole('button', {
       name: /Cancel selected instance in this (flow node|element)/i,
     });
@@ -307,7 +309,17 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickMoveAllButtononPopup(): Promise<void> {
-    await this.moveAllButtononPopup.click();
+    // Wait for any in-flight element-stats fetch (which replaces buttons with a
+    // spinner) to complete before clicking. Passes immediately when the spinner
+    // is not present.
+    await this.page
+      .getByTestId('dropdown-spinner')
+      .waitFor({state: 'hidden', timeout: 15000});
+    // The sticky header can overlap the button in the popover, intercepting
+    // pointer events even though the button is visible and enabled. Using
+    // evaluate/click() fires the DOM click event directly on the element,
+    // bypassing any visual interception by the header.
+    await this.moveAllButtononPopup.evaluate((el: HTMLElement) => el.click());
   }
 
   async clickMoveInstanceButtononPopup(): Promise<void> {
