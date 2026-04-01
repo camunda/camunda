@@ -6,12 +6,8 @@
 name: C8 Orchestration Cluster E2E Tests Nightly
 
 on:
-  pull_request:
-    types: [opened, edited, synchronize]  # Triggers on PR open, new comits on PR and when the PR description is edited
-
-#on:
-#  schedule:
-#    - cron: "0 0 * * *" # Run all tests at midnight UTC
+  schedule:
+    - cron: "0 0 * * *" # Run all tests at midnight UTC
 permissions:
   contents: read
 
@@ -21,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-fix-rdbms-failures]
+        branch: [stable/8.6, stable/8.7, stable/8.8, stable/8.9, main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -150,7 +146,7 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: false
+          INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           API_TESTS_ONLY: true
@@ -229,7 +225,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ test-fix-rdbms-failures ]
+        branch: [ stable/8.9, main ]
 
     steps:
       - name: Checkout Code
@@ -282,7 +278,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ test-fix-rdbms-failures ]
+        branch: [ stable/8.9, main ]
         database:
           # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
           - database-name: "Postgres 14"
@@ -576,7 +572,7 @@ jobs:
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
           DATABASE: "RDBMS"
           DB_NAME: ${{ matrix.database.database-name }}
-          INCLUDE_SLACK_REPORTER: false
+          INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
         run: DATABASE=RDBMS npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
@@ -633,8 +629,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-fix-rdbms-failures]
+        branch: [stable/8.6, stable/8.7, stable/8.8, stable/8.9, main]
         tasklist_mode: [v1, v2]
+        exclude:
+          # V2 mode only supported on main branch - exclude V2 for older branches
+          - branch: stable/8.6
+            tasklist_mode: v2
+          - branch: stable/8.7
+            tasklist_mode: v2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -766,7 +768,7 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: false
+          INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
