@@ -8,7 +8,10 @@
 
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+  type BatchOperationType,
+  type ProcessInstance,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Button, MenuButton, MenuItem} from '@carbon/react';
 import {
   Error,
@@ -26,7 +29,6 @@ import {tracking} from 'modules/tracking';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
-import {type OperationEntityType} from 'modules/types/operate';
 import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
 import {CancelConfirmationModal} from 'modules/components/Operations/CancelConfirmationModal';
 import {DeleteConfirmationModal} from 'modules/components/Operations/DeleteConfirmationModal';
@@ -50,7 +52,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({
   const processInstanceKey = processInstance.processInstanceKey;
   const navigate = useNavigate();
   const handleOperationSuccessUtil = useHandleOperationSuccess();
-  const handleOperationSuccess = (operationType: OperationEntityType) => {
+  const handleOperationSuccess = (operationType: BatchOperationType) => {
     handleOperationSuccessUtil({
       operationType,
       source: 'instance-header',
