@@ -76,9 +76,11 @@ public final class MessageEventProcessors {
             MessageBatchIntent.EXPIRE,
             new MessageBatchExpireProcessor(
                 writers.state(),
-                writers.rejection(),
+                writers.command(),
                 messageState,
-                featureFlags.enableMessageBodyOnExpired()))
+                config.getMessagesTtlCheckerBatchLimit(),
+                featureFlags.enableMessageBodyOnExpired(),
+                clock))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(
@@ -141,7 +143,6 @@ public final class MessageEventProcessors {
                 scheduledTaskStateFactory.get().getPendingMessageSubscriptionState(),
                 subscriptionCommandSender,
                 config.getMessagesTtlCheckerInterval(),
-                config.getMessagesTtlCheckerBatchLimit(),
                 featureFlags.enableMessageTTLCheckerAsync(),
                 clock));
   }
