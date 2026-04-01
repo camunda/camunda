@@ -295,7 +295,7 @@ elasticsearch:
     pdb:
       minAvailable: 2
     ## @param elasticsearch.master.heapSize
-    heapSize: 3g
+    heapSize: 6g
     persistence:
       ## @param elasticsearch.master.persistence.size
       size: 512Gi
@@ -304,10 +304,10 @@ elasticsearch:
     resources:
       requests:
         cpu: 7000m
-        memory: 8Gi
+        memory: 12Gi
       limits:
         cpu: 7000m
-        memory: 8Gi
+        memory: 12Gi
     nodeSelector:
       component: benchmark-n2-standard-8
     tolerations:
