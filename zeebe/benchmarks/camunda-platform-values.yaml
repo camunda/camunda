@@ -350,7 +350,7 @@ elasticsearch:
     pdb:
       minAvailable: 2
     ## @param elasticsearch.master.heapSize
-    heapSize: 3g
+    heapSize: 4g
     persistence:
       ## @param elasticsearch.master.persistence.size
       size: 512Gi
