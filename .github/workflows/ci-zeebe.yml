@@ -88,6 +88,7 @@ jobs:
         env:
           # For non Linux runners there is no container available for testing, see build-zeebe-docker job
           EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
+          CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
         run: >
           ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
