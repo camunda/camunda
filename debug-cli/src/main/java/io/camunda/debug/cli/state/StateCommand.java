@@ -7,6 +7,8 @@
  */
 package io.camunda.debug.cli.state;
 
+import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_MEMORY_LIMIT;
+
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
