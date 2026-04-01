@@ -26,6 +26,7 @@ import {notificationsStore} from 'common/notifications/notifications.store';
 import {AssignButton} from './AssignButton';
 import {tracking} from 'common/tracking';
 import {decodeTaskOpenedRef} from 'common/tracking/reftags';
+import {removeRefParam} from 'common/tasks/removeRefParam';
 
 type OutletContext = {
   task: Task;
@@ -76,16 +77,24 @@ const TaskDetailsLayout: React.FC = () => {
         subtitle: `${task?.processName} (${task?.processInstanceKey})`,
         isDismissable: true,
       });
-      navigate(pages.initial);
+      navigate({
+        pathname: pages.initial,
+        search: removeRefParam(searchParams),
+      });
     }
-  }, [navigate, task?.processInstanceKey, task?.processName, taskState, t]);
+  }, [
+    navigate,
+    searchParams,
+    task?.processInstanceKey,
+    task?.processName,
+    taskState,
+    t,
+  ]);
 
   useEffect(() => {
-    const search = new URLSearchParams(searchParams);
-    const ref = search.get('ref');
-    if (search.has('ref')) {
-      search.delete('ref');
-      setSearchParams(search, {replace: true});
+    const ref = searchParams.get('ref');
+    if (searchParams.has('ref')) {
+      setSearchParams(removeRefParam(searchParams), {replace: true});
     }
 
     const taskOpenedRef = decodeTaskOpenedRef(ref);
