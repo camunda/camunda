@@ -7,6 +7,8 @@
  */
 package io.camunda.debug.cli.state;
 
+import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_MEMORY_LIMIT;
+
 import io.camunda.debug.cli.concurrency.CurrentThreadConcurrencyControl;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -15,6 +17,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
@@ -35,7 +38,9 @@ public class SnapshotUtil {
             new RocksDbConfiguration().setWalDisabled(false),
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            SharedRocksDbResources.allocate(DEFAULT_MEMORY_LIMIT),
+            3);
   }
 
   public ZeebeDb openSnapshot(final Path snapshotPath, final Path runtimePath) {
