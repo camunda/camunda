@@ -28,16 +28,27 @@ test.describe('Job Completion API Tests', () => {
 
   test.beforeAll(async () => {
     await deploy(['./resources/job_api_process.bpmn']);
+    await deploy(['./resources/job_api_task_conflict.bpmn']);
   });
 
   test.beforeEach(async () => {
-    const processInstance = await createInstances('jobApiProcess', 1, 1);
-    state['processInstanceKey'] = processInstance[0].processInstanceKey;
+    const processInstance1 = await createInstances('jobApiProcess', 1, 1);
+    const processInstance2 = await createInstances(
+      'job_api_task_conflict',
+      1,
+      1,
+    );
+
+    state['processInstanceKey1'] = processInstance1[0].processInstanceKey;
+    state['processInstanceKey2'] = processInstance2[0].processInstanceKey;
   });
 
   test.afterEach(async () => {
-    if (!state['completed']) {
-      await cancelProcessInstance(state['processInstanceKey'] as string);
+    if (!state['completed1']) {
+      await cancelProcessInstance(state['processInstanceKey1'] as string);
+    }
+    if (!state['completed2']) {
+      await cancelProcessInstance(state['processInstanceKey2'] as string);
     }
   });
 
@@ -55,7 +66,7 @@ test.describe('Job Completion API Tests', () => {
       },
     );
     await assertStatusCode(completeRes, 204);
-    state['completed'] = true;
+    state['completed1'] = true;
   });
 
   test('Complete Job - not found', async ({request}) => {
@@ -95,10 +106,11 @@ test.describe('Job Completion API Tests', () => {
 
   test('Complete Job - conflict 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Activate a job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'jobApiTaskType',
+        'jobApiTaskTypeConflict',
       );
     });
 
@@ -114,6 +126,7 @@ test.describe('Job Completion API Tests', () => {
         },
       );
       await assertStatusCode(completeRes, 204);
+      state['completed2'] = true;
     });
 
     await test.step('Second completion (should conflict)', async () => {
