@@ -7,14 +7,9 @@
  */
 
 import {test, expect, APIRequestContext} from '@playwright/test';
-import {
-  assertStatusCode,
-  assertInvalidArgument,
-} from '../../../../utils/http';
+import {assertStatusCode, assertInvalidArgument} from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {evaluateExpression, EXPRESSION_URL} from '@requestHelpers'
-
-
+import {evaluateExpression, EXPRESSION_URL} from '@requestHelpers';
 
 type ExpressionTestCase = {
   description: string;
@@ -44,13 +39,12 @@ const successTestCases: ExpressionTestCase[] = [
     variables: {},
     result: false,
   },
-   //Skipped due to bug 50091 : https://github.com/camunda/camunda/issues/50091
-  //   {
-  //     description: 'Should evaluate null literal - Success',
-  //     expression: '=x',
-  //     variables: {x: null},
-  //     result: null,
-  //   },
+  {
+    description: 'Should evaluate null literal - Success',
+    expression: '=x',
+    variables: {x: null},
+    result: null,
+  },
   {
     description: 'Should evaluate simple variable read - Success',
     expression: '=x',
@@ -200,7 +194,8 @@ const errorTestCases: ExpressionTestCase[] = [
     errorDetail: 'Failed to parse expression',
   },
   {
-    description: 'Should return warning when invalid FEEL syntax (missing else) - Error',
+    description:
+      'Should return warning when invalid FEEL syntax (missing else) - Error',
     expression: '=if x > 5 then "big"',
     variables: {x: 10},
     errorDetail: 'Failed to parse expression',
@@ -234,11 +229,10 @@ test.describe('Expression API Tests', () => {
         tc.variables,
       );
       await assertStatusCode(response, 200);
-      //Skipped due to bug 50091 : https://github.com/camunda/camunda/issues/50091
-      //   await validateResponse(
-      //     {path: EXPRESSION_URL, method: 'POST', status: '200'},
-      //     response,
-      //   );
+      await validateResponse(
+        {path: EXPRESSION_URL, method: 'POST', status: '200'},
+        response,
+      );
       const body = await response.json();
       const warnings = [];
       for (const w of body.warnings) {
