@@ -226,10 +226,17 @@ outputs:
     description: Output whether AlwaysGreen Docker Build + Helm integration should run
     value: >-
       ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-alwaysgreen.outputs.docker-build-helm-integration == 'true'
+        (
+          github.event_name == 'push' ||
+          github.event_name == 'schedule' ||
+          steps.filter-common.outputs.github-actions-change == 'true' ||
+          steps.filter-alwaysgreen.outputs.docker-build-helm-integration == 'true'
+        )
+        &&
+        (
+          github.event_name != 'pull_request' ||
+          !contains(github.event.pull_request.labels.*.name, 'skip-always-green')
+        )
       }}
 runs:
   using: composite
@@ -430,8 +437,6 @@ runs:
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
         docker-build-helm-integration:
-          - ".github/workflows/docker-build-helm-integration.yml"
-          - ".github/workflows/ci.yml"
           - "camunda.Dockerfile"
           - "dist/**"
           - "zeebe/**"
