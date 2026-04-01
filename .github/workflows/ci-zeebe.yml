@@ -533,12 +533,24 @@ jobs:
     permissions:
       checks: read
       pull-requests: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@v6
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve
           # Call the API directly to work around https://github.com/cli/cli/issues/8352
