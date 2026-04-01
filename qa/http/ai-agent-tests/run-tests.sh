@@ -6,8 +6,8 @@ set -euo pipefail
 # ─────────────────────────────────────────────────────────────────
 # Automatically discovers test metadata from the .http file:
 #   ### @test <name>      — declares a test scenario
-#   ### PHASE <N>: <desc> — declares a phase
-#   ### Step <N>: <desc>  — declares a step
+#   ### PHASE <N>: <desc> — declares an execution phase
+#   ### Step <N>: <desc>  — declares a step (grouped under phases)
 #
 # Usage: ./run-tests.sh [env_name]
 # ─────────────────────────────────────────────────────────────────
@@ -17,6 +17,7 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+DIM='\033[2m'
 BOLD='\033[1m'
 NC='\033[0m'
 
@@ -47,7 +48,7 @@ fi
 mapfile -t TESTS < <(grep -oP '(?<=^### @test ).*' "$HTTP_FILE" || true)
 TEST_COUNT=${#TESTS[@]}
 
-# Extract title from first non-empty ### line (the suite name)
+# Extract suite title from first non-empty ### line
 SUITE_TITLE=$(grep -m1 -oP '(?<=^### )(?!=)[A-Za-z].*' "$HTTP_FILE" | head -1 || echo "E2E Tests")
 
 # ── Display header ──────────────────────────────────────────────
@@ -72,12 +73,21 @@ if (( TEST_COUNT > 0 )); then
   echo ""
 fi
 
-# List steps
-echo -e "${BLUE}Execution Steps:${NC}"
-grep "^### Step " "$HTTP_FILE" | sed 's/^### Step /  /' || true
+# List steps grouped by phase (auto-parsed from .http file)
+echo -e "${BLUE}Execution Plan:${NC}"
+current_phase=""
+while IFS= read -r line; do
+  if [[ "$line" =~ ^###\ PHASE\ [0-9]+:\ (.*) ]]; then
+    current_phase="${BASH_REMATCH[1]}"
+    echo ""
+    echo -e "  ${BOLD}${current_phase}${NC}"
+  elif [[ "$line" =~ ^###\ Step\ (.*) ]]; then
+    echo -e "    ${DIM}→${NC} ${BASH_REMATCH[1]}"
+  fi
+done < "$HTTP_FILE"
 echo ""
 
-# ── Run ijhttp ──────────────────────────────────────────────────
+# ── Run ijhttp (output suppressed — we show our own results) ───
 
 echo -e "${YELLOW}▶ Starting test execution...${NC}"
 echo ""
@@ -90,7 +100,7 @@ if ijhttp "$HTTP_FILE" \
   --private-env-file "$PRIVATE_ENV" \
   --env "$ENV_NAME" \
   --report \
-  --socket-timeout 300000 2>&1 | tee "$TMPOUT" | grep -v '━'; then
+  --socket-timeout 300000 > "$TMPOUT" 2>&1; then
 
   # Parse results (macOS-compatible: use sed instead of grep -oP)
   TOTAL_REQUESTS=$(sed -n 's/.*\([0-9][0-9]*\) requests completed.*/\1/p' "$TMPOUT" | tail -1)
@@ -124,16 +134,31 @@ if ijhttp "$HTTP_FILE" \
     fail_line=" ✗ FAILED — $FAILED_TESTS assertion(s) failed"
     printf "${BLUE}│${NC} ${RED}%s${NC}%*s${BLUE}│${NC}\n" "$fail_line" $((WIDTH - ${#fail_line} - 1)) ""
     printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
+
+    # Show failed test details from ijhttp output
+    printf "${BLUE}│${NC}%*s${BLUE}│${NC}\n" $WIDTH ""
+    while IFS= read -r fline; do
+      printf "${BLUE}│${NC} ${RED}  %s${NC}%*s${BLUE}│${NC}\n" "$fline" $((WIDTH - ${#fline} - 3)) ""
+    done < <(grep -i "FAIL\|AssertionError\|Expected" "$TMPOUT" | head -20 || true)
+
+    printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
     req_line=" HTTP Requests: $TOTAL_REQUESTS"
     printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$req_line" $((WIDTH - ${#req_line})) ""
     printf "${BLUE}└%${WIDTH}s┘${NC}\n" "" | tr ' ' '─'
     echo ""
     echo -e "${RED}E2E validation failed${NC}"
-    echo -e "${YELLOW}Check the test report for detailed failure information${NC}"
+    echo -e "${YELLOW}Full output saved to: $TMPOUT${NC}"
+    # Print full output for CI log inspection
+    echo ""
+    echo -e "${DIM}── ijhttp output ──${NC}"
+    cat "$TMPOUT"
     exit 1
   fi
 else
   echo ""
-  echo -e "${RED}Test execution failed${NC}"
+  echo -e "${RED}Test execution failed (ijhttp exited with error)${NC}"
+  echo ""
+  echo -e "${DIM}── ijhttp output ──${NC}"
+  cat "$TMPOUT"
   exit 1
 fi
