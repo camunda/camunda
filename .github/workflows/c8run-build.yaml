@@ -259,7 +259,6 @@ jobs:
         run: .\packager.exe package
         working-directory: .\c8run
         env:
-          GH_TOKEN: ${{ github.token }}
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 

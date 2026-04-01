@@ -63,7 +63,7 @@ func (s *stubOpener) OpenBrowser(_ context.Context, url string) error {
 	return nil
 }
 
-func TestShouldUsePortFlagForStatusOutputOutsideDocker(t *testing.T) {
+func TestShouldUsePortFlagForStatusOutput(t *testing.T) {
 	// given
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -75,7 +75,7 @@ func TestShouldUsePortFlagForStatusOutputOutsideDocker(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(cwd) })
 
-	settings := types.C8RunSettings{Port: 9090, Docker: false}
+	settings := types.C8RunSettings{Port: 9090}
 
 	// when
 	out := captureOutput(t, func() {
@@ -94,47 +94,6 @@ func TestShouldUsePortFlagForStatusOutputOutsideDocker(t *testing.T) {
 	}
 	for label, endpoint := range expectedEndpoints {
 		assertEndpointForLabel(t, out, label, endpoint)
-	}
-}
-
-func TestShouldIgnorePortFlagForStatusOutputInDockerMode(t *testing.T) {
-	// given
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get wd: %v", err)
-	}
-	root := filepath.Clean(filepath.Join(cwd, "../.."))
-	if err := os.Chdir(root); err != nil {
-		t.Fatalf("failed to chdir to module root: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(cwd) })
-
-	settings := types.C8RunSettings{Port: 9090, Docker: true}
-
-	// when
-	out := captureOutput(t, func() {
-		if err := PrintStatus(settings); err != nil {
-			t.Fatalf("PrintStatus failed: %v", err)
-		}
-	})
-
-	// then
-	expectedEndpoints := map[string]string{
-		"Operate":                   "http://localhost:8080/operate",
-		"Tasklist":                  "http://localhost:8080/tasklist",
-		"Admin":                     "http://localhost:8080/admin",
-		"Orchestration Cluster API": "http://localhost:8080/v2/",
-		"Orchestration Cluster":     "http://localhost:8080/mcp/cluster",
-	}
-	for label, endpoint := range expectedEndpoints {
-		assertEndpointForLabel(t, out, label, endpoint)
-	}
-	if strings.Contains(out, "http://localhost:9090/operate") ||
-		strings.Contains(out, "http://localhost:9090/tasklist") ||
-		strings.Contains(out, "http://localhost:9090/admin") ||
-		strings.Contains(out, "http://localhost:9090/v2/") ||
-		strings.Contains(out, "http://localhost:9090/mcp/cluster") {
-		t.Fatalf("docker mode should ignore custom port 9090; output: %s", out)
 	}
 }
 
