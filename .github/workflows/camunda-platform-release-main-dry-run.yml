@@ -94,6 +94,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Delete temporary release branch
+        if: ${{ needs.dry-run-release.result == 'success' }}
         run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
       - name: Delete fake dry-run tags
         if: ${{ needs.dry-run-release.result == 'success' }}
