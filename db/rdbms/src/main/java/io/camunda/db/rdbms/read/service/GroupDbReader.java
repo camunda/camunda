@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GroupDbQuery;
 import io.camunda.db.rdbms.sql.GroupMapper;
@@ -83,7 +85,11 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
   }
 
   private GroupEntity map(final GroupDbModel model) {
-    return new GroupEntity(model.groupKey(), model.groupId(), model.name(), model.description());
+    return new GroupEntity(
+        model.groupKey(),
+        nullToEmpty(model.groupId()),
+        nullToEmpty(model.name()),
+        model.description());
   }
 
   private boolean shouldReturnEmptyResult(

@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.RoleDbQuery;
 import io.camunda.db.rdbms.sql.RoleMapper;
@@ -82,7 +84,11 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
   }
 
   private RoleEntity map(final RoleDbModel model) {
-    return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
+    return new RoleEntity(
+        model.roleKey(),
+        nullToEmpty(model.roleId()),
+        nullToEmpty(model.name()),
+        model.description());
   }
 
   private boolean shouldReturnEmptyResult(

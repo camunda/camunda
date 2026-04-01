@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
 import io.camunda.search.entities.SequenceFlowEntity;
 
@@ -15,11 +17,11 @@ public class SequenceFlowEntityMapper {
   public static SequenceFlowEntity toEntity(final SequenceFlowDbModel dbModel) {
     return new SequenceFlowEntity(
         dbModel.sequenceFlowId(),
-        dbModel.flowNodeId(),
+        nullToEmpty(dbModel.flowNodeId()),
         dbModel.processInstanceKey(),
         dbModel.rootProcessInstanceKey(),
         dbModel.processDefinitionKey(),
-        dbModel.processDefinitionId(),
-        dbModel.tenantId());
+        nullToEmpty(dbModel.processDefinitionId()),
+        nullToEmpty(dbModel.tenantId()));
   }
 }

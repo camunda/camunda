@@ -129,15 +129,19 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.VariableEntity">
     <constructor>
       <idArg column="VAR_KEY" javaType="java.lang.Long"/>
-      <arg column="VAR_NAME" javaType="java.lang.String"/>
-      <arg column="VAR_VALUE" javaType="java.lang.String"/>
+      <arg column="VAR_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VAR_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
       <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
     </constructor>
   </resultMap>
 
