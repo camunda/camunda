@@ -1,4 +1,41 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.4.2"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -1389,7 +1426,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\"camunda.*|zeebe.*\"}) by (namespace)",
+          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\"camunda.*|zeebe.*\",container!=\"\"}) by (namespace)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1459,7 +1496,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\".*elastic.*\", container=~\"elasticsearch\"}) by (namespace)",
+          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\".*elastic.*\", container=~\"elasticsearch\",container!=\"\"}) by (namespace)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1491,7 +1528,11 @@
                 "value": 0
               },
               {
-                "color": "red",
+                "color": "dark-yellow",
+                "value": 7
+              },
+              {
+                "color": "dark-red",
                 "value": 10
               }
             ]
@@ -1532,7 +1573,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"zeebe.*|camunda.*\"}[$__rate_interval]))",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"zeebe.*|camunda.*\",container!=\"\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1562,8 +1603,12 @@
                 "value": 0
               },
               {
-                "color": "red",
-                "value": 8
+                "color": "dark-yellow",
+                "value": 14
+              },
+              {
+                "color": "dark-red",
+                "value": 19
               }
             ]
           },
@@ -1603,7 +1648,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"elastic.*\"}[$__rate_interval]))",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"elastic.*\", container!=\"\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1621,7 +1666,11 @@
   "templating": {
     "list": [
       {
-        "current": {},
+        "current": {
+          "text": "",
+          "value": "${DS_PROMETHEUS}",
+          "selected": true
+        },
         "includeAll": false,
         "label": "datasource",
         "name": "DS_PROMETHEUS",
@@ -1653,6 +1702,6 @@
   "timezone": "browser",
   "title": "Release overview",
   "uid": "chl4qs5",
-  "version": 1,
+  "version": 2,
   "weekStart": "monday"
 }
