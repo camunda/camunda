@@ -11,22 +11,24 @@ export interface MaximizeButtonProps {
   onClick: () => void;
 }
 
-export interface ViewFullVariableButtonAddProps {
-  mode: 'add';
+interface ViewFullVariableBaseProps {
   variableName: string;
+  shouldSubmitOnApply?: boolean;
+}
+
+export interface ViewFullVariableButtonAddProps extends ViewFullVariableBaseProps {
+  mode: 'add';
   scopeId: string | null;
 }
 
-export interface ViewFullVariableButtonEditProps {
+export interface ViewFullVariableButtonEditProps extends ViewFullVariableBaseProps {
   mode: 'edit';
-  variableName: string;
   variableValue: string;
   variableKey: string;
 }
 
-export interface ViewFullVariableButtonShowProps {
+export interface ViewFullVariableButtonShowProps extends ViewFullVariableBaseProps {
   mode: 'show';
-  variableName: string;
   variableValue: string;
   variableKey: string;
 }

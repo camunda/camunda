@@ -19,6 +19,7 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
   variableName,
   variableKey,
   variableValue,
+  shouldSubmitOnApply,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const {data: variable} = useVariable(variableKey, {
@@ -56,6 +57,9 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
           }}
           onApply={(value) => {
             form.change(variableEditor.fieldName, value);
+            if (shouldSubmitOnApply) {
+              form.submit();
+            }
             setIsModalVisible(false);
             tracking.track({
               eventName: 'json-editor-saved',

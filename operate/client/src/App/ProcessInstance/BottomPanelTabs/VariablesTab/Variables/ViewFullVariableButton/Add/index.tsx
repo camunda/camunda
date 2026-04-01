@@ -20,6 +20,7 @@ import {MaximizeButton} from '../MaximizeButton';
 const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
   variableName,
   scopeId,
+  shouldSubmitOnApply,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const valueFieldName = createNewVariableFieldName(variableName, 'value');
@@ -49,6 +50,9 @@ const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
           }}
           onApply={(value) => {
             form.change(valueFieldName, value);
+            if (shouldSubmitOnApply) {
+              form.submit();
+            }
             setIsModalVisible(false);
             if (value !== undefined) {
               createModification({
