@@ -32,6 +32,12 @@ global:
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets:
       - name: harbor-registry
+
+  # Default node configuration for all the components, unless specific
+  # reconfigured.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
   # Identity authentication is enabled for Optimize
   identity:
     keycloak:
@@ -58,8 +64,6 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
-  nodeSelector:
-    component: benchmark-n2-standard-4
   tolerations:
     - key: nodepool
       operator: Equal
@@ -75,8 +79,6 @@ optimize:
         historyCleanup:
           cronTrigger: '0 1 * * *'
           ttl: 'P1D'
-  nodeSelector:
-    component: benchmark-n2-standard-4
   tolerations:
     - key: nodepool
       operator: Equal
@@ -106,6 +108,11 @@ connectors:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: connectors-security-authentication-oidc-secret
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 webModeler:
   enabled: false
@@ -156,9 +163,6 @@ orchestration:
     limits:
       cpu: 3000m
       memory: 2Gi
-
-  nodeSelector:
-    component: benchmark-n2-standard-4
 
   tolerations:
     - key: nodepool
