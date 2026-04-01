@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.backup;
 
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -88,5 +90,23 @@ final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance, A
   @Override
   public void afterAll(final ExtensionContext context) {
     NETWORK.close();
+  }
+
+  @AfterEach
+  void cleanUp() throws Exception {
+    // Clean up blobs from the GCS container after each test
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withoutAuthentication()
+            .withHost(GCS.externalEndpoint())
+            .withBucketName(BUCKET_NAME)
+            .build();
+
+    try (final var client = GcsBackupStore.buildClient(config)) {
+      final var bucket = client.get(BUCKET_NAME);
+      if (bucket != null) {
+        client.list(BUCKET_NAME).iterateAll().forEach(Blob::delete);
+      }
+    }
   }
 }
