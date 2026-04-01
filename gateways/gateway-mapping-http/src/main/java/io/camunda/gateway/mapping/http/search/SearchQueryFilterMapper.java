@@ -2441,8 +2441,8 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  // Strict-contract overload for variable value filters
-  private static Either<List<String>, List<VariableValueFilter>> toStrictVariableValueFilters(
+  // Strict-contract overload for variable value filters — used by contract filter mappers
+  public static Either<List<String>, List<VariableValueFilter>> toStrictVariableValueFilters(
       final List<GeneratedVariableValueFilterPropertyStrictContract> filters) {
     if (CollectionUtils.isEmpty(filters)) {
       return Either.right(List.of());
