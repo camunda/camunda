@@ -538,6 +538,13 @@
       "prBodyNotes": [
         "**Manual verification required before merging:** Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) is fixed in this version. Do **not** merge until confirmed."
       ]
+    },
+    {
+      "description": "Prevent supply-chain-attacks by not creating branches or PRs before the minimum release age.",
+      "matchPackageNames": ["*"],
+      "minimumReleaseAge": "3 days",
+      "prCreation": "not-pending",
+      "internalChecksFilter": "strict"
     }
   ],
   "dockerfile": {
