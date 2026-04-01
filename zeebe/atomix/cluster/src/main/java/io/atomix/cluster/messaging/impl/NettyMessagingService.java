@@ -939,17 +939,19 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       serverChannel = f.channel();
                       bind(bootstrap, addressIterator, future);
                     } else {
-                      if (f.cause() instanceof BindException) {
+                      final Throwable cause = f.cause();
+                      final Throwable rootCause = Throwables.getRootCause(cause);
+                      if (rootCause instanceof BindException) {
                         log.error(
                             "Failed to bind TCP server to port {}. The port is already in use. "
                                 + "Either free the port or configure a different value.",
                             address,
-                            f.cause());
+                            rootCause);
                       } else {
                         log.error(
-                            "Failed to bind TCP server to port {} due to {}", address, f.cause());
+                            "Failed to bind TCP server to port {} due to {}", address, cause);
                       }
-                      future.completeExceptionally(f.cause());
+                      future.completeExceptionally(cause);
                     }
                   });
     } else {
