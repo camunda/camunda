@@ -66,11 +66,7 @@ public final class ExpireMessageTest {
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
-        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
-
-    Assertions.assertThat(expireBatchMessageCommand.getValue())
-        .hasMessageKeys(publishedMessageKeys);
+    RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
 
     final List<Long> listOfExpiredMessageKeys =
         RecordingExporter.messageRecords()
@@ -112,18 +108,13 @@ public final class ExpireMessageTest {
     final long timeToLive = 50L;
 
     // when
-    final Record<MessageRecordValue> publishedRecord =
-        messageClient.withTimeToLive(timeToLive).publish();
+    messageClient.withTimeToLive(timeToLive).publish();
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageBatchRecordValue> deleteCommand =
-        RecordingExporter.messageBatchRecords()
-            .withIntent(MessageBatchIntent.EXPIRE)
-            .hasMessageKey(publishedRecord.getKey())
-            .getFirst();
+    final Record<MessageBatchRecordValue> expireCommand =
+        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
 
-    // then
-    assertThat(deleteCommand.getSourceRecordPosition()).isLessThan(0);
+    assertThat(expireCommand.getSourceRecordPosition()).isLessThan(0);
   }
 }
