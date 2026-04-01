@@ -53,11 +53,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
