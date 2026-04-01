@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.test.backup;
 
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.Network;
@@ -65,5 +68,19 @@ final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance,
   @Override
   public void afterAll(final ExtensionContext context) {
     NETWORK.close();
+  }
+
+  @AfterEach
+  void cleanUp() {
+    // Clean up blobs from the Azurite container after each test
+    final BlobServiceClient blobServiceClient =
+        new BlobServiceClientBuilder()
+            .connectionString(AZURITE.externalConnectionString())
+            .buildClient();
+
+    final var containerClient = blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
+    containerClient
+        .listBlobs()
+        .forEach(blob -> containerClient.getBlobClient(blob.getName()).delete());
   }
 }
