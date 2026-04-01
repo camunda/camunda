@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filters records by BPMN process id using simple inclusion/exclusion lists.
@@ -56,6 +58,8 @@ import java.util.Set;
  * <p>Non-supported record values are always accepted (filter is a no-op for them).
  */
 public final class BpmnProcessFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnProcessFilter.class);
 
   private static final SemanticVersion MIN_BROKER_VERSION =
       new SemanticVersion(8, 9, 0, null, null);
@@ -89,11 +93,21 @@ public final class BpmnProcessFilter implements ExporterRecordFilter, RecordVers
       return true;
     }
 
+    final boolean accepted;
     if (allowedBpmnProcesses.isEmpty()) {
-      return !excludedBpmnProcesses.contains(bpmnProcessId);
+      accepted = !excludedBpmnProcesses.contains(bpmnProcessId);
+    } else {
+      accepted = allowedBpmnProcesses.contains(bpmnProcessId);
     }
 
-    return allowedBpmnProcesses.contains(bpmnProcessId);
+    if (!accepted && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "BpmnProcessFilter rejected record {} (valueType={}): bpmnProcessId '{}' did not pass inclusion/exclusion rules",
+          record.getKey(),
+          record.getValueType(),
+          bpmnProcessId);
+    }
+    return accepted;
   }
 
   @Override

@@ -13,6 +13,8 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Objects;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filters variable records by inferred JSON type, applying separate rules depending on whether the
@@ -26,6 +28,8 @@ import java.util.Set;
  * accepted.
  */
 public final class VariableTypeScopeFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableTypeScopeFilter.class);
 
   private static final SemanticVersion MIN_BROKER_VERSION =
       new SemanticVersion(8, 10, 0, null, null);
@@ -69,18 +73,45 @@ public final class VariableTypeScopeFilter implements ExporterRecordFilter, Reco
       return true;
     }
 
-    if (VariableScope.isLocal(variableRecordValue)) {
+    final boolean isLocal = VariableScope.isLocal(variableRecordValue);
+    final String scope = isLocal ? "local" : "root";
+
+    if (isLocal) {
       if (!hasLocalRules) {
         return true;
       }
-      return allowedLocalTypes.contains(
-          VariableValueType.infer(objectMapper, variableRecordValue.getValue()));
+      final VariableValueType inferredType =
+          VariableValueType.infer(objectMapper, variableRecordValue.getValue());
+      final boolean accepted = allowedLocalTypes.contains(inferredType);
+      if (!accepted && LOG.isDebugEnabled()) {
+        LOG.debug(
+            "VariableTypeScopeFilter rejected record {}: {} variable '{}' has inferred type {} which is not in allowed {} types {}",
+            record.getKey(),
+            scope,
+            variableRecordValue.getName(),
+            inferredType,
+            scope,
+            allowedLocalTypes);
+      }
+      return accepted;
     } else {
       if (!hasRootRules) {
         return true;
       }
-      return allowedRootTypes.contains(
-          VariableValueType.infer(objectMapper, variableRecordValue.getValue()));
+      final VariableValueType inferredType =
+          VariableValueType.infer(objectMapper, variableRecordValue.getValue());
+      final boolean accepted = allowedRootTypes.contains(inferredType);
+      if (!accepted && LOG.isDebugEnabled()) {
+        LOG.debug(
+            "VariableTypeScopeFilter rejected record {}: {} variable '{}' has inferred type {} which is not in allowed {} types {}",
+            record.getKey(),
+            scope,
+            variableRecordValue.getName(),
+            inferredType,
+            scope,
+            allowedRootTypes);
+      }
+      return accepted;
     }
   }
 
