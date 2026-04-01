@@ -19,11 +19,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.UserTaskResult;
-import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
-import io.camunda.gateway.protocol.model.UserTaskStateEnum;
-import io.camunda.gateway.protocol.model.VariableResultBase;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
@@ -137,34 +136,34 @@ class UserTaskToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<UserTaskQuery> userTaskQueryCaptor;
   @Captor private ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
-  private void assertExampleUserTask(final UserTaskResult userTask) {
-    assertThat(userTask.getUserTaskKey()).isEqualTo("5");
-    assertThat(userTask.getName()).isEqualTo("Task Name");
-    assertThat(userTask.getState()).isEqualTo(UserTaskStateEnum.CREATED);
-    assertThat(userTask.getAssignee()).isEqualTo("john.doe");
-    assertThat(userTask.getElementId()).isEqualTo("elementId");
-    assertThat(userTask.getCandidateGroups()).containsExactly("group1", "group2");
-    assertThat(userTask.getCandidateUsers()).containsExactly("user1", "user2");
-    assertThat(userTask.getProcessDefinitionId()).isEqualTo("complexProcess");
-    assertThat(userTask.getCreationDate()).isEqualTo("2024-05-23T23:05:00.000Z");
-    assertThat(userTask.getTenantId()).isEqualTo("tenantId");
-    assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(2);
-    assertThat(userTask.getCustomHeaders()).containsEntry("header1", "value1");
-    assertThat(userTask.getPriority()).isEqualTo(50);
-    assertThat(userTask.getProcessDefinitionKey()).isEqualTo("23");
-    assertThat(userTask.getProcessInstanceKey()).isEqualTo("42");
-    assertThat(userTask.getElementInstanceKey()).isEqualTo("17");
-    assertThat(userTask.getFormKey()).isEqualTo("101");
-    assertThat(userTask.getTags()).containsExactlyInAnyOrder("tag1", "tag2");
-    assertThat(userTask.getProcessName()).isEqualTo("Process Name");
+  private void assertExampleUserTask(final GeneratedUserTaskStrictContract userTask) {
+    assertThat(userTask.userTaskKey()).isEqualTo("5");
+    assertThat(userTask.name()).isEqualTo("Task Name");
+    assertThat(userTask.state()).isEqualTo(GeneratedUserTaskStateEnum.CREATED);
+    assertThat(userTask.assignee()).isEqualTo("john.doe");
+    assertThat(userTask.elementId()).isEqualTo("elementId");
+    assertThat(userTask.candidateGroups()).containsExactly("group1", "group2");
+    assertThat(userTask.candidateUsers()).containsExactly("user1", "user2");
+    assertThat(userTask.processDefinitionId()).isEqualTo("complexProcess");
+    assertThat(userTask.creationDate()).isEqualTo("2024-05-23T23:05:00.000Z");
+    assertThat(userTask.tenantId()).isEqualTo("tenantId");
+    assertThat(userTask.processDefinitionVersion()).isEqualTo(2);
+    assertThat(userTask.customHeaders()).containsEntry("header1", "value1");
+    assertThat(userTask.priority()).isEqualTo(50);
+    assertThat(userTask.processDefinitionKey()).isEqualTo("23");
+    assertThat(userTask.processInstanceKey()).isEqualTo("42");
+    assertThat(userTask.elementInstanceKey()).isEqualTo("17");
+    assertThat(userTask.formKey()).isEqualTo("101");
+    assertThat(userTask.tags()).containsExactlyInAnyOrder("tag1", "tag2");
+    assertThat(userTask.processName()).isEqualTo("Process Name");
   }
 
-  private void assertExampleVariable(final VariableResultBase variable) {
-    assertThat(variable.getVariableKey()).isEqualTo("10");
-    assertThat(variable.getName()).isEqualTo("varName");
-    assertThat(variable.getScopeKey()).isEqualTo("101");
-    assertThat(variable.getProcessInstanceKey()).isEqualTo("42");
-    assertThat(variable.getTenantId()).isEqualTo("tenantId");
+  private void assertExampleVariable(final GeneratedVariableSearchStrictContract variable) {
+    assertThat(variable.variableKey()).isEqualTo("10");
+    assertThat(variable.name()).isEqualTo("varName");
+    assertThat(variable.scopeKey()).isEqualTo("101");
+    assertThat(variable.processInstanceKey()).isEqualTo("42");
+    assertThat(variable.tenantId()).isEqualTo("tenantId");
   }
 
   @Nested
@@ -188,7 +187,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var userTask =
-          objectMapper.convertValue(result.structuredContent(), UserTaskResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(), GeneratedUserTaskStrictContract.class);
       assertExampleUserTask(userTask);
 
       verify(userTaskServices).getByKey(eq(5L), any());
@@ -317,13 +317,20 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), UserTaskSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<GeneratedUserTaskStrictContract> searchResult =
+          (StrictSearchQueryResult<GeneratedUserTaskStrictContract>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, GeneratedUserTaskStrictContract.class));
+      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
+      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
+      assertThat(searchResult.page().startCursor()).isEqualTo("f");
+      assertThat(searchResult.page().endCursor()).isEqualTo("v");
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(UserTaskToolsTest.this::assertExampleUserTask);
@@ -874,18 +881,26 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<GeneratedVariableSearchStrictContract> searchResult =
+          (StrictSearchQueryResult<GeneratedVariableSearchStrictContract>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class,
+                          GeneratedVariableSearchStrictContract.class));
+      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
+      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(
               variable -> {
                 assertExampleVariable(variable);
-                assertThat(variable.getIsTruncated()).isTrue();
-                assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
+                assertThat(variable.isTruncated()).isTrue();
+                assertThat(variable.value()).isEqualTo(TRUNCATED_VALUE);
               });
 
       verify(userTaskServices)
@@ -913,16 +928,24 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<GeneratedVariableSearchStrictContract> searchResult =
+          (StrictSearchQueryResult<GeneratedVariableSearchStrictContract>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class,
+                          GeneratedVariableSearchStrictContract.class));
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(
               variable -> {
                 assertExampleVariable(variable);
-                assertThat(variable.getIsTruncated()).isFalse();
-                assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
+                assertThat(variable.isTruncated()).isFalse();
+                assertThat(variable.value()).isEqualTo(FULL_VALUE);
               });
 
       verify(userTaskServices)

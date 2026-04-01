@@ -12,11 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.BrokerInfo;
-import io.camunda.gateway.protocol.model.Partition;
-import io.camunda.gateway.protocol.model.Partition.HealthEnum;
-import io.camunda.gateway.protocol.model.Partition.RoleEnum;
-import io.camunda.gateway.protocol.model.TopologyResponse;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBrokerInfoStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPartitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.ClusterStatus;
@@ -105,46 +103,32 @@ class ClusterToolsTest extends OperationalToolsTest {
       // given
       final var version = VersionUtil.getVersion();
       final var expectedResponse =
-          new TopologyResponse()
-              .clusterId("cluster-id")
-              .gatewayVersion(version)
-              .clusterSize(3)
-              .partitionsCount(1)
-              .replicationFactor(3)
-              .lastCompletedChangeId("1")
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(0)
-                      .host("localhost")
-                      .port(26501)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.LEADER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(1)
-                      .host("localhost")
-                      .port(26502)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.FOLLOWER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(2)
-                      .host("localhost")
-                      .port(26503)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.UNHEALTHY)
-                              .role(RoleEnum.INACTIVE)));
+          new GeneratedTopologyResponseStrictContract(
+              List.of(
+                  new GeneratedBrokerInfoStrictContract(
+                      0,
+                      "localhost",
+                      26501,
+                      List.of(new GeneratedPartitionStrictContract(1, "LEADER", "HEALTHY")),
+                      version),
+                  new GeneratedBrokerInfoStrictContract(
+                      1,
+                      "localhost",
+                      26502,
+                      List.of(new GeneratedPartitionStrictContract(1, "FOLLOWER", "HEALTHY")),
+                      version),
+                  new GeneratedBrokerInfoStrictContract(
+                      2,
+                      "localhost",
+                      26503,
+                      List.of(new GeneratedPartitionStrictContract(1, "INACTIVE", "UNHEALTHY")),
+                      version)),
+              "cluster-id",
+              3,
+              1,
+              3,
+              version,
+              "1");
       final var topologyResponse =
           new Topology(
               List.of(
@@ -185,7 +169,8 @@ class ClusterToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var topology =
-          objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
+          objectMapper.convertValue(
+              result.structuredContent(), GeneratedTopologyResponseStrictContract.class);
       assertThat(topology).usingRecursiveComparison().isEqualTo(expectedResponse);
     }
 

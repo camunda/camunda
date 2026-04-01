@@ -16,8 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -80,15 +80,15 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<ProcessDefinitionQuery> queryCaptor;
 
   private void assertExampleProcessDefinitionResult(
-      final ProcessDefinitionResult processDefinition) {
-    assertThat(processDefinition.getProcessDefinitionKey()).isEqualTo("5");
-    assertThat(processDefinition.getName()).isEqualTo("Complex Process");
-    assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("complexProcess");
-    assertThat(processDefinition.getResourceName()).isEqualTo("complexProcess.bpmn");
-    assertThat(processDefinition.getVersion()).isEqualTo(2);
-    assertThat(processDefinition.getVersionTag()).isEqualTo("v2");
-    assertThat(processDefinition.getTenantId()).isEqualTo("tenantId");
-    assertThat(processDefinition.getHasStartForm()).isTrue();
+      final GeneratedProcessDefinitionStrictContract processDefinition) {
+    assertThat(processDefinition.processDefinitionKey()).isEqualTo("5");
+    assertThat(processDefinition.name()).isEqualTo("Complex Process");
+    assertThat(processDefinition.processDefinitionId()).isEqualTo("complexProcess");
+    assertThat(processDefinition.resourceName()).isEqualTo("complexProcess.bpmn");
+    assertThat(processDefinition.version()).isEqualTo(2);
+    assertThat(processDefinition.versionTag()).isEqualTo("v2");
+    assertThat(processDefinition.tenantId()).isEqualTo("tenantId");
+    assertThat(processDefinition.hasStartForm()).isTrue();
   }
 
   @Nested
@@ -112,7 +112,8 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processDefinition =
-          objectMapper.convertValue(result.structuredContent(), ProcessDefinitionResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(), GeneratedProcessDefinitionStrictContract.class);
       assertExampleProcessDefinitionResult(processDefinition);
 
       assertTextContentFallback(result);
@@ -213,14 +214,21 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var response =
-          objectMapper.convertValue(
-              result.structuredContent(), ProcessDefinitionSearchQueryResult.class);
-      assertThat(response.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(response.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(response.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(response.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(response.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract> response =
+          (StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class,
+                          GeneratedProcessDefinitionStrictContract.class));
+      assertThat(response.page().totalItems()).isEqualTo(1L);
+      assertThat(response.page().hasMoreTotalItems()).isFalse();
+      assertThat(response.page().startCursor()).isEqualTo("f");
+      assertThat(response.page().endCursor()).isEqualTo("v");
+      assertThat(response.items())
           .hasSize(1)
           .first()
           .satisfies(ProcessDefinitionToolsTest.this::assertExampleProcessDefinitionResult);
