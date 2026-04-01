@@ -9,12 +9,12 @@ package io.camunda.zeebe.it.shared.smoke;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -34,14 +34,16 @@ final class ContainerClusterSmokeIT {
           .withBrokersCount(1)
           .withBrokerConfig(
               zeebeBrokerNode -> {
-                zeebeBrokerNode.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
+                zeebeBrokerNode.withUnifiedConfig(
+                    cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none));
                 zeebeBrokerNode.addEnv(UNPROTECTED_API_ENV_VAR, "true");
                 zeebeBrokerNode.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
               })
           .withGatewaysCount(1)
           .withGatewayConfig(
               gateway -> {
-                gateway.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
+                gateway.withUnifiedConfig(
+                    cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none));
                 gateway.addEnv(UNPROTECTED_API_ENV_VAR, "true");
                 gateway.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
               })
