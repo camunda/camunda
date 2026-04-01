@@ -17,17 +17,13 @@ import {
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   defaultAssertionOptions,
-  generateUniqueId,
+  uniqueBusinessId,
 } from '../../../../utils/constants';
 
 const PROCESS_INSTANCE_ENDPOINT = '/process-instances';
 const LONG_RUNNING_PROCESS_ID = 'process_with_task_listener';
 const INSTANT_PROCESS_ID = 'process_instance_api_test';
 const SECOND_PROCESS_ID = 'user_task_api_test_process';
-
-function uniqueBusinessId(prefix = 'biz'): string {
-  return `${prefix}-${generateUniqueId()}`;
-}
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Business ID - Core API Behavior', () => {

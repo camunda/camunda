@@ -246,6 +246,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -374,7 +375,45 @@ jobs:
           export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin"
           export ZEEBE_CLOCK_CONTROLLED="true"
 
-          # (copy your existing env exports here)
+          # Auth configuration
+          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
+          export CAMUNDA_SECURITY_AUTHENTICATION_METHOD="BASIC"
+          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED="false"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME="Demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL="demo@example.com"
+          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL="lisa@example.com"
+          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
+
+          # H2 in-memory database with RDBMS secondary storage
+          export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="sa"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD=""
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL="PT60S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL="PT10S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL="PT60S"
+
+          # Audit log
+          export CAMUNDA_DATA_AUDITLOG_ENABLED="true"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_0="ADMIN"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_1="DEPLOYED_RESOURCES"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_2="USER_TASKS"
+          export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0="VARIABLE"
+          export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1="BATCH"
+          export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
+          export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
+
+          # Business ID uniqueness enforcement toggle
+          export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
 
           dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
           echo $! > dev-dist/camunda.pid
@@ -417,6 +456,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
