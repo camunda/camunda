@@ -77,8 +77,6 @@ runs:
         TARGET_REPO: ${{ inputs.target_repo }}
         WORKFLOW_FILE: ${{ inputs.workflow_file }}
         CORRELATION_ID: ${{ inputs.correlation_id }}
-        DISPATCH_TIME: ${{ steps.trigger.outputs.dispatch_time }}
-        SINCE_TIME: ${{ steps.trigger.outputs.since_time }}
       run: |
         set -euo pipefail
         ./.ci/saas-downstream-e2e/wait-run.sh
