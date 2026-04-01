@@ -50,7 +50,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return DateFormatterUtil.getOffsetDateTimeFromIsoZoneDateTimeString(dueDate)
         .orElseGet(
             () -> {
-              LOG.debug(
+              LOG.info(
                   "Unable to parse due date of userTask record with elementId '{}' and userTaskKey '{}': {}. UserTask will be imported without dueDate data.",
                   elementId,
                   userTaskKey,
