@@ -17,6 +17,33 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=gh-api-with-retry.sh
 source "$SCRIPT_DIR/gh-api-with-retry.sh"
 
+write_job_summary() {
+  # Only write when running in GitHub Actions
+  [[ -n "${GITHUB_STEP_SUMMARY:-}" ]] || return 0
+
+  local run_url=""
+  if [[ -n "${RUN_ID:-}" ]]; then
+    run_url="https://github.com/$TARGET_REPO/actions/runs/$RUN_ID"
+  fi
+
+  if [[ -n "$run_url" ]]; then
+    {
+      echo "### SaaS Downstream Workflow Run"
+      echo ""
+      if [[ -n "${CORRELATION_ID:-}" ]]; then
+        echo "**Correlation ID:** \`${CORRELATION_ID}\`"
+        echo ""
+      fi
+      echo "[Open the triggered SaaS E2E workflow run in $TARGET_REPO]($run_url)"
+    } >> "$GITHUB_STEP_SUMMARY"
+  else
+    echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+# Ensure a summary is written even if we exit early on errors/timeouts
+trap write_job_summary EXIT
+
 if [[ -z "${RUN_ID:-}" ]]; then
   if [[ -z "${CORRELATION_ID:-}" ]]; then
     echo "RUN_ID not provided and CORRELATION_ID is empty; cannot discover downstream run."
