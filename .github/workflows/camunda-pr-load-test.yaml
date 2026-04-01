@@ -32,6 +32,8 @@ jobs:
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
@@ -69,6 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - name: Wait for load test to stabilize
         run: sleep 900  # 15 minutes
       - name: Observe build status
@@ -105,6 +109,8 @@ jobs:
       contents: 'read'
       pull-requests: 'write'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
