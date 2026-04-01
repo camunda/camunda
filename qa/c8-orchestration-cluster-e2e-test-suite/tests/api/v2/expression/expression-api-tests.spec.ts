@@ -44,13 +44,12 @@ const successTestCases: ExpressionTestCase[] = [
     variables: {},
     result: false,
   },
-   //Skipped due to bug 50091 : https://github.com/camunda/camunda/issues/50091
-  //   {
-  //     description: 'Should evaluate null literal - Success',
-  //     expression: '=x',
-  //     variables: {x: null},
-  //     result: null,
-  //   },
+  {
+    description: 'Should evaluate null literal - Success',
+    expression: '=x',
+    variables: {x: null},
+    result: null,
+  },
   {
     description: 'Should evaluate simple variable read - Success',
     expression: '=x',
@@ -234,11 +233,10 @@ test.describe('Expression API Tests', () => {
         tc.variables,
       );
       await assertStatusCode(response, 200);
-      //Skipped due to bug 50091 : https://github.com/camunda/camunda/issues/50091
-      //   await validateResponse(
-      //     {path: EXPRESSION_URL, method: 'POST', status: '200'},
-      //     response,
-      //   );
+      await validateResponse(
+        {path: EXPRESSION_URL, method: 'POST', status: '200'},
+        response,
+      );
       const body = await response.json();
       const warnings = [];
       for (const w of body.warnings) {
