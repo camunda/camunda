@@ -13,7 +13,7 @@ Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
 
 Options:
   -h, --help         Show this help message.
@@ -21,6 +21,7 @@ Options:
 Examples:
   ./newBenchmark.sh demo
   ./newBenchmark.sh perf opensearch 3 true
+
 EOF
 }
 
@@ -65,7 +66,7 @@ if ! [[ $ttl_days =~ $numberRegex ]] ; then
 fi
 
 # Validate enable_optimize value
-enable_optimize="${4:-false}"
+enable_optimize="${4:-true}"
 enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   echo "Error: Invalid enable_optimize value '$enable_optimize'"
@@ -124,13 +125,11 @@ cp -rv default/ $namespace
 # Copy all *.yaml files to the new folder
 cp -v ../*.yaml $namespace/
 
-# Copy secrets creation script to the new folder
-cp -v ./createCredsLoadTest.sh $namespace/
-
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
+sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 

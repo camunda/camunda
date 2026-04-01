@@ -71,7 +71,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -144,7 +144,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -337,13 +337,13 @@ jobs:
         with:
           directory: ./identity/client
           package-manager: "npm"
+          node-version: 24
       - uses: ./.github/actions/build-frontend
         name: Build Optimize Frontend
         id: build-optimize-fe
         if: ${{ inputs.build-frontend && inputs.enable-optimize }}
         with:
           directory: ./optimize/client
-          package-manager: "yarn"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda

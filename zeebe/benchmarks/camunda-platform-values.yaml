@@ -5,6 +5,10 @@
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, Elasticsearch as secondary
+# storage and Identity Keycloak as identity provider with OIDC authentication, but you can easily
+# switch to other configurations by changing the values in this file or by overriding them via the
+# command line when installing the chart.
 
 ########################################################################################
 ################################################### Global cluster configuration
@@ -28,23 +32,25 @@ global:
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets:
       - name: harbor-registry
-  # By default, we run without Identity
+  # Identity authentication is enabled for Optimize
   identity:
     auth:
-      enabled: false
+      enabled: true
+      optimize:
+        clientId: optimize
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-optimize-client-token
+  security:
+    authentication:
+      method: oidc
 
 identity:
-  enabled: false
-  nodeSelector:
-    component: benchmark-n2-standard-4
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-
-identityKeycloak:
-  enabled: false
+  enabled: true
+  firstUser:
+    secret:
+      existingSecret: camunda-credentials
+      existingSecretKey: identity-firstuser-password
   nodeSelector:
     component: benchmark-n2-standard-4
   tolerations:
@@ -54,7 +60,22 @@ identityKeycloak:
       effect: NoSchedule
 
 optimize:
-  enabled: false
+  enabled: true
+  extraConfiguration:
+    application.yml: |
+      historyCleanup:
+        cronTrigger: '0 1 * * *'
+        ttl: 'P1D'
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+identityKeycloak:
+  enabled: true
   nodeSelector:
     component: benchmark-n2-standard-4
   tolerations:
@@ -64,7 +85,14 @@ optimize:
       effect: NoSchedule
 
 connectors:
-  enabled: false
+  enabled: true
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: connectors-security-authentication-oidc-secret
 
 webModeler:
   enabled: false
@@ -78,9 +106,18 @@ postgresql:
 orchestration:
   security:
     authentication:
-      unprotectedApi: true
+      method: oidc
+      unprotectedApi: false
+      oidc:
+        secret:
+          ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: camunda-credentials
+          ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: orchestration-security-authentication-oidc-secret
+
     authorizations:
       enabled: false
+
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
@@ -169,13 +206,10 @@ orchestration:
       # We moved the archiver configuration under retention at some point, but still need to support the previous
       # versions for now, so the configurations for retention are duplicated
       zeebe.broker.exporters.camundaexporter.args.history.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      zeebe.broker.exporters.camundaexporter.args.history.retention.minimumAge: "70m"
       zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
+      zeebe.broker.flowControl.write.limit: 10000
       zeebe.broker.flowControl.write.throttling.enabled: "true"
       # Disable the importers
       camunda.tasklist.importerEnabled: "false"
@@ -183,9 +217,6 @@ orchestration:
       camunda.operate.elasticsearch.numberOfShards: 3
       # Schema management has been moved out of exporter - to be bootstrap at start; once
       camunda.database.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      camunda.database.retention.minimumAge: "70m"
       camunda.database.retention.policyName: "camunda-retention-policy"
       #Metrics:
       camunda.flags.jfr.metrics: "true"
@@ -204,12 +235,18 @@ orchestration:
   extraVolumeMounts:
     - name: logs
       mountPath: /usr/local/camunda/logs
+  # Retention for the ES Exporter indices - legacy Zeebe indices    
+  retention:
+    enabled: true
+    minimumAge: 1d
+  # Retention for the Camunda Exporter  
   history:
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: true
       ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-      minimumAge: 70m
+      minimumAge: 1d
+      policyName: "camunda-retention-policy"
   # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver
@@ -256,22 +293,22 @@ elasticsearch:
     heapSize: 3g
     persistence:
       ## @param elasticsearch.master.persistence.size
-      size: 128Gi
+      size: 512Gi
       storageClass: "ssd"
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 7000m
+        memory: 8Gi
       limits:
-        cpu: 3
-        memory: 6Gi
+        cpu: 7000m
+        memory: 8Gi
     nodeSelector:
-      component: benchmark-n2-standard-4
+      component: benchmark-n2-standard-8
     tolerations:
       - key: nodepool
         operator: Equal
-        value: n2-standard-4
+        value: n2-standard-8
         effect: NoSchedule
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"

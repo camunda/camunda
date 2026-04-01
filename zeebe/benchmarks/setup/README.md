@@ -70,6 +70,18 @@ When following the instructions above, execute all commands that deal with Docke
 
 ## Load testing Self-Managed Zeebe Cluster
 
+### Default deployment
+
+By default, a load test deploys the full Camunda Platform, including:
+
+* **Orchestration cluster** (Gateway, Webapps incl. Identity, Operate, Tasklist and Zeebe brokers as Camunda application)
+* **Elasticsearch** as secondary storage
+* **Optimize** with history cleanup (1-day TTL)
+* **Connectors** with OIDC authentication
+* **Identity + Keycloak** for OIDC-based authentication
+
+All components are configured in `camunda-platform-values.yaml`.
+
 ### How to set up a load test namespace
 
 If you run `newBenchmark.sh` without arguments, it will display the following help message.
@@ -114,6 +126,16 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+
+#### Disabling Optimize
+
+Optimize is enabled by default. To disable it, pass `false` as the fourth argument:
+
+```
+. ./newLoadTest.sh my-load-test-name elasticsearch 1 false
+```
+
+In the GitHub workflow, set the `enable-optimize` input to `false`.
 
 ### How to configure a load test
 
@@ -171,7 +193,7 @@ make install-load-test
 
 The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
 
-This will deploy the Camunda Platform (including `orchestration cluster`, `elastic`) and load test applications (e.g., `starter` and `worker`).
+This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
 ### How to clean up a load test
 
