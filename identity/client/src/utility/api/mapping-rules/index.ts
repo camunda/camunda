@@ -52,7 +52,7 @@ export const updateMappingRule: ApiDefinition<
   undefined,
   UpdateMappingRuleParams
 > = ({ mappingRuleId, claimName, claimValue, name }) =>
-  apiPut(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`, {
+  apiPut(`${MAPPING_RULES_ENDPOINT}/${encodeURIComponent(mappingRuleId)}`, {
     name,
     claimName,
     claimValue,
@@ -63,4 +63,4 @@ export const deleteMappingRule: ApiDefinition<
   undefined,
   { mappingRuleId: string }
 > = ({ mappingRuleId }) =>
-  apiDelete(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`);
+  apiDelete(`${MAPPING_RULES_ENDPOINT}/${encodeURIComponent(mappingRuleId)}`);

@@ -22,7 +22,10 @@ export const searchMembersByGroup: ApiDefinition<
   SearchResponse<MemberUser>,
   GetGroupMembersParams
 > = ({ groupId, ...body }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`, body);
+  apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/users/search`,
+    body,
+  );
 
 export type GetTenantMembersParams = {
   tenantId: string;
@@ -31,7 +34,10 @@ export const getMembersByTenantId: ApiDefinition<
   SearchResponse<MemberUser>,
   GetTenantMembersParams
 > = ({ tenantId, ...body }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`, body);
+  apiPost(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/users/search`,
+    body,
+  );
 
 export type GetRoleMembersParams = {
   roleId: string;
@@ -40,28 +46,34 @@ export const getMembersByRole: ApiDefinition<
   SearchResponse<MemberUser>,
   GetRoleMembersParams
 > = ({ roleId, ...body }) =>
-  apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`, body);
+  apiPost(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/users/search`, body);
 
 type AssignGroupMemberParams = GetGroupMembersParams & { username: string };
 export const assignGroupMember: ApiDefinition<
   undefined,
   AssignGroupMemberParams
 > = ({ groupId, username }) =>
-  apiPut(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
+  apiPut(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`,
+  );
 
 type UnassignGroupMemberParams = AssignGroupMemberParams;
 export const unassignGroupMember: ApiDefinition<
   undefined,
   UnassignGroupMemberParams
 > = ({ groupId, username }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
+  apiDelete(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`,
+  );
 
 type AssignTenantMemberParams = GetTenantMembersParams & { username: string };
 export const assignTenantMember: ApiDefinition<
   undefined,
   AssignTenantMemberParams
 > = ({ tenantId, username }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/users/${username}`);
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
+  );
 };
 
 type UnassignTenantMemberParams = AssignTenantMemberParams;
@@ -69,14 +81,18 @@ export const unassignTenantMember: ApiDefinition<
   undefined,
   UnassignTenantMemberParams
 > = ({ tenantId, username }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/users/${username}`);
+  apiDelete(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
+  );
 
 type AssignRoleMemberParams = GetRoleMembersParams & { username: string };
 export const assignRoleMember: ApiDefinition<
   undefined,
   AssignRoleMemberParams
 > = ({ roleId, username }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/users/${username}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`,
+  );
 };
 
 type UnassignRoleMemberParams = AssignRoleMemberParams;
@@ -84,4 +100,6 @@ export const unassignRoleMember: ApiDefinition<
   undefined,
   UnassignRoleMemberParams
 > = ({ roleId, username }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/users/${username}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`,
+  );

@@ -96,7 +96,7 @@ const getRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}`;
 	},
 };
 
@@ -105,7 +105,7 @@ const updateRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}`;
 	},
 };
 
@@ -114,7 +114,7 @@ const deleteRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}`;
 	},
 };
 
@@ -130,7 +130,7 @@ const queryUsersByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/users/search`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/search`;
 	},
 };
 
@@ -139,7 +139,7 @@ const queryClientsByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/clients/search`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/search`;
 	},
 };
 
@@ -148,7 +148,7 @@ const assignUserToRole: Endpoint<Pick<Role, 'roleId'> & {username: string}> = {
 	getUrl(params) {
 		const {roleId, username} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/users/${username}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`;
 	},
 };
 
@@ -157,7 +157,7 @@ const unassignUserFromRole: Endpoint<Pick<Role, 'roleId'> & {username: string}> 
 	getUrl(params) {
 		const {roleId, username} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/users/${username}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`;
 	},
 };
 
@@ -166,7 +166,7 @@ const assignClientToRole: Endpoint<Pick<Role, 'roleId'> & {clientId: string}> = 
 	getUrl(params) {
 		const {roleId, clientId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/clients/${clientId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}`;
 	},
 };
 
@@ -175,7 +175,7 @@ const unassignClientFromRole: Endpoint<Pick<Role, 'roleId'> & {clientId: string}
 	getUrl(params) {
 		const {roleId, clientId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/clients/${clientId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}`;
 	},
 };
 
@@ -184,7 +184,7 @@ const assignGroupToRole: Endpoint<Pick<Role, 'roleId'> & Pick<Group, 'groupId'>>
 	getUrl(params) {
 		const {roleId, groupId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/groups/${groupId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`;
 	},
 };
 
@@ -193,7 +193,7 @@ const unassignGroupFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<Group, 'groupI
 	getUrl(params) {
 		const {roleId, groupId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/groups/${groupId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`;
 	},
 };
 
@@ -202,7 +202,7 @@ const queryGroupsByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/groups/search`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/groups/search`;
 	},
 };
 
@@ -211,7 +211,7 @@ const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'ma
 	getUrl(params) {
 		const {roleId, mappingId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mappings/${mappingId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mappings/${encodeURIComponent(mappingId)}`;
 	},
 };
 
@@ -220,7 +220,7 @@ const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule,
 	getUrl(params) {
 		const {roleId, mappingId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mappings/${mappingId}`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mappings/${encodeURIComponent(mappingId)}`;
 	},
 };
 
@@ -229,7 +229,7 @@ const queryMappingRulesByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	getUrl(params) {
 		const {roleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mapping-rules/search`;
+		return `/${API_VERSION}/roles/${encodeURIComponent(roleId)}/mapping-rules/search`;
 	},
 };
 
