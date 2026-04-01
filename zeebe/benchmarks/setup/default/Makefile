@@ -116,7 +116,7 @@ install-load-test:
 	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
 		--install \
 		--namespace $(namespace) \
-		--reuse-values \
+		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f load-test-values.yaml \
 		$(additional_load_test_configuration)
