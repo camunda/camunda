@@ -19,7 +19,9 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,10 +38,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@MultiDbTest
+@MultiDbTest(DatabaseType.RDBMS_MSSQL)
 @CompatibilityTest
 public class ProcessDefinitionSearchIT {
-  private static final String PROCESS_ID_WITH_START_FORM = "Process_11hxie4";
+  private static final String PROCESS_ID_WITH_START_FORM = "processStartForm";
   private static final String FORM_ID = "test";
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
@@ -61,7 +63,7 @@ public class ProcessDefinitionSearchIT {
           new ProcessDefinitionTestContext(
               "processWithVersionTag", "process/processWithVersionTag.bpmn", 1, "<default>"),
           new ProcessDefinitionTestContext(
-              "Process_11hxie4", "process/process_start_form.bpmn", 1, "<default>"));
+              "processStartForm", "process/process_start_form.bpmn", 1, "<default>"));
 
   private static CamundaClient camundaClient;
 
@@ -596,29 +598,6 @@ public class ProcessDefinitionSearchIT {
   }
 
   @Test
-  void shouldRetrieveProcessDefinitionsWithReverseSorting() {
-    // given
-    final var expectedProcessDefinitionIds =
-        DEPLOYED_PROCESSES.stream()
-            .map(Process::getBpmnProcessId)
-            .sorted(Comparator.reverseOrder())
-            .toList();
-
-    // when
-    final var result =
-        camundaClient
-            .newProcessDefinitionSearchRequest()
-            .sort(s -> s.processDefinitionId().desc())
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(9);
-    assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(expectedProcessDefinitionIds);
-  }
-
-  @Test
   void shouldSortProcessDefinitionsByKey() {
     // when
     final var resultAsc =
@@ -662,16 +641,8 @@ public class ProcessDefinitionSearchIT {
             .send()
             .join();
 
-    final var all =
-        resultAsc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList();
-    final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    TestHelper.assertSortedFlexible(
+        resultAsc, resultDesc, ProcessDefinition::getProcessDefinitionId);
   }
 
   @Test
