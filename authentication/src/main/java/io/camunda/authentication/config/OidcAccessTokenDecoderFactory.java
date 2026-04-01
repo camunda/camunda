@@ -249,6 +249,11 @@ public class OidcAccessTokenDecoderFactory {
     final var jwtProcessor = new DefaultJWTProcessor<>();
     final var jwsTypeVerifier = createJOSEObjectTypeVerifier();
     jwtProcessor.setJWSTypeVerifier(jwsTypeVerifier);
+    // Disable Nimbus-level claims verification (including its hardcoded 60s expiry check).
+    // Spring Security's JwtTimestampValidator handles expiry with a configurable clock skew,
+    // matching the pattern used by Spring Security's own
+    // NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder.
+    jwtProcessor.setJWTClaimsSetVerifier((claims, context) -> {});
     customizer.accept(jwtProcessor);
     return jwtProcessor;
   }
