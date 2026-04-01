@@ -54,7 +54,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
-public class ProcessInstanceMigrationCatchEventBehaviour {
+public class ProcessInstanceMigrationCatchEventBehavior {
 
   private static final String ERROR_BOUNDARY_HAS_WRONG_EVENT_TYPE =
       """
@@ -78,7 +78,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
   private final int currentPartitionId;
   private final RoutingInfo routingInfo;
 
-  public ProcessInstanceMigrationCatchEventBehaviour(
+  public ProcessInstanceMigrationCatchEventBehavior(
       final ProcessMessageSubscriptionState processMessageSubscriptionState,
       final CatchEventBehavior catchEventBehavior,
       final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour,
