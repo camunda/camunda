@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.test.backup;
 
-import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
@@ -18,7 +17,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -64,7 +62,7 @@ final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance, A
   }
 
   @Override
-  public Map<String, String> oldBrokerBackupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars(final String storeBasePath) {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE",
         "GCS",
@@ -73,40 +71,25 @@ final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance, A
         "ZEEBE_BROKER_DATA_BACKUP_GCS_HOST",
         GCS.internalEndpoint(),
         "ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH",
-        "NONE");
+        "NONE",
+        "ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH",
+        storeBasePath);
   }
 
   @Override
-  public void configureCurrentBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg, final String storeBasePath) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.GCS);
 
     final var gcs = backup.getGcs();
     gcs.setAuth(Gcs.GcsBackupStoreAuth.NONE);
     gcs.setBucketName(BUCKET_NAME);
+    gcs.setBasePath(storeBasePath);
     gcs.setHost(GCS.externalEndpoint());
   }
 
   @Override
   public void afterAll(final ExtensionContext context) {
     NETWORK.close();
-  }
-
-  @AfterEach
-  void cleanUp() throws Exception {
-    // Clean up blobs from the GCS container after each test
-    final var config =
-        new GcsBackupConfig.Builder()
-            .withoutAuthentication()
-            .withHost(GCS.externalEndpoint())
-            .withBucketName(BUCKET_NAME)
-            .build();
-
-    try (final var client = GcsBackupStore.buildClient(config)) {
-      final var bucket = client.get(BUCKET_NAME);
-      if (bucket != null) {
-        client.list(BUCKET_NAME).iterateAll().forEach(Blob::delete);
-      }
-    }
   }
 }
