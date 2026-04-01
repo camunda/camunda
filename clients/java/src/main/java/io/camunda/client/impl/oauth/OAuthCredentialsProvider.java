@@ -174,6 +174,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
    * asynchronously on a daemon thread, so it does not block the calling thread. If the refresh
    * fails, the error is logged and the next call to {@link #applyCredentials} will fall back to the
    * synchronized path when the grace period eventually kicks in.
+   *
+   * <p>The token fetch (HTTP POST to the OAuth server) runs WITHOUT holding the cache monitor, so
+   * concurrent {@link #applyCredentials} calls continue serving the current (still-valid) token
+   * unblocked. Only the brief {@code put()+writeCache()} at the end acquires the monitor.
    */
   private void triggerProactiveRefresh() {
     final CompletableFuture<Void> existing = backgroundRefresh.get();
@@ -186,8 +190,17 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         CompletableFuture.runAsync(
             () -> {
               try {
-                LOG.debug("Proactively refreshing OAuth token for client '{}'", clientId);
-                credentialsCache.forceRefreshIfChanged(clientId, this::fetchCredentials);
+                LOG.info("Proactively refreshing OAuth token for client '{}'", clientId);
+                // Step 1: Fetch the token WITHOUT any lock — this is the slow part
+                // (HTTP round-trip to the OAuth server).
+                final CamundaClientCredentials freshCredentials = fetchCredentials();
+
+                // Step 2: Briefly acquire the cache monitor to atomically put + write.
+                // During the proactive window the token is still valid, so
+                // computeIfMissingOrInvalid() only holds the monitor for a quick
+                // read-check-return — no contention.
+                credentialsCache.putAndWrite(clientId, freshCredentials);
+                LOG.info("Proactively refreshed OAuth token for client '{}'", clientId);
               } catch (final IOException e) {
                 LOG.warn(
                     "Background OAuth token refresh failed for client '{}': {}",
