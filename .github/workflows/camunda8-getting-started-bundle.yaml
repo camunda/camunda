@@ -884,7 +884,20 @@ jobs:
     if: always() && (needs.build-bundle.result == 'failure' || needs.test-bundle.result == 'failure' || needs.upload-to-release.result == 'failure')
     permissions: {}
     steps:
+      - uses: actions/checkout@v6
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Send failure notification to Slack
+        if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         run: |
           WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BLOCKS=$(cat <<EOF
@@ -902,7 +915,7 @@ jobs:
           
           PAYLOAD=$(jq -n --argjson blocks "$BLOCKS" '{blocks: $blocks}')
           
-          curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}" \
+          curl -X POST "${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
 
