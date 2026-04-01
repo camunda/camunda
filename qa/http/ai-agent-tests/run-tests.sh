@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Colors for output
+# ─────────────────────────────────────────────────────────────────
+# Generic ijhttp test runner
+# ─────────────────────────────────────────────────────────────────
+# Automatically discovers test metadata from the .http file:
+#   ### @test <name>      — declares a test scenario
+#   ### PHASE <N>: <desc> — declares a phase
+#   ### Step <N>: <desc>  — declares a step
+#
+# Usage: ./run-tests.sh [env_name]
+# ─────────────────────────────────────────────────────────────────
+
+# Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+BOLD='\033[1m'
+NC='\033[0m'
 
 # Configuration
 ENV_NAME="${1:-sm}"
@@ -15,100 +27,113 @@ PUBLIC_ENV="http-client.env.json"
 PRIVATE_ENV="http-client.private.env.json"
 
 # Validate files exist
-if [[ ! -f "$HTTP_FILE" ]]; then
-  echo -e "${RED}❌ Error: $HTTP_FILE not found${NC}"
-  exit 1
-fi
+for f in "$HTTP_FILE" "$PUBLIC_ENV"; do
+  if [[ ! -f "$f" ]]; then
+    echo -e "${RED}Error: $f not found${NC}"
+    exit 1
+  fi
+done
 
 # Get base URL from environment
 ZEEBE_REST_ADDRESS=$(jq -r ".${ENV_NAME}.ZEEBE_REST_ADDRESS // empty" "$PRIVATE_ENV" 2>/dev/null || echo "")
 if [[ -z "$ZEEBE_REST_ADDRESS" ]]; then
-  echo -e "${RED}❌ Error: ZEEBE_REST_ADDRESS not found in $PRIVATE_ENV for environment '$ENV_NAME'${NC}"
+  echo -e "${RED}Error: ZEEBE_REST_ADDRESS not found in $PRIVATE_ENV for environment '$ENV_NAME'${NC}"
   exit 1
 fi
 
+# ── Auto-discover metadata from .http file ──────────────────────
+
+# Extract test names from "### @test <name>" lines
+mapfile -t TESTS < <(grep -oP '(?<=^### @test ).*' "$HTTP_FILE" || true)
+TEST_COUNT=${#TESTS[@]}
+
+# Extract title from first non-empty ### line (the suite name)
+SUITE_TITLE=$(grep -m1 -oP '(?<=^### )(?!=)[A-Za-z].*' "$HTTP_FILE" | head -1 || echo "E2E Tests")
+
+# ── Display header ──────────────────────────────────────────────
+
+WIDTH=65
 echo ""
-echo -e "${BLUE}┌─────────────────────────────────────────────────────────────────┐${NC}"
-echo -e "${BLUE}│       AI Agent Connector E2E Test - User Flow Validation       │${NC}"
-echo -e "${BLUE}└─────────────────────────────────────────────────────────────────┘${NC}"
+printf "${BLUE}┌%${WIDTH}s┐${NC}\n" "" | tr ' ' '─'
+printf "${BLUE}│${NC}${BOLD}%*s${NC}${BLUE}│${NC}\n" $(( (WIDTH + ${#SUITE_TITLE}) / 2 )) "$SUITE_TITLE"
+printf "${BLUE}└%${WIDTH}s┘${NC}\n" "" | tr ' ' '─'
 echo ""
-echo -e "API Base URL: ${ZEEBE_REST_ADDRESS}"
-echo -e "Environment: ${ENV_NAME}"
+echo -e "  Environment:  ${BOLD}${ENV_NAME}${NC}"
+echo -e "  API Base URL: ${ZEEBE_REST_ADDRESS}"
+echo -e "  Tests:        ${TEST_COUNT}"
 echo ""
 
-# Extract and display the test flow description
-echo -e "${BLUE}Test Scenarios:${NC}"
-echo "  1. Happy Path: Deploy AI Agent process, agent processes request,"
-echo "     user validates response, completes process"
-echo "  2. Feedback Loop: Agent processes request, user rejects response"
-echo "     with feedback, agent re-processes, user accepts, completes process"
-echo ""
+# List discovered tests
+if (( TEST_COUNT > 0 )); then
+  echo -e "${BLUE}Test Scenarios:${NC}"
+  for i in "${!TESTS[@]}"; do
+    echo -e "  $((i+1)). ${TESTS[$i]}"
+  done
+  echo ""
+fi
 
-# Parse test steps from HTTP file
-echo -e "${BLUE}Test Steps:${NC}"
+# List steps
+echo -e "${BLUE}Execution Steps:${NC}"
 grep "^### Step " "$HTTP_FILE" | sed 's/^### Step /  /' || true
 echo ""
 
-# Run ijhttp and capture output
+# ── Run ijhttp ──────────────────────────────────────────────────
+
 echo -e "${YELLOW}▶ Starting test execution...${NC}"
 echo ""
 
-# Create temporary file for output
 TMPOUT=$(mktemp)
 trap "rm -f $TMPOUT" EXIT
 
-# Run ijhttp with detailed output
 if ijhttp "$HTTP_FILE" \
   --env-file "$PUBLIC_ENV" \
   --private-env-file "$PRIVATE_ENV" \
   --env "$ENV_NAME" \
   --report \
   --socket-timeout 300000 2>&1 | tee "$TMPOUT" | grep -v '━'; then
-  
-  # Parse results
-  TOTAL_REQUESTS=$(grep -oP '\d+(?= requests completed)' "$TMPOUT" || echo "0")
-  FAILED_TESTS=$(grep -oP '\d+(?= have failed tests)' "$TMPOUT" || echo "0")
-  
+
+  # Parse results (macOS-compatible: use sed instead of grep -oP)
+  TOTAL_REQUESTS=$(sed -n 's/.*\([0-9][0-9]*\) requests completed.*/\1/p' "$TMPOUT" | tail -1)
+  TOTAL_REQUESTS="${TOTAL_REQUESTS:-0}"
+  FAILED_TESTS=$(sed -n 's/.*\([0-9][0-9]*\) have failed tests.*/\1/p' "$TMPOUT" | tail -1)
+  FAILED_TESTS="${FAILED_TESTS:-0}"
+
   echo ""
-  echo -e "${BLUE}┌─────────────────────────────────────────────────────────────────┐${NC}"
-  echo -e "${BLUE}│                         Test Results                            │${NC}"
-  echo -e "${BLUE}├─────────────────────────────────────────────────────────────────┤${NC}"
-  
+  printf "${BLUE}┌%${WIDTH}s┐${NC}\n" "" | tr ' ' '─'
+  printf "${BLUE}│${NC}${BOLD}  Test Results%*s${BLUE}│${NC}\n" $((WIDTH - 15)) ""
+  printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
+
   if [[ "$FAILED_TESTS" == "0" ]]; then
-    echo -e "${BLUE}│${NC} ${GREEN}✓ PASSED${NC} - All steps completed successfully                   ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}                                                                 ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   Test 1 - Happy Path:                                          ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - Authentication & resource deployment                        ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - AI Agent connector execution (~60s)                         ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - Agent response validation                                   ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - Task assignment and completion (satisfied)                   ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - Process instance completion                                 ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}                                                                 ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   Test 2 - Feedback Loop:                                       ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - New process instance started                                ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - AI Agent initial processing (~60s)                          ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - User rejected response with feedback                        ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - AI Agent re-processing after rejection (~60s)               ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - User accepted re-processed response                         ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}   - Process instance completion after feedback loop              ${BLUE}│${NC}"
-    echo -e "${BLUE}├─────────────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${BLUE}│${NC} HTTP Requests: $TOTAL_REQUESTS (including retries)                         ${BLUE}│${NC}"
-    echo -e "${BLUE}└─────────────────────────────────────────────────────────────────┘${NC}"
+    printf "${BLUE}│${NC} ${GREEN}✓ PASSED${NC} — All assertions passed%*s${BLUE}│${NC}\n" $((WIDTH - 35)) ""
+    printf "${BLUE}│${NC}%*s${BLUE}│${NC}\n" $WIDTH ""
+
+    # Print each discovered test as a passed item
+    for i in "${!TESTS[@]}"; do
+      line="  ✓ Test $((i+1)): ${TESTS[$i]}"
+      printf "${BLUE}│${NC} ${GREEN}%s${NC}%*s${BLUE}│${NC}\n" "$line" $((WIDTH - ${#line} - 1)) ""
+    done
+
+    printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
+    req_line=" HTTP Requests: $TOTAL_REQUESTS"
+    printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$req_line" $((WIDTH - ${#req_line})) ""
+    printf "${BLUE}└%${WIDTH}s┘${NC}\n" "" | tr ' ' '─'
     echo ""
-    echo -e "${GREEN}🎉 E2E user flow validation successful${NC}"
+    echo -e "${GREEN}E2E validation successful${NC}"
     exit 0
   else
-    echo -e "${BLUE}│${NC} ${RED}✗ FAILED${NC} - $FAILED_TESTS test assertion(s) failed                      ${BLUE}│${NC}"
-    echo -e "${BLUE}├─────────────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${BLUE}│${NC} HTTP Requests: $TOTAL_REQUESTS                                            ${BLUE}│${NC}"
-    echo -e "${BLUE}└─────────────────────────────────────────────────────────────────┘${NC}"
+    fail_line=" ✗ FAILED — $FAILED_TESTS assertion(s) failed"
+    printf "${BLUE}│${NC} ${RED}%s${NC}%*s${BLUE}│${NC}\n" "$fail_line" $((WIDTH - ${#fail_line} - 1)) ""
+    printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
+    req_line=" HTTP Requests: $TOTAL_REQUESTS"
+    printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$req_line" $((WIDTH - ${#req_line})) ""
+    printf "${BLUE}└%${WIDTH}s┘${NC}\n" "" | tr ' ' '─'
     echo ""
-    echo -e "${RED}❌ E2E user flow validation failed${NC}"
+    echo -e "${RED}E2E validation failed${NC}"
     echo -e "${YELLOW}Check the test report for detailed failure information${NC}"
     exit 1
   fi
 else
   echo ""
-  echo -e "${RED}❌ Test execution failed${NC}"
+  echo -e "${RED}Test execution failed${NC}"
   exit 1
 fi
