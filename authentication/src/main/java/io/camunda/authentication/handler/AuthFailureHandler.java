@@ -14,6 +14,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,6 +30,8 @@ import org.springframework.stereotype.Component;
 @Component
 public final class AuthFailureHandler
     implements AuthenticationFailureHandler, AccessDeniedHandler, AuthenticationEntryPoint {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AuthFailureHandler.class);
 
   private final ObjectMapper objectMapper;
 
@@ -78,6 +82,12 @@ public final class AuthFailureHandler
       final HttpStatus status,
       final Exception error)
       throws IOException {
+    LOG.warn(
+        "Authentication failure: status={}, method={}, uri={}, error={}",
+        status.value(),
+        request.getMethod(),
+        request.getRequestURI(),
+        error.getMessage());
     final var problem = CamundaProblemDetail.forStatus(status);
     problem.setDetail(error.getMessage());
     problem.setInstance(URI.create(request.getRequestURI()));

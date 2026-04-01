@@ -38,6 +38,11 @@ public class LoggingAuthenticationFailureHandler implements AuthenticationFailur
     // Only AuthenticationServiceException will not be handled by default failure handlers,
     // instead it will be rethrown and bubble up to tomcat, causing an ERROR log.
     if (!AuthenticationServiceException.class.isAssignableFrom(exception.getClass())) {
+      LOG.warn(
+          "Bearer token authentication failed: method={}, uri={}, error={}",
+          request.getMethod(),
+          request.getRequestURI(),
+          exception.getMessage());
       delegate.onAuthenticationFailure(request, response, exception);
       return;
     }

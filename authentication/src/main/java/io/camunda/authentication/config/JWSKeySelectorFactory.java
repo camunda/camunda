@@ -131,6 +131,7 @@ public class JWSKeySelectorFactory {
         .refreshAheadCache(true)
         .rateLimited(true)
         .cache(true)
+        .outageTolerant(true)
         .build();
   }
 
