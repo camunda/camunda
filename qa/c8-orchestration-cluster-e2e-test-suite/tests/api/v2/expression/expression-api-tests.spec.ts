@@ -45,7 +45,7 @@ const successTestCases: ExpressionTestCase[] = [
     result: false,
   },
   {
-    description: 'Should evaluate null literal - Success',
+    description: 'Should evaluate null variable - Success',
     expression: '=x',
     variables: {x: null},
     result: null,
