@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -45,6 +46,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -742,9 +744,22 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     final var destIndexName = UUID.randomUUID().toString();
     final var now = Instant.now();
+
     final var fourDaysAgo = now.minus(Duration.ofDays(4)).toString();
+    final String fourDaysAgoDate = dateFormatter.format(now.minus(Duration.ofDays(4)));
+    final String firstExpected =
+        DateOfArchivedDocumentsUtil.getBucketStart(fourDaysAgoDate, "3d", "date");
+
     final var twoDaysAgo = now.minus(Duration.ofDays(2)).toString();
+    final String twoDaysAgoDate = dateFormatter.format(now.minus(Duration.ofDays(2)));
+    final String secondExpected =
+        DateOfArchivedDocumentsUtil.getBucketStart(twoDaysAgoDate, "3d", "date");
+
     final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final String twoHoursAgoDate = dateFormatter.format(now.minus(Duration.ofHours(2)));
+    final String thirdExpected =
+        DateOfArchivedDocumentsUtil.getBucketStart(twoHoursAgoDate, "3d", "date");
+
     final var repository = createRepository();
     final var documents =
         List.of(new TestBatchOperation("1", fourDaysAgo), new TestBatchOperation("2", fourDaysAgo));
@@ -761,8 +776,7 @@ final class OpenSearchArchiverRepositoryIT {
             () -> {
               assertThat(firstBatch.isDone()).isTrue();
               assertThat(firstBatch.get().ids()).containsExactlyInAnyOrder("1", "2");
-              assertThat(firstBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+              assertThat(firstBatch.get().finishDate()).isEqualTo(firstExpected);
             });
     repository
         .moveDocuments(
@@ -783,8 +797,7 @@ final class OpenSearchArchiverRepositoryIT {
             () -> {
               assertThat(secondBatch.isDone()).isTrue();
               assertThat(secondBatch.get().ids()).containsExactlyInAnyOrder("3", "4");
-              assertThat(secondBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+              assertThat(secondBatch.get().finishDate()).isEqualTo(secondExpected);
             });
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
@@ -810,8 +823,7 @@ final class OpenSearchArchiverRepositoryIT {
             () -> {
               assertThat(thirdBatch.isDone()).isTrue();
               assertThat(thirdBatch.get().ids()).containsExactlyInAnyOrder("5", "6");
-              assertThat(thirdBatch.get().finishDate())
-                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+              assertThat(thirdBatch.get().finishDate()).isEqualTo(thirdExpected);
             });
   }
 
@@ -820,13 +832,16 @@ final class OpenSearchArchiverRepositoryIT {
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     final var now = Instant.now();
+    final var endDate = now.minus(Duration.ofDays(1));
     final var documents =
         List.of(
-            new TestBatchOperation("1", now.minus(Duration.ofDays(1)).toString()),
-            new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
+            new TestBatchOperation("1", endDate.toString()),
+            new TestBatchOperation("2", endDate.toString()));
 
     final var repository = createRepository();
-    // we have an already existing index with a date of 3 days ago.
+
+    // NOTE: This is simulating the real index name. Since the use of the new bucketing strategy,
+    //  the index suffix is no longer relevant to determine the finish date.
     testClient
         .indices()
         .create(
@@ -841,10 +856,13 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
     config.setRolloverInterval("3d");
 
+    final String expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(dateFormatter.format(endDate), "3d", "date");
+
     // then the batch finish date should not update:
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart);
   }
 
   @Test
@@ -858,8 +876,13 @@ final class OpenSearchArchiverRepositoryIT {
             new TestBatchOperation("1", now.minus(Duration.ofDays(1)).toString()),
             new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
 
+    final String endDate = dateFormatter.format(now.minus(Duration.ofDays(1)));
+    final String expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(endDate, "3d", "date");
+
     final var repository = createRepository();
-    // we have an already existing Zeebe index with a date of 3 days ago.
+    // NOTE: the index suffix is no longer relevant since we're using the bucketization strategy to
+    //  determine the finish date.
     testClient
         .indices()
         .create(
@@ -873,7 +896,7 @@ final class OpenSearchArchiverRepositoryIT {
     // then the batch finish date should update since zeebe index should be excluded:
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart);
   }
 
   @ParameterizedTest
@@ -906,6 +929,11 @@ final class OpenSearchArchiverRepositoryIT {
     // then
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final String endDate = dateFormatter.format(now.minus(Duration.ofHours(2)));
+    final String expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, config.getUsageMetricsRolloverInterval(), "date");
+
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
@@ -913,7 +941,7 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart);
   }
 
   @ParameterizedTest
@@ -944,8 +972,6 @@ final class OpenSearchArchiverRepositoryIT {
     final var result = repository.getUsageMetricTUNextBatch();
 
     // then
-    final var dateFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
@@ -953,7 +979,8 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+    assertThat(batch.finishDate())
+        .isEqualTo(YearMonth.now(ZoneId.systemDefault()).atDay(1).toString()); // rollover is 1M
   }
 
   @Test
