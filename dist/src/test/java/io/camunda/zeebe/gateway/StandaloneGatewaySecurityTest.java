@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.gateway;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.actor.ActorClockConfiguration;
@@ -33,7 +35,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -62,6 +67,43 @@ final class StandaloneGatewaySecurityTest {
   public void tearDown() {
     CloseHelper.quietCloseAll(
         gateway, brokerClient, jobStreamClient, actorScheduler, () -> atomixCluster.stop().join());
+  }
+
+  @Test
+  void shouldFailToStartWhenClusterPortIsAlreadyInUse() throws IOException {
+    // given
+    final var clusterAddress = SocketUtil.getNextAddress();
+
+    // bind the cluster port before the gateway tries to use it
+    try (final var serverSocket = new ServerSocket()) {
+      serverSocket.setReuseAddress(true);
+      serverSocket.bind(
+          new InetSocketAddress(clusterAddress.getHostName(), clusterAddress.getPort()));
+
+      final var cfg = createGatewayCfg(clusterAddress);
+
+      // when - then
+      assertThatThrownBy(
+              () -> {
+                gateway = buildGateway(cfg);
+                gateway.gateway();
+              })
+          .satisfies(
+              throwable -> {
+                final var rootCause = throwable.getCause();
+                assertThat(rootCause)
+                    .isNotNull()
+                    .matches(
+                        cause ->
+                            cause instanceof BindException
+                                || cause
+                                    .getClass()
+                                    .getName()
+                                    .equals("io.netty.channel.unix.Errors$NativeIoException"),
+                        "is a bind-related exception")
+                    .hasMessageContaining("Address already in use");
+              });
+    }
   }
 
   @Test
@@ -188,6 +230,16 @@ final class StandaloneGatewaySecurityTest {
                     .setEnabled(true)
                     .setCertificateChainPath(certificate.certificate())
                     .setPrivateKeyPath(certificate.privateKey())));
+    return config;
+  }
+
+  private GatewayBasedProperties createGatewayCfg(final InetSocketAddress clusterAddress) {
+    final var gatewayAddress = SocketUtil.getNextAddress();
+    final var config = new GatewayBasedProperties();
+    config.setNetwork(
+        new NetworkCfg().setHost(gatewayAddress.getHostName()).setPort(gatewayAddress.getPort()));
+    config.setCluster(
+        new ClusterCfg().setHost(clusterAddress.getHostName()).setPort(clusterAddress.getPort()));
     return config;
   }
 
