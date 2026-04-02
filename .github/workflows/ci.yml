@@ -1657,7 +1657,7 @@ jobs:
         run: |
           MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
             SHA_SHORT="${GITHUB_SHA::7}"
             echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
