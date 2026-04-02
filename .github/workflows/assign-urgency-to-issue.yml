@@ -56,7 +56,6 @@ jobs:
     permissions: {}
     timeout-minutes: 10
     env:
-      GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ github.event.repository.name }}
       ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
@@ -68,6 +67,18 @@ jobs:
         shell: bash
 
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        with:
+          github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - name: Dump event issue JSON
         run: |
           cat << 'EOF'
@@ -75,6 +86,8 @@ jobs:
           EOF
       - name: Fetch issue and project data
         id: fetch_data
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -364,6 +377,8 @@ jobs:
 
       - name: Update Urgency
         if: steps.validate_project.outputs.in_target_project == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
 
