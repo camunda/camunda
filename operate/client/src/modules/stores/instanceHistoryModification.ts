@@ -7,19 +7,14 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {ElementModification} from './modifications';
 
-type ElementInstancePlaceholder = {
-  id: string;
-  type: string;
-  state?: ProcessInstanceState;
-  flowNodeId: string;
-  startDate: string;
-  endDate: null | string;
-  treePath: string;
-  sortValues: [string, string] | [];
-  isPlaceholder?: boolean;
+type ElementInstancePlaceholder = Pick<
+  ElementInstance,
+  'elementId' | 'elementInstanceKey'
+> & {
+  isPlaceholder: true;
 };
 
 type ModificationPlaceholder = {
@@ -44,12 +39,14 @@ class InstanceHistoryModification {
     makeAutoObservable(this);
   }
 
-  addExpandedElementInstanceIds = (id: ElementInstancePlaceholder['id']) => {
+  addExpandedElementInstanceIds = (
+    id: ElementInstancePlaceholder['elementInstanceKey'],
+  ) => {
     this.state.expandedElementInstanceIds.push(id);
   };
 
   removeFromExpandedElementInstanceIds = (
-    id: ElementInstancePlaceholder['id'],
+    id: ElementInstancePlaceholder['elementInstanceKey'],
   ) => {
     this.state.expandedElementInstanceIds =
       this.state.expandedElementInstanceIds.filter(
