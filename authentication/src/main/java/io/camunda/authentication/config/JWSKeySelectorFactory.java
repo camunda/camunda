@@ -129,7 +129,7 @@ public class JWSKeySelectorFactory {
   protected JWKSource<SecurityContext> createJWKSource(final URL jwkSetUri) {
     return JWKSourceBuilder.create(jwkSetUri)
         .refreshAheadCache(true)
-        .rateLimited(true)
+        .rateLimited(false)
         .cache(true)
         .outageTolerant(true)
         .build();

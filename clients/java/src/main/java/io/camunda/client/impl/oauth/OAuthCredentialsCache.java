@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.jcip.annotations.ThreadSafe;
@@ -58,6 +59,13 @@ public final class OAuthCredentialsCache {
 
   private final File cacheFile;
   private final AtomicReference<Map<String, OAuthCachedCredentials>> credentialsByClientId;
+
+  /**
+   * Monotonically increasing counter incremented after every successful token refresh. Used by
+   * {@link #forceRefreshIfChanged} to detect that a concurrent caller already refreshed while this
+   * thread was waiting for the lock, so the expensive Keycloak HTTP call can be skipped.
+   */
+  private final AtomicLong refreshGeneration = new AtomicLong(0);
 
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
@@ -114,12 +122,31 @@ public final class OAuthCredentialsCache {
    * proactiveRefreshCallback} is provided and the cached token is valid but nearing expiry (as
    * determined by {@link CamundaClientCredentials#shouldRefreshProactively()}), the callback is
    * invoked to trigger a background refresh while the still-valid token is returned immediately.
+   *
+   * <p>This method first checks the in-memory cache (a fast HashMap lookup) before falling back to
+   * reading from the on-disk YAML cache. Under high throughput (~300 req/s), this avoids hundreds
+   * of file reads per second while holding the synchronized lock.
    */
   public synchronized CamundaClientCredentials computeIfMissingOrInvalid(
       final String clientId,
       final SupplierWithIO<CamundaClientCredentials> zeebeClientCredentialsConsumer,
       final Runnable proactiveRefreshCallback)
       throws IOException {
+
+    // Fast path: check the in-memory cache first (no disk I/O).
+    // This is the hot path under steady-state load — the token is valid in memory
+    // and we can return it without touching the filesystem.
+    final Optional<CamundaClientCredentials> inMemoryCredentials = get(clientId);
+    if (inMemoryCredentials.isPresent() && inMemoryCredentials.get().isValid()) {
+      final CamundaClientCredentials credentials = inMemoryCredentials.get();
+      if (proactiveRefreshCallback != null && credentials.shouldRefreshProactively()) {
+        proactiveRefreshCallback.run();
+      }
+      return credentials;
+    }
+
+    // Slow path: read from disk (another process/thread might have updated the file),
+    // then check validity again.
     final Optional<CamundaClientCredentials> optionalCredentials =
         readCache()
             .get(clientId)
@@ -133,7 +160,6 @@ public final class OAuthCredentialsCache {
                 });
     if (optionalCredentials.isPresent()) {
       final CamundaClientCredentials credentials = optionalCredentials.get();
-      // Token is valid but nearing expiry — trigger background refresh
       if (proactiveRefreshCallback != null && credentials.shouldRefreshProactively()) {
         proactiveRefreshCallback.run();
       }
@@ -146,17 +172,44 @@ public final class OAuthCredentialsCache {
   }
 
   /**
-   * Unconditionally fetches new credentials from the supplier, updates the cache, and returns true
-   * if the new credentials differ from the previously cached ones. This method is synchronized on
-   * the same monitor as {@link #computeIfMissingOrInvalid}, so concurrent calls will coalesce: only
-   * one thread fetches while the others wait and then see the already-refreshed token.
+   * Fetches new credentials from the supplier, updates the cache, and returns true if the new
+   * credentials differ from the previously cached ones. If a concurrent call already refreshed the
+   * token, the expensive fetch is skipped to prevent a stampede of serialized OAuth fetches that
+   * would block the HTTP client's I/O reactor threads.
+   *
+   * <p>This method reads a generation counter <em>before</em> acquiring the monitor lock. Inside
+   * the lock, if the generation was incremented by another thread (indicating a concurrent refresh
+   * completed while this thread was waiting), the Keycloak HTTP call is skipped. This reduces the
+   * total lock hold time from N × ~200ms (where N is the number of concurrent 401 retries) to
+   * ~200ms + (N−1) × O(μs), preventing a cascading freeze of the HTTP client's I/O reactor.
    */
-  public synchronized boolean forceRefreshIfChanged(
+  public boolean forceRefreshIfChanged(
       final String clientId, final SupplierWithIO<CamundaClientCredentials> credentialsSupplier)
       throws IOException {
+    // Capture the generation BEFORE blocking on the synchronized monitor.
+    // If another thread refreshes the token while we wait, the generation will be higher
+    // when we enter the critical section, and we can safely skip the redundant fetch.
+    final long generationOnEntry = refreshGeneration.get();
+    return doForceRefreshIfChanged(clientId, credentialsSupplier, generationOnEntry);
+  }
+
+  private synchronized boolean doForceRefreshIfChanged(
+      final String clientId,
+      final SupplierWithIO<CamundaClientCredentials> credentialsSupplier,
+      final long generationOnEntry)
+      throws IOException {
+    // Stampede prevention: if another thread already refreshed while we were waiting for
+    // the lock, skip the expensive Keycloak HTTP call. Without this, N concurrent 401
+    // retries would each perform a serialized ~200ms fetch, freezing the HTTP client's
+    // I/O reactor dispatcher threads and causing a cascading outage.
+    if (refreshGeneration.get() > generationOnEntry) {
+      return true;
+    }
+
     final CamundaClientCredentials previous = readCache().get(clientId).orElse(null);
     final CamundaClientCredentials fresh = credentialsSupplier.get();
     put(clientId, fresh).writeCache();
+    refreshGeneration.incrementAndGet();
     return !fresh.equals(previous);
   }
 
@@ -170,6 +223,7 @@ public final class OAuthCredentialsCache {
   public synchronized void putAndWrite(
       final String clientId, final CamundaClientCredentials credentials) throws IOException {
     put(clientId, credentials).writeCache();
+    refreshGeneration.incrementAndGet();
   }
 
   public <T> Optional<T> withCache(
