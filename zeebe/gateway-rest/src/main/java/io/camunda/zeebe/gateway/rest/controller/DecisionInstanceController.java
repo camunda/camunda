@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/decision-instances")
 public class DecisionInstanceController {
 
@@ -47,6 +46,7 @@ public class DecisionInstanceController {
     this.authenticationProvider = authenticationProvider;
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionInstanceSearchQueryResult> searchDecisionInstances(
       @RequestBody(required = false) final DecisionInstanceSearchQuery query) {
@@ -54,6 +54,7 @@ public class DecisionInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
       @PathVariable final String decisionEvaluationInstanceKey) {
