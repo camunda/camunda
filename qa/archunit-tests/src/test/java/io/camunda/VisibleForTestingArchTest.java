@@ -14,9 +14,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaField;
-import com.tngtech.archunit.core.domain.JavaMember;
 import com.tngtech.archunit.core.domain.JavaMethod;
-import com.tngtech.archunit.core.domain.properties.HasName.AndFullName;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -42,46 +40,77 @@ public class VisibleForTestingArchTest {
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      classes().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
+      classes()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should(beClassAccessedBySelfOrTest());
 
   @ArchTest
   static final ArchRule METHOD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      methods().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
+      methods()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should(beMethodAccessedBySelfOrTest());
 
   @ArchTest
   static final ArchRule FIELD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      fields().that().areAnnotatedWith(VisibleForTesting.class).should(beAccessedBySelfOrTest());
+      fields()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should(beFieldAccessedBySelfOrTest());
 
-  private static <T extends AndFullName> ArchCondition<T> beAccessedBySelfOrTest() {
+  private static ArchCondition<JavaClass> beClassAccessedBySelfOrTest() {
     return new ArchCondition<>("be accessed from test or self") {
       @Override
-      public void check(final T element, final ConditionEvents events) {
-
-        final Set<? extends JavaAccess<?>> accessesToSelf;
-        final JavaClass owner;
-        if (element instanceof final JavaClass javaClass) {
-          accessesToSelf = javaClass.getAccessesToSelf();
-          owner = javaClass;
-        } else if (element instanceof final JavaMember javaMember) {
-          accessesToSelf = javaMember.getAccessesToSelf();
-          owner = javaMember.getOwner();
-        } else {
-          return;
-        }
-
-        accessesToSelf.stream()
-            .filter(access -> isViolation(owner, access.getOriginOwner()))
-            .forEach(
-                violationAccess ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            violationAccess,
-                            String.format(
-                                "%s is accessed from %s, which is not a test but still requires extended visibility.",
-                                displayName(element),
-                                violationAccess.getOriginOwner().getFullName()))));
+      public void check(final JavaClass element, final ConditionEvents events) {
+        validateAccessViolations(
+            events, element.getAccessesToSelf(), element, "Class " + element.getFullName());
       }
     };
+  }
+
+  private static ArchCondition<JavaMethod> beMethodAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
+      @Override
+      public void check(final JavaMethod element, final ConditionEvents events) {
+        validateAccessViolations(
+            events,
+            element.getAccessesToSelf(),
+            element.getOwner(),
+            "Method " + element.getFullName());
+      }
+    };
+  }
+
+  private static ArchCondition<JavaField> beFieldAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
+      @Override
+      public void check(final JavaField element, final ConditionEvents events) {
+        validateAccessViolations(
+            events,
+            element.getAccessesToSelf(),
+            element.getOwner(),
+            "Field " + element.getFullName());
+      }
+    };
+  }
+
+  private static void validateAccessViolations(
+      final ConditionEvents events,
+      final Set<? extends JavaAccess<?>> accessesToSelf,
+      final JavaClass owner,
+      final String displayName) {
+
+    accessesToSelf.stream()
+        .filter(access -> isViolation(owner, access.getOriginOwner()))
+        .forEach(
+            violationAccess ->
+                events.add(
+                    SimpleConditionEvent.violated(
+                        violationAccess,
+                        String.format(
+                            "%s is accessed from %s, which is not a test but still requires extended visibility.",
+                            displayName, violationAccess.getOriginOwner().getFullName()))));
   }
 
   private static boolean isViolation(final JavaClass javaOwner, final JavaClass javaOriginOwner) {
@@ -106,14 +135,5 @@ public class VisibleForTestingArchTest {
       topLevelClass = topLevelClass.getEnclosingClass().get();
     }
     return topLevelClass;
-  }
-
-  private static String displayName(final AndFullName element) {
-    return switch (element) {
-      case final JavaClass javaClass -> "Class " + element.getFullName();
-      case final JavaMethod javaMethod -> "Method " + element.getFullName();
-      case final JavaField javaField -> "Field " + element.getFullName();
-      default -> element.getFullName();
-    };
   }
 }
