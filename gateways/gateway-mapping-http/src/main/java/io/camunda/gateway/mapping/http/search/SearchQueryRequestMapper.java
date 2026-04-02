@@ -88,7 +88,8 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTa
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.RequestValidator;
-import io.camunda.gateway.protocol.model.*;
+import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
@@ -217,76 +218,6 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
-  static Either<List<String>, SearchQueryPage> toSearchQueryPage(
-      final SearchQueryPageRequest requestedPage) {
-    if (requestedPage == null) {
-      return Either.right(null);
-    }
-
-    final List<String> violations = new ArrayList<>();
-    validatePageAttributes(requestedPage, violations);
-
-    if (!violations.isEmpty()) {
-      return Either.left(violations);
-    }
-
-    return switch (requestedPage) {
-      case final CursorBackwardPagination req -> Either.right(innerToSearchQueryPage(req));
-      case final CursorForwardPagination req -> Either.right(innerToSearchQueryPage(req));
-      case final OffsetPagination req -> Either.right(innerToSearchQueryPage(req));
-      case final LimitPagination req -> Either.right(innerToSearchQueryPage(req));
-      default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
-    };
-  }
-
-  private static void validatePageAttributes(
-      final SearchQueryPageRequest requestedPage, final List<String> violations) {
-    final Integer limit =
-        switch (requestedPage) {
-          case final CursorBackwardPagination req -> req.getLimit();
-          case final CursorForwardPagination req -> req.getLimit();
-          case final OffsetPagination req -> req.getLimit();
-          case final LimitPagination req -> req.getLimit();
-          default -> null;
-        };
-
-    if (limit != null && limit < 0) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "page.limit", limit, "a non-negative number"));
-    }
-
-    if (requestedPage instanceof final OffsetPagination req) {
-      final Integer from = req.getFrom();
-      if (from != null && from < 0) {
-        violations.add(
-            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                "page.from", from, "a non-negative number"));
-      }
-    }
-  }
-
-  private static SearchQueryPage innerToSearchQueryPage(
-      final CursorBackwardPagination requestedPage) {
-    return SearchQueryPage.of(
-        (p) -> p.size(requestedPage.getLimit()).before(requestedPage.getBefore()));
-  }
-
-  private static SearchQueryPage innerToSearchQueryPage(
-      final CursorForwardPagination requestedPage) {
-    return SearchQueryPage.of(
-        (p) -> p.size(requestedPage.getLimit()).after(requestedPage.getAfter()));
-  }
-
-  private static SearchQueryPage innerToSearchQueryPage(final OffsetPagination requestedPage) {
-    return SearchQueryPage.of(
-        (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
-  }
-
-  private static SearchQueryPage innerToSearchQueryPage(final LimitPagination requestedPage) {
-    return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
-  }
-
   /**
    * Overload that accepts flat page fields (no polymorphic subtypes). Determines pagination type
    * from which fields are non-null.
@@ -329,74 +260,6 @@ public final class SearchQueryRequestMapper {
     } else {
       return Either.right(SearchQueryPage.of(p -> p.size(limit)));
     }
-  }
-
-  private static Either<ProblemDetail, Void> validateProcessDefinitionIsLatestVersionConstraints(
-      final ProcessDefinitionSearchQuery request) {
-    final List<String> violations = new ArrayList<>();
-
-    // Check if isLatestVersion filter is set to true
-    final var filter = request.getFilter();
-    if (filter == null || filter.getIsLatestVersion() == null || !filter.getIsLatestVersion()) {
-      return Either.right(null);
-    }
-
-    // Validate pagination: only 'after' and 'limit' are allowed
-    final var page = request.getPage();
-    if (page != null) {
-      if (page instanceof CursorBackwardPagination) {
-        violations.add(
-            ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION.formatted("before"));
-      } else if (page instanceof OffsetPagination) {
-        violations.add(
-            ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION.formatted("from"));
-      }
-    }
-
-    // Validate sorting: only 'processDefinitionId' and 'tenantId' are allowed
-    final var sort = request.getSort();
-    if (sort != null && !sort.isEmpty()) {
-      for (final var sortRequest : sort) {
-        final var field = sortRequest.getField();
-        if (field != null
-            && field
-                != io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest
-                    .FieldEnum.PROCESS_DEFINITION_ID
-            && field
-                != io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest
-                    .FieldEnum.TENANT_ID) {
-          violations.add(
-              ERROR_MESSAGE_UNSUPPORTED_SORT_FIELD_WITH_IS_LATEST_VERSION.formatted(field));
-        }
-      }
-    }
-
-    if (!violations.isEmpty()) {
-      final var problem = RequestValidator.createProblemDetail(violations);
-      if (problem.isPresent()) {
-        return Either.left(problem.get());
-      }
-    }
-
-    return Either.right(null);
-  }
-
-  private static Either<List<String>, SearchQueryPage> toOffsetPagination(
-      final OffsetPagination requestedPage) {
-
-    if (requestedPage == null) {
-      return Either.right(null);
-    }
-
-    final List<String> violations = new ArrayList<>();
-    validatePageAttributes(requestedPage, violations);
-
-    if (!violations.isEmpty()) {
-      return Either.left(violations);
-    }
-
-    // Delegate to the existing mapping
-    return Either.right(innerToSearchQueryPage(requestedPage));
   }
 
   static <
