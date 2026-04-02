@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -29,16 +30,19 @@ public final class BpmnIncidentBehavior {
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final IncidentMetrics incidentMetrics;
 
   public BpmnIncidentBehavior(
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
-      final StateWriter stateWriter) {
+      final StateWriter stateWriter,
+      final IncidentMetrics incidentMetrics) {
     incidentState = processingState.getIncidentState();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
+    this.incidentMetrics = incidentMetrics;
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -48,6 +52,7 @@ public final class BpmnIncidentBehavior {
     if (hasIncident) {
       final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
       stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
+      incidentMetrics.incidentResolved();
     }
   }
 
@@ -85,6 +90,7 @@ public final class BpmnIncidentBehavior {
 
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
+    incidentMetrics.incidentCreated();
   }
 
   public void resolveIncidents(final BpmnElementContext context) {
@@ -94,6 +100,9 @@ public final class BpmnIncidentBehavior {
   public void resolveIncidents(final long elementInstanceKey) {
     incidentState.forExistingProcessIncident(
         elementInstanceKey,
-        (record, key) -> stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
+        (record, key) -> {
+          stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record);
+          incidentMetrics.incidentResolved();
+        });
   }
 }
