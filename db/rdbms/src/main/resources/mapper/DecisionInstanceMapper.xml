@@ -205,18 +205,18 @@
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="DECISION_DEFINITION_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"/>
       <arg column="TYPE"
         javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"/>
       <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="RESULT" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <!-- The list is loaded separately (optional). But we still need a value (NULL) here.
        we use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
       <arg column="EVALUATED_INPUTS" javaType="java.util.List"
