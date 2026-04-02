@@ -8,6 +8,10 @@ name: C8 Orchestration Cluster E2E Tests Nightly
 on:
   schedule:
     - cron: "0 0 * * *" # Run all tests at midnight UTC
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, fix-plugin-versiom]
 permissions:
   contents: read
 
@@ -146,8 +150,8 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: true
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          INCLUDE_SLACK_REPORTER: false
+          # SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           API_TESTS_ONLY: true
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
@@ -221,11 +225,12 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 30
+    if: github.event_name == 'schedule' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'main')
 
     strategy:
       fail-fast: false
       matrix:
-        branch: [ stable/8.9, main ]
+        branch: ${{ (github.event_name == 'pull_request') && fromJSON('["main"]') || (github.event_name == 'push') && fromJSON('["fix-plugin-versiom"]') || fromJSON('["stable/8.9", "main"]') }}
 
     steps:
       - name: Checkout Code
@@ -274,11 +279,12 @@ jobs:
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
     permissions: {}
+    if: github.event_name == 'schedule' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'main')
 
     strategy:
       fail-fast: false
       matrix:
-        branch: [ stable/8.9, main ]
+        branch: ${{ (github.event_name == 'pull_request') && fromJSON('["main"]') || (github.event_name == 'push') && fromJSON('["fix-plugin-versiom"]') || fromJSON('["stable/8.9", "main"]') }}
         database:
           # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
           - database-name: "Postgres 14"
@@ -398,7 +404,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
 
       - name: Python setup
         if: always()
@@ -572,8 +578,8 @@ jobs:
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
           DATABASE: "RDBMS"
           DB_NAME: ${{ matrix.database.database-name }}
-          INCLUDE_SLACK_REPORTER: true
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          INCLUDE_SLACK_REPORTER: false
+          # SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
         run: DATABASE=RDBMS npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
@@ -768,8 +774,8 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: true
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          INCLUDE_SLACK_REPORTER: false
+          # SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
