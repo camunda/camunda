@@ -193,6 +193,32 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
+
+
+    await test.step('Setup - Verify limited user is included in limited role', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/roles/{roleId}/users/search', {roleId: LIMITED_ROLE.roleId}), {
+          headers: jsonHeaders(),
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+
+        const usernames = body.items.map((item: {username: string}) => item.username);
+        expect(usernames).toContain(LIMITED_USER.username);
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Setup - Verify limited authorization is included in role authorizations', async () => {
+      await expect(async () => {
+        const res = await request.get(buildUrl(`/authorizations/${limitedAuthorizationKey}`), {
+          headers: jsonHeaders(),
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+
+        expect(body.authorizationKey).toBe(limitedAuthorizationKey);
+      }).toPass(defaultAssertionOptions);
+    });
   });
 
   test.afterAll(async ({request}) => {
@@ -231,7 +257,17 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
           headers: jsonHeaders(token), // overrides default demo:demo
         },
       );
-      await assertUnauthorizedRequest(res);
+      await assertStatusCode(res, 200);
+      await validateResponse({
+        path: USAGE_METRICS_GET_ENDPOINT,
+        method: 'GET',
+        status: '200',
+      }, res);
+      const body = await res.json();
+      expect(body.activeTenants).toBe(0);
+      expect(body.processInstances).toBe(0);
+      expect(body.decisionInstances).toBe(0);
+      expect(body.assignees).toBe(0);
     }).toPass(defaultAssertionOptions);
   });
 });
