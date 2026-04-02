@@ -17,6 +17,7 @@ import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
@@ -133,6 +134,7 @@ public final class EngineProcessors {
         new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
+    final var incidentMetrics = processingState.getIncidentMetrics();
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -159,7 +161,8 @@ public final class EngineProcessors {
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
             expressionLanguageMetrics,
-            config);
+            config,
+            incidentMetrics);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -234,7 +237,8 @@ public final class EngineProcessors {
         jobMetrics,
         config,
         clock,
-        authCheckBehavior);
+        authCheckBehavior,
+        incidentMetrics);
 
     final var userTaskProcessor =
         createUserTaskProcessor(
@@ -248,7 +252,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         bpmnBehaviors.jobActivationBehavior(),
-        authCheckBehavior);
+        authCheckBehavior,
+        incidentMetrics);
     addResourceDeletionProcessors(
         typedRecordProcessors,
         writers,
@@ -429,7 +434,8 @@ public final class EngineProcessors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -443,7 +449,8 @@ public final class EngineProcessors {
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
         expressionLanguageMetrics,
-        config);
+        config,
+        incidentMetrics);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -546,7 +553,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
@@ -554,7 +562,8 @@ public final class EngineProcessors {
         userTaskProcessor,
         writers,
         jobActivationBehavior,
-        authCheckBehavior);
+        authCheckBehavior,
+        incidentMetrics);
   }
 
   private static void addMessageProcessors(

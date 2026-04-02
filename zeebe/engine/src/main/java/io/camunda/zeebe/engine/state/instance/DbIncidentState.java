@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {
@@ -49,7 +51,8 @@ public final class DbIncidentState implements MutableIncidentState {
   public DbIncidentState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final int partitionId) {
+      final int partitionId,
+      final IncidentMetrics metrics) {
     incidentKey = new DbLong();
     incidentColumnFamily =
         zeebeDb.createColumnFamily(
@@ -68,7 +71,14 @@ public final class DbIncidentState implements MutableIncidentState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
 
-    metrics = new IncidentMetrics(zeebeDb.getMeterRegistry());
+    this.metrics = metrics;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    final var counter = new AtomicInteger(0);
+    incidentColumnFamily.forEachKey(ignore -> counter.getAndIncrement());
+    metrics.setPendingIncidents(counter.get());
   }
 
   @Override
@@ -85,8 +95,6 @@ public final class DbIncidentState implements MutableIncidentState {
       elementInstanceKey.inner().wrapLong(incident.getElementInstanceKey());
       processInstanceIncidentColumnFamily.insert(elementInstanceKey, incidentKeyValue);
     }
-
-    metrics.incidentCreated();
   }
 
   @Override
@@ -103,8 +111,6 @@ public final class DbIncidentState implements MutableIncidentState {
         elementInstanceKey.inner().wrapLong(incidentRecord.getElementInstanceKey());
         processInstanceIncidentColumnFamily.deleteExisting(elementInstanceKey);
       }
-
-      metrics.incidentResolved();
     }
   }
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -33,7 +34,8 @@ public final class JobEventProcessors {
       final JobProcessingMetrics jobMetrics,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -69,7 +71,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 jobBackoffChecker,
                 bpmnBehaviors,
-                authCheckBehavior))
+                authCheckBehavior,
+                incidentMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
@@ -83,7 +86,8 @@ public final class JobEventProcessors {
                 keyGenerator,
                 jobMetrics,
                 authCheckBehavior,
-                writers))
+                writers,
+                incidentMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
