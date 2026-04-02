@@ -20,6 +20,7 @@ import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +75,7 @@ public class ProcessDefinitionSpecificFilterIT {
                 filter,
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
@@ -116,7 +117,7 @@ public class ProcessDefinitionSpecificFilterIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
