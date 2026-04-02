@@ -61,11 +61,18 @@ jobs:
         secrets: |
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+          secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
     - name: Login to Docker Hub
       uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
       with:
         username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
         password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+    - name: Login to Minimus Registry
+      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+      with:
+        registry: reg.mini.dev
+        username: minimus
+        password: ${{ steps.secrets.outputs.minimus-token }}
     # Generating a production build
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
