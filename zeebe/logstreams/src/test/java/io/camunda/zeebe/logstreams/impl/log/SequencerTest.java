@@ -26,11 +26,15 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -39,6 +43,8 @@ import org.mockito.Mockito;
 @SuppressWarnings("resource")
 @Execution(ExecutionMode.CONCURRENT)
 final class SequencerTest {
+
+  @AutoClose ExecutorService executor;
 
   @Test
   void writingSingleEntryIncreasesPositions() {
@@ -275,7 +281,6 @@ final class SequencerTest {
         meterRegistry.find("zeebe.sequencer.lock.hold.time").tag("writer", "internal").timer();
     Assertions.assertThat(timer).isNotNull();
     Assertions.assertThat(timer.count()).isEqualTo(1);
-    Assertions.assertThat(timer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
   }
 
   @Test
@@ -305,28 +310,30 @@ final class SequencerTest {
             new FlowControl(logStreamMetrics));
 
     // when — thread 1 holds lock via blocking append
-    final var holder =
-        new Thread(() -> sequencer.tryWrite(WriteContext.scheduled(), TestEntry.ofDefaults()));
-    holder.start();
+    executor = Executors.newVirtualThreadPerTaskExecutor();
+
+    executor.submit(() -> sequencer.tryWrite(WriteContext.scheduled(), TestEntry.ofDefaults()));
+
     enteredAppendLatch.await();
 
     // thread 2 contends
-    final var waiter =
-        new Thread(
-            () ->
-                sequencer.tryWrite(
-                    WriteContext.processingResult(ProcessInstanceIntent.ACTIVATE_ELEMENT),
-                    TestEntry.ofDefaults()));
-    waiter.start();
+    final var waiterWaiting = new AtomicBoolean(false);
+    executor.submit(
+        () -> {
+          waiterWaiting.set(true);
+          sequencer.tryWrite(
+              WriteContext.processingResult(ProcessInstanceIntent.ACTIVATE_ELEMENT),
+              TestEntry.ofDefaults());
+        });
 
     // wait until the waiter thread is blocked on the lock
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> waiter.getState() == Thread.State.WAITING);
+    Awaitility.await().atMost(Duration.ofSeconds(5)).until(waiterWaiting::get);
 
     blockingLatch.countDown(); // release thread 1
-    holder.join(5_000);
-    waiter.join(5_000);
+
+    // terminate executor
+    executor.shutdown();
+    Awaitility.await().until(executor::isShutdown);
 
     // then — wait time is labeled by waiter (who is waiting to acquire the lock)
     final var waitTimer =

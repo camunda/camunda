@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +40,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   private volatile long position;
   private volatile boolean isClosed = false;
-
-  // Written under the lock, but read by waiters before they acquire it to identify the holder.
-  // Volatile is needed for cross-thread visibility of the write.
-  @Nullable private volatile WriteContext currentLockHolder;
-
   private final ReentrantLock lock = new ReentrantLock();
   private final LogStorage logStorage;
   private final InstantSource clock;
@@ -114,12 +108,10 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final int batchSize = appendEntries.size();
     final int batchLength = calculateBatchLength(appendEntries);
 
-    final WriteContext holderAtWaitTime;
     final long waitStart = System.nanoTime();
-    if (lock.tryLock()) {
-      holderAtWaitTime = null;
-    } else {
-      holderAtWaitTime = currentLockHolder;
+
+    final boolean lockAcquiredImmediately = lock.tryLock();
+    if (!lockAcquiredImmediately) {
       lock.lock();
     }
 
@@ -127,7 +119,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final long highestPosition;
     try {
       acquireTime = System.nanoTime();
-      currentLockHolder = context;
       final var currentPosition = position;
       highestPosition = currentPosition + batchSize - 1;
       final var sequencedBatch =
@@ -137,7 +128,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
       logStorage.append(currentPosition, highestPosition, sequencedBatch, appendListener);
       position = currentPosition + batchSize;
     } finally {
-      currentLockHolder = null;
       lock.unlock();
     }
     final long releaseTime = System.nanoTime();
@@ -147,7 +137,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
     // All metrics are recorded outside the critical section to avoid inflating lock hold time.
     recordMetrics(
         context,
-        holderAtWaitTime,
+        lockAcquiredImmediately,
         batchSize,
         batchLength,
         acquireTime - waitStart,
@@ -157,12 +147,12 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   private void recordMetrics(
       final WriteContext context,
-      final @Nullable WriteContext holderAtWaitTime,
+      final boolean lockAcquiredImmediately,
       final int batchSize,
       final int batchLength,
       final long waitNanos,
       final long holdNanos) {
-    if (holderAtWaitTime != null) {
+    if (!lockAcquiredImmediately) {
       sequencerMetrics.observeLockWaitTime(context, waitNanos);
     }
     sequencerMetrics.observeLockHoldTime(context, holdNanos);
