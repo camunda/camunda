@@ -766,3 +766,63 @@ ordering. Since you are using the shared `orderBy` fragment, this is handled aut
   `PersistentWebSessionMapper.xml` for the `USING (SELECT … CAST(…)) source` pattern.
 - When adding new SQL functions, verify H2 compatibility first since test coverage depends on it.
 
+---
+
+## Adding a new export handler
+
+This section explains how to wire a new Zeebe record type into the RDBMS exporter
+(`zeebe/exporters/rdbms-exporter`). It assumes that the `db/rdbms` writer for the entity (e.g.
+`WidgetWriter`) already exists. If not, follow the [Adding a new entity](#adding-a-new-entity)
+guide first.
+
+### 1. Implement `RdbmsExportHandler`
+
+Create a handler class in
+`zeebe/exporters/rdbms-exporter/src/main/java/io/camunda/exporter/rdbms/handlers/`:
+
+**File:** `WidgetExportHandler.java`
+
+```java
+public class WidgetExportHandler implements RdbmsExportHandler<WidgetRecordValue> {
+
+  private final WidgetWriter widgetWriter;
+
+  public WidgetExportHandler(final WidgetWriter widgetWriter) {
+    this.widgetWriter = widgetWriter;
+  }
+
+  @Override
+  public boolean canExport(final Record<WidgetRecordValue> record) {
+    return record.getIntent() == WidgetIntent.CREATED;
+  }
+
+  @Override
+  public void export(final Record<WidgetRecordValue> record) {
+    widgetWriter.create(
+        new WidgetDbModel.WidgetDbModelBuilder()
+            .widgetKey(record.getValue().getWidgetKey())
+            .name(record.getValue().getName())
+            .build());
+  }
+}
+```
+
+### 2. Register the handler in `RdbmsExporterWrapper`
+
+Add a `builder.withHandler(...)` call in `createHandlers()`. If the record type only appears on
+partition 1 (e.g. definition-level data), place the call inside the
+`if (partitionId == PROCESS_DEFINITION_PARTITION)` block:
+
+```java
+builder.withHandler(
+    ValueType.WIDGET,
+    new WidgetExportHandler(rdbmsWriters.getWidgetWriter()));
+```
+
+### 3. Add audit log support (optional)
+
+If the entity should generate audit log entries, implement `AuditLogTransformer` in
+`zeebe/exporter-common/…/auditlog/transformers/` and register it in
+`AuditLogTransformerRegistry`. The `RdbmsExporterWrapper` will automatically pick it up when
+`auditLog.enabled` is `true`.
+

@@ -134,8 +134,8 @@ flowchart LR
 |----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | User           | The user which uses Camunda.                                                                                                                                                                            |
 | Camunda        | The whole camunda platform, including broker, webapps, ...                                                                                                                                              |
-| RDBMS Exporter | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
-| EntityDbReader | Each entity (processInstance, user, role) has an Reader interface (e.g. ProcessInstanceReader). For each of these interfaces, RDBMS provides a DbReader implementation (e.g. ProcessInstanceDbReader)   |
+| RDBMS Exporter | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is a configured exporter with id `rdbms`.  |
+| EntityDbReader | Each entity (processInstance, user, role) has a Reader interface (e.g. ProcessInstanceReader). For each of these interfaces, RDBMS provides a DbReader implementation (e.g. ProcessInstanceDbReader)    |
 | RDBMS Service  | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                     |
 | RDBMS          | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                        |
 
@@ -189,12 +189,12 @@ flowchart TD
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | User                         | The user which uses Camunda.                                                                                                                                                                            |
 | REST Gateway                 | The v2 REST API, e.g.: `io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController`                                                                                                             |
-| Camunda Service              | A camunda service, e.g.: `io.camunda.service.ProcessInstanceServices`. It uses a either a SearchClient for query data, or the broker client to send commands to zeebe.                                  |
+| Camunda Service              | A camunda service, e.g.: `io.camunda.service.ProcessInstanceServices`. It uses either a SearchClient for query data or the broker client to send commands to Zeebe.                                    |
 | Broker Client                | Is used to send commands to zeebe.                                                                                                                                                                      |
 | Zeebe Engine                 | The engine works on commands and produces the records which are processed later by the exporters.                                                                                                       |
 | RDBMS Exporter               | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
 | ProcessInstanceExportHandler | An example record handler, here for records for processInstances.                                                                                                                                       |
-| ProcessInstanceWriter        | Is used by the RDBMS exporter and it's handlers to write processInstance data.                                                                                                                          |
+| ProcessInstanceWriter        | Is used by the RDBMS exporter and its handlers to write processInstance data.                                                                                                                           |
 | RDBMS Service                | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                     |
 | ProcessInstanceReader        | Is the general API interface to read data from the secondary storage (here processInstance as example). Has to be implemented by the secondary storage implementation.                                  |
 | ProcessInstanceDbReader      | The RDBMS implementation of the ProcessInstanceReader.                                                                                                                                                  |
@@ -204,20 +204,27 @@ flowchart TD
 
 #### 5.2.1 Component RdbmsExporter
 
-In contrast to the CamundaExporter, the RDBMS Exporter is created via Spring, because it needs
-access to the spring context to get access to the RdbmsService and the spring DataSource.
+The `zeebe/exporters/rdbms-exporter` module is the Zeebe broker-side component responsible for
+consuming Zeebe records and persisting them to the RDBMS via `RdbmsService`. In contrast to the
+`CamundaExporter`, the RDBMS Exporter is created via Spring, because it needs access to the Spring
+context to obtain the `RdbmsService` and the `DataSource`.
 
-The RdbmsExporter is divided into several classes:
+The module is organised into the following packages under `io.camunda.exporter.rdbms`:
 
-- **RdbmsExporterWrapper**: The main entry class which implements the `Exporter` interface. It is
-  responsible to parse the configuration, caches and create the handlers for the different record
-  types (e.g. processInstance) and delegate the records to the `RdbmsExporter`.
-- **RdbmsExporter**: The class which receives the records from the `RdbmsExporterWrapper` and
-  delegates them to the correct handler (e.g. `ProcessInstanceExportHandler`) based on the record
-  type. The `RdbmsExporter` also manages the flush batch and transactional boundaries if necessary.
-- **ProcessInstanceExportHandler**: An example handler which handles records for process instances.
-  It uses the `ProcessInstanceWriter` from the `RdbmsService` to write the data to the database.
-  Next to this handler there are numerous other handlers for different record types.
+- **Root package** — Core classes: `RdbmsExporterFactory`, `RdbmsExporterWrapper`, `RdbmsExporter`,
+  `RdbmsExportHandler` (interface), and `ExporterConfiguration`
+- **`cache/`** — Caffeine cache loaders that back the in-memory caches held by the exporter to
+  avoid repeated database lookups for frequently accessed metadata
+- **`handlers/`** — One `RdbmsExportHandler` implementation per Zeebe record type; the
+  `batchoperation/` sub-package contains handlers specific to batch operations
+- **`utils/`** — Shared utilities (`DateUtil`, `ExportUtil`, `TreePath`)
+
+When `auditLog.enabled` is set to `true`, `RdbmsExporterWrapper` additionally registers an
+`AuditLogExportHandler` for each transformer provided by `AuditLogTransformerRegistry`, which
+writes an audit entry for every relevant record.
+
+For a step-by-step guide on adding a new export handler, see the
+[developer guide](./developer-guide.md#adding-a-new-export-handler).
 
 #### 5.2.2 Component RdbmsService
 
