@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
@@ -82,7 +81,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
-  private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
 
   public OpenSearchArchiverRepository(
@@ -655,40 +653,40 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final String endDate =
         hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
-        .thenApply(
-            date -> {
-              final var batchHits =
-                  hits.stream()
-                      .takeWhile(
-                          hit ->
-                              hit.fields()
-                                  .get(endDateField)
-                                  .toJson()
-                                  .asJsonArray()
-                                  .getString(0)
-                                  .equals(endDate))
-                      .toList();
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, rolloverInterval, config.getElsRolloverDateFormat());
 
-              final List<Long> processInstanceKeys = new ArrayList<>();
-              final List<Long> rootProcessInstanceKeys = new ArrayList<>();
+    final var batchHits =
+        hits.stream()
+            .takeWhile(
+                hit ->
+                    hit.fields()
+                        .get(endDateField)
+                        .toJson()
+                        .asJsonArray()
+                        .getString(0)
+                        .equals(endDate))
+            .toList();
 
-              if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
-                batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
-              } else {
-                for (final var hit : batchHits) {
-                  final var rootKey = hit.source().getRootProcessInstanceKey();
-                  if (rootKey != null) {
-                    rootProcessInstanceKeys.add(rootKey);
-                  } else {
-                    processInstanceKeys.add(Long.valueOf(hit.id()));
-                  }
-                }
-              }
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
 
-              return new ProcessInstanceArchiveBatch(
-                  date, processInstanceKeys, rootProcessInstanceKeys);
-            });
+    if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
+      batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
+    } else {
+      for (final var hit : batchHits) {
+        final var rootKey = hit.source().getRootProcessInstanceKey();
+        if (rootKey != null) {
+          rootProcessInstanceKeys.add(rootKey);
+        } else {
+          processInstanceKeys.add(Long.valueOf(hit.id()));
+        }
+      }
+    }
+
+    return CompletableFuture.completedFuture(
+        new ProcessInstanceArchiveBatch(date, processInstanceKeys, rootProcessInstanceKeys));
   }
 
   private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
@@ -711,50 +709,24 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final String endDate =
         hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
-        .thenApply(
-            date -> {
-              final var batchHits =
-                  hits.stream()
-                      .takeWhile(
-                          hit ->
-                              hit.fields()
-                                  .get(endDateField)
-                                  .toJson()
-                                  .asJsonArray()
-                                  .getString(0)
-                                  .equals(endDate))
-                      .toList();
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, rolloverInterval, config.getElsRolloverDateFormat());
 
-              final List<String> ids = batchHits.stream().map(Hit::id).toList();
-              return new BasicArchiveBatch(date, ids);
-            });
-  }
+    final var batchHits =
+        hits.stream()
+            .takeWhile(
+                hit ->
+                    hit.fields()
+                        .get(endDateField)
+                        .toJson()
+                        .asJsonArray()
+                        .getString(0)
+                        .equals(endDate))
+            .toList();
 
-  private CompletableFuture<String> getDateOfArchiveIndex(
-      final String endDate,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
-    final String templateIndexName = templateDescriptor.getIndexName();
-    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
-    final CompletableFuture<String> dateFuture;
-    try {
-      dateFuture =
-          (lastHistoricalArchiverDate == null)
-              ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                  fetchIndexMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
-              : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
-    }
-    return dateFuture.thenApply(
-        date -> {
-          final String nextArchiverDate =
-              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
-          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-          return nextArchiverDate;
-        });
+    final List<String> ids = batchHits.stream().map(Hit::id).toList();
+    return CompletableFuture.completedFuture(new BasicArchiveBatch(date, ids));
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
