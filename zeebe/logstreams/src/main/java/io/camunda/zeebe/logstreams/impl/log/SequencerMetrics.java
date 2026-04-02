@@ -20,14 +20,12 @@ import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
 import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.NullMarked;
@@ -65,14 +63,16 @@ final class SequencerMetrics {
     batchLengthBytes.record(batchLengthKiloBytes);
   }
 
-  void observeLockWaitTime(final WriteContext holder, final long durationNanos) {
-    final var holderTag = tagForContext(holder);
+  void observeLockWaitTime(final WriteContext waiter, final long durationNanos) {
+    final var waiterTag = tagForContext(waiter);
     final var timer =
         lockWaitTimers.computeIfAbsent(
-            holderTag,
+            waiterTag,
             tag ->
-                MicrometerUtil.buildTimer(LOCK_WAIT_TIME)
-                    .tag(LockKeyNames.HOLDER.asString(), tag.getValue())
+                Timer.builder(LOCK_WAIT_TIME.getName())
+                    .description(LOCK_WAIT_TIME.getDescription())
+                    .publishPercentiles(0.5, 0.9, 0.99, 0.999)
+                    .tag(LockKeyNames.WAITER.asString(), tag.getValue())
                     .register(meterRegistry));
     timer.record(durationNanos, TimeUnit.NANOSECONDS);
   }
@@ -83,7 +83,9 @@ final class SequencerMetrics {
         lockHoldTimers.computeIfAbsent(
             writerTag,
             tag ->
-                MicrometerUtil.buildTimer(LOCK_HOLD_TIME)
+                Timer.builder(LOCK_HOLD_TIME.getName())
+                    .description(LOCK_HOLD_TIME.getDescription())
+                    .publishPercentiles(0.5, 0.9, 0.99, 0.999)
                     .tag(LockKeyNames.WRITER.asString(), tag.getValue())
                     .register(meterRegistry));
     timer.record(durationNanos, TimeUnit.NANOSECONDS);
@@ -98,20 +100,6 @@ final class SequencerMetrics {
       case final Internal ignored -> FlowControlContext.INTERNAL;
     };
   }
-
-  private static final Duration[] LOCK_TIMER_BUCKETS = {
-    Duration.ofNanos(1_000),
-    Duration.ofNanos(10_000),
-    Duration.ofNanos(50_000),
-    Duration.ofNanos(200_000),
-    Duration.ofNanos(500_000),
-    Duration.ofMillis(1),
-    Duration.ofMillis(2),
-    Duration.ofMillis(5),
-    Duration.ofMillis(10),
-    Duration.ofMillis(50),
-    Duration.ofMillis(250)
-  };
 
   @SuppressWarnings("NullableProblems")
   public enum SequencerMetricsDoc implements ExtendedMeterDocumentation {
@@ -180,11 +168,11 @@ final class SequencerMetrics {
       }
     },
 
-    /** Time spent waiting to acquire the sequencer lock, labeled by who held the lock */
+    /** Time spent waiting to acquire the sequencer lock, labeled by who is waiting */
     LOCK_WAIT_TIME {
       @Override
       public String getDescription() {
-        return "Time spent waiting to acquire the sequencer lock, labeled by who held the lock";
+        return "Time spent waiting to acquire the sequencer lock, labeled by who is waiting";
       }
 
       @Override
@@ -198,13 +186,8 @@ final class SequencerMetrics {
       }
 
       @Override
-      public Duration[] getTimerSLOs() {
-        return LOCK_TIMER_BUCKETS;
-      }
-
-      @Override
       public KeyName[] getKeyNames() {
-        return new KeyName[] {LockKeyNames.HOLDER};
+        return new KeyName[] {LockKeyNames.WAITER};
       }
 
       @Override
@@ -231,11 +214,6 @@ final class SequencerMetrics {
       }
 
       @Override
-      public Duration[] getTimerSLOs() {
-        return LOCK_TIMER_BUCKETS;
-      }
-
-      @Override
       public KeyName[] getKeyNames() {
         return new KeyName[] {LockKeyNames.WRITER};
       }
@@ -254,10 +232,10 @@ final class SequencerMetrics {
         return "writer";
       }
     },
-    HOLDER {
+    WAITER {
       @Override
       public String asString() {
-        return "holder";
+        return "waiter";
       }
     }
   }

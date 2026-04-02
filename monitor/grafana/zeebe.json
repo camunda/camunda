@@ -10130,10 +10130,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_sequencer_lock_hold_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (le, writer))",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.999\"}) by (writer)",
               "format": "time_series",
               "interval": "30s",
-              "legendFormat": "p99 {{writer}}",
+              "legendFormat": "p99.9 {{writer}}",
               "refId": "A"
             },
             {
@@ -10142,10 +10142,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_sequencer_lock_hold_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (le, writer))",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.99\"}) by (writer)",
               "format": "time_series",
               "interval": "30s",
-              "legendFormat": "p50 {{writer}}",
+              "legendFormat": "p99 {{writer}}",
               "refId": "B"
             },
             {
@@ -10154,11 +10154,23 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "zeebe_sequencer_lock_hold_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.9\"}) by (writer)",
               "format": "time_series",
               "interval": "30s",
-              "legendFormat": "max {{writer}}",
+              "legendFormat": "p90 {{writer}}",
               "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.5\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p50 {{writer}}",
+              "refId": "D"
             }
           ],
           "title": "Sequencer Lock Hold Time Quantiles",
@@ -10168,7 +10180,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "Quantiles of time spent waiting to acquire the sequencer lock, by who held the lock",
+          "description": "Quantiles of time spent waiting to acquire the sequencer lock, by who is waiting",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -10253,10 +10265,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_sequencer_lock_wait_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (le, holder))",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.999\"}) by (waiter)",
               "format": "time_series",
               "interval": "30s",
-              "legendFormat": "p99 {{holder}}",
+              "legendFormat": "p99.9 {{waiter}}",
               "refId": "A"
             },
             {
@@ -10265,10 +10277,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_sequencer_lock_wait_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (le, holder))",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.99\"}) by (waiter)",
               "format": "time_series",
               "interval": "30s",
-              "legendFormat": "p50 {{holder}}",
+              "legendFormat": "p99 {{waiter}}",
               "refId": "B"
             },
             {
@@ -10277,11 +10289,23 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "zeebe_sequencer_lock_wait_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.9\"}) by (waiter)",
               "format": "time_series",
               "interval": "30s",
-              "legendFormat": "max {{holder}}",
+              "legendFormat": "p90 {{waiter}}",
               "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.5\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p50 {{waiter}}",
+              "refId": "D"
             }
           ],
           "title": "Sequencer Lock Wait Time Quantiles",

@@ -162,7 +162,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final long waitNanos,
       final long holdNanos) {
     if (holderAtWaitTime != null) {
-      sequencerMetrics.observeLockWaitTime(holderAtWaitTime, waitNanos);
+      sequencerMetrics.observeLockWaitTime(context, waitNanos);
     }
     sequencerMetrics.observeLockHoldTime(context, holdNanos);
     sequencerMetrics.observeBatchLengthBytes(batchLength);

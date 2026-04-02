@@ -321,9 +321,12 @@ final class SequencerTest {
     holder.join(5_000);
     waiter.join(5_000);
 
-    // then — wait time is labeled by holder (who caused the wait)
+    // then — wait time is labeled by waiter (who is waiting to acquire the lock)
     final var waitTimer =
-        meterRegistry.find("zeebe.sequencer.lock.wait.time").tag("holder", "scheduled").timer();
+        meterRegistry
+            .find("zeebe.sequencer.lock.wait.time")
+            .tag("waiter", "processingResult")
+            .timer();
     Assertions.assertThat(waitTimer).isNotNull();
     Assertions.assertThat(waitTimer.count()).isEqualTo(1);
     Assertions.assertThat(waitTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
