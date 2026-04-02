@@ -30,9 +30,56 @@ import {
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
+type DecisionInstanceLookup = Record<
+  string,
+  {decisionInstanceKey: string; decisionDefinitionName: string}
+>;
+
+const getElementName = (
+  incident: EnhancedIncident,
+  processInstanceKey: string,
+  decisionInstancesByElementKey?: DecisionInstanceLookup,
+): React.ReactNode => {
+  const decisionInstance =
+    decisionInstancesByElementKey &&
+    (incident.errorType === 'DECISION_EVALUATION_ERROR' ||
+      incident.errorType === 'CALLED_DECISION_ERROR') &&
+    decisionInstancesByElementKey[incident.elementInstanceKey];
+
+  if (decisionInstance) {
+    return (
+      <Link
+        to={Paths.decisionInstance(decisionInstance.decisionInstanceKey)}
+        title={`View root cause decision ${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {`${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`}
+      </Link>
+    );
+  }
+
+  if (processInstanceKey !== incident.processInstanceKey) {
+    return (
+      <Link
+        to={{
+          pathname: Paths.processInstance(incident.processInstanceKey),
+          search: `?elementId=${incident.elementId}`,
+        }}
+        title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+      </Link>
+    );
+  }
+
+  return incident.elementName;
+};
+
 type IncidentsTableProps = {
   processInstanceKey: string;
   incidents: EnhancedIncident[];
+  decisionInstancesByElementKey?: DecisionInstanceLookup;
   state: React.ComponentProps<typeof SortableTable>['state'];
   onVerticalScrollStartReach?: React.ComponentProps<
     typeof SortableTable
@@ -47,6 +94,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     state,
     incidents,
     processInstanceKey,
+    decisionInstancesByElementKey,
     onVerticalScrollEndReach,
     onVerticalScrollStartReach,
   }) {
@@ -189,22 +237,11 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             return {
               id: incident.incidentKey,
               errorType: getIncidentErrorName(incident.errorType),
-              elementName:
-                processInstanceKey === incident.processInstanceKey ? (
-                  incident.elementName
-                ) : (
-                  <Link
-                    to={{
-                      pathname: Paths.processInstance(
-                        incident.processInstanceKey,
-                      ),
-                      search: `?elementId=${incident.elementId}`,
-                    }}
-                    title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
-                  >
-                    {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
-                  </Link>
-                ),
+              elementName: getElementName(
+                incident,
+                processInstanceKey,
+                decisionInstancesByElementKey,
+              ),
               creationTime: formatDate(incident.creationTime),
               operations: areOperationsVisible ? (
                 <IncidentOperation
