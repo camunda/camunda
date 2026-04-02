@@ -29,7 +29,8 @@ final class EngineCfgTest {
     final var configuration = cfg.getExperimental().getEngine().createEngineConfiguration();
 
     // then
-    assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(configuration.getMessagesTtlCheckerBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofMinutes(1));
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(1000L);
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
