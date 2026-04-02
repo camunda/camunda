@@ -353,6 +353,42 @@ final class DefaultRecordFilterTest {
         .isTrue();
   }
 
+  @Test
+  void shouldApplyScopeAndGlobalFiltersIndependently() {
+    // given: global name inclusion for "allowed", local type inclusion for NUMBER
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration
+        .filterIndexConfig()
+        .withVariableNameInclusionExact(List.of("allowed"))
+        .withLocalVariableValueTypeInclusion(List.of("NUMBER"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // root variable named "allowed" → passes global name filter, no local type rule applies
+    assertThat(filter.acceptRecord(scopedVariableRecord("allowed", "\"text\"", 100L, 100L)))
+        .as("Root variable 'allowed' should pass global name filter")
+        .isTrue();
+
+    // root variable named "other" → rejected by global name filter
+    assertThat(filter.acceptRecord(scopedVariableRecord("other", "\"text\"", 100L, 100L)))
+        .as("Root variable 'other' should be rejected by global name filter")
+        .isFalse();
+
+    // local variable named "allowed" with NUMBER value → passes both filters
+    assertThat(filter.acceptRecord(scopedVariableRecord("allowed", "42", 100L, 200L)))
+        .as("Local variable 'allowed' with NUMBER type should pass both filters")
+        .isTrue();
+
+    // local variable named "allowed" with STRING value → rejected by local type filter
+    assertThat(filter.acceptRecord(scopedVariableRecord("allowed", "\"text\"", 100L, 200L)))
+        .as("Local variable 'allowed' with STRING type should be rejected by local type filter")
+        .isFalse();
+  }
+
   // ---------------------------------------------------------------------------
   // helpers
   // ---------------------------------------------------------------------------
