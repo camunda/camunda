@@ -28,11 +28,14 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -293,6 +296,119 @@ public final class OAuthCredentialsCacheTest {
     // then — returns the token without triggering the callback
     assertThat(result.getAccessToken()).isEqualTo("wombat");
     assertThat(callbackInvoked).isFalse();
+  }
+
+  @Test
+  public void shouldSkipRedundantFetchWhenConcurrentRefreshCompleted() throws Exception {
+    // given — two threads race to call forceRefreshIfChanged; only one should actually fetch
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.readCache();
+    final CountDownLatch fetchStarted = new CountDownLatch(1);
+    final CountDownLatch fetchCanComplete = new CountDownLatch(1);
+    final AtomicInteger fetchCount = new AtomicInteger(0);
+    final CamundaClientCredentials freshCredentials =
+        new CamundaClientCredentials("freshToken", EXPIRY, "Bearer");
+
+    // when — both threads read the generation counter before the lock, then one acquires
+    // the lock and fetches while the other waits. When the second thread enters the lock,
+    // it sees the generation was incremented and skips the fetch.
+    final ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      final Callable<Boolean> refreshTask =
+          () ->
+              cache.forceRefreshIfChanged(
+                  WOMBAT_CLIENT_ID,
+                  () -> {
+                    fetchCount.incrementAndGet();
+                    fetchStarted.countDown();
+                    try {
+                      fetchCanComplete.await(5, TimeUnit.SECONDS);
+                    } catch (final InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                    }
+                    return freshCredentials;
+                  });
+
+      final Future<Boolean> first = pool.submit(refreshTask);
+      final Future<Boolean> second = pool.submit(refreshTask);
+
+      // Wait for the first thread to start fetching (it holds the lock)
+      assertThat(fetchStarted.await(5, TimeUnit.SECONDS)).isTrue();
+      // Release the fetch so the first thread can complete
+      fetchCanComplete.countDown();
+
+      // then — only one thread should have performed the expensive fetch
+      assertThat(first.get(5, TimeUnit.SECONDS)).isTrue();
+      assertThat(second.get(5, TimeUnit.SECONDS)).isTrue();
+      assertThat(fetchCount.get()).isEqualTo(1);
+      assertThat(cache.get(WOMBAT_CLIENT_ID)).isNotEmpty().contains(freshCredentials);
+    } finally {
+      pool.shutdownNow();
+      pool.awaitTermination(5, TimeUnit.SECONDS);
+    }
+  }
+
+  @Test
+  public void shouldFetchWhenCachedTokenIsExpired() throws IOException {
+    // given — cache contains an expired token
+    final ZonedDateTime pastExpiry = ZonedDateTime.now().minusMinutes(5);
+    final CamundaClientCredentials expired =
+        new CamundaClientCredentials("expiredToken", pastExpiry, "Bearer");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.put(WOMBAT_CLIENT_ID, expired).writeCache();
+
+    final CamundaClientCredentials freshCredentials =
+        new CamundaClientCredentials("freshToken", EXPIRY, "Bearer");
+
+    // when — forceRefreshIfChanged is called with an expired cached token
+    final boolean changed = cache.forceRefreshIfChanged(WOMBAT_CLIENT_ID, () -> freshCredentials);
+
+    // then — the fetch was performed because the cached token was expired
+    assertThat(changed).isTrue();
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).isNotEmpty().contains(freshCredentials);
+  }
+
+  @Test
+  public void shouldUseInMemoryCacheOnHotPath() throws IOException {
+    // given — a cache with a valid token in memory (put without writeCache to isolate in-memory)
+    final File emptyFile = new File(temporaryFolder.getRoot(), ".emptyCacheFile.yml");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(emptyFile);
+    cache.put(WOMBAT_CLIENT_ID, WOMBAT);
+    final AtomicBoolean fetchCalled = new AtomicBoolean(false);
+
+    // when — computeIfMissingOrInvalid is called
+    final CamundaClientCredentials result =
+        cache.computeIfMissingOrInvalid(
+            WOMBAT_CLIENT_ID,
+            () -> {
+              fetchCalled.set(true);
+              return new CamundaClientCredentials("shouldNotBeUsed", EXPIRY, "Bearer");
+            });
+
+    // then — returns the in-memory token without fetching
+    assertThat(result).isEqualTo(WOMBAT);
+    assertThat(fetchCalled).isFalse();
+  }
+
+  @Test
+  public void shouldFallBackToDiskWhenInMemoryCacheIsEmpty() throws IOException {
+    // given — a cache with a valid token on disk but empty in-memory
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    // Don't call readCache() or put() — in-memory is empty, but disk has the golden file
+    final AtomicBoolean fetchCalled = new AtomicBoolean(false);
+
+    // when
+    final CamundaClientCredentials result =
+        cache.computeIfMissingOrInvalid(
+            WOMBAT_CLIENT_ID,
+            () -> {
+              fetchCalled.set(true);
+              return new CamundaClientCredentials("shouldNotBeUsed", EXPIRY, "Bearer");
+            });
+
+    // then — falls back to disk, finds WOMBAT from the golden file
+    assertThat(result).isEqualTo(WOMBAT);
+    assertThat(fetchCalled).isFalse();
   }
 
   @Test
