@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/system")
 public class SystemController {
 
@@ -45,6 +44,7 @@ public class SystemController {
     this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/usage-metrics")
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
       @RequestParam final String startTime,
