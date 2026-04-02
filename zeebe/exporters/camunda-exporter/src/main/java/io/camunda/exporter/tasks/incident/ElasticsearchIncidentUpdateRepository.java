@@ -19,14 +19,17 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -53,6 +56,8 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
           FieldValue.of(OperationState.SENT.name()),
           FieldValue.of(OperationState.COMPLETED.name()));
 
+  private static final String INCIDENT_IMPORT_POSITION_ALIAS_NAME = "incident";
+
   private final int partitionId;
   private final String pendingUpdateAlias;
   private final String incidentAlias;
@@ -60,6 +65,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
+  private final String importPositionAlias;
 
   public ElasticsearchIncidentUpdateRepository(
       final int partitionId,
@@ -69,6 +75,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
       final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
+      final String importPositionAlias,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
@@ -80,6 +87,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+    this.importPositionAlias = importPositionAlias;
   }
 
   @Override
@@ -243,6 +251,36 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
     return fetchUnboundedDocumentCollection(
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+  }
+
+  @Override
+  public CompletionStage<Long> getLegacyIncidentPostImporterPosition() {
+    final var aliasNameQ =
+        QueryBuilders.term(
+            t ->
+                t.field(ImportPositionIndex.ALIAS_NAME).value(INCIDENT_IMPORT_POSITION_ALIAS_NAME));
+    final var partitionQ =
+        QueryBuilders.term(t -> t.field(ImportPositionIndex.PARTITION_ID).value(partitionId));
+    final var request =
+        new SearchRequest.Builder()
+            .index(importPositionAlias)
+            .query(q -> q.bool(b -> b.must(aliasNameQ, partitionQ)))
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .source(s -> s.filter(f -> f.includes(ImportPositionIndex.POST_IMPORTER_POSITION)))
+            .size(1)
+            .build();
+
+    return client
+        .search(request, ImportPositionEntity.class)
+        .thenApplyAsync(
+            response ->
+                response.hits().hits().stream()
+                    .findFirst()
+                    .map(Hit::source)
+                    .map(ImportPositionEntity::getPostImporterPosition)
+                    .orElse(-1L),
+            executor);
   }
 
   private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {

@@ -163,6 +163,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         "listViewFullQualifiedName",
         "flowNodeAlias",
         "operationAlias",
+        "importPositionAlias",
         client,
         Runnable::run,
         LOGGER);
