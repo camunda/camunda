@@ -116,5 +116,16 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "npm@11.12.1",
+  "overrides": {
+    "@tanstack/eslint-plugin-query": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-react-hooks": {
+      "eslint": "$eslint"
+    }
+  }
 }

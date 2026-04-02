@@ -64,5 +64,10 @@
     "vite": "8.0.3",
     "vite-plugin-svgr": "5.0.0"
   },
-  "stableVersion": "8.10.0-SNAPSHOT"
+  "stableVersion": "8.10.0-SNAPSHOT",
+  "overrides": {
+    "eslint-plugin-react-hooks": {
+      "eslint": "$eslint"
+    }
+  }
 }
