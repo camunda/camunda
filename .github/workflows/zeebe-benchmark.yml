@@ -147,6 +147,7 @@ jobs:
         with:
           directory: ./identity/client
           package-manager: "npm"
+          node-version: 24
       - uses: ./.github/actions/build-zeebe
         name: Build Zeebe
         id: build-zeebe
