@@ -56,6 +56,7 @@ import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
 import org.apache.hc.client5.http.ssl.HttpClientHostnameVerifier;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
@@ -82,13 +83,17 @@ public class HttpClientFactory {
 
   public HttpClient createClient() {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
-    final CloseableHttpAsyncClient client =
-        defaultClientBuilder().setDefaultRequestConfig(defaultRequestConfig).build();
-    final URI gatewayAddress = buildGatewayAddress();
+
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
+
+    final HttpAsyncClientBuilder clientBuilder =
+        defaultClientBuilder(credentialsProvider).setDefaultRequestConfig(defaultRequestConfig);
+
+    final CloseableHttpAsyncClient client = clientBuilder.build();
+    final URI gatewayAddress = buildGatewayAddress();
 
     return new HttpClient(
         client,
@@ -118,7 +123,8 @@ public class HttpClientFactory {
     }
   }
 
-  private HttpAsyncClientBuilder defaultClientBuilder() {
+  private HttpAsyncClientBuilder defaultClientBuilder(
+      final CredentialsProvider credentialsProvider) {
     final Header acceptHeader =
         new BasicHeader(
             HttpHeaders.ACCEPT,
@@ -156,6 +162,21 @@ public class HttpClientFactory {
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
             .useSystemProperties(); // allow users to customize via system properties
+
+    // Register a request-level interceptor that injects the Authorization header at the
+    // latest possible point — inside httpProcessor.process(), which runs AFTER connection
+    // acquisition in AsyncMainClientExec.produceRequest(). This is critical under load:
+    // an AsyncExecChainHandler runs before connection pool lease, so the token can go stale
+    // while waiting for a connection. A request interceptor runs after the connection is
+    // acquired, right before bytes are written to the socket.
+    builder.addRequestInterceptorLast(
+        (request, entity, context) -> {
+          try {
+            credentialsProvider.applyCredentials(request::setHeader);
+          } catch (final IOException e) {
+            throw new HttpException("Failed to apply credentials to request", e);
+          }
+        });
 
     final List<AsyncExecChainHandler> chainHandlers = config.getChainHandlers();
     IntStream.range(0, chainHandlers.size())
