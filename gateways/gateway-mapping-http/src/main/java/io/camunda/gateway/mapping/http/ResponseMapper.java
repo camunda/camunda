@@ -794,7 +794,9 @@ public final class ResponseMapper {
 
   private static GeneratedPartitionStrictContract toPartition(final Partition partition) {
     return new GeneratedPartitionStrictContract(
-        partition.partitionId(), partition.role().name(), partition.health().name());
+        partition.partitionId(),
+        partition.role().name().toLowerCase(),
+        partition.health().name().toLowerCase());
   }
 
   private static String emptyToNull(final String value) {
