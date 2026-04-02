@@ -428,6 +428,28 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasVariablesSatisfyingFeel(final String feelExpression) {
+    variableAssertj.hasVariablesSatisfyingFeel(getProcessInstanceKey(), feelExpression);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariablesSatisfyingFeel(
+      final String elementId, final String feelExpression) {
+    variableAssertj.hasLocalVariablesSatisfyingFeel(
+        getProcessInstanceKey(), elementSelector.apply(elementId), feelExpression);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariablesSatisfyingFeel(
+      final ElementSelector selector, final String feelExpression) {
+    variableAssertj.hasLocalVariablesSatisfyingFeel(
+        getProcessInstanceKey(), selector, feelExpression);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasNoActiveIncidents() {
     incidentAssertj.hasNoActiveIncidents(getProcessInstanceKey());
     return this;

@@ -1093,4 +1093,167 @@ public class VariableAssertTest {
       verify(camundaDataSource, times(2)).findVariables(any());
     }
   }
+
+  @Nested
+  class HasVariablesSatisfyingFeel {
+
+    @Test
+    void shouldPassWhenFeelExpressionEvaluatesToTrue() {
+      // given
+      final Variable variable = newVariable("riskScore", "0.6");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariablesSatisfyingFeel("riskScore >= 0.5 and riskScore <= 0.75");
+    }
+
+    @Test
+    void shouldPassWithComplexFeelExpression() {
+      // given
+      final Variable scoreVar = newVariable("riskScore", "0.6");
+      final Variable statusVar = newVariable("status", "\"approved\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(scoreVar, statusVar));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariablesSatisfyingFeel("riskScore >= 0.5 and status = \"approved\"");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWhenFeelExpressionEvaluatesToFalse() {
+      // given
+      final Variable variable = newVariable("riskScore", "0.3");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariablesSatisfyingFeel("riskScore >= 0.5 and riskScore <= 0.75"))
+          .hasMessageContaining("FEEL expression 'riskScore >= 0.5 and riskScore <= 0.75'")
+          .hasMessageContaining("should evaluate to true but was 'false'");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWithUsefulMessageWhenFeelExpressionIsInvalid() {
+      // given
+      final Variable variable = newVariable("riskScore", "0.6");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariablesSatisfyingFeel("this is not valid FEEL %%%"))
+          .hasMessageContaining("FEEL expression 'this is not valid FEEL %%%'")
+          .hasMessageContaining("failed to evaluate");
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionWhenExpressionStartsWithEquals() {
+      // given
+      final Variable variable = newVariable("riskScore", "0.6");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariablesSatisfyingFeel("= riskScore >= 0.5"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("FEEL expression must not start with '='")
+          .hasMessageContaining("riskScore >= 0.5");
+    }
+
+    @Test
+    void shouldWaitUntilFeelExpressionEvaluatesToTrue() {
+      // given
+      final Variable lowScore = newVariable("riskScore", "0.3");
+      final Variable highScore = newVariable("riskScore", "0.6");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(lowScore))
+          .thenReturn(Collections.singletonList(highScore));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariablesSatisfyingFeel("riskScore >= 0.5");
+
+      verify(camundaDataSource, times(2))
+          .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldPassWhenFeelExpressionUsesIntegerComparison() {
+      // given
+      final Variable variable = newVariable("count", "5");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariablesSatisfyingFeel("count > 3");
+    }
+
+    @Test
+    void shouldPassForLocalVariablesWithFeelExpression() {
+      // given
+      final String elementId = "element-id";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+      final Variable variable = newVariable("score", "0.7");
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariablesSatisfyingFeel(
+              ElementSelectors.byId(elementId), "score >= 0.5 and score <= 1.0")
+          .hasLocalVariablesSatisfyingFeel(elementId, "score >= 0.5 and score <= 1.0");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailForLocalVariablesWhenFeelExpressionEvaluatesToFalse() {
+      // given
+      final String elementId = "element-id";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+      final Variable variable = newVariable("score", "0.3");
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasLocalVariablesSatisfyingFeel(elementId, "score >= 0.5"))
+          .hasMessageContaining("FEEL expression 'score >= 0.5'")
+          .hasMessageContaining("should evaluate to true but was 'false'");
+    }
+  }
 }

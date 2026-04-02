@@ -63,4 +63,12 @@ public interface AssertVariablesInstruction extends TestCaseInstruction {
    * @return the expected variables or empty if not asserted
    */
   Map<String, Object> getVariables();
+
+  /**
+   * A FEEL expression to evaluate against the variables. Optional. When combined with an element
+   * selector, the expression is evaluated against the local variables of that element.
+   *
+   * @return the FEEL expression or empty if not asserted
+   */
+  Optional<String> getFeelExpression();
 }

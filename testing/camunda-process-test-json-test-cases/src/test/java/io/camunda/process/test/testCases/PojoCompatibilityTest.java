@@ -519,6 +519,27 @@ public class PojoCompatibilityTest {
                     .putVariables("x", 3)
                     .putVariables("y", "okay")
                     .build())),
+        Arguments.of(
+            "assert variables: with FEEL expression",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .feelExpression("score >= 0.5 and score <= 1.0")
+                    .build())),
+        Arguments.of(
+            "assert variables: with local FEEL expression",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
+                    .feelExpression("score >= 0.5 and score <= 1.0")
+                    .build())),
         // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
         Arguments.of(
             "assert process instance message subscription: minimal",

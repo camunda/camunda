@@ -1190,4 +1190,151 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: 1] should have at least one correlated message [message-name: 'expected', correlation-key: 'correlation-key'], but found none.");
     }
   }
+
+  @Nested
+  class HasVariablesSatisfyingFeel {
+
+    @BeforeEach
+    void configureMocks() {
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+    }
+
+    @Test
+    void shouldDelegateToVariableAssertj() {
+      // given
+      final Variable variable =
+          VariableBuilder.newVariable("score", "0.7")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      assertThatProcessInstance(processInstanceEvent)
+          .hasVariablesSatisfyingFeel("score >= 0.5 and score <= 1.0");
+
+      verify(camundaDataSource).findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldSupportMethodChaining() {
+      // given
+      final Variable variable =
+          VariableBuilder.newVariable("score", "0.7")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      assertThatProcessInstance(processInstanceEvent)
+          .isActive()
+          .hasVariablesSatisfyingFeel("score >= 0.5")
+          .hasVariablesSatisfyingFeel("score <= 1.0");
+    }
+
+    @Test
+    void shouldDelegateLocalVariablesToVariableAssertj() {
+      // given
+      final String elementId = "myTask";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+      final Variable variable =
+          VariableBuilder.newVariable("score", "0.7")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then — both String and ElementSelector variants
+      assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariablesSatisfyingFeel(elementId, "score >= 0.5")
+          .hasLocalVariablesSatisfyingFeel(
+              io.camunda.process.test.api.assertions.ElementSelectors.byId(elementId),
+              "score >= 0.5");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailForLocalVariablesWhenFeelExpressionEvaluatesToFalse() {
+      // given
+      final String elementId = "myTask";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+      final Variable variable =
+          VariableBuilder.newVariable("score", "0.3")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  assertThatProcessInstance(processInstanceEvent)
+                      .hasLocalVariablesSatisfyingFeel(elementId, "score >= 0.5"))
+          .hasMessageContaining("FEEL expression 'score >= 0.5'")
+          .hasMessageContaining("should evaluate to true but was 'false'");
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionWhenLocalExpressionStartsWithEquals() {
+      // given
+      final String elementId = "myTask";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+      final Variable variable =
+          VariableBuilder.newVariable("score", "0.7")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  assertThatProcessInstance(processInstanceEvent)
+                      .hasLocalVariablesSatisfyingFeel(elementId, "= score >= 0.5"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("FEEL expression must not start with '='")
+          .hasMessageContaining("score >= 0.5");
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionWhenExpressionStartsWithEquals() {
+      // given
+      final Variable variable =
+          VariableBuilder.newVariable("score", "0.7")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  assertThatProcessInstance(processInstanceEvent)
+                      .hasVariablesSatisfyingFeel("= score >= 0.5"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("FEEL expression must not start with '='")
+          .hasMessageContaining("score >= 0.5");
+    }
+  }
 }

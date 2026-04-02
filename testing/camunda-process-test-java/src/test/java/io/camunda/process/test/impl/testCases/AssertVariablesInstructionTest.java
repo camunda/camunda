@@ -221,4 +221,57 @@ public class AssertVariablesInstructionTest {
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
+
+  @Test
+  void shouldAssertVariablesWithFeelExpression() {
+    // given
+    final AssertVariablesInstruction instruction =
+        ImmutableAssertVariablesInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .feelExpression("score >= 0.5 and score <= 1.0")
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(assertionFacade).assertThatProcessInstance(any());
+
+    final ProcessInstanceAssert processInstanceAssert =
+        assertionFacade.assertThatProcessInstance(any());
+    verify(processInstanceAssert).hasVariablesSatisfyingFeel("score >= 0.5 and score <= 1.0");
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
+  }
+
+  @Test
+  void shouldAssertLocalVariablesWithFeelExpression() {
+    // given
+    final AssertVariablesInstruction instruction =
+        ImmutableAssertVariablesInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            .feelExpression("score >= 0.5 and score <= 1.0")
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(assertionFacade).assertThatProcessInstance(any());
+
+    final ProcessInstanceAssert processInstanceAssert =
+        assertionFacade.assertThatProcessInstance(any());
+    verify(processInstanceAssert)
+        .hasLocalVariablesSatisfyingFeel(
+            any(ElementSelector.class), eq("score >= 0.5 and score <= 1.0"));
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
+  }
 }

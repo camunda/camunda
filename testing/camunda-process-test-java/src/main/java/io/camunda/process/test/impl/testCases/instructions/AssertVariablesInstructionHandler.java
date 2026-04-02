@@ -64,6 +64,19 @@ public class AssertVariablesInstructionHandler
         processInstanceAssert.hasVariables(instruction.getVariables());
       }
     }
+
+    // Assert variables using a FEEL expression
+    instruction
+        .getFeelExpression()
+        .ifPresent(
+            feelExpression -> {
+              if (elementSelector.isPresent()) {
+                processInstanceAssert.hasLocalVariablesSatisfyingFeel(
+                    elementSelector.get(), feelExpression);
+              } else {
+                processInstanceAssert.hasVariablesSatisfyingFeel(feelExpression);
+              }
+            });
   }
 
   @Override

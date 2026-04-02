@@ -1081,6 +1081,10 @@
           "description": "The expected variables with their values. Optional.",
           "type": "object",
           "additionalProperties": true
+        },
+        "feelExpression": {
+          "description": "A FEEL expression to evaluate against the variables. When combined with elementSelector, evaluates against the local variables of that element. Optional.",
+          "type": "string"
         }
       },
       "required": [

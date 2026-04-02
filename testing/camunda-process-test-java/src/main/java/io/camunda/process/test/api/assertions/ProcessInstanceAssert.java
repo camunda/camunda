@@ -555,6 +555,52 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
   ProcessInstanceAssert hasLocalVariables(ElementSelector selector, Map<String, Object> variables);
 
   /**
+   * Verifies that the process instance variables satisfy the given FEEL expression. The expression
+   * is evaluated with all process variables as context and must evaluate to {@code true}.
+   *
+   * <p>The assertion waits until the expression evaluates to {@code true}.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   assertThat(pi).hasVariablesSatisfyingFeel("riskScore &gt;= 0.5 and riskScore &lt;= 0.75");
+   *   assertThat(pi).hasVariablesSatisfyingFeel("status = \"approved\" and amount &gt; 100");
+   * </pre>
+   *
+   * @param feelExpression the FEEL expression to evaluate (without the leading {@code =} prefix)
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasVariablesSatisfyingFeel(String feelExpression);
+
+  /**
+   * Verifies that the local variables of the given BPMN element satisfy the given FEEL expression.
+   * The expression is evaluated with all local variables of the element as context and must
+   * evaluate to {@code true}.
+   *
+   * <p>The assertion waits until the expression evaluates to {@code true}.
+   *
+   * @param elementId the BPMN element ID whose local variables are used as context
+   * @param feelExpression the FEEL expression to evaluate (without the leading {@code =} prefix)
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariablesSatisfyingFeel(String elementId, String feelExpression);
+
+  /**
+   * Verifies that the local variables of the BPMN element matching the selector satisfy the given
+   * FEEL expression. The expression is evaluated with all local variables of the element as context
+   * and must evaluate to {@code true}.
+   *
+   * <p>The assertion waits until the expression evaluates to {@code true}.
+   *
+   * @param selector the selector for the BPMN element
+   * @param feelExpression the FEEL expression to evaluate (without the leading {@code =} prefix)
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariablesSatisfyingFeel(
+      ElementSelector selector, String feelExpression);
+
+  /**
    * Verifies that the process instance has no active incidents. The verification fails if there is
    * any active incident.
    *

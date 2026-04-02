@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.ThrowingConsumer;
+import org.camunda.feel.api.EvaluationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -325,6 +326,61 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                       jsonMapper.toJsonNode(actualValues))
                   .containsAllEntriesOf(expectedValues);
             });
+  }
+
+  // --- FEEL expression evaluation methods ---
+
+  public void hasVariablesSatisfyingFeel(
+      final long processInstanceKey, final String feelExpression) {
+    awaitBehavior
+        .get()
+        .untilAsserted(
+            () -> {
+              final Map<String, Object> variables =
+                  toObjectMap(getGlobalProcessInstanceVariables(processInstanceKey));
+              evaluateFeelExpression(feelExpression, variables);
+            });
+  }
+
+  public void hasLocalVariablesSatisfyingFeel(
+      final long processInstanceKey, final ElementSelector selector, final String feelExpression) {
+    withLocalVariableAssertion(
+        processInstanceKey,
+        selector,
+        instance -> {
+          final Map<String, Object> variables =
+              toObjectMap(
+                  getLocalProcessInstanceVariables(
+                      processInstanceKey, instance.getElementInstanceKey()));
+          evaluateFeelExpression(feelExpression, variables);
+        });
+  }
+
+  private void evaluateFeelExpression(
+      final String feelExpression, final Map<String, Object> variables) {
+    final EvaluationResult result =
+        FeelExpressionEvaluator.INSTANCE.evaluate(feelExpression, variables);
+
+    if (result.isFailure()) {
+      fail(
+          "%s: FEEL expression '%s' failed to evaluate: %s",
+          actual, feelExpression, result.failure().message());
+    }
+
+    final Object value = result.result();
+    assertThat(value)
+        .withFailMessage(
+            "%s: FEEL expression '%s' should evaluate to true but was '%s'.",
+            actual, feelExpression, value)
+        .isEqualTo(Boolean.TRUE);
+  }
+
+  private Map<String, Object> toObjectMap(final Map<String, String> variables) {
+    return variables.entrySet().stream()
+        .collect(
+            HashMap::new,
+            (m, e) -> m.put(e.getKey(), jsonMapper.readJson(e.getValue(), Object.class)),
+            HashMap::putAll);
   }
 
   private void withLocalVariableAssertion(
