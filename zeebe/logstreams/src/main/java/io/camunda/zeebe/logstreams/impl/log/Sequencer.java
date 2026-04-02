@@ -122,10 +122,11 @@ final class Sequencer implements LogStreamWriter, Closeable {
       holderAtWaitTime = currentLockHolder;
       lock.lock();
     }
-    final long acquireTime = System.nanoTime();
 
+    final long acquireTime;
     final long highestPosition;
     try {
+      acquireTime = System.nanoTime();
       currentLockHolder = context;
       final var currentPosition = position;
       highestPosition = currentPosition + batchSize - 1;
