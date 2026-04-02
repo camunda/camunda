@@ -20,6 +20,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
@@ -75,7 +76,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -110,7 +111,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
@@ -133,7 +134,7 @@ public class ProcessDefinitionIT {
                 new ProcessDefinitionFilter.Builder().build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(null).size(null)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
@@ -166,7 +167,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
