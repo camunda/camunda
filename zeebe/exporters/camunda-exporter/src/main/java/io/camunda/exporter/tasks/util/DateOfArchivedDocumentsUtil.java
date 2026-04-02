@@ -9,104 +9,21 @@ package io.camunda.exporter.tasks.util;
 
 import io.camunda.search.schema.config.RetentionConfiguration;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.AbstractMap;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class DateOfArchivedDocumentsUtil {
-  private static final Logger LOGGER = LoggerFactory.getLogger(DateOfArchivedDocumentsUtil.class);
   private static final Pattern TEMPORAL_PATTERN = Pattern.compile("(\\d+)" + "([smhdwMy])");
   private static final String DATE_PATTERN = "yyyy-MM-dd";
-  private static final String DATE_AND_HOUR_PATTERN = "yyyy-MM-dd-HH";
-
-  public static String calculateDateOfArchiveIndexForBatch(
-      final String dateOfArchiveBatch,
-      String dateOfMostRecentArchiveIndex,
-      final String rolloverInterval,
-      final String elsRolloverDateFormat) {
-
-    // if historicalDate is not set, or rolloverInterval is not valid,
-    // we default to the endDate.
-    if (dateOfMostRecentArchiveIndex == null
-        || dateOfMostRecentArchiveIndex.isEmpty()
-        || rolloverInterval == null
-        || rolloverInterval.isEmpty()) {
-      return dateOfArchiveBatch;
-    }
-
-    final LocalDateTime endDateTime =
-        parseFlexibleDateTime(dateOfArchiveBatch, elsRolloverDateFormat);
-    final LocalDateTime lastEndDate =
-        parseFlexibleDateTime(dateOfMostRecentArchiveIndex, elsRolloverDateFormat);
-
-    final Temp temporalAmount = parseTemporalAmount(rolloverInterval);
-
-    final LocalDateTime rollover =
-        lastEndDate.plus(temporalAmount.amount, temporalAmount.chronoUnit);
-    try {
-      if (endDateTime.isAfter(rollover)) {
-        // If the end date is after the last historical archiver date plus
-        // the rollover, then a new one needs to be set.
-        final var previousDate = dateOfMostRecentArchiveIndex;
-        dateOfMostRecentArchiveIndex = dateOfArchiveBatch;
-        LOGGER.debug(
-            "Rolling over historical archive date from {} date to: {}",
-            previousDate,
-            dateOfMostRecentArchiveIndex);
-      }
-
-    } catch (final IllegalArgumentException e) {
-      LOGGER.error(
-          "Error parsing rollover interval '{}'. Please check the format. Using the last historical date: {}",
-          rolloverInterval,
-          dateOfMostRecentArchiveIndex,
-          e);
-    }
-
-    return dateOfMostRecentArchiveIndex;
-  }
-
-  public static CompletableFuture<String> getLastHistoricalArchiverDate(
-      final CompletableFuture<List<String>> listOfIndexes) {
-    final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern(DATE_AND_HOUR_PATTERN);
-    final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern(DATE_PATTERN);
-    final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
-
-    return listOfIndexes.thenApply(
-        indexes ->
-            indexes.stream()
-                .map(
-                    index -> {
-                      final Matcher matcher = indexDatePattern.matcher(index);
-                      if (matcher.find()) {
-                        final String dateStr = matcher.group(1);
-                        final LocalDateTime dateTime;
-                        if (dateStr.length() == 13) { // e.g., 2025-06-16-10
-                          dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
-                        } else { // e.g., 2025-06-16
-                          dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
-                        }
-                        return new AbstractMap.SimpleEntry<>(dateTime, dateStr);
-                      }
-                      return null;
-                    })
-                .filter(Objects::nonNull)
-                .max(Comparator.comparing(Map.Entry::getKey))
-                .map(Map.Entry::getValue)
-                .orElse(null));
-  }
+  private static final DateTimeFormatter DATE_ONLY_FORMATTER =
+      DateTimeFormatter.ofPattern(DATE_PATTERN);
 
   private static Temp parseTemporalAmount(final String input) throws IllegalArgumentException {
     final Matcher matcher = TEMPORAL_PATTERN.matcher(input);
@@ -143,11 +60,49 @@ public final class DateOfArchivedDocumentsUtil {
     return Optional.of(Duration.of(temp.amount(), temp.chronoUnit()));
   }
 
+  public static String getBucketStart(
+      final String endDate, final String rolloverInterval, final String dateFormat) {
+    final Temp rollover = parseTemporalAmount(rolloverInterval);
+    final LocalDateTime archiveDate = parseFlexibleDateTime(endDate, dateFormat);
+    final ZoneId utc = ZoneId.of("UTC");
+
+    final LocalDateTime bucketStart;
+    switch (rollover.chronoUnit()) {
+      // NOTES:
+      //  WEEKS is already handled by parseTemporalAmount as 7 days
+      //  SECONDS is the smallest unit
+      //  Floor integer division gives us the bucket that contains endDate
+      case DAYS, HOURS, MINUTES, SECONDS -> {
+        final long rolloverSeconds =
+            Duration.of(rollover.amount(), rollover.chronoUnit()).getSeconds();
+        final long secondsSinceEpoch = archiveDate.atZone(utc).toEpochSecond();
+        final long bucketStartSeconds = (secondsSinceEpoch / rolloverSeconds) * rolloverSeconds;
+        bucketStart = Instant.ofEpochSecond(bucketStartSeconds).atZone(utc).toLocalDateTime();
+      }
+      case MONTHS -> {
+        final int totalMonthsSinceEpoch =
+            (archiveDate.getYear() - LocalDate.EPOCH.getYear()) * 12
+                + (archiveDate.getMonthValue() - 1);
+        final int bucketMonth = (totalMonthsSinceEpoch / rollover.amount()) * rollover.amount();
+        final int year = LocalDate.EPOCH.getYear() + (bucketMonth / 12);
+        final int month = (bucketMonth % 12) + 1;
+        bucketStart = LocalDate.of(year, month, 1).atStartOfDay();
+      }
+      default ->
+          throw new IllegalArgumentException("Unsupported rollover value: " + rolloverInterval);
+    }
+
+    if (isDateOnly(dateFormat)) {
+      return bucketStart.format(DATE_ONLY_FORMATTER);
+    } else {
+      return bucketStart.format(DateTimeFormatter.ofPattern(dateFormat));
+    }
+  }
+
   private static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {
     try {
-      if ("date".equals(pattern) || DATE_PATTERN.equals(pattern)) {
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
-        return LocalDate.parse(dateStr, formatter).atStartOfDay();
+      if (isDateOnly(pattern)) {
+        return LocalDate.parse(dateStr, DATE_ONLY_FORMATTER).atStartOfDay();
       } else {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return LocalDateTime.parse(dateStr, formatter);
@@ -156,6 +111,10 @@ public final class DateOfArchivedDocumentsUtil {
       throw new IllegalArgumentException(
           "Invalid date format: " + dateStr + " with pattern: " + pattern, exception);
     }
+  }
+
+  private static boolean isDateOnly(final String pattern) {
+    return "date".equals(pattern) || DATE_PATTERN.equals(pattern);
   }
 
   private record Temp(int amount, ChronoUnit chronoUnit) {}
