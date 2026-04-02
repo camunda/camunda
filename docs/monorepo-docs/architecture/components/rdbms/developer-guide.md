@@ -25,9 +25,9 @@ db/rdbms/
 │   │   └── RdbmsReaderConfig.java
 │   ├── sql/
 │   │   ├── columns/         # SearchColumn enums (e.g. ProcessDefinitionSearchColumn)
-│   │   ├── typehandler/     # DB-specific MyBatis TypeHandlers (PostgreSQL array, Oracle XML)
+│   │   ├── typehandler/     # MyBatis TypeHandlers (generic JSON/null handling and
+│   │   │                    #   DB-specific handlers for PostgreSQL array, Oracle XML, etc.)
 │   │   └── *Mapper.java     # MyBatis Mapper interfaces
-│   ├── typehandler/         # Generic MyBatis TypeHandlers (JSON, null/empty-string handling)
 │   ├── write/
 │   │   ├── domain/          # DbModel records (e.g. ProcessDefinitionDbModel)
 │   │   ├── queue/           # ExecutionQueue, QueueItem, Mergers
@@ -71,17 +71,17 @@ db/rdbms-schema/
   `Builder` to construct them.
 - **Queue-based writes**: Never call mapper methods directly from a writer. Always enqueue
   operations via `ExecutionQueue.executeInQueue(...)`.
-- **Always run all supported databases** before merging: schema and SQL changes must be verified
-  against H2, PostgreSQL, MariaDB, MySQL, MSSQL, and Oracle. Use the `db/docker-compose.yml` file
-  to start all supported database containers locally:
+- **Run your target database** before testing: use the `db/docker-compose.yml` file to start
+  the database you are working with locally. For example, to start PostgreSQL:
 
   ```bash
   cd db/
-  docker compose up postgres mssql mariadb oracle -d
+  docker compose up postgres -d
   ```
 
   H2 runs in-process during tests and does not need a separate container. MySQL and MariaDB share
-  the same port (3306), so start only one at a time unless you override the port mapping.
+  the same port (3306), so start only one at a time. Before merging, verify schema and SQL changes
+  against all supported databases: H2, PostgreSQL, MariaDB, MySQL, MSSQL, and Oracle.
 
 ---
 
