@@ -6,9 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {expect} from '@playwright/test';
+
+export type TaskCard = {
+  readonly name: string;
+  readonly assignee?: string;
+};
 
 class TaskPanelPage {
   readonly availableTasks: Locator;
@@ -137,6 +141,44 @@ class TaskPanelPage {
 
   goToTaskDetails(taskKey: string) {
     return this.page.goto(`/tasklist/${taskKey}`);
+  }
+
+  async assertTaskCardsPresent(
+    tasks: TaskCard[],
+    options: {expectedCount?: number} = {},
+  ): Promise<void> {
+    const {expectedCount} = options;
+    for (const task of tasks) {
+      const taskName = this.availableTasks.getByText(task.name, {exact: true});
+      const assignee = task.assignee
+        ? this.availableTasks.getByText(task.assignee, {exact: true})
+        : null;
+
+      if (expectedCount === undefined) {
+        await expect(taskName.first()).toBeVisible();
+        if (assignee) {
+          await expect(assignee.first()).toBeVisible();
+        }
+      } else {
+        await expect(taskName).toHaveCount(expectedCount);
+        if (assignee) {
+          await expect(assignee).toHaveCount(expectedCount);
+        }
+      }
+    }
+  }
+
+  async assertTaskCardsAbsent(tasks: TaskCard[]): Promise<void> {
+    for (const task of tasks) {
+      await expect(
+        this.availableTasks.getByText(task.name, {exact: true}),
+      ).toHaveCount(0);
+      if (task.assignee) {
+        await expect(
+          this.availableTasks.getByText(task.assignee, {exact: true}),
+        ).toHaveCount(0);
+      }
+    }
   }
 }
 
