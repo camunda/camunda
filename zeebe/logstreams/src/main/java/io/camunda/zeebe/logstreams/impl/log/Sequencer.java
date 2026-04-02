@@ -142,6 +142,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
     }
     final long releaseTime = System.nanoTime();
 
+    flowControl.onAppended(inFlightEntry);
+
     // All metrics are recorded outside the critical section to avoid inflating lock hold time.
     recordMetrics(
         context,
@@ -150,8 +152,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
         batchLength,
         acquireTime - waitStart,
         releaseTime - acquireTime);
-
-    flowControl.onAppended(inFlightEntry);
     return Either.right(highestPosition);
   }
 
