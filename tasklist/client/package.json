@@ -62,7 +62,7 @@
     "@axe-core/playwright": "4.11.1",
     "@camunda/lint-config": "file:../../client-components/packages/lint-config",
     "@eslint/js": "10.0.1",
-    "@playwright/test": "1.58.2",
+    "@playwright/test": "1.59.1",
     "@tanstack/react-query-devtools": "5.91.3",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",

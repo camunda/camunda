@@ -26,7 +26,7 @@ async function findIndexJsFiles(dir) {
     );
   } catch (error) {
     if (error.code === 'ENOENT') {
-      throw new Error(`Directory ${dir} does not exist`);
+      throw new Error(`Directory ${dir} does not exist`, {cause: error});
     }
     throw error;
   }
