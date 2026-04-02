@@ -108,9 +108,17 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final int batchSize = appendEntries.size();
     final int batchLength = calculateBatchLength(appendEntries);
 
-    lock.lock();
+    final long waitStart = System.nanoTime();
+
+    final boolean lockAcquiredImmediately = lock.tryLock();
+    if (!lockAcquiredImmediately) {
+      lock.lock();
+    }
+
+    final long acquireTime;
     final long highestPosition;
     try {
+      acquireTime = System.nanoTime();
       final var currentPosition = position;
       highestPosition = currentPosition + batchSize - 1;
       final var sequencedBatch =
@@ -121,11 +129,35 @@ final class Sequencer implements LogStreamWriter, Closeable {
       position = currentPosition + batchSize;
     } finally {
       lock.unlock();
-      sequencerMetrics.observeBatchLengthBytes(batchLength);
-      sequencerMetrics.observeBatchSize(batchSize);
     }
+    final long releaseTime = System.nanoTime();
+
     flowControl.onAppended(inFlightEntry);
+
+    // All metrics are recorded outside the critical section to avoid inflating lock hold time.
+    recordMetrics(
+        context,
+        lockAcquiredImmediately,
+        batchSize,
+        batchLength,
+        acquireTime - waitStart,
+        releaseTime - acquireTime);
     return Either.right(highestPosition);
+  }
+
+  private void recordMetrics(
+      final WriteContext context,
+      final boolean lockAcquiredImmediately,
+      final int batchSize,
+      final int batchLength,
+      final long waitNanos,
+      final long holdNanos) {
+    if (!lockAcquiredImmediately) {
+      sequencerMetrics.observeLockWaitTime(context, waitNanos);
+    }
+    sequencerMetrics.observeLockHoldTime(context, holdNanos);
+    sequencerMetrics.observeBatchLengthBytes(batchLength);
+    sequencerMetrics.observeBatchSize(batchSize);
   }
 
   /**

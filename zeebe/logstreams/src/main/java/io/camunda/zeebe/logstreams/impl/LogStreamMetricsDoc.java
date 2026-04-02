@@ -7,6 +7,12 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
+import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
+import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
+import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
+import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
@@ -527,6 +533,16 @@ public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
 
     FlowControlContext(final String value) {
       this.value = value;
+    }
+
+    public static FlowControlContext from(final WriteContext context) {
+      return switch (context) {
+        case final UserCommand ignored -> FlowControlContext.USER_COMMAND;
+        case final ProcessingResult ignored -> FlowControlContext.PROCESSING_RESULT;
+        case final InterPartition ignored -> FlowControlContext.INTER_PARTITION;
+        case final Scheduled ignored -> FlowControlContext.SCHEDULED;
+        case final Internal ignored -> FlowControlContext.INTERNAL;
+      };
     }
 
     public String getValue() {

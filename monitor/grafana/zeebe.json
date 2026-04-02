@@ -10045,6 +10045,276 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
+          "description": "Quantiles of time spent holding the sequencer lock during a write, by writer context",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "log": 10,
+                  "type": "log"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 1683
+          },
+          "id": 710,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_sequencer_lock_hold_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "max {{writer}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.99\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p99 {{writer}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.9\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p90 {{writer}}",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.5\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p50 {{writer}}",
+              "refId": "D"
+            }
+          ],
+          "title": "Sequencer Lock Hold Time Quantiles",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Quantiles of time spent waiting to acquire the sequencer lock, by who is waiting",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "log": 10,
+                  "type": "log"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 1683
+          },
+          "id": 711,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_sequencer_lock_wait_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "max {{waiter}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.99\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p99 {{waiter}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.9\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p90 {{waiter}}",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.5\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p50 {{waiter}}",
+              "refId": "D"
+            }
+          ],
+          "title": "Sequencer Lock Wait Time Quantiles",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
           "description": "Shows the quantiles of: time taken to commit a record to the log (includes write latency)",
           "fieldConfig": {
             "defaults": {
@@ -10105,7 +10375,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1683
+            "y": 1690
           },
           "id": 310,
           "options": {
@@ -10232,7 +10502,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1683
+            "y": 1690
           },
           "id": 311,
           "options": {
@@ -10318,7 +10588,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1690
+            "y": 1697
           },
           "id": 235,
           "options": {
@@ -10401,7 +10671,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1690
+            "y": 1697
           },
           "id": 234,
           "options": {
