@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -277,7 +279,7 @@ final class SequencerTest {
   }
 
   @Test
-  void shouldRecordLockWaitTimeByHolder() throws Exception {
+  void shouldRecordLockWaitTimeByWaiter() throws Exception {
     // given
     final var meterRegistry = new SimpleMeterRegistry();
     final var blockingLatch = new CountDownLatch(1);
@@ -316,7 +318,12 @@ final class SequencerTest {
                     WriteContext.processingResult(ProcessInstanceIntent.ACTIVATE_ELEMENT),
                     TestEntry.ofDefaults()));
     waiter.start();
-    Thread.sleep(50); // give thread 2 time to block on lock
+
+    // wait until the waiter thread is blocked on the lock
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> waiter.getState() == Thread.State.WAITING);
+
     blockingLatch.countDown(); // release thread 1
     holder.join(5_000);
     waiter.join(5_000);
