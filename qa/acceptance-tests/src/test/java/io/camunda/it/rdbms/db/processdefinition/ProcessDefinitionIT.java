@@ -34,6 +34,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
@@ -92,7 +93,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -130,7 +131,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -157,7 +158,7 @@ public class ProcessDefinitionIT {
                 new ProcessDefinitionFilter.Builder().names(name).build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().stream().map(ProcessDefinitionEntity::name))
@@ -182,7 +183,7 @@ public class ProcessDefinitionIT {
                 new ProcessDefinitionFilter.Builder().names(name).build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().stream().map(ProcessDefinitionEntity::name))
@@ -257,7 +258,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
@@ -284,7 +285,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(100);
@@ -308,7 +309,7 @@ public class ProcessDefinitionIT {
                 new ProcessDefinitionFilter.Builder().build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(null).size(null)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
@@ -341,7 +342,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
@@ -535,7 +536,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
     assertThat(searchResult.total()).isEqualTo(2);
 
     // when
@@ -557,7 +558,7 @@ public class ProcessDefinitionIT {
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10)),
-                null));
+                ProcessDefinitionQueryResultConfig.of(b -> b)));
     assertThat(resultAfterDeletion.total()).isZero();
   }
 }

@@ -27,9 +27,16 @@ public record ProcessDefinitionQuery(
     ProcessDefinitionQueryResultConfig resultConfig)
     implements TypedSearchQuery<ProcessDefinitionFilter, ProcessDefinitionSort> {
 
+  private static final ProcessDefinitionQueryResultConfig EMPTY_RESULT_CONFIG =
+      QueryResultConfigBuilders.processDefinition().build();
+
   public static ProcessDefinitionQuery of(
       final Function<ProcessDefinitionQuery.Builder, ObjectBuilder<ProcessDefinitionQuery>> fn) {
     return fn.apply(new ProcessDefinitionQuery.Builder()).build();
+  }
+
+  public ProcessDefinitionQuery {
+    resultConfig = Objects.requireNonNullElse(resultConfig, EMPTY_RESULT_CONFIG);
   }
 
   @Override
@@ -52,8 +59,6 @@ public record ProcessDefinitionQuery(
         FilterBuilders.processDefinition().build();
     private static final ProcessDefinitionSort EMPTY_SORT =
         SortOptionBuilders.processDefinition().build();
-    private static final ProcessDefinitionQueryResultConfig EMPTY_RESULT_CONFIG =
-        QueryResultConfigBuilders.processDefinition().build();
 
     private ProcessDefinitionFilter filter;
     private ProcessDefinitionSort sort;
