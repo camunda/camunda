@@ -12,18 +12,8 @@ import static org.assertj.core.api.Fail.fail;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.ClientDefinition;
-import io.camunda.qa.util.auth.GroupDefinition;
-import io.camunda.qa.util.auth.MappingRuleDefinition;
-import io.camunda.qa.util.auth.RoleDefinition;
-import io.camunda.qa.util.auth.TenantDefinition;
-import io.camunda.qa.util.auth.TestClient;
-import io.camunda.qa.util.auth.TestGroup;
-import io.camunda.qa.util.auth.TestMappingRule;
-import io.camunda.qa.util.auth.TestRole;
-import io.camunda.qa.util.auth.TestTenant;
-import io.camunda.qa.util.auth.TestUser;
-import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
+import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -32,7 +22,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -42,6 +31,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -152,7 +142,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *  }</pre>
  *
  *  As we can see there are further possibilities with the extension, like defining users with
- *  annotated {@link UserDefinition}. This allows the extension to pick up the users, and create
+ *  annotated {@link io.camunda.qa.util.auth.UserDefinition}. This allows the extension to pick up the users, and create
  *  them on client usage. Furthermore, authenticated clients are supported with this as well.
  *
  * The following code will inject a client, as parameter, that is authenticated with the ADMIN
@@ -245,7 +235,6 @@ public class CamundaMultiDBExtension
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
-  private EntityManager entityManager;
   private KeycloakContainer keycloakContainer;
 
   public CamundaMultiDBExtension() {
@@ -485,12 +474,29 @@ public class CamundaMultiDBExtension
               applicationUnderTest.application.grpcAddress());
     }
 
+    final TestEntityCollection testEntities = new TestEntityCollector().collect(testClass);
+    final ConfigurationTestEntities configuredEntities =
+        new TestEntityConfigurer().configure(testEntities);
+    applicationUnderTest.application.withSecurityConfig(
+        cfg -> {
+          final var config = cfg.getInitialization();
+          config.getUsers().addAll(configuredEntities.users());
+          config.getRoles().addAll(configuredEntities.roles());
+          config.getMappingRules().addAll(configuredEntities.mappingRules());
+          config.getGroups().addAll(configuredEntities.groups());
+          config.getAuthorizations().addAll(configuredEntities.authorizations());
+        });
+
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
     }
 
-    entityManager = new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
-    createEntities(testClass, shouldSetupKeycloak);
+    final EntityManager entityManager =
+        new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
+
+    entityManager.await(configuredEntities);
+
+    createClientsForTestEntities(shouldSetupKeycloak, testEntities);
 
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
@@ -517,77 +523,71 @@ public class CamundaMultiDBExtension
     return keycloakContainer;
   }
 
-  private void createEntities(final Class<?> testClass, final Boolean shouldSetupKeycloak) {
-    final var users = findUsers(testClass, null, ModifierSupport::isStatic);
-    final var tenants = findTenants(testClass, null, ModifierSupport::isStatic);
-    final var mappingRules = findMappingRules(testClass, null, ModifierSupport::isStatic);
-    final var clients = findClients(testClass, null, ModifierSupport::isStatic);
-    final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
-    final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
-    entityManager
-        .withUser(users)
-        .withClients(clients)
-        .withMappingRules(mappingRules)
-        .withGroups(groups)
-        .withRoles(roles)
-        .withTenants(tenants)
-        .await();
-    users.forEach(
-        user -> {
-          try {
-            final var clientFactory =
-                (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForUser(
-                applicationUnderTest.application.newClientBuilder(),
-                applicationUnderTest.application.restAddress(),
-                applicationUnderTest.application.grpcAddress(),
-                user);
-          } catch (final ClassCastException e) {
-            LOGGER.warn(
-                "Could not create client for user, as the application is not configured for basic authentication: %s",
-                e);
-          }
-        });
+  private void createClientsForTestEntities(
+      final Boolean shouldSetupKeycloak, final TestEntityCollection testEntities) {
 
-    mappingRules.forEach(
-        mappingRule -> {
-          try {
-            final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForMappingRule(
-                applicationUnderTest.application.newClientBuilder(),
-                applicationUnderTest.application.restAddress(),
-                applicationUnderTest.application.grpcAddress(),
-                mappingRule);
-          } catch (final ClassCastException e) {
-            LOGGER.warn(
-                "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
-                e);
-          }
+    testEntities
+        .users()
+        .forEach(
+            user -> {
+              try {
+                final var clientFactory =
+                    (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
+                clientFactory.createClientForUser(
+                    applicationUnderTest.application.newClientBuilder(),
+                    applicationUnderTest.application.restAddress(),
+                    applicationUnderTest.application.grpcAddress(),
+                    user);
+              } catch (final ClassCastException e) {
+                LOGGER.warn(
+                    "Could not create client for user, as the application is not configured for basic authentication: %s",
+                    e);
+              }
+            });
 
-          if (shouldSetupKeycloak) {
-            setupUserInKeycloak(mappingRule.id(), mappingRule.claimValue());
-          }
-        });
+    testEntities
+        .mappingRules()
+        .forEach(
+            mappingRule -> {
+              try {
+                final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
+                clientFactory.createClientForMappingRule(
+                    applicationUnderTest.application.newClientBuilder(),
+                    applicationUnderTest.application.restAddress(),
+                    applicationUnderTest.application.grpcAddress(),
+                    mappingRule);
+              } catch (final ClassCastException e) {
+                LOGGER.warn(
+                    "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
+                    e);
+              }
 
-    clients.forEach(
-        client -> {
-          try {
-            final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForClient(
-                applicationUnderTest.application.newClientBuilder(),
-                applicationUnderTest.application.restAddress(),
-                applicationUnderTest.application.grpcAddress(),
-                client);
-          } catch (final ClassCastException e) {
-            LOGGER.warn(
-                "Could not create client for client, as the application is not configured for OIDC authentication",
-                e);
-          }
+              if (shouldSetupKeycloak) {
+                setupUserInKeycloak(mappingRule.id(), mappingRule.claimValue());
+              }
+            });
 
-          if (shouldSetupKeycloak) {
-            setupUserInKeycloak(client.clientId(), client.clientId());
-          }
-        });
+    testEntities
+        .clients()
+        .forEach(
+            client -> {
+              try {
+                final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
+                clientFactory.createClientForClient(
+                    applicationUnderTest.application.newClientBuilder(),
+                    applicationUnderTest.application.restAddress(),
+                    applicationUnderTest.application.grpcAddress(),
+                    client);
+              } catch (final ClassCastException e) {
+                LOGGER.warn(
+                    "Could not create client for client, as the application is not configured for OIDC authentication",
+                    e);
+              }
+
+              if (shouldSetupKeycloak) {
+                setupUserInKeycloak(client.clientId(), client.clientId());
+              }
+            });
   }
 
   private void setupUserInKeycloak(final String mappingRuleId, final String claimValue) {
@@ -670,62 +670,6 @@ public class CamundaMultiDBExtension
     return new ApplicationUnderTest(testStandaloneApplication, shouldBeManaged);
   }
 
-  private List<TestUser> findUsers(
-      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, TestUser.class, UserDefinition.class);
-  }
-
-  private List<TestTenant> findTenants(
-      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, TestTenant.class, TenantDefinition.class);
-  }
-
-  private List<TestGroup> findGroups(
-      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, TestGroup.class, GroupDefinition.class);
-  }
-
-  private List<TestRole> findRoles(
-      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, TestRole.class, RoleDefinition.class);
-  }
-
-  private List<TestMappingRule> findMappingRules(
-      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(
-        testClass, testInstance, predicate, TestMappingRule.class, MappingRuleDefinition.class);
-  }
-
-  private List<TestClient> findClients(
-      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, TestClient.class, ClientDefinition.class);
-  }
-
-  private <T> List<T> findFields(
-      final Class<?> testClass,
-      final Object testInstance,
-      Predicate<Field> predicate,
-      final Class<T> entityClass,
-      final Class<? extends Annotation> definitionClass) {
-    final var instances = new ArrayList<T>();
-    predicate =
-        predicate.and(
-            field ->
-                field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
-    for (final Field field : testClass.getDeclaredFields()) {
-      try {
-        if (predicate.test(field)) {
-          field.setAccessible(true);
-          final var instance = (T) field.get(testInstance);
-          instances.add(instance);
-        }
-      } catch (final Exception ex) {
-        throw new RuntimeException(ex);
-      }
-    }
-    return instances;
-  }
-
   private void injectStaticClientField(final Class<?> testClass) {
     for (final Field field : testClass.getDeclaredFields()) {
       try {
@@ -780,7 +724,7 @@ public class CamundaMultiDBExtension
   }
 
   @Override
-  public void afterAll(final ExtensionContext context) throws Exception {
+  public void afterAll(final @NonNull ExtensionContext context) throws Exception {
     // Only cleanup if this extension actually ran
     if (!isOwner(context)) {
       LOGGER.debug("Skipping CamundaMultiDBExtension cleanup - extension didn't run");
@@ -796,7 +740,8 @@ public class CamundaMultiDBExtension
 
   @Override
   public boolean supportsParameter(
-      final ParameterContext parameterContext, final ExtensionContext extensionContext)
+      final @NonNull ParameterContext parameterContext,
+      final @NonNull ExtensionContext extensionContext)
       throws ParameterResolutionException {
     if (!isOwner(extensionContext)) {
       return false;
@@ -807,7 +752,8 @@ public class CamundaMultiDBExtension
 
   @Override
   public Object resolveParameter(
-      final ParameterContext parameterContext, final ExtensionContext extensionContext)
+      final @NonNull ParameterContext parameterContext,
+      final @NonNull ExtensionContext extensionContext)
       throws ParameterResolutionException {
     if (!isOwner(extensionContext)) {
       throw new ParameterResolutionException(
