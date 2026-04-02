@@ -1652,6 +1652,106 @@ public class ModifyProcessInstanceTest {
     verifyThatRootElementIsActivated(processInstanceKey, "C", BpmnElementType.USER_TASK);
   }
 
+  @Test
+  public void shouldPreserveCallHierarchyWhenModifyingChildProcessInstance() {
+    // given — deploy a 3-level hierarchy: root → intermediate → leaf
+    final var leafProcess =
+        Bpmn.createExecutableProcess("leaf").startEvent().userTask("leafTask").endEvent().done();
+    final var intermediateProcess =
+        Bpmn.createExecutableProcess("intermediate")
+            .startEvent()
+            .userTask("userTask")
+            .callActivity("callLeaf", c -> c.zeebeProcessId("leaf"))
+            .endEvent()
+            .done();
+    final var rootProcess =
+        Bpmn.createExecutableProcess("root")
+            .startEvent()
+            .callActivity("callIntermediate", c -> c.zeebeProcessId("intermediate"))
+            .endEvent()
+            .done();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("leaf.bpmn", leafProcess)
+            .withXmlResource("intermediate.bpmn", intermediateProcess)
+            .withXmlResource("root.bpmn", rootProcess)
+            .deploy();
+
+    final long rootProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> "root".equals(p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId("root").create();
+
+    // wait for intermediate process instance to be created and user task to be active
+    final var intermediateInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(rootInstanceKey)
+            .withBpmnProcessId("intermediate")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    final var intermediateInstanceKey = intermediateInstance.getKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(intermediateInstanceKey)
+        .withElementId("userTask")
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    final var userTaskElement =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(intermediateInstanceKey)
+            .withElementId("userTask")
+            .getFirst();
+
+    // when — modify intermediate: terminate user task + activate call activity
+    ENGINE
+        .processInstance()
+        .withInstanceKey(intermediateInstanceKey)
+        .modification()
+        .terminateElement(userTaskElement.getKey())
+        .activateElement("callLeaf")
+        .modify();
+
+    // then — wait for the leaf process instance to be created
+    final var leafInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(intermediateInstanceKey)
+            .withBpmnProcessId("leaf")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    final var leafInstanceKey = leafInstance.getKey();
+
+    // verify the leaf's tree path contains the full 3-level hierarchy
+    final var leafUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(leafInstanceKey)
+            .withElementId("leafTask")
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    final var leafTreePath = leafUserTask.getValue();
+
+    Assertions.assertThat(leafTreePath.getProcessDefinitionPath())
+        .describedAs("Expect the process definition path to contain all 3 levels including root")
+        .hasSize(3)
+        .first()
+        .isEqualTo(rootProcessDefinitionKey);
+
+    Assertions.assertThat(leafTreePath.getElementInstancePath())
+        .describedAs("Expect the element instance path to contain all 3 levels")
+        .hasSize(3);
+
+    Assertions.assertThat(leafTreePath.getCallingElementPath())
+        .describedAs("Expect the calling element path to contain 2 entries (one per call activity)")
+        .hasSize(2);
+  }
+
   private void verifyThatElementTreePathIsUpdated(
       final Record<ProcessInstanceRecordValue> elementBeforeModification) {
     final var elementInstance = elementBeforeModification.getValue();
