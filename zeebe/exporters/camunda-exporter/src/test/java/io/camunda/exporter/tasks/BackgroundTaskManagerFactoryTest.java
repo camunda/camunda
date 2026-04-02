@@ -51,6 +51,7 @@ class BackgroundTaskManagerFactoryTest {
             EXPORTER_ID,
             config,
             new TestExporterResourceProvider("", true),
+            null,
             new CamundaExporterMetrics(new SimpleMeterRegistry()),
             LoggerFactory.getLogger(BackgroundTaskManagerFactoryTest.class),
             mock(ExporterMetadata.class),
