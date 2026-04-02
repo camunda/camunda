@@ -78,7 +78,7 @@ describe('Date Range Field', () => {
   });
 
   // TODO: un-skip after fixed with https://github.com/camunda/camunda/issues/50378
-  it.skip('should set default values', async () => {
+  it.todo('should set default values', async () => {
     const {user} = render(<MockDateRangeField />, {
       wrapper: getWrapper({
         startDateAfter: '2021-02-03T12:34:56',
