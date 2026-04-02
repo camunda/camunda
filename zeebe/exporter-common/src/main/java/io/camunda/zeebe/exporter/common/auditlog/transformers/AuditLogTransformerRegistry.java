@@ -79,6 +79,7 @@ public final class AuditLogTransformerRegistry {
     return List.of(
         AuthorizationAuditLogTransformer::new,
         BatchOperationCreationAuditLogTransformer::new,
+        BatchOperationLifecycleManagementAuditLogTransformer::new,
         DecisionRequirementsRecordAuditLogTransformer::new,
         DecisionAuditLogTransformer::new,
         FormAuditLogTransformer::new,
@@ -102,7 +103,6 @@ public final class AuditLogTransformerRegistry {
    */
   public static List<Supplier<AuditLogTransformer<?>>> getAllPartitionTransformerSuppliers() {
     return List.of(
-        BatchOperationLifecycleManagementAuditLogTransformer::new,
         DecisionEvaluationAuditLogTransformer::new,
         IncidentResolutionAuditLogTransformer::new,
         JobAuditLogTransformer::new,

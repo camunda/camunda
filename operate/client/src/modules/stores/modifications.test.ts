@@ -20,7 +20,7 @@ import {
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 import {mockServer} from 'modules/mock-server/node';
 import {http} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type AddModificationPayload = Extract<
   ElementModification['payload'],

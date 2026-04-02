@@ -9,7 +9,7 @@
 import {
   endpoints,
   type GetElementInstanceResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {requestWithThrow} from 'modules/request';
 
 const fetchElementInstance = async (params: {elementInstanceKey: string}) => {

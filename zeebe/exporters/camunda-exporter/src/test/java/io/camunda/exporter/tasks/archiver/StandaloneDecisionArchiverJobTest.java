@@ -117,6 +117,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
                 auditLogTemplate.getFullQualifiedName(),
                 auditLogTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(auditLogTemplate.getDecisionDependantField(), List.of("1", "2", "3")),
+                Map.of(AuditLogTemplate.ENTITY_TYPE, "DECISION"),
                 executor),
             new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),

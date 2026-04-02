@@ -17,7 +17,7 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleMappingRule } from "src/utility/api/roles";
-import type { MappingRule, Role } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { MappingRule, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedMappingRules = styled.div`
   margin-top: 0;

@@ -38,7 +38,7 @@ class ActivateJobsTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofMillis(500)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -61,13 +61,21 @@ class ActivateJobsTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldReturnEmptyListOnRequestTimeout(final boolean useRest) {
-    // when
-    final var actual =
-        getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send().join();
+  public void shouldReturnEmptyListOnDefaultRequestTimeout(final boolean useRest) {
+    // given
+    try (final var clientWithShortTimeout =
+        ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofMillis(500)).build()) {
+      // when
+      final var actual =
+          getCommand(clientWithShortTimeout, useRest)
+              .jobType("notExisting")
+              .maxJobsToActivate(1)
+              .send()
+              .join();
 
-    // then
-    assertThat(actual.getJobs()).isEmpty();
+      // then
+      assertThat(actual.getJobs()).isEmpty();
+    }
   }
 
   @ParameterizedTest

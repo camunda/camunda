@@ -2,3 +2,4 @@ io.camunda.process.test.impl.judge.OpenAiChatModelAdapterProvider
 io.camunda.process.test.impl.judge.AnthropicChatModelAdapterProvider
 io.camunda.process.test.impl.judge.BedrockChatModelAdapterProvider
 io.camunda.process.test.impl.judge.OpenAiCompatibleChatModelAdapterProvider
+io.camunda.process.test.impl.judge.AzureOpenAiChatModelAdapterProvider

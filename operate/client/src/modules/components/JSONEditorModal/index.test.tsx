@@ -32,6 +32,7 @@ describe('<JSONEditorModal />', () => {
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
     expect(await screen.findByDisplayValue(mockValue)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /copy/i})).toBeInTheDocument();
 
     rerender(
       <JSONEditorModal
@@ -52,6 +53,7 @@ describe('<JSONEditorModal />', () => {
     expect(
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /copy/i})).toBeInTheDocument();
   });
 
   it('should handle modal close', async () => {
@@ -107,5 +109,43 @@ describe('<JSONEditorModal />', () => {
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
     expect(mockOnApply).toHaveBeenNthCalledWith(1, mockUpdatedValue);
+  });
+
+  it('should copy value to clipboard when copy button is clicked', async () => {
+    const mockValue = '"i am a value"';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    const {user} = render(<JSONEditorModal isVisible value={mockValue} />);
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith(mockValue);
+    expect(
+      await screen.findByRole('button', {name: /copied/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should copy value to clipboard in read-only mode', async () => {
+    const mockValue = '"i am a read-only value"';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    const {user} = render(
+      <JSONEditorModal isVisible readOnly value={mockValue} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith(mockValue);
+    expect(
+      await screen.findByRole('button', {name: /copied/i}),
+    ).toBeInTheDocument();
   });
 });

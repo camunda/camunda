@@ -20,11 +20,10 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {TextInputField} from 'modules/components/TextInputField';
-import {IconTextInputField} from 'modules/components/IconTextInputField';
-import {Maximize} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {MaximizeButton} from '../ViewFullVariableButton/MaximizeButton';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();
@@ -67,7 +66,7 @@ const NewVariable: React.FC = () => {
           parse={(value) => value}
         >
           {({input}) => (
-            <IconTextInputField
+            <TextInputField
               {...input}
               size="sm"
               type="text"
@@ -75,20 +74,20 @@ const NewVariable: React.FC = () => {
               hideLabel
               labelText="Value"
               placeholder="Value"
-              buttonLabel="Open JSON editor"
-              tooltipPosition="left"
-              onIconClick={() => {
-                setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'json-editor-opened',
-                  variant: 'add-variable',
-                });
-              }}
-              Icon={Maximize}
             />
           )}
         </Field>
         <Operations>
+          <MaximizeButton
+            label="Open JSON editor"
+            onClick={() => {
+              setIsModalVisible(true);
+              tracking.track({
+                eventName: 'json-editor-opened',
+                variant: 'add-variable',
+              });
+            }}
+          />
           <EditButtons />
         </Operations>
       </Layer>
@@ -110,6 +109,7 @@ const NewVariable: React.FC = () => {
           }}
           onApply={(value) => {
             form.change('value', value);
+            form.submit();
             setIsModalVisible(false);
             tracking.track({
               eventName: 'json-editor-saved',

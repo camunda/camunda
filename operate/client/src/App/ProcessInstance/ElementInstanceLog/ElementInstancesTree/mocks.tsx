@@ -19,7 +19,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const mockMultiInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',

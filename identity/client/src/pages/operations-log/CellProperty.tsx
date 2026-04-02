@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { AuditLog } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { AuditLog } from "@camunda/camunda-api-zod-schemas/8.10";
 import { OwnerInfo, PropertyText } from "./components/styled";
 import { CodeSnippet } from "@carbon/react";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
-import { AuditLogOperationType } from "@camunda/camunda-api-zod-schemas/8.9";
+import { AuditLogOperationType } from "@camunda/camunda-api-zod-schemas/8.10";
 import useTranslate from "src/utility/localization";
 
 type Props = {

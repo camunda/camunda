@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -101,6 +102,11 @@ public class CamundaProcessTestRuntimeBuilder {
   private CamundaClientBuilderFactory camundaClientBuilderFactory =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
   private Consumer<CamundaClientBuilder> camundaClientOverrides = cb -> {};
+
+  private Optional<Duration> assertionTimeout =
+      CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionTimeout();
+  private Optional<Duration> assertionInterval =
+      CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionInterval();
 
   // ============ For testing =================
 
@@ -288,6 +294,16 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withAssertionTimeout(final Duration assertionTimeout) {
+    this.assertionTimeout = Optional.ofNullable(assertionTimeout);
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withAssertionInterval(final Duration assertionInterval) {
+    this.assertionInterval = Optional.ofNullable(assertionInterval);
+    return this;
+  }
+
   // ============ Build =================
 
   private void loadContainerProvidersFromServiceLoader() {
@@ -443,5 +459,13 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public boolean isContainerProvidersServiceLoaderEnabled() {
     return containerProvidersServiceLoaderEnabled;
+  }
+
+  public Optional<Duration> getAssertionTimeout() {
+    return assertionTimeout;
+  }
+
+  public Optional<Duration> getAssertionInterval() {
+    return assertionInterval;
   }
 }

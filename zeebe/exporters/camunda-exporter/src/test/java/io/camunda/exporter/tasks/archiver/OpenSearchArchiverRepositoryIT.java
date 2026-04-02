@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.LongStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
@@ -516,10 +517,9 @@ final class OpenSearchArchiverRepositoryIT {
     createProcessInstanceIndex();
     documents.forEach(doc -> index(processInstanceIndex, doc));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
-    config.setRolloverBatchSize(3);
 
     // when
-    final var result = repository.getProcessInstancesNextBatch();
+    final var result = repository.getProcessInstancesNextBatch(100);
 
     // then - we expect only the first document created two hours ago to be returned
     final var dateFormatter =
@@ -528,6 +528,44 @@ final class OpenSearchArchiverRepositoryIT {
     final var batch = result.join();
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldLimitGetProcessInstancesNextBatch() throws IOException {
+    // given - multiple finished PIs
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        LongStream.rangeClosed(1, 10)
+            .mapToObj(
+                id ->
+                    new TestProcessInstance(
+                        String.valueOf(id),
+                        twoHoursAgo,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+                        1,
+                        null,
+                        null))
+            .toList();
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    // when
+    final var resultLimit20 = repository.getProcessInstancesNextBatch(20);
+    final var resultLimit5 = repository.getProcessInstancesNextBatch(5);
+
+    // then - the size used should limit the number of returned documents
+    assertThat(resultLimit20).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(resultLimit5).succeedsWithin(Duration.ofSeconds(30));
+    final var batch20 = resultLimit20.join();
+    assertThat(batch20.processInstanceKeys()).hasSize(10);
+    final var batch5 = resultLimit5.join();
+    assertThat(batch5.processInstanceKeys()).hasSize(5);
   }
 
   @Test
@@ -550,7 +588,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
 
     // then
     // PI mode: Should select all 3 (since end date matches).
@@ -579,7 +617,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
 
     // then
     // Legacy -> "10"
@@ -609,7 +647,7 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when
-    final var batch = repository.getProcessInstancesNextBatch().join();
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
 
     // then
     assertThat(batch.processInstanceKeys()).isEmpty();
@@ -1208,7 +1246,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // when
     // ensure PI batch is processed first to assert that both dates are maintained separately
-    final var piBatch = repository.getProcessInstancesNextBatch().join();
+    final var piBatch = repository.getProcessInstancesNextBatch(100).join();
     final var batchOperationBatch = repository.getBatchOperationsNextBatch().join();
 
     // then
@@ -1496,6 +1534,11 @@ final class OpenSearchArchiverRepositoryIT {
   private OpenSearchTransport createTransport() {
     try {
       return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+          .setHttpClientConfigCallback(
+              httpClientBuilder -> {
+                httpClientBuilder.disableContentCompression();
+                return httpClientBuilder;
+              })
           .setMapper(new JacksonJsonpMapper())
           .build();
     } catch (final Exception e) {

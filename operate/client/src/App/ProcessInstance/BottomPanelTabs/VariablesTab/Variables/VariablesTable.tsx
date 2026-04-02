@@ -83,23 +83,20 @@ const VariablesTable: React.FC<Props> = ({
                 {value}
               </VariableValue>
             ),
-            width: '55%',
+            width: 'auto',
           },
           {
             cellContent: (
               <Operations>
+                <ViewFullVariableButton
+                  variableName={name}
+                  variableKey={variableKey}
+                  variableValue={value}
+                  mode={isEditMode(name) ? 'edit' : 'show'}
+                />
                 {(() => {
-                  if (isModificationModeEnabled) {
+                  if (isModificationModeEnabled || !isProcessInstanceRunning) {
                     return null;
-                  }
-
-                  if (!isProcessInstanceRunning) {
-                    return (
-                      <ViewFullVariableButton
-                        variableName={name}
-                        variableKey={variableKey}
-                      />
-                    );
                   }
 
                   if (initialValues?.name === name) {
@@ -127,7 +124,7 @@ const VariablesTable: React.FC<Props> = ({
                 })()}
               </Operations>
             ),
-            width: '10%',
+            width: '120px',
           },
         ],
       })),
@@ -138,8 +135,8 @@ const VariablesTable: React.FC<Props> = ({
       dataTestId="variables-list"
       headerColumns={[
         {cellContent: 'Name', width: '35%'},
-        {cellContent: 'Value', width: '55%'},
-        {cellContent: '', width: '10%'},
+        {cellContent: 'Value', width: 'auto'},
+        {cellContent: '', width: '120px'},
       ]}
       headerSize="sm"
       verticalCellPadding="var(--cds-spacing-02)"
@@ -174,18 +171,26 @@ const VariablesTable: React.FC<Props> = ({
                             scopeId={scopeId}
                           />
                         ),
-                        width: '55%',
+                        width: 'auto',
                       },
                       {
                         cellContent: (
-                          <Operation
-                            variableName={variableName}
-                            onRemove={() => {
-                              fields.remove(index);
-                            }}
-                          />
+                          <Operations>
+                            <ViewFullVariableButton
+                              shouldSubmitOnApply={false}
+                              mode="add"
+                              scopeId={scopeId}
+                              variableName={variableName}
+                            />
+                            <Operation
+                              variableName={variableName}
+                              onRemove={() => {
+                                fields.remove(index);
+                              }}
+                            />
+                          </Operations>
                         ),
-                        width: '10%',
+                        width: '120px',
                       },
                     ],
                   }))}

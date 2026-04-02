@@ -42,6 +42,11 @@ public class OSClient implements DocumentClient {
     try {
       transport =
           ApacheHttpClient5TransportBuilder.builder(HttpHost.create(url))
+              .setHttpClientConfigCallback(
+                  httpClientBuilder -> {
+                    httpClientBuilder.disableContentCompression();
+                    return httpClientBuilder;
+                  })
               .setMapper(new JacksonJsonpMapper())
               .build();
       opensearchClient = new OpenSearchClient(transport);

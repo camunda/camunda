@@ -19,7 +19,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {LocationLog} from 'common/testing/LocationLog';
 import * as auditLogMocks from 'v2/mocks/auditLogs';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {vi} from 'vitest';
 
 function getRouter(initialEntry: string = '/0/history') {

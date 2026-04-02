@@ -82,7 +82,7 @@ class JudgeConfigResolverTest {
   @Test
   void shouldMatchSingleBeanByNameWhenProviderConfigured() {
     when(applicationContext.getBeansOfType(ChatModelAdapter.class))
-        .thenReturn(Map.of("my-adapter", ADAPTER_A));
+        .thenReturn(Map.of("judge.my-adapter", ADAPTER_A));
 
     final JudgeConfiguration config = new JudgeConfiguration();
     config.getChatModel().setProvider("my-adapter");
@@ -112,7 +112,7 @@ class JudgeConfigResolverTest {
   @Test
   void shouldSelectBeanByProviderName() {
     when(applicationContext.getBeansOfType(ChatModelAdapter.class))
-        .thenReturn(Map.of("my-custom", ADAPTER_A, "another", ADAPTER_B));
+        .thenReturn(Map.of("judge.my-custom", ADAPTER_A, "judge.another", ADAPTER_B));
 
     final JudgeConfiguration config = new JudgeConfiguration();
     config.getChatModel().setProvider("my-custom");

@@ -66,7 +66,7 @@ services:
       - identity-network
   keycloak:
     container_name: keycloak
-    image: camunda/keycloak:quay-26@sha256:1e03306a2385f678dc034e1923564d5419a4d03534648663dba5a914fab3b236
+    image: camunda/keycloak:quay-26@sha256:72f3630dfb4cee43107327ab4ce6fe812be06fea7f5f4b047c3aba09c7017390
     command: [ start ]
     ports:
       - "18080:8080"

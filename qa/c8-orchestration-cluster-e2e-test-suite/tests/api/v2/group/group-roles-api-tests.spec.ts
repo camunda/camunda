@@ -13,6 +13,7 @@ import {
   assertUnauthorizedRequest,
   assertPaginatedRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {ROLE_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
 import {
   assignRoleToGroups,
@@ -61,6 +62,14 @@ test.describe.parallel('Group Roles API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 2,
         itemsLengthEqualTo: 2,
@@ -101,6 +110,14 @@ test.describe.parallel('Group Roles API Tests', () => {
       },
     );
 
+    await validateResponse(
+      {
+        path: '/groups/{groupId}/roles/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -128,6 +145,14 @@ test.describe.parallel('Group Roles API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 1,
         itemsLengthEqualTo: 1,
@@ -160,6 +185,14 @@ test.describe.parallel('Group Roles API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 1,
         itemsLengthEqualTo: 1,
@@ -194,6 +227,14 @@ test.describe.parallel('Group Roles API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 1,
         itemsLengthEqualTo: 1,

@@ -170,6 +170,7 @@ import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
 import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
+import io.camunda.client.api.search.request.UserTaskEffectiveVariableSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -2212,6 +2213,28 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the user task variable search request
    */
   UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
+
+  /**
+   * Executes a search request to query effective variables related to a user task. Returns
+   * deduplicated variables where the innermost scope wins when the same variable name exists at
+   * multiple scope levels.
+   *
+   * <pre>
+   *   long userTaskKey = ...;
+   *
+   *  camundaClient
+   *   .newUserTaskEffectiveVariableSearchRequest(userTaskKey)
+   *   .sort((s) -> s.value().asc())
+   *   .page((p) -> p.limit(100))
+   *   .withFullValues()
+   *   .send();
+   * </pre>
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the user task effective variable search request
+   */
+  UserTaskEffectiveVariableSearchRequest newUserTaskEffectiveVariableSearchRequest(
+      long userTaskKey);
 
   /**
    * <strong>Experimental: This method is under development. The respective API on compatible

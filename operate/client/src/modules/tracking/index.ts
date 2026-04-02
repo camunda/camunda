@@ -10,14 +10,11 @@ import type {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import type {
-  InstanceEntityState,
-  OperationEntityType,
-} from 'modules/types/operate';
-import type {
   BatchOperationState,
   BatchOperationType,
   DecisionInstanceState,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+  ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 
 const EVENT_PREFIX = 'operate:';
@@ -61,11 +58,11 @@ type Events =
     }
   | {
       eventName: 'batch-operation';
-      operationType: OperationEntityType;
+      operationType: BatchOperationType;
     }
   | {
       eventName: 'single-operation';
-      operationType: OperationEntityType;
+      operationType: BatchOperationType;
       source: 'instances-list' | 'incident-table' | 'instance-header';
     }
   | {
@@ -93,7 +90,7 @@ type Events =
     }
   | {
       eventName: 'process-instance-details-loaded';
-      state: InstanceEntityState;
+      state: ProcessInstanceState;
     }
   | {
       eventName: 'decision-instance-details-loaded';

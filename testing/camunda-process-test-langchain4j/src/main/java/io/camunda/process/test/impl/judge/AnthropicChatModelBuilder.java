@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
@@ -24,19 +24,31 @@ import org.slf4j.LoggerFactory;
 
 final class AnthropicChatModelBuilder {
 
+  public static final String ANTHROPIC = "anthropic";
   private static final Logger LOG = LoggerFactory.getLogger(AnthropicChatModelBuilder.class);
 
   private AnthropicChatModelBuilder() {}
 
   static ChatModel build(final BaseProviderConfig.AnthropicConfig config) {
     LOG.debug("Building Anthropic chat model");
-
-    final String model = require(config.getModel(), "model", "anthropic");
-    final String apiKey = require(config.getApiKey(), "apiKey", "anthropic");
-
-    final ChatModel chatModel =
-        AnthropicChatModel.builder().apiKey(apiKey).modelName(model).build();
-    LOG.debug("Successfully built Anthropic chat model with model '{}'", model);
+    final ChatModel chatModel = build(config, AnthropicChatModel.builder());
+    LOG.debug("Successfully built Anthropic chat model with model '{}'", config.getModel());
     return chatModel;
+  }
+
+  static ChatModel build(
+      final BaseProviderConfig.AnthropicConfig config,
+      final AnthropicChatModel.AnthropicChatModelBuilder builder) {
+    builder.apiKey(require(config.getApiKey(), "apiKey", ANTHROPIC));
+    builder.modelName(require(config.getModel(), "model", ANTHROPIC));
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      builder.temperature(config.getTemperature());
+    }
+    return builder.build();
   }
 }

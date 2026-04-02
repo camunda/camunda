@@ -20,5 +20,5 @@ jobs:
     uses: ./.github/workflows/zeebe-qa-testbench.yaml
     with:
       branch: ${{ github.event.client_payload.branch }}
-      generation: Zeebe SNAPSHOT
+      generation: Camunda SNAPSHOT
     secrets: inherit

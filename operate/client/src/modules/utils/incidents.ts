@@ -9,7 +9,7 @@
 import type {
   IncidentErrorType,
   QueryIncidentsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 
 const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {

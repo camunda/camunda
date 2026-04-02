@@ -60,6 +60,7 @@ class DecisionInstanceServiceTest {
   private DecisionInstanceServices services;
   private DecisionInstanceSearchClient client;
   private BrokerClient brokerClient;
+  private SecurityContextProvider securityContextProvider;
   private final CamundaAuthentication authentication = CamundaAuthentication.none();
 
   @BeforeEach
@@ -67,12 +68,13 @@ class DecisionInstanceServiceTest {
     final ApiServicesExecutorProvider executorProvider = mock(ApiServicesExecutorProvider.class);
     client = mock(DecisionInstanceSearchClient.class);
     brokerClient = mock(BrokerClient.class);
+    securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new DecisionInstanceServices(
             brokerClient,
-            mock(SecurityContextProvider.class),
+            securityContextProvider,
             client,
             executorProvider,
             mock(BrokerRequestAuthorizationConverter.class));
@@ -207,6 +209,22 @@ class DecisionInstanceServiceTest {
   }
 
   @Test
+  void shouldReturn404WhenDecisionInstanceDoesNotExist() {
+    // given
+    final var result = mock(SearchQueryResult.class);
+    when(result.items()).thenReturn(List.of());
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class))).thenReturn(result);
+
+    // when/then
+    assertThatThrownBy(
+            () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
+        .isInstanceOf(ServiceException.class)
+        .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found")
+        .extracting(e -> ((ServiceException) e).getStatus())
+        .isEqualTo(Status.NOT_FOUND);
+  }
+
+  @Test
   void shouldNotDeleteDecisionInstance() {
     // given
     when(client.searchDecisionInstances(any(DecisionInstanceQuery.class)))
@@ -220,6 +238,44 @@ class DecisionInstanceServiceTest {
             () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
+  }
+
+  @Test
+  void shouldUseAnonymousAuthenticationForExistenceCheckWhenDeleting() {
+    // given
+    final var decisionInstanceKey = 123L;
+    final var tenantId = "tenantId";
+
+    final var entity = mock(DecisionInstanceEntity.class);
+    when(entity.decisionDefinitionId()).thenReturn(DECISION_DEFINITION_ID);
+    when(entity.tenantId()).thenReturn(tenantId);
+
+    final var result = mock(SearchQueryResult.class);
+    when(result.items()).thenReturn(List.of(entity));
+    when(client.searchDecisionInstances(any(DecisionInstanceQuery.class))).thenReturn(result);
+
+    final var record =
+        new HistoryDeletionRecord()
+            .setResourceKey(decisionInstanceKey)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setDecisionDefinitionId(DECISION_DEFINITION_ID)
+            .setTenantId(tenantId);
+    when(brokerClient.sendRequest(any(BrokerDeleteHistoryRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
+
+    // then - verify that anonymous authentication was used for the existence check
+    final var authCaptor = ArgumentCaptor.forClass(CamundaAuthentication.class);
+    verify(securityContextProvider).provideSecurityContext(authCaptor.capture());
+    assertThat(authCaptor.getValue().isAnonymous()).isTrue();
+
+    // Also verify the query was for the correct decision instance key
+    final var queryCaptor = ArgumentCaptor.forClass(DecisionInstanceQuery.class);
+    verify(client).searchDecisionInstances(queryCaptor.capture());
+    final var capturedQuery = queryCaptor.getValue();
+    assertThat(capturedQuery.filter().decisionInstanceKeys()).containsExactly(decisionInstanceKey);
   }
 
   @Test

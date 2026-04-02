@@ -15,11 +15,14 @@
  */
 package io.camunda.zeebe.model.bpmn.validation;
 
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ATTACHED_TO_REF;
 import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractBpmnModelElementBuilder;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTest {
@@ -89,7 +92,27 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .endEvent("end")
             .done(),
         singletonList(expect("boundary", "Cannot have incoming sequence flows"))
+      },
+      {
+        createBoundaryEventWithNonExistingAttachedTo(),
+        singletonList(expect("boundary", "Must be attached to an activity"))
       }
     };
+  }
+
+  private static BpmnModelInstance createBoundaryEventWithNonExistingAttachedTo() {
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .boundaryEvent("boundary")
+            .timerWithDuration("PT1S")
+            .endEvent("end")
+            .done();
+
+    final BoundaryEvent boundary = model.getModelElementById("boundary");
+    boundary.setAttributeValue(BPMN_ATTRIBUTE_ATTACHED_TO_REF, "no_such_activity", false);
+
+    return model;
   }
 }

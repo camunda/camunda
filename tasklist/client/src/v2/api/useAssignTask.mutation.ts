@@ -8,7 +8,7 @@
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
@@ -51,7 +51,7 @@ function useAssignTask() {
           requestErrorSchema.safeParse(error);
 
         if (success && parsedError.variant === 'failed-response') {
-          if (isTaskTimeoutError(await parsedError.response.json())) {
+          if (isTaskTimeoutError(await parsedError.response.clone().json())) {
             const currentTask = client.getQueryData<UserTask>(
               getUseTaskQueryKey(params.userTaskKey),
             );

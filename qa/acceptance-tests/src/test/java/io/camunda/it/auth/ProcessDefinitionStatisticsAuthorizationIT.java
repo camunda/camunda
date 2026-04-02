@@ -29,9 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-// TODO: Re-enable for RDBMS when authorization checks are implemented
-// see https://github.com/camunda/camunda/issues/48780
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class ProcessDefinitionStatisticsAuthorizationIT {
 

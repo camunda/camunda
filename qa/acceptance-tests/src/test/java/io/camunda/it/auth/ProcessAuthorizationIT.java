@@ -42,7 +42,7 @@ class ProcessAuthorizationIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
-  private static final String PROCESS_DEFINITION_ID_WITH_START_FORM = "Process_11hxie4";
+  private static final String PROCESS_DEFINITION_ID_WITH_START_FORM = "processStartForm";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String START_FORM_RESTRICTED = "startFormUser";
@@ -74,7 +74,7 @@ class ProcessAuthorizationIT {
           "password",
           List.of(
               new Permissions(
-                  PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("Process_11hxie4"))));
+                  PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("processStartForm"))));
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {

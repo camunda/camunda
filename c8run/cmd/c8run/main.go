@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,6 +20,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/start"
+	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -193,6 +193,11 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 			return err
 		}
 		err = health.PrintStatus(settings)
+		if err == nil {
+			if markerErr := startupurl.MarkSeen(settings.StartupMarkerPath); markerErr != nil {
+				log.Warn().Err(markerErr).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+			}
+		}
 	case "stop":
 		err = runDockerCommand(composeExtractedFolder, "down")
 	default:
@@ -207,7 +212,7 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
-const docsStartupURL = "https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/#work-with-camunda-8-run"
+const docsStartupURL = startupurl.DocsURL
 
 func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, error) {
 	var (
@@ -258,7 +263,6 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", true, "Skip managing Elasticsearch (default). Set to false (and configure the application) to run with Elasticsearch instead of H2.")
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
@@ -266,52 +270,12 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	return startFlagSet
 }
 
-func createOperateUrl(settings *types.C8RunSettings) string {
-	return fmt.Sprintf("%s://localhost:%s/operate", settings.GetProtocol(), strconv.Itoa(settings.Port))
-}
-
 func createDefaultStartupUrl(settings *types.C8RunSettings, camundaVersion string) string {
-	if shouldUseDocsStartup(camundaVersion) {
-		return docsStartupURL
-	}
-	return createOperateUrl(settings)
-}
-
-func shouldUseDocsStartup(camundaVersion string) bool {
-	major, minor, ok := parseMajorMinor(camundaVersion)
-	if !ok {
-		return false
-	}
-	if major > 8 {
-		return true
-	}
-	return major == 8 && minor >= 9
-}
-
-func parseMajorMinor(version string) (int, int, bool) {
-	version = strings.TrimSpace(version)
-	if version == "" {
-		return 0, 0, false
-	}
-	base := strings.SplitN(version, "-", 2)[0]
-	parts := strings.Split(base, ".")
-	if len(parts) < 2 {
-		return 0, 0, false
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, false
-	}
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, false
-	}
-	return major, minor, true
+	return startupurl.Default(*settings, camundaVersion)
 }
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
-	stopFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
 	stopFlagSet.BoolVar(&settings.Docker, "docker", false, "Stop docker-compose distribution of camunda.")
 	return stopFlagSet
 }
@@ -322,12 +286,10 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		fmt.Println(err.Error())
 	}
 
-	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
 
-	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.process")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.process")
 	camundaPidPath := filepath.Join(baseDir, "camunda.process")
 
@@ -338,6 +300,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
+	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") && settings.ResolvedConfigPath != "" {
 		var vendor string
@@ -398,10 +361,6 @@ func initialize(baseCommand string, baseDir string) *types.State {
 			Version: connectorsVersion,
 			PidPath: connectorsPidPath,
 		},
-		Elasticsearch: types.Process{
-			Version: elasticsearchVersion,
-			PidPath: elasticsearchPidPath,
-		},
 	}
 
 	return &types.State{
@@ -433,19 +392,7 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 
 	settings.SecondaryStorageType = strings.TrimSpace(secondaryType)
 	if settings.SecondaryStorageType == "" {
-		// Nothing configured, keep whatever defaults were provided via CLI/env
-		return
-	}
-
-	// Any non-elasticsearch backend means we keep Elasticsearch disabled (default true)
-	if !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
-		settings.DisableElasticsearch = true
-		event := log.Info().
-			Str("secondaryStorage.type", settings.SecondaryStorageType)
-		if configSource != "" {
-			event = event.Str("config", configSource)
-		}
-		event.Msg("Secondary storage type is not Elasticsearch; Elasticsearch processes will be skipped")
+		// Nothing configured, keep the distribution defaults.
 		return
 	}
 
@@ -454,7 +401,7 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 	if configSource != "" {
 		event = event.Str("config", configSource)
 	}
-	event.Msg("Secondary storage type is Elasticsearch; keeping default behavior")
+	event.Msg("Resolved secondary storage type from configuration")
 }
 
 func prepareDockerComposeConfig(baseDir, composeFolder, resolvedConfigPath string) (string, error) {

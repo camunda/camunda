@@ -423,6 +423,8 @@ paths:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1audit-logs~1search'
   /user-tasks/{userTaskKey}/completion:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1completion'
+  /user-tasks/{userTaskKey}/effective-variables/search:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1effective-variables~1search'
   /user-tasks/{userTaskKey}/form:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1form'
   /user-tasks/{userTaskKey}/variables/search:

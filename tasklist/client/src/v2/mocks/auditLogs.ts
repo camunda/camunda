@@ -9,7 +9,7 @@
 import type {
   QueryUserTaskAuditLogsResponseBody,
   AuditLog,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {uniqueId} from './utils';
 
 const auditLog = (customFields: Partial<AuditLog> = {}): AuditLog => ({

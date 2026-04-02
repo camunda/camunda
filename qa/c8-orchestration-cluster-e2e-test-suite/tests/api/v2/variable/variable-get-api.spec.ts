@@ -91,6 +91,7 @@ test.describe.parallel('Get Variable API Tests', () => {
     const localState: Record<string, unknown> = {};
 
     await setupVariableTest(localState, request);
+
     await test.step('Get Variable without auth', async () => {
       const res = await request.get(
         buildUrl(`/variables/${localState['variableKey']}`),

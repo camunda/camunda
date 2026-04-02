@@ -10,10 +10,15 @@ package io.camunda.gateway.mcp.config;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration.CamundaMcpToolAnnotatedBeans;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
+import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
+import io.camunda.zeebe.util.Either;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
+import org.jspecify.annotations.NonNull;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -49,5 +54,22 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
     return new CamundaSyncStatelessMcpToolProvider(
             annotatedBeans.getBeansByAnnotation(CamundaMcpTool.class), jsonSchemaGenerator)
         .getToolSpecifications();
+  }
+
+  @Bean(name = "processesToolRepository")
+  @ConditionalOnMissingBean(name = "processesToolRepository")
+  public ToolRepository processesToolRepository() {
+    return new ToolRepository() {
+      @Override
+      public @NonNull List<Tool> getTools(@NonNull final McpTransportContext transportContext) {
+        return List.of();
+      }
+
+      @Override
+      public @NonNull Either<String, SyncToolSpecification> findTool(
+          @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
+        return Either.left("Not implemented yet");
+      }
+    };
   }
 }

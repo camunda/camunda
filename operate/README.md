@@ -28,6 +28,14 @@ make env-up
 
 The Operate webapp will be running at `localhost:8080/operate`.
 
+Alternative: To run Camunda 8 and skip the frontend build:
+
+```
+make env-up skip-fe-build=true
+```
+
+This speeds up the startup process in case the frontend is already built (e.g. by a separate frontend development environment like vite).
+
 #### Zeebe + Operate + Identity + Elasticsearch
 
 To run Camunda 8 with Zeebe, Operate and Identity profiles, run this command in the operate folder:
@@ -100,18 +108,27 @@ To set this value permanently, update the `vm.max_map_count` setting in /etc/sys
 
 On Operate we use Playwright for visual regression testing. These tests run on every push on every branch through Github Actions.
 
-To run these locally you can follow the steps below:
+On local machines, visual tests use a [Playwright Server in Docker](https://playwright.dev/docs/docker#remote-connection) to ensure consistent rendering across all environments. In CI, the tests run directly inside the Playwright Docker image without using the remote server connection. The Docker container is started and stopped automatically by Playwright.
 
-1. Inside the client folder run `npm run build:visual-regression`
-2. After the build is finished start the Docker container with `npm run start-visual-regression-docker`
-3. Inside the container, run `npm run start:visual-regression &`
-4. After that, run `npm run test:visual`
+### Prerequisites
 
-After the tests run, test report is saved locally in operate/client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
+- Docker or Docker Desktop with host networking enabled (`Settings` → `Resources` → `Network` → `Enable host networking`)
+- Required Playwright image will be automatically pulled by tests. In case of a timeout after 3 minutes, you can run `docker pull mcr.microsoft.com/playwright:v{version in package.json}`.
+
+### Running the tests
+
+Inside the client folder:
+
+1. Build the application: `npm run build:visual-regression`
+2. Run the tests: `npm run test:visual`
+
+Alternatively, you can start Playwright in UI mode by running `npm run test:visual -- --ui`.
 
 ### Updating visual regression screenshots
 
-If you made feature changes and intentionally want to update the UI baseline, follow the steps above, but in step 4 run `npm run test:visual -- --update-snapshots`. Be aware that this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and intentionally want to update the UI baseline, run `npm run test:visual -- --update-snapshots`. Be aware that this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+
+Alternatively, you can configure Playwright's UI mode to update snapshots under "Testing Options" after running `npm run test:visual -- --ui`.
 
 ### Inspecting failures in the CI
 

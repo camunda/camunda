@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Date;
 import javax.sql.DataSource;
@@ -153,6 +154,100 @@ class LiquibaseSchemaManagerTest {
     schemaManager.releaseStaleLockIfPresent();
   }
 
+  @Test
+  void shouldRetryMigrationWhenDeadlockOccursAndThenSucceed() throws Exception {
+    // given
+    final var schemaManager =
+        new RetryableMigrationSchemaManager(
+            1,
+            new RuntimeException(
+                "liquibase migration failed",
+                new SQLException(
+                    "Transaction was deadlocked on lock resources and has been chosen as the deadlock victim.",
+                    "40001",
+                    1205)));
+
+    // when
+    schemaManager.afterPropertiesSet();
+
+    // then
+    assertThat(schemaManager.isInitialized()).isTrue();
+    assertThat(schemaManager.attempts).isEqualTo(2);
+    assertThat(schemaManager.waits).isEqualTo(1);
+  }
+
+  @Test
+  void shouldFailWhenDeadlockRetriesAreExhausted() {
+    // given
+    final var schemaManager =
+        new RetryableMigrationSchemaManager(
+            3,
+            new RuntimeException(
+                "liquibase migration failed", new SQLException("deadlock victim", "40001", 1205)));
+
+    // when / then
+    assertThatThrownBy(schemaManager::afterPropertiesSet)
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("liquibase migration failed");
+
+    assertThat(schemaManager.isInitialized()).isFalse();
+    assertThat(schemaManager.attempts).isEqualTo(3);
+    assertThat(schemaManager.waits).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotRetryWhenMigrationFailureIsNotDeadlock() {
+    // given
+    final var schemaManager =
+        new RetryableMigrationSchemaManager(1, new RuntimeException("non-retryable failure"));
+
+    // when / then
+    assertThatThrownBy(schemaManager::afterPropertiesSet)
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("non-retryable failure");
+
+    assertThat(schemaManager.isInitialized()).isFalse();
+    assertThat(schemaManager.attempts).isEqualTo(1);
+    assertThat(schemaManager.waits).isZero();
+  }
+
+  @Test
+  void shouldRetryWhenSqlStateIndicatesRetryableFailure() throws Exception {
+    // given
+    final var schemaManager =
+        new RetryableMigrationSchemaManager(
+            1,
+            new RuntimeException(
+                "liquibase migration failed", new SQLException("transient conflict", "40001", 0)));
+
+    // when
+    schemaManager.afterPropertiesSet();
+
+    // then
+    assertThat(schemaManager.isInitialized()).isTrue();
+    assertThat(schemaManager.attempts).isEqualTo(2);
+    assertThat(schemaManager.waits).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRetryWhenSqlErrorCodeIndicatesRetryableFailure() throws Exception {
+    // given
+    final var schemaManager =
+        new RetryableMigrationSchemaManager(
+            1,
+            new RuntimeException(
+                "liquibase migration failed",
+                new SQLException("generic db failure", "S0001", 1205)));
+
+    // when
+    schemaManager.afterPropertiesSet();
+
+    // then
+    assertThat(schemaManager.isInitialized()).isTrue();
+    assertThat(schemaManager.attempts).isEqualTo(2);
+    assertThat(schemaManager.waits).isEqualTo(1);
+  }
+
   /**
    * Test implementation that overrides the parent's afterPropertiesSet to avoid actual Liquibase
    * initialization. Designed for extension by test subclasses (e.g. {@code TestableSchemaManager}).
@@ -167,6 +262,7 @@ class LiquibaseSchemaManagerTest {
       setInitialized();
     }
 
+    @Override
     protected void performMigration() {
       // No-op for testing, can be overridden in spy
     }
@@ -210,6 +306,32 @@ class LiquibaseSchemaManagerTest {
     @Override
     protected LockService getLockService(final Database database) {
       return mockLockService;
+    }
+  }
+
+  private static final class RetryableMigrationSchemaManager extends LiquibaseSchemaManager {
+    private int remainingFailures;
+    private final RuntimeException failure;
+    private int attempts;
+    private int waits;
+
+    private RetryableMigrationSchemaManager(
+        final int failuresBeforeSuccess, final RuntimeException failure) {
+      remainingFailures = failuresBeforeSuccess;
+      this.failure = failure;
+    }
+
+    @Override
+    protected void performMigration() {
+      attempts++;
+      if (remainingFailures-- > 0) {
+        throw failure;
+      }
+    }
+
+    @Override
+    protected void waitBeforeRetry(final Duration retryBackoff) {
+      waits++;
     }
   }
 }

@@ -124,10 +124,6 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>org.postgresql:postgresql</dep>
                 </ignoredUnusedDeclaredDependencies>
-                <ignoredNonTestScopedDependencies>
-                  <dep>org.elasticsearch:elasticsearch-x-content</dep>
-                  <dep>org.apache.lucene:lucene-core</dep>
-                </ignoredNonTestScopedDependencies>
               </configuration>
             </execution>
           </executions>

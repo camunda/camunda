@@ -20,6 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.judge.BaseProviderConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig.AzureOpenAiConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig.OpenAiCompatibleConfig;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
@@ -98,6 +102,7 @@ public class JudgePropertiesTest {
     properties.setProperty("judge.chatModel.provider", "openai");
     properties.setProperty("judge.chatModel.model", "gpt-4o");
     properties.setProperty("judge.chatModel.apiKey", "test-key");
+    properties.setProperty("judge.chatModel.timeout", "PT30S");
 
     // when
     final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
@@ -106,6 +111,8 @@ public class JudgePropertiesTest {
     assertThat(config).isInstanceOf(BaseProviderConfig.OpenAiConfig.class);
     assertThat(config.getProvider()).isEqualTo("openai");
     assertThat(config.getModel()).isEqualTo("gpt-4o");
+    assertThat(((BaseProviderConfig.OpenAiConfig) config).getTimeout())
+        .isEqualTo(Duration.ofSeconds(30));
   }
 
   @Test
@@ -158,6 +165,116 @@ public class JudgePropertiesTest {
   }
 
   @Test
+  void shouldCreateAzureOpenAiProviderConfig() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "azure-openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.endpoint", "https://my-resource.openai.azure.com/");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+    properties.setProperty("judge.chatModel.timeout", "PT30S");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isInstanceOf(AzureOpenAiConfig.class);
+    assertThat(config.getProvider()).isEqualTo("azure-openai");
+    assertThat(config.getModel()).isEqualTo("gpt-4o");
+    final AzureOpenAiConfig azureConfig = (AzureOpenAiConfig) config;
+    assertThat(azureConfig.getEndpoint()).isEqualTo("https://my-resource.openai.azure.com/");
+    assertThat(azureConfig.getApiKey()).isEqualTo("test-key");
+    assertThat(azureConfig.getTimeout()).isEqualTo(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldCreateAzureOpenAiProviderConfigWithoutApiKey() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "azure-openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.endpoint", "https://my-resource.openai.azure.com/");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isInstanceOf(AzureOpenAiConfig.class);
+    final AzureOpenAiConfig azureConfig = (AzureOpenAiConfig) config;
+    assertThat(azureConfig.getApiKey()).isNull();
+  }
+
+  @Test
+  void shouldParseTemperature() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+    properties.setProperty("judge.chatModel.temperature", "0.7");
+
+    // when
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
+    // then
+    assertThat(config.getTemperature()).isEqualTo(0.7);
+  }
+
+  @Test
+  void shouldReturnNullTemperatureWhenNotConfigured() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+
+    // when
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config.getTemperature()).isNull();
+  }
+
+  @Test
+  void shouldRejectInvalidTemperature() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.temperature", "not-a-number");
+
+    // when / then
+    assertThatThrownBy(() -> new JudgeProperties(properties))
+        .isInstanceOf(NumberFormatException.class);
+  }
+
+  @Test
+  void shouldReturnNullTimeoutWhenNotConfigured() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+
+    // when
+    final BaseProviderConfig config =
+        (BaseProviderConfig) new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config.getTimeout()).isNull();
+  }
+
+  @Test
+  void shouldRejectInvalidTimeout() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.timeout", "1ms");
+
+    // when/then
+    assertThatThrownBy(() -> new JudgeProperties(properties))
+        .isInstanceOf(DateTimeParseException.class);
+  }
+
+  @Test
   void shouldTreatPlaceholderAsAbsent() {
     // given
     final Properties properties = new Properties();
@@ -172,5 +289,29 @@ public class JudgePropertiesTest {
     assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
     assertThat(judgeProperties.getCustomPrompt()).isNull();
     assertThat(judgeProperties.hasProviderConfigured()).isFalse();
+  }
+
+  @Test
+  void shouldParseHeaders() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai-compatible");
+    properties.setProperty("judge.chatModel.model", "llama3");
+    properties.setProperty("judge.chatModel.baseUrl", "http://localhost:11434/v1");
+    properties.setProperty("judge.chatModel.headers.X-Test-Header1", "value1");
+    properties.setProperty("judge.chatModel.headers.X-Test-Header2", "value2");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isInstanceOf(OpenAiCompatibleConfig.class);
+    final OpenAiCompatibleConfig openAiCompatibleConfig = (OpenAiCompatibleConfig) config;
+
+    assertThat(openAiCompatibleConfig.getHeaders()).isNotNull();
+    assertThat(openAiCompatibleConfig.getHeaders())
+        .containsEntry("X-Test-Header1", "value1")
+        .containsEntry("X-Test-Header2", "value2")
+        .hasSize(2);
   }
 }

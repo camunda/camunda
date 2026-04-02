@@ -46,6 +46,7 @@ test.describe.parallel('Get Authorization API', () => {
     };
     let userAuthorizationKey: string = '';
     let originalUserAuthorization: Authorization = {} as Authorization;
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {
@@ -98,6 +99,7 @@ test.describe.parallel('Get Authorization API', () => {
 
   test('Get existing Authorization - not found', async ({request}) => {
     const nonExistentAuthorizationKey = '9999999999999999';
+
     await test.step('Get Authorization and assert results', async () => {
       await expect(async () => {
         const res = await request.get(
@@ -122,6 +124,7 @@ test.describe.parallel('Get Authorization API', () => {
       password: string;
     };
     let userAuthorizationKey: string = '';
+
     await test.step('Setup - Create user for authorization tests', async () => {
       user = await createUser(request);
       cleanups.push(async (request) => {

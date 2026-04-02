@@ -11,7 +11,7 @@ import type {Route} from '@playwright/test';
 import type {
   GetDecisionInstanceResponseBody,
   QueryDecisionInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const mockEvaluatedDecisionInstance: GetDecisionInstanceResponseBody = {
   decisionEvaluationInstanceKey: '2251799813830820-1',

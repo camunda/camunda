@@ -1,10 +1,13 @@
-# description: This workflow deploys a load test with a camunda cluster under test.
-# We use this workflow to start ad-hoc load tests or weekly medic load tests.
-# The health of the cluster and results of the load tests are monitored by Core team's regularly.
-# https://dashboard.benchmark.camunda.cloud/
-# called by: camunda-weekly-load-tests.yml, camunda-pr-load-test.yaml
+# description: Central reusable workflow for deploying load tests. All load test creation
+#              routes through this workflow. Builds Docker images (or reuses existing ones),
+#              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
+# called-by: camunda-daily-load-tests.yml, camunda-weekly-load-tests.yml,
+#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml,
+#            zeebe-update-long-running-migrating-benchmark.yaml
+# also: triggerable manually via workflow_dispatch for ad-hoc load tests
+# monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
-# owner: camunda/orchestration-cluster-team
+# owner: @camunda/reliability-testing
 #
 # Infos from Infra:
 # - Using the infra benchmark prod cluster requires to use Teleport to authenticate.
@@ -40,16 +43,15 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. When not set to "custom", this will override the load-test-load input.'
+        description: 'Choose the variant of workload to use for the load test. When not set, it will default to max'
         required: false
         type: choice
         options:
-          - custom
           - latency
           - realistic
           - typical
           - max
-        default: custom
+        default: max
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
         required: false
@@ -162,7 +164,7 @@ on:
 env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
-  HELM_CHART: camunda-platform-8.9
+  HELM_CHART: camunda-platform-8.10
   # Namespaces MUST start with c8 due to access policy
   NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
@@ -182,6 +184,11 @@ jobs:
     outputs:
       image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
     steps:
+      - name: Validate official images require explicit tag
+        if: ${{ inputs.use-official-docker-images == true && inputs.reuse-tag == '' }}
+        run: |
+          echo "::error::Invalid input combination: 'use-official-docker-images' is enabled but 'reuse-tag' is empty. Official Camunda Docker images require an explicit tag (e.g., '8.9.0-rc2') to pull from Docker Hub. Either provide a 'reuse-tag' or disable 'use-official-docker-images'."
+          exit 1
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
@@ -243,14 +250,17 @@ jobs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
       platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
       - name: Calculate configuration based on scenario
         id: config
         run: |
           scenario="${{ inputs.scenario }}"
 
-          # Default to custom scenario if not provided
+          # Default to max scenario if not provided
           if [[ -z "$scenario" ]]; then
-            scenario="custom"
+            scenario="max"
           fi
 
           case "$scenario" in
@@ -276,11 +286,6 @@ jobs:
               # so this override works regardless of which secondary storage type is selected.
               # The file is copied to the local namespace setup dir by newLoadTest.sh (copies all ../*.yaml).
               echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
-              ;;
-            custom)
-              # Use the provided load-test-load inputs
-              echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
-              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -442,7 +447,8 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-            version: 17.2.2
+            proxy: camunda.teleport.sh:443
+            version: auto
 
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2
@@ -473,10 +479,10 @@ jobs:
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
                             --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
-          # Append load-test-load configuration if not empty
-          if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
-            load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
-          fi
+
+          # Append scenario load-test-load configuration and custom inputs
+          load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
           # Resolve image registry/repository based on whether official images are used
           image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"

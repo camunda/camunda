@@ -17,7 +17,7 @@ import {
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {Paths} from 'modules/Routes';
-import type {BatchOperation as BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {BatchOperation as BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockGetBatchOperation} from 'modules/mocks/api/v2/batchOperations/getBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';

@@ -131,6 +131,29 @@ class BatchOperationChunkCreatedItemHandlerTest {
   }
 
   @Test
+  void shouldUpdateEntityWithNullTypeWhenCacheIsEmpty() {
+    // given
+    when(batchOperationCache.get("42")).thenReturn(Optional.empty());
+
+    final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(42L, 1);
+    final var item = record.getValue().getItems().getFirst();
+    final String expectedId =
+        String.format(ID_PATTERN, record.getValue().getBatchOperationKey(), item.getItemKey());
+
+    // when
+    final var entity = underTest.createNewEntity(expectedId);
+    underTest.updateEntity(record, entity);
+
+    // then
+    verify(batchOperationCache).get("42");
+    assertThat(entity.getId()).isEqualTo(expectedId);
+    assertThat(entity.getType()).isNull();
+    assertThat(entity.getBatchOperationId()).isEqualTo("42");
+    assertThat(entity.getState()).isEqualTo(OperationState.SCHEDULED);
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(item.getProcessInstanceKey());
+  }
+
+  @Test
   void shouldFlushEntity() {
     // given
     final var mockRequest = mock(BatchRequest.class);
@@ -151,6 +174,31 @@ class BatchOperationChunkCreatedItemHandlerTest {
     verify(mockRequest).add(eq(indexName), entityCaptor.capture());
     final var capturedEntity = entityCaptor.getValue();
     assertThat(capturedEntity).isEqualTo(entity);
+  }
+
+  @Test
+  void shouldFlushEntityWithNullType() {
+    // given
+    when(batchOperationCache.get("42")).thenReturn(Optional.empty());
+
+    final var mockRequest = mock(BatchRequest.class);
+    final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(42L, 1);
+    final var item = record.getValue().getItems().getFirst();
+    final String expectedId =
+        String.format(ID_PATTERN, record.getValue().getBatchOperationKey(), item.getItemKey());
+    final var entity = underTest.createNewEntity(expectedId);
+    underTest.updateEntity(record, entity);
+
+    // when
+    underTest.flush(entity, mockRequest);
+
+    // then
+    verify(batchOperationCache).get("42"); // verify cache was consulted
+    final var entityCaptor = ArgumentCaptor.forClass(OperationEntity.class);
+    verify(mockRequest).add(eq(indexName), entityCaptor.capture());
+    final var capturedEntity = entityCaptor.getValue();
+    assertThat(capturedEntity.getType()).isNull();
+    assertThat(capturedEntity.getState()).isEqualTo(OperationState.SCHEDULED);
   }
 
   private Record<BatchOperationChunkRecordValue> aChunkRecordWithMultipleItems(

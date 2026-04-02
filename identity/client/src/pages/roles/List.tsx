@@ -19,7 +19,7 @@ import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/roles/modals/AddModal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
-import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("roles");
@@ -44,7 +44,7 @@ const List: FC = () => {
     <PageHeader
       title={t("roles")}
       linkText={t("roles").toLowerCase()}
-      docsLinkPath="/docs/components/identity/role/"
+      docsLinkPath="/components/admin/role/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -55,7 +55,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"role"}
-          docsLinkPath="/docs/components/identity/role/"
+          docsLinkPath="/components/admin/role/"
           handleClick={addRole}
         />
         {addRoleModal}

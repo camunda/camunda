@@ -23,7 +23,7 @@ import type {
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   Variable,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const queryKeys = {
   variables: {
@@ -97,10 +97,19 @@ const queryKeys = {
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
     search: () => ['incidentsSearch'],
-    processInstanceIncidentsCount: (processInstanceKey: string) => [
+    processInstanceIncidentsCount: (
+      processInstanceKey: string,
+      filter?: QueryProcessInstanceIncidentsRequestBody['filter'],
+    ) => [
       queryKeys.incidents.search()[0],
       'processInstanceIncidentsCount',
       processInstanceKey,
+      filter,
+    ],
+    elementInstanceIncidentsCount: (elementInstanceKey: string) => [
+      queryKeys.incidents.search()[0],
+      'elementInstanceIncidentsCount',
+      elementInstanceKey,
     ],
     searchByProcessInstanceKeyPaginated: (
       processInstanceKey: string,

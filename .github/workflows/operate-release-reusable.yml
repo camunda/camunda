@@ -163,7 +163,7 @@ jobs:
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.4.0
+        uses: octokit/request-action@v3.0.0
         with:
           route: POST /repos/camunda/zeebe/releases
           draft: true
@@ -284,7 +284,7 @@ jobs:
       # Notify: send Slack notification of release failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
           webhook-type: incoming-webhook

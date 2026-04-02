@@ -255,6 +255,36 @@ public class AuthorizationIT {
   }
 
   @Test
+  void shouldReturnNonEmptyPermissionTypesListForAuthorization() {
+    // given - create an authorization
+    final var authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourceId("test-resource")
+            .resourceType(ResourceType.AUTHORIZATION)
+            .permissionTypes(CREATE)
+            .send()
+            .join();
+
+    // when
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .send()
+                      .join();
+
+              // then
+              assertThat(result.getPermissionTypes()).containsExactly(CREATE);
+            });
+  }
+
+  @Test
   void searchShouldReturnAuthorizationsFilteredByOwnerId() {
     // when
     final var ownerId = USER_ID_3;

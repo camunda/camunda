@@ -25,8 +25,11 @@ test.describe('Job Fail API Tests', () => {
     'job_api_process',
     'jobApiProcess',
   );
+
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Fail Job - success', async ({request}) => {
@@ -78,6 +81,7 @@ test.describe('Job Fail API Tests', () => {
 
   test('Fail Job - 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First activate a job', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,

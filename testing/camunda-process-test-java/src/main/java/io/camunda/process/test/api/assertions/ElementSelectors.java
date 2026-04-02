@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 
@@ -39,6 +41,36 @@ public class ElementSelectors {
    */
   public static ElementSelector byName(final String elementName) {
     return new ElementNameSelector(elementName);
+  }
+
+  /**
+   * Select the BPMN element by its type.
+   *
+   * @param elementType the type of the BPMN element.
+   * @return the selector
+   */
+  public static ElementSelector byElementType(final ElementInstanceType elementType) {
+    return new ElementTypeSelector(elementType);
+  }
+
+  /**
+   * Select the BPMN element by its element instance key.
+   *
+   * @param elementInstanceKey the key of the element instance.
+   * @return the selector
+   */
+  public static ElementSelector byElementInstanceKey(final long elementInstanceKey) {
+    return new ElementInstanceKeySelector(elementInstanceKey);
+  }
+
+  /**
+   * Select the BPMN element by its state.
+   *
+   * @param state the state of the element instance.
+   * @return the selector
+   */
+  public static ElementSelector byState(final ElementInstanceState state) {
+    return new ElementStateSelector(state);
   }
 
   private static final class ElementIdSelector implements ElementSelector {
@@ -86,6 +118,78 @@ public class ElementSelectors {
     @Override
     public void applyFilter(final ElementInstanceFilter filter) {
       filter.elementName(elementName);
+    }
+  }
+
+  private static final class ElementTypeSelector implements ElementSelector {
+
+    private final ElementInstanceType elementType;
+
+    private ElementTypeSelector(final ElementInstanceType elementType) {
+      this.elementType = elementType;
+    }
+
+    @Override
+    public boolean test(final ElementInstance element) {
+      return elementType.equals(element.getType());
+    }
+
+    @Override
+    public String describe() {
+      return "type: " + elementType.name();
+    }
+
+    @Override
+    public void applyFilter(final ElementInstanceFilter filter) {
+      filter.type(elementType);
+    }
+  }
+
+  private static final class ElementInstanceKeySelector implements ElementSelector {
+
+    private final long elementInstanceKey;
+
+    private ElementInstanceKeySelector(final long elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+    }
+
+    @Override
+    public boolean test(final ElementInstance element) {
+      return elementInstanceKey == element.getElementInstanceKey();
+    }
+
+    @Override
+    public String describe() {
+      return "element instance key: " + String.valueOf(elementInstanceKey);
+    }
+
+    @Override
+    public void applyFilter(final ElementInstanceFilter filter) {
+      filter.elementInstanceKey(elementInstanceKey);
+    }
+  }
+
+  private static final class ElementStateSelector implements ElementSelector {
+
+    private final ElementInstanceState state;
+
+    private ElementStateSelector(final ElementInstanceState state) {
+      this.state = state;
+    }
+
+    @Override
+    public boolean test(final ElementInstance element) {
+      return state.equals(element.getState());
+    }
+
+    @Override
+    public String describe() {
+      return "state: " + state.name();
+    }
+
+    @Override
+    public void applyFilter(final ElementInstanceFilter filter) {
+      filter.state(state);
     }
   }
 }

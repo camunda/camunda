@@ -7,6 +7,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {Callout as BaseCallout} from '@carbon/react';
 import {EmptyMessage as BaseEmptyMessage} from 'modules/components/EmptyMessage';
 
 type ContentProps = {
@@ -17,6 +18,7 @@ const Content = styled.div<ContentProps>`
   ${({$isInfoBannerVisible}) => {
     return css`
       height: 100%;
+      padding-inline: var(--cds-spacing-05);
       overflow: hidden;
       display: grid;
       grid-template-rows: ${$isInfoBannerVisible ? 'auto 1fr' : '1fr'};
@@ -33,4 +35,8 @@ const EmptyMessage = styled(BaseEmptyMessage)`
   margin: auto;
 `;
 
-export {Content, EmptyMessage};
+const Callout = styled(BaseCallout)`
+  min-width: 100%;
+`;
+
+export {Content, EmptyMessage, Callout};

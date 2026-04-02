@@ -20,7 +20,7 @@ import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import AddModal from "src/pages/groups/modals/AddModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
-import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("groups");
@@ -47,7 +47,7 @@ const List: FC = () => {
     <PageHeader
       title={t("groups")}
       linkText={t("groups").toLowerCase()}
-      docsLinkPath="/docs/components/identity/group/"
+      docsLinkPath="/components/admin/group/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -58,7 +58,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"group"}
-          docsLinkPath="/docs/components/identity/group/"
+          docsLinkPath="/components/admin/group/"
           handleClick={addGroup}
         />
         {addModal}

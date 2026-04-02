@@ -11,6 +11,7 @@ import {APIRequestContext} from 'playwright-core';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {SearchElementInstancesResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {validateResponse} from 'json-body-assertions';
 
 export async function resolveAdHocSubProcessInstanceKey(
   request: APIRequestContext,
@@ -88,6 +89,14 @@ async function searchElementInstanceByFilter(
       },
     });
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/element-instances/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const body = await res.json();
     expect(body.items.length, `Received JSON: ${JSON.stringify(body)}`).toBe(1);
     Object.keys(filter).forEach((filterKey) => {

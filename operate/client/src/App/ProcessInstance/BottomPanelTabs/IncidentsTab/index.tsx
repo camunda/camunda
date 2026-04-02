@@ -10,7 +10,7 @@ import {observer} from 'mobx-react';
 import {
   type Incident,
   type QueryIncidentsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useEnhancedIncidents, useIncidentsSort} from 'modules/hooks/incidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
@@ -26,6 +26,9 @@ import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
+import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
+import {useMemo} from 'react';
 
 const ROW_HEIGHT = 32;
 
@@ -57,7 +60,7 @@ const IncidentsTab: React.FC = observer(() => {
     {
       enabled:
         !isElementInstanceSelected &&
-        processInstance !== undefined &&
+        !!processInstance?.hasIncident &&
         !isFetchingElement,
       enablePeriodicRefetch,
       payload: {sort, filter},
@@ -67,7 +70,7 @@ const IncidentsTab: React.FC = observer(() => {
   const elementInstanceResult = useGetIncidentsByElementInstancePaginated(
     resolvedElementInstanceKey ?? '',
     {
-      enabled: isElementInstanceSelected && processInstance !== undefined,
+      enabled: isElementInstanceSelected && !!processInstance?.hasIncident,
       enablePeriodicRefetch,
       payload: {
         sort,
@@ -90,6 +93,91 @@ const IncidentsTab: React.FC = observer(() => {
 
   const enhancedIncidents = useEnhancedIncidents(incidents);
 
+  const hasDecisionIncidents = useMemo(
+    () =>
+      incidents.some(
+        ({errorType}) =>
+          errorType === 'DECISION_EVALUATION_ERROR' ||
+          errorType === 'CALLED_DECISION_ERROR',
+      ),
+    [incidents],
+  );
+
+  const {data: decisionInstancesResult} = useDecisionInstancesSearch(
+    {filter: {processInstanceKey: processInstanceId}},
+    {enabled: hasDecisionIncidents},
+  );
+
+  const decisionInstancesByElementKey = useMemo(
+    () =>
+      (decisionInstancesResult?.items ?? []).reduce<
+        Record<
+          string,
+          {decisionInstanceKey: string; decisionDefinitionName: string}
+        >
+      >((acc, instance) => {
+        acc[instance.elementInstanceKey] = {
+          decisionInstanceKey: instance.decisionEvaluationInstanceKey,
+          decisionDefinitionName: instance.decisionDefinitionName,
+        };
+        return acc;
+      }, {}),
+    [decisionInstancesResult],
+  );
+
+  const hasIncidentFromChild =
+    isElementInstanceSelected &&
+    !!resolvedElementInstance?.hasIncident &&
+    totalIncidentsCount === 0;
+
+  const resolvedElementType = resolvedElementInstance?.type;
+
+  const {data: calledProcessInstances} = useProcessInstancesSearch(
+    {
+      filter: {
+        parentElementInstanceKey: resolvedElementInstanceKey ?? '',
+        hasIncident: true,
+      },
+    },
+    {
+      enabled: hasIncidentFromChild && resolvedElementType === 'CALL_ACTIVITY',
+    },
+  );
+
+  const {data: calledDecisionInstances} = useDecisionInstancesSearch(
+    {
+      filter: {
+        elementInstanceKey: resolvedElementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled:
+        hasIncidentFromChild && resolvedElementType === 'BUSINESS_RULE_TASK',
+    },
+  );
+
+  const childInstanceWithIncident = useMemo(() => {
+    const calledProcess = calledProcessInstances?.items?.[0];
+    if (calledProcess) {
+      return {
+        type: 'process' as const,
+        key: calledProcess.processInstanceKey,
+        name: calledProcess.processDefinitionName,
+      };
+    }
+
+    const calledDecision = calledDecisionInstances?.items?.[0];
+    if (calledDecision) {
+      return {
+        type: 'decision' as const,
+        key: calledDecision.decisionEvaluationInstanceKey,
+        name: calledDecision.decisionDefinitionName,
+      };
+    }
+
+    return undefined;
+  }, [calledProcessInstances, calledDecisionInstances]);
+
   return (
     <Container>
       <PanelHeader count={totalIncidentsCount} size="sm">
@@ -101,6 +189,8 @@ const IncidentsTab: React.FC = observer(() => {
         onVerticalScrollEndReach={handleScrollEndReach}
         processInstanceKey={processInstanceId}
         incidents={enhancedIncidents}
+        decisionInstancesByElementKey={decisionInstancesByElementKey}
+        childInstanceWithIncident={childInstanceWithIncident}
       />
     </Container>
   );

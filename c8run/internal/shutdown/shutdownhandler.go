@@ -59,16 +59,6 @@ func (s *ShutdownHandler) ShutdownProcesses(state *types.State) {
 }
 
 func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes types.Processes) {
-	if !settings.DisableElasticsearch {
-		log.Info().Msg("Trying to stop Elasticsearch")
-
-		err := s.stopProcess(processes.Elasticsearch.PidPath)
-		if err != nil {
-			log.Debug().Err(err).Msg("Failed to stop Elasticsearch")
-		} else {
-			log.Info().Msg("Elasticsearch is stopped.")
-		}
-	}
 	err := s.stopProcess(processes.Connectors.PidPath)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to stop connectors")
@@ -101,27 +91,29 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 		return fmt.Errorf("stopProcess: unable to stat pidfile: %w", err)
 	}
 
-	pid, err := s.ProcessHandler.ReadPIDFromFile(pidPath)
+	pidList, err := s.ProcessHandler.ReadPIDsFromFile(pidPath)
 	if err != nil {
 		return fmt.Errorf("stopProcess: %w", err)
 	}
 
 	var killErr error
-	processPids := s.ProcessHandler.GetProcessFromPid(pid)
+	processPids := s.ProcessHandler.CollectCandidatePIDs(pidList)
 	for _, procPid := range processPids {
 		if procPid <= 0 {
 			continue
 		}
 
-		killErr = s.ProcessHandler.KillProcess(procPid)
-	}
-
-	if err := os.Remove(pidPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		log.Warn().Err(err).Str("pidFile", pidPath).Msg("Failed to remove pidfile")
+		if err := s.ProcessHandler.KillProcess(procPid); err != nil && killErr == nil {
+			killErr = err
+		}
 	}
 
 	if killErr != nil {
 		return fmt.Errorf("stopProcess: %w", killErr)
+	}
+
+	if err := os.Remove(pidPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Warn().Err(err).Str("pidFile", pidPath).Msg("Failed to remove pidfile")
 	}
 
 	log.Info().Str("pidFile", pidPath).Msg("Successfully stopped process")

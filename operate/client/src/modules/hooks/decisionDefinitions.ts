@@ -8,7 +8,7 @@
 
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseDecisionDefinitionsSearchFilter} from 'modules/utils/filter/decisionsFilter';
 import {useDecisionDefinitionsSearch} from 'modules/queries/decisionDefinitions/useDecisionDefinitionsSearch';
 import {DEFAULT_TENANT} from 'modules/constants';

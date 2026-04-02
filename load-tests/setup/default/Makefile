@@ -1,6 +1,6 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
-helm_chart ?= camunda-platform-8.9
+helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
@@ -116,7 +116,7 @@ install-load-test:
 	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
 		--install \
 		--namespace $(namespace) \
-		--reuse-values \
+		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f load-test-values.yaml \
 		$(additional_load_test_configuration)

@@ -6,22 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
-import {Field, useForm, useFormState} from 'react-final-form';
-import get from 'lodash/get';
+import {Field, useForm} from 'react-final-form';
 import {createNewVariableFieldName} from '../createVariableFieldName';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
   validateModifiedValueComplete,
   validateModifiedValueValid,
 } from '../validators';
-import {IconTextInputField} from 'modules/components/IconTextInputField';
-import {Maximize} from '@carbon/react/icons';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
+import {TextInputField} from 'modules/components/TextInputField';
 
 type Props = {
   variableName: string;
@@ -29,19 +25,12 @@ type Props = {
 };
 
 const Value: React.FC<Props> = ({variableName, scopeId}) => {
-  const formState = useFormState();
   const form = useForm();
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const valueFieldName = createNewVariableFieldName(variableName, 'value');
   const selectedElementName = useSelectedElementName() || '';
 
-  const {
-    currentName,
-    currentValue,
-    currentId,
-    isNameFieldValid,
-    areFormFieldsValid,
-  } = useVariableFormFields(variableName);
+  const {currentName, currentValue, currentId, areFormFieldsValid} =
+    useVariableFormFields(variableName);
 
   return (
     <Layer>
@@ -54,7 +43,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         parse={(value) => value}
       >
         {({input}) => (
-          <IconTextInputField
+          <TextInputField
             {...input}
             data-testid="new-variable-value"
             size="sm"
@@ -63,12 +52,6 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
             hideLabel
             labelText="Value"
             placeholder="Value"
-            buttonLabel="Open JSON editor"
-            tooltipPosition="left"
-            onIconClick={() => {
-              setIsModalVisible(true);
-            }}
-            Icon={Maximize}
             onBlur={() => {
               form.mutators?.triggerValidation?.(valueFieldName);
               input.onBlur();
@@ -85,34 +68,6 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
           />
         )}
       </Field>
-
-      {isModalVisible && (
-        <JSONEditorModal
-          isVisible={isModalVisible}
-          title="Edit a new Variable"
-          value={get(formState.values, valueFieldName)}
-          onClose={() => {
-            setIsModalVisible(false);
-          }}
-          onApply={(value) => {
-            form.change(valueFieldName, value);
-            setIsModalVisible(false);
-            if (value !== undefined) {
-              createModification({
-                scopeId,
-                areFormFieldsValid:
-                  (isNameFieldValid &&
-                    form.getFieldState(valueFieldName)?.valid) ??
-                  false,
-                id: currentId,
-                name: currentName,
-                value: value,
-                selectedElementName,
-              });
-            }
-          }}
-        />
-      )}
     </Layer>
   );
 };

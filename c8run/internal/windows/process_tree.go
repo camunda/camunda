@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"syscall"
 	"unsafe"
+
+	"github.com/rs/zerolog/log"
 )
 
 func processTree(pid int) []int {
 	rootPid := uint32(pid)
 	tree, err := getTreePids(rootPid)
 	if err != nil {
-		fmt.Println(err)
+		log.Debug().Err(err).Uint32("pid", rootPid).Msg("Failed to resolve Windows process tree")
 	}
 
 	processList := make([]int, 0, len(tree))
@@ -28,9 +30,6 @@ func processTree(pid int) []int {
 func getTreePids(rootPid uint32) ([]uint32, error) {
 	// https://docs.microsoft.com/en-us/windows/win32/api/tlhelp32/ns-tlhelp32-processentry32
 	procEntry := syscall.ProcessEntry32{}
-	parentLayer := []uint32{rootPid}
-	treePids := parentLayer
-	foundRootPid := false
 
 	snapshot, err := syscall.CreateToolhelp32Snapshot(uint32(syscall.TH32CS_SNAPPROCESS), 0)
 	if err != nil {
@@ -40,53 +39,57 @@ func getTreePids(rootPid uint32) ([]uint32, error) {
 
 	procEntry.Size = uint32(unsafe.Sizeof(procEntry))
 
-	for {
-		// set procEntry to the first process in the snapshot
-		err = syscall.Process32First(snapshot, &procEntry)
-		if err != nil {
-			return nil, err
-		}
+	err = syscall.Process32First(snapshot, &procEntry)
+	if err != nil {
+		return nil, err
+	}
 
-		// loop through the processes in the snapshot, if the parent pid of the analyzed process
-		// is in in the parent layer, append the analyzed process pid in the child layer
+	entries := make([]processEntry, 0, 128)
+	for {
+		entries = append(entries, processEntry{
+			pid:  procEntry.ProcessID,
+			ppid: procEntry.ParentProcessID,
+		})
+
+		err = syscall.Process32Next(snapshot, &procEntry)
+		if err != nil {
+			break
+		}
+	}
+
+	return buildProcessTree(rootPid, entries)
+}
+
+type processEntry struct {
+	pid  uint32
+	ppid uint32
+}
+
+func buildProcessTree(rootPid uint32, entries []processEntry) ([]uint32, error) {
+	parentLayer := []uint32{rootPid}
+	treePids := append([]uint32(nil), parentLayer...)
+	foundRootPid := false
+
+	for {
 		var childLayer []uint32
-		for {
-			if procEntry.ProcessID == rootPid {
+		for _, entry := range entries {
+			if entry.pid == rootPid {
 				foundRootPid = true
 			}
 
-			if contains(parentLayer, procEntry.ParentProcessID) {
-				// avoid adding a pid if it's already contained in treePids
-				// useful for pid 0 whose ppid is 0 and would lead to recursion (windows)
-				if !contains(treePids, procEntry.ProcessID) {
-					childLayer = append(childLayer, procEntry.ProcessID)
-				}
-			}
-
-			// advance to next process in snapshot
-			err = syscall.Process32Next(snapshot, &procEntry)
-			if err != nil {
-				// if there aren't anymore processes to be analyzed, break out of the loop
-				break
+			if contains(parentLayer, entry.ppid) && !contains(treePids, entry.pid) {
+				childLayer = append(childLayer, entry.pid)
 			}
 		}
 
-		// if the specified rootPid is not found, return error
-		if !foundRootPid {
-			return nil, fmt.Errorf("getTreePids: specified rootPid not found")
-		}
-
-		// fmt.Println(childLayer)
-
-		// there are no more child processes, return the process tree
 		if len(childLayer) == 0 {
+			if !foundRootPid && len(treePids) == 1 {
+				return nil, fmt.Errorf("getTreePids: specified rootPid not found")
+			}
 			return treePids, nil
 		}
 
-		// append the child layer to the tree pids
 		treePids = append(treePids, childLayer...)
-
-		// to analyze the next layer, set the child layer to be the new parent layer
 		parentLayer = childLayer
 	}
 }

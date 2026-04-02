@@ -19,7 +19,7 @@ import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("tenants");
@@ -45,7 +45,7 @@ const List: FC = () => {
     <PageHeader
       title={t("tenants")}
       linkText={t("tenants").toLowerCase()}
-      docsLinkPath="/docs/components/identity/tenant/"
+      docsLinkPath="/components/admin/tenant/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -56,7 +56,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"tenant"}
-          docsLinkPath="/docs/components/identity/tenant/"
+          docsLinkPath="/components/admin/tenant/"
           handleClick={addTenant}
         />
         {addTenantModal}

@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {DetailsModal} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 

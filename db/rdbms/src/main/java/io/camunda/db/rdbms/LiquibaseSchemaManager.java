@@ -7,9 +7,12 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
@@ -32,6 +35,21 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     implements RdbmsSchemaManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(LiquibaseSchemaManager.class);
+  private static final int DEFAULT_MIGRATION_RETRY_ATTEMPTS = 3;
+  private static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofMillis(200);
+
+  private static final Set<String> RETRYABLE_MESSAGES =
+      Set.of(
+          "deadlock" // MSSQL causes deadlocks in CI with parallel tests #50230
+          );
+  private static final Set<Integer> RETRYABLE_SQL_ERROR_CODES =
+      Set.of(
+          1205 // MSSQL deadlock victim #50230
+          );
+  private static final Set<String> RETRYABLE_SQL_STATES =
+      Set.of(
+          "40001" // transaction serialization failure #50230
+          );
 
   private volatile boolean initialized = false;
   private Duration ddlLockWaitTimeout;
@@ -39,9 +57,77 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   @Override
   public void afterPropertiesSet() throws Exception {
     releaseStaleLockIfPresent();
-    super.afterPropertiesSet();
+    performMigrationWithRetry();
     initialized = true;
     LOG.debug("Liquibase migrations completed.");
+  }
+
+  /**
+   * Runs the Liquibase migration with bounded retries for transient, retryable failures. In CI,
+   * tests run concurrently with unique table prefixes, causing Liquibase to run multiple migrations
+   * in parallel against the same database, which can trigger transient errors such as deadlocks.
+   */
+  protected void performMigrationWithRetry() throws Exception {
+    var retryBackoff = DEFAULT_RETRY_BACKOFF;
+
+    for (int attempt = 1; attempt <= DEFAULT_MIGRATION_RETRY_ATTEMPTS; attempt++) {
+      try {
+        performMigration();
+        return;
+      } catch (final Exception e) {
+        final boolean shouldRetry =
+            isRetryableException(e) && attempt < DEFAULT_MIGRATION_RETRY_ATTEMPTS;
+        if (!shouldRetry) {
+          throw e;
+        }
+
+        LOG.warn(
+            "Liquibase migration failed due to a transient, retryable error (attempt {}/{}). Retrying in {}.",
+            attempt,
+            DEFAULT_MIGRATION_RETRY_ATTEMPTS,
+            retryBackoff,
+            e);
+
+        waitBeforeRetry(retryBackoff);
+        retryBackoff = retryBackoff.multipliedBy(2);
+      }
+    }
+  }
+
+  @VisibleForTesting
+  protected void performMigration() throws Exception {
+    super.afterPropertiesSet();
+  }
+
+  protected void waitBeforeRetry(final Duration retryBackoff) throws InterruptedException {
+    try {
+      Thread.sleep(retryBackoff.toMillis());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw e;
+    }
+  }
+
+  private boolean isRetryableException(final Throwable throwable) {
+    var current = throwable;
+    while (current != null) {
+      if (current instanceof final SQLException sqlException
+          && (RETRYABLE_SQL_ERROR_CODES.contains(sqlException.getErrorCode())
+              || RETRYABLE_SQL_STATES.contains(sqlException.getSQLState()))) {
+        return true;
+      }
+
+      final var message = current.getMessage();
+      if (message != null) {
+        final var normalizedMessage = message.toLowerCase();
+        if (RETRYABLE_MESSAGES.stream().anyMatch(normalizedMessage::contains)) {
+          return true;
+        }
+      }
+
+      current = current.getCause();
+    }
+    return false;
   }
 
   @Override

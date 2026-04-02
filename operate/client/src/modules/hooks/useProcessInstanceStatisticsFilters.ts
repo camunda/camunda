@@ -10,7 +10,7 @@ import {useSearchParams} from 'react-router-dom';
 import {
   type GetProcessDefinitionStatisticsRequestBody,
   type QueryProcessInstancesRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 
 type ProcessInstancesSearchFilter = NonNullable<

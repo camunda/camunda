@@ -101,10 +101,7 @@ test.describe('dashboard', () => {
         .first(),
     ).toBeVisible();
 
-    const results = await makeAxeBuilder()
-      // TODO: enable 'color-contrast' rule when the related TODO item is fixed https://github.com/camunda/operate/issues/5027
-      .disableRules(['color-contrast'])
-      .analyze();
+    const results = await makeAxeBuilder().analyze();
 
     validateResults(results);
   });

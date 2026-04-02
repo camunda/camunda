@@ -8,7 +8,9 @@
 package io.camunda.zeebe.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 public class ConfigTest {
@@ -28,6 +30,7 @@ public class ConfigTest {
     assertThat(appCfg.isMonitorDataAvailability()).isTrue();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
     assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
+    assertThat(appCfg.getDisabledQueriesList()).isEmpty();
 
     // authentication
     final var authCfg = appCfg.getAuth();
@@ -39,7 +42,8 @@ public class ConfigTest {
     assertThat(starterCfg).isNotNull();
 
     assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");
-    assertThat(starterCfg.getRate()).isEqualTo(300);
+    assertThat(starterCfg.getRate()).isEqualTo(300.0);
+    assertThat(starterCfg.getRateDuration()).hasSeconds(1);
     assertThat(starterCfg.getThreads()).isEqualTo(2);
     assertThat(starterCfg.getBpmnXmlPath()).isEqualTo("bpmn/one_task.bpmn");
     assertThat(starterCfg.getExtraBpmnModels()).isEmpty();
@@ -84,6 +88,8 @@ public class ConfigTest {
     assertThat(appCfg.isMonitorDataAvailability()).isFalse();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(50);
     assertThat(appCfg.isPerformReadBenchmarks()).isTrue();
+    assertThat(appCfg.getDisabledQueriesList())
+        .containsExactlyInAnyOrder("process_instances_active", "audit_log_by_category");
 
     // authentication
     final var authCfg = appCfg.getAuth();
@@ -102,7 +108,9 @@ public class ConfigTest {
     assertThat(starterCfg).isNotNull();
 
     assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");
-    assertThat(starterCfg.getRate()).isEqualTo(300);
+    assertThat(starterCfg.getRate()).isEqualTo(30.5);
+    assertThat(starterCfg.getRateDuration()).hasMinutes(5);
+    assertThat(starterCfg.getRatePerSecond()).isCloseTo(30.5 / 300.0, within(1e-9));
     assertThat(starterCfg.getThreads()).isEqualTo(2);
     assertThat(starterCfg.getBpmnXmlPath())
         .isEqualTo("bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn");
@@ -135,5 +143,59 @@ public class ConfigTest {
     assertThat(workerCfg.getMessageName()).isEqualTo("msg");
     assertThat(workerCfg.isSendMessage()).isTrue();
     assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
+  }
+
+  @Test
+  public void shouldConvertFractionalRateWithCustomDuration() {
+    // given
+    final var starterCfg = new StarterCfg();
+    starterCfg.setRate(30.5);
+    starterCfg.setRateDuration(Duration.ofMinutes(1));
+
+    // when
+    final double ratePerSecond = starterCfg.getRatePerSecond();
+
+    // then
+    assertThat(ratePerSecond).isCloseTo(30.5 / 60.0, within(1e-9));
+  }
+
+  @Test
+  public void shouldReturnRateUnchangedForOneSecondDuration() {
+    // given
+    final var starterCfg = new StarterCfg();
+    starterCfg.setRate(0.5);
+    starterCfg.setRateDuration(Duration.ofSeconds(1));
+
+    // when
+    final double ratePerSecond = starterCfg.getRatePerSecond();
+
+    // then
+    assertThat(ratePerSecond).isEqualTo(0.5);
+  }
+
+  @Test
+  public void shouldParseDisabledQueriesFromCommaSeparatedString() {
+    // given
+    final var appCfg = new AppCfg();
+    appCfg.setDisabledQueries("query_a, query_b ,query_c");
+
+    // when
+    final var result = appCfg.getDisabledQueriesList();
+
+    // then
+    assertThat(result).containsExactly("query_a", "query_b", "query_c");
+  }
+
+  @Test
+  public void shouldReturnEmptyListForBlankDisabledQueries() {
+    // given
+    final var appCfg = new AppCfg();
+    appCfg.setDisabledQueries(",,");
+
+    // when
+    final var result = appCfg.getDisabledQueriesList();
+
+    // then
+    assertThat(result).isEmpty();
   }
 }

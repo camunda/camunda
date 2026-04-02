@@ -403,6 +403,7 @@ public final class BackgroundTaskManagerFactory {
 
     return buildReschedulingArchiverTask(
         new ProcessInstanceArchiverJob(
+            config.getHistory(),
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
             dependantTemplates,

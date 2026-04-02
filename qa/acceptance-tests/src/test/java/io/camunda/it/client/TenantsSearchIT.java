@@ -40,6 +40,17 @@ public class TenantsSearchIT {
   }
 
   @Test
+  void shouldGetTenantById() {
+    // when
+    final var tenant = camundaClient.newTenantGetRequest(TENANT_ID_1).send().join();
+
+    // then - assert all fields
+    assertThat(tenant.getTenantId()).isEqualTo(TENANT_ID_1);
+    assertThat(tenant.getName()).isEqualTo(TENANT_NAME_1);
+    assertThat(tenant.getDescription()).isEqualTo("description");
+  }
+
+  @Test
   void searchShouldReturnTenantFilteredByTenantName() {
     final var tenantSearchResponse =
         camundaClient.newTenantsSearchRequest().filter(fn -> fn.name(TENANT_NAME_1)).send().join();

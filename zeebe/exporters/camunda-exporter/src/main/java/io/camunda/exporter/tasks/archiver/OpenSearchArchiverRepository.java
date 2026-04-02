@@ -138,8 +138,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
-    final var request = createFinishedProcessInstancesSearchRequest();
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final int size) {
+    final var request = createFinishedProcessInstancesSearchRequest(size);
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
@@ -552,10 +553,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return CompletableFuture.completedFuture(null);
   }
 
-  private SearchRequest createFinishedProcessInstancesSearchRequest() {
+  private SearchRequest createFinishedProcessInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        size,
         ListViewTemplate.END_DATE,
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
   }
@@ -800,6 +802,16 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final Query filterQuery,
       final String sortField,
       final String... extraFields) {
+    return createSearchRequest(
+        indexName, filterQuery, config.getRolloverBatchSize(), sortField, extraFields);
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName,
+      final Query filterQuery,
+      final int size,
+      final String sortField,
+      final String... extraFields) {
     logger.trace(
         "Create search request against index '{}', with filter '{}' and sortField '{}'",
         indexName,
@@ -819,7 +831,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
-        .size(config.getRolloverBatchSize())
+        .size(size)
         .build();
   }
 

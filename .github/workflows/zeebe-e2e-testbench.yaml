@@ -15,7 +15,7 @@ on:
       generation:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
-        default: 'Zeebe SNAPSHOT'
+        default: 'Camunda SNAPSHOT'
         type: string
       branch:
         description: 'Specifies the branch, for which the E2E run should be executed'
@@ -24,7 +24,7 @@ on:
         type: string
       clusterPlan:
         description: 'Cluster plan used by testbench to create the test cluster'
-        default: 'Production - M'
+        default: 'G3-M'
         required: false
         type: string
       fault:
@@ -51,7 +51,7 @@ on:
       generation:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
-        default: 'Zeebe SNAPSHOT'
+        default: 'Camunda SNAPSHOT'
         type: string
       branch:
         description: 'Specifies the branch, for which the E2E run should be executed'
@@ -83,7 +83,7 @@ jobs:
       variables: >
         {
           "zeebeImage": "$IMAGE",
-          "generationTemplate": "${{ inputs.generation || 'Zeebe SNAPSHOT' }}",
+          "generationTemplate": "${{ inputs.generation || 'Camunda SNAPSHOT' }}",
           "channel": "Internal Dev",
           "branch": "${{ inputs.branch || 'main' }}",
           "build":  "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",

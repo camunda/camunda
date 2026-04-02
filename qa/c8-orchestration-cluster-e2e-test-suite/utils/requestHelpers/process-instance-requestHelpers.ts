@@ -12,6 +12,7 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
+import {validateResponse} from 'json-body-assertions';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -24,6 +25,14 @@ export async function getProcessDefinitionKey(
     },
   });
   await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: '/process-instances',
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
   const json = await res.json();
   await cancelProcessInstance(json.processInstanceKey);
   return json.processDefinitionKey;
@@ -43,6 +52,14 @@ export async function createCancellationBatch(
       },
     });
     await assertStatusCode(startRes, 200);
+    await validateResponse(
+      {
+        path: '/process-instances',
+        method: 'POST',
+        status: '200',
+      },
+      startRes,
+    );
     const startJson = await startRes.json();
     processInstanceKeys.push(String(startJson.processInstanceKey));
   }
@@ -65,6 +82,14 @@ export async function createCancellationBatch(
       },
     );
     await assertStatusCode(batchRes, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/cancellation',
+        method: 'POST',
+        status: '200',
+      },
+      batchRes,
+    );
     const json = await batchRes.json();
     expect(json).toHaveProperty('batchOperationKey');
     result.batchKey = json.batchOperationKey;
@@ -89,6 +114,14 @@ export async function searchJobKeysForProcessInstance(
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/jobs/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.page.totalItems).toBeGreaterThan(0);
     localState['jobKeys'] = json.items.map(
@@ -144,6 +177,14 @@ export async function verifyIncidentsForProcessInstance(
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: `/process-instances/{processInstanceKey}/incidents/search`,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(
       json.page.totalItems,
@@ -164,6 +205,14 @@ export async function expectProcessInstanceCanBeFound(
       },
     );
     await assertStatusCode(statusRes, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}',
+        method: 'GET',
+        status: '200',
+      },
+      statusRes,
+    );
     const json = await statusRes.json();
     expect(json.processInstanceKey).toBe(processInstanceKey);
   }).toPass({

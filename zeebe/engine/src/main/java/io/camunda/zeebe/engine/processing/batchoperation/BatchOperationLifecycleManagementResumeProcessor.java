@@ -145,7 +145,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
           "Processing distributed command to resume with key '{}': {}",
           batchOperationKey,
           recordValue);
-      resumeBatchOperation(command.getKey(), batchOperation.get(), recordValue);
+      resumeBatchOperation(batchOperationKey, batchOperation.get(), recordValue);
     } else {
       LOGGER.debug(
           "Distributed command to resume a batch operation with key '{}' will be ignored: {}",

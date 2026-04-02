@@ -176,10 +176,13 @@ public class Starter extends App {
             registry,
             Executors.newScheduledThreadPool(2),
             client,
-            DataReadMeterQueryProvider.getDefaultQueries());
+            DataReadMeterQueryProvider.getDefaultQueries(config.getDisabledQueriesList()));
     dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
     dataReadMeter.setContextBusinessKeySupplier(
-        () -> Pair.of(starterCfg.getBusinessKey(), businessKey.get() - starterCfg.getRate() * 60L));
+        () ->
+            Pair.of(
+                starterCfg.getBusinessKey(),
+                businessKey.get() - (long) (starterCfg.getRatePerSecond() * 60.0)));
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -187,8 +190,12 @@ public class Starter extends App {
       final CountDownLatch countDownLatch,
       final CamundaClient client) {
 
-    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, starterCfg.getRate());
-    LOG.info("Creating an instance every {}ns", intervalNanos);
+    final long intervalNanos = (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
+    LOG.info(
+        "Creating an instance every {}ns (rate: {} per {})",
+        intervalNanos,
+        starterCfg.getRate(),
+        starterCfg.getRateDuration());
 
     final String variablesString = readVariables(starterCfg.getPayloadPath());
     final Map<String, Object> baseVariables =

@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -26,7 +26,19 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   private final AtomicReference<VersionedPartitionRing> partitionRing =
       new AtomicReference<>(VersionedPartitionRing.uninitialized());
 
-  private final AtomicInteger offset = new AtomicInteger(0);
+  private final AtomicLong offset;
+
+  public RoundRobinDispatchStrategy() {
+    this(0);
+  }
+
+  public RoundRobinDispatchStrategy(final int initialOffset) {
+    if (initialOffset < 0) {
+      throw new IllegalArgumentException(
+          "Expected initialOffset to be >= 0, but got %d".formatted(initialOffset));
+    }
+    offset = new AtomicLong(initialOffset);
+  }
 
   @Override
   public int determinePartition(final BrokerTopologyManager topologyManager) {
@@ -108,8 +120,8 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
       return new PartitionRing(sorted);
     }
 
-    public int partitionAtOffset(final int offset) {
-      return partitions[offset % partitions.length];
+    public int partitionAtOffset(final long offset) {
+      return partitions[Math.floorMod(offset, partitions.length)];
     }
   }
 }

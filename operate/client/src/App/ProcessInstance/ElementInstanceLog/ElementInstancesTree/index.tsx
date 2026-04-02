@@ -10,7 +10,7 @@ import {createContext, useContext, useEffect, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
@@ -31,12 +31,14 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {
+  instanceHistoryModificationStore,
+  type ElementInstancePlaceholder,
+} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
-import type {ElementInstancePlaceholder} from 'modules/types/operate';
 import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 

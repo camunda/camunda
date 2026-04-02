@@ -1,4 +1,6 @@
-# description: This workflow deletes eligible load tests that reached or passed their deadline
+# description: Deletes expired load test namespaces based on TTL deadline labels.
+#              Runs two parallel cleanup jobs: one for legacy GKE infra (Google Cloud auth),
+#              one for new infra (Teleport auth). Posts deleted namespaces to Slack.
 # type: CI
 # owner: camunda/orchestration-cluster-team
 name: camunda-load-test-clean-up.yml
@@ -47,7 +49,7 @@ jobs:
         id: delete-namespaces
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
       - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook
@@ -92,7 +94,8 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-          version: 17.2.2
+          proxy: camunda.teleport.sh:443
+          version: auto
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2
         with:
@@ -103,7 +106,7 @@ jobs:
         id: delete-namespaces
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
       - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook

@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -51,16 +52,24 @@ type StartupSummary struct {
 	AgentGuideURL        string
 }
 
+var (
+	isRunningFunc   = isRunning
+	printStatusFunc = PrintStatus
+	markSeenStartup = startupurl.MarkSeen
+)
+
 func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", settings.GetProtocol())
-	if isRunning(ctx, name, healthEndpoint, retries, 14*time.Second) {
+	if isRunningFunc(ctx, name, healthEndpoint, retries, 14*time.Second) {
 		if err := c8.OpenBrowser(ctx, settings.StartupUrl); err != nil {
 			log.Err(err).Msg("Failed to open browser")
-			return nil
 		}
-		if err := PrintStatus(settings); err != nil {
+		if err := printStatusFunc(settings); err != nil {
 			log.Err(err).Msg("Failed to print status")
 			return err
+		}
+		if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
+			log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
 		}
 		return nil
 	}

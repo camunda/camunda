@@ -21,7 +21,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {
@@ -87,9 +87,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
-  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceKey, {
-    enabled: hasIncident,
-  });
+  const {data: incidentsCount = 0} = useProcessInstanceIncidentsCount(
+    processInstanceKey,
+    {
+      enabled: hasIncident,
+    },
+  );
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -107,7 +110,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     <InstanceHeader
       state={processInstanceState}
       instanceName={getProcessDefinitionName(processInstance)}
-      incidentsCount={incidentsCount}
+      incidentsCount={hasIncident ? incidentsCount : 0}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;

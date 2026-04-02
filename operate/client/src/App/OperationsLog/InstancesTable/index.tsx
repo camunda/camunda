@@ -15,7 +15,7 @@ import {
   type AuditLog,
   type QueryAuditLogsRequestBody,
   queryAuditLogsRequestBodySchema,
-} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
@@ -41,7 +41,7 @@ import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
   auditLogResultSchema,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {CellEntityKey} from './Cell/CellEntityKey';
@@ -128,6 +128,12 @@ const InstancesTable: React.FC = observer(() => {
       filter: {
         category: {$neq: 'ADMIN'},
         processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
+        processDefinitionId:
+          filterValues.processDefinitionId &&
+          (!filterValues.processDefinitionVersion ||
+            filterValues.processDefinitionVersion === 'all')
+            ? filterValues.processDefinitionId
+            : undefined,
         processInstanceKey: filterValues.processInstanceKey,
         tenantId: selectedTenantId,
         operationType: filterValues.operationType

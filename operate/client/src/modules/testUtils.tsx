@@ -14,7 +14,7 @@ import type {
   ProcessDefinition,
   QueryProcessDefinitionsResponseBody,
   QueryProcessInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {EnhancedIncident} from './hooks/incidents';
 
 const createRandomId = function* createRandomId(type: string) {

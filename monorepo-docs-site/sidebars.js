@@ -21,6 +21,54 @@ const sidebars = {
     'infrastructure-services',
     'renovate-pr-handling',
     'release',
+    {
+      type: 'category',
+      label: 'Architecture',
+      items: [
+        {
+          type: 'category',
+          label: 'Components',
+          items: [
+            {
+              type: 'category',
+              label: 'Orchestration Cluster Identity',
+              items: [
+                'architecture/components/identity/identity_architecture_docs',
+                {
+                  type: 'category',
+                  label: 'ADRs',
+                  items: [
+                    'architecture/components/identity/adr/cluster-embedded-identity',
+                    'architecture/components/identity/adr/oidc-default-production-authentication',
+                    'architecture/components/identity/adr/resource-based-authorization-model',
+                    'architecture/components/identity/adr/multi-jwks-endpoints-per-issuer',
+                    'architecture/components/identity/adr/support-forward-slashes-in-entity-ids',
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Authorizations',
+                  items: [
+                    'architecture/components/identity/authorizations/authorization-concept',
+                    'architecture/components/identity/authorizations/engine-authorization',
+                    'architecture/components/identity/authorizations/rest-authorization',
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'References',
+                  items: [
+                    'architecture/components/identity/references/data-model',
+                    'architecture/components/identity/references/default-roles',
+                    'architecture/components/identity/references/rp-initiated-logout',
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   ],
 };
 

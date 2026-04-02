@@ -22,10 +22,6 @@ func (m *mockC8) ProcessTree(pid int) []int {
 	return nil
 }
 func (m *mockC8) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd { return nil }
-func (m *mockC8) ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd {
-	return nil
-}
-
 func (m *mockC8) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	return nil
 }
@@ -68,6 +64,33 @@ func TestReadPIDFromFile_InvalidPID(t *testing.T) {
 	_, err := h.ReadPIDFromFile(pidPath)
 	if err == nil {
 		t.Error("Expected error for invalid PID, got nil")
+	}
+}
+
+func TestReadPIDsFromFile_MultipleEntries(t *testing.T) {
+	dir := t.TempDir()
+	pidPath := filepath.Join(dir, "multi.pid")
+	content := "123\r\n456\n456\n"
+	if err := os.WriteFile(pidPath, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to write PID file: %v", err)
+	}
+	h := &ProcessHandler{}
+	pids, err := h.ReadPIDsFromFile(pidPath)
+	if err != nil {
+		t.Fatalf("ReadPIDsFromFile failed: %v", err)
+	}
+	if len(pids) != 2 {
+		t.Fatalf("Expected 2 pids, got %d", len(pids))
+	}
+	expected := map[int]struct{}{123: {}, 456: {}}
+	for _, pid := range pids {
+		if _, ok := expected[pid]; !ok {
+			t.Fatalf("Unexpected pid %d returned", pid)
+		}
+		delete(expected, pid)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("Missing pids: %v", expected)
 	}
 }
 
@@ -183,5 +206,30 @@ func TestAttemptToStartProcess_KillsUnhealthyProcess(t *testing.T) {
 	}
 	if stopped {
 		t.Error("Stop was called. This should only be called when everything fails. Its like a panic but allows for the shutdown logic to run")
+	}
+}
+
+func TestCollectCandidatePIDsIncludesRecorded(t *testing.T) {
+	h := &ProcessHandler{
+		C8: &mockC8{ProcessTreeFunc: func(pid int) []int {
+			if pid == 100 {
+				return []int{100, 101, 102}
+			}
+			return nil
+		}},
+	}
+	pids := h.CollectCandidatePIDs([]int{100, 200, 200, 0})
+	expected := map[int]struct{}{100: {}, 101: {}, 102: {}, 200: {}}
+	if len(pids) != len(expected) {
+		t.Fatalf("unexpected pid count: got %d expected %d", len(pids), len(expected))
+	}
+	for _, pid := range pids {
+		if _, ok := expected[pid]; !ok {
+			t.Fatalf("unexpected pid %d in list", pid)
+		}
+		delete(expected, pid)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("missing pids from candidate list: %v", expected)
 	}
 }

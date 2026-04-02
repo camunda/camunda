@@ -8,6 +8,8 @@
 package io.camunda.zeebe.config;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 public class AppCfg {
 
@@ -21,6 +23,8 @@ public class AppCfg {
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
+
+  private String disabledQueries = "";
 
   public String getBrokerUrl() {
     return brokerUrl;
@@ -100,5 +104,23 @@ public class AppCfg {
 
   public void setPerformReadBenchmarks(final boolean performReadBenchmarks) {
     this.performReadBenchmarks = performReadBenchmarks;
+  }
+
+  public String getDisabledQueries() {
+    return disabledQueries;
+  }
+
+  public void setDisabledQueries(final String disabledQueries) {
+    this.disabledQueries = disabledQueries;
+  }
+
+  public List<String> getDisabledQueriesList() {
+    if (disabledQueries == null || disabledQueries.isBlank()) {
+      return List.of();
+    }
+    return Arrays.stream(disabledQueries.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isBlank())
+        .toList();
   }
 }

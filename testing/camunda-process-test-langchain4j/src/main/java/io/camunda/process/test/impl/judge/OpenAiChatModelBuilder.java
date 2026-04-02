@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -24,18 +24,31 @@ import org.slf4j.LoggerFactory;
 
 final class OpenAiChatModelBuilder {
 
+  public static final String OPENAI = "openai";
   private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatModelBuilder.class);
 
   private OpenAiChatModelBuilder() {}
 
   static ChatModel build(final BaseProviderConfig.OpenAiConfig config) {
     LOG.debug("Building OpenAI chat model");
-
-    final String model = require(config.getModel(), "model", "openai");
-    final String apiKey = require(config.getApiKey(), "apiKey", "openai");
-
-    final ChatModel chatModel = OpenAiChatModel.builder().apiKey(apiKey).modelName(model).build();
-    LOG.debug("Successfully built OpenAI chat model with model '{}'", model);
+    final ChatModel chatModel = build(config, OpenAiChatModel.builder());
+    LOG.debug("Successfully built OpenAI chat model with model '{}'", config.getModel());
     return chatModel;
+  }
+
+  static ChatModel build(
+      final BaseProviderConfig.OpenAiConfig config,
+      final OpenAiChatModel.OpenAiChatModelBuilder builder) {
+    builder.apiKey(require(config.getApiKey(), "apiKey", OPENAI));
+    builder.modelName(require(config.getModel(), "model", OPENAI));
+    if (config.getTimeout() != null) {
+      LOG.debug("Setting timeout to {}", config.getTimeout());
+      builder.timeout(config.getTimeout());
+    }
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      builder.temperature(config.getTemperature());
+    }
+    return builder.build();
   }
 }

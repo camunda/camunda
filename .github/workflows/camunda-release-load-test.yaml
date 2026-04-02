@@ -1,10 +1,13 @@
-# description: Create a Camunda load test for a given release.
-#              Abstraction layer of the actual load test creation process, to define a clear API between release process and the load test workflows.
-#              Public API - accepting inputs for test name and tag.
-#              To validate that load test creation works; we regularly run this workflow via schedule.
-#              The create load test (created by scheduled) is deleted after a fixed time (15 mins) to avoid unnecessary costs.
+# description: Creates a load test for official release images. Abstraction layer between
+#              the release process and the load test infrastructure, with a simple public API
+#              accepting only name and tag as inputs. Uses official Docker images with scenario: realistic.
+# called-by: camunda-scheduled-release-load-tests.yml (daily schedule),
+#            release BPMN process (workflow_dispatch via GitHub API)
+# calls: camunda-load-test.yml (use-official-docker-images: true, scenario: realistic)
+# note: Verification and namespace cleanup are handled externally by the scheduled workflow
+#       via camunda-verify-and-cleanup-load-test.yml, not by this workflow.
 # type: CI
-# owner @camunda/reliability-testing
+# owner: @camunda/reliability-testing
 name: Camunda Release load test workflow
 on:
   workflow_dispatch:
@@ -17,9 +20,16 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
-# This workflow is also scheduled to run daily with default values for the test name and tag, allowing for regular sanity check whether load testing creation works
-  schedule:
-    - cron: '0 4 * * *' # every day at 04:00
+  workflow_call:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test'
+        type: string
+        required: true
+      tag:
+        description: 'Specifies the tag that should be used for the release load test'
+        type: string
+        required: true
 
 defaults:
   run:
@@ -27,7 +37,6 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
-# Define environment variables for the workflow, allowing for default values (used on schedule) that can be overridden by workflow inputs
 env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
@@ -40,25 +49,12 @@ jobs:
     permissions: {}
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
-      test-tag: ${{ steps.prepare_tag.outputs.test-tag }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
-          branch: ${{ inputs.name || 'dry-run-release-8-8-x' }}
+          branch: ${{ inputs.name }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
-      # Prepare a default tag if none is provided, to ensure that the load test creation can proceed with a valid tag even in the case of missing input (e.g., during scheduled runs)
-      - id: prepare_tag
-        run: echo "test-tag=${{ inputs.tag || '8.9.0-alpha5' }}" >> "$GITHUB_OUTPUT"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   create-load-test:
     name: Create release load test
@@ -67,77 +63,22 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
-      ref: ${{ needs.sanitize-inputs.outputs.test-tag }}
-      reuse-tag: ${{ needs.sanitize-inputs.outputs.test-tag }}
+      ref: main
+      reuse-tag: ${{ inputs.tag }}
       ttl: 60
       use-official-docker-images: true
       scenario: 'realistic'
 
-  await-load-test:
-    name: Await Load Test
-    needs: [sanitize-inputs, create-load-test]
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Wait for load test to stabilize
-        run: sleep 900  # 15 minutes
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  delete-load-test:
-    name: Benchmark Cleanup
-    needs: [sanitize-inputs, await-load-test, create-load-test]
-    if: github.event_name != 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Set up Teleport
-        uses: teleport-actions/setup@v1
-        with:
-          version: 17.2.2
-
-      - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
-        with:
-          proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
-
-      - name: Delete benchmarks
-        run: |
-          kubectl delete ns "${{ needs.sanitize-inputs.outputs.sanitized-name }}"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   notify-on-failure:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [sanitize-inputs, create-load-test, await-load-test, delete-load-test]
+    needs: [sanitize-inputs, create-load-test]
     if: failure()
     permissions: {}
     steps:
       - uses: actions/checkout@v6
       - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook
@@ -148,7 +89,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *${{ github.event_name != 'workflow_dispatch' && '[Dry-run]:' || ':alarm:' }}Release load test creation failed:*"
+                    "text": ":alarm: *Release load test creation failed:*"
                   }
                 },
                 {

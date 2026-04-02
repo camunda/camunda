@@ -12,10 +12,16 @@ import {useMatch} from 'react-router-dom';
 function useIsCurrentTaskOpen(id: string) {
   const taskDetailsMatch = useMatch(pages.taskDetails());
   const taskDetailsProcessMatch = useMatch(pages.taskDetailsProcess());
+  const taskDetailsHistoryMatch = useMatch(pages.taskDetailsHistory());
+  const taskDetailsHistoryAuditLogMatch = useMatch(
+    pages.taskDetailsHistoryAuditLog(),
+  );
 
   return [
     taskDetailsMatch?.params.id,
     taskDetailsProcessMatch?.params.id,
+    taskDetailsHistoryMatch?.params.id,
+    taskDetailsHistoryAuditLogMatch?.params.id,
   ].includes(id);
 }
 

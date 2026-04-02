@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.EnumSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter that selects only the records relevant for Optimize:
@@ -37,6 +39,8 @@ import java.util.EnumSet;
  * acceptIntent methods.
  */
 public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeModeFilter.class);
 
   private static final SemanticVersion MIN_BROKER_VERSION =
       new SemanticVersion(8, 9, 0, null, null);
@@ -65,14 +69,23 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
 
   @Override
   public boolean accept(final Record<?> record) {
-    return switch (record.getValueType()) {
-      case PROCESS -> isAcceptedProcess(record);
-      case PROCESS_INSTANCE -> isAcceptedProcessInstance(record);
-      case INCIDENT -> isAcceptedIncident(record);
-      case USER_TASK -> isAcceptedUserTask(record);
-      case VARIABLE -> isAcceptedVariable(record);
-      default -> false;
-    };
+    final boolean accepted =
+        switch (record.getValueType()) {
+          case PROCESS -> isAcceptedProcess(record);
+          case PROCESS_INSTANCE -> isAcceptedProcessInstance(record);
+          case INCIDENT -> isAcceptedIncident(record);
+          case USER_TASK -> isAcceptedUserTask(record);
+          case VARIABLE -> isAcceptedVariable(record);
+          default -> false;
+        };
+    if (!accepted && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "OptimizeModeFilter rejected record {} (valueType={}, intent={}): not relevant for Optimize",
+          record.getKey(),
+          record.getValueType(),
+          record.getIntent());
+    }
+    return accepted;
   }
 
   private boolean isAcceptedProcess(final Record<?> record) {

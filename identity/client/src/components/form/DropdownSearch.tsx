@@ -8,7 +8,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Search } from "@carbon/react";
-import ListBox from "@carbon/react/lib/components/ListBox";
+import ListBox from "@carbon/react/es/components/ListBox";
 import useDebounce from "react-debounced";
 import { SecondaryText } from "src/components/form/Text";
 import styled from "styled-components";

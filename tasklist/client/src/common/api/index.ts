@@ -8,7 +8,7 @@
 
 import {getClientConfig} from 'common/config/getClientConfig';
 import {mergePathname} from './mergePathname';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {buildDocumentMultipart} from 'common/document-handling/buildDocumentMultipart';
 
 const BASE_REQUEST_OPTIONS: RequestInit = {

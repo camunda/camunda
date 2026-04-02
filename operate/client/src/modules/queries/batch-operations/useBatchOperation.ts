@@ -7,7 +7,7 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {RequestError} from 'modules/request';
 import {getBatchOperation} from 'modules/api/v2/batchOperations/getBatchOperation';
 import {queryKeys} from '../queryKeys';

@@ -24,6 +24,7 @@ function useVariable(variableKey: string, options?: {enabled?: boolean}) {
       throw error;
     },
     enabled,
+    staleTime: 5000,
   });
 }
 

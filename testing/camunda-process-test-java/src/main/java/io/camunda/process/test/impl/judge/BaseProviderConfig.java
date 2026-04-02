@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.judge;
 
 import io.camunda.process.test.api.judge.ProviderConfig;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
@@ -26,9 +27,12 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   public static final String PROVIDER_ANTHROPIC = "anthropic";
   public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
   public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
+  public static final String PROVIDER_AZURE_OPENAI = "azure-openai";
 
   private final String provider;
   private final String model;
+  private Duration timeout;
+  private Double temperature;
 
   protected BaseProviderConfig(final String provider, final String model) {
     this.provider = provider;
@@ -43,6 +47,22 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   @Override
   public String getModel() {
     return model;
+  }
+
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(final Duration timeout) {
+    this.timeout = timeout;
+  }
+
+  public Double getTemperature() {
+    return temperature;
+  }
+
+  public void setTemperature(final Double temperature) {
+    this.temperature = temperature;
   }
 
   /** Generic provider configuration for unknown or custom providers. */
@@ -139,15 +159,46 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     private final String baseUrl;
     private final String apiKey;
+    private final Map<String, String> headers;
 
-    public OpenAiCompatibleConfig(final String model, final String baseUrl, final String apiKey) {
+    public OpenAiCompatibleConfig(
+        final String model,
+        final String baseUrl,
+        final String apiKey,
+        final Map<String, String> headers) {
       super(PROVIDER_OPENAI_COMPATIBLE, model);
       this.baseUrl = baseUrl;
       this.apiKey = apiKey;
+      this.headers = headers;
     }
 
     public String getBaseUrl() {
       return baseUrl;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+
+    public Map<String, String> getHeaders() {
+      return headers;
+    }
+  }
+
+  /** Azure OpenAI provider configuration. */
+  public static final class AzureOpenAiConfig extends BaseProviderConfig {
+
+    private final String endpoint;
+    private final String apiKey;
+
+    public AzureOpenAiConfig(final String model, final String endpoint, final String apiKey) {
+      super(PROVIDER_AZURE_OPENAI, model);
+      this.endpoint = endpoint;
+      this.apiKey = apiKey;
+    }
+
+    public String getEndpoint() {
+      return endpoint;
     }
 
     public String getApiKey() {

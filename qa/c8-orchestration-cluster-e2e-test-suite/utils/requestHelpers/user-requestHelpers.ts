@@ -17,6 +17,7 @@ import {
 import {expect} from '@playwright/test';
 import {Serializable} from 'playwright-core/types/structs';
 import {CREATE_NEW_USER, userRequiredFields} from '../beans/requestBeans';
+import {validateResponse} from 'json-body-assertions';
 
 export async function createUsersAndStoreResponseFields(
   request: APIRequestContext,
@@ -62,6 +63,14 @@ export async function createUser(
   });
 
   await assertStatusCode(res, 201);
+  await validateResponse(
+    {
+      path: '/users',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, userRequiredFields);
   if (state && key) {

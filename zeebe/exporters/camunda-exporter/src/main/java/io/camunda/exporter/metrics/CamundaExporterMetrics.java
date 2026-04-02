@@ -26,8 +26,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CamundaExporterMetrics implements AutoCloseable {
-  private static final String NAMESPACE = "zeebe.camunda.exporter";
 
+  private static final String NAMESPACE = "zeebe.camunda.exporter";
+  private static final String SINCE_LAST_FLUSH_SECONDS_METER_NAME =
+      meterName("since.last.flush.seconds");
+  private static final String PROCESS_INSTANCES_AWAITING_ARCHIVAL_METER_NAME =
+      meterName("process.instances.awaiting.archival");
+  private static final String FLUSH_FAILURE_TYPE_METER_NAME = meterName("flush.failure.type");
   private final MeterRegistry meterRegistry;
   private final InstantSource streamClock;
 
@@ -275,12 +280,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .register(meterRegistry);
 
     TimeGauge.builder(
-            meterName("since.last.flush.seconds"), this::secondSinceLastFlush, TimeUnit.SECONDS)
+            SINCE_LAST_FLUSH_SECONDS_METER_NAME, this::secondSinceLastFlush, TimeUnit.SECONDS)
         .description("Time in seconds since the last successful flush")
         .register(meterRegistry);
 
     Gauge.builder(
-            meterName("process.instances.awaiting.archival"),
+            PROCESS_INSTANCES_AWAITING_ARCHIVAL_METER_NAME,
             processInstancesAwaitingArchival,
             AtomicInteger::get)
         .description("Number of process instances awaiting archival (approximate)")
@@ -314,6 +319,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   public void stopFlushLatencyMeasurement() {
     if (flushLatencyMeasurement != null) {
       flushLatencyMeasurement.stop(flushLatency);
+      flushLatencyMeasurement = null;
     }
   }
 
@@ -386,7 +392,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   }
 
   public void recordFlushFailureType(final String failureType) {
-    meterRegistry.counter(meterName("flush.failure.type"), "failure_type", failureType).increment();
+    meterRegistry.counter(FLUSH_FAILURE_TYPE_METER_NAME, "failure_type", failureType).increment();
   }
 
   private double secondSinceLastFlush() {
@@ -410,11 +416,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
   public void observeRecordExportLatencies(final Collection<Long> recordTimestamps) {
     final var now = streamClock.millis();
     recordTimestamps.stream()
-        .mapToLong(timestamp -> now - timestamp)
+        .mapToLong(timestamp -> Math.max(0, now - timestamp))
         .forEach(duration -> recordExportDuration.record(duration, TimeUnit.MILLISECONDS));
   }
 
-  private String meterName(final String name) {
+  private static String meterName(final String name) {
     return NAMESPACE + "." + name;
   }
 
@@ -460,10 +466,20 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(incidentUpdatesDocumentsUpdated);
     meterRegistry.remove(jobBatchMetricsArchiving);
     meterRegistry.remove(jobBatchMetricsArchived);
+    meterRegistry.remove(usageMetricsArchived);
+    meterRegistry.remove(usageMetricsArchiving);
+    meterRegistry.remove(usageMetricsTUArchived);
+    meterRegistry.remove(usageMetricsTUArchiving);
+    meterRegistry.remove(standaloneDecisionsArchiving);
+    meterRegistry.remove(standaloneDecisionsArchived);
+    meterRegistry.remove(auditLogsArchiving);
+    meterRegistry.remove(auditLogsArchived);
+
+    meterRegistry.find(FLUSH_FAILURE_TYPE_METER_NAME).meters().forEach(meterRegistry::remove);
 
     // Remove custom gauges by their names if needed
-    removeGaugeIfExists(meterName("since.last.flush.seconds"));
-    removeGaugeIfExists(meterName("process.instances.awaiting.archival"));
+    removeGaugeIfExists(SINCE_LAST_FLUSH_SECONDS_METER_NAME);
+    removeGaugeIfExists(PROCESS_INSTANCES_AWAITING_ARCHIVAL_METER_NAME);
   }
 
   private void removeGaugeIfExists(final String meterName) {

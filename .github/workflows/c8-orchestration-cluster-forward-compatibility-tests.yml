@@ -231,16 +231,16 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
-          INCLUDE_SLACK_REPORTER: "true"
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          INCLUDE_SLACK_REPORTER: "false"
           VERSION: "Forward Compat - Server: ${{ matrix.server_branch }} / Tests: ${{ matrix.test_branch }}"
           API_TESTS_ONLY: "true"
           DATABASE: "Elasticsearch"
+          AJB_ALLOW_EXTRA_FIELDS: "true"
         run: |
           echo "Running forward compatibility API tests"
           echo "Server built from: ${{ matrix.server_branch }}"
           echo "Tests checked out from: ${{ matrix.test_branch }}"
-          npm run test -- --project=api-tests
+          npm run test -- --project=api-tests --retries=2
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Sanitize branch names for artifact names
@@ -294,13 +294,23 @@ jobs:
      steps:
        - uses: actions/checkout@v6
 
-       - name: Notify failure
-         uses: slackapi/slack-github-action@v2.1.1
-         if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-         env:
-           SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+       - name: Import Secrets
+         id: secrets
+         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
          with:
-           webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+           url: ${{ secrets.VAULT_ADDR }}
+           method: approle
+           roleId: ${{ secrets.VAULT_ROLE_ID }}
+           secretId: ${{ secrets.VAULT_SECRET_ID }}
+           exportEnv: false
+           secrets: |
+             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
+
+       - name: Notify failure
+         uses: slackapi/slack-github-action@v3.0.1
+         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+         with:
+           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
            webhook-type: incoming-webhook
            payload: |
             {

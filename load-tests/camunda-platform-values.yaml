@@ -34,6 +34,12 @@ global:
       - name: harbor-registry
   # Identity authentication is enabled for Optimize
   identity:
+    keycloak:
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-keycloak-admin-password
     auth:
       enabled: true
       optimize:
@@ -47,25 +53,52 @@ global:
 
 identity:
   enabled: true
+  fullnameOverride: identity # we override the names for simplicity of the deployment
   firstUser:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 optimize:
   enabled: true
+  fullnameOverride: optimize # we override the names for simplicity of the deployment
   extraConfiguration:
     - file: application.yml
       content: |
         historyCleanup:
           cronTrigger: '0 1 * * *'
           ttl: 'P1D'
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 identityKeycloak:
   enabled: true
+  fullnameOverride: keycloak # we override the names for simplicity of the deployment
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+  postgresql:
+    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
 
 connectors:
   enabled: true
+  fullnameOverride: connectors # we override the names for simplicity of the deployment
   security:
     authentication:
       method: oidc
@@ -208,11 +241,11 @@ orchestration:
   extraVolumeMounts:
     - name: logs
       mountPath: /usr/local/camunda/logs
-  # Retention for the ES Exporter indices - legacy Zeebe indices    
+  # Retention for the ES Exporter indices - legacy Zeebe indices
   retention:
     enabled: true
     minimumAge: 1d
-  # Retention for the Camunda Exporter  
+  # Retention for the Camunda Exporter
   history:
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.

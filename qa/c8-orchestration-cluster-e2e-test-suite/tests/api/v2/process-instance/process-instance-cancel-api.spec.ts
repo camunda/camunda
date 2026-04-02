@@ -15,11 +15,13 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cancel Process instance Tests', () => {
   test('Cancel Process Instance - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -29,6 +31,14 @@ test.describe.parallel('Cancel Process instance Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -94,6 +104,7 @@ test.describe.parallel('Cancel Process instance Tests', () => {
 
   test('Double Cancel Process Instance - Not Found', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -103,6 +114,14 @@ test.describe.parallel('Cancel Process instance Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });

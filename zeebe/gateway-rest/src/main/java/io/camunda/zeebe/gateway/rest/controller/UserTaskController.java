@@ -20,6 +20,7 @@ import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskEffectiveVariableSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
@@ -145,6 +146,22 @@ public class UserTaskController {
   }
 
   @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{userTaskKey}/effective-variables/search")
+  public ResponseEntity<VariableSearchQueryResult> searchEffectiveVariables(
+      @PathVariable("userTaskKey") final long userTaskKey,
+      @RequestBody(required = false)
+          final UserTaskEffectiveVariableSearchQueryRequest
+              userTaskEffectiveVariablesSearchQueryRequest,
+      @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
+          final boolean truncateValues) {
+    return SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(
+            userTaskEffectiveVariablesSearchQueryRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> searchUserTaskEffectiveVariableQuery(userTaskKey, query, truncateValues));
+  }
+
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{userTaskKey}/audit-logs/search")
   public ResponseEntity<AuditLogSearchQueryResult> searchAuditLogs(
       @PathVariable final long userTaskKey,
@@ -172,6 +189,19 @@ public class UserTaskController {
     try {
       final var result =
           userTaskServices.searchUserTaskVariables(
+              userTaskKey, query, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<VariableSearchQueryResult> searchUserTaskEffectiveVariableQuery(
+      final long userTaskKey, final VariableQuery query, final boolean truncateValues) {
+    try {
+      final var result =
+          userTaskServices.searchUserTaskEffectiveVariables(
               userTaskKey, query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));

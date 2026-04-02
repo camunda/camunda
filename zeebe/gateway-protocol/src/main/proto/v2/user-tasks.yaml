@@ -316,9 +316,13 @@ paths:
       operationId: searchUserTaskVariables
       summary: Search user task variables
       description: |
-        Search for user task variables based on given criteria. This endpoint returns all variables
-        visible from the user task's scope, including variables from parent scopes in the scope
-        hierarchy. By default, long variable values in the response are truncated.
+        Search for user task variables based on given criteria. This endpoint returns all variable
+        documents visible from the user task's scope, including variables from parent scopes in the
+        scope hierarchy. If the same variable name exists at multiple scope levels, each scope's
+        variable is returned as a separate result. Use the
+        `/user-tasks/{userTaskKey}/effective-variables/search` endpoint to get deduplicated variables
+        where the innermost scope takes precedence. By default, long variable values in the response
+        are truncated.
       parameters:
         - name: userTaskKey
           in: path
@@ -341,6 +345,51 @@ paths:
       responses:
         "200":
           description: The user task variable search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'variables.yaml#/components/schemas/VariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+  /user-tasks/{userTaskKey}/effective-variables/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: searchUserTaskEffectiveVariables
+      summary: Search user task effective variables
+      description: |
+        Search for the effective variables of a user task. This endpoint returns deduplicated
+        variables where each variable name appears at most once. When the same variable name exists
+        at multiple scope levels in the scope hierarchy, the value from the innermost scope (closest
+        to the user task) takes precedence. This is useful for retrieving the actual runtime state
+        of variables as seen by the user task. By default, long variable values in the response are
+        truncated.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+        - name: truncateValues
+          in: query
+          required: false
+          description: When true (default), long variable values in the response are truncated. When false, full variable values are returned.
+          schema:
+            type: boolean
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskEffectiveVariableSearchQueryRequest'
+      responses:
+        "200":
+          description: The user task effective variable search result.
           content:
             application/json:
               schema:
@@ -787,6 +836,26 @@ components:
       additionalProperties: false
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+             $ref: '#/components/schemas/UserTaskVariableSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/UserTaskVariableFilter'
+          description: The user task variable search filters.
+
+    UserTaskEffectiveVariableSearchQueryRequest:
+      description: >
+        User task effective variable search query request. Uses offset-based pagination only.
+      additionalProperties: false
+      type: object
+      properties:
+        page:
+          description: Pagination parameters.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array

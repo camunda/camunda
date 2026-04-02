@@ -29,7 +29,7 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
   false,
 );
 
-export const docsUrl = "https://docs.camunda.io";
+export const docsUrl = "https://docs.camunda.io/docs/next";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 

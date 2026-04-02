@@ -10,7 +10,7 @@ import type {Route} from '@playwright/test';
 import {
   type QueryBatchOperationsResponseBody,
   type QueryBatchOperationItemsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function mockResponses({
   batchOperations,

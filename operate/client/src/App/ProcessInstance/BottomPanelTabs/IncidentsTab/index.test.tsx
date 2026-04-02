@@ -47,11 +47,11 @@ function getWrapper(searchParams?: Record<string, string>) {
     <QueryClientProvider client={getMockQueryClient()}>
       <MemoryRouter
         initialEntries={[
-          `${Paths.processInstance(PROCESS_INSTANCE_ID)}?${params.toString()}`,
+          `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?${params.toString()}`,
         ]}
       >
         <Routes>
-          <Route path={Paths.processInstance()} element={children} />
+          <Route path={Paths.processInstanceIncidents()} element={children} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>

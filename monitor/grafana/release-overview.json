@@ -15,7 +15,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "12.0.2"
+      "version": "12.4.2"
     },
     {
       "type": "datasource",
@@ -81,6 +81,9 @@
               "type": "auto"
             },
             "filterable": true,
+            "footer": {
+              "reducers": []
+            },
             "inspect": false
           },
           "mappings": [],
@@ -88,7 +91,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -141,7 +145,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green"
+                      "color": "green",
+                      "value": 0
                     },
                     {
                       "color": "red",
@@ -201,7 +206,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green"
+                      "color": "green",
+                      "value": 0
                     },
                     {
                       "color": "semi-dark-orange",
@@ -251,19 +257,11 @@
       "id": 294,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "frameIndex": 0,
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -286,7 +284,6 @@
           "editorMode": "code",
           "expr": "atomix_role{namespace=~\"(c8-)?release-8.*\"} ",
           "format": "table",
-          "hide": false,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -389,7 +386,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -428,7 +426,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -474,7 +472,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               }
             ]
           },
@@ -509,7 +508,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -555,7 +554,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -594,7 +594,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -627,7 +627,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -662,18 +663,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "editorMode": "code",
           "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"(c8-)?release-8.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          }
+          "refId": "A"
         }
       ],
       "title": "Archiving rate",
@@ -701,7 +702,6 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "red",
             "mode": "thresholds"
           },
           "mappings": [
@@ -720,15 +720,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.8
               },
               {
                 "color": "red",
-                "value": 0.2
+                "value": 1
               }
             ]
           },
@@ -746,7 +747,7 @@
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
@@ -763,7 +764,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -772,9 +773,10 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "instant": true,
+          "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
+          "range": true,
           "refId": "B"
         },
         {
@@ -784,7 +786,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -822,15 +823,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
-                "value": 0.4
+                "value": 2
               },
               {
                 "color": "red",
-                "value": 0.6
+                "value": 4
               }
             ]
           },
@@ -865,7 +867,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -886,7 +888,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -924,15 +925,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
-                "value": 0.6
+                "value": 7
               },
               {
                 "color": "red",
-                "value": 0.8
+                "value": 10
               }
             ]
           },
@@ -967,7 +969,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -988,7 +990,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1013,11 +1014,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 5
               }
             ]
           },
@@ -1040,7 +1042,7 @@
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
-            "max"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
@@ -1049,7 +1051,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "adhocFilters": [],
@@ -1084,11 +1086,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 5
               }
             ]
           },
@@ -1111,7 +1114,7 @@
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
-            "max"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
@@ -1120,7 +1123,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "adhocFilters": [],
@@ -1155,7 +1158,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1182,7 +1186,7 @@
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
-            "max"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
@@ -1191,7 +1195,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "adhocFilters": [],
@@ -1241,7 +1245,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1277,7 +1282,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -1310,7 +1315,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1346,7 +1352,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -1379,12 +1385,14 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           },
           "unit": "decbytes"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -1410,7 +1418,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -1418,9 +1426,8 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\"camunda.*|zeebe.*\"}) by (namespace)",
+          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\"camunda.*|zeebe.*\",container!=\"\"}) by (namespace)",
           "format": "time_series",
-          "hide": false,
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{namespace}} RSS",
@@ -1435,7 +1442,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
-      },      
+      },
       "description": "Container memory rss of the elastic pods, based on k8 metrics.",
       "fieldConfig": {
         "defaults": {
@@ -1448,12 +1455,14 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           },
           "unit": "decbytes"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -1479,7 +1488,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -1487,9 +1496,8 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\".*elastic.*\", container=~\"elasticsearch\"}) by (namespace)",
+          "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\".*elastic.*\", container=~\"elasticsearch\",container!=\"\"}) by (namespace)",
           "format": "time_series",
-          "hide": false,
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{namespace}} RSS",
@@ -1516,10 +1524,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
-                "color": "red",
+                "color": "dark-yellow",
+                "value": 7
+              },
+              {
+                "color": "dark-red",
                 "value": 10
               }
             ]
@@ -1552,7 +1565,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -1560,7 +1573,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"zeebe.*|camunda.*\"}[$__rate_interval]))",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"zeebe.*|camunda.*\",container!=\"\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1586,11 +1599,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
-                "color": "red",
-                "value": 8
+                "color": "dark-yellow",
+                "value": 14
+              },
+              {
+                "color": "dark-red",
+                "value": 19
               }
             ]
           },
@@ -1622,7 +1640,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.2",
       "targets": [
         {
           "datasource": {
@@ -1630,7 +1648,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"elastic.*\"}[$__rate_interval]))",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"elastic.*\", container!=\"\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1641,13 +1659,18 @@
       "type": "stat"
     }
   ],
+  "preload": false,
   "refresh": "1m",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [],
   "templating": {
     "list": [
       {
-        "current": {},
+        "current": {
+          "text": "",
+          "value": "${DS_PROMETHEUS}",
+          "selected": true
+        },
         "includeAll": false,
         "label": "datasource",
         "name": "DS_PROMETHEUS",
@@ -1679,7 +1702,6 @@
   "timezone": "browser",
   "title": "Release overview",
   "uid": "chl4qs5",
-  "version": 0,
-  "weekStart": "monday",
-  "id": null
+  "version": 2,
+  "weekStart": "monday"
 }

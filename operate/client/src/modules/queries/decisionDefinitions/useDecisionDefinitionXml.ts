@@ -8,7 +8,7 @@
 
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../queryKeys';
-import {type DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {fetchDecisionDefinitionXml} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
 import type {RequestError} from 'modules/request';
 

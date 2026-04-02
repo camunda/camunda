@@ -17,7 +17,7 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/groups/detail/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layout/TabEmptyState";
-import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type ClientsProps = {
   groupId: Group["groupId"];
@@ -62,7 +62,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
           childResourceTypeTranslationKey={"client"}
           parentResourceTypeTranslationKey={"group"}
           handleClick={openAssignModal}
-          docsLinkPath="/docs/components/identity/client/"
+          docsLinkPath="/components/admin/client/"
         />
         {assignClientModal}
       </>

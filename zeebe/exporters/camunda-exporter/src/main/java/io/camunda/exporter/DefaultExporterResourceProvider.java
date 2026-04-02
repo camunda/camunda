@@ -247,7 +247,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ListViewFlowNodeFromProcessInstanceHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewVariableFromVariableHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()),
             new ClusterVariableCreatedUpdatedHandler(
                 indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
@@ -303,7 +304,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName()),
             new UserTaskVariableHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()),
+                configuration.getIndex().getVariableSizeThreshold(),
+                processCache,
+                configuration.isSkipVariableWriteWithoutUserTasks()),
             new UserTaskCompletionVariableHandler(
                 indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold(),

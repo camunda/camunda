@@ -12,10 +12,10 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {queryKeys} from 'modules/queries/queryKeys';
-import type {OperationEntityType} from 'modules/types/operate';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type HandleOperationSuccessOptions = {
-  operationType: OperationEntityType;
+  operationType: BatchOperationType;
   source: 'instances-list' | 'instance-header';
   onInvalidateQueries?: () => void;
 };

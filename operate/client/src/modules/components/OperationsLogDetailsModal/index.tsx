@@ -32,13 +32,14 @@ import {
   IconTextWithTopMargin,
   SecondColumn,
 } from './styled';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {
   formatBatchTitle,
   formatModalHeading,
   getActorIcon,
+  isValidProcessInstanceKey,
   mapToCellDetailsData,
   mapToCellEntityKeyData,
 } from 'modules/utils/operationsLog';
@@ -162,7 +163,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           </VerticallyAlignedRow>
           {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
             auditLog.entityType,
-          ) ? (
+          ) && isValidProcessInstanceKey(auditLog.processInstanceKey) ? (
             <VerticallyAlignedRow>
               <FirstColumn noWrap>
                 <IconText>

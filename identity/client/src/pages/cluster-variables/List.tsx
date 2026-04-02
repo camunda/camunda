@@ -22,7 +22,7 @@ import DeleteModal from "./modals/DeleteModal";
 import DetailsModal from "./modals/DetailsModal";
 import EditModal from "./modals/EditModal";
 import { usePollingReload } from "src/utility/hooks/usePollingReload";
-import { type QueryClusterVariablesResponseBody } from "@camunda/camunda-api-zod-schemas/8.9";
+import { type QueryClusterVariablesResponseBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { useCallback } from "react";
 
 export default function List() {
@@ -95,7 +95,7 @@ export default function List() {
     <PageHeader
       title={t("clusterVariables")}
       linkText={t("clusterVariables").toLowerCase()}
-      docsLinkPath="/docs/next/components/modeler/feel/cluster-variable/cluster-variable-overview/"
+      docsLinkPath="/components/modeler/feel/cluster-variable/cluster-variable-overview/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -106,7 +106,7 @@ export default function List() {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"clusterVariable"}
-          docsLinkPath="/docs/next/components/modeler/feel/cluster-variable/cluster-variable-overview/"
+          docsLinkPath="/components/modeler/feel/cluster-variable/cluster-variable-overview/"
           handleClick={addClusterVariable}
         />
         {addClusterVariableModal}

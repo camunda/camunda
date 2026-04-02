@@ -8,7 +8,7 @@
 
 import {Link} from '@carbon/react';
 import {ActionableNotification, Text} from './styled';
-import {type CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 

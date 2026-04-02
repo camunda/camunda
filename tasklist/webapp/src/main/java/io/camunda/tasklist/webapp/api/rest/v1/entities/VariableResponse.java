@@ -87,7 +87,7 @@ public class VariableResponse {
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
         .setValue(
-            variableEntity.getIsPreview()
+            variableEntity.getIsPreview() && variableEntity.getFullValue() != null
                 ? variableEntity.getFullValue()
                 : variableEntity.getValue())
         .setTenantId(variableEntity.getTenantId());
@@ -106,7 +106,10 @@ public class VariableResponse {
     return new VariableResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
-        .setValue(variableEntity.getFullValue())
+        .setValue(
+            variableEntity.getIsPreview() && variableEntity.getFullValue() != null
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue())
         .setTenantId(variableEntity.getTenantId());
   }
 

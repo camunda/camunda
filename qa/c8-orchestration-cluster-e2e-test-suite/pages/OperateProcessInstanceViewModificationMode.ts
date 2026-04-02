@@ -88,21 +88,21 @@ export class OperateProcessInstanceViewModificationModePage {
       .getByText('Process Instance Modification Mode')
       .first();
     this.flowNodeModificationsPopup = page.getByText('Element Modifications');
-    this.addModificationButtononPopup = page.getByTitle(
-      'Add single element instance',
-    );
-    this.moveAllButtononPopup = page.getByTitle(
-      'Move all running instances in this element to another target',
-    );
-    this.cancelButtonPopup = page.getByTitle(
-      'Cancel selected instance in this element',
-    );
-    this.cancelAllButtonPopup = page.getByTitle(
-      'Cancel all running element instances in this element',
-    );
-    this.reviewModificationsButton = page.getByTestId(
-      'review-modifications-button',
-    );
+    this.addModificationButtononPopup = page.getByRole('button', {
+      name: /Add single (flow node|element) instance/i,
+    });
+    this.moveAllButtononPopup = page
+      .getByTestId('popover')
+      .getByRole('button', {name: /Move all/i});
+    this.cancelButtonPopup = page.getByRole('button', {
+      name: /Cancel selected instance in this (flow node|element)/i,
+    });
+    this.cancelAllButtonPopup = page.getByRole('button', {
+      name: /Cancel all running (flow node|element) instances in this (flow node|element)/i,
+    });
+    this.reviewModificationsButton = page.getByRole('button', {
+      name: /Apply Modifications|Review Modifications/,
+    });
     this.discardAllModificationsButton = page.getByTestId('discard-all-button');
     this.cancelButtonModificationDialog = page
       .getByRole('dialog')
@@ -111,7 +111,7 @@ export class OperateProcessInstanceViewModificationModePage {
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
     this.moveTokensMessage = page.getByText(
-      'Select the target element in the diagram',
+      /Select the target (flow node|element) in the diagram/,
     );
     this.diagram = this.page.getByTestId('diagram');
     this.multipleInstancesAlert = page
@@ -126,7 +126,7 @@ export class OperateProcessInstanceViewModificationModePage {
       name: 'Add single element instance',
     });
     this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this element to another target',
+      name: /Move selected instance in this (flow node|element) to another target/,
     });
     this.modificationModeText = page.getByText(
       'Process Instance Modification Mode',
@@ -151,41 +151,21 @@ export class OperateProcessInstanceViewModificationModePage {
         .locator(`[id="newVariables[${index}].value"]`),
       jsonEditorButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('cell')
-        .nth(1)
-        .getByRole('button'),
+        .getByRole('button', {name: 'Open JSON editor'}),
       deleteButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('cell')
-        .nth(2)
-        .getByRole('button'),
+        .getByRole('button', {name: 'Delete Variable'}),
       jsonEditorModal: {
         header: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByText('Edit a new Variable'),
         cancelButton: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
         applyButton: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Apply'}),
         inputField: this.page
-          .getByTestId(`variable-newVariables[${index}]`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
           .getByRole('textbox', {name: 'Editor content'}),
@@ -209,36 +189,18 @@ export class OperateProcessInstanceViewModificationModePage {
         .getByTestId('edit-variable-value'),
       jsonEditorButton: this.page
         .getByTestId(`variable-${name}`)
-        .getByRole('cell')
-        .nth(1)
-        .getByRole('button'),
+        .getByRole('button', {name: 'Open JSON editor'}),
       jsonEditorModal: {
         header: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByText(`Edit Variable "${name}"`),
         cancelButton: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
         applyButton: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('button', {name: 'Apply'}),
         inputField: this.page
-          .getByTestId(`variable-${name}`)
-          .getByRole('cell')
-          .nth(1)
-          .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
           .getByRole('textbox', {name: 'Editor content'}),
@@ -347,7 +309,17 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickMoveAllButtononPopup(): Promise<void> {
-    await this.moveAllButtononPopup.click();
+    // Wait for any in-flight element-stats fetch (which replaces buttons with a
+    // spinner) to complete before clicking. Passes immediately when the spinner
+    // is not present.
+    await this.page
+      .getByTestId('dropdown-spinner')
+      .waitFor({state: 'hidden', timeout: 15000});
+    // The sticky header can overlap the button in the popover, intercepting
+    // pointer events even though the button is visible and enabled. Using
+    // evaluate/click() fires the DOM click event directly on the element,
+    // bypassing any visual interception by the header.
+    await this.moveAllButtononPopup.evaluate((el: HTMLElement) => el.click());
   }
 
   async clickMoveInstanceButtononPopup(): Promise<void> {
@@ -390,9 +362,9 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   getFlowNode(flowNodeName: string) {
-    return this.diagram
-      .locator('.djs-group')
-      .locator(`[data-element-id="${flowNodeName}"]`);
+    return this.diagram.locator(
+      `.djs-element[data-element-id="${flowNodeName}"]`,
+    );
   }
 
   async addTokenToFlowNodeAndApplyChanges(flowNodeName: string): Promise<void> {

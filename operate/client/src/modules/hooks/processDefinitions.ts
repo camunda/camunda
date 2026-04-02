@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {useProcessDefinitionsSearch} from 'modules/queries/processDefinitions/useProcessDefinitionsSearch';
 import {parseProcessDefinitionsSearchFilter} from 'modules/utils/filter/v2/processDefinitionsSearchFilter';

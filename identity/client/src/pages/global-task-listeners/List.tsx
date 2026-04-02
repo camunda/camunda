@@ -51,7 +51,7 @@ const List: FC = () => {
     <PageHeader
       title={t("globalTaskListeners")}
       linkText={t("globalTaskListeners").toLowerCase()}
-      docsLinkPath="/docs/components/concepts/global-user-task-listeners/"
+      docsLinkPath="/components/concepts/global-user-task-listeners/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -62,7 +62,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"globalTaskListener"}
-          docsLinkPath="/docs/components/concepts/global-user-task-listeners/"
+          docsLinkPath="/components/concepts/global-user-task-listeners/"
           handleClick={addGlobalTaskListener}
         />
         {addGlobalTaskListenerModal}

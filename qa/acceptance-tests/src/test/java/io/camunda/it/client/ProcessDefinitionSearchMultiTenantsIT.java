@@ -52,7 +52,7 @@ public class ProcessDefinitionSearchMultiTenantsIT {
 
   private static final String TENANT_ID_1 = "tenant1";
   private static final String USERNAME_1 = "user1";
-  private static final String PROCESS_DEFINITION_WITH_START_FORM_ID = "Process_11hxie4";
+  private static final String PROCESS_DEFINITION_WITH_START_FORM_ID = "processStartForm";
   private static final String FORM_ID = "test";
 
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
@@ -74,7 +74,7 @@ public class ProcessDefinitionSearchMultiTenantsIT {
           new ProcessDefinitionTestContext(
               "processWithVersionTag", "process/processWithVersionTag.bpmn", 1, "<default>"),
           new ProcessDefinitionTestContext(
-              "Process_11hxie4", "process/process_start_form.bpmn", 1, "<default>"));
+              "processStartForm", "process/process_start_form.bpmn", 1, "<default>"));
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_TENANT_1 =
       List.of(
           new ProcessDefinitionTestContext(

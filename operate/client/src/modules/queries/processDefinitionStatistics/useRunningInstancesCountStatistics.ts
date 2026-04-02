@@ -9,7 +9,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinitionStatistics} from 'modules/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
 import {queryKeys} from '../queryKeys';
-import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 
 interface RunningProcessInstancesCount {
   total: number;

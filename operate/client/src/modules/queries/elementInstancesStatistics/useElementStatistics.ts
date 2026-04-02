@@ -7,11 +7,11 @@
  */
 
 import {useElementInstancesStatistics} from './useElementInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getStatisticsByElement} from 'modules/utils/statistics/elementInstances';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import type {ElementState} from 'modules/types/operate';
+import type {ElementState} from 'modules/bpmn-js/overlayTypes';
 
 const statisticsByElementParser =
   (businessObjects?: BusinessObjects) =>

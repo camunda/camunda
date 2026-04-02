@@ -11,7 +11,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {useElementStatistics} from './useElementStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   createProcessInstance,
   mockProcessWithInputOutputMappingsXML,

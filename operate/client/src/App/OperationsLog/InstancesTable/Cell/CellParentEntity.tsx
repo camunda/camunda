@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
+import {isValidProcessInstanceKey} from 'modules/utils/operationsLog';
 
 type Props = {
   item: AuditLog;
@@ -24,7 +25,7 @@ const CellParentEntity: React.FC<Props> = ({item, processDefinitionName}) => {
     case 'USER_TASK':
     case 'INCIDENT':
     case 'VARIABLE':
-      return (
+      return isValidProcessInstanceKey(item.processInstanceKey) ? (
         <div>
           <div>
             <Link
@@ -36,6 +37,8 @@ const CellParentEntity: React.FC<Props> = ({item, processDefinitionName}) => {
           </div>
           <em>{processDefinitionName}</em>
         </div>
+      ) : (
+        '-'
       );
     default:
       return '-';

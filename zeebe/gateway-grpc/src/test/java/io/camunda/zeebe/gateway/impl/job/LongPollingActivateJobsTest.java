@@ -173,7 +173,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldUnblockAllRequestsWhenJobsAvailable() throws Exception {
+  public void shouldUnblockOneRequestPerNotificationAndCascade() throws Exception {
     // given
     final int amount = FAILED_RESPONSE_THRESHOLD;
     activateJobsAndWaitUntilBlocked(amount);
@@ -187,15 +187,68 @@ public final class LongPollingActivateJobsTest {
 
     // then
 
-    // the job available notification triggers all three requests again
-    final int invTriggeredByNotification = amount * partitionsCount;
-    // the one request which has a result, re-triggers the remaining requests
-    final int invTriggeredBySuccessfulRequest = (amount - 1) * partitionsCount;
+    // the notification wakes one request, which activates jobs on all partitions
+    final int invTriggeredByNotification = partitionsCount;
+    // that request finds jobs and cascades to the next, which finds nothing and stops
+    final int invTriggeredByCascade = partitionsCount;
     verify(
             activateJobsStub,
-            timeout(2000)
-                .times(firstRound + invTriggeredByNotification + invTriggeredBySuccessfulRequest))
+            timeout(2000).times(firstRound + invTriggeredByNotification + invTriggeredByCascade))
         .handle(any());
+  }
+
+  @Test
+  public void shouldSkipCancelledRequestAndUnblockNext() {
+    // given
+    final InflightActivateJobsRequest<ActivateJobsResponse> cancelledRequest =
+        getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest<ActivateJobsResponse> liveRequest =
+        getLongPollingActivateJobsRequest();
+
+    handler.internalActivateJobsRetry(cancelledRequest);
+    handler.internalActivateJobsRetry(liveRequest);
+    waitUntil(cancelledRequest::hasScheduledTimer);
+    waitUntil(liveRequest::hasScheduledTimer);
+
+    // when — first request's worker disconnects, then jobs become available
+    doReturn(true).when(cancelledRequest.getResponseObserver()).isCancelled();
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    brokerClient.notifyJobsAvailable(TYPE);
+    Awaitility.await().until(liveRequest::isCompleted);
+
+    // then — the cancelled request is skipped, the live one gets the jobs
+    verify(cancelledRequest.getResponseObserver(), never()).onNext(any());
+    verify(liveRequest.getResponseObserver(), times(1)).onNext(any());
+    verify(liveRequest.getResponseObserver(), times(1)).onCompleted();
+  }
+
+  @Test
+  public void shouldCleanUpJobTypeStateWhenAllPendingRequestsCancelled() {
+    // given
+    final InflightActivateJobsRequest<ActivateJobsResponse> request1 =
+        getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest<ActivateJobsResponse> request2 =
+        getLongPollingActivateJobsRequest();
+
+    handler.internalActivateJobsRetry(request1);
+    handler.internalActivateJobsRetry(request2);
+    waitUntil(request1::hasScheduledTimer);
+    waitUntil(request2::hasScheduledTimer);
+
+    // when — all workers disconnect, then a notification arrives
+    doReturn(true).when(request1.getResponseObserver()).isCancelled();
+    doReturn(true).when(request2.getResponseObserver()).isCancelled();
+    brokerClient.notifyJobsAvailable(TYPE);
+
+    // then — a new request for the same type should still work
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    final InflightActivateJobsRequest<ActivateJobsResponse> freshRequest =
+        getLongPollingActivateJobsRequest();
+    handler.internalActivateJobsRetry(freshRequest);
+    Awaitility.await().until(freshRequest::isCompleted);
+
+    verify(freshRequest.getResponseObserver(), times(1)).onNext(any());
+    verify(freshRequest.getResponseObserver(), times(1)).onCompleted();
   }
 
   @Test

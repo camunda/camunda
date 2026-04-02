@@ -205,7 +205,7 @@ jobs:
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
 
       - name: Login to infosec registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
@@ -385,7 +385,7 @@ jobs:
         if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.4.0
+        uses: octokit/request-action@v3.0.0
         with:
           route: POST /repos/camunda/camunda/releases
           make_latest: false

@@ -101,4 +101,14 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   public Map<String, String> getBatchOperationDependantFilters() {
     return Map.of(AuditLogTemplate.ENTITY_TYPE, AuditLogEntityType.BATCH.toString());
   }
+
+  @Override
+  public String getDecisionDependantField() {
+    return ENTITY_KEY;
+  }
+
+  @Override
+  public Map<String, String> getDecisionDependantFilters() {
+    return Map.of(AuditLogTemplate.ENTITY_TYPE, AuditLogEntityType.DECISION.toString());
+  }
 }

@@ -17,7 +17,7 @@ import * as userMocks from 'common/mocks/current-user';
 import {assignedTaskWithForm, unassignedTaskWithForm} from 'v2/mocks/task';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import type {QueryVariablesByUserTaskRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryVariablesByUserTaskRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 const DYNAMIC_FORM_REQUESTED_VARIABLES = ['radio_field', 'radio_field_options'];
@@ -80,7 +80,7 @@ describe('<FormJS />', () => {
   it('should render form for unassigned task', async () => {
     nodeMockServer.use(
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
@@ -139,7 +139,7 @@ describe('<FormJS />', () => {
   it('should render form for assigned task', async () => {
     nodeMockServer.use(
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
@@ -197,7 +197,7 @@ describe('<FormJS />', () => {
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
@@ -252,7 +252,7 @@ describe('<FormJS />', () => {
   it('should submit prefilled form', async () => {
     nodeMockServer.use(
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
@@ -319,7 +319,7 @@ describe('<FormJS />', () => {
   it('should submit edited form', async () => {
     nodeMockServer.use(
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
@@ -389,7 +389,7 @@ describe('<FormJS />', () => {
         return HttpResponse.json(formMocks.dynamicForm);
       }),
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(
@@ -445,11 +445,14 @@ describe('<FormJS />', () => {
 
   it("should show an error message if variables can't be loaded", async () => {
     nodeMockServer.use(
-      http.post('/v2/user-tasks/:userTaskKey/variables/search', () => {
-        return HttpResponse.json(null, {
-          status: 404,
-        });
-      }),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
+        () => {
+          return HttpResponse.json(null, {
+            status: 404,
+          });
+        },
+      ),
     );
     render(
       <FormJS
@@ -485,7 +488,7 @@ describe('<FormJS />', () => {
         },
       ),
       http.post(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
           return HttpResponse.json([]);
         },
@@ -521,7 +524,7 @@ describe('<FormJS />', () => {
   it("should make sure fetched variables don't truncate", async () => {
     nodeMockServer.use(
       http.post<never, QueryVariablesByUserTaskRequestBody>(
-        '/v2/user-tasks/:userTaskKey/variables/search',
+        '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
           const url = new URL(request.url);
 

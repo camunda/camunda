@@ -56,6 +56,8 @@ const instanceWithIncident: InstanceMock = {
           <zeebe:ioMapping>
             <zeebe:input source="=orderNo" target="orderId" />
             <zeebe:input source="=total" target="amountToPay" />
+            <zeebe:output source="=paymentStatus" target="paymentResult" />
+            <zeebe:output source="=transactionId" target="paymentTransactionId" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>SequenceFlow_0j6tsnn</bpmn:incoming>

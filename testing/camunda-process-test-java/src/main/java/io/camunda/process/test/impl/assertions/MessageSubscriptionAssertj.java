@@ -25,16 +25,17 @@ import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.assertj.core.api.AbstractAssert;
 
 public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscriptionAssertj, String> {
 
   private final CamundaDataSource dataSource;
-  private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
 
   public MessageSubscriptionAssertj(
       final CamundaDataSource dataSource,
-      final CamundaAssertAwaitBehavior awaitBehavior,
+      final Supplier<CamundaAssertAwaitBehavior> awaitBehavior,
       final String failureMessagePrefix) {
     super(failureMessagePrefix, MessageSubscriptionAssertj.class);
     this.dataSource = dataSource;
@@ -134,11 +135,13 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
       final Consumer<MessageSubscriptionFilter> filter,
       final Consumer<List<MessageSubscription>> assertionCallback) {
 
-    awaitBehavior.untilAsserted(
-        () ->
-            dataSource.findMessageSubscriptions(
-                f -> filter.accept(f.processInstanceKey(processInstanceKey))),
-        assertionCallback);
+    awaitBehavior
+        .get()
+        .untilAsserted(
+            () ->
+                dataSource.findMessageSubscriptions(
+                    f -> filter.accept(f.processInstanceKey(processInstanceKey))),
+            assertionCallback);
   }
 
   private void awaitCorrelatedMessages(
@@ -146,10 +149,12 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
       final Consumer<CorrelatedMessageSubscriptionFilter> filter,
       final Consumer<List<CorrelatedMessageSubscription>> assertionCallback) {
 
-    awaitBehavior.untilAsserted(
-        () ->
-            dataSource.findCorrelatedMessages(
-                f -> filter.accept(f.processInstanceKey(processInstanceKey))),
-        assertionCallback);
+    awaitBehavior
+        .get()
+        .untilAsserted(
+            () ->
+                dataSource.findCorrelatedMessages(
+                    f -> filter.accept(f.processInstanceKey(processInstanceKey))),
+            assertionCallback);
   }
 }
