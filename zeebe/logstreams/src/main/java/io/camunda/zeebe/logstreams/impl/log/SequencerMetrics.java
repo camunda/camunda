@@ -71,7 +71,7 @@ final class SequencerMetrics {
             tag ->
                 Timer.builder(LOCK_WAIT_TIME.getName())
                     .description(LOCK_WAIT_TIME.getDescription())
-                    .publishPercentiles(0.5, 0.9, 0.99, 0.999)
+                    .publishPercentiles(0.5, 0.9, 0.99)
                     .tag(LockKeyNames.WAITER.asString(), tag.getValue())
                     .register(meterRegistry));
     timer.record(durationNanos, TimeUnit.NANOSECONDS);
@@ -85,7 +85,7 @@ final class SequencerMetrics {
             tag ->
                 Timer.builder(LOCK_HOLD_TIME.getName())
                     .description(LOCK_HOLD_TIME.getDescription())
-                    .publishPercentiles(0.5, 0.9, 0.99, 0.999)
+                    .publishPercentiles(0.5, 0.9, 0.99)
                     .tag(LockKeyNames.WRITER.asString(), tag.getValue())
                     .register(meterRegistry));
     timer.record(durationNanos, TimeUnit.NANOSECONDS);
