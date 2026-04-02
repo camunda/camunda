@@ -82,13 +82,21 @@ public class HttpClientFactory {
 
   public HttpClient createClient() {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
-    final CloseableHttpAsyncClient client =
-        defaultClientBuilder().setDefaultRequestConfig(defaultRequestConfig).build();
-    final URI gatewayAddress = buildGatewayAddress();
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
+    final HttpAsyncClientBuilder clientBuilder =
+        defaultClientBuilder().setDefaultRequestConfig(defaultRequestConfig);
+
+    // Register the credentials interceptor as the FIRST exec interceptor so that the
+    // Authorization header is applied at wire-send time (not at request-build time).
+    // This prevents stale tokens on requests that sit in the Apache async pipeline.
+    clientBuilder.addExecInterceptorFirst(
+        "credentials-interceptor", new CredentialsInterceptor(credentialsProvider));
+
+    final CloseableHttpAsyncClient client = clientBuilder.build();
+    final URI gatewayAddress = buildGatewayAddress();
 
     return new HttpClient(
         client,
