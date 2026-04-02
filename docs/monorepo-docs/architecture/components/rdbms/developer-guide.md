@@ -1,38 +1,17 @@
-# Contributing to the RDBMS Module
+---
+toc_min_heading_level: 2
+toc_max_heading_level: 4
+---
+
+# Contributing to the RDBMS module
 
 This guide provides practical development guidelines for contributors working on the `db/rdbms`
 module. For high-level architectural decisions (ADRs) and a component overview, see the
-[architecture documentation](../../docs/monorepo-docs/architecture/components/rdbms/rdbms_architecture_docs.md).
-
-## Table of Contents
-
-- [Module Structure](#module-structure)
-- [Development Guidelines](#development-guidelines)
-  - [General Conventions](#general-conventions)
-  - [Adding a New Entity](#adding-a-new-entity)
-    - [1. Create the DbModel](#1-create-the-dbmodel)
-    - [2. Create the DbQuery](#2-create-the-dbquery)
-    - [3. Create the SearchColumn Enum](#3-create-the-searchcolumn-enum)
-    - [4. Create the Mapper Interface](#4-create-the-mapper-interface)
-    - [5. Create the Mapper XML](#5-create-the-mapper-xml)
-    - [6. Create the DbReader](#6-create-the-dbreader)
-    - [7. Create the Writer](#7-create-the-writer)
-    - [8. Register in RdbmsService](#8-register-in-rdbmsservice)
-  - [Adding a New Field to an Existing Entity](#adding-a-new-field-to-an-existing-entity)
-- [Liquibase Guidelines](#liquibase-guidelines)
-  - [Changeset Conventions](#changeset-conventions)
-  - [Data Types](#data-types)
-  - [Database-Specific Code](#database-specific-code-in-liquibase)
-- [MyBatis Guidelines](#mybatis-guidelines)
-  - [Common Practices](#common-practices)
-  - [Using Commons.xml](#using-commonsxml)
-  - [Database-Specific SQL](#database-specific-sql)
-  - [Oracle-Specific Pitfalls](#oracle-specific-pitfalls)
-  - [Other Database-Specific Considerations](#other-database-specific-considerations)
+[architecture documentation](./rdbms_architecture_docs.md).
 
 ---
 
-## Module Structure
+## Module structure
 
 ```
 db/rdbms/
@@ -73,9 +52,9 @@ db/rdbms-schema/
 
 ---
 
-## Development Guidelines
+## Development guidelines
 
-### General Conventions
+### General conventions
 
 - **No Spring in the `db/rdbms` module**: Spring is only used in `dist/` to wire components
   together. The `db/rdbms` module itself is Spring-free; use constructor injection everywhere.
@@ -90,7 +69,7 @@ db/rdbms-schema/
 
 ---
 
-### Adding a New Entity
+### Adding a new entity
 
 This section walks through adding support for a completely new entity — for example, a fictional
 `Widget` entity — by following the same patterns used by `ProcessDefinition`.
@@ -303,7 +282,7 @@ final var widgetReader = new WidgetDbReader(widgetMapper, readerConfig);
 
 ---
 
-### Adding a New Field to an Existing Entity
+### Adding a new field to an existing entity
 
 Adding a new column to an existing entity requires changes in the following places:
 
@@ -323,9 +302,9 @@ Adding a new column to an existing entity requires changes in the following plac
 
 ---
 
-## Liquibase Guidelines
+## Liquibase guidelines
 
-### Changeset Conventions
+### Changeset conventions
 
 - **One changeset file per release**: e.g., `changesets/8.9.0.xml`. New changesets for the next
   release go in a new version file.
@@ -378,7 +357,7 @@ whether the change has already been applied and mark it as ran if yes. For examp
 
 ---
 
-### Data Types
+### Data types
 
 Use the following Liquibase-level types which are mapped correctly across all supported databases:
 
@@ -459,7 +438,7 @@ Rules:
 
 ---
 
-### Database-Specific Code in Liquibase
+### Database-specific code in Liquibase
 
 When a Liquibase type or syntax is not portable across databases, use:
 
@@ -471,9 +450,9 @@ When a Liquibase type or syntax is not portable across databases, use:
 
 ---
 
-## MyBatis Guidelines
+## MyBatis guidelines
 
-### Common Practices
+### Common practices
 
 - **Always prefix table names** with `${prefix}` to support configurable schema prefixes:
 
@@ -500,7 +479,7 @@ When a Liquibase type or syntax is not portable across databases, use:
 
 ---
 
-### Using Commons.xml
+### Using `Commons.xml`
 
 `Commons.xml` (namespace `io.camunda.db.rdbms.sql.Commons`) contains reusable SQL fragments for
 cross-cutting concerns. Always use these instead of duplicating the SQL.
@@ -561,7 +540,7 @@ The `operationCondition` fragment expects a variable named `operation` in scope 
 
 ---
 
-### Database-Specific SQL
+### Database-specific SQL
 
 When a single SQL statement cannot be written in a way that works on all supported databases, use
 the `databaseId` attribute to provide separate implementations. MyBatis selects the matching
@@ -646,7 +625,7 @@ syntax differ from other databases.
 
 ---
 
-### Oracle-Specific Pitfalls
+### Oracle-specific pitfalls
 
 Oracle has several unique behaviors that require explicit workarounds:
 
@@ -727,7 +706,7 @@ ordering. Since you are using the shared `orderBy` fragment, this is handled aut
 
 ---
 
-### Other Database-Specific Considerations
+### Other database-specific considerations
 
 #### MariaDB / MySQL
 

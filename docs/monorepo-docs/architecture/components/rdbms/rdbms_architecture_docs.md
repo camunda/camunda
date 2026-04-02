@@ -30,11 +30,38 @@ Key Features & Benefits:
 
 ### 1.2 Requirements Overview
 
-tbd
+- **Provide RDBMS as secondary storage backend** for the Orchestration Cluster as an alternative to
+  Elasticsearch/OpenSearch, without changing external API behavior or request/response semantics for
+  clients.
+- **Support multiple relational databases** (PostgreSQL/Aurora, MariaDB, MySQL, SQL Server, Oracle, H2
+  for single-broker) under a documented support policy, including schema management via Liquibase.
+- **Persist and expose orchestration data** (process instances, user tasks, etc.) by exporting Zeebe
+  records into RDBMS and serving all read access via the Orchestration Cluster (v2 REST API and
+  internal readers), not by direct DB access.
+- **Support lifecycle operations on RDBMS data**, including automatic history cleanup (TTL-based marking
+  plus batch deletion) and consistent backup/restore together with Zeebe log via exporter position
+  tracking.
+- **Expose configuration options** for connectivity, pooling, TLS, credentials, table prefixing, and
+  auto-DDL/manual schema control so that operations teams can integrate with their existing RDBMS
+  standards and tooling.
 
 ### 1.3 Quality Goals
 
-tbd
+- **Reliability & consistency:** RDBMS state must stay consistent with Zeebe’s primary log,
+  including after failover and restore, using exporter positions and backup ranges to synchronize
+  both systems.
+- **Performance & scalability:** Typical workloads should meet or closely match existing
+  secondary-storage SLAs by using batched exports, configurable flush intervals/queue sizes, and
+  tunable JDBC connection pools.
+- **Security:** Introducing RDBMS must not weaken the platform’s security posture; it should
+  preserve the existing external attack surface, rely on database-layer protections, encourage
+  TLS-secured connections, and pass regular security assessments.
+- **Operability:** Operators must be able to diagnose and fix RDBMS-related issues efficiently via
+  clear logging, documented failure modes, and dedicated troubleshooting guidance for connectivity,
+  exporter, and query errors.
+- **Maintainability & extensibility:** The RDBMS module should be straightforward to extend (new
+  entities/fields, new DB versions) using documented conventions, minimizing regression risk across
+  all supported databases.
 
 ### 1.4 Stakeholders
 
@@ -47,7 +74,7 @@ tbd
 
 ### Spring
 
-Spring should only be used in the dist folder to bring together the components for the application.
+Spring should only be used in the `dist` folder to bring together the components for the application.
 So in the rdbms module itself, no spring should be used.
 
 ## 3. Context and Scope
@@ -60,7 +87,7 @@ title: Rdbms - Business Context
 ---
 flowchart LR
   USER(["User"])
-  Camunda_8["Camunda"]
+  Camunda_8("Camunda")
   RDBMS_DB[("RDBMS (e.g. Postgres)")]
   USER --> Camunda_8 --> RDBMS_DB
 ```

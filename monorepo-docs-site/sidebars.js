@@ -34,6 +34,8 @@ const sidebars = {
               label: 'RDBMS',
               items: [
                 'architecture/components/rdbms/rdbms_architecture_docs',
+                'architecture/components/rdbms/developer-guide',
+                'architecture/components/rdbms/benchmarking',
                 {
                   type: 'category',
                   label: 'ADRs',

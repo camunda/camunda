@@ -1,3 +1,8 @@
+---
+toc_min_heading_level: 2
+toc_max_heading_level: 4
+---
+
 # RDBMS benchmarking
 
 This is a quick guide to performance analysis and benchmarking of the relational databases on the
@@ -12,14 +17,14 @@ kubectl port-forward postgres-postgresql-0 5432:5432
 This tunnels the database port to your local machine, so you can connect to it using any database
 client. You have two options to connect to the database:
 
-Via the regular camunda user:
+Via the regular `camunda` user:
 
 ```
 username: camunda
 password: camunda
 ```
 
-Via the postgres admin user:
+Via the `postgres` admin user:
 
 ```
 username: postgres
@@ -38,7 +43,7 @@ To analyze the current `camunda` sessions and their activity, you can use the fo
 select * from pg_stat_activity where state = 'active' AND usename = 'camunda' AND client_addr IS NOT NULL
 ```
 
-What to watch for:
+Key fields to watch:
 - `wait_event`: If this column is not null, it indicates that the session is currently waiting for a
 specific event, such as a lock or I/O operation.
 - `wait_event_type`: This column provides more context about the type of event the session is
@@ -272,7 +277,7 @@ inefficient query plans, or excessive disk I/O. Most often, this can be analysed
 which can provide recommendations on how to optimize the query, for example by adding indexes,
 rewriting the query, or changing the database configuration.
 
-## Read Query benchmarking
+## Read query benchmarking
 
 In our common load-tester, we have a read query performance benchmark built-in. It executes a
 predefined set of queries against the database and measures their execution time, which can be used
