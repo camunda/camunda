@@ -177,6 +177,7 @@ const VariablesTable: React.FC<Props> = ({
                         cellContent: (
                           <Operations>
                             <ViewFullVariableButton
+                              shouldSubmitOnApply={false}
                               mode="add"
                               scopeId={scopeId}
                               variableName={variableName}

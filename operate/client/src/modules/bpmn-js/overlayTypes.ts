@@ -7,7 +7,7 @@
  */
 
 import type {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import type {ElementState} from 'modules/types/operate';
+type ElementState = 'active' | 'incidents' | 'canceled' | 'completed';
 
 type OverlayData = {
   payload?: unknown;
@@ -49,4 +49,4 @@ const isModificationBadgePayload = (
 };
 
 export {isStatisticsPayload, isModificationBadgePayload};
-export type {OverlayData};
+export type {ElementState, OverlayData};

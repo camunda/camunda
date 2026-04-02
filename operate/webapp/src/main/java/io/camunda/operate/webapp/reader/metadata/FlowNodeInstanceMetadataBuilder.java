@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ public class FlowNodeInstanceMetadataBuilder {
       LoggerFactory.getLogger(FlowNodeInstanceMetadataBuilder.class);
 
   private static final String ID_PATTERN = "%s_%s";
+  private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
   private final DecisionInstanceReader decisionInstanceReader;
 
   private final ListViewReader listViewReader;
@@ -178,7 +180,7 @@ public class FlowNodeInstanceMetadataBuilder {
           .setFollowUpDate(task.getFollowUpDate())
           .setChangedAttributes(task.getChangedAttributes())
           .setTenantId(task.getTenantId())
-          .setFormKey(task.getFormKey() != null ? Long.parseLong(task.getFormKey()) : null)
+          .setFormKey(parseFormKeyOrNull(task.getFormKey()))
           .setExternalReference(task.getExternalFormReference())
           .setVariables(variablesMap);
     }
@@ -230,5 +232,17 @@ public class FlowNodeInstanceMetadataBuilder {
         generateEventId(flowNodeInstance),
         messageSubscription,
         job);
+  }
+
+  private static Long parseFormKeyOrNull(final String formKey) {
+    if (formKey == null || EMBEDDED_FORMS_PATTERN.matcher(formKey).matches()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(formKey);
+    } catch (final NumberFormatException e) {
+      LOGGER.debug("Failed to parse formKey '{}' as Long, returning null", formKey);
+      return null;
+    }
   }
 }

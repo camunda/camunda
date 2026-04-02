@@ -172,6 +172,7 @@ const Variable: React.FC = observer(() => {
               }}
               onApply={(value) => {
                 form.change('variableValues', value);
+                form.submit();
                 setIsModalVisible(false);
                 tracking.track({
                   eventName: 'json-editor-saved',

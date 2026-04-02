@@ -7,8 +7,20 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {ElementInstancePlaceholder} from 'modules/types/operate';
+import type {ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {ElementModification} from './modifications';
+
+type ElementInstancePlaceholder = {
+  id: string;
+  type: string;
+  state?: ProcessInstanceState;
+  flowNodeId: string;
+  startDate: string;
+  endDate: null | string;
+  treePath: string;
+  sortValues: [string, string] | [];
+  isPlaceholder?: boolean;
+};
 
 type ModificationPlaceholder = {
   elementInstancePlaceholder: ElementInstancePlaceholder;
@@ -53,4 +65,4 @@ class InstanceHistoryModification {
 export const instanceHistoryModificationStore =
   new InstanceHistoryModification();
 
-export type {ModificationPlaceholder};
+export type {ElementInstancePlaceholder, ModificationPlaceholder};

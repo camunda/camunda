@@ -99,8 +99,8 @@ const BottomPanelContent: React.FC = () => {
               : undefined
           }
         >
-          <ElementInstanceLog />
-          <BottomPanelTabs />
+          <ElementInstanceLog isPanel />
+          <BottomPanelTabs isHistoryTabVisible={false} />
         </ResizablePanel>
       </BottomPanel>
     );
@@ -108,8 +108,7 @@ const BottomPanelContent: React.FC = () => {
 
   return (
     <BottomPanelStacked>
-      <ElementInstanceLog />
-      <BottomPanelTabs />
+      <BottomPanelTabs isHistoryTabVisible />
     </BottomPanelStacked>
   );
 };
