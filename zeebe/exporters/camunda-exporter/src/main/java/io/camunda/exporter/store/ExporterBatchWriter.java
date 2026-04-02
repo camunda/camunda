@@ -112,11 +112,11 @@ public final class ExporterBatchWriter {
         final var entityKey = key.key();
         final var cached = cachedEntities.get(entityKey);
         LOG.trace(
-            "  entity: id={} type={} handler={} initialRecordBytes={}",
+            "  entity: id={} type={} handler={} sourceRecordBytes={}",
             entityKey.entityId(),
             entityKey.entityType().getSimpleName(),
             key.handler().getClass().getSimpleName(),
-            cached != null ? cached.initialRecordBytes() : 0L);
+            cached != null ? cached.sourceRecordBytes() : 0L);
       }
     }
 
@@ -217,7 +217,7 @@ public final class ExporterBatchWriter {
     }
   }
 
-  private record CachedEntity(ExporterEntity entity, long initialRecordBytes) {}
+  private record CachedEntity(ExporterEntity entity, long sourceRecordBytes) {}
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
