@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public final class ExporterBatchWriter {
   private static final Logger LOG = LoggerFactory.getLogger(ExporterBatchWriter.class);
   private boolean warnAboutMessageSizeEstimation = false;
-  private final Map<EntityIdAndEntityType, ExporterEntity> cachedEntities = new HashMap<>();
+  private final Map<EntityIdAndEntityType, CachedEntity> cachedEntities = new HashMap<>();
   private final Map<EntityIdTypeAndHandler, ExporterEntity> cachedEntitiesToFlush =
       new LinkedHashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
@@ -77,10 +77,14 @@ public final class ExporterBatchWriter {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
     totalMemoryEstimate += length;
-    final ExporterEntity entity =
-        cachedEntities.computeIfAbsent(cacheKey, (k) -> handler.createNewEntity(id));
+    final var cached =
+        cachedEntities.computeIfAbsent(
+            cacheKey,
+            (k) -> {
+              return new CachedEntity(handler.createNewEntity(id), length);
+            });
 
-    handler.updateEntity(record, entity);
+    handler.updateEntity(record, cached.entity());
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
     // we store all handlers for an entity to make sure not to miss any flushes.
@@ -88,12 +92,32 @@ public final class ExporterBatchWriter {
     // in cases where we have bugs with writing to the same index + id, but with a different
     // entity, this helps avoid race conditions that make that behavior non-deterministic.
     // which would otherwise make spotting and fixing such bugs harder.
-    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), entity);
+    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), cached.entity());
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
     if (cachedEntities.isEmpty()) {
       return;
+    }
+
+    if (LOG.isTraceEnabled()) {
+      LOG.trace(
+          "Flushing batch: totalMemoryEstimation={} bytes ({} MB), cachedEntities={}, entitiesToFlush={}",
+          totalMemoryEstimate,
+          getBatchMemoryEstimateInMb(),
+          cachedEntities.size(),
+          cachedEntitiesToFlush.size());
+      for (final var entry : cachedEntitiesToFlush.entrySet()) {
+        final var key = entry.getKey();
+        final var entityKey = key.key();
+        final var cached = cachedEntities.get(entityKey);
+        LOG.trace(
+            "  entity: id={} type={} handler={} sourceRecordBytes={}",
+            entityKey.entityId(),
+            entityKey.entityType().getSimpleName(),
+            key.handler().getClass().getSimpleName(),
+            cached != null ? cached.sourceRecordBytes() : 0L);
+      }
     }
 
     // some handlers modify the same entity (e.g. list view flow node instances are
@@ -107,6 +131,7 @@ public final class ExporterBatchWriter {
     }
 
     batchRequest.execute(customErrorHandler);
+    metrics.recordBulkMemorySize(totalMemoryEstimate);
     observeRecordTimestamps();
     reset();
   }
@@ -191,6 +216,8 @@ public final class ExporterBatchWriter {
       return this;
     }
   }
+
+  private record CachedEntity(ExporterEntity entity, long sourceRecordBytes) {}
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 

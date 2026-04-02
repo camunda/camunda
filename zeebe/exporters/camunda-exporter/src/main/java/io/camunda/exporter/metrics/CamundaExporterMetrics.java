@@ -86,6 +86,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
   private final DistributionSummary bulkSize;
+  private final DistributionSummary bulkEstimatedMemorySize;
   private final Counter bulkOperations;
   private final Timer flushDuration;
   private final Counter failedFlush;
@@ -224,6 +225,13 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description("How many items were exported in one bulk request")
             .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
             .register(meterRegistry);
+    bulkEstimatedMemorySize =
+        DistributionSummary.builder(meterName("bulk.estimated.memory.size"))
+            .description("Estimated serialized payload size in bytes of a bulk request")
+            .baseUnit("bytes")
+            .serviceLevelObjectives(
+                10_000, 100_000, 1_000_000, 10_000_000, 50_000_000, 100_000_000, 200_000_000)
+            .register(meterRegistry);
     bulkOperations =
         Counter.builder(meterName("bulk.operations"))
             .description(
@@ -269,6 +277,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordBulkSize(final int bulkSize) {
     this.bulkSize.record(bulkSize);
+  }
+
+  public void recordBulkMemorySize(final long bytes) {
+    bulkEstimatedMemorySize.record(bytes);
   }
 
   public void recordBulkOperations(final int operations) {
@@ -408,6 +420,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(archiverReindexedDocs);
     meterRegistry.remove(archivingDuration);
     meterRegistry.remove(bulkSize);
+    meterRegistry.remove(bulkEstimatedMemorySize);
     meterRegistry.remove(bulkOperations);
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
