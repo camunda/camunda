@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityR
 import static io.camunda.gateway.mapping.http.validator.ConditionalEvaluationRequestValidator.validateConditionalEvaluationRequest;
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentMetadata;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCancelProcessInstanceRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedConditionalEvaluationInstructionStrictContract;
@@ -896,17 +898,6 @@ public class RequestMapper {
                 tenantId));
   }
 
-  public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
-      final io.camunda.gateway.protocol.model.DecisionInstanceFilter request) {
-
-    final var filter = SearchQueryFilterMapper.toRequiredDecisionInstanceFilter(request);
-    if (filter.isLeft()) {
-      return Either.left(createProblemDetail(filter.getLeft()).get());
-    }
-
-    return Either.right(filter.get());
-  }
-
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
       toAdHocSubProcessActivateActivitiesRequest(
           final String adHocSubProcessInstanceKey,
@@ -1649,7 +1640,17 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
       final GeneratedDecisionInstanceFilterStrictContract request) {
-    return toRequiredDecisionInstanceFilter(
-        convertToProtocol(request, io.camunda.gateway.protocol.model.DecisionInstanceFilter.class));
+    if (request == null) {
+      return Either.left(
+          createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());
+    }
+    final var result = DecisionInstanceFilterMapper.toDecisionInstanceFilter(request);
+    if (result.equals(io.camunda.search.filter.FilterBuilders.decisionInstance().build())) {
+      return Either.left(
+          createProblemDetail(
+                  List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")))
+              .get());
+    }
+    return Either.right(result);
   }
 }

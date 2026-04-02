@@ -16,17 +16,13 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
 
-import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruction;
@@ -43,9 +39,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
-
-  public static final ProcessInstanceMigrationBatchOperationPlan EMPTY_MIGRATION_PLAN =
-      new ProcessInstanceMigrationBatchOperationPlan();
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
@@ -128,29 +121,6 @@ public class ProcessInstanceRequestValidator {
     return Optional.empty();
   }
 
-  public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
-      final ProcessInstanceMigrationBatchOperationRequest request) {
-    return validate(
-        violations -> {
-          final var filter =
-              SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
-          filter.ifLeft(violations::addAll);
-
-          final var migrationPlan = request.getMigrationPlan();
-          if (migrationPlan == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("migrationPlan"));
-            return;
-          }
-
-          if (migrationPlan.getMappingInstructions() == null
-              || migrationPlan.getMappingInstructions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
-          } else {
-            validateMappingInstructions(migrationPlan.getMappingInstructions(), violations);
-          }
-        });
-  }
-
   public static Optional<ProblemDetail> validateMigrateProcessInstanceRequest(
       final ProcessInstanceMigrationInstruction request) {
     return validate(
@@ -171,21 +141,6 @@ public class ProcessInstanceRequestValidator {
           validateActivateInstructions(request.getActivateInstructions(), violations);
           validateTerminateInstructions(request.getTerminateInstructions(), violations);
           validateMoveInstructions(request.getMoveInstructions(), violations);
-        });
-  }
-
-  public static Optional<ProblemDetail> validateModifyProcessInstanceBatchOperationRequest(
-      final ProcessInstanceModificationBatchOperationRequest request) {
-    return validate(
-        violations -> {
-          final var filter =
-              SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
-          filter.ifLeft(violations::addAll);
-          if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
-          } else {
-            validateMoveBatchInstructions(request.getMoveInstructions(), violations);
-          }
         });
   }
 

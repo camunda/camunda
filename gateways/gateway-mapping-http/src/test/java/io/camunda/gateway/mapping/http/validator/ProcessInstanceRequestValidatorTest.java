@@ -10,9 +10,6 @@ package io.camunda.gateway.mapping.http.validator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
-import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -61,28 +58,6 @@ class ProcessInstanceRequestValidatorTest {
     final ProblemDetail problem = result.get();
     assertThat(problem.getTitle()).isEqualTo("Bad Request");
     assertThat(problem.getDetail()).contains("is not valid. Tags must start with a letter");
-  }
-
-  @Test
-  @DisplayName("Should accept valid targetProcessDefinitionKey format in migration request")
-  void shouldAcceptValidTargetProcessDefinitionKey() {
-
-    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
-    migrationPlan.setTargetProcessDefinitionKey("987654321");
-    migrationPlan.setMappingInstructions(java.util.List.of());
-
-    final var request = new ProcessInstanceMigrationBatchOperationRequest();
-    request.setFilter(new ProcessInstanceFilter());
-    request.setMigrationPlan(migrationPlan);
-
-    final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
-            request);
-
-    // Should have validation error for empty mappingInstructions, but not for key format
-    assertThat(result).isPresent();
-    final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail()).contains("mappingInstructions");
   }
 
   @Test
