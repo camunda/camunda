@@ -57,6 +57,7 @@ import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -168,9 +169,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   public Map<String, IndexMapping> getMappings(
       final String namePattern, final MappingSource mappingSource) {
     try {
-      final Map<String, TypeMapping> mappings = getCurrentMappings(mappingSource, namePattern);
+      final Map<String, TypeMapping> allMappings = new HashMap<>();
+      for (final String batch : SearchEngineClientUtils.batchPatterns(namePattern)) {
+        allMappings.putAll(getCurrentMappings(mappingSource, batch));
+      }
 
-      return mappings.entrySet().stream()
+      return allMappings.entrySet().stream()
           .collect(
               Collectors.toMap(
                   Entry::getKey,

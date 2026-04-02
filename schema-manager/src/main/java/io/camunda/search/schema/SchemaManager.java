@@ -52,6 +52,9 @@ public class SchemaManager implements CloseableSilently {
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
 
+  /** Maximum length of a comma-delimited index-pattern string passed in a URL request. */
+  static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
