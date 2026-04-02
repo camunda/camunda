@@ -271,6 +271,33 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     // optimize mode
     private boolean optimizeModeEnabled = false;
 
+    // export local variables flag
+    private boolean exportLocalVariablesEnabled = true;
+
+    // local variable name filters
+    private List<String> localVariableNameInclusionExact = new ArrayList<>();
+    private List<String> localVariableNameInclusionStartWith = new ArrayList<>();
+    private List<String> localVariableNameInclusionEndWith = new ArrayList<>();
+    private List<String> localVariableNameExclusionExact = new ArrayList<>();
+    private List<String> localVariableNameExclusionStartWith = new ArrayList<>();
+    private List<String> localVariableNameExclusionEndWith = new ArrayList<>();
+
+    // local variable value type filters
+    private List<String> localVariableValueTypeInclusion = new ArrayList<>();
+    private List<String> localVariableValueTypeExclusion = new ArrayList<>();
+
+    // root variable name filters
+    private List<String> rootVariableNameInclusionExact = new ArrayList<>();
+    private List<String> rootVariableNameInclusionStartWith = new ArrayList<>();
+    private List<String> rootVariableNameInclusionEndWith = new ArrayList<>();
+    private List<String> rootVariableNameExclusionExact = new ArrayList<>();
+    private List<String> rootVariableNameExclusionStartWith = new ArrayList<>();
+    private List<String> rootVariableNameExclusionEndWith = new ArrayList<>();
+
+    // root variable value type filters
+    private List<String> rootVariableValueTypeInclusion = new ArrayList<>();
+    private List<String> rootVariableValueTypeExclusion = new ArrayList<>();
+
     // BPMN process id filters
     private List<String> bpmnProcessIdInclusion = new ArrayList<>();
     private List<String> bpmnProcessIdExclusion = new ArrayList<>();
@@ -401,6 +428,175 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     }
 
     @Override
+    public boolean isExportLocalVariablesEnabled() {
+      return exportLocalVariablesEnabled;
+    }
+
+    public void setExportLocalVariablesEnabled(final boolean exportLocalVariablesEnabled) {
+      this.exportLocalVariablesEnabled = exportLocalVariablesEnabled;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameInclusionExact() {
+      return List.copyOf(localVariableNameInclusionExact);
+    }
+
+    public void setLocalVariableNameInclusionExact(
+        final List<String> localVariableNameInclusionExact) {
+      this.localVariableNameInclusionExact = localVariableNameInclusionExact;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameInclusionStartWith() {
+      return List.copyOf(localVariableNameInclusionStartWith);
+    }
+
+    public void setLocalVariableNameInclusionStartWith(
+        final List<String> localVariableNameInclusionStartWith) {
+      this.localVariableNameInclusionStartWith = localVariableNameInclusionStartWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameInclusionEndWith() {
+      return List.copyOf(localVariableNameInclusionEndWith);
+    }
+
+    public void setLocalVariableNameInclusionEndWith(
+        final List<String> localVariableNameInclusionEndWith) {
+      this.localVariableNameInclusionEndWith = localVariableNameInclusionEndWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameExclusionExact() {
+      return List.copyOf(localVariableNameExclusionExact);
+    }
+
+    public void setLocalVariableNameExclusionExact(
+        final List<String> localVariableNameExclusionExact) {
+      this.localVariableNameExclusionExact = localVariableNameExclusionExact;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameExclusionStartWith() {
+      return List.copyOf(localVariableNameExclusionStartWith);
+    }
+
+    public void setLocalVariableNameExclusionStartWith(
+        final List<String> localVariableNameExclusionStartWith) {
+      this.localVariableNameExclusionStartWith = localVariableNameExclusionStartWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameExclusionEndWith() {
+      return List.copyOf(localVariableNameExclusionEndWith);
+    }
+
+    public void setLocalVariableNameExclusionEndWith(
+        final List<String> localVariableNameExclusionEndWith) {
+      this.localVariableNameExclusionEndWith = localVariableNameExclusionEndWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableValueTypeInclusion() {
+      return List.copyOf(localVariableValueTypeInclusion);
+    }
+
+    public void setLocalVariableValueTypeInclusion(
+        final List<String> localVariableValueTypeInclusion) {
+      this.localVariableValueTypeInclusion = localVariableValueTypeInclusion;
+    }
+
+    @Override
+    public List<String> getLocalVariableValueTypeExclusion() {
+      return List.copyOf(localVariableValueTypeExclusion);
+    }
+
+    public void setLocalVariableValueTypeExclusion(
+        final List<String> localVariableValueTypeExclusion) {
+      this.localVariableValueTypeExclusion = localVariableValueTypeExclusion;
+    }
+
+    @Override
+    public List<String> getRootVariableNameInclusionExact() {
+      return List.copyOf(rootVariableNameInclusionExact);
+    }
+
+    public void setRootVariableNameInclusionExact(
+        final List<String> rootVariableNameInclusionExact) {
+      this.rootVariableNameInclusionExact = rootVariableNameInclusionExact;
+    }
+
+    @Override
+    public List<String> getRootVariableNameInclusionStartWith() {
+      return List.copyOf(rootVariableNameInclusionStartWith);
+    }
+
+    public void setRootVariableNameInclusionStartWith(
+        final List<String> rootVariableNameInclusionStartWith) {
+      this.rootVariableNameInclusionStartWith = rootVariableNameInclusionStartWith;
+    }
+
+    @Override
+    public List<String> getRootVariableNameInclusionEndWith() {
+      return List.copyOf(rootVariableNameInclusionEndWith);
+    }
+
+    public void setRootVariableNameInclusionEndWith(
+        final List<String> rootVariableNameInclusionEndWith) {
+      this.rootVariableNameInclusionEndWith = rootVariableNameInclusionEndWith;
+    }
+
+    @Override
+    public List<String> getRootVariableNameExclusionExact() {
+      return List.copyOf(rootVariableNameExclusionExact);
+    }
+
+    public void setRootVariableNameExclusionExact(
+        final List<String> rootVariableNameExclusionExact) {
+      this.rootVariableNameExclusionExact = rootVariableNameExclusionExact;
+    }
+
+    @Override
+    public List<String> getRootVariableNameExclusionStartWith() {
+      return List.copyOf(rootVariableNameExclusionStartWith);
+    }
+
+    public void setRootVariableNameExclusionStartWith(
+        final List<String> rootVariableNameExclusionStartWith) {
+      this.rootVariableNameExclusionStartWith = rootVariableNameExclusionStartWith;
+    }
+
+    @Override
+    public List<String> getRootVariableNameExclusionEndWith() {
+      return List.copyOf(rootVariableNameExclusionEndWith);
+    }
+
+    public void setRootVariableNameExclusionEndWith(
+        final List<String> rootVariableNameExclusionEndWith) {
+      this.rootVariableNameExclusionEndWith = rootVariableNameExclusionEndWith;
+    }
+
+    @Override
+    public List<String> getRootVariableValueTypeInclusion() {
+      return List.copyOf(rootVariableValueTypeInclusion);
+    }
+
+    public void setRootVariableValueTypeInclusion(
+        final List<String> rootVariableValueTypeInclusion) {
+      this.rootVariableValueTypeInclusion = rootVariableValueTypeInclusion;
+    }
+
+    @Override
+    public List<String> getRootVariableValueTypeExclusion() {
+      return List.copyOf(rootVariableValueTypeExclusion);
+    }
+
+    public void setRootVariableValueTypeExclusion(
+        final List<String> rootVariableValueTypeExclusion) {
+      this.rootVariableValueTypeExclusion = rootVariableValueTypeExclusion;
+    }
+
+    @Override
     public String toString() {
       return "IndexConfiguration{"
           + "prefix='"
@@ -513,6 +709,40 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + variableValueTypeExclusion
           + ", optimizeModeEnabled="
           + optimizeModeEnabled
+          + ", exportLocalVariablesEnabled="
+          + exportLocalVariablesEnabled
+          + ", localVariableNameInclusionExact="
+          + localVariableNameInclusionExact
+          + ", localVariableNameInclusionStartWith="
+          + localVariableNameInclusionStartWith
+          + ", localVariableNameInclusionEndWith="
+          + localVariableNameInclusionEndWith
+          + ", localVariableNameExclusionExact="
+          + localVariableNameExclusionExact
+          + ", localVariableNameExclusionStartWith="
+          + localVariableNameExclusionStartWith
+          + ", localVariableNameExclusionEndWith="
+          + localVariableNameExclusionEndWith
+          + ", localVariableValueTypeInclusion="
+          + localVariableValueTypeInclusion
+          + ", localVariableValueTypeExclusion="
+          + localVariableValueTypeExclusion
+          + ", rootVariableNameInclusionExact="
+          + rootVariableNameInclusionExact
+          + ", rootVariableNameInclusionStartWith="
+          + rootVariableNameInclusionStartWith
+          + ", rootVariableNameInclusionEndWith="
+          + rootVariableNameInclusionEndWith
+          + ", rootVariableNameExclusionExact="
+          + rootVariableNameExclusionExact
+          + ", rootVariableNameExclusionStartWith="
+          + rootVariableNameExclusionStartWith
+          + ", rootVariableNameExclusionEndWith="
+          + rootVariableNameExclusionEndWith
+          + ", rootVariableValueTypeInclusion="
+          + rootVariableValueTypeInclusion
+          + ", rootVariableValueTypeExclusion="
+          + rootVariableValueTypeExclusion
           + ", bpmnProcessIdInclusion="
           + bpmnProcessIdInclusion
           + ", bpmnProcessIdExclusion="
