@@ -18,10 +18,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.collection.Tuple;
 
-public final class BpmnIncidentBehavior {
+public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware {
 
   private final IncidentRecord incidentRecord = new IncidentRecord();
 
@@ -104,5 +106,10 @@ public final class BpmnIncidentBehavior {
           stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record);
           incidentMetrics.incidentResolved();
         });
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    incidentMetrics.setPendingIncidents(incidentState.getIncidentCount());
   }
 }

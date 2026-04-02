@@ -136,7 +136,7 @@ public final class EngineProcessors {
         new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
-    final var incidentMetrics = processingState.getIncidentMetrics();
+    final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -165,6 +165,8 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics);
+
+    typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(

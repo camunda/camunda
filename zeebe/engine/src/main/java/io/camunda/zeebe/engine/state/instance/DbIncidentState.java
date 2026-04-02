@@ -12,13 +12,11 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ObjLongConsumer;
 
@@ -46,13 +44,8 @@ public final class DbIncidentState implements MutableIncidentState {
   private final ColumnFamily<DbForeignKey<DbLong>, IncidentKey> jobIncidentColumnFamily;
   private final IncidentKey incidentKeyValue = new IncidentKey();
 
-  private final IncidentMetrics metrics;
-
   public DbIncidentState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final int partitionId,
-      final IncidentMetrics metrics) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     incidentKey = new DbLong();
     incidentColumnFamily =
         zeebeDb.createColumnFamily(
@@ -70,15 +63,6 @@ public final class DbIncidentState implements MutableIncidentState {
     jobIncidentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
-
-    this.metrics = metrics;
-  }
-
-  @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var counter = new AtomicInteger(0);
-    incidentColumnFamily.forEachKey(ignore -> counter.getAndIncrement());
-    metrics.setPendingIncidents(counter.get());
   }
 
   @Override
@@ -181,5 +165,12 @@ public final class DbIncidentState implements MutableIncidentState {
       final IncidentRecord incidentRecord = getIncidentRecord(processIncidentKey);
       resolver.accept(incidentRecord, processIncidentKey);
     }
+  }
+
+  @Override
+  public int getIncidentCount() {
+    final var counter = new AtomicInteger(0);
+    incidentColumnFamily.forEachKey(ignore -> counter.getAndIncrement());
+    return counter.get();
   }
 }
