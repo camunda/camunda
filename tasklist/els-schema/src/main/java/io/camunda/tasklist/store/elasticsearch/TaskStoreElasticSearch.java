@@ -359,7 +359,7 @@ public class TaskStoreElasticSearch implements TaskStore {
                 TaskSearchView.createFrom(
                     hit.source(), hit.sort().stream().map(FieldValue::_get).toArray()))
         .filter(Objects::nonNull)
-        .toList();
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   /**

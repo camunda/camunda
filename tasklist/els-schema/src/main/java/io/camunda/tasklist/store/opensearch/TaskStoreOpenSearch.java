@@ -447,7 +447,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             sh ->
                 TaskSearchView.createFrom(
                     sh.source(), sh.sort().stream().map(FieldValue::_get).toArray()))
-        .toList();
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   private List<String> getTasksContainsVarNameAndValue(
