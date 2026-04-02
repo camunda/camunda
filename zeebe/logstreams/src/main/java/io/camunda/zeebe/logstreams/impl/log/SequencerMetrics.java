@@ -14,11 +14,6 @@ import static io.camunda.zeebe.logstreams.impl.log.SequencerMetrics.SequencerMet
 
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlContext;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
-import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
-import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
-import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
-import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
@@ -64,10 +59,9 @@ final class SequencerMetrics {
   }
 
   void observeLockWaitTime(final WriteContext waiter, final long durationNanos) {
-    final var waiterTag = tagForContext(waiter);
     final var timer =
         lockWaitTimers.computeIfAbsent(
-            waiterTag,
+            FlowControlContext.from(waiter),
             tag ->
                 Timer.builder(LOCK_WAIT_TIME.getName())
                     .description(LOCK_WAIT_TIME.getDescription())
@@ -78,10 +72,9 @@ final class SequencerMetrics {
   }
 
   void observeLockHoldTime(final WriteContext writer, final long durationNanos) {
-    final var writerTag = tagForContext(writer);
     final var timer =
         lockHoldTimers.computeIfAbsent(
-            writerTag,
+            FlowControlContext.from(writer),
             tag ->
                 Timer.builder(LOCK_HOLD_TIME.getName())
                     .description(LOCK_HOLD_TIME.getDescription())
@@ -89,16 +82,6 @@ final class SequencerMetrics {
                     .tag(LockKeyNames.WRITER.asString(), tag.getValue())
                     .register(meterRegistry));
     timer.record(durationNanos, TimeUnit.NANOSECONDS);
-  }
-
-  static FlowControlContext tagForContext(final WriteContext context) {
-    return switch (context) {
-      case final UserCommand ignored -> FlowControlContext.USER_COMMAND;
-      case final ProcessingResult ignored -> FlowControlContext.PROCESSING_RESULT;
-      case final InterPartition ignored -> FlowControlContext.INTER_PARTITION;
-      case final Scheduled ignored -> FlowControlContext.SCHEDULED;
-      case final Internal ignored -> FlowControlContext.INTERNAL;
-    };
   }
 
   @SuppressWarnings("NullableProblems")
