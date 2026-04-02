@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 
 public class BatchOperationLifecycleManagementAuditLogTransformer
@@ -15,5 +17,13 @@ public class BatchOperationLifecycleManagementAuditLogTransformer
   @Override
   public TransformerConfig config() {
     return AuditLogTransformerConfigs.BATCH_OPERATION_LIFECYCLE_MANAGEMENT_CONFIG;
+  }
+
+  @Override
+  public void transform(
+      final Record<BatchOperationLifecycleManagementRecordValue> record, final AuditLogEntry log) {
+    // Since RESUME, CANCEL and SUSPEND logs use a different key, we override the entity key
+    // to ensure that the key is always the batch operation key
+    log.setEntityKey(String.valueOf(record.getValue().getBatchOperationKey()));
   }
 }
