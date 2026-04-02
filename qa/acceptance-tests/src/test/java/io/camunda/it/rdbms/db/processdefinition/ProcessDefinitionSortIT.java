@@ -151,7 +151,8 @@ public class ProcessDefinitionSortIT {
                 new ProcessDefinitionQuery(
                     new ProcessDefinitionFilter.Builder().versionTags(versionTag).build(),
                     ProcessDefinitionSort.of(sortBuilder),
-                    SearchQueryPage.of(b -> b)))
+                    SearchQueryPage.of(b -> b),
+                    null))
             .items();
 
     assertThat(searchResult).hasSize(20);

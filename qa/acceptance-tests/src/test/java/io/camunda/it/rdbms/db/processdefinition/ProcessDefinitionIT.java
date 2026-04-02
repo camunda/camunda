@@ -74,7 +74,8 @@ public class ProcessDefinitionIT {
                     .processDefinitionIds("test-process-unique")
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(10))));
+                SearchQueryPage.of(b -> b.from(0).size(10)),
+                null));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -108,7 +109,8 @@ public class ProcessDefinitionIT {
                     .processDefinitionIds(processDefinitionId)
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+                SearchQueryPage.of(b -> b.from(0).size(5)),
+                null));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
@@ -130,7 +132,8 @@ public class ProcessDefinitionIT {
             new ProcessDefinitionQuery(
                 new ProcessDefinitionFilter.Builder().build(),
                 ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(null).size(null))));
+                SearchQueryPage.of(b -> b.from(null).size(null)),
+                null));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
@@ -162,7 +165,8 @@ public class ProcessDefinitionIT {
                     .tenantIds(processDefinition.tenantId())
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+                SearchQueryPage.of(b -> b.from(0).size(5)),
+                null));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);

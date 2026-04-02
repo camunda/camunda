@@ -12,6 +12,8 @@ import io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
+import io.camunda.search.result.QueryResultConfigBuilders;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
@@ -19,7 +21,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessDefinitionQuery(
-    ProcessDefinitionFilter filter, ProcessDefinitionSort sort, SearchQueryPage page)
+    ProcessDefinitionFilter filter,
+    ProcessDefinitionSort sort,
+    SearchQueryPage page,
+    ProcessDefinitionQueryResultConfig resultConfig)
     implements TypedSearchQuery<ProcessDefinitionFilter, ProcessDefinitionSort> {
 
   public static ProcessDefinitionQuery of(
@@ -47,9 +52,12 @@ public record ProcessDefinitionQuery(
         FilterBuilders.processDefinition().build();
     private static final ProcessDefinitionSort EMPTY_SORT =
         SortOptionBuilders.processDefinition().build();
+    private static final ProcessDefinitionQueryResultConfig EMPTY_RESULT_CONFIG =
+        QueryResultConfigBuilders.processDefinition().build();
 
     private ProcessDefinitionFilter filter;
     private ProcessDefinitionSort sort;
+    private ProcessDefinitionQueryResultConfig resultConfig;
 
     @Override
     protected ProcessDefinitionQuery.Builder self() {
@@ -79,11 +87,26 @@ public record ProcessDefinitionQuery(
       return sort(SortOptionBuilders.processDefinition(fn));
     }
 
+    public ProcessDefinitionQuery.Builder resultConfig(
+        final ProcessDefinitionQueryResultConfig value) {
+      resultConfig = value;
+      return this;
+    }
+
+    public ProcessDefinitionQuery.Builder resultConfig(
+        final Function<
+                ProcessDefinitionQueryResultConfig.Builder,
+                ObjectBuilder<ProcessDefinitionQueryResultConfig>>
+            fn) {
+      return resultConfig(QueryResultConfigBuilders.processDefinition(fn));
+    }
+
     @Override
     public ProcessDefinitionQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new ProcessDefinitionQuery(filter, sort, page());
+      resultConfig = Objects.requireNonNullElse(resultConfig, EMPTY_RESULT_CONFIG);
+      return new ProcessDefinitionQuery(filter, sort, page(), resultConfig);
     }
   }
 }
