@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
@@ -147,7 +146,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
-  private final IncidentMetrics incidentMetrics;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -184,8 +182,7 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
     messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
-    incidentMetrics = new IncidentMetrics(zeebeDb.getMeterRegistry());
-    incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId, incidentMetrics);
+    incidentState = new DbIncidentState(zeebeDb, transactionContext);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
@@ -225,7 +222,6 @@ public class ProcessingDbState implements MutableProcessingState {
     processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
     messageState.onRecovered(context);
-    incidentState.onRecovered(context);
   }
 
   @Override
@@ -477,10 +473,5 @@ public class ProcessingDbState implements MutableProcessingState {
     zeebeDb
         .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
         .forEach(visitor);
-  }
-
-  @Override
-  public IncidentMetrics getIncidentMetrics() {
-    return incidentMetrics;
   }
 }

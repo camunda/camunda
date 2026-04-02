@@ -123,7 +123,8 @@ public final class JobEventProcessors {
                 processingState.getKeyGenerator(),
                 jobMetrics,
                 authCheckBehavior,
-                clock))
+                clock,
+                incidentMetrics))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
