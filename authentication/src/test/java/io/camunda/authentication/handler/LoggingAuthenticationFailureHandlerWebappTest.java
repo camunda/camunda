@@ -91,7 +91,7 @@ class LoggingAuthenticationFailureHandlerWebappTest {
   static final String ENDPOINT_WELL_KNOWN_JWKS = "/realms/" + REALM + "/.well-known/jwks.json";
   static final String ENDPOINT_WELL_KNOWN_OIDC =
       "/realms/" + REALM + "/.well-known/openid-configuration";
-  static final String WEBAPP_ENDPOINT = "/identity/users";
+  static final String WEBAPP_ENDPOINT = "/admin/users";
 
   @Autowired MockMvcTester mockMvcTester;
 

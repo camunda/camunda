@@ -85,9 +85,7 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
 
   private boolean hasAccessToComponent(final String component) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    // We want to temporarily support both "admin" and "identity" as components for the
-    // authorization check, for backwards compatibility.
-    if ("admin".equals(component) || "identity".equals(component)) {
+    if ("admin".equals(component)) {
       return resourceAccessProvider
               .hasResourceAccessByResourceId(
                   authentication, COMPONENT_ACCESS_AUTHORIZATION, "identity")
