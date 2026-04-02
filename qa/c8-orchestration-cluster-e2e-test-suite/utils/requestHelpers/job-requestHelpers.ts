@@ -111,3 +111,29 @@ export function setupProcessInstanceForTests(
     },
   };
 }
+
+export function getLast24HoursRange() {
+  const fromDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours ago
+  const toDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
+  return {
+    fromDate,
+    toDate,
+  };
+}
+
+export interface StatisticsJobItem {      
+    jobType: string,
+    created: {
+        count: number,
+        lastUpdatedAt: string
+    },
+    completed: {
+        count: number,
+        lastUpdatedAt: string
+    },
+    failed: {
+        count: number,
+        lastUpdatedAt: string
+    },
+    workers: number,
+};
