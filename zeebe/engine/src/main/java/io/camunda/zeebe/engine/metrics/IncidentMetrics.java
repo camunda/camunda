@@ -39,10 +39,6 @@ public final class IncidentMetrics {
     pendingIncidents.decrement();
   }
 
-  public void reset() {
-    pendingIncidents.set(0);
-  }
-
   public void setPendingIncidents(final long count) {
     pendingIncidents.set(count);
   }
