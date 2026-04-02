@@ -161,6 +161,7 @@ public final class CamundaExporterConfigurationApplier {
         Math.toIntExact(source.getHistory().getDelayBetweenRuns().toMillis()));
     target.setMaxDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getMaxDelayBetweenRuns().toMillis()));
+    target.setExtraBackgroundTaskThreads(source.getHistory().getExtraBackgroundTaskThreads());
   }
 
   public static void applyPostExportConfiguration(

@@ -75,6 +75,9 @@ public class DocumentBasedHistory {
   /** Maximum millisecond interval between archiver runs due to failure backoffs */
   private Duration maxDelayBetweenRuns = DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS;
 
+  /** Additional background task threads to allocate to background task manager executor */
+  private int extraBackgroundTaskThreads = 0;
+
   /** Defines the name of the created and applied ILM policy. */
   private String policyName = DEFAULT_HISTORY_POLICY_NAME;
 
@@ -197,6 +200,14 @@ public class DocumentBasedHistory {
 
   public void setMaxDelayBetweenRuns(final Duration maxDelayBetweenRuns) {
     this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+  }
+
+  public int getExtraBackgroundTaskThreads() {
+    return extraBackgroundTaskThreads;
+  }
+
+  public void setExtraBackgroundTaskThreads(final int extraBackgroundTaskThreads) {
+    this.extraBackgroundTaskThreads = extraBackgroundTaskThreads;
   }
 
   public String getPolicyName() {

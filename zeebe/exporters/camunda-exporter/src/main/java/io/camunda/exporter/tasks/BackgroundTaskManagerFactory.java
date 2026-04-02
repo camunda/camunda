@@ -277,8 +277,12 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildHistoryDeletionJob());
     tasks.add(buildAuditLogArchiverJob());
 
-    executor.setCorePoolSize(tasks.size());
+    executor.setCorePoolSize(getCorePoolSize(tasks));
     return tasks;
+  }
+
+  private int getCorePoolSize(final List<RunnableTask> tasks) {
+    return tasks.size() + Math.max(config.getHistory().getExtraBackgroundTaskThreads(), 0);
   }
 
   private OpenSearchHistoryDeletionRepository createHistoryDeletionRepository(

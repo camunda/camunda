@@ -245,6 +245,7 @@ public class ExporterConfiguration {
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;
+    private int extraBackgroundTaskThreads = 0;
 
     public boolean isProcessInstanceEnabled() {
       return processInstanceEnabled;
@@ -330,6 +331,32 @@ public class ExporterConfiguration {
       this.maxDelayBetweenRuns = maxDelayBetweenRuns;
     }
 
+    public boolean isTrackArchivalMetricsForProcessInstance() {
+      return trackArchivalMetricsForProcessInstance;
+    }
+
+    public void setTrackArchivalMetricsForProcessInstance(
+        final boolean trackArchivalMetricsForProcessInstance) {
+      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
+    }
+
+    public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
+      return processInstanceRetentionMode;
+    }
+
+    public void setProcessInstanceRetentionMode(
+        final ProcessInstanceRetentionMode processInstanceRetentionMode) {
+      this.processInstanceRetentionMode = processInstanceRetentionMode;
+    }
+
+    public int getExtraBackgroundTaskThreads() {
+      return extraBackgroundTaskThreads;
+    }
+
+    public void setExtraBackgroundTaskThreads(final int extraBackgroundTaskThreads) {
+      this.extraBackgroundTaskThreads = extraBackgroundTaskThreads;
+    }
+
     @Override
     public String toString() {
       return "ArchiverConfiguration{"
@@ -354,25 +381,9 @@ public class ExporterConfiguration {
           + trackArchivalMetricsForProcessInstance
           + ", retentionMode="
           + processInstanceRetentionMode
+          + ", extraBackgroundTaskThreads="
+          + extraBackgroundTaskThreads
           + '}';
-    }
-
-    public boolean isTrackArchivalMetricsForProcessInstance() {
-      return trackArchivalMetricsForProcessInstance;
-    }
-
-    public void setTrackArchivalMetricsForProcessInstance(
-        final boolean trackArchivalMetricsForProcessInstance) {
-      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
-    }
-
-    public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
-      return processInstanceRetentionMode;
-    }
-
-    public void setProcessInstanceRetentionMode(
-        final ProcessInstanceRetentionMode processInstanceRetentionMode) {
-      this.processInstanceRetentionMode = processInstanceRetentionMode;
     }
 
     public enum ProcessInstanceRetentionMode {
