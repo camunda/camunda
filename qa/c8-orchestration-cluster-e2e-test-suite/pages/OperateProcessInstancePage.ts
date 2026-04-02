@@ -294,9 +294,9 @@ class OperateProcessInstancePage {
     ).all();
     for (const element of expandingElements) {
       await expect(element).toBeVisible();
-      const expandToggle = element.locator(
-        '.cds--tree-parent-node__toggle-icon',
-      );
+      const expandToggle = element
+        .locator(':scope > div > .cds--tree-parent-node__toggle')
+        .locator('.cds--tree-parent-node__toggle-icon');
       await expect(expandToggle).toBeVisible();
       const isExpanded = await element.getAttribute('aria-expanded');
       expect(isExpanded).not.toBeNull();
@@ -311,17 +311,20 @@ class OperateProcessInstancePage {
   async getNestedParentLocatorInHistory(
     parentElementName: string,
   ): Promise<Locator> {
-    return this.instanceHistory
-      .getByRole('group')
-      .getByLabel(parentElementName, {exact: true});
+    return this.page
+      .getByTestId('instance-history')
+      .getByRole('tree', { name: /instance history/i })
+      .getByRole('treeitem', {name: parentElementName, exact: true});
   }
 
   async getNestedGroupInHistoryLocator(
     parentElementName: string,
   ): Promise<Locator> {
-    const parentLocator =
-      await this.getNestedParentLocatorInHistory(parentElementName);
-    return parentLocator.getByRole('group');
+    return this.page
+      .getByTestId('instance-history')
+      .getByRole('tree', { name: /instance history/i })
+      .getByRole('treeitem', { name: parentElementName, exact: true })
+      .getByRole('group', { name: parentElementName, exact: true });
   }
 
   async getHistoryElementsDataByName(itemName: string) {
