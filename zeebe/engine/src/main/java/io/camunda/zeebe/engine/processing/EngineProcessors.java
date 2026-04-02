@@ -11,6 +11,12 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -99,7 +105,20 @@ public final class EngineProcessors {
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
+<<<<<<< HEAD
         new ProcessEngineMetrics(typedRecordProcessorContext.getMeterRegistry());
+=======
+        new ProcessEngineMetrics(
+            typedRecordProcessorContext.getMeterRegistry(),
+            processingState.getElementInstanceState().getActiveProcessInstanceCount());
+    final var distributionMetrics =
+        new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var batchOperationMetrics =
+        new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
+    final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
+        new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
+    final var incidentMetrics = processingState.getIncidentMetrics();
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -120,7 +139,13 @@ public final class EngineProcessors {
             decisionBehavior,
             clock,
             transientProcessMessageSubscriptionState,
+<<<<<<< HEAD
             config);
+=======
+            expressionLanguageMetrics,
+            config,
+            incidentMetrics);
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -184,14 +209,31 @@ public final class EngineProcessors {
         writers,
         jobMetrics,
         config,
+<<<<<<< HEAD
         clock);
+=======
+        clock,
+        authCheckBehavior,
+        incidentMetrics);
+
+    final var userTaskProcessor =
+        createUserTaskProcessor(
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
+    addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 
     addIncidentProcessors(
         processingState,
         bpmnStreamProcessor,
         typedRecordProcessors,
         writers,
+<<<<<<< HEAD
         bpmnBehaviors.jobActivationBehavior());
+=======
+        bpmnBehaviors.jobActivationBehavior(),
+        authCheckBehavior,
+        incidentMetrics);
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     addResourceDeletionProcessors(
         typedRecordProcessors,
         writers,
@@ -246,7 +288,13 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+<<<<<<< HEAD
       final EngineConfiguration config) {
+=======
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -258,7 +306,13 @@ public final class EngineProcessors {
         jobStreamer,
         clock,
         transientProcessMessageSubscriptionState,
+<<<<<<< HEAD
         config);
+=======
+        expressionLanguageMetrics,
+        config,
+        incidentMetrics);
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -348,13 +402,25 @@ public final class EngineProcessors {
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
+<<<<<<< HEAD
       final BpmnJobActivationBehavior jobActivationBehavior) {
+=======
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
         bpmnStreamProcessor,
         writers,
+<<<<<<< HEAD
         jobActivationBehavior);
+=======
+        jobActivationBehavior,
+        authCheckBehavior,
+        incidentMetrics);
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
   }
 
   private static void addMessageProcessors(

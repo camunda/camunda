@@ -9,8 +9,9 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 
-public interface MutableIncidentState extends IncidentState {
+public interface MutableIncidentState extends IncidentState, StreamProcessorLifecycleAware {
 
   void createIncident(long incidentKey, IncidentRecord incident);
 

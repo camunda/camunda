@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -94,4 +99,6 @@ public interface MutableProcessingState extends ProcessingState {
   MutableMultiInstanceState getMultiInstanceState();
 
   KeyGenerator getKeyGenerator();
+
+  IncidentMetrics getIncidentMetrics();
 }

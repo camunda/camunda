@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -23,11 +24,27 @@ public final class IncidentEventProcessors {
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers,
+<<<<<<< HEAD
       final BpmnJobActivationBehavior jobActivationBehavior) {
+=======
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
         new IncidentResolveProcessor(
+<<<<<<< HEAD
             processingState, bpmnStreamProcessor, writers, jobActivationBehavior));
+=======
+            processingState,
+            bpmnStreamProcessor,
+            userTaskProcessor,
+            writers,
+            jobActivationBehavior,
+            authCheckBehavior,
+            incidentMetrics));
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
   }
 }

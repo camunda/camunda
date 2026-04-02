@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -65,7 +66,54 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobStreamer jobStreamer,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+<<<<<<< HEAD
       final EngineConfiguration config) {
+=======
+      final ExpressionLanguageMetrics expressionMetrics,
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
+
+    final var tenantClusterScope =
+        new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
+    final var globalClusterScope =
+        new GlobalScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
+    final var mergedClusterScope =
+        CombinedEvaluationContext.withContexts(tenantClusterScope, globalClusterScope);
+
+    final var namespacedTenantClusterScope =
+        NamespacedEvaluationContext.create().register("tenant", tenantClusterScope);
+    final var namespacedGlobalClusterScope =
+        NamespacedEvaluationContext.create().register("cluster", globalClusterScope);
+    final var namespacedMergedClusterScope =
+        NamespacedEvaluationContext.create().register("env", mergedClusterScope);
+
+    final var namespaceFullClusterContext =
+        NamespacedEvaluationContext.create()
+            .register(
+                "camunda",
+                NamespacedEvaluationContext.create()
+                    .register(
+                        "vars",
+                        CombinedEvaluationContext.withContexts(
+                            namespacedMergedClusterScope,
+                            namespacedTenantClusterScope,
+                            namespacedGlobalClusterScope)));
+
+    final var processVariableContext =
+        new VariableEvaluationContext(processingState.getVariableState());
+
+    expressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new ZeebeFeelEngineClock(clock), expressionMetrics);
+
+    expressionProcessor =
+        new ExpressionProcessor(
+            expressionLanguage,
+            CombinedEvaluationContext.withContexts(
+                processVariableContext, namespaceFullClusterContext),
+            config.getExpressionEvaluationTimeout());
+
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
@@ -117,7 +165,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, processingState.getKeyGenerator(), writers.state());
+            processingState,
+            processingState.getKeyGenerator(),
+            writers.state(),
+            incidentMetrics);
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

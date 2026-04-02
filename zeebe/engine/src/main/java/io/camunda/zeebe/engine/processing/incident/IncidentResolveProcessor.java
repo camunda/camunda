@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -47,12 +48,23 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
+<<<<<<< HEAD
+=======
+  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final IncidentMetrics incidentMetrics;
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers,
+<<<<<<< HEAD
       final BpmnJobActivationBehavior jobActivationBehavior) {
+=======
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -61,6 +73,11 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     elementInstanceState = processingState.getElementInstanceState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
+<<<<<<< HEAD
+=======
+    this.authCheckBehavior = authCheckBehavior;
+    this.incidentMetrics = incidentMetrics;
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
   }
 
   @Override
@@ -83,6 +100,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    incidentMetrics.incidentResolved();
 
     publishIncidentRelatedJob(jobKey);
 

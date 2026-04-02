@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -31,7 +32,13 @@ public final class JobEventProcessors {
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final EngineConfiguration config,
+<<<<<<< HEAD
       final InstantSource clock) {
+=======
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -60,7 +67,13 @@ public final class JobEventProcessors {
                 processingState.getKeyGenerator(),
                 jobMetrics,
                 jobBackoffChecker,
+<<<<<<< HEAD
                 bpmnBehaviors))
+=======
+                bpmnBehaviors,
+                authCheckBehavior,
+                incidentMetrics))
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
@@ -73,7 +86,13 @@ public final class JobEventProcessors {
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
                 jobMetrics,
+<<<<<<< HEAD
                 writers))
+=======
+                authCheckBehavior,
+                writers,
+                incidentMetrics))
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,

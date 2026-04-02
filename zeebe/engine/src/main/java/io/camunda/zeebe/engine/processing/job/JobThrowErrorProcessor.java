@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
@@ -73,13 +74,20 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final StateWriter stateWriter;
+  private final IncidentMetrics incidentMetrics;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
+<<<<<<< HEAD
       final Writers writers) {
+=======
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final Writers writers,
+      final IncidentMetrics incidentMetrics) {
+>>>>>>> 5048494c (fix: move incident metrics from state application to processing layer)
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -97,6 +105,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
     this.eventPublicationBehavior = eventPublicationBehavior;
     this.jobMetrics = jobMetrics;
+    this.incidentMetrics = incidentMetrics;
   }
 
   @Override
@@ -211,6 +220,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    incidentMetrics.incidentCreated();
   }
 
   private DirectBuffer getElementId(final JobRecord job) {
