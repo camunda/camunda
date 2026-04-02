@@ -33,6 +33,7 @@ class BatchOperationCreationAuditLogTransformerTest {
         ImmutableBatchOperationCreationRecordValue.builder()
             .from(factory.generateObject(BatchOperationCreationRecordValue.class))
             .withBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE)
+            .withBatchOperationKey(456L)
             .build();
 
     final Record<BatchOperationCreationRecordValue> record =
@@ -45,6 +46,7 @@ class BatchOperationCreationAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getBatchOperationType())
         .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
