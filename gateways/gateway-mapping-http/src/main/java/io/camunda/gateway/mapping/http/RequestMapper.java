@@ -23,8 +23,6 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
-import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
-import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +43,9 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobAct
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobCompletionRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobFailRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobResultAdHocSubProcessStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobResultUserTaskStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageCorrelationRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessagePublicationRequestStrictContract;
@@ -67,9 +68,6 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
-import io.camunda.gateway.protocol.model.JobCompletionRequest;
-import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
-import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
@@ -141,15 +139,9 @@ import org.springframework.http.ProblemDetail;
 public class RequestMapper {
 
   // Jackson converter for types where strict-contract fields are untyped (Object / LinkedHashMap)
-  // and the protocol model relies on registered deserializers (polymorphic filter properties,
-  // oneOf sub-types). Used only for filter schemas and deeply nested polymorphic instructions.
+  // and the generated sealed interface relies on registered deserializers (e.g. oneOf sub-types).
   private static final ObjectMapper PROTOCOL_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-  @SuppressWarnings("unchecked")
-  private static <T> T convertToProtocol(final Object value, final Class<T> type) {
-    return value == null ? null : PROTOCOL_MAPPER.convertValue(value, type);
-  }
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
@@ -691,86 +683,6 @@ public class RequestMapper {
     return value == null ? Map.of() : value;
   }
 
-  private static JobResult getJobResultOrDefault(final JobCompletionRequest request) {
-    if (request == null || request.getResult() == null) {
-      return new JobResult();
-    }
-    final var type = request.getResult().getType();
-    if (USER_TASK.getType().equals(type)) {
-      return getJobResult((JobResultUserTask) request.getResult());
-    }
-    if (AD_HOC_SUB_PROCESS.getType().equals(type)) {
-      return getJobResult((JobResultAdHocSubProcess) request.getResult());
-    }
-    throw new IllegalStateException("Unexpected value: " + type);
-  }
-
-  private static JobResult getJobResult(final JobResultUserTask result) {
-    final JobResult jobResult = new JobResult();
-    jobResult.setType(JobResultType.from(result.getType()));
-    jobResult.setDenied(result.getDenied() != null ? result.getDenied() : false);
-    jobResult.setDenied(getBooleanOrDefault(result, JobResultUserTask::getDenied, false));
-    jobResult.setDeniedReason(getStringOrEmpty(result, JobResultUserTask::getDeniedReason));
-
-    final var jobResultCorrections = result.getCorrections();
-    if (jobResultCorrections == null) {
-      return jobResult;
-    }
-
-    final JobResultCorrections corrections = new JobResultCorrections();
-    final List<String> correctedAttributes = new ArrayList<>();
-
-    if (jobResultCorrections.getAssignee() != null) {
-      corrections.setAssignee(jobResultCorrections.getAssignee());
-      correctedAttributes.add(UserTaskRecord.ASSIGNEE);
-    }
-    if (jobResultCorrections.getDueDate() != null) {
-      corrections.setDueDate(jobResultCorrections.getDueDate());
-      correctedAttributes.add(UserTaskRecord.DUE_DATE);
-    }
-    if (jobResultCorrections.getFollowUpDate() != null) {
-      corrections.setFollowUpDate(jobResultCorrections.getFollowUpDate());
-      correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
-    }
-    if (jobResultCorrections.getCandidateUsers() != null) {
-      corrections.setCandidateUsersList(jobResultCorrections.getCandidateUsers());
-      correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
-    }
-    if (jobResultCorrections.getCandidateGroups() != null) {
-      corrections.setCandidateGroupsList(jobResultCorrections.getCandidateGroups());
-      correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
-    }
-    if (jobResultCorrections.getPriority() != null) {
-      corrections.setPriority(jobResultCorrections.getPriority());
-      correctedAttributes.add(UserTaskRecord.PRIORITY);
-    }
-
-    jobResult.setCorrections(corrections);
-    jobResult.setCorrectedAttributes(correctedAttributes);
-    return jobResult;
-  }
-
-  private static JobResult getJobResult(final JobResultAdHocSubProcess result) {
-    final JobResult jobResult = new JobResult();
-    jobResult
-        .setType(JobResultType.from(result.getType()))
-        .setCompletionConditionFulfilled(result.getIsCompletionConditionFulfilled())
-        .setCancelRemainingInstances(result.getIsCancelRemainingInstances());
-    result.getActivateElements().stream()
-        .map(
-            element -> {
-              final var activateElement =
-                  new JobResultActivateElement().setElementId(element.getElementId());
-              if (element.getVariables() != null) {
-                activateElement.setVariables(
-                    new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.getVariables())));
-              }
-              return activateElement;
-            })
-        .forEach(jobResult::addActivateElement);
-    return jobResult;
-  }
-
   private static <R> boolean getBooleanOrDefault(
       final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
     final Boolean value = request == null ? null : valueExtractor.apply(request);
@@ -1032,19 +944,94 @@ public class RequestMapper {
 
   public static CompleteJobRequest toJobCompletionRequest(
       final GeneratedJobCompletionRequestStrictContract request, final long jobKey) {
-    // JobResult is polymorphic (oneOf: JobResultUserTask, JobResultAdHocSubProcess) with
-    // custom deserialization. The strict contract holds it as Object (LinkedHashMap at runtime).
-    // Construct the protocol model to reuse existing polymorphic deserialization logic.
-    final var completionRequest = convertToProtocol(request, JobCompletionRequest.class);
-    return toJobCompletionRequest(completionRequest, jobKey);
+    final Map<String, Object> variables =
+        request != null && request.variables() != null ? request.variables() : Map.of();
+    final var jobResult = toJobResult(request != null ? request.result() : null);
+    return new CompleteJobRequest(jobKey, variables, jobResult);
   }
 
-  public static CompleteJobRequest toJobCompletionRequest(
-      final JobCompletionRequest completionRequest, final long jobKey) {
-    return new CompleteJobRequest(
-        jobKey,
-        getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
-        getJobResultOrDefault(completionRequest));
+  /**
+   * Converts the raw result Object (a LinkedHashMap at runtime due to the strict contract typing
+   * the oneOf field as Object) to a domain JobResult by deserializing through the generated sealed
+   * interface.
+   */
+  private static JobResult toJobResult(final Object rawResult) {
+    if (rawResult == null) {
+      return new JobResult();
+    }
+    final var typed = PROTOCOL_MAPPER.convertValue(rawResult, GeneratedJobStrictContract.class);
+    return switch (typed) {
+      case GeneratedJobResultUserTaskStrictContract ut -> toJobResult(ut);
+      case GeneratedJobResultAdHocSubProcessStrictContract ahsp -> toJobResult(ahsp);
+    };
+  }
+
+  private static JobResult toJobResult(final GeneratedJobResultUserTaskStrictContract result) {
+    final JobResult jobResult = new JobResult();
+    jobResult.setType(JobResultType.from(result.type()));
+    jobResult.setDenied(result.denied() != null ? result.denied() : false);
+    jobResult.setDeniedReason(result.deniedReason() != null ? result.deniedReason() : "");
+
+    final var corrections = result.corrections();
+    if (corrections == null) {
+      return jobResult;
+    }
+
+    final JobResultCorrections domainCorrections = new JobResultCorrections();
+    final List<String> correctedAttributes = new ArrayList<>();
+
+    if (corrections.assignee() != null) {
+      domainCorrections.setAssignee(corrections.assignee());
+      correctedAttributes.add(UserTaskRecord.ASSIGNEE);
+    }
+    if (corrections.dueDate() != null) {
+      domainCorrections.setDueDate(corrections.dueDate());
+      correctedAttributes.add(UserTaskRecord.DUE_DATE);
+    }
+    if (corrections.followUpDate() != null) {
+      domainCorrections.setFollowUpDate(corrections.followUpDate());
+      correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
+    }
+    if (corrections.candidateUsers() != null) {
+      domainCorrections.setCandidateUsersList(corrections.candidateUsers());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
+    }
+    if (corrections.candidateGroups() != null) {
+      domainCorrections.setCandidateGroupsList(corrections.candidateGroups());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
+    }
+    if (corrections.priority() != null) {
+      domainCorrections.setPriority(corrections.priority());
+      correctedAttributes.add(UserTaskRecord.PRIORITY);
+    }
+
+    jobResult.setCorrections(domainCorrections);
+    jobResult.setCorrectedAttributes(correctedAttributes);
+    return jobResult;
+  }
+
+  private static JobResult toJobResult(
+      final GeneratedJobResultAdHocSubProcessStrictContract result) {
+    final JobResult jobResult = new JobResult();
+    jobResult
+        .setType(JobResultType.from(result.type()))
+        .setCompletionConditionFulfilled(result.isCompletionConditionFulfilled())
+        .setCancelRemainingInstances(result.isCancelRemainingInstances());
+    if (result.activateElements() != null) {
+      result.activateElements().stream()
+          .map(
+              element -> {
+                final var activateElement =
+                    new JobResultActivateElement().setElementId(element.elementId());
+                if (element.variables() != null) {
+                  activateElement.setVariables(
+                      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.variables())));
+                }
+                return activateElement;
+              })
+          .forEach(jobResult::addActivateElement);
+    }
+    return jobResult;
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -1177,7 +1164,6 @@ public class RequestMapper {
   public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
       toProcessInstanceMigrationBatchOperationRequest(
           final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract request) {
-    // Validate and map filter using strict contract mapper (avoids convertToProtocol)
     final var filterResult = toRequiredProcessInstanceFilter(request.filter());
     if (filterResult.isLeft()) {
       return Either.left(filterResult.getLeft());
@@ -1216,7 +1202,6 @@ public class RequestMapper {
   public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
       toProcessInstanceModifyBatchOperationRequest(
           final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract request) {
-    // Validate and map filter using strict contract mapper (avoids convertToProtocol)
     final var filterResult = toRequiredProcessInstanceFilter(request.filter());
     if (filterResult.isLeft()) {
       return Either.left(filterResult.getLeft());
