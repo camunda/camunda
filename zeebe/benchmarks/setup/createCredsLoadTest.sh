@@ -7,9 +7,12 @@ set -euo pipefail
 # Usage: ./createCredsLoadTest.sh [namespace]
 NS="${1:-__NAMESPACE__}"
 
-# Check if the secret already exists; if so, skip creation.
+# Check if the secret already exists; if so, retrieve the existing orchestration secret
+# for the sed replacement and skip creation.
 if kubectl -n "$NS" get secret camunda-credentials &>/dev/null; then
   echo "Secret 'camunda-credentials' already exists in namespace '$NS'. Skipping creation."
+  ORCHESTRATION_SECRET=$(kubectl -n "$NS" get secret camunda-credentials -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 -d)
+  sed_inplace "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml
   exit 0
 fi
 
