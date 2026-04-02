@@ -24,5 +24,6 @@ public class BatchOperationCreationAuditLogTransformer
       final Record<BatchOperationCreationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setBatchOperationType(value.getBatchOperationType());
+    log.setEntityKey(String.valueOf(value.getBatchOperationKey()));
   }
 }
