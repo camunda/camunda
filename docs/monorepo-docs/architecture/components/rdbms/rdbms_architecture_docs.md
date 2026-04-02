@@ -74,8 +74,14 @@ Key Features & Benefits:
 
 ### Spring
 
-Spring should only be used in the `dist` folder to bring together the components for the application.
-So in the rdbms module itself, no spring should be used.
+Spring IoC (bean declarations via `@Component`, `@Bean`, `@Autowired`, etc.) must not be used
+inside the `db/rdbms` module. All component wiring happens in the `dist` module using constructor
+injection. The `db/rdbms` module is a plain Java library with no Spring DI dependency; components
+are instantiated and wired together from the outside.
+
+The one exception is `LiquibaseSchemaManager`, which extends Liquibase's
+`MultiTenantSpringLiquibase` to leverage its schema-migration lifecycle. It carries no Spring bean
+annotations and is wired as a Spring bean in `dist`, not inside `db/rdbms` itself.
 
 ## 3. Context and Scope
 
@@ -130,7 +136,7 @@ flowchart LR
 | Camunda        | The whole camunda platform, including broker, webapps, ...                                                                                                                                              |
 | RDBMS Exporter | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
 | EntityDbReader | Each entity (processInstance, user, role) has an Reader interface (e.g. ProcessInstanceReader). For each of these interfaces, RDBMS provides a DbReader implementation (e.g. ProcessInstanceDbReader)   |
-| RDBMS Service  | Entry Point to the database modul which provides readers for the search client as well as writers for the exporter.                                                                                     |
+| RDBMS Service  | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                     |
 | RDBMS          | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                        |
 
 ## 4. Solution Strategy
@@ -189,7 +195,7 @@ flowchart TD
 | RDBMS Exporter               | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
 | ProcessInstanceExportHandler | An example record handler, here for records for processInstances.                                                                                                                                       |
 | ProcessInstanceWriter        | Is used by the RDBMS exporter and it's handlers to write processInstance data.                                                                                                                          |
-| RDBMS Service                | Entry Point to the database modul which provides readers for the search client as well as writers for the exporter.                                                                                     |
+| RDBMS Service                | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                     |
 | ProcessInstanceReader        | Is the general API interface to read data from the secondary storage (here processInstance as example). Has to be implemented by the secondary storage implementation.                                  |
 | ProcessInstanceDbReader      | The RDBMS implementation of the ProcessInstanceReader.                                                                                                                                                  |
 | RDBMS                        | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                        |

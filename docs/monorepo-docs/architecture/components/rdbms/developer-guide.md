@@ -18,16 +18,21 @@ db/rdbms/
 ├── src/main/java/io/camunda/db/rdbms/
 │   ├── read/
 │   │   ├── domain/          # DbQuery records (e.g. ProcessDefinitionDbQuery)
+│   │   ├── mapper/          # Entity mappers: DbModel → API entity (used when direct MyBatis
+│   │   │                    #   result mapping is not sufficient)
+│   │   ├── security/        # RdbmsResourceAccessController (authorization filter)
 │   │   ├── service/         # DbReader implementations (e.g. ProcessDefinitionDbReader)
 │   │   └── RdbmsReaderConfig.java
 │   ├── sql/
 │   │   ├── columns/         # SearchColumn enums (e.g. ProcessDefinitionSearchColumn)
-│   │   ├── typehandler/     # MyBatis TypeHandlers
+│   │   ├── typehandler/     # DB-specific MyBatis TypeHandlers (PostgreSQL array, Oracle XML)
 │   │   └── *Mapper.java     # MyBatis Mapper interfaces
+│   ├── typehandler/         # Generic MyBatis TypeHandlers (JSON, null/empty-string handling)
 │   ├── write/
 │   │   ├── domain/          # DbModel records (e.g. ProcessDefinitionDbModel)
 │   │   ├── queue/           # ExecutionQueue, QueueItem, Mergers
-│   │   └── service/         # Writer implementations (e.g. ProcessDefinitionWriter)
+│   │   ├── service/         # Writer implementations (e.g. ProcessDefinitionWriter)
+│   │   └── util/            # Internal write-path utilities (e.g. TruncateUtil)
 │   └── RdbmsService.java    # Main entry point, wires readers and writers
 │
 └── src/main/resources/
@@ -56,8 +61,10 @@ db/rdbms-schema/
 
 ### General conventions
 
-- **No Spring in the `db/rdbms` module**: Spring is only used in `dist/` to wire components
-  together. The `db/rdbms` module itself is Spring-free; use constructor injection everywhere.
+- **No Spring IoC in the `db/rdbms` module**: Spring bean annotations (`@Component`, `@Bean`,
+  `@Autowired`, etc.) are not used in `db/rdbms`. All wiring is done externally in `dist/` using
+  constructor injection. `LiquibaseSchemaManager` is the only class that extends a Spring-Liquibase
+  integration base class; it carries no Spring annotations itself.
 - **CQRS**: Read and write paths are strictly separated. Readers use MyBatis mappers directly;
   writers enqueue operations through the `ExecutionQueue`.
 - **Immutable domain models**: DbModels and DbQueries are Java `record` types. Use the nested
@@ -65,7 +72,16 @@ db/rdbms-schema/
 - **Queue-based writes**: Never call mapper methods directly from a writer. Always enqueue
   operations via `ExecutionQueue.executeInQueue(...)`.
 - **Always run all supported databases** before merging: schema and SQL changes must be verified
-  against H2, PostgreSQL, MariaDB, MySQL, MSSQL, and Oracle.
+  against H2, PostgreSQL, MariaDB, MySQL, MSSQL, and Oracle. Use the `db/docker-compose.yml` file
+  to start all supported database containers locally:
+
+  ```bash
+  cd db/
+  docker compose up postgres mssql mariadb oracle -d
+  ```
+
+  H2 runs in-process during tests and does not need a separate container. MySQL and MariaDB share
+  the same port (3306), so start only one at a time unless you override the port mapping.
 
 ---
 
@@ -694,7 +710,7 @@ an XMLTABLE-based approach that passes the list as an XML document and parses it
 
 The `OracleXmlArrayTypeHandler` converts a Java `List<Long>` into an Oracle XML document of the
 form `<d><r>1</r><r>2</r>…</d>`, which `XMLTABLE` then parses back into a relational result set.
-See the `OracleXmlArrayTypeHandler` implementation in `db/rdbms/src/main/java/…/typehandler/` for
+See the `OracleXmlArrayTypeHandler` implementation in `db/rdbms/src/main/java/…/sql/typehandler/` for
 details.
 
 #### NULL ordering
