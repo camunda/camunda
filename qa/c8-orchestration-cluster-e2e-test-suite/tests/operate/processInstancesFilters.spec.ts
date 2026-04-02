@@ -617,30 +617,26 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateProcessesPage.selectProcessCheckboxByPIK(
-        processToCancelInstanceMeowIK,
-        processToCancelInstanceGawIK,
-      );
+      await operateProcessesPage.selectAllRowsCheckbox.click();
 
       await operateProcessesPage.clickCancelBatchOperationButton();
 
       await operateProcessesPage.clickCancelProcessInstanceDialogButton();
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 30000});
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
-
       await operateProcessesPage.clickGoToOperationDetailsButton();
 
       await sleep(1_000);
       await expect(operateOperationsDetailsPage.state).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          const batchOperationStatus = await operateOperationsDetailsPage.getBatchOperationStatus();
+          expect(batchOperationStatus).toBe('Completed');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 6,
+      });
 
       const operationId =
         await operateOperationsDetailsPage.getBatchOperationId();
