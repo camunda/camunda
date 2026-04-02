@@ -126,18 +126,18 @@
     <constructor>
       <idArg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"/>
       <arg column="DECISION_REQUIREMENTS_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="DECISION_REQUIREMENTS_VERSION" javaType="java.lang.Integer"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
     </constructor>
   </resultMap>
 
