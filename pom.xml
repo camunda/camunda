@@ -89,6 +89,7 @@
               <exclude>.github/instructions/**/*.md</exclude>
               <exclude>.github/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
+              <exclude>.github/workflows/**/*.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
