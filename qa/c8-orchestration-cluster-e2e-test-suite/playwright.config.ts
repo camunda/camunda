@@ -78,6 +78,7 @@ const apiTestIgnore = [
   'tests/api/v2/clock/*.spec.ts',
   'tests/api/v2/usage-metrics/*.spec.ts',
   'tests/api/v2/audit-log/*.spec.ts',
+  'tests/api/v2/job/job-statistics-*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -94,6 +95,7 @@ const normalProjects = [
       'tests/api/v2/clock/*.spec.ts',
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
+      'tests/api/v2/job/job-statistics-*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,

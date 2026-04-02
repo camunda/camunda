@@ -7,14 +7,9 @@
  */
 
 import {test, expect, APIRequestContext} from '@playwright/test';
-import {
-  assertStatusCode,
-  assertInvalidArgument,
-} from '../../../../utils/http';
+import {assertStatusCode, assertInvalidArgument} from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {evaluateExpression, EXPRESSION_URL} from '@requestHelpers'
-
-
+import {evaluateExpression, EXPRESSION_URL} from '@requestHelpers';
 
 type ExpressionTestCase = {
   description: string;
@@ -199,7 +194,8 @@ const errorTestCases: ExpressionTestCase[] = [
     errorDetail: 'Failed to parse expression',
   },
   {
-    description: 'Should return warning when invalid FEEL syntax (missing else) - Error',
+    description:
+      'Should return warning when invalid FEEL syntax (missing else) - Error',
     expression: '=if x > 5 then "big"',
     variables: {x: 10},
     errorDetail: 'Failed to parse expression',
