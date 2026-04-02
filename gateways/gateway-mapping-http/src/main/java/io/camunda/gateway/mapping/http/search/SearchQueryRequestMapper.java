@@ -140,17 +140,6 @@ public final class SearchQueryRequestMapper {
   public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
       new AdvancedStringFilter();
   public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
-  public static final io.camunda.gateway.protocol.model.ProcessInstanceFilter
-      EMPTY_PROCESS_INSTANCE_FILTER = new io.camunda.gateway.protocol.model.ProcessInstanceFilter();
-  public static final io.camunda.gateway.protocol.model.DecisionInstanceFilter
-      EMPTY_DECISION_INSTANCE_FILTER =
-          new io.camunda.gateway.protocol.model.DecisionInstanceFilter();
-
-  public static final io.camunda.gateway.protocol.model
-          .IncidentProcessInstanceStatisticsByDefinitionFilter
-      EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER =
-          new io.camunda.gateway.protocol.model
-              .IncidentProcessInstanceStatisticsByDefinitionFilter();
 
   private SearchQueryRequestMapper() {}
 
