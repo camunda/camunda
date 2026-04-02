@@ -73,7 +73,8 @@ public class ProcessDefinitionSpecificFilterIT {
             new ProcessDefinitionQuery(
                 filter,
                 ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+                SearchQueryPage.of(b -> b.from(0).size(5)),
+                null));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
@@ -114,7 +115,8 @@ public class ProcessDefinitionSpecificFilterIT {
                     .isLatestVersion(true)
                     .build(),
                 ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+                SearchQueryPage.of(b -> b.from(0).size(5)),
+                null));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);

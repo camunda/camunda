@@ -63,7 +63,8 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
                     .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(dbPage)
+                    .resultConfig(query.resultConfig()));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processDefinitionMapper.count(dbQuery);
@@ -80,7 +81,9 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
     final var result =
         search(
             ProcessDefinitionQuery.of(
-                b -> b.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .resultConfig(c -> c.includeXml(true))));
     if (result.items() == null || result.items().isEmpty()) {
       return Optional.empty();
     } else {
