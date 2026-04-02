@@ -12,6 +12,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
 import {type editor, KeyCode} from 'monaco-editor';
+import type {ReactNode} from 'react';
 
 type Props = {
   value: string;
@@ -25,6 +26,7 @@ type Props = {
   height?: string;
   width?: string;
   options?: editor.IStandaloneEditorConstructionOptions;
+  loading?: ReactNode;
 };
 
 const JSONEditor: React.FC<Props> = observer(
@@ -37,6 +39,7 @@ const JSONEditor: React.FC<Props> = observer(
     height = '60vh',
     width = '100%',
     options = {},
+    loading,
   }) => {
     const editorOptions = {
       ...defaultOptions,
@@ -48,6 +51,7 @@ const JSONEditor: React.FC<Props> = observer(
       <>
         <EditorStyles />
         <Editor
+          loading={loading}
           options={editorOptions}
           language="json"
           value={value}

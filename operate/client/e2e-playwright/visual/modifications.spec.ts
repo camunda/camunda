@@ -215,10 +215,10 @@ test.describe('modifications', () => {
     await page.getByRole('link', {name: /variables/i}).click();
 
     await processInstancePage.variablesEditor
-      .getEditor('edit-variable-value')
+      .getEditor('loopCounter')
       .first()
       .click();
-    await processInstancePage.variablesEditor.waitForLoaded();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
 
     await processInstancePage.variablesEditor.clear();
     await processInstancePage.variablesEditor.fill('"test"');

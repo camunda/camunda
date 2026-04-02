@@ -7,6 +7,7 @@
  */
 
 import {Field, useForm} from 'react-final-form';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import {createNewVariableFieldName} from '../createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
@@ -31,6 +32,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
 
   const {currentName, currentValue, currentId, areFormFieldsValid} =
     useVariableFormFields(variableName);
+  const fieldError = useFieldError(valueFieldName);
 
   return (
     <Layer>
@@ -45,8 +47,10 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         {({input}) => (
           <InlineJsonEditor
             {...input}
+            label="Value"
             data-testid="new-variable-value"
             id={valueFieldName}
+            fieldError={fieldError}
             onBlur={() => {
               form.mutators?.triggerValidation?.(valueFieldName);
               input.onBlur();

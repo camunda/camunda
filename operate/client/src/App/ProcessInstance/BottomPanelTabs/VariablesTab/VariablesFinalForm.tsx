@@ -19,7 +19,6 @@ import {queryKeys} from 'modules/queries/queryKeys';
 import {useElementInstanceVariables} from 'modules/mutations/elementInstances/useElementInstanceVariables';
 import {handleMutationError} from 'modules/utils/notifications';
 import {modificationsStore} from 'modules/stores/modifications';
-import {EditorProvider} from './Variables/EditorContext/EditorProvider';
 
 type Props = {
   scopeKey: string;
@@ -48,52 +47,50 @@ const VariablesFinalForm: React.FC<Props> = ({scopeKey}) => {
   }, [scopeKey]);
 
   return (
-    <EditorProvider>
-      <ReactFinalForm<VariableFormValues>
-        mutators={{
-          ...arrayMutators,
-          triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
-            fieldsToValidate.forEach((fieldName) => {
-              changeValue(state, fieldName, (n) => n);
-            });
-          },
-        }}
-        key={scopeKey}
-        initialValues={initialValues}
-        render={(props) => <VariablesForm {...props} />}
-        onSubmit={async (values, form) => {
-          const {initialValues} = form.getState();
-          const isNewVariable = initialValues?.name === '';
-          const {name, value} = values;
+    <ReactFinalForm<VariableFormValues>
+      mutators={{
+        ...arrayMutators,
+        triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
+          fieldsToValidate.forEach((fieldName) => {
+            changeValue(state, fieldName, (n) => n);
+          });
+        },
+      }}
+      key={scopeKey}
+      initialValues={initialValues}
+      render={(props) => <VariablesForm {...props} />}
+      onSubmit={async (values, form) => {
+        const {initialValues} = form.getState();
+        const isNewVariable = initialValues?.name === '';
+        const {name, value} = values;
 
-          await mutateAsyncVariables(
-            {name, value: JSON.stringify(JSON.parse(value))},
-            {
-              onSuccess: () => {
-                notificationsStore.displayNotification({
-                  kind: 'success',
-                  title: isNewVariable ? 'Variable added' : 'Variable updated',
-                  isDismissable: true,
-                });
-              },
-              onError: (error) => {
-                handleMutationError({
-                  statusCode: error.status,
-                  title: 'Variable could not be saved',
-                  subtitle: error.statusText,
-                });
-              },
-              onSettled: async () => {
-                form.reset({});
-                await queryClient.invalidateQueries({
-                  queryKey: queryKeys.variables.search(),
-                });
-              },
+        await mutateAsyncVariables(
+          {name, value: JSON.stringify(JSON.parse(value))},
+          {
+            onSuccess: () => {
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: isNewVariable ? 'Variable added' : 'Variable updated',
+                isDismissable: true,
+              });
             },
-          ).catch(() => void 0);
-        }}
-      />
-    </EditorProvider>
+            onError: (error) => {
+              handleMutationError({
+                statusCode: error.status,
+                title: 'Variable could not be saved',
+                subtitle: error.statusText,
+              });
+            },
+            onSettled: async () => {
+              form.reset({});
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.variables.search(),
+              });
+            },
+          },
+        ).catch(() => void 0);
+      }}
+    />
   );
 };
 

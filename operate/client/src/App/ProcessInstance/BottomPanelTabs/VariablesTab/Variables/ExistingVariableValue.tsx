@@ -19,6 +19,7 @@ import {Layer, Loading} from '@carbon/react';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 import {modificationsStore} from 'modules/stores/modifications';
 
@@ -58,6 +59,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
 
     const isVariableValueUndefined = variable?.value === undefined;
     const pauseValidation = isPreview && isVariableValueUndefined;
+    const fieldError = useFieldError(variableEditor.fieldName);
 
     return (
       <Layer>
@@ -83,7 +85,9 @@ const ExistingVariableValue: React.FC<Props> = observer(
               <InlineJsonEditor
                 {...input}
                 id={variableEditor.fieldName}
+                label={variableName}
                 data-testid="edit-variable-value"
+                fieldError={fieldError}
                 autoFocus={!isModificationModeEnabled || meta.active}
                 readOnly={meta.submitting}
                 onBlur={() => {

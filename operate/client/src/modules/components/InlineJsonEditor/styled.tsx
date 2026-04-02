@@ -42,20 +42,25 @@ const EditorWrapper = styled.div<{
     &:focus-within::after {
       ${ring('var(--cds-focus, #0f62fe)')}
     }
+
+    ${({$invalid}) =>
+      $invalid &&
+      css`
+        &:focus-within::after {
+          ${ring('var(--cds-support-error)')}
+        }
+      `}
   }
 
   ${({$invalid}) =>
     $invalid &&
     css`
-      &::after {
-        ${ring('var(--cds-support-error, #da1e28)')}
-      }
       .cds--form-requirement {
         display: block;
         overflow: visible;
         font-weight: 400;
         max-block-size: 12.5rem;
-        color: var(--cds-text-error, #da1e28);
+        color: var(--cds-text-error);
       }
     `}
 `;
@@ -94,14 +99,14 @@ const EditorReadonly = styled.pre<{
         `}
 
   &:focus-visible {
-    outline: 2px solid var(--cds-focus, #0f62fe);
+    outline: 2px solid var(--cds-focus);
     outline-offset: -2px;
   }
 
   ${({$empty}) =>
     $empty &&
     css`
-      color: var(--cds-text-placeholder, #a8a8a8);
+      color: var(--cds-text-placeholder);
     `};
   ${({$editMode}) =>
     $editMode &&

@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {Field, useForm, useFormState} from 'react-final-form';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import {Layer} from './styled';
 import {
   validateNameCharacters,
@@ -34,6 +35,7 @@ const NewVariable: React.FC = () => {
   const allVariables =
     variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
     [];
+  const valueError = useFieldError('value');
 
   return (
     <>
@@ -66,7 +68,14 @@ const NewVariable: React.FC = () => {
           validate={mergeValidators(validateValueComplete, validateValueValid)}
           parse={(value) => value}
         >
-          {({input}) => <InlineJsonEditor {...input} id="value" />}
+          {({input}) => (
+            <InlineJsonEditor
+              {...input}
+              label="Value"
+              id="value"
+              fieldError={valueError}
+            />
+          )}
         </Field>
         <Operations>
           <MaximizeButton

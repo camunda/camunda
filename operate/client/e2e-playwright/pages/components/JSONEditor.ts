@@ -8,7 +8,7 @@
 
 import type {Locator, Page} from '@playwright/test';
 
-export class JSONEditor {
+class JSONEditor {
   private readonly page: Page;
   private readonly readOnlyEditor: Locator;
   private readonly codeEditor: Locator;
@@ -19,11 +19,11 @@ export class JSONEditor {
     this.codeEditor = this.page.getByRole('code').first();
   }
 
-  getEditor(testId: string = "'json-editor-wrapper'") {
-    return this.page.getByTestId(testId);
+  getEditor(label: string) {
+    return this.page.getByRole('group', {name: label});
   }
 
-  async waitForLoaded() {
+  async waitForEditorToLoad() {
     await this.codeEditor.waitFor({state: 'visible'});
     await this.page
       .locator('.monaco-editor .cursor')
@@ -44,3 +44,5 @@ export class JSONEditor {
     await this.page.keyboard.press('Escape');
   }
 }
+
+export {JSONEditor};
