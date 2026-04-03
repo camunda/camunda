@@ -67,7 +67,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
-  private final String importPositionAlias;
+  private final String importPositionFullQualifiedName;
 
   public OpenSearchIncidentUpdateRepository(
       final int partitionId,
@@ -77,7 +77,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
       final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
-      final String importPositionAlias,
+      final String importPositionFullQualifiedName,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
@@ -89,7 +89,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
-    this.importPositionAlias = importPositionAlias;
+    this.importPositionFullQualifiedName = importPositionFullQualifiedName;
   }
 
   @Override
@@ -300,7 +300,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
             .toQuery();
     final var request =
         new SearchRequest.Builder()
-            .index(importPositionAlias)
+            .index(importPositionFullQualifiedName)
             .query(q -> q.bool(b -> b.must(aliasNameQ, partitionQ)))
             .allowNoIndices(true)
             .ignoreUnavailable(true)

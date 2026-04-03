@@ -65,7 +65,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
-  private final String importPositionAlias;
+  private final String importPositionFullQualifiedName;
 
   public ElasticsearchIncidentUpdateRepository(
       final int partitionId,
@@ -75,7 +75,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
       final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
-      final String importPositionAlias,
+      final String importPositionFullQualifiedName,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
@@ -87,7 +87,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
-    this.importPositionAlias = importPositionAlias;
+    this.importPositionFullQualifiedName = importPositionFullQualifiedName;
   }
 
   @Override
@@ -263,7 +263,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         QueryBuilders.term(t -> t.field(ImportPositionIndex.PARTITION_ID).value(partitionId));
     final var request =
         new SearchRequest.Builder()
-            .index(importPositionAlias)
+            .index(importPositionFullQualifiedName)
             .query(q -> q.bool(b -> b.must(aliasNameQ, partitionQ)))
             .allowNoIndices(true)
             .ignoreUnavailable(true)

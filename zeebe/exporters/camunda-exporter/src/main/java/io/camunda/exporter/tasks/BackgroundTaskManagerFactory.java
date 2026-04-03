@@ -165,7 +165,7 @@ public final class BackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
-        importPositionIndex.getAlias(),
+        importPositionIndex.getFullQualifiedName(),
         asyncClient,
         executor,
         logger);
@@ -219,7 +219,7 @@ public final class BackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
-        importPositionIndex.getAlias(),
+        importPositionIndex.getFullQualifiedName(),
         asyncClient,
         executor,
         logger);
