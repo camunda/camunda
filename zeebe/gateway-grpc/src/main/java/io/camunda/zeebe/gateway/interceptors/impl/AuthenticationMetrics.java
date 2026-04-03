@@ -10,21 +10,14 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.AuthResultValues;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.LatencyKeyNames;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class AuthenticationMetrics {
   private final MeterRegistry meterRegistry;
   private final Timer successLatencyTimer;
   private final Timer failureLatencyTimer;
-
-  @VisibleForTesting
-  AuthenticationMetrics() {
-    this(new SimpleMeterRegistry(), AuthenticationMethod.BASIC);
-  }
 
   public AuthenticationMetrics(
       final MeterRegistry meterRegistry, final AuthenticationMethod method) {
