@@ -9,11 +9,7 @@ package io.camunda.search.clients.transformers.result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.search.sort.ProcessDefinitionSort;
 import org.junit.jupiter.api.Test;
 
 public class ProcessDefinitionResultConfigTest extends AbstractResultConfigTest {
@@ -45,17 +41,9 @@ public class ProcessDefinitionResultConfigTest extends AbstractResultConfigTest 
   }
 
   @Test
-  public void shouldDefaultNullResultConfigToExcludeXml() {
-    // given
-    final var query =
-        new ProcessDefinitionQuery(
-            FilterBuilders.processDefinition().build(),
-            ProcessDefinitionSort.of(b -> b),
-            SearchQueryPage.of(b -> b),
-            null);
-
+  public void shouldSourceConfigExcludeXmlByDefault() {
     // when
-    final var source = transformRequest(query);
+    final var source = transformRequest(SearchQueryBuilders.processDefinitionSearchQuery(q -> q));
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("bpmnXml");
