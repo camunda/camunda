@@ -50,13 +50,10 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
@@ -66,6 +63,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+
   private final int partitionId;
   private final HistoryConfiguration config;
   private final String archiverBlockedMetaIndex;
@@ -76,7 +74,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
-  private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
 
   public ElasticsearchArchiverRepository(
@@ -187,7 +184,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 createArchiveBatch(
                     response,
                     UsageMetricTUTemplate.END_TIME,
-                    usageMetricTUTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
             executor);
   }
@@ -209,7 +205,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 createArchiveBatch(
                     response,
                     UsageMetricTemplate.END_TIME,
-                    usageMetricTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
             executor);
   }
@@ -377,13 +372,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         q -> q.filter(endDateQ).filter(isProcessInstanceQ).filter(partitionQ));
   }
 
-  private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexPattern) {
-    return client
-        .indices()
-        .get(b -> b.index(indexPattern))
-        .thenApplyAsync(response -> new ArrayList<>(response.result().keySet()), executor);
-  }
-
   private SearchRequest createFinishedInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
@@ -412,52 +400,30 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final SearchResponse<?> response,
       final String field,
       final IndexTemplateDescriptor templateDescriptor) {
-    return createArchiveBatch(response, field, templateDescriptor, config.getRolloverInterval());
+    return createArchiveBatch(response, field, config.getRolloverInterval());
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
+      final SearchResponse<?> response, final String field, final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
       return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
-    final String templateIndexName = templateDescriptor.getIndexName();
-    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
 
-    final CompletableFuture<String> dateFuture =
-        (lastHistoricalArchiverDate == null)
-            ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                fetchMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
-            : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, rolloverInterval, config.getElsRolloverDateFormat());
 
-    return dateFuture.thenApply(
-        date -> {
-          final String nextArchiverDate =
-              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
+    final var ids =
+        hits.stream()
+            .takeWhile(
+                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
+            .map(Hit::id)
+            .toList();
 
-          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-
-          final var ids =
-              hits.stream()
-                  .takeWhile(
-                      hit ->
-                          hit.fields()
-                              .get(field)
-                              .toJson()
-                              .asJsonArray()
-                              .getString(0)
-                              .equals(endDate))
-                  .map(Hit::id)
-                  .toList();
-
-          return new ArchiveBatch(nextArchiverDate, ids);
-        });
+    return CompletableFuture.completedFuture(new ArchiveBatch(date, ids));
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
