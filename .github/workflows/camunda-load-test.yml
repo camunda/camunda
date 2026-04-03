@@ -83,6 +83,21 @@ on:
         options:
         - elasticsearch
         default: elasticsearch
+      optimize-tag:
+        description: 'Docker image tag for Optimize. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Docker image tag for Identity. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Docker image tag for Connectors. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -154,6 +169,21 @@ on:
         type: string
         required: false
         default: elasticsearch
+      optimize-tag:
+        description: 'Docker image tag for Optimize. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Docker image tag for Identity. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Docker image tag for Connectors. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
 
 env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
@@ -195,6 +225,9 @@ jobs:
         env:
           TAG: ${{ inputs.reuse-tag }}
           ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
+          OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
+          IDENTITY_TAG: ${{ inputs.identity-tag }}
+          CONNECTORS_TAG: ${{ inputs.connectors-tag }}
         run: |
           validate_image() {
             local image="$1"
@@ -231,8 +264,16 @@ jobs:
 
           validate_image "camunda/camunda:${TAG}" || exit 1
 
-          if [[ "${ENABLE_OPTIMIZE}" == "true" ]]; then
-            validate_image "camunda/optimize:${TAG}" || exit 1
+          if [[ "${ENABLE_OPTIMIZE}" == "true" && -n "${OPTIMIZE_TAG}" ]]; then
+            validate_image "camunda/optimize:${OPTIMIZE_TAG}" || exit 1
+          fi
+
+          if [[ -n "${IDENTITY_TAG}" ]]; then
+            validate_image "camunda/identity:${IDENTITY_TAG}" || exit 1
+          fi
+
+          if [[ -n "${CONNECTORS_TAG}" ]]; then
+            validate_image "camunda/connectors:${CONNECTORS_TAG}" || exit 1
           fi
 
   calculate-scenario-config:
@@ -442,12 +483,48 @@ jobs:
           zeebe_repo="${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
 
           additional_platform_config="--set global.image.tag=${image_tag} \
+<<<<<<< HEAD
             --set zeebe.image.registry=${image_registry} \
             --set zeebe.image.repository=${zeebe_repo} \
             --set zeebe.image.tag=${image_tag} \
             --set zeebeGateway.image.registry=${image_registry} \
             --set zeebeGateway.image.repository=${zeebe_repo} \
             --set zeebeGateway.image.tag=${image_tag}"
+=======
+            --set orchestration.image.registry=${image_registry} \
+            --set orchestration.image.repository=${camunda_repo} \
+            --set orchestration.image.tag=${image_tag}"
+
+          # Append optimize image config if enabled
+          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+            # Use dedicated optimize-tag only with official images; otherwise fall back to the built image tag
+            if [[ "${{ inputs.use-official-docker-images }}" == "true" && -n "${{ inputs.optimize-tag }}" ]]; then
+              optimize_tag="${{ inputs.optimize-tag }}"
+            else
+              optimize_tag="${image_tag}"
+            fi
+            additional_platform_config+=" \
+              --set optimize.image.registry=${image_registry} \
+              --set optimize.image.repository=${optimize_repo} \
+              --set optimize.image.tag=${optimize_tag}"
+          fi
+
+          # Append identity image config if a dedicated tag is provided (only for official images)
+          if [[ "${{ inputs.use-official-docker-images }}" == "true" && -n "${{ inputs.identity-tag }}" ]]; then
+            additional_platform_config+=" \
+              --set identity.image.registry=docker.io \
+              --set identity.image.repository=camunda/identity \
+              --set identity.image.tag=${{ inputs.identity-tag }}"
+          fi
+
+          # Append connectors image config if a dedicated tag is provided (only for official images)
+          if [[ "${{ inputs.use-official-docker-images }}" == "true" && -n "${{ inputs.connectors-tag }}" ]]; then
+            additional_platform_config+=" \
+              --set connectors.image.registry=docker.io \
+              --set connectors.image.repository=camunda/connectors \
+              --set connectors.image.tag=${{ inputs.connectors-tag }}"
+          fi
+>>>>>>> e983d7ee (feat: add per-component Docker image tag inputs for load test workflows)
 
           # Append user-provided helm values if present
           if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
