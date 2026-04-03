@@ -20,6 +20,21 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
+      optimize-tag:
+        description: 'Docker image tag for Optimize. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Docker image tag for Identity. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Docker image tag for Connectors. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       name:
@@ -30,6 +45,21 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
+      optimize-tag:
+        description: 'Docker image tag for Optimize. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Docker image tag for Identity. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Docker image tag for Connectors. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
 
 defaults:
   run:
@@ -68,6 +98,9 @@ jobs:
       ttl: 60
       use-official-docker-images: true
       scenario: 'realistic'
+      optimize-tag: ${{ inputs.optimize-tag }}
+      identity-tag: ${{ inputs.identity-tag }}
+      connectors-tag: ${{ inputs.connectors-tag }}
 
   notify-on-failure:
     name: Notify on failure
