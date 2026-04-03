@@ -35,7 +35,6 @@ const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
   return (
     <>
       <MaximizeButton
-        label="Open JSON editor"
         onClick={() => {
           setIsModalVisible(true);
         }}

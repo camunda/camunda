@@ -32,7 +32,6 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
   return (
     <>
       <MaximizeButton
-        label="Open JSON editor"
         onClick={() => {
           if (variableEditor.isSubmittingForm) {
             return;

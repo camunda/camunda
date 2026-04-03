@@ -7,7 +7,6 @@
  */
 
 export interface MaximizeButtonProps {
-  label: string;
   onClick: () => void;
 }
 

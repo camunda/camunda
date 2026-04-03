@@ -10,15 +10,15 @@ import {Button} from '@carbon/react';
 import {Maximize} from '@carbon/react/icons';
 import type {MaximizeButtonProps} from './types';
 
-const MaximizeButton: React.FC<MaximizeButtonProps> = ({onClick, label}) => {
+const MaximizeButton: React.FC<MaximizeButtonProps> = ({onClick}) => {
   return (
     <Button
       kind="ghost"
       hasIconOnly
       renderIcon={Maximize}
       size="sm"
-      aria-label={label}
-      iconDescription="Expand"
+      aria-label="Open variable"
+      iconDescription="Open"
       tooltipPosition="top"
       onClick={onClick}
     />

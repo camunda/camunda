@@ -609,7 +609,7 @@ describe('Edit variable', () => {
     );
 
     mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(screen.getByRole('button', {name: /expand/i}));
+    await user.click(screen.getByRole('button', {name: /open/i}));
 
     await waitFor(() =>
       expect(screen.getByTestId('monaco-editor')).toHaveValue('123456'),
@@ -646,7 +646,7 @@ describe('Edit variable', () => {
     ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /edit/i}));
-    await user.click(screen.getByRole('button', {name: /expand/i}));
+    await user.click(screen.getByRole('button', {name: /open/i}));
 
     expect(
       within(screen.getByRole('dialog')).getByRole('button', {
@@ -750,7 +750,7 @@ describe('Edit variable', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /expand/i,
+        name: /open/i,
       }),
     ).toBeInTheDocument();
   });

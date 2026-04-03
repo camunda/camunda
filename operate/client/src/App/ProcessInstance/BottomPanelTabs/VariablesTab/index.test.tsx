@@ -72,7 +72,7 @@ describe('VariablesTab', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /Expand/i,
+        name: /Open/i,
       }),
     ).toBeInTheDocument();
   });

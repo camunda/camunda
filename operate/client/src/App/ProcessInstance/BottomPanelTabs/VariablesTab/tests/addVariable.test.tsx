@@ -522,7 +522,7 @@ describe('Add variable', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await user.click(
       within(screen.getByTestId('variables-footer')).getByRole('button', {
-        name: /Expand/i,
+        name: /Open/i,
       }),
     );
 

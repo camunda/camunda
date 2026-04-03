@@ -28,7 +28,6 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   ) : (
     <>
       <MaximizeButton
-        label={`View full value of ${variableName}`}
         onClick={() => {
           setIsModalVisible(true);
         }}

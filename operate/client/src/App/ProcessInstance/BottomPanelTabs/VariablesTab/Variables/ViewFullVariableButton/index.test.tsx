@@ -73,7 +73,7 @@ describe('<ViewFullVariableButton />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: `Expand`,
+        name: 'Open',
       }),
     );
 
@@ -119,7 +119,7 @@ describe('<ViewFullVariableButton />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Expand',
+        name: 'Open',
       }),
     );
 
@@ -145,7 +145,7 @@ describe('<ViewFullVariableButton />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Expand',
+        name: 'Open',
       }),
     );
 
