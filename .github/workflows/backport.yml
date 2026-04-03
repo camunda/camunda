@@ -4,10 +4,14 @@
 name: Backport labeled merged pull requests
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
   issue_comment:
     types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   backport:
@@ -19,7 +23,7 @@ jobs:
     # own PAT as `github_token`, that you should replace this id with yours.
     if: >
       (
-        github.event_name == 'pull_request' &&
+        github.event_name == 'pull_request_target' &&
         github.event.pull_request.merged
       ) || (
         github.event_name == 'issue_comment' &&
@@ -28,15 +32,32 @@ jobs:
         startsWith(github.event.comment.body, '/backport')
       )
     steps:
+      - name: Import Secrets
+        id: vault-secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda BACKPORT_GH_APP_ID;
+            secret/data/github.com/organizations/camunda BACKPORT_GH_APP_KEY;
+      - name: Generate a GitHub token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ steps.vault-secrets.outputs.BACKPORT_GH_APP_ID }}
+          private-key: ${{ steps.vault-secrets.outputs.BACKPORT_GH_APP_KEY }}
       - uses: actions/checkout@v6
         with:
-          # Token for git actions, e.g. git push
-          token: ${{ secrets.BACKPORT_ACTION_PAT }}
+          # PR created by GitHub Action bot will not trigger CI checks
+          token: ${{ steps.app-token.outputs.token }}
       - name: Create backport PRs
         uses: korthout/backport-action@v4
         with:
           # Token to authenticate requests to GitHub
-          github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
+          github_token: ${{ steps.app-token.outputs.token }}
 
           # Template used as description in the pull requests created by this action.
           # Placeholders can be used to define variable values.
