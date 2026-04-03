@@ -156,8 +156,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   /**
-   * Returns true if the request failed because it was unauthenticated or unauthorized, and a new
-   * access token could be fetched; otherwise returns false. Delegates to {@link
+   * Returns true if the request should be retried — meaning the token was refreshed (either by this
+   * thread or a concurrent one) and a retry with the new token is worthwhile. Returns false if the
+   * failure was not an auth error, or if the freshly fetched credentials are identical to the
+   * cached ones (indicating the 401 was not caused by a stale token). Delegates to {@link
    * OAuthCredentialsCache#forceRefreshIfChanged} which is synchronized on the same monitor as
    * {@link OAuthCredentialsCache#computeIfMissingOrInvalid}, ensuring that concurrent 401 retries
    * coalesce into a single token refresh call.
@@ -187,35 +189,40 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
    * unblocked. Only the brief {@code put()+writeCache()} at the end acquires the monitor.
    */
   private void triggerProactiveRefresh() {
-    final CompletableFuture<Void> existing = backgroundRefresh.get();
-    if (existing != null && !existing.isDone()) {
-      // A refresh is already in progress, skip
-      return;
-    }
-
-    final CompletableFuture<Void> refresh =
-        CompletableFuture.runAsync(
-            () -> {
-              try {
-                LOG.info("Proactively refreshing OAuth token for client '{}'", clientId);
-                // Step 1: Fetch the token WITHOUT any lock — this is the slow part
-                // (HTTP round-trip to the OAuth server).
-                final CamundaClientCredentials freshCredentials = fetchCredentials();
-
-                // Step 2: Briefly acquire the cache monitor to atomically put + write.
-                // During the proactive window the token is still valid, so
-                // computeIfMissingOrInvalid() only holds the monitor for a quick
-                // read-check-return — no contention.
-                credentialsCache.putAndWrite(clientId, freshCredentials);
-                LOG.info("Proactively refreshed OAuth token for client '{}'", clientId);
-              } catch (final IOException e) {
-                LOG.warn(
-                    "Background OAuth token refresh failed for client '{}': {}",
-                    clientId,
-                    e.getMessage());
+    // Atomically swap in a placeholder so only one thread wins the race.
+    // updateAndGet returns the current value if a refresh is already in-flight,
+    // or installs and returns a new future if the slot is empty/done.
+    final CompletableFuture<Void> winner =
+        backgroundRefresh.updateAndGet(
+            existing -> {
+              if (existing != null && !existing.isDone()) {
+                // A refresh is already in progress — keep it, skip
+                return existing;
               }
+              // This thread wins: create and return the refresh future
+              return CompletableFuture.runAsync(
+                  () -> {
+                    try {
+                      LOG.info("Proactively refreshing OAuth token for client '{}'", clientId);
+                      // Step 1: Fetch the token WITHOUT any lock — this is the slow part
+                      // (HTTP round-trip to the OAuth server).
+                      final CamundaClientCredentials freshCredentials = fetchCredentials();
+
+                      // Step 2: Briefly acquire the cache monitor to atomically put + write.
+                      // During the proactive window the token is still valid, so
+                      // computeIfMissingOrInvalid() only holds the monitor for a quick
+                      // read-check-return — no contention.
+                      credentialsCache.putAndWrite(clientId, freshCredentials);
+                      LOG.info("Proactively refreshed OAuth token for client '{}'", clientId);
+                    } catch (final IOException e) {
+                      LOG.warn(
+                          "Background OAuth token refresh failed for client '{}': {}",
+                          clientId,
+                          e.getMessage());
+                    }
+                  });
             });
-    backgroundRefresh.set(refresh);
+    // winner is either the existing in-flight future or the one we just created — nothing to do
   }
 
   private String createPayload() {
