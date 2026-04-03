@@ -92,7 +92,7 @@ class HealthConfigurationInitializerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"operate", "tasklist", "identity", "admin"})
+    @ValueSource(strings = {"operate", "tasklist", "admin"})
     void shouldReturnEmptyForWebappOnlyProfiles(final String profile) {
       // given
       final var profiles = List.of(profile);
@@ -149,9 +149,9 @@ class HealthConfigurationInitializerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"operate", "tasklist", "identity", "admin"})
+    @ValueSource(strings = {"operate", "tasklist", "admin"})
     void shouldIncludeReadinessStateForAnyWebappProfile(final String profile) {
-      // given — Identity is a webapp profile, should get readinessState
+      // given — Admin is a webapp profile, should get readinessState
       withElasticsearchSecondaryStorage();
       final var profiles = List.of(profile);
 

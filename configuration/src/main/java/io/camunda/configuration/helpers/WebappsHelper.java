@@ -12,7 +12,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public class WebappsHelper {
   private static final String OPERATE = "operate";
   private static final String TASKLIST = "tasklist";
-  private static final String IDENTITY = "identity";
   private static final String ADMIN = "admin";
 
   public static boolean isOperateEnabled(final ConfigurableEnvironment environment) {
@@ -23,8 +22,8 @@ public class WebappsHelper {
     return isWebappEnabled(environment, TASKLIST);
   }
 
-  public static boolean isIdentityEnabled(final ConfigurableEnvironment environment) {
-    return isWebappEnabled(environment, IDENTITY) && isWebappEnabled(environment, ADMIN);
+  public static boolean isAdminEnabled(final ConfigurableEnvironment environment) {
+    return isWebappEnabled(environment, ADMIN);
   }
 
   public static boolean isOperateUiEnabled(final ConfigurableEnvironment environment) {
@@ -35,8 +34,8 @@ public class WebappsHelper {
     return isWebappUiEnabled(environment, TASKLIST);
   }
 
-  public static boolean isIdentityUiEnabled(final ConfigurableEnvironment environment) {
-    return isWebappUiEnabled(environment, IDENTITY) && isWebappUiEnabled(environment, ADMIN);
+  public static boolean isAdminUiEnabled(final ConfigurableEnvironment environment) {
+    return isWebappUiEnabled(environment, ADMIN);
   }
 
   private static boolean isWebappEnabled(

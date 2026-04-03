@@ -8,7 +8,6 @@
 package io.camunda.application.initializers;
 
 import static io.camunda.application.Profile.ADMIN;
-import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
@@ -31,7 +30,7 @@ public class WebappsConfigurationInitializer
 
   public static final String CAMUNDA_WEBAPPS_ENABLED_PROPERTY = "camunda.webapps.enabled";
   private static final Set<String> WEBAPPS_PROFILES =
-      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
+      Set.of(OPERATE.getId(), TASKLIST.getId(), ADMIN.getId());
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
   private static final String AUTHORIZATIONS_ENABLED_PROPERTY =
       "camunda.security.authorizations.enabled";
@@ -100,11 +99,9 @@ public class WebappsConfigurationInitializer
       }
     }
 
-    // Identity/Admin Properties
+    // Admin Properties
 
-    if ((activeProfiles.contains(IDENTITY.getId()) || activeProfiles.contains(ADMIN.getId()))
-        && WebappsHelper.isIdentityUiEnabled(environment)) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
+    if (activeProfiles.contains(ADMIN.getId()) && WebappsHelper.isAdminUiEnabled(environment)) {
       locations.add(DEFAULT_RESOURCES_LOCATION + "admin/");
       if (defaultWebapp == null) {
         defaultWebapp = ADMIN.getId();

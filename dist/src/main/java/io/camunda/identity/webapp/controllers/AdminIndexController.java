@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@ConditionalOnWebappUiEnabled({"identity", "admin"})
+@ConditionalOnWebappUiEnabled("admin")
 public class AdminIndexController {
   private final ServletContext context;
 
