@@ -118,6 +118,16 @@ public interface IncidentUpdateRepository extends AutoCloseable {
       final Collection<String> treePathTerms);
 
   /**
+   * Returns the post-importer position for incidents from the legacy Operate import-position index.
+   * This is used as a fallback when the exporter's own position metadata is unset (e.g., after
+   * migrating from 8.7 to 8.8), to avoid re-processing the entire post-importer queue from the
+   * beginning.
+   *
+   * @return the post-importer position for incidents from the legacy index, or -1 if not found
+   */
+  CompletionStage<Long> getLegacyIncidentPostImporterPosition();
+
+  /**
    * Represents an incident document: the source identity and its ID and index.
    *
    * <p>Keeping the index is useful as we typically query by alias, so we don't know beforehand
@@ -223,6 +233,11 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
         final Collection<String> treePathTerms) {
       return CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
+    public CompletionStage<Long> getLegacyIncidentPostImporterPosition() {
+      return CompletableFuture.completedFuture(-1L);
     }
 
     @Override

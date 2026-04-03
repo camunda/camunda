@@ -77,6 +77,8 @@ final class IncidentUpdateTaskTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new PendingIncidentUpdateBatch(-1, Collections.emptyMap())));
+    when(repository.getLegacyIncidentPostImporterPosition())
+        .thenReturn(CompletableFuture.completedFuture(-1L));
   }
 
   @Test
@@ -121,6 +123,108 @@ final class IncidentUpdateTaskTest {
 
     // then
     Mockito.verify(repository).getPendingIncidentsBatch(anyLong(), Mockito.eq(10));
+  }
+
+  @Test
+  void shouldInitializeFromLegacyPositionWhenMetadataIsUnset() {
+    // given - metadata position is -1 (default) and legacy position is 42
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    when(repository.getLegacyIncidentPostImporterPosition())
+        .thenReturn(CompletableFuture.completedFuture(42L));
+
+    // when
+    task.execute().toCompletableFuture().join();
+
+    // then - should have initialized from legacy and used it for the batch query
+    verify(repository).getLegacyIncidentPostImporterPosition();
+    verify(repository).getPendingIncidentsBatch(Mockito.eq(42L), anyInt());
+  }
+
+  @Test
+  void shouldNotCheckLegacyPositionWhenMetadataIsAlreadySet() {
+    // given - metadata position is already set
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    metadata.setLastIncidentUpdatePosition(100);
+
+    // when
+    task.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository, never()).getLegacyIncidentPostImporterPosition();
+    verify(repository).getPendingIncidentsBatch(Mockito.eq(100L), anyInt());
+  }
+
+  @Test
+  void shouldNotCheckLegacyPositionOnSecondExecution() {
+    // given - first execution checks legacy, second should not
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    when(repository.getLegacyIncidentPostImporterPosition())
+        .thenReturn(CompletableFuture.completedFuture(-1L));
+
+    // when - execute twice
+    task.execute().toCompletableFuture().join();
+    task.execute().toCompletableFuture().join();
+
+    // then - legacy position should only be checked once
+    verify(repository, times(1)).getLegacyIncidentPostImporterPosition();
+  }
+
+  @Test
+  void shouldFailWhenLegacyPositionLookupFails() {
+    // given - legacy lookup fails due to ES connectivity issue
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    when(repository.getLegacyIncidentPostImporterPosition())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("ES unavailable")));
+
+    // when
+    final var result = task.execute();
+
+    // then - should return a failed future so the task gets rescheduled
+    assertThat(result).failsWithin(TIMEOUT);
+    assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldRetryLegacyPositionLookupOnNextExecutionAfterFailure() {
+    // given - legacy lookup fails on first call, succeeds on second
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    when(repository.getLegacyIncidentPostImporterPosition())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("ES unavailable")))
+        .thenReturn(CompletableFuture.completedFuture(42L));
+
+    // when - first execution fails, second succeeds
+    assertThat(task.execute()).failsWithin(TIMEOUT);
+    task.execute().toCompletableFuture().join();
+
+    // then - should have retried and initialized from legacy on second attempt
+    verify(repository, times(2)).getLegacyIncidentPostImporterPosition();
+    verify(repository).getPendingIncidentsBatch(Mockito.eq(42L), anyInt());
+  }
+
+  @Test
+  void shouldKeepUnsetPositionWhenLegacyReturnsMinusOne() {
+    // given - legacy returns -1 (no data found)
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    when(repository.getLegacyIncidentPostImporterPosition())
+        .thenReturn(CompletableFuture.completedFuture(-1L));
+
+    // when
+    task.execute().toCompletableFuture().join();
+
+    // then - metadata should remain at -1 (not set by legacy fallback)
+    verify(repository).getPendingIncidentsBatch(Mockito.eq(-1L), anyInt());
   }
 
   private IncidentNotifier createIncidentNotifier() {

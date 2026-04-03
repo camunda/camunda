@@ -8,10 +8,12 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.util.OpensearchRepository;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -42,6 +44,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.AnalyzeRequest;
 import org.opensearch.client.opensearch.indices.analyze.AnalyzeToken;
@@ -55,6 +58,8 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
           FieldValue.of(OperationState.SENT.name()),
           FieldValue.of(OperationState.COMPLETED.name()));
 
+  private static final String INCIDENT_IMPORT_POSITION_ALIAS_NAME = "incident";
+
   private final int partitionId;
   private final String pendingUpdateAlias;
   private final String incidentAlias;
@@ -62,6 +67,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
+  private final String importPositionFullQualifiedName;
 
   public OpenSearchIncidentUpdateRepository(
       final int partitionId,
@@ -71,6 +77,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
       final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
+      final String importPositionFullQualifiedName,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
@@ -82,6 +89,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+    this.importPositionFullQualifiedName = importPositionFullQualifiedName;
   }
 
   @Override
@@ -274,6 +282,46 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
 
     return fetchUnboundedDocumentCollection(
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+  }
+
+  @Override
+  public CompletionStage<Long> getLegacyIncidentPostImporterPosition() {
+    final var aliasNameQ =
+        QueryBuilders.term()
+            .field(ImportPositionIndex.ALIAS_NAME)
+            .value(v -> v.stringValue(INCIDENT_IMPORT_POSITION_ALIAS_NAME))
+            .build()
+            .toQuery();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(ImportPositionIndex.PARTITION_ID)
+            .value(v -> v.longValue(partitionId))
+            .build()
+            .toQuery();
+    final var request =
+        new SearchRequest.Builder()
+            .index(importPositionFullQualifiedName)
+            .query(q -> q.bool(b -> b.must(aliasNameQ, partitionQ)))
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .source(s -> s.filter(f -> f.includes(ImportPositionIndex.POST_IMPORTER_POSITION)))
+            .size(1)
+            .build();
+
+    try {
+      return client
+          .search(request, ImportPositionEntity.class)
+          .thenApplyAsync(
+              response ->
+                  response.hits().hits().stream()
+                      .findFirst()
+                      .map(Hit::source)
+                      .map(ImportPositionEntity::getPostImporterPosition)
+                      .orElse(-1L),
+              executor);
+    } catch (final Exception e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {

@@ -32,11 +32,13 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
@@ -98,6 +100,7 @@ abstract class IncidentUpdateRepositoryIT {
   protected final ListViewTemplate listViewTemplate;
   protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   protected final OperationTemplate operationTemplate;
+  protected final ImportPositionIndex importPositionIndex;
   @AutoClose private final ClientAdapter clientAdapter;
   private final SearchEngineClient engineClient;
 
@@ -116,6 +119,7 @@ abstract class IncidentUpdateRepositoryIT {
     listViewTemplate = new ListViewTemplate(indexPrefix, isElastic);
     flowNodeInstanceTemplate = new FlowNodeInstanceTemplate(indexPrefix, isElastic);
     operationTemplate = new OperationTemplate(indexPrefix, isElastic);
+    importPositionIndex = new ImportPositionIndex(indexPrefix, isElastic);
   }
 
   @BeforeEach
@@ -1129,6 +1133,95 @@ abstract class IncidentUpdateRepositoryIT {
           .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
           .containsExactly(
               new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"));
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
+  final class GetLegacyIncidentPostImporterPositionIT {
+
+    @Test
+    void shouldReturnLegacyPositionWhenDocumentExists() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      engineClient.createIndex(importPositionIndex, new IndexConfiguration());
+
+      final var entity =
+          new ImportPositionEntity()
+              .setAliasName("incident")
+              .setPartitionId(PARTITION_ID)
+              .setPosition(100L)
+              .setPostImporterPosition(42L);
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(importPositionIndex.getFullQualifiedName(), entity.getId(), entity);
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var result = repository.getLegacyIncidentPostImporterPosition();
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(42L);
+    }
+
+    @Test
+    void shouldReturnMinusOneWhenPartitionIdDiffers() throws PersistenceException {
+      // given - index has an incident entry but for a different partition
+      final var repository = createRepository();
+      engineClient.createIndex(importPositionIndex, new IndexConfiguration());
+
+      final var entity =
+          new ImportPositionEntity()
+              .setAliasName("incident")
+              .setPartitionId(PARTITION_ID + 1)
+              .setPosition(100L)
+              .setPostImporterPosition(42L);
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(importPositionIndex.getFullQualifiedName(), entity.getId(), entity);
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var result = repository.getLegacyIncidentPostImporterPosition();
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(-1L);
+    }
+
+    @Test
+    void shouldReturnMinusOneWhenDifferentAliasName() throws PersistenceException {
+      // given - index exists but the document has a different alias name
+      final var repository = createRepository();
+      engineClient.createIndex(importPositionIndex, new IndexConfiguration());
+
+      final var entity =
+          new ImportPositionEntity()
+              .setAliasName("process-instance")
+              .setPartitionId(PARTITION_ID)
+              .setPosition(100L)
+              .setPostImporterPosition(42L);
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(importPositionIndex.getFullQualifiedName(), entity.getId(), entity);
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var result = repository.getLegacyIncidentPostImporterPosition();
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(-1L);
+    }
+
+    @Test
+    void shouldReturnMinusOneWhenIndexDoesNotExist() {
+      // given - no import-position index exists at all
+      final var repository = createRepository();
+
+      // when
+      final var result = repository.getLegacyIncidentPostImporterPosition();
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(-1L);
     }
   }
 }

@@ -41,6 +41,7 @@ import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public final class IncidentUpdateTask implements BackgroundTask {
+  private static final long UNSET_POSITION = -1;
   private final ExporterMetadata metadata;
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
@@ -50,6 +51,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final Duration waitForRefreshInterval;
   private final IncidentNotifier incidentNotifier;
   private final CamundaExporterMetrics metrics;
+  private volatile boolean legacyPositionChecked = false;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -639,7 +641,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final AdditionalData data) {
     final IncidentUpdateRepository.PendingIncidentUpdateBatch pendingIncidentsBatch =
         repository
-            .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize)
+            .getPendingIncidentsBatch(getOrInitLastIncidentUpdatePosition(), batchSize)
             .toCompletableFuture()
             .join();
 
@@ -677,6 +679,30 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
 
     return pendingIncidentsBatch;
+  }
+
+  private long getOrInitLastIncidentUpdatePosition() {
+    final long position = metadata.getLastIncidentUpdatePosition();
+    if (position != UNSET_POSITION || legacyPositionChecked) {
+      return position;
+    }
+
+    final long legacyPosition =
+        repository.getLegacyIncidentPostImporterPosition().toCompletableFuture().join();
+    legacyPositionChecked = true;
+    if (legacyPosition > UNSET_POSITION) {
+      logger.info(
+          "Exporter incident update position is unset; initializing from legacy "
+              + "Operate import-position index with position {}",
+          legacyPosition);
+      metadata.setLastIncidentUpdatePosition(legacyPosition);
+      return legacyPosition;
+    }
+
+    logger.debug(
+        "No legacy post-importer position found in import-position index; "
+            + "starting from the beginning of the post-importer queue");
+    return position;
   }
 
   private void uncheckedThreadSleep() {
