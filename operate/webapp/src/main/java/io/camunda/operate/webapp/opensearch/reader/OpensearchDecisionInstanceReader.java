@@ -167,7 +167,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
           final var decisionDefId = source.getDecisionDefinitionId();
           if (rootDecisionDefId.equals(decisionDefId)) {
             // this is our instance, we will show the link
-            calledDecisionInstanceId[0] = source.getId();
+            calledDecisionInstanceId[0] = hit.id();
             var decisionName = source.getDecisionName();
             if (decisionName == null) {
               decisionName = source.getDecisionId();
