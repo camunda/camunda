@@ -143,10 +143,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            (response) ->
-                createProcessInstanceBatch(
-                    response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+        .thenApplyAsync(
+            (response) -> createProcessInstanceBatch(response, ListViewTemplate.END_DATE),
             executor);
   }
 
@@ -157,7 +155,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             (response) ->
                 createBasicBatch(
                     response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
@@ -175,7 +173,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createBasicBatch(
                     response,
@@ -196,7 +194,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createBasicBatch(
                     response,
@@ -213,7 +211,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createBasicBatch(
                     response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
@@ -227,7 +225,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createBasicBatch(
                     response,
@@ -631,23 +629,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .toQuery();
   }
 
-  private CompletableFuture<ProcessInstanceArchiveBatch> createProcessInstanceBatch(
-      final SearchResponse<ProcessInstanceForListViewEntity> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor) {
-    return createProcessInstanceBatch(
-        response, field, templateDescriptor, config.getRolloverInterval());
-  }
-
-  private CompletableFuture<ProcessInstanceArchiveBatch> createProcessInstanceBatch(
-      final SearchResponse<ProcessInstanceForListViewEntity> response,
-      final String endDateField,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
+  private ProcessInstanceArchiveBatch createProcessInstanceBatch(
+      final SearchResponse<ProcessInstanceForListViewEntity> response, final String endDateField) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(
-          new ProcessInstanceArchiveBatch(null, List.of(), List.of()));
+      return new ProcessInstanceArchiveBatch(null, List.of(), List.of());
     }
 
     final String endDate =
@@ -655,7 +641,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final String date =
         DateOfArchivedDocumentsUtil.getBucketStart(
-            endDate, rolloverInterval, config.getElsRolloverDateFormat());
+            endDate, config.getRolloverInterval(), config.getElsRolloverDateFormat());
 
     final var batchHits =
         hits.stream()
@@ -685,25 +671,24 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       }
     }
 
-    return CompletableFuture.completedFuture(
-        new ProcessInstanceArchiveBatch(date, processInstanceKeys, rootProcessInstanceKeys));
+    return new ProcessInstanceArchiveBatch(date, processInstanceKeys, rootProcessInstanceKeys);
   }
 
-  private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
+  private <T> BasicArchiveBatch createBasicBatch(
       final SearchResponse<T> response,
       final String field,
       final IndexTemplateDescriptor templateDescriptor) {
     return createBasicBatch(response, field, templateDescriptor, config.getRolloverInterval());
   }
 
-  private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
+  private <T> BasicArchiveBatch createBasicBatch(
       final SearchResponse<T> response,
       final String endDateField,
       final IndexTemplateDescriptor templateDescriptor,
       final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(new BasicArchiveBatch(null, List.of()));
+      return new BasicArchiveBatch(null, List.of());
     }
 
     final String endDate =
@@ -726,7 +711,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .toList();
 
     final List<String> ids = batchHits.stream().map(Hit::id).toList();
-    return CompletableFuture.completedFuture(new BasicArchiveBatch(date, ids));
+    return new BasicArchiveBatch(date, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
