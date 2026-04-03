@@ -12,27 +12,30 @@ import {MemoryRouter, Routes, Route} from 'react-router-dom';
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'common/testing/testing-library';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
+import {LocationLog} from 'common/testing/LocationLog';
 import * as userMocks from 'common/mocks/current-user';
 import * as taskMocks from 'v1/mocks/task';
 import * as processMocks from 'v1/mocks/processes';
 import {Component} from '.';
 
-const getWrapper = (id: string = '0') => {
+const getWrapper = (id: string = '0', search: string = '') => {
   const mockClient = getMockQueryClient();
 
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MemoryRouter initialEntries={[`/${id}`]}>
+      <MemoryRouter initialEntries={[`/${id}${search}`]}>
         <Routes>
           <Route path="/:id" element={children} />
         </Routes>
+        <LocationLog />
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -199,5 +202,30 @@ describe('Task Details', () => {
     expect(
       within(nav).getByLabelText(/show associated BPMN process/i),
     ).not.toBeVisible();
+  });
+
+  it('navigates to initial page preserving search params when task is cancelled', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/tasks/:taskId',
+        () =>
+          HttpResponse.json({
+            ...taskMocks.assignedTask(),
+            taskState: 'CANCELED',
+          }),
+        {once: true},
+      ),
+    );
+
+    render(<Component />, {
+      wrapper: getWrapper('0', '?filter=all-open'),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?filter=all-open',
+      );
+    });
   });
 });
