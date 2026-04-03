@@ -7,6 +7,8 @@
  */
 package io.camunda.container;
 
+import static io.camunda.container.ZeebeTopologyWaitStrategy.newDefaultTopologyCheck;
+
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
 import io.camunda.container.cluster.BrokerNode;
@@ -53,10 +55,19 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
 
   @Override
   public void start() {
-    final var tempDir = createTempDir();
-    final var configFile = configurationBuilder.exportConfig(tempDir);
-    withFileSystemBind(configFile.toAbsolutePath().toString(), CONFIG_PATH, BindMode.READ_ONLY)
-        .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH);
+    // For rolling updates the config is already mounted need to skip
+    final boolean alreadyMounted =
+        getBinds().stream().anyMatch(b -> b.getVolume().getPath().equals(CONFIG_PATH));
+    if (!alreadyMounted) {
+      final var tempDir = createTempDir();
+      final var configFile = configurationBuilder.exportConfig(tempDir);
+      withFileSystemBind(configFile.toAbsolutePath().toString(), CONFIG_PATH, BindMode.READ_ONLY)
+          .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH);
+    }
+    super.start();
+  }
+
+  protected void startWithoutConfig() {
     super.start();
   }
 
@@ -196,10 +207,15 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     @Override
     void applyDefaultConfiguration() {
       withNetwork(Network.SHARED)
-          .withTopologyCheck(ZeebeTopologyWaitStrategy.newDefaultTopologyCheck())
-          .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
+          .withUnifiedConfig(
+              cfg -> {
+                cfg.getCluster().getNetwork().setAdvertisedHost(getInternalHost());
+                cfg.getCluster().getNetwork().setHost("0.0.0.0");
+              })
+          .withTopologyCheck(newDefaultTopologyCheck())
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+          .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
           .addExposedPorts(
               CamundaPort.GATEWAY_REST.getPort(),
               CamundaPort.GATEWAY_GRPC.getPort(),
@@ -243,6 +259,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     @Override
     void applyDefaultConfiguration() {
       withNetwork(Network.SHARED)
+          .withTopologyCheck(newDefaultTopologyCheck())
           .withEnv("SPRING_PROFILES_ACTIVE", "gateway, standalone")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")

@@ -153,14 +153,18 @@ final class ContainerState implements AutoCloseable {
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 })
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-            .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-            .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
-            .withEnv("CAMUNDA_REST_ENABLED", "false")
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
             .withCamundaData(volume)
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;
+
+    if (brokerImage == PREVIOUS_VERSION) {
+      broker
+          .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
+          .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
+          .withEnv("CAMUNDA_REST_ENABLED", "false")
+          .withEnv(CREATE_SCHEMA_ENV_VAR, "false");
+    }
 
     if (withRemoteDebugging) {
       RemoteDebugger.configureContainer(broker);
@@ -195,14 +199,28 @@ final class ContainerState implements AutoCloseable {
       gateway =
           new GatewayContainer(gatewayImage)
               .withUnifiedConfig(
-                  cfg ->
-                      cfg.getCluster()
-                          .setInitialContactPoints(List.of(broker.getInternalClusterAddress())))
+                  cfg -> {
+                    cfg.getCluster()
+                        .setInitialContactPoints(List.of(broker.getInternalClusterAddress()));
+                    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                  })
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
               .withEnv(UNPROTECTED_API_ENV_VAR, "true")
               .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+              .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+              .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
               .withNetwork(network);
+
+      if (gatewayImage == PREVIOUS_VERSION) {
+        // Gateway configuration is not part of the Unified config yet in 8.8.x
+        gateway
+            .withEnv(
+                "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", broker.getInternalClusterAddress())
+            .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
+            .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", gateway.getInternalHost())
+            .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", gateway.getInternalHost());
+      }
 
       Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
       grpcAddress = gateway.getGrpcAddress();

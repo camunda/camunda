@@ -80,10 +80,9 @@ import org.testcontainers.utility.DockerImageName;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class CamundaClusterBuilder {
 
+  public static final String DEFAULT_CLUSTER_NAME = "camunda-cluster";
   private static final String CAMUNDA_NETWORK_ALIAS_PREFIX = "camunda-";
   private static final String GATEWAY_NETWORK_ALIAS_PREFIX = "camunda-gateway-";
-  private static final String DEFAULT_CLUSTER_NAME = "camunda-cluster";
-
   private Network network = Network.SHARED;
   private String name = DEFAULT_CLUSTER_NAME;
 
@@ -527,8 +526,8 @@ public class CamundaClusterBuilder {
               cfg.getCluster().setReplicationFactor(replicationFactor);
               cfg.getCluster().setSize(brokersCount);
               cfg.getCluster().setNodeId(index);
+              cfg.getCluster().getNetwork().setAdvertisedHost(broker.getInternalHost());
             })
-        .withProperty("zeebe.broker.network.advertised-host", broker.getInternalHost())
         .withStartupTimeout(Duration.ofMinutes((long) brokersCount + gatewaysCount));
   }
 

@@ -18,6 +18,7 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;
+import io.camunda.container.cluster.CamundaClusterBuilder;
 import io.camunda.container.cluster.GatewayNode;
 import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -111,7 +112,9 @@ final class RollingUpdateTest {
 
   @BeforeEach
   public void setup() {
-    cluster.getBrokers().values().forEach(this::configureBroker);
+    final var initialContactPoints =
+        cluster.getBrokers().values().stream().map(BrokerNode::getInternalClusterAddress).toList();
+    cluster.getBrokers().values().forEach(broker -> configureBroker(broker, initialContactPoints));
   }
 
   @AfterEach
@@ -394,7 +397,8 @@ final class RollingUpdateTest {
                     .isNotBlank());
   }
 
-  private void configureBroker(final BrokerNode<?> broker) {
+  private void configureBroker(
+      final BrokerNode<?> broker, final List<String> initialContactPoints) {
     final var volume =
         CamundaVolume.newVolume(
             cfg -> {
@@ -418,6 +422,19 @@ final class RollingUpdateTest {
               cfg.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(2));
               cfg.getCluster().getMembership().setSuspectProbes(2);
             })
+
+        // Pass the old env vars for the old version broker
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
+        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
+        .withEnv(
+            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
         // ensure we have an exporter present to test sharing exporter state across nodes
         .withEnv("ZEEBE_BROKER_EXECUTIONMETRICSEXPORTERENABLED", "true")
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
