@@ -1,7 +1,7 @@
 # description: Runs parallel endurance tests weekly against main (TTL: 28 days).
-#              Variants: realistic, rdbms-realistic (PostgreSQL), latency.
+#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic, latency.
 #              Naming pattern: medic-y-YYYY-cw-WW-<sha>
-# calls: camunda-load-test.yml (4 parallel calls, one per scenario)
+# calls: camunda-load-test.yml (5 parallel calls, one per scenario)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda weekly medic load test
@@ -186,6 +186,26 @@ jobs:
       secondary-storage-type: 'postgresql'
       scenario: realistic
 
+  setup-opensearch-realistic-load-test:
+    name: OpenSearch realistic load test
+    needs:
+      - test-data
+      - build-camunda-image
+      - build-load-test-images
+    if: |
+      always() &&
+      needs.test-data.result == 'success' &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.test-data.outputs.image-tag }}-opensearch-realistic
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
+      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
+      secondary-storage-type: 'opensearch'
+      scenario: realistic
+
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -227,7 +247,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
