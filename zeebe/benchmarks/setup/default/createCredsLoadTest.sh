@@ -15,6 +15,7 @@ NS="${1:-__NAMESPACE__}"
 if kubectl -n "$NS" get secret camunda-credentials &>/dev/null; then
   echo "Secret 'camunda-credentials' already exists in namespace '$NS'. Skipping creation."
   ORCHESTRATION_SECRET=$(kubectl -n "$NS" get secret camunda-credentials -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 -d)
+  echo "Replacing __SECRET__ in load-test-values.yaml with existing orchestration secret."
   sed_inplace "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml
   exit 0
 fi
