@@ -172,16 +172,19 @@ public final class OAuthCredentialsCache {
   }
 
   /**
-   * Fetches new credentials from the supplier, updates the cache, and returns true if the new
-   * credentials differ from the previously cached ones. If a concurrent call already refreshed the
-   * token, the expensive fetch is skipped to prevent a stampede of serialized OAuth fetches that
-   * would block the HTTP client's I/O reactor threads.
+   * Ensures that a fresh token is available in the cache, and returns {@code true} if the caller
+   * should retry its request (i.e. credentials were refreshed — either by this thread or by a
+   * concurrent one that completed while this thread was waiting for the lock).
    *
-   * <p>This method reads a generation counter <em>before</em> acquiring the monitor lock. Inside
-   * the lock, if the generation was incremented by another thread (indicating a concurrent refresh
-   * completed while this thread was waiting), the Keycloak HTTP call is skipped. This reduces the
-   * total lock hold time from N × ~200ms (where N is the number of concurrent 401 retries) to
-   * ~200ms + (N−1) × O(μs), preventing a cascading freeze of the HTTP client's I/O reactor.
+   * <p>When a concurrent call already refreshed the token (detected via a generation counter read
+   * before acquiring the monitor), the expensive OAuth HTTP call is skipped and {@code true} is
+   * returned immediately. This reduces lock hold time from N × ~200ms (where N is the number of
+   * concurrent 401 retries) to ~200ms + (N−1) × O(μs), preventing a cascading freeze of the HTTP
+   * client's I/O reactor.
+   *
+   * @return {@code true} if credentials were refreshed (by any thread) and the request should be
+   *     retried; {@code false} if the freshly fetched credentials are identical to the previously
+   *     cached ones (i.e. the 401 was not caused by a stale token)
    */
   public boolean forceRefreshIfChanged(
       final String clientId, final SupplierWithIO<CamundaClientCredentials> credentialsSupplier)
@@ -198,10 +201,10 @@ public final class OAuthCredentialsCache {
       final SupplierWithIO<CamundaClientCredentials> credentialsSupplier,
       final long generationOnEntry)
       throws IOException {
-    // Stampede prevention: if another thread already refreshed while we were waiting for
-    // the lock, skip the expensive Keycloak HTTP call. Without this, N concurrent 401
-    // retries would each perform a serialized ~200ms fetch, freezing the HTTP client's
-    // I/O reactor dispatcher threads and causing a cascading outage.
+    // Stampede prevention: another thread already refreshed while we were waiting for the
+    // lock. Return true ("retry the request") — the cache now holds a fresh token. We do
+    // not know whether the new token differs from the old one, but the caller only needs
+    // to know whether a retry is worthwhile, and it is.
     if (refreshGeneration.get() > generationOnEntry) {
       return true;
     }
