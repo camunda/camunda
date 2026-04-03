@@ -20,7 +20,6 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessDefinitionSort.Builder;
 import io.camunda.util.ObjectBuilder;
@@ -149,11 +148,11 @@ public class ProcessDefinitionSortIT {
     final var searchResult =
         reader
             .search(
-                new ProcessDefinitionQuery(
-                    new ProcessDefinitionFilter.Builder().versionTags(versionTag).build(),
-                    ProcessDefinitionSort.of(sortBuilder),
-                    SearchQueryPage.of(b -> b),
-                    ProcessDefinitionQueryResultConfig.of(b -> b)))
+                ProcessDefinitionQuery.of(
+                    b ->
+                        b.filter(f -> f.versionTags(versionTag))
+                            .sort(sortBuilder)
+                            .page(p -> p)))
             .items();
 
     assertThat(searchResult).hasSize(20);
