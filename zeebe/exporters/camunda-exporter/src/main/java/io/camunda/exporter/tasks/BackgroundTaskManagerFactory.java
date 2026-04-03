@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ElasticsearchAuditLogArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ExporterBackpressure;
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpensearchAuditLogArchiverRepository;
@@ -78,6 +79,7 @@ public final class BackgroundTaskManagerFactory {
   private final String exporterId;
   private final ExporterConfiguration config;
   private final ExporterResourceProvider resourceProvider;
+  private final ExporterBackpressure backpressure;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
   private final ExporterMetadata metadata;
@@ -97,6 +99,7 @@ public final class BackgroundTaskManagerFactory {
       final String exporterId,
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
+      final ExporterBackpressure backpressure,
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterMetadata metadata,
@@ -107,6 +110,7 @@ public final class BackgroundTaskManagerFactory {
     this.exporterId = exporterId;
     this.config = config;
     this.resourceProvider = resourceProvider;
+    this.backpressure = backpressure;
     this.metrics = metrics;
     this.logger = logger;
     this.metadata = metadata;
@@ -349,7 +353,7 @@ public final class BackgroundTaskManagerFactory {
 
   private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
     final var processInstanceToBeArchivedCountJob =
-        new ProcessInstanceToBeArchivedCountJob(metrics, archiverRepository, logger);
+        new ProcessInstanceToBeArchivedCountJob(backpressure, metrics, archiverRepository, logger);
 
     return new ReschedulingTask(
         processInstanceToBeArchivedCountJob,
