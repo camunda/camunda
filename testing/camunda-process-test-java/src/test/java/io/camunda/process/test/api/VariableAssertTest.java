@@ -1143,12 +1143,8 @@ public class VariableAssertTest {
     }
 
     @Test
-    @CamundaAssertExpectFailure
     void shouldFailWithUsefulMessageWhenFeelExpressionIsInvalid() {
       // given
-      final Variable variable = newVariable("riskScore", "0.6");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then
@@ -1156,16 +1152,14 @@ public class VariableAssertTest {
               () ->
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariablesSatisfyingFeel("this is not valid FEEL %%%"))
+          .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("FEEL expression 'this is not valid FEEL %%%'")
-          .hasMessageContaining("failed to evaluate");
+          .hasMessageContaining("is not a valid FEEL expression");
     }
 
     @Test
     void shouldThrowIllegalArgumentExceptionWhenExpressionStartsWithEquals() {
       // given
-      final Variable variable = newVariable("riskScore", "0.6");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then

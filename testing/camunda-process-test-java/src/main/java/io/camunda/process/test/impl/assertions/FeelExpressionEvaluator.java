@@ -19,6 +19,7 @@ import java.util.Map;
 import org.camunda.feel.api.EvaluationResult;
 import org.camunda.feel.api.FeelEngineApi;
 import org.camunda.feel.api.FeelEngineBuilder;
+import org.camunda.feel.api.ParseResult;
 
 /** Evaluates FEEL expressions against a map of variables. */
 class FeelExpressionEvaluator {
@@ -32,24 +33,53 @@ class FeelExpressionEvaluator {
   }
 
   /**
+   * Validates a FEEL expression by attempting to parse it. Call this before entering a retry loop
+   * to fail fast on non-recoverable syntax errors.
+   *
+   * @param expression the FEEL expression (without the leading {@code =} prefix)
+   * @throws IllegalArgumentException if the expression is null, blank, starts with {@code =}, or
+   *     contains a syntax error
+   */
+  void validate(final String expression) {
+    final String normalized = normalizeExpression(expression);
+    final ParseResult parseResult = feelEngine.parseExpression(normalized);
+    if (!parseResult.isSuccess()) {
+      throw new IllegalArgumentException(
+          "FEEL expression '"
+              + expression
+              + "' is not a valid FEEL expression: "
+              + parseResult.failure().message());
+    }
+  }
+
+  /**
    * Evaluates a FEEL expression with the given variables as context.
    *
    * @param expression the FEEL expression (without the leading {@code =} prefix)
    * @param variables the context variables available to the expression
    * @return the evaluation result
-   * @throws IllegalArgumentException if the expression starts with {@code =}
+   * @throws IllegalArgumentException if the expression is null, blank, or starts with {@code =}
    */
   EvaluationResult evaluate(final String expression, final Map<String, Object> variables) {
-    if (expression != null && expression.startsWith("=")) {
+    final String normalized = normalizeExpression(expression);
+    return feelEngine.evaluateExpression(normalized, variables);
+  }
+
+  private String normalizeExpression(final String expression) {
+    final String normalized = expression != null ? expression.trim() : "";
+    if (normalized.isEmpty()) {
+      throw new IllegalArgumentException("FEEL expression must not be null or blank.");
+    }
+    if (normalized.startsWith("=")) {
       throw new IllegalArgumentException(
           "FEEL expression must not start with '='. "
               + "The '=' prefix is a Camunda expression language marker and is not part of the FEEL expression itself. "
               + "Please provide the expression without the leading '=', e.g., \""
-              + expression.substring(1).trim()
+              + normalized.substring(1).trim()
               + "\" instead of \""
-              + expression
+              + normalized
               + "\".");
     }
-    return feelEngine.evaluateExpression(expression, variables);
+    return normalized;
   }
 }

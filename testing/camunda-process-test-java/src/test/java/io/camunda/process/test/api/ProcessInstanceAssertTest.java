@@ -1293,17 +1293,6 @@ public class ProcessInstanceAssertTest {
     void shouldThrowIllegalArgumentExceptionWhenLocalExpressionStartsWithEquals() {
       // given
       final String elementId = "myTask";
-      final ElementInstance elementInstance =
-          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
-              .setElementInstanceKey(10L)
-              .build();
-      final Variable variable =
-          VariableBuilder.newVariable("score", "0.7")
-              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-              .build();
-      when(camundaDataSource.findElementInstances(any()))
-          .thenReturn(Collections.singletonList(elementInstance));
-      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then
@@ -1319,12 +1308,6 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldThrowIllegalArgumentExceptionWhenExpressionStartsWithEquals() {
       // given
-      final Variable variable =
-          VariableBuilder.newVariable("score", "0.7")
-              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-              .build();
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when / then

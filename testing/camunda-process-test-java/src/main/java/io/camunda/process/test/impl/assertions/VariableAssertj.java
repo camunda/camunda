@@ -332,6 +332,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   public void hasVariablesSatisfyingFeel(
       final long processInstanceKey, final String feelExpression) {
+    FeelExpressionEvaluator.INSTANCE.validate(feelExpression);
     awaitBehavior
         .get()
         .untilAsserted(
@@ -344,6 +345,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   public void hasLocalVariablesSatisfyingFeel(
       final long processInstanceKey, final ElementSelector selector, final String feelExpression) {
+    FeelExpressionEvaluator.INSTANCE.validate(feelExpression);
     withLocalVariableAssertion(
         processInstanceKey,
         selector,
