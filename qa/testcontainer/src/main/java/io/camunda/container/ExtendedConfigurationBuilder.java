@@ -33,7 +33,6 @@ import io.camunda.configuration.Security;
 import io.camunda.configuration.Webapps;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -223,70 +222,6 @@ public class ExtendedConfigurationBuilder {
   }
 
   private void initializeUnifiedConfigDefaults() {
-    // Set cluster defaults
-    unifiedConfig.getCluster().setSize(1);
-    unifiedConfig.getCluster().setPartitionCount(1);
-    unifiedConfig.getCluster().setReplicationFactor(1);
-    unifiedConfig.getCluster().setCompressionAlgorithm(Cluster.CompressionAlgorithm.NONE);
-
-    // Set membership defaults for fast test execution
-    final var membership = unifiedConfig.getCluster().getMembership();
-    membership.setFailureTimeout(Duration.ofSeconds(5));
-    membership.setProbeInterval(Duration.ofMillis(100));
-    membership.setSyncInterval(Duration.ofMillis(500));
-
-    final var metadata = unifiedConfig.getCluster().getMetadata();
-    metadata.setSyncInitializerDelay(Duration.ofMillis(500));
-    metadata.setSyncDelay(Duration.ofMillis(500));
-
-    // Set raft defaults - disable flushing for faster tests
-    unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
-    unifiedConfig.getCluster().getRaft().setFlushDelay(Duration.ZERO);
-
-    // Set data defaults - smaller segments for tests
-    unifiedConfig.getData().setSnapshotPeriod(Duration.ofMinutes(5));
-    unifiedConfig
-        .getData()
-        .getPrimaryStorage()
-        .getLogStream()
-        .setLogSegmentSize(DataSize.ofMegabytes(16));
-    unifiedConfig
-        .getData()
-        .getPrimaryStorage()
-        .getDisk()
-        .getFreeSpace()
-        .setProcessing(DataSize.ofMegabytes(128));
-    unifiedConfig
-        .getData()
-        .getPrimaryStorage()
-        .getDisk()
-        .getFreeSpace()
-        .setReplication(DataSize.ofMegabytes(64));
-
-    // set default default size for rocks db
-    unifiedConfig
-        .getData()
-        .getPrimaryStorage()
-        .getRocksDb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
-
-    // Set processing defaults - enable consistency checks
-    unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
-    unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
-
-    // Set dynamic ports via properties (these aren't in unified config yet)
-    /*    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());*/
-
     // By default, disable web apps
     unifiedConfig.getWebapps().getIdentity().setEnabled(false);
     unifiedConfig.getWebapps().getOperate().setEnabled(false);
