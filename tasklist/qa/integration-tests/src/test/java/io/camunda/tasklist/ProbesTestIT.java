@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.tasklist.management.TasklistIndicesCheck;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import java.util.Optional;
@@ -47,7 +47,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
       classes = {TestApplication.class},
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaExistsTest {
-    @Autowired private IndexSchemaValidator indexSchemaValidator;
+    @Autowired private TasklistIndicesCheck indicesCheck;
 
     @Autowired private TestSchemaManager testSchemaManager;
 
@@ -59,7 +59,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
 
     @Test
     public void testIsReady() {
-      assertThat(indexSchemaValidator.schemaExists()).isTrue();
+      assertThat(indicesCheck.schemaExists()).isTrue();
     }
 
     @AfterEach
@@ -78,7 +78,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
       },
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaNotExistsTest {
-    @Autowired private IndexSchemaValidator indexSchemaValidator;
+    @Autowired private TasklistIndicesCheck indicesCheck;
 
     @DynamicPropertySource
     static void setProperties(final DynamicPropertyRegistry registry) {
@@ -88,7 +88,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
 
     @Test
     public void testIsNotReady() {
-      assertThat(indexSchemaValidator.schemaExists()).isFalse();
+      assertThat(indicesCheck.schemaExists()).isFalse();
     }
   }
 }
