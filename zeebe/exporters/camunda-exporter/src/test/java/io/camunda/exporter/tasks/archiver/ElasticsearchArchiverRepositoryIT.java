@@ -52,6 +52,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -528,8 +530,6 @@ final class ElasticsearchArchiverRepositoryIT {
     final var result = repository.getUsageMetricNextBatch();
 
     // then
-    final var dateFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
@@ -537,7 +537,7 @@ final class ElasticsearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+    assertThat(batch.finishDate()).isEqualTo(YearMonth.now(ZoneId.of("UTC")).atDay(1).toString());
   }
 
   @ParameterizedTest
@@ -568,8 +568,6 @@ final class ElasticsearchArchiverRepositoryIT {
     final var result = repository.getUsageMetricTUNextBatch();
 
     // then
-    final var dateFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
@@ -577,7 +575,8 @@ final class ElasticsearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+    assertThat(batch.finishDate())
+        .isEqualTo(YearMonth.now(ZoneId.of("UTC")).atDay(1).toString()); // rollover is 1M
   }
 
   @Test
@@ -673,14 +672,13 @@ final class ElasticsearchArchiverRepositoryIT {
     final var firstBatch = repository.getBatchOperationsNextBatch();
     Awaitility.await("waiting for first batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                firstBatch.isDone()
-                    && firstBatch.get().ids().containsAll(List.of("1", "2"))
-                    && firstBatch
-                        .get()
-                        .finishDate()
-                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+        .untilAsserted(
+            () -> {
+              assertThat(firstBatch.isDone()).isTrue();
+              assertThat(firstBatch.get().ids()).containsExactly("1", "2");
+              assertThat(firstBatch.get().finishDate())
+                  .isEqualTo(bucketStart(now.minus(Duration.ofDays(4)), 3, dateFormatter));
+            });
     repository
         .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
         .join();
@@ -695,14 +693,13 @@ final class ElasticsearchArchiverRepositoryIT {
     final var secondBatch = repository.getBatchOperationsNextBatch();
     Awaitility.await("waiting for second batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                secondBatch.isDone()
-                    && secondBatch.get().ids().containsAll(List.of("3", "4"))
-                    && secondBatch
-                        .get()
-                        .finishDate()
-                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+        .untilAsserted(
+            () -> {
+              assertThat(secondBatch.isDone()).isTrue();
+              assertThat(secondBatch.get().ids()).containsExactly("3", "4");
+              assertThat(secondBatch.get().finishDate())
+                  .isEqualTo(bucketStart(now.minus(Duration.ofDays(2)), 3, dateFormatter));
+            });
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
     repository
@@ -722,14 +719,13 @@ final class ElasticsearchArchiverRepositoryIT {
 
     Awaitility.await("waiting for third batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                thirdBatch.isDone()
-                    && thirdBatch.get().ids().containsAll(List.of("5", "6"))
-                    && thirdBatch
-                        .get()
-                        .finishDate()
-                        .equals(dateFormatter.format(now.minus(Duration.ofHours(2)))));
+        .untilAsserted(
+            () -> {
+              assertThat(thirdBatch.isDone()).isTrue();
+              assertThat(thirdBatch.get().ids()).containsExactly("5", "6");
+              assertThat(thirdBatch.get().finishDate())
+                  .isEqualTo(bucketStart(now.minus(Duration.ofHours(2)), 3, dateFormatter));
+            });
   }
 
   @Test
@@ -743,15 +739,6 @@ final class ElasticsearchArchiverRepositoryIT {
             new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
 
     final var repository = createRepository();
-    // we have an already existing index with a date of 3 days ago.
-    testClient
-        .indices()
-        .create(
-            r ->
-                r.index(
-                    batchOperationIndex
-                        + "_"
-                        + dateFormatter.format(now.minus(Duration.ofDays(3)))));
 
     createBatchOperationIndex();
     documents.forEach(doc -> index(batchOperationIndex, doc));
@@ -761,7 +748,8 @@ final class ElasticsearchArchiverRepositoryIT {
     // then the batch finish date should not update:
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsAll(List.of("1", "2"));
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
+    assertThat(batch.finishDate())
+        .isEqualTo(bucketStart(now.minus(Duration.ofDays(1)), 3, dateFormatter));
   }
 
   @Test
@@ -775,11 +763,6 @@ final class ElasticsearchArchiverRepositoryIT {
             new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
 
     final var repository = createRepository();
-    // we have an already existing Zeebe index with a date of 3 days ago.
-    testClient
-        .indices()
-        .create(
-            r -> r.index(zeebeIndex + "_" + dateFormatter.format(now.minus(Duration.ofDays(3)))));
 
     createBatchOperationIndex();
     documents.forEach(doc -> index(batchOperationIndex, doc));
@@ -789,7 +772,8 @@ final class ElasticsearchArchiverRepositoryIT {
     // then the batch finish date should update since zeebe index should be excluded:
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsAll(List.of("1", "2"));
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
+    assertThat(batch.finishDate())
+        .isEqualTo(bucketStart(now.minus(Duration.ofDays(1)), 3, dateFormatter));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
@@ -1198,6 +1182,18 @@ final class ElasticsearchArchiverRepositoryIT {
 
     assertThat(piBatch.finishDate()).isEqualTo("2025-05-02");
     assertThat(batchOperationBatch.finishDate()).isEqualTo("2025-01-02");
+  }
+
+  /**
+   * We use this method to count days the same way ES does. This is needed because, by simply using
+   * Java relative dates, if the number of days between epoch and the date is not divisible by the
+   * rollover interval, the rest causes a lost day in the count.
+   */
+  private static String bucketStart(
+      final Instant date, final int intervalDays, final DateTimeFormatter formatter) {
+    final long daysSinceEpoch = date.atZone(ZoneId.of("UTC")).toLocalDate().toEpochDay();
+    final long bucketDay = (daysSinceEpoch / intervalDays) * intervalDays;
+    return LocalDate.ofEpochDay(bucketDay).format(formatter);
   }
 
   private record TestDocument(String id) implements TDocument {}

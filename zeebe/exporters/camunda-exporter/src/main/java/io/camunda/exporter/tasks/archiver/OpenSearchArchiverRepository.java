@@ -34,10 +34,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
@@ -80,7 +78,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
-  private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
 
   public OpenSearchArchiverRepository(
@@ -154,9 +151,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     .whenCompleteAsync(
                         (ignored, error) -> metrics.measureArchiverSearch(timer), executor)
                     .thenComposeAsync(
-                        (response) ->
-                            createArchiveBatch(
-                                response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+                        (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE),
                         executor);
               });
     } catch (final IOException e) {
@@ -173,10 +168,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
-            (response) ->
-                createArchiveBatch(
-                    response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
-            executor);
+            (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
   @Override
@@ -195,7 +187,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 createArchiveBatch(
                     response,
                     UsageMetricTUTemplate.END_TIME,
-                    usageMetricTUTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
             executor);
   }
@@ -216,7 +207,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 createArchiveBatch(
                     response,
                     UsageMetricTemplate.END_TIME,
-                    usageMetricTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
             executor);
   }
@@ -229,11 +219,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
-            response ->
-                createArchiveBatch(
-                    response,
-                    DecisionInstanceTemplate.EVALUATION_DATE,
-                    decisionInstanceTemplateDescriptor),
+            response -> createArchiveBatch(response, DecisionInstanceTemplate.EVALUATION_DATE),
             executor);
   }
 
@@ -563,59 +549,30 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor) {
-    return createArchiveBatch(response, field, templateDescriptor, config.getRolloverInterval());
+      final SearchResponse<?> response, final String field) {
+    return createArchiveBatch(response, field, config.getRolloverInterval());
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
+      final SearchResponse<?> response, final String field, final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
       return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
     }
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
-    final String templateIndexName = templateDescriptor.getIndexName();
-    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
 
-    final CompletableFuture<String> dateFuture;
-    try {
-      dateFuture =
-          (lastHistoricalArchiverDate == null)
-              ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                  fetchIndexMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
-              : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
-    }
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, rolloverInterval, config.getElsRolloverDateFormat());
 
-    return dateFuture.thenApply(
-        date -> {
-          final String nextArchiverDate =
-              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
+    final var ids =
+        hits.stream()
+            .takeWhile(
+                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
+            .map(Hit::id)
+            .toList();
 
-          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-
-          final var ids =
-              hits.stream()
-                  .takeWhile(
-                      hit ->
-                          hit.fields()
-                              .get(field)
-                              .toJson()
-                              .asJsonArray()
-                              .getString(0)
-                              .equals(endDate))
-                  .map(Hit::id)
-                  .toList();
-
-          return new ArchiveBatch(nextArchiverDate, ids);
-        });
+    return CompletableFuture.completedFuture(new ArchiveBatch(date, ids));
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
