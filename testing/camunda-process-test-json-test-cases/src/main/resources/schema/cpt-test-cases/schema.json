@@ -1084,7 +1084,9 @@
         },
         "feelExpression": {
           "description": "A FEEL expression to evaluate against the variables. When combined with elementSelector, evaluates against the local variables of that element. Optional.",
-          "type": "string"
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^=].*$"
         }
       },
       "required": [

@@ -1158,6 +1158,28 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWithUsefulMessageWhenFeelExpressionEvaluationFails() {
+      // given
+      // assert() is a FEEL built-in that returns a runtime evaluation failure when its condition
+      // is false; this tests the isFailure() branch in evaluateFeelExpression()
+      final Variable variable = newVariable("score", "0.7");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariablesSatisfyingFeel(
+                          "assert(score > 100, \"score must be greater than 100\")"))
+          .hasMessageContaining(
+              "FEEL expression 'assert(score > 100, \"score must be greater than 100\")'")
+          .hasMessageContaining("failed to evaluate");
+    }
+
+    @Test
     void shouldThrowIllegalArgumentExceptionWhenExpressionStartsWithEquals() {
       // given
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
