@@ -40,12 +40,11 @@ jobs:
         id: get-last-run-id
         run: |
           runs=$(gh api /repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs)
-          last_run_id=$(echo "$runs" | jq -r 'first(.workflow_runs[] | select(.status=="completed" and .conclusion=="success").id) // empty')
+          last_run_id=$(echo "$runs" | jq 'first(.workflow_runs[] | select(.status=="completed").id)')
           echo "last_run_id=$last_run_id" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previous report
-        if: steps.get-last-run-id.outputs.last_run_id != ''
         uses: actions/download-artifact@v8
         continue-on-error: true
         with:
