@@ -192,7 +192,44 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     }
   }
 
+  private static final int MAX_TOKEN_FETCH_RETRIES = 3;
+  private static final long INITIAL_BACKOFF_MS = 1_000L;
+  private static final double BACKOFF_MULTIPLIER = 2.0;
+  private static final long MAX_BACKOFF_MS = 30_000L;
+
   private CamundaClientCredentials fetchCredentials() throws IOException {
+    IOException lastException = null;
+    long backoffMs = INITIAL_BACKOFF_MS;
+
+    for (int attempt = 1; attempt <= MAX_TOKEN_FETCH_RETRIES; attempt++) {
+      try {
+        return doFetchCredentials();
+      } catch (final IOException e) {
+        lastException = e;
+        if (attempt < MAX_TOKEN_FETCH_RETRIES) {
+          LOG.warn(
+              "Token fetch failed (attempt {}/{}), retrying in {}ms: {}",
+              attempt,
+              MAX_TOKEN_FETCH_RETRIES,
+              backoffMs,
+              e.getMessage());
+          try {
+            Thread.sleep(backoffMs);
+          } catch (final InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while waiting to retry token fetch", ie);
+          }
+          backoffMs = Math.min((long) (backoffMs * BACKOFF_MULTIPLIER), MAX_BACKOFF_MS);
+        }
+      }
+    }
+
+    throw new IOException(
+        "Failed to fetch credentials after " + MAX_TOKEN_FETCH_RETRIES + " attempts",
+        lastException);
+  }
+
+  private CamundaClientCredentials doFetchCredentials() throws IOException {
     final HttpURLConnection connection =
         (HttpURLConnection) authorizationServerUrl.openConnection();
     maybeConfigureCustomSSLContext(connection);
