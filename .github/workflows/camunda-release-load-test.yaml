@@ -1,6 +1,7 @@
 # description: Creates a load test for official release images. Abstraction layer between
 #              the release process and the load test infrastructure, with a simple public API
-#              accepting only name and tag as inputs. Uses official Docker images with scenario: realistic.
+#              accepting name, tag, and optional per-component image tags as inputs.
+#              Uses official Docker images with scenario: realistic.
 # called-by: camunda-scheduled-release-load-tests.yml (daily schedule),
 #            release BPMN process (workflow_dispatch via GitHub API)
 # calls: camunda-load-test.yml (use-official-docker-images: true, scenario: realistic)
