@@ -144,7 +144,7 @@
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.21</version.jackson-annotations>
     <version.json-path>2.9.0</version.json-path>
-    <version.swagger-annotations>2.2.45</version.swagger-annotations>
+    <version.swagger-annotations>2.2.46</version.swagger-annotations>
     <version.swagger-parser>2.1.39</version.swagger-parser>
     <version.checker-qual>3.49.5</version.checker-qual>
     <version.java-jwt>4.5.1</version.java-jwt>
