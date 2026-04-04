@@ -537,31 +537,30 @@ jobs:
 
           # Append optimize image config if enabled
           if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
-            # Use dedicated optimize-tag only with official images; otherwise fall back to the built image tag
-            if [[ "${{ inputs.use-official-docker-images }}" == "true" && -n "${{ inputs.optimize-tag }}" ]]; then
-              optimize_tag="${{ inputs.optimize-tag }}"
+            if [[ "${{ inputs.use-official-docker-images }}" == "true" ]]; then
+              # Official images: only override if an explicit optimize-tag is provided; otherwise let Helm chart defaults apply
+              if [[ -n "${{ inputs.optimize-tag }}" ]]; then
+                additional_platform_config+=" \
+                  --set optimize.image.tag=${{ inputs.optimize-tag }}"
+              fi
             else
-              optimize_tag="${image_tag}"
+              # Custom build: use the built image tag with full registry/repo override
+              additional_platform_config+=" \
+                --set optimize.image.registry=${image_registry} \
+                --set optimize.image.repository=${optimize_repo} \
+                --set optimize.image.tag=${image_tag}"
             fi
-            additional_platform_config+=" \
-              --set optimize.image.registry=${image_registry} \
-              --set optimize.image.repository=${optimize_repo} \
-              --set optimize.image.tag=${optimize_tag}"
           fi
 
           # Append identity image config if a dedicated tag is provided (only for official images)
           if [[ "${{ inputs.use-official-docker-images }}" == "true" && -n "${{ inputs.identity-tag }}" ]]; then
             additional_platform_config+=" \
-              --set identity.image.registry=docker.io \
-              --set identity.image.repository=camunda/identity \
               --set identity.image.tag=${{ inputs.identity-tag }}"
           fi
 
           # Append connectors image config if a dedicated tag is provided (only for official images)
           if [[ "${{ inputs.use-official-docker-images }}" == "true" && -n "${{ inputs.connectors-tag }}" ]]; then
             additional_platform_config+=" \
-              --set connectors.image.registry=docker.io \
-              --set connectors.image.repository=camunda/connectors \
               --set connectors.image.tag=${{ inputs.connectors-tag }}"
           fi
 
