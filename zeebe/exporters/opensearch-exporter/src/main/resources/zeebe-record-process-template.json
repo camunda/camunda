@@ -54,6 +54,9 @@
             },
             "versionTag": {
               "type": "keyword"
+            },
+            "processName": {
+              "type": "keyword"
             }
           }
         }
