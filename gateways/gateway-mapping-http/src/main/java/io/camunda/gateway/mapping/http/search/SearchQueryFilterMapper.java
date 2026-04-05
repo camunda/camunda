@@ -1205,12 +1205,7 @@ public class SearchQueryFilterMapper {
                   if (filter.name() == null) {
                     validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
                   }
-                  if (filter.value() == null
-                      || filter
-                          .value()
-                          .equals(SearchQueryRequestMapper.EMPTY_ADVANCED_STRING_FILTER)
-                      || filter.value().equals(SearchQueryRequestMapper.EMPTY_BASIC_STRING_FILTER)
-                      || isEmptyStrictStringFilter(filter.value())) {
+                  if (filter.value() == null || isEmptyStrictStringFilter(filter.value())) {
                     validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
                   }
                   return validationErrors.isEmpty()
