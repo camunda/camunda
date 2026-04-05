@@ -83,9 +83,7 @@ public class ConfigTest {
     assertThat(optimizeCfg.getClientSecret()).isEqualTo("demo-optimize-secret");
     assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
     assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
-    assertThat(optimizeCfg.getReportId()).isEmpty();
     assertThat(optimizeCfg.getEvaluationIntervalSeconds()).isEqualTo(60);
-    assertThat(optimizeCfg.getDurationLimit()).isZero();
   }
 
   @Test
@@ -160,19 +158,17 @@ public class ConfigTest {
     assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
 
     // optimize
-    final var optimizeCfg2 = appCfg.getOptimize();
-    assertThat(optimizeCfg2).isNotNull();
+    final var optimizeCfg = appCfg.getOptimize();
+    assertThat(optimizeCfg).isNotNull();
 
-    assertThat(optimizeCfg2.getBaseUrl()).isEqualTo("http://localhost:8083");
-    assertThat(optimizeCfg2.getKeycloakUrl()).isEqualTo("http://localhost:18080");
-    assertThat(optimizeCfg2.getRealm()).isEqualTo("camunda-platform");
-    assertThat(optimizeCfg2.getClientId()).isEqualTo("optimize");
-    assertThat(optimizeCfg2.getClientSecret()).isEqualTo("demo-optimize-secret");
-    assertThat(optimizeCfg2.getUsername()).isEqualTo("demo");
-    assertThat(optimizeCfg2.getPassword()).isEqualTo("demo");
-    assertThat(optimizeCfg2.getReportId()).isEmpty();
-    assertThat(optimizeCfg2.getEvaluationIntervalSeconds()).isEqualTo(60);
-    assertThat(optimizeCfg2.getDurationLimit()).isZero();
+    assertThat(optimizeCfg.getBaseUrl()).isEqualTo("http://localhost:8083");
+    assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://localhost:18080");
+    assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
+    assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
+    assertThat(optimizeCfg.getClientSecret()).isEqualTo("demo-optimize-secret");
+    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
+    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
+    assertThat(optimizeCfg.getEvaluationIntervalSeconds()).isEqualTo(60);
   }
 
   @Test

@@ -10,22 +10,27 @@ package io.camunda.zeebe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.config.OptimizeCfg;
 import org.junit.jupiter.api.Test;
 
-public class OptimizeReportLoadTesterTest {
+public class OptimizeReportsApiClientTest {
+
+  private static OptimizeReportApiClient createTester() {
+    final OptimizeCfg config = new OptimizeCfg();
+    config.setBaseUrl("http://localhost:8083");
+    config.setKeycloakUrl("http://localhost:18080");
+    config.setRealm("camunda-platform");
+    config.setClientId("optimize");
+    config.setUsername("demo");
+    config.setPassword("demo");
+    config.setClientSecret("demo-secret");
+    return new OptimizeReportApiClient(config);
+  }
 
   @Test
   public void shouldExtractReportIdsFromDashboardResponse() throws Exception {
     // given
-    final OptimizeReportLoadTester tester =
-        new OptimizeReportLoadTester(
-            "http://localhost:8083",
-            "http://localhost:18080",
-            "camunda-platform",
-            "optimize",
-            "demo",
-            "demo",
-            "demo-secret");
+    final OptimizeReportApiClient tester = createTester();
 
     final String dashboardJson =
         """
@@ -66,15 +71,7 @@ public class OptimizeReportLoadTesterTest {
   @Test
   public void shouldExtractReportIdsFromEmptyDashboard() throws Exception {
     // given
-    final OptimizeReportLoadTester tester =
-        new OptimizeReportLoadTester(
-            "http://localhost:8083",
-            "http://localhost:18080",
-            "camunda-platform",
-            "optimize",
-            "demo",
-            "demo",
-            "demo-secret");
+    final OptimizeReportApiClient tester = createTester();
 
     final String dashboardJson =
         """
@@ -93,15 +90,7 @@ public class OptimizeReportLoadTesterTest {
   @Test
   public void shouldHandleMissingTilesArray() throws Exception {
     // given
-    final OptimizeReportLoadTester tester =
-        new OptimizeReportLoadTester(
-            "http://localhost:8083",
-            "http://localhost:18080",
-            "camunda-platform",
-            "optimize",
-            "demo",
-            "demo",
-            "demo-secret");
+    final OptimizeReportApiClient tester = createTester();
 
     final String dashboardJson = "{}";
 
@@ -115,15 +104,7 @@ public class OptimizeReportLoadTesterTest {
   @Test
   public void shouldHandleTilesWithoutId() throws Exception {
     // given
-    final OptimizeReportLoadTester tester =
-        new OptimizeReportLoadTester(
-            "http://localhost:8083",
-            "http://localhost:18080",
-            "camunda-platform",
-            "optimize",
-            "demo",
-            "demo",
-            "demo-secret");
+    final OptimizeReportApiClient tester = createTester();
 
     final String dashboardJson =
         """
@@ -154,15 +135,7 @@ public class OptimizeReportLoadTesterTest {
   @Test
   public void shouldThrowExceptionForInvalidJson() {
     // given
-    final OptimizeReportLoadTester tester =
-        new OptimizeReportLoadTester(
-            "http://localhost:8083",
-            "http://localhost:18080",
-            "camunda-platform",
-            "optimize",
-            "demo",
-            "demo",
-            "demo-secret");
+    final OptimizeReportApiClient tester = createTester();
 
     final String invalidJson = "{ invalid json }";
 
@@ -175,9 +148,9 @@ public class OptimizeReportLoadTesterTest {
   public void shouldValidateDashboardEvaluationResult() {
     // given
     final var successResult =
-        new OptimizeReportLoadTester.DashboardEvaluationResult("management", 200, 1500, "{}");
+        new OptimizeReportApiClient.DashboardEvaluationResult("management", 200, 1500, "{}");
     final var errorResult =
-        new OptimizeReportLoadTester.DashboardEvaluationResult("management", 500, 1000, "error");
+        new OptimizeReportApiClient.DashboardEvaluationResult("management", 500, 1000, "error");
 
     // then
     assertThat(successResult.isSuccess()).isTrue();
@@ -193,9 +166,9 @@ public class OptimizeReportLoadTesterTest {
   public void shouldValidateReportEvaluationResult() {
     // given
     final var successResult =
-        new OptimizeReportLoadTester.ReportEvaluationResult("report-1", 200, 2000, "{}");
+        new OptimizeReportApiClient.ReportEvaluationResult("report-1", 200, 2000, "{}");
     final var errorResult =
-        new OptimizeReportLoadTester.ReportEvaluationResult("report-2", 404, 500, "not found");
+        new OptimizeReportApiClient.ReportEvaluationResult("report-2", 404, 500, "not found");
 
     // then
     assertThat(successResult.isSuccess()).isTrue();
@@ -211,14 +184,14 @@ public class OptimizeReportLoadTesterTest {
   public void shouldCalculateTotalResponseTimeForDashboardWithReports() {
     // given
     final var dashboardResult =
-        new OptimizeReportLoadTester.DashboardEvaluationResult("management", 200, 1000, "{}");
+        new OptimizeReportApiClient.DashboardEvaluationResult("management", 200, 1000, "{}");
     final var report1Result =
-        new OptimizeReportLoadTester.ReportEvaluationResult("report-1", 200, 2000, "{}");
+        new OptimizeReportApiClient.ReportEvaluationResult("report-1", 200, 2000, "{}");
     final var report2Result =
-        new OptimizeReportLoadTester.ReportEvaluationResult("report-2", 200, 1500, "{}");
+        new OptimizeReportApiClient.ReportEvaluationResult("report-2", 200, 1500, "{}");
 
     final var result =
-        new OptimizeReportLoadTester.DashboardWithReportsResult(
+        new OptimizeReportApiClient.HomepageResult(
             dashboardResult, java.util.List.of(report1Result, report2Result));
 
     // then
@@ -231,14 +204,14 @@ public class OptimizeReportLoadTesterTest {
   public void shouldDetectFailureInDashboardWithReports() {
     // given
     final var dashboardResult =
-        new OptimizeReportLoadTester.DashboardEvaluationResult("management", 200, 1000, "{}");
+        new OptimizeReportApiClient.DashboardEvaluationResult("management", 200, 1000, "{}");
     final var report1Result =
-        new OptimizeReportLoadTester.ReportEvaluationResult("report-1", 200, 2000, "{}");
+        new OptimizeReportApiClient.ReportEvaluationResult("report-1", 200, 2000, "{}");
     final var report2Result =
-        new OptimizeReportLoadTester.ReportEvaluationResult("report-2", 500, 1500, "error");
+        new OptimizeReportApiClient.ReportEvaluationResult("report-2", 500, 1500, "error");
 
     final var result =
-        new OptimizeReportLoadTester.DashboardWithReportsResult(
+        new OptimizeReportApiClient.HomepageResult(
             dashboardResult, java.util.List.of(report1Result, report2Result));
 
     // then

@@ -15,11 +15,8 @@ public final class OptimizeCfg {
   private String clientSecret;
   private String username;
   private String password;
-  private String reportId;
-  private boolean enableOptimize;
   private String processDefinitionKey;
   private int evaluationIntervalSeconds = 60; // Default: 1 minute
-  private int durationLimit = 0; // 0 means run forever
   private int authRetryMaxAttempts = 30;
   private int authRetryDelaySeconds = 10;
 
@@ -79,36 +76,12 @@ public final class OptimizeCfg {
     this.password = password;
   }
 
-  public String getReportId() {
-    return reportId;
-  }
-
-  public void setReportId(final String reportId) {
-    this.reportId = reportId;
-  }
-
   public int getEvaluationIntervalSeconds() {
     return evaluationIntervalSeconds;
   }
 
   public void setEvaluationIntervalSeconds(final int evaluationIntervalSeconds) {
     this.evaluationIntervalSeconds = evaluationIntervalSeconds;
-  }
-
-  public int getDurationLimit() {
-    return durationLimit;
-  }
-
-  public void setDurationLimit(final int durationLimit) {
-    this.durationLimit = durationLimit;
-  }
-
-  public boolean isEnableOptimize() {
-    return enableOptimize;
-  }
-
-  public void setEnableOptimize(final boolean enableOptimize) {
-    this.enableOptimize = enableOptimize;
   }
 
   public String getProcessDefinitionKey() {

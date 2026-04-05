@@ -67,7 +67,7 @@ public class Starter extends App {
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
   // Optimize evaluation meter
-  private OptimizeEvaluationMeter optimizeEvaluationMeter;
+  private OptimizeReportStartMeter optimizeReportStartMeter;
 
   Starter(final AppCfg config) {
     super(config);
@@ -100,7 +100,7 @@ public class Starter extends App {
     // Initialize Optimize report metrics if configured
     if (config.isEnableOptimizeReportMetric()) {
       setupOptimizeEvaluationMeter();
-      optimizeEvaluationMeter.start();
+      optimizeReportStartMeter.start();
     }
 
     // setup to start instances on given rate
@@ -128,8 +128,8 @@ public class Starter extends App {
                     }
                   }
                   // Shutdown Optimize if running
-                  if (optimizeEvaluationMeter != null) {
-                    optimizeEvaluationMeter.close();
+                  if (optimizeReportStartMeter != null) {
+                    optimizeReportStartMeter.close();
                   }
                 }));
 
@@ -154,8 +154,8 @@ public class Starter extends App {
     }
 
     // Cleanup Optimize if running
-    if (optimizeEvaluationMeter != null) {
-      optimizeEvaluationMeter.close();
+    if (optimizeReportStartMeter != null) {
+      optimizeReportStartMeter.close();
     }
   }
 
@@ -396,7 +396,7 @@ public class Starter extends App {
 
   private void setupOptimizeEvaluationMeter() {
     LOG.info("Setting up Optimize report evaluation meter");
-    optimizeEvaluationMeter = new OptimizeEvaluationMeter(config.getOptimize());
+    optimizeReportStartMeter = new OptimizeReportStartMeter(config.getOptimize());
   }
 
   public static void main(final String[] args) {

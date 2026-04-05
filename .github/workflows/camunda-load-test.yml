@@ -489,7 +489,7 @@ jobs:
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
                             --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}} \
-                            --set global.extraEnvVars[1].name=ENABLE_OPTIMIZE_REPORT_METRIC \
+                            --set global.extraEnvVars[1].name=CONFIG_FORCE_app_enableOptimizeReportMetric \
                             --set global.extraEnvVars[1].value=${{inputs.enable-optimize-report-metric}}"
 
           # Append scenario load-test-load configuration and custom inputs
