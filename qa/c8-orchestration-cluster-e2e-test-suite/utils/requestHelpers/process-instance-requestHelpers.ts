@@ -216,7 +216,10 @@ export async function expectProcessInstanceCanBeFound(
     const json = await statusRes.json();
     expect(json.processInstanceKey).toBe(processInstanceKey);
   }).toPass({
-    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    intervals: [
+      1_000, 2_000, 3_000, 4_000, 5_000, 6_000, 7_000, 8_000, 9_000, 10_000,
+      15_000, 25_000, 35_000,
+    ],
     timeout: 180_000,
   });
 }
