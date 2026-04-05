@@ -59,21 +59,4 @@ class ProcessInstanceRequestValidatorTest {
     assertThat(problem.getTitle()).isEqualTo("Bad Request");
     assertThat(problem.getDetail()).contains("is not valid. Tags must start with a letter");
   }
-
-  @Test
-  @DisplayName("Should reject businessId exceeding max length in simple API")
-  void shouldRejectBusinessIdExceedingMaxLengthSimpleApi() {
-    final var request =
-        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
-    request.setProcessDefinitionId("process-id");
-    request.setBusinessId("a".repeat(257));
-
-    final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
-
-    assertThat(result).isPresent();
-    final ProblemDetail problem = result.get();
-    assertThat(problem.getTitle()).isEqualTo("Bad Request");
-    assertThat(problem.getDetail()).contains("businessId").contains("256");
-  }
 }

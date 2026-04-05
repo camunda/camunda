@@ -88,8 +88,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTa
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.RequestValidator;
-import io.camunda.gateway.protocol.model.AdvancedStringFilter;
-import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
@@ -137,10 +135,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
-
-  public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
-      new AdvancedStringFilter();
-  public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
 
   private SearchQueryRequestMapper() {}
 
