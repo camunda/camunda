@@ -61,7 +61,6 @@ final class Ipv6IntegrationTest {
           .withPartitionsCount(1)
           .withReplicationFactor(1)
           .withBrokersCount(1)
-          .withNetwork(network)
           .withBrokerConfig(this::configureBroker)
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)

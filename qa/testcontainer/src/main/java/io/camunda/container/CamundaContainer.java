@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
@@ -32,6 +31,7 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
 public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF>>
@@ -233,10 +233,9 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     public BrokerContainer withRecordingExporter() {
       final var jarPath = resolveJar(RecordingExporter.class);
 
-      return withFileSystemBind(
-              jarPath.toAbsolutePath().toString(),
-              "/tmp/recording-exporter.jar",
-              BindMode.READ_ONLY)
+      return withCopyFileToContainer(
+              MountableFile.forHostPath(jarPath),
+              "/tmp/recording-exporter.jar")
           .withUnifiedConfig(
               cfg -> {
                 final var exporter =
