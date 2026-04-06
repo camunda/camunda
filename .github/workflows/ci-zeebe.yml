@@ -408,9 +408,16 @@ jobs:
           EXIT_CODE=${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
           exit $EXIT_CODE
 
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
-  utils-get-snapshot-docker-tag-and-concurrency-group:
-    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
+  # Dynamically generate the concurrency group based on branch name
+  utils-get-concurrency-group:
+    uses: ./.github/workflows/generate-concurrency-group.yml
     secrets: inherit
     permissions:
       contents: read
@@ -421,11 +428,11 @@ jobs:
     name: Deploy snapshot Docker image
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    needs: [ test-summary, utils-get-snapshot-docker-tag-and-concurrency-group ]
+    needs: [ test-summary, utils-get-snapshot-docker-tag, utils-get-concurrency-group ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group:  ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
+      group:  ${{ needs.utils-get-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
@@ -444,7 +451,7 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
