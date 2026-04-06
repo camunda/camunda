@@ -1,3 +1,13 @@
+# Extra env vars for the HOCON-based load tester (application.conf)
+# - ZEEBE_ADDRESS: the app reads this, not ZEEBE_GRPC_ADDRESS set by the chart
+# - CONFIG_FORCE_app_tls: gateway doesn't have TLS, override chart default (tls=true)
+global:
+  extraEnvVars:
+    - name: ZEEBE_ADDRESS
+      value: "http://zeebe-gateway:26500"
+    - name: CONFIG_FORCE_app_tls
+      value: "false"
+
 # OAuth configuration for load tests to connect to the Zeebe gateway via Identity/Keycloak.
 # In 8.7, all components are deployed separately (unlike 8.8's unified orchestration cluster).
 # The gateway is 'zeebe-gateway' and Identity uses Keycloak for OIDC tokens.

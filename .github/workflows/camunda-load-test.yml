@@ -468,7 +468,7 @@ jobs:
       - name: Build Optimize assembly
         run: |
           cd optimize-build-src
-          ./mvnw install -pl optimize-distro -am -DskipTests -DskipChecks -PrunAssembly -T1C
+          ./mvnw install -pl optimize-distro -am -DskipTests -DskipChecks -Dskip.docker -PrunAssembly -T1C
       - name: Get Optimize version
         id: optimize-version
         run: |
@@ -490,6 +490,7 @@ jobs:
             VERSION=${{ steps.optimize-version.outputs.version }}
             DISTRO=production
             ARTIFACT_PATH=./optimize-distro/target
+            REVISION=${{ inputs.ref }}
       - name: Observe build status
         if: always()
         continue-on-error: true
