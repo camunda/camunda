@@ -17,9 +17,11 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMul
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -29,6 +31,10 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class MultiInstanceActivityTransformer implements ModelElementTransformer<Activity> {
+
+  private final ExecutionListenerTransformer executionListenerTransformer =
+      new ExecutionListenerTransformer();
+
   @Override
   public Class<Activity> getType() {
     return Activity.class;
@@ -50,6 +56,7 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
           new ExecutableMultiInstanceBody(element.getId(), miLoopCharacteristics, innerActivity);
 
       transformMultiInstanceBody(process, innerActivity, multiInstanceBody);
+      transformExecutionListeners(loopCharacteristics, multiInstanceBody, context);
     }
   }
 
@@ -114,6 +121,21 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
     // replace the inner element with the body
     process.addFlowElement(multiInstanceBody);
+  }
+
+  private void transformExecutionListeners(
+      final MultiInstanceLoopCharacteristics loopCharacteristics,
+      final ExecutableMultiInstanceBody multiInstanceBody,
+      final TransformContext context) {
+    Optional.ofNullable(
+            loopCharacteristics.getSingleExtensionElement(ZeebeExecutionListeners.class))
+        .ifPresent(
+            listeners ->
+                executionListenerTransformer.transform(
+                    loopCharacteristics,
+                    multiInstanceBody,
+                    listeners.getExecutionListeners(),
+                    context.getExpressionLanguage()));
   }
 
   private static void attachEventsToMultiInstanceBody(
