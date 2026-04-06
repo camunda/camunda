@@ -16,8 +16,8 @@ public class JobsCfg implements ConfigurationEntry {
       EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int timeoutCheckerBatchLimit =
       EngineConfiguration.DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
-  private boolean jobsCompletedEventVariablesDisabled =
-      EngineConfiguration.DEFAULT_JOBS_COMPLETED_EVENT_VARIABLES_DISABLED;
+  private boolean includeVariablesInJobCompletedEvent =
+      EngineConfiguration.DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
 
   public Duration getTimeoutCheckerPollingInterval() {
     return timeoutCheckerPollingInterval;
@@ -35,13 +35,13 @@ public class JobsCfg implements ConfigurationEntry {
     this.timeoutCheckerBatchLimit = timeoutCheckerBatchLimit;
   }
 
-  public boolean isJobsCompletedEventVariablesDisabled() {
-    return jobsCompletedEventVariablesDisabled;
+  public boolean isIncludeVariablesInJobCompletedEvent() {
+    return includeVariablesInJobCompletedEvent;
   }
 
-  public void setJobsCompletedEventVariablesDisabled(
-      final boolean jobsCompletedEventVariablesDisabled) {
-    this.jobsCompletedEventVariablesDisabled = jobsCompletedEventVariablesDisabled;
+  public void setIncludeVariablesInJobCompletedEvent(
+      final boolean includeVariablesInJobCompletedEvent) {
+    this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
   }
 
   @Override
@@ -51,8 +51,8 @@ public class JobsCfg implements ConfigurationEntry {
         + timeoutCheckerPollingInterval
         + ", timeoutCheckerBatchLimit="
         + timeoutCheckerBatchLimit
-        + ", jobsCompletedEventVariablesDisabled="
-        + jobsCompletedEventVariablesDisabled
+        + ", includeVariablesInJobCompletedEvent="
+        + includeVariablesInJobCompletedEvent
         + '}';
   }
 }

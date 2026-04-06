@@ -59,7 +59,7 @@ public final class JobEventProcessors {
                 eventHandle,
                 authCheckBehavior,
                 bpmnBehaviors.variableBehavior(),
-                config.isJobsCompletedEventVariablesDisabled()))
+                config.isIncludeVariablesInJobCompletedEvent()))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,

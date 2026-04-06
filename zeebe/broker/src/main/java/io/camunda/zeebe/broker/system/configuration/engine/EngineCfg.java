@@ -205,6 +205,6 @@ public final class EngineCfg implements ConfigurationEntry {
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
-        .setJobsCompletedEventVariablesDisabled(jobs.isJobsCompletedEventVariablesDisabled());
+        .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent());
   }
 }

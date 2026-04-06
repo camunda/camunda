@@ -132,7 +132,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
 
-  private final boolean eventVariablesDisabled;
+  private final boolean includeVariablesInJobCompletedEvent;
 
   public JobCompleteProcessor(
       final ProcessingState state,
@@ -141,7 +141,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior,
       final VariableBehavior variableBehavior,
-      final boolean eventVariablesDisabled) {
+      final boolean includeVariablesInJobCompletedEvent) {
     processState = state;
     userTaskState = state.getUserTaskState();
     jobState = state.getJobState();
@@ -150,7 +150,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.eventVariablesDisabled = eventVariablesDisabled;
+    this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
@@ -193,10 +193,10 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
     preCompleteActions(job, session);
 
-    // If job completed variables are disabled, Emit the COMPLETED event without variables to avoid
+    // If job completed variables are disabled, emit the COMPLETED event without variables to avoid
     // ExceededBatchRecordSizeException. Variables are not needed in the COMPLETED event; exporters
     // can read them from JobIntent.COMPLETE command or the follow-up ProcessEvent.TRIGGERING event.
-    if (!eventVariablesDisabled) {
+    if (includeVariablesInJobCompletedEvent) {
       job.setVariables(command.getValue().getVariablesBuffer());
     }
     job.setResult(command.getValue().getResult());
@@ -206,10 +206,10 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
 
-    // If the job completed variables are disabled, set variables on the job for
+    // If job completed variables are disabled, set variables on the job for
     // postCompleteActions, passed to follow-up events e.g., ProcessEvent.TRIGGERING so that the
     // process instance receives the job output.
-    if (eventVariablesDisabled) {
+    if (!includeVariablesInJobCompletedEvent) {
       job.setVariables(command.getValue().getVariablesBuffer());
     }
     postCompleteActions(job);

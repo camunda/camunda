@@ -1071,12 +1071,12 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .getJobs()
-        .setJobsCompletedEventVariablesDisabled(
+        .setIncludeVariablesInJobCompletedEvent(
             unifiedConfiguration
                 .getCamunda()
                 .getProcessing()
                 .getEngine()
                 .getJob()
-                .isCompletedEventVariablesDisabled());
+                .isIncludeVariablesInJobCompletedEvent());
   }
 }

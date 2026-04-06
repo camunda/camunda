@@ -33,7 +33,10 @@ public final class CompleteJobTest {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withJobConfig(b -> b.setIncludeVariablesInJobCompletedEvent(false))
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess();
 
   @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
@@ -76,7 +79,7 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldCompleteJobWithVariablesAndJobCompleteVariablesDisabled(
+  public void shouldCompleteJobWithVariablesAndDisabledVariablesInJobCompletedEvent(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
@@ -222,7 +225,7 @@ public final class CompleteJobTest {
     @TestZeebe
     private static final TestStandaloneBroker ZEEBE =
         new TestStandaloneBroker()
-            .withJobConfig(b -> b.setCompletedEventVariablesDisabled(false))
+            .withJobConfig(b -> b.setIncludeVariablesInJobCompletedEvent(true))
             .withRecordingExporter(true)
             .withUnauthenticatedAccess();
 

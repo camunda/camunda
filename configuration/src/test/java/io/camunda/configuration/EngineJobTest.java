@@ -25,7 +25,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 @ActiveProfiles("broker")
 @TestPropertySource(
-    properties = {"camunda.processing.engine.job.completed-event-variables-disabled=false"})
+    properties = {"camunda.processing.engine.job.include-variables-in-job-completed-event=true"})
 public class EngineJobTest {
   final BrokerBasedProperties brokerCfg;
 
@@ -36,6 +36,6 @@ public class EngineJobTest {
   @Test
   void shouldSetJobs() {
     assertThat(brokerCfg.getExperimental().getEngine().getJobs())
-        .returns(false, JobsCfg::isJobsCompletedEventVariablesDisabled);
+        .returns(true, JobsCfg::isIncludeVariablesInJobCompletedEvent);
   }
 }

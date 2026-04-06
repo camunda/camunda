@@ -7,16 +7,31 @@
  */
 package io.camunda.configuration;
 
+/**
+ * Defines configurations for jobs in the engine. The prefix for this class is
+ * camunda.processing.engine.job.
+ */
 public class EngineJob {
-  // private static final String PREFIX = "camunda.processing.engine.job";
 
-  private boolean completedEventVariablesDisabled = true;
+  private boolean includeVariablesInJobCompletedEvent = false;
 
-  public boolean isCompletedEventVariablesDisabled() {
-    return completedEventVariablesDisabled;
+  /**
+   * Configuration option to include variables in the job completed event. This configuration can be
+   * accessed via the environment variable: <br>
+   * {@code camunda.processing.engine.job.include-variables-in-job-completed-event}.
+   *
+   * <p>Defaults to {@code false} to prevent job completed events from failing due to excessive
+   * batch record size.
+   *
+   * @return {@code true} if variables should be included in the job completed event, {@code false}
+   *     otherwise
+   */
+  public boolean isIncludeVariablesInJobCompletedEvent() {
+    return includeVariablesInJobCompletedEvent;
   }
 
-  public void setCompletedEventVariablesDisabled(final boolean completedEventVariablesDisabled) {
-    this.completedEventVariablesDisabled = completedEventVariablesDisabled;
+  public void setIncludeVariablesInJobCompletedEvent(
+      final boolean includeVariablesInJobCompletedEvent) {
+    this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
   }
 }
