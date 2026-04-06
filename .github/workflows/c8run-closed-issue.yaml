@@ -40,13 +40,26 @@ jobs:
               echo "match=true" >> "$GITHUB_OUTPUT"
             fi
 
+        - name: Import Secrets
+          id: secrets
+          uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+          with:
+            url: ${{ secrets.VAULT_ADDR }}
+            method: approle
+            roleId: ${{ secrets.VAULT_ROLE_ID }}
+            secretId: ${{ secrets.VAULT_SECRET_ID }}
+            secrets: |
+              secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+              secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+            exportEnv: true
+
         - name: Generate GitHub token
           if: ${{ steps.vars.outputs.match == 'true' }}
           uses: tibdex/github-app-token@v2
           id: generate-github-token
           with:
-            app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-            private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+            app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+            private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
         - name: Update Closed At field
           if: ${{ steps.vars.outputs.match == 'true' }}
