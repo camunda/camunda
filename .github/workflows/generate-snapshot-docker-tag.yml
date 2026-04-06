@@ -1,0 +1,62 @@
+# description: Generate Docker snapshot tags based on branch and project version.
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Generate Docker Snapshot Tag
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    outputs:
+      version_tag:
+        description: "Generated Docker version tag"
+        value: ${{ jobs.get-snapshot-docker-version-tag.outputs.tag }}
+      snapshot_tag:
+        description: "Generated Docker SNAPSHOT tag for main branch"
+        value: ${{ jobs.get-snapshot-docker-version-tag.outputs.snapshot_tag }}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  get-snapshot-docker-version-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    outputs:
+      tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
+      snapshot_tag: ${{ steps.set_docker_snapshot_version_tag.outputs.snapshot_tag }}
+    steps:
+      - name: Checkout repository
+        if: github.ref == 'refs/heads/main'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            pom.xml
+      - name: Determine Snapshot Docker Version Tag
+        id: set_docker_snapshot_version_tag
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == "main" ]]; then
+            PROJECT_VERSION="$(grep -m1 '<version>' pom.xml | sed -E 's|.*<version>([^<]+)</version>.*|\1|')"
+            if [[ "$PROJECT_VERSION" =~ ^([0-9]+)\.([0-9]+)\..*$ ]]; then
+              TAG="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}-SNAPSHOT"
+            else
+              echo "Unsupported project version: $PROJECT_VERSION"
+              exit 1
+            fi
+            SNAPSHOT_TAG="SNAPSHOT"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            TAG="${BRANCH#stable/}-SNAPSHOT"
+            SNAPSHOT_TAG=""
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "snapshot_tag=$SNAPSHOT_TAG" >> "$GITHUB_OUTPUT"
