@@ -143,13 +143,9 @@ jobs:
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/operate
-<<<<<<< HEAD
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
-=======
           version: |
             ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
             ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
->>>>>>> 6b84d2e3 (ci: split snapshot tag and concurrency reusable workflows)
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile

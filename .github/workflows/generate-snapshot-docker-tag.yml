@@ -11,17 +11,10 @@ on:
     outputs:
       version_tag:
         description: "Generated Docker version tag"
-<<<<<<< HEAD:.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
-        value: ${{  jobs.get-snapshot-docker-version-tag.outputs.tag }}
-      concurrency_group_name:
-        description: "Concurrency group name for the workflow"
-        value: ${{ jobs.get-concurrency-group-dynamically.outputs.result }}
-=======
         value: ${{ jobs.get-snapshot-docker-version-tag.outputs.tag }}
       snapshot_tag:
         description: "Generated Docker SNAPSHOT tag for main branch"
         value: ${{ jobs.get-snapshot-docker-version-tag.outputs.snapshot_tag }}
->>>>>>> 6b84d2e3 (ci: split snapshot tag and concurrency reusable workflows):.github/workflows/generate-snapshot-docker-tag.yml
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -50,35 +43,3 @@ jobs:
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-<<<<<<< HEAD:.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
-  get-concurrency-group-dynamically:
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    permissions: { }
-    if: >-
-      github.repository == 'camunda/camunda' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) &&
-      (inputs.job_to_run == 'all' || inputs.job_to_run == 'concurrency-group') &&
-      inputs.base_group_name != ''
-    outputs:
-      result: ${{ steps.split_branch.outputs.result }}
-    steps:
-      - name: Determine concurrency group name
-        id: split_branch
-        env:
-          BASE_GROUP_NAME: ${{ inputs.base_group_name }}
-        run: |
-          BRANCH="${GITHUB_REF#refs/heads/}"
-          if [[ "$BRANCH" == stable/* ]]; then
-            SUFFIX="${BRANCH#stable/}"
-            CONCURRENCY_GROUP_NAME="${BASE_GROUP_NAME}${SUFFIX}"
-          elif [[ "$BRANCH" == "main" ]]; then
-            CONCURRENCY_GROUP_NAME="${BASE_GROUP_NAME}"
-          else
-            echo "Unsupported branch: $BRANCH"
-            exit 1
-          fi
-          echo "result=$CONCURRENCY_GROUP_NAME" >> "$GITHUB_OUTPUT"
-=======
-          echo "snapshot_tag=$SNAPSHOT_TAG" >> "$GITHUB_OUTPUT"
->>>>>>> 6b84d2e3 (ci: split snapshot tag and concurrency reusable workflows):.github/workflows/generate-snapshot-docker-tag.yml

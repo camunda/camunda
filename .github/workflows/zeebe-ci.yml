@@ -414,13 +414,9 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-<<<<<<< HEAD:.github/workflows/zeebe-ci.yml
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
-=======
           version: |
             ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
             ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
->>>>>>> 6b84d2e3 (ci: split snapshot tag and concurrency reusable workflows):.github/workflows/ci-zeebe.yml
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
