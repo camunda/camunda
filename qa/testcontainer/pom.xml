@@ -72,10 +72,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
     <dependency>

@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.springframework.util.unit.DataSize;
 
@@ -231,18 +232,81 @@ public class ExtendedConfigurationBuilder {
   public Path exportConfig(final Path exportPath) {
     final var filePath = exportPath.resolve(CONFIG_FILE_NAME);
     try {
-      // Convert the unified config bean into a plain map so it can be deep-merged
-      final Map<String, Object> fullConfig = new LinkedHashMap<>();
-      fullConfig.put(CAMUNDA_HEADER, flatten(unifiedConfig));
-      mergeConfigs(fullConfig, flatten(additionalConfigs));
-
-      final String yaml =
-          YAML_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fullConfig);
-      Files.writeString(filePath, yaml);
+      Files.writeString(filePath, exportConfigAsString());
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
     return filePath;
+  }
+
+  /**
+   * Exports the configuration as a YAML string. Only properties that differ from the defaults are
+   * included, avoiding serialization bloat from eagerly initialized nested objects.
+   */
+  public String exportConfigAsString() {
+    try {
+      // Compute the diff between the configured Camunda bean and a pristine default instance.
+      // This avoids serializing hundreds of default properties that can interfere with the
+      // Docker image's own defaults (e.g. secondary-storage type, thread counts, etc.).
+      final Map<String, Object> defaultMap = flatten(createDefaultCamunda());
+      final Map<String, Object> configuredMap = flatten(unifiedConfig);
+      final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
+
+      final Map<String, Object> fullConfig = new LinkedHashMap<>();
+      if (!diff.isEmpty()) {
+        fullConfig.put(CAMUNDA_HEADER, diff);
+      }
+      mergeConfigs(fullConfig, flatten(additionalConfigs));
+
+      return YAML_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fullConfig);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Creates a pristine {@link Camunda} instance with the same defaults applied by {@link
+   * #initializeUnifiedConfigDefaults()}. This is used as a baseline for computing the diff.
+   */
+  private static Camunda createDefaultCamunda() {
+    final var defaults = new Camunda();
+    defaults.getWebapps().getIdentity().setEnabled(false);
+    defaults.getWebapps().getOperate().setEnabled(false);
+    defaults.getWebapps().getTasklist().setEnabled(false);
+    return defaults;
+  }
+
+  /**
+   * Recursively computes the difference between a default map and a configured map. Returns a new
+   * map containing only the entries from {@code configured} that differ from {@code defaults}. For
+   * nested maps, the diff recurses and only non-empty sub-diffs are included.
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> diffMaps(
+      final Map<String, Object> defaults, final Map<String, Object> configured) {
+    final Map<String, Object> result = new LinkedHashMap<>();
+    for (final var entry : configured.entrySet()) {
+      final String key = entry.getKey();
+      final Object configuredValue = entry.getValue();
+      final Object defaultValue = defaults.get(key);
+
+      if (configuredValue instanceof Map && defaultValue instanceof Map) {
+        final Map<String, Object> subDiff =
+            diffMaps((Map<String, Object>) defaultValue, (Map<String, Object>) configuredValue);
+        if (!subDiff.isEmpty()) {
+          result.put(key, subDiff);
+        }
+      } else if (!Objects.equals(configuredValue, defaultValue)) {
+        result.put(key, configuredValue);
+      }
+    }
+    // Also include any keys present in configured but absent in defaults (new keys)
+    for (final var entry : configured.entrySet()) {
+      if (!defaults.containsKey(entry.getKey()) && !result.containsKey(entry.getKey())) {
+        result.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return result;
   }
 
   /**

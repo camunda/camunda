@@ -163,7 +163,7 @@ public interface GatewayNode<T extends GenericContainer<T> & GatewayNode<T>>
    * @return internally accessible REST API address
    */
   default URI getInternalGrpcAddress(final String scheme) {
-    final int port = CamundaPort.GATEWAY_REST.getPort();
+    final int port = CamundaPort.GATEWAY_GRPC.getPort();
     return URI.create(String.format("%s://%s:%d", scheme, getInternalHost(), port));
   }
 
