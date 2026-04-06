@@ -19,7 +19,6 @@ import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -69,25 +68,26 @@ public class NonDefaultContainerSetupTest {
                     cmd -> Objects.requireNonNull(cmd.getHostConfig()).withReadonlyRootfs(true))));
   }
 
+  // Use env var configuration since on CI a RO_BIND from the host filesystem is not possible
+  // in order to mount the exported unified config file
   @ParameterizedTest
   @MethodSource("containerModifiers")
   void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
     try (final BrokerContainer broker =
             new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-                .withUnifiedConfig(
-                    cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none))
+                .withReadOnlyFileSystem()
+                .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", SecondaryStorageType.none.name())
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
                 .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
                 .withCreateContainerCmdModifier(containerModifier);
         final GatewayContainer gateway =
             new GatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
+                .withReadOnlyFileSystem()
                 .withNetwork(broker.getNetwork())
-                .withUnifiedConfig(
-                    cfg -> {
-                      cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-                      cfg.getCluster()
-                          .setInitialContactPoints(List.of(broker.getInternalClusterAddress()));
-                    })
+                .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", SecondaryStorageType.none.name())
+                .withEnv(
+                    "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
+                    broker.getInternalClusterAddress())
                 .withCreateContainerCmdModifier(containerModifier)
                 .dependsOn(broker)
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
