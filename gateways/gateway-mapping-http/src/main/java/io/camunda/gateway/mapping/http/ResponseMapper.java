@@ -305,8 +305,7 @@ public final class ResponseMapper {
                 reference -> createdDocuments.add(toDocumentReference(reference)),
                 error -> failedDocuments.add(toDocumentCreationFailure(error))));
     return new GeneratedDocumentCreationBatchResponseStrictContract(
-        failedDocuments.isEmpty() ? null : failedDocuments,
-        createdDocuments.isEmpty() ? null : createdDocuments);
+        failedDocuments, createdDocuments);
   }
 
   public static GeneratedDocumentReferenceStrictContract toDocumentReference(
@@ -330,7 +329,7 @@ public final class ResponseMapper {
             .processInstanceKey(internalMetadata.processInstanceKey())
             .build();
     return new GeneratedDocumentReferenceStrictContract(
-        "CAMUNDA",
+        "camunda",
         response.storeId(),
         response.documentId(),
         response.contentHash(),
