@@ -300,12 +300,6 @@ public class ExtendedConfigurationBuilder {
         result.put(key, configuredValue);
       }
     }
-    // Also include any keys present in configured but absent in defaults (new keys)
-    for (final var entry : configured.entrySet()) {
-      if (!defaults.containsKey(entry.getKey()) && !result.containsKey(entry.getKey())) {
-        result.put(entry.getKey(), entry.getValue());
-      }
-    }
     return result;
   }
 

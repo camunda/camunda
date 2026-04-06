@@ -156,18 +156,14 @@ public class CamundaCluster implements Startable {
   }
 
   /**
-   * Builds a new client builder by picking a random gateway started gateway for it and disabling
-   * transport security.
+   * Builds a new client builder by picking a random started gateway and disabling transport
+   * security.
    *
    * @return a new client builder with the gateway and transport security pre-configured
    * @throws NoSuchElementException if there are no started gateways
    */
   public CamundaClientBuilder newClientBuilder() {
-    final GatewayNode<?> gateway = getAvailableGateway();
-
-    return CamundaClient.newClientBuilder()
-        .grpcAddress(gateway.getGrpcAddress())
-        .restAddress(gateway.getRestAddress());
+    return newClientBuilder(this);
   }
 
   /**

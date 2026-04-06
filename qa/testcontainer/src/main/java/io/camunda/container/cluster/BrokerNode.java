@@ -43,8 +43,8 @@ public interface BrokerNode<T extends GenericContainer<T> & BrokerNode<T>> exten
    * <p>For example, if you want to test updating a broker, you could do the following:
    *
    * <pre>{@code
-   * final DockerImageName oldImage = DockerImageName.parse("camunda/zeebe:1.0.0");
-   * final DockerImageName newImage = DockerImageName.parse("camunda/zeebe:1.1.0");
+   * final DockerImageName oldImage = DockerImageName.parse("camunda/camunda:8.7.0");
+   * final DockerImageName newImage = DockerImageName.parse("camunda/camunda:8.8.0");
    * final CamundaVolume volume = new CamundaVolume();
    * final BrokerContainer broker = new BrokerContainer(oldImage)
    *    .withCamundaData(volume);

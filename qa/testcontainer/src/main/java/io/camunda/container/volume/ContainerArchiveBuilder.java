@@ -17,14 +17,14 @@ import org.testcontainers.containers.GenericContainer;
  * A builder for a {@link ContainerArchive} which will also take care of producing the archive from
  * a given path.
  *
- * <p>By default, it's tailored to extract Zeebe data, and so will use {@link
- * ZeebeDefaults#getDefaultDataPath()} as the default container path.
+ * <p>By default, it's tailored to extract Camunda data, and so will use {@link
+ * CamundaContainer#DEFAULT_CAMUNDA_TMP_PATH} as the default container path.
  *
  * <p>Example usage:
  *
  * <pre>@{code
  *   // configure and start your container
- *   final ZeebeBrokerContainer container = new ZeebeBrokerContainer();
+ *   final BrokerContainer container = new BrokerContainer(image);
  *   container.start();
  *   // generate some actual data...
  *   // extract it to a given destination
