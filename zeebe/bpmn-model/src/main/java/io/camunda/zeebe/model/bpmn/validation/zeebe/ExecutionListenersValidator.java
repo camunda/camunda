@@ -58,7 +58,9 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
               BpmnModelConstants.BPMN_ELEMENT_EXCLUSIVE_GATEWAY,
               BpmnModelConstants.BPMN_ELEMENT_INCLUSIVE_GATEWAY,
               BpmnModelConstants.BPMN_ELEMENT_PARALLEL_GATEWAY,
-              BpmnModelConstants.BPMN_ELEMENT_EVENT_BASED_GATEWAY));
+              BpmnModelConstants.BPMN_ELEMENT_EVENT_BASED_GATEWAY,
+              // multi-instance
+              BpmnModelConstants.BPMN_ELEMENT_MULTI_INSTANCE_LOOP_CHARACTERISTICS));
 
   @Override
   public Class<ZeebeExecutionListeners> getElementType() {
