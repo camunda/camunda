@@ -89,14 +89,19 @@ public final class MultiInstanceBodyProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-    // verify that the input collection variable is present and valid
+    // Subscribe to boundary events so they can interrupt during execution listener processing.
+    // The input collection evaluation is deferred to finalizeActivation() so that variables
+    // produced by start execution listeners on the multi-instance body are available.
+    return eventSubscriptionBehavior.subscribeToEvents(element, context);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+    // Evaluate the input collection after start execution listeners have completed.
+    // Variables produced by those listeners are now available for the inputCollection expression.
     return multiInstanceInputCollectionBehavior
         .initializeInputCollection(element, context)
-        .flatMap(
-            inputCollection ->
-                eventSubscriptionBehavior
-                    .subscribeToEvents(element, context)
-                    .map(ok -> inputCollection))
         .thenDo(inputCollection -> activate(element, context, inputCollection));
   }
 
@@ -113,6 +118,12 @@ public final class MultiInstanceBodyProcessor
 
     compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
 
+    return SUCCESS;
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
         .thenDo(
