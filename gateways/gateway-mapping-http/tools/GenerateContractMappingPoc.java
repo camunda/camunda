@@ -2803,6 +2803,12 @@ public record %s(
       }
     }
 
+    if (!node.oneOfRefs().isEmpty()
+        && node.oneOfRefs().stream()
+            .allMatch(ref -> isLongKeyRef(ref, currentFile, allSchemas, resolvingStack))) {
+      return true;
+    }
+
     return false;
   }
 
@@ -2832,6 +2838,14 @@ public record %s(
         if (isLongKeyRef(allOfRef, key.fileName(), allSchemas, resolvingStack)) {
           return true;
         }
+      }
+
+      if (!schema.node().oneOfRefs().isEmpty()
+          && schema.node().oneOfRefs().stream()
+              .allMatch(
+                  oneOfRef ->
+                      isLongKeyRef(oneOfRef, key.fileName(), allSchemas, resolvingStack))) {
+        return true;
       }
 
       return false;

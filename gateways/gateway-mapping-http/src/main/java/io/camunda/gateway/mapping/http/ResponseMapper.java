@@ -384,19 +384,22 @@ public final class ResponseMapper {
               GeneratedBatchOperationTypeEnum.valueOf(
                   brokerResponse.getBatchOperationType().name()));
     }
-    return new GeneratedDeleteResourceResponseStrictContract(
-        KeyUtil.keyToString(brokerResponse.getResourceKey()), batchOperation);
+    return GeneratedDeleteResourceResponseStrictContract.builder()
+        .resourceKey(brokerResponse.getResourceKey())
+        .batchOperation(batchOperation)
+        .build();
   }
 
   public static GeneratedResourceStrictContract toGetResourceResponse(
       final ResourceRecord resourceRecord) {
-    return new GeneratedResourceStrictContract(
-        resourceRecord.getResourceName(),
-        resourceRecord.getVersion(),
-        emptyToNull(resourceRecord.getVersionTag()),
-        resourceRecord.getResourceId(),
-        resourceRecord.getTenantId(),
-        String.valueOf(resourceRecord.getResourceKey()));
+    return GeneratedResourceStrictContract.builder()
+        .resourceName(resourceRecord.getResourceName())
+        .version(resourceRecord.getVersion())
+        .resourceId(resourceRecord.getResourceId())
+        .tenantId(resourceRecord.getTenantId())
+        .resourceKey(resourceRecord.getResourceKey())
+        .versionTag(emptyToNull(resourceRecord.getVersionTag()))
+        .build();
   }
 
   public static String toGetResourceContentResponse(final ResourceRecord resourceRecord) {
@@ -443,12 +446,13 @@ public final class ResponseMapper {
                     null,
                     null,
                     null,
-                    new GeneratedDeploymentResourceStrictContract(
-                        resource.getResourceId(),
-                        resource.getResourceName(),
-                        resource.getVersion(),
-                        resource.getTenantId(),
-                        KeyUtil.keyToString(resource.getResourceKey()))))
+                    GeneratedDeploymentResourceStrictContract.builder()
+                        .resourceId(resource.getResourceId())
+                        .resourceName(resource.getResourceName())
+                        .version(resource.getVersion())
+                        .tenantId(resource.getTenantId())
+                        .resourceKey(resource.getResourceKey())
+                        .build()))
         .forEach(deployments::add);
   }
 
