@@ -376,16 +376,16 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
 
       // then
-      assertThat(result.getEvaluatedDecisions())
+      assertThat(result.evaluatedDecisions())
           .singleElement()
           .satisfies(
               evaluated -> {
-                assertThat(evaluated.getDecisionDefinitionId()).isEqualTo("innerDecisionId");
-                assertThat(evaluated.getDecisionDefinitionKey()).isEqualTo("300");
-                assertThat(evaluated.getDecisionDefinitionName()).isEqualTo("innerDecisionName");
-                assertThat(evaluated.getDecisionDefinitionVersion()).isEqualTo(2);
-                assertThat(evaluated.getDecisionDefinitionType()).isEqualTo("DECISION_TABLE");
-                assertThat(evaluated.getTenantId()).isEqualTo("tenant-1");
+                assertThat(evaluated.decisionDefinitionId()).isEqualTo("innerDecisionId");
+                assertThat(evaluated.decisionDefinitionKey()).isEqualTo("300");
+                assertThat(evaluated.decisionDefinitionName()).isEqualTo("innerDecisionName");
+                assertThat(evaluated.decisionDefinitionVersion()).isEqualTo(2);
+                assertThat(evaluated.decisionDefinitionType()).isEqualTo("DECISION_TABLE");
+                assertThat(evaluated.tenantId()).isEqualTo("tenant-1");
               });
     }
 
@@ -428,10 +428,10 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
 
       // then
-      assertThat(result.getEvaluatedDecisions()).hasSize(2);
-      assertThat(result.getEvaluatedDecisions().get(0).getDecisionDefinitionType())
+      assertThat(result.evaluatedDecisions()).hasSize(2);
+      assertThat(result.evaluatedDecisions().get(0).decisionDefinitionType())
           .isEqualTo("DECISION_TABLE");
-      assertThat(result.getEvaluatedDecisions().get(1).getDecisionDefinitionType())
+      assertThat(result.evaluatedDecisions().get(1).decisionDefinitionType())
           .isEqualTo("DECISION_LITERAL_EXPRESSION");
     }
 
@@ -454,16 +454,16 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
 
       // then
-      assertThat(result.getDecisionDefinitionId()).isEqualTo("myDecisionId");
-      assertThat(result.getDecisionDefinitionKey()).isEqualTo("100");
-      assertThat(result.getDecisionDefinitionName()).isEqualTo("myDecision");
-      assertThat(result.getDecisionDefinitionVersion()).isEqualTo(3);
-      assertThat(result.getDecisionRequirementsId()).isEqualTo("myDrgId");
-      assertThat(result.getDecisionRequirementsKey()).isEqualTo("200");
-      assertThat(result.getTenantId()).isEqualTo("my-tenant");
-      assertThat(result.getDecisionInstanceKey()).isEqualTo("555");
-      assertThat(result.getDecisionEvaluationKey()).isEqualTo("555");
-      assertThat(result.getEvaluatedDecisions()).isEmpty();
+      assertThat(result.decisionDefinitionId()).isEqualTo("myDecisionId");
+      assertThat(result.decisionDefinitionKey()).isEqualTo("100");
+      assertThat(result.decisionDefinitionName()).isEqualTo("myDecision");
+      assertThat(result.decisionDefinitionVersion()).isEqualTo(3);
+      assertThat(result.decisionRequirementsId()).isEqualTo("myDrgId");
+      assertThat(result.decisionRequirementsKey()).isEqualTo("200");
+      assertThat(result.tenantId()).isEqualTo("my-tenant");
+      assertThat(result.decisionInstanceKey()).isEqualTo("555");
+      assertThat(result.decisionEvaluationKey()).isEqualTo("555");
+      assertThat(result.evaluatedDecisions()).isEmpty();
     }
   }
 
@@ -481,8 +481,8 @@ class ResponseMapperTest {
       final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
 
       // then
-      assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
-      assertThat(response.getBatchOperation()).isNull();
+      assertThat(response.resourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(response.batchOperation()).isNull();
     }
 
     @Test
@@ -502,12 +502,12 @@ class ResponseMapperTest {
       final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
 
       // then
-      assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
-      assertThat(response.getBatchOperation()).isNotNull();
-      assertThat(response.getBatchOperation().getBatchOperationKey())
+      assertThat(response.resourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(response.batchOperation()).isNotNull();
+      assertThat(response.batchOperation().batchOperationKey())
           .isEqualTo(String.valueOf(batchOperationKey));
-      assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
-      assertThat(response.getBatchOperation().getBatchOperationType().name())
+      assertThat(response.batchOperation().batchOperationType()).isNotNull();
+      assertThat(response.batchOperation().batchOperationType().name())
           .isEqualTo(batchOperationType.name());
     }
   }

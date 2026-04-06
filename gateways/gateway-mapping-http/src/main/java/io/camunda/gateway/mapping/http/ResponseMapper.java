@@ -17,56 +17,56 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationCreatedStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBrokerInfoStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableScopeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateProcessInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteResourceResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentDecisionRequirementsStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentDecisionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentFormStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentMetadataStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentProcessStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentResourceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentCreationBatchResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentCreationFailureDetailStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentLinkStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentReferenceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluateConditionalStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluateDecisionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionInputItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionOutputItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpressionEvaluationStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpressionEvaluationWarningItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMatchedDecisionRuleItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageCorrelationStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessagePublicationStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPartitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceReferenceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResourceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSignalBroadcastStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
-import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
-import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
-import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
-import io.camunda.gateway.protocol.model.ClusterVariableResult;
-import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
-import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
-import io.camunda.gateway.protocol.model.DeleteResourceResponse;
-import io.camunda.gateway.protocol.model.DeploymentDecisionRequirementsResult;
-import io.camunda.gateway.protocol.model.DeploymentDecisionResult;
-import io.camunda.gateway.protocol.model.DeploymentFormResult;
-import io.camunda.gateway.protocol.model.DeploymentMetadataResult;
-import io.camunda.gateway.protocol.model.DeploymentProcessResult;
-import io.camunda.gateway.protocol.model.DeploymentResourceResult;
-import io.camunda.gateway.protocol.model.DeploymentResult;
-import io.camunda.gateway.protocol.model.DocumentCreationBatchResponse;
-import io.camunda.gateway.protocol.model.DocumentCreationFailureDetail;
-import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
-import io.camunda.gateway.protocol.model.DocumentReference;
-import io.camunda.gateway.protocol.model.DocumentReference.CamundaDocumentTypeEnum;
-import io.camunda.gateway.protocol.model.EvaluateConditionalResult;
-import io.camunda.gateway.protocol.model.EvaluateDecisionResult;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
-import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
-import io.camunda.gateway.protocol.model.ExpressionEvaluationWarningItem;
-import io.camunda.gateway.protocol.model.GroupCreateResult;
-import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.MappingRuleCreateResult;
-import io.camunda.gateway.protocol.model.MappingRuleUpdateResult;
-import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
-import io.camunda.gateway.protocol.model.MessageCorrelationResult;
-import io.camunda.gateway.protocol.model.MessagePublicationResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceReference;
-import io.camunda.gateway.protocol.model.ResourceResult;
-import io.camunda.gateway.protocol.model.RoleCreateResult;
-import io.camunda.gateway.protocol.model.RoleUpdateResult;
-import io.camunda.gateway.protocol.model.SignalBroadcastResult;
-import io.camunda.gateway.protocol.model.TenantCreateResult;
-import io.camunda.gateway.protocol.model.TenantUpdateResult;
-import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
-import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -279,12 +279,12 @@ public final class ResponseMapper {
     }
   }
 
-  public static MessageCorrelationResult toMessageCorrelationResponse(
+  public static GeneratedMessageCorrelationStrictContract toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
-    return new MessageCorrelationResult()
-        .messageKey(KeyUtil.keyToString(brokerResponse.getMessageKey()))
-        .tenantId(brokerResponse.getTenantId())
-        .processInstanceKey(KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()));
+    return new GeneratedMessageCorrelationStrictContract(
+        brokerResponse.getTenantId(),
+        KeyUtil.keyToString(brokerResponse.getMessageKey()),
+        KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()));
   }
 
   public static MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
@@ -299,47 +299,53 @@ public final class ResponseMapper {
     }
   }
 
-  public static DocumentCreationBatchResponse toDocumentReferenceBatch(
+  public static GeneratedDocumentCreationBatchResponseStrictContract toDocumentReferenceBatch(
       final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> responses) {
-    final var response = new DocumentCreationBatchResponse();
+    final var createdDocuments = new ArrayList<GeneratedDocumentReferenceStrictContract>();
+    final var failedDocuments =
+        new ArrayList<GeneratedDocumentCreationFailureDetailStrictContract>();
     responses.forEach(
         documentResponse ->
             documentResponse.ifRightOrLeft(
-                reference -> response.addCreatedDocumentsItem(toDocumentReference(reference)),
-                error -> response.addFailedDocumentsItem(toDocumentCreationFailure(error))));
-    return response;
+                reference -> createdDocuments.add(toDocumentReference(reference)),
+                error -> failedDocuments.add(toDocumentCreationFailure(error))));
+    return new GeneratedDocumentCreationBatchResponseStrictContract(
+        failedDocuments.isEmpty() ? null : failedDocuments,
+        createdDocuments.isEmpty() ? null : createdDocuments);
   }
 
-  public static DocumentReference toDocumentReference(final DocumentReferenceResponse response) {
+  public static GeneratedDocumentReferenceStrictContract toDocumentReference(
+      final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
+    final var customProperties =
+        internalMetadata.customProperties() != null
+            ? internalMetadata.customProperties()
+            : Map.<String, Object>of();
     final var externalMetadata =
-        new DocumentMetadataResponse()
-            .expiresAt(
-                Optional.ofNullable(internalMetadata.expiresAt())
-                    .map(Object::toString)
-                    .orElse(null))
-            .fileName(internalMetadata.fileName())
-            .size(internalMetadata.size())
-            .contentType(internalMetadata.contentType())
-            .processDefinitionId(internalMetadata.processDefinitionId())
-            .processInstanceKey(KeyUtil.keyToString(internalMetadata.processInstanceKey()));
-    Optional.ofNullable(internalMetadata.customProperties())
-        .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
-    return new DocumentReference()
-        .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
-        .documentId(response.documentId())
-        .storeId(response.storeId())
-        .contentHash(response.contentHash())
-        .metadata(externalMetadata);
+        new GeneratedDocumentMetadataResponseStrictContract(
+            internalMetadata.contentType(),
+            internalMetadata.fileName(),
+            Optional.ofNullable(internalMetadata.expiresAt()).map(Object::toString).orElse(null),
+            internalMetadata.size(),
+            internalMetadata.processDefinitionId(),
+            KeyUtil.keyToString(internalMetadata.processInstanceKey()),
+            customProperties);
+    return new GeneratedDocumentReferenceStrictContract(
+        "CAMUNDA",
+        response.storeId(),
+        response.documentId(),
+        response.contentHash(),
+        externalMetadata);
   }
 
-  private static DocumentCreationFailureDetail toDocumentCreationFailure(
+  private static GeneratedDocumentCreationFailureDetailStrictContract toDocumentCreationFailure(
       final DocumentErrorResponse error) {
-    final var detail = new DocumentCreationFailureDetail();
-    final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
-    detail.setDetail(defaultProblemDetail.getDetail());
-    detail.setFileName(error.request().metadata().fileName());
-    return detail;
+    final var problemDetail = mapDocumentErrorToProblem(error.error());
+    return new GeneratedDocumentCreationFailureDetailStrictContract(
+        error.request().metadata().fileName(),
+        problemDetail.getStatus(),
+        problemDetail.getTitle(),
+        problemDetail.getDetail());
   }
 
   private static ProblemDetail mapDocumentErrorToProblem(final ServiceException e) {
@@ -348,154 +354,165 @@ public final class ResponseMapper {
     return GatewayErrorMapper.createProblemDetail(status, detail, e.getStatus().name());
   }
 
-  public static io.camunda.gateway.protocol.model.DocumentLink toDocumentLinkResponse(
+  public static GeneratedDocumentLinkStrictContract toDocumentLinkResponse(
       final DocumentLink documentLink) {
-    final var externalDocumentLink = new io.camunda.gateway.protocol.model.DocumentLink();
-    externalDocumentLink.setExpiresAt(documentLink.expiresAt().toString());
-    externalDocumentLink.setUrl(documentLink.link());
-    return externalDocumentLink;
+    return new GeneratedDocumentLinkStrictContract(
+        documentLink.link(), documentLink.expiresAt().toString());
   }
 
-  public static DeploymentResult toDeployResourceResponse(final DeploymentRecord brokerResponse) {
-    final var response =
-        new DeploymentResult()
-            .deploymentKey(KeyUtil.keyToString(brokerResponse.getDeploymentKey()))
-            .tenantId(brokerResponse.getTenantId());
-    addDeployedProcess(response, brokerResponse.getProcessesMetadata());
-    addDeployedDecision(response, brokerResponse.decisionsMetadata());
-    addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
-    addDeployedForm(response, brokerResponse.formMetadata());
-    addDeployedResource(response, brokerResponse.resourceMetadata());
-    return response;
+  public static GeneratedDeploymentStrictContract toDeployResourceResponse(
+      final DeploymentRecord brokerResponse) {
+    final var deployments = new ArrayList<GeneratedDeploymentMetadataStrictContract>();
+    addDeployedProcess(deployments, brokerResponse.getProcessesMetadata());
+    addDeployedDecision(deployments, brokerResponse.decisionsMetadata());
+    addDeployedDecisionRequirements(deployments, brokerResponse.decisionRequirementsMetadata());
+    addDeployedForm(deployments, brokerResponse.formMetadata());
+    addDeployedResource(deployments, brokerResponse.resourceMetadata());
+    return new GeneratedDeploymentStrictContract(
+        KeyUtil.keyToString(brokerResponse.getDeploymentKey()),
+        brokerResponse.getTenantId(),
+        deployments);
   }
 
-  public static DeleteResourceResponse toDeleteResourceResponse(
+  public static GeneratedDeleteResourceResponseStrictContract toDeleteResourceResponse(
       final ResourceDeletionRecord brokerResponse) {
-    final var response =
-        new DeleteResourceResponse()
-            .resourceKey(KeyUtil.keyToString(brokerResponse.getResourceKey()));
-
+    GeneratedBatchOperationCreatedStrictContract batchOperation = null;
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
-      final var batchOperationCreatedResult =
-          new BatchOperationCreatedResult()
-              .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
-              .batchOperationType(
-                  BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
-      response.setBatchOperation(batchOperationCreatedResult);
+      batchOperation =
+          new GeneratedBatchOperationCreatedStrictContract(
+              KeyUtil.keyToString(brokerResponse.getBatchOperationKey()),
+              GeneratedBatchOperationTypeEnum.valueOf(
+                  brokerResponse.getBatchOperationType().name()));
     }
-    return response;
+    return new GeneratedDeleteResourceResponseStrictContract(
+        KeyUtil.keyToString(brokerResponse.getResourceKey()), batchOperation);
   }
 
-  public static ResourceResult toGetResourceResponse(final ResourceRecord resourceRecord) {
-    return new ResourceResult()
-        .resourceName(resourceRecord.getResourceName())
-        .version(resourceRecord.getVersion())
-        .versionTag(emptyToNull(resourceRecord.getVersionTag()))
-        .resourceId(resourceRecord.getResourceId())
-        .tenantId(resourceRecord.getTenantId())
-        .resourceKey(String.valueOf(resourceRecord.getResourceKey()));
+  public static GeneratedResourceStrictContract toGetResourceResponse(
+      final ResourceRecord resourceRecord) {
+    return new GeneratedResourceStrictContract(
+        resourceRecord.getResourceName(),
+        resourceRecord.getVersion(),
+        emptyToNull(resourceRecord.getVersionTag()),
+        resourceRecord.getResourceId(),
+        resourceRecord.getTenantId(),
+        String.valueOf(resourceRecord.getResourceKey()));
   }
 
   public static String toGetResourceContentResponse(final ResourceRecord resourceRecord) {
     return resourceRecord.getResourceProp();
   }
 
-  public static MessagePublicationResult toMessagePublicationResponse(
+  public static GeneratedMessagePublicationStrictContract toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
-    return new MessagePublicationResult()
-        .messageKey(KeyUtil.keyToString(brokerResponse.getKey()))
-        .tenantId(brokerResponse.getResponse().getTenantId());
+    return new GeneratedMessagePublicationStrictContract(
+        brokerResponse.getResponse().getTenantId(), KeyUtil.keyToString(brokerResponse.getKey()));
   }
 
   private static void addDeployedForm(
-      final DeploymentResult response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
+      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final ValueArray<FormMetadataRecord> formMetadataRecords) {
     formMetadataRecords.stream()
         .map(
             form ->
-                new DeploymentFormResult()
-                    .formId(form.getFormId())
-                    .version(form.getVersion())
-                    .formKey(KeyUtil.keyToString(form.getFormKey()))
-                    .resourceName(form.getResourceName())
-                    .tenantId(form.getTenantId()))
-        .map(deploymentForm -> new DeploymentMetadataResult().form(deploymentForm))
-        .forEach(response::addDeploymentsItem);
+                new GeneratedDeploymentMetadataStrictContract(
+                    null,
+                    null,
+                    null,
+                    new GeneratedDeploymentFormStrictContract(
+                        form.getFormId(),
+                        form.getVersion(),
+                        form.getResourceName(),
+                        form.getTenantId(),
+                        KeyUtil.keyToString(form.getFormKey())),
+                    null))
+        .forEach(deployments::add);
   }
 
   private static void addDeployedResource(
-      final DeploymentResult response,
+      final List<GeneratedDeploymentMetadataStrictContract> deployments,
       final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
     resourceMetadataRecords.stream()
         .map(
             resource ->
-                new DeploymentResourceResult()
-                    .resourceId(resource.getResourceId())
-                    .version(resource.getVersion())
-                    .resourceKey(KeyUtil.keyToString(resource.getResourceKey()))
-                    .resourceName(resource.getResourceName())
-                    .tenantId(resource.getTenantId()))
-        .map(deploymentForm -> new DeploymentMetadataResult().resource(deploymentForm))
-        .forEach(response::addDeploymentsItem);
+                new GeneratedDeploymentMetadataStrictContract(
+                    null,
+                    null,
+                    null,
+                    null,
+                    new GeneratedDeploymentResourceStrictContract(
+                        resource.getResourceId(),
+                        resource.getResourceName(),
+                        resource.getVersion(),
+                        resource.getTenantId(),
+                        KeyUtil.keyToString(resource.getResourceKey()))))
+        .forEach(deployments::add);
   }
 
   private static void addDeployedDecisionRequirements(
-      final DeploymentResult response,
+      final List<GeneratedDeploymentMetadataStrictContract> deployments,
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
     decisionRequirementsMetadataRecords.stream()
         .map(
             decisionRequirement ->
-                new DeploymentDecisionRequirementsResult()
-                    .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
-                    .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
-                    .tenantId(decisionRequirement.getTenantId())
-                    .decisionRequirementsKey(
-                        KeyUtil.keyToString(decisionRequirement.getDecisionRequirementsKey()))
-                    .resourceName(decisionRequirement.getResourceName()))
-        .map(
-            deploymentDecisionRequirement ->
-                new DeploymentMetadataResult().decisionRequirements(deploymentDecisionRequirement))
-        .forEach(response::addDeploymentsItem);
+                new GeneratedDeploymentMetadataStrictContract(
+                    null,
+                    null,
+                    new GeneratedDeploymentDecisionRequirementsStrictContract(
+                        decisionRequirement.getDecisionRequirementsId(),
+                        decisionRequirement.getDecisionRequirementsName(),
+                        decisionRequirement.getDecisionRequirementsVersion(),
+                        decisionRequirement.getResourceName(),
+                        decisionRequirement.getTenantId(),
+                        KeyUtil.keyToString(decisionRequirement.getDecisionRequirementsKey())),
+                    null,
+                    null))
+        .forEach(deployments::add);
   }
 
   private static void addDeployedDecision(
-      final DeploymentResult response, final ValueArray<DecisionRecord> decisionRecords) {
+      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final ValueArray<DecisionRecord> decisionRecords) {
     decisionRecords.stream()
         .map(
             decision ->
-                new DeploymentDecisionResult()
-                    .decisionDefinitionId(decision.getDecisionId())
-                    .version(decision.getVersion())
-                    .decisionDefinitionKey(KeyUtil.keyToString(decision.getDecisionKey()))
-                    .name(decision.getDecisionName())
-                    .tenantId(decision.getTenantId())
-                    .decisionRequirementsId(decision.getDecisionRequirementsId())
-                    .decisionRequirementsKey(
-                        KeyUtil.keyToString(decision.getDecisionRequirementsKey())))
-        .map(
-            deploymentDecision ->
-                new DeploymentMetadataResult().decisionDefinition(deploymentDecision))
-        .forEach(response::addDeploymentsItem);
+                new GeneratedDeploymentMetadataStrictContract(
+                    null,
+                    new GeneratedDeploymentDecisionStrictContract(
+                        decision.getDecisionId(),
+                        decision.getVersion(),
+                        decision.getDecisionName(),
+                        decision.getTenantId(),
+                        decision.getDecisionRequirementsId(),
+                        KeyUtil.keyToString(decision.getDecisionKey()),
+                        KeyUtil.keyToString(decision.getDecisionRequirementsKey())),
+                    null,
+                    null,
+                    null))
+        .forEach(deployments::add);
   }
 
   private static void addDeployedProcess(
-      final DeploymentResult response, final List<ProcessMetadataValue> processesMetadata) {
+      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final List<ProcessMetadataValue> processesMetadata) {
     processesMetadata.stream()
         .map(
             process ->
-                new DeploymentProcessResult()
-                    .processDefinitionId(process.getBpmnProcessId())
-                    .processDefinitionVersion(process.getVersion())
-                    .processDefinitionKey(KeyUtil.keyToString(process.getProcessDefinitionKey()))
-                    .tenantId(process.getTenantId())
-                    .resourceName(process.getResourceName()))
-        .map(
-            deploymentProcess ->
-                new DeploymentMetadataResult().processDefinition(deploymentProcess))
-        .forEach(response::addDeploymentsItem);
+                new GeneratedDeploymentMetadataStrictContract(
+                    new GeneratedDeploymentProcessStrictContract(
+                        process.getBpmnProcessId(),
+                        process.getVersion(),
+                        process.getResourceName(),
+                        process.getTenantId(),
+                        KeyUtil.keyToString(process.getProcessDefinitionKey())),
+                    null,
+                    null,
+                    null,
+                    null))
+        .forEach(deployments::add);
   }
 
-  public static CreateProcessInstanceResult toCreateProcessInstanceResponse(
+  public static GeneratedCreateProcessInstanceStrictContract toCreateProcessInstanceResponse(
       final ProcessInstanceCreationRecord brokerResponse) {
     return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
@@ -508,8 +525,8 @@ public final class ResponseMapper {
         brokerResponse.getBusinessId());
   }
 
-  public static CreateProcessInstanceResult toCreateProcessInstanceWithResultResponse(
-      final ProcessInstanceResultRecord brokerResponse) {
+  public static GeneratedCreateProcessInstanceStrictContract
+      toCreateProcessInstanceWithResultResponse(final ProcessInstanceResultRecord brokerResponse) {
     return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
         brokerResponse.getBpmnProcessId(),
@@ -521,7 +538,7 @@ public final class ResponseMapper {
         brokerResponse.getBusinessId());
   }
 
-  private static CreateProcessInstanceResult buildCreateProcessInstanceResponse(
+  private static GeneratedCreateProcessInstanceStrictContract buildCreateProcessInstanceResponse(
       final Long processDefinitionKey,
       final String bpmnProcessId,
       final Integer version,
@@ -530,245 +547,207 @@ public final class ResponseMapper {
       final Map<String, Object> variables,
       final Set<String> tags,
       final String businessId) {
-    final var response =
-        new CreateProcessInstanceResult()
-            .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
-            .processDefinitionId(bpmnProcessId)
-            .processDefinitionVersion(version)
-            .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
-            .tenantId(tenantId)
-            // defaults to an empty string on the originating record
-            // the conversion to null ensures response contract compliance
-            .businessId(emptyToNull(businessId));
-    if (variables != null) {
-      response.variables(variables);
-    }
-    if (tags != null) {
-      response.setTags(tags);
-    }
-    return response;
+    return new GeneratedCreateProcessInstanceStrictContract(
+        bpmnProcessId,
+        version,
+        tenantId,
+        variables != null ? variables : Map.of(),
+        KeyUtil.keyToString(processDefinitionKey),
+        KeyUtil.keyToString(processInstanceKey),
+        tags != null ? tags : Set.of(),
+        emptyToNull(businessId));
   }
 
-  public static BatchOperationCreatedResult toBatchOperationCreatedWithResultResponse(
-      final BatchOperationCreationRecord brokerResponse) {
-    return new BatchOperationCreatedResult()
-        .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
-        .batchOperationType(
-            BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
+  public static GeneratedBatchOperationCreatedStrictContract
+      toBatchOperationCreatedWithResultResponse(final BatchOperationCreationRecord brokerResponse) {
+    return new GeneratedBatchOperationCreatedStrictContract(
+        KeyUtil.keyToString(brokerResponse.getBatchOperationKey()),
+        GeneratedBatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
   }
 
-  public static SignalBroadcastResult toSignalBroadcastResponse(
+  public static GeneratedSignalBroadcastStrictContract toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
-    return new SignalBroadcastResult()
-        .signalKey(KeyUtil.keyToString(brokerResponse.getKey()))
-        .tenantId(brokerResponse.getResponse().getTenantId());
+    return new GeneratedSignalBroadcastStrictContract(
+        brokerResponse.getResponse().getTenantId(), KeyUtil.keyToString(brokerResponse.getKey()));
   }
 
-  public static EvaluateConditionalResult toConditionalEvaluationResponse(
+  public static GeneratedEvaluateConditionalStrictContract toConditionalEvaluationResponse(
       final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
     final var response = brokerResponse.getResponse();
     final var processInstances =
         response.getStartedProcessInstances().stream()
             .map(
                 instance ->
-                    new ProcessInstanceReference()
-                        .processDefinitionKey(
-                            KeyUtil.keyToString(instance.getProcessDefinitionKey()))
-                        .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
+                    new GeneratedProcessInstanceReferenceStrictContract(
+                        KeyUtil.keyToString(instance.getProcessDefinitionKey()),
+                        KeyUtil.keyToString(instance.getProcessInstanceKey())))
             .toList();
 
-    return new EvaluateConditionalResult()
-        .conditionalEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()))
-        .tenantId(response.getTenantId())
-        .processInstances(processInstances);
+    return new GeneratedEvaluateConditionalStrictContract(
+        KeyUtil.keyToString(brokerResponse.getKey()), response.getTenantId(), processInstances);
   }
 
-  public static AuthorizationCreateResult toAuthorizationCreateResponse(
+  public static GeneratedAuthorizationCreateStrictContract toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    return new AuthorizationCreateResult()
-        .authorizationKey(KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
+    return new GeneratedAuthorizationCreateStrictContract(
+        KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
   }
 
-  public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
-    return new UserCreateResult()
-        .username(userRecord.getUsername())
-        .email(userRecord.getEmail())
-        .name(userRecord.getName());
+  public static GeneratedUserCreateStrictContract toUserCreateResponse(
+      final UserRecord userRecord) {
+    return new GeneratedUserCreateStrictContract(
+        userRecord.getUsername(), userRecord.getName(), userRecord.getEmail());
   }
 
-  public static UserUpdateResult toUserUpdateResponse(final UserRecord userRecord) {
-    return new UserUpdateResult()
-        .username(userRecord.getUsername())
-        .email(userRecord.getEmail())
-        .name(userRecord.getName());
+  public static GeneratedUserUpdateStrictContract toUserUpdateResponse(
+      final UserRecord userRecord) {
+    return new GeneratedUserUpdateStrictContract(
+        userRecord.getUsername(), userRecord.getName(), userRecord.getEmail());
   }
 
-  public static RoleCreateResult toRoleCreateResponse(final RoleRecord roleRecord) {
-    return new RoleCreateResult()
-        .roleId(roleRecord.getRoleId())
-        .name(roleRecord.getName())
-        .description(roleRecord.getDescription());
+  public static GeneratedRoleCreateStrictContract toRoleCreateResponse(
+      final RoleRecord roleRecord) {
+    return new GeneratedRoleCreateStrictContract(
+        roleRecord.getRoleId(), roleRecord.getName(), roleRecord.getDescription());
   }
 
-  public static RoleUpdateResult toRoleUpdateResponse(final RoleRecord roleRecord) {
-    return new RoleUpdateResult()
-        .roleId(roleRecord.getRoleId())
-        .description(roleRecord.getDescription())
-        .name(roleRecord.getName());
+  public static GeneratedRoleUpdateStrictContract toRoleUpdateResponse(
+      final RoleRecord roleRecord) {
+    return new GeneratedRoleUpdateStrictContract(
+        roleRecord.getName(), roleRecord.getDescription(), roleRecord.getRoleId());
   }
 
-  public static GroupCreateResult toGroupCreateResponse(final GroupRecord groupRecord) {
-    return new GroupCreateResult()
-        .name(groupRecord.getName())
-        .groupId(groupRecord.getGroupId())
-        .description(groupRecord.getDescription());
+  public static GeneratedGroupCreateStrictContract toGroupCreateResponse(
+      final GroupRecord groupRecord) {
+    return new GeneratedGroupCreateStrictContract(
+        groupRecord.getGroupId(), groupRecord.getName(), groupRecord.getDescription());
   }
 
-  public static GroupUpdateResult toGroupUpdateResponse(final GroupRecord groupRecord) {
-    return new GroupUpdateResult()
-        .groupId(groupRecord.getGroupId())
-        .description(groupRecord.getDescription())
-        .name(groupRecord.getName());
+  public static GeneratedGroupUpdateStrictContract toGroupUpdateResponse(
+      final GroupRecord groupRecord) {
+    return new GeneratedGroupUpdateStrictContract(
+        groupRecord.getGroupId(), groupRecord.getName(), groupRecord.getDescription());
   }
 
-  public static TenantCreateResult toTenantCreateResponse(final TenantRecord record) {
-    return new TenantCreateResult()
-        .tenantId(record.getTenantId())
-        .name(record.getName())
-        .description(record.getDescription());
+  public static GeneratedTenantCreateStrictContract toTenantCreateResponse(
+      final TenantRecord record) {
+    return new GeneratedTenantCreateStrictContract(
+        record.getTenantId(), record.getName(), record.getDescription());
   }
 
-  public static TenantUpdateResult toTenantUpdateResponse(final TenantRecord record) {
-    return new TenantUpdateResult()
-        .tenantId(record.getTenantId())
-        .name(record.getName())
-        .description(record.getDescription());
+  public static GeneratedTenantUpdateStrictContract toTenantUpdateResponse(
+      final TenantRecord record) {
+    return new GeneratedTenantUpdateStrictContract(
+        record.getTenantId(), record.getName(), record.getDescription());
   }
 
-  public static MappingRuleCreateResult toMappingRuleCreateResponse(
+  public static GeneratedMappingRuleCreateStrictContract toMappingRuleCreateResponse(
       final MappingRuleRecord record) {
-    return new MappingRuleCreateResult()
-        .claimName(record.getClaimName())
-        .claimValue(record.getClaimValue())
-        .mappingRuleId(record.getMappingRuleId())
-        .name(record.getName());
+    return new GeneratedMappingRuleCreateStrictContract(
+        record.getClaimName(), record.getClaimValue(), record.getName(), record.getMappingRuleId());
   }
 
-  public static MappingRuleUpdateResult toMappingRuleUpdateResponse(
+  public static GeneratedMappingRuleUpdateStrictContract toMappingRuleUpdateResponse(
       final MappingRuleRecord record) {
-    return new MappingRuleUpdateResult()
-        .claimName(record.getClaimName())
-        .claimValue(record.getClaimValue())
-        .mappingRuleId(record.getMappingRuleId())
-        .name(record.getName());
+    return new GeneratedMappingRuleUpdateStrictContract(
+        record.getClaimName(), record.getClaimValue(), record.getName(), record.getMappingRuleId());
   }
 
-  public static EvaluateDecisionResult toEvaluateDecisionResponse(
+  public static GeneratedEvaluateDecisionStrictContract toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
-    final var decisionEvaluationRecord = brokerResponse.getResponse();
-    final var response =
-        new EvaluateDecisionResult()
-            .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
-            .decisionDefinitionKey(KeyUtil.keyToString(decisionEvaluationRecord.getDecisionKey()))
-            .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
-            .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
-            .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
-            .decisionRequirementsKey(
-                KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
-            .output(decisionEvaluationRecord.getDecisionOutput())
-            // these optional fields default to an empty string on the originating record
-            // the conversion to null ensures response contract compliance
-            .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
-            .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
-            .tenantId(decisionEvaluationRecord.getTenantId())
-            .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
-            .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
-
-    buildEvaluatedDecisions(decisionEvaluationRecord, response);
-    return response;
+    final var record = brokerResponse.getResponse();
+    return new GeneratedEvaluateDecisionStrictContract(
+        record.getDecisionId(),
+        KeyUtil.keyToString(record.getDecisionKey()),
+        record.getDecisionName(),
+        record.getDecisionVersion(),
+        KeyUtil.keyToString(brokerResponse.getKey()),
+        KeyUtil.keyToString(brokerResponse.getKey()),
+        record.getDecisionRequirementsId(),
+        KeyUtil.keyToString(record.getDecisionRequirementsKey()),
+        buildEvaluatedDecisions(record),
+        emptyToNull(record.getFailedDecisionId()),
+        emptyToNull(record.getEvaluationFailureMessage()),
+        record.getDecisionOutput(),
+        record.getTenantId());
   }
 
-  private static void buildEvaluatedDecisions(
-      final DecisionEvaluationRecord decisionEvaluationRecord,
-      final EvaluateDecisionResult response) {
-    decisionEvaluationRecord.getEvaluatedDecisions().stream()
+  private static List<GeneratedEvaluatedDecisionStrictContract> buildEvaluatedDecisions(
+      final DecisionEvaluationRecord decisionEvaluationRecord) {
+    return decisionEvaluationRecord.getEvaluatedDecisions().stream()
         .map(
             evaluatedDecision ->
-                new EvaluatedDecisionResult()
-                    .decisionDefinitionKey(KeyUtil.keyToString(evaluatedDecision.getDecisionKey()))
-                    .decisionDefinitionId(evaluatedDecision.getDecisionId())
-                    .decisionEvaluationInstanceKey(
-                        evaluatedDecision.getDecisionEvaluationInstanceKey())
-                    .decisionDefinitionName(evaluatedDecision.getDecisionName())
-                    .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
-                    .decisionDefinitionType(evaluatedDecision.getDecisionType())
-                    .output(evaluatedDecision.getDecisionOutput())
-                    .tenantId(evaluatedDecision.getTenantId())
-                    .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
-                    .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules())))
-        .forEach(response::addEvaluatedDecisionsItem);
+                new GeneratedEvaluatedDecisionStrictContract(
+                    evaluatedDecision.getDecisionId(),
+                    evaluatedDecision.getDecisionName(),
+                    evaluatedDecision.getDecisionVersion(),
+                    evaluatedDecision.getDecisionType(),
+                    evaluatedDecision.getDecisionOutput(),
+                    evaluatedDecision.getTenantId(),
+                    buildMatchedRules(evaluatedDecision.getMatchedRules()),
+                    buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()),
+                    KeyUtil.keyToString(evaluatedDecision.getDecisionKey()),
+                    evaluatedDecision.getDecisionEvaluationInstanceKey()))
+        .toList();
   }
 
-  private static List<MatchedDecisionRuleItem> buildMatchedRules(
+  private static List<GeneratedMatchedDecisionRuleItemStrictContract> buildMatchedRules(
       final List<MatchedRuleValue> matchedRuleValues) {
     return matchedRuleValues.stream()
         .map(
             matchedRuleValue ->
-                new MatchedDecisionRuleItem()
-                    .ruleId(matchedRuleValue.getRuleId())
-                    .ruleIndex(matchedRuleValue.getRuleIndex())
-                    .evaluatedOutputs(
-                        buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
+                new GeneratedMatchedDecisionRuleItemStrictContract(
+                    matchedRuleValue.getRuleId(),
+                    matchedRuleValue.getRuleIndex(),
+                    buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
         .toList();
   }
 
-  private static List<EvaluatedDecisionOutputItem> buildEvaluatedOutputs(
+  private static List<GeneratedEvaluatedDecisionOutputItemStrictContract> buildEvaluatedOutputs(
       final List<EvaluatedOutputValue> evaluatedOutputs) {
     return evaluatedOutputs.stream()
         .map(
             evaluatedOutput ->
-                new EvaluatedDecisionOutputItem()
-                    .outputId(evaluatedOutput.getOutputId())
-                    .outputName(evaluatedOutput.getOutputName())
-                    .outputValue(evaluatedOutput.getOutputValue()))
+                new GeneratedEvaluatedDecisionOutputItemStrictContract(
+                    evaluatedOutput.getOutputId(),
+                    evaluatedOutput.getOutputName(),
+                    evaluatedOutput.getOutputValue(),
+                    null,
+                    null))
         .toList();
   }
 
-  private static List<EvaluatedDecisionInputItem> buildEvaluatedInputs(
+  private static List<GeneratedEvaluatedDecisionInputItemStrictContract> buildEvaluatedInputs(
       final List<EvaluatedInputValue> inputValues) {
     return inputValues.stream()
         .map(
             evaluatedInputValue ->
-                new EvaluatedDecisionInputItem()
-                    .inputId(evaluatedInputValue.getInputId())
-                    .inputName(evaluatedInputValue.getInputName())
-                    .inputValue(evaluatedInputValue.getInputValue()))
+                new GeneratedEvaluatedDecisionInputItemStrictContract(
+                    evaluatedInputValue.getInputId(),
+                    evaluatedInputValue.getInputName(),
+                    evaluatedInputValue.getInputValue()))
         .toList();
   }
 
-  public static ClusterVariableResult toClusterVariableResponse(
+  public static GeneratedClusterVariableStrictContract toClusterVariableResponse(
       final ClusterVariableRecord clusterVariableRecord) {
-    final var response =
-        new ClusterVariableResult()
-            .name(clusterVariableRecord.getName())
-            .value(clusterVariableRecord.getValue());
-    if (clusterVariableRecord.isTenantScoped()) {
-      response.scope(ClusterVariableScopeEnum.TENANT).tenantId(clusterVariableRecord.getTenantId());
-    } else {
-      response.scope(ClusterVariableScopeEnum.GLOBAL);
-    }
-    return response;
+    return new GeneratedClusterVariableStrictContract(
+        clusterVariableRecord.getName(),
+        clusterVariableRecord.isTenantScoped()
+            ? GeneratedClusterVariableScopeEnum.TENANT
+            : GeneratedClusterVariableScopeEnum.GLOBAL,
+        clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null,
+        clusterVariableRecord.getValue());
   }
 
-  public static ExpressionEvaluationResult toExpressionEvaluationResult(
+  public static GeneratedExpressionEvaluationStrictContract toExpressionEvaluationResult(
       final ExpressionRecord expressionRecord) {
-    return new ExpressionEvaluationResult()
-        .expression(expressionRecord.getExpression())
-        .result(expressionRecord.getResultValue())
-        .warnings(
-            expressionRecord.getWarnings().stream()
-                .map(warning -> new ExpressionEvaluationWarningItem().message(warning))
-                .toList());
+    return new GeneratedExpressionEvaluationStrictContract(
+        expressionRecord.getExpression(),
+        expressionRecord.getResultValue(),
+        expressionRecord.getWarnings().stream()
+            .map(GeneratedExpressionEvaluationWarningItemStrictContract::new)
+            .toList());
   }
 
   public static GeneratedTopologyResponseStrictContract toTopologyResponse(
