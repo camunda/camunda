@@ -81,14 +81,6 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     return self();
   }
 
-  private static Path createTempDir() {
-    try {
-      return Files.createTempDirectory("camunda-config");
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   public static DockerImageName getBrokerImageName() {
     return DockerImageName.parse(getDefaultImage()).withTag(getDefaultVersion());
   }
@@ -111,10 +103,6 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
   public static String getDefaultVersion() {
     return TestcontainersConfiguration.getInstance()
         .getEnvVarOrProperty(CAMUNDA_CONTAINER_VERSION_PROPERTY, DEFAULT_CAMUNDA_VERSION);
-  }
-
-  public DockerImageName getDefaultDockerImage() {
-    return DockerImageName.parse(getDefaultImage()).withTag(getDefaultVersion());
   }
 
   /**
@@ -234,8 +222,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
       final var jarPath = resolveJar(RecordingExporter.class);
 
       return withCopyFileToContainer(
-              MountableFile.forHostPath(jarPath),
-              "/tmp/recording-exporter.jar")
+              MountableFile.forHostPath(jarPath), "/tmp/recording-exporter.jar")
           .withUnifiedConfig(
               cfg -> {
                 final var exporter =
@@ -265,7 +252,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     void applyDefaultConfiguration() {
       withNetwork(Network.SHARED)
           .withTopologyCheck(newDefaultTopologyCheck())
-          .withEnv("SPRING_PROFILES_ACTIVE", "gateway, standalone")
+          .withEnv("SPRING_PROFILES_ACTIVE", "gateway,standalone")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
           .addExposedPorts(
@@ -277,19 +264,16 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
 
     @Override
     public GatewayContainer withTopologyCheck(final ZeebeTopologyWaitStrategy topologyCheck) {
-      return waitingFor(newDefaultWaitStrategy(topologyCheck));
+      return waitingFor(
+          new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
+              .withStrategy(new HostPortWaitStrategy())
+              .withStrategy(topologyCheck)
+              .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT));
     }
 
     @Override
     public GatewayContainer withoutTopologyCheck() {
       return waitingFor(new HostPortWaitStrategy().withStartupTimeout(DEFAULT_STARTUP_TIMEOUT));
-    }
-
-    private WaitAllStrategy newDefaultWaitStrategy(final ZeebeTopologyWaitStrategy topologyCheck) {
-      return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
-          .withStrategy(new HostPortWaitStrategy())
-          .withStrategy(topologyCheck)
-          .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
     }
 
     public GatewayContainer withReadOnlyFileSystem() {
@@ -312,11 +296,9 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     void applyDefaultConfiguration() {
       switch (webApp) {
         case ALL ->
-            withEnv(
-                "SPRING_PROFILES_ACTIVE", "operate, tasklist, identity, admin,consolidated-auth");
-        case OPERATE -> withEnv("SPRING_PROFILES_ACTIVE", "operate, standalone,consolidated-auth");
-        case TASKLIST ->
-            withEnv("SPRING_PROFILES_ACTIVE", "tasklist, standalone,consolidated-auth");
+            withEnv("SPRING_PROFILES_ACTIVE", "operate,tasklist,identity,admin,consolidated-auth");
+        case OPERATE -> withEnv("SPRING_PROFILES_ACTIVE", "operate,standalone,consolidated-auth");
+        case TASKLIST -> withEnv("SPRING_PROFILES_ACTIVE", "tasklist,standalone,consolidated-auth");
         default -> throw new IllegalStateException("Unexpected value: " + webApp);
       }
     }

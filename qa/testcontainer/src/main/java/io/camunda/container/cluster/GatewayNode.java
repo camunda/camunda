@@ -139,14 +139,14 @@ public interface GatewayNode<T extends GenericContainer<T> & GatewayNode<T>>
    *     .build();
    * }</pre>
    *
-   * @return internally accessible REST API address
+   * @return internally accessible gRPC API address
    */
   default URI getInternalGrpcAddress() {
     return getInternalGrpcAddress("http");
   }
 
   /**
-   * Returns an address accessible from within the container's network for the REST API. Primarily
+   * Returns an address accessible from within the container's network for the gRPC API. Primarily
    * meant to be used by clients.
    *
    * <p>Use this variant if you need to specify a different scheme, e.g. HTTPS.
@@ -160,7 +160,7 @@ public interface GatewayNode<T extends GenericContainer<T> & GatewayNode<T>>
    * }</pre>
    *
    * @param scheme the expected scheme (e.g. HTTP, HTTPS)
-   * @return internally accessible REST API address
+   * @return internally accessible gRPC API address
    */
   default URI getInternalGrpcAddress(final String scheme) {
     final int port = CamundaPort.GATEWAY_GRPC.getPort();

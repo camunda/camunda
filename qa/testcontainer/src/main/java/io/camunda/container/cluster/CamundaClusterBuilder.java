@@ -235,10 +235,10 @@ public class CamundaClusterBuilder {
   }
 
   /**
-   * Sets the docker image for separate gateways. This could be used to create a test against
-   * specific Zeebe version.
+   * Sets the docker image for separate gateways. This could be used to create a test against a
+   * specific Camunda version.
    *
-   * @param gatewayImageName the docker image name of the Zeebe
+   * @param gatewayImageName the docker image name of the Camunda distribution
    * @return this builder instance for chaining
    */
   public CamundaClusterBuilder withGatewayImage(final DockerImageName gatewayImageName) {
@@ -248,9 +248,9 @@ public class CamundaClusterBuilder {
 
   /**
    * Sets the docker image for brokers with embedded gateways. This could be used to create a test
-   * against specific Zeebe version.
+   * against a specific Camunda version.
    *
-   * @param brokerImageName the docker image name of the Zeebe
+   * @param brokerImageName the docker image name of the Camunda distribution
    * @return this builder instance for chaining
    */
   public CamundaClusterBuilder withBrokerImage(final DockerImageName brokerImageName) {
@@ -260,9 +260,9 @@ public class CamundaClusterBuilder {
 
   /**
    * Sets the docker image for brokers with embedded gateways and separate gateways. This could be
-   * used to create a test against specific Zeebe version.
+   * used to create a test against a specific Camunda version.
    *
-   * @param imageName the docker image name of the Zeebe
+   * @param imageName the docker image name of the Camunda distribution
    * @return this builder instance for chaining
    */
   public CamundaClusterBuilder withImage(final DockerImageName imageName) {
@@ -357,7 +357,7 @@ public class CamundaClusterBuilder {
   }
 
   /**
-   * Builds a new Zeebe cluster. Will create {@link #brokersCount} brokers (accessible later via
+   * Builds a new Camunda cluster. Will create {@link #brokersCount} brokers (accessible later via
    * {@link CamundaCluster#getBrokers()}) and {@link #gatewaysCount} standalone gateways (accessible
    * later via {@link CamundaCluster#getGateways()}).
    *
@@ -366,7 +366,7 @@ public class CamundaClusterBuilder {
    * CamundaCluster#getGateways()} will also include them, along with any other additional
    * standalone gateway.
    *
-   * <p>NOTE: as a rule of thumb, we had one minute to the startup timeout for each node in the
+   * <p>NOTE: as a rule of thumb, we add one minute to the startup timeout for each node in the
    * cluster. For example, if you have 2 gateways and 3 brokers, each container will have a maximum
    * startup time of 5 minutes. You can still change that by configuring the containers manually
    * after building but before starting the cluster.
@@ -374,7 +374,7 @@ public class CamundaClusterBuilder {
    * <p>For standalone gateways, if {@link #brokersCount} is at least one, then a random broker is
    * picked as the contact point for all gateways.
    *
-   * @return a new Zeebe cluster
+   * @return a new Camunda cluster
    */
   public CamundaCluster build() {
     gateways.clear();

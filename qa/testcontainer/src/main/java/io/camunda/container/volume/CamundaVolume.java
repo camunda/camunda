@@ -44,21 +44,23 @@ public class CamundaVolume implements AutoCloseable {
     return name;
   }
 
+  /**
+   * Creates a new managed Docker volume with Testcontainers resource reaper labels.
+   *
+   * @return a new managed volume
+   */
   public static CamundaVolume newCamundaVolume() {
-    return newCamundaVolume(UnaryOperator.identity());
+    return newVolume();
   }
 
+  /**
+   * Creates a new managed Docker volume with Testcontainers resource reaper labels.
+   *
+   * @param configurator a function which can optionally configure more of the volume
+   * @return a new managed volume
+   */
   public static CamundaVolume newCamundaVolume(final UnaryOperator<CreateVolumeCmd> configurator) {
-    final DockerClient client = DockerClientFactory.instance().client();
-    final Map<String, String> labels = new HashMap<>();
-    labels.putAll(DockerClientFactory.DEFAULT_LABELS);
-    //noinspection deprecation
-    labels.putAll(ResourceReaper.instance().getLabels());
-
-    try (final CreateVolumeCmd command = client.createVolumeCmd().withLabels(labels)) {
-      final CreateVolumeResponse response = configurator.apply(command).exec();
-      return new CamundaVolume(response.getName(), client);
-    }
+    return newVolume(configurator);
   }
 
   /**
@@ -92,10 +94,14 @@ public class CamundaVolume implements AutoCloseable {
   public void attachVolumeToContainer(final CreateContainerCmd command, final String mountPath) {
     final HostConfig hostConfig = Objects.requireNonNull(command.getHostConfig());
     final Bind[] binds = hostConfig.getBinds();
-    final Bind[] newBinds = new Bind[binds.length + 1];
-
-    System.arraycopy(binds, 0, newBinds, 0, binds.length);
-    newBinds[binds.length] = asBind(mountPath);
+    final Bind[] newBinds;
+    if (binds == null) {
+      newBinds = new Bind[] {asBind(mountPath)};
+    } else {
+      newBinds = new Bind[binds.length + 1];
+      System.arraycopy(binds, 0, newBinds, 0, binds.length);
+      newBinds[binds.length] = asBind(mountPath);
+    }
 
     command.withHostConfig(hostConfig.withBinds(newBinds));
   }
