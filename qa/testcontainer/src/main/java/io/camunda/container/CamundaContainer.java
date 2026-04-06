@@ -47,6 +47,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
   private static final int DEBUG_PORT = 5005;
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
 
+  protected boolean readOnlyContainer = false;
   protected final ExtendedConfigurationBuilder configurationBuilder;
 
   protected CamundaContainer(final DockerImageName image) {
@@ -59,7 +60,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     // For rolling updates the config is already mounted need to skip
     final boolean alreadyMounted =
         getBinds().stream().anyMatch(b -> b.getVolume().getPath().equals(CONFIG_PATH));
-    if (!alreadyMounted) {
+    if (!alreadyMounted && !readOnlyContainer) {
       final var configYaml = configurationBuilder.exportConfigAsString();
       withCopyToContainer(Transferable.of(configYaml), CONFIG_PATH)
           .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH);
@@ -246,6 +247,11 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
                 exporter.setJarPath("/tmp/recording-exporter.jar");
               });
     }
+
+    public BrokerContainer withReadOnlyFileSystem() {
+      readOnlyContainer = true;
+      return this;
+    }
   }
 
   public static final class GatewayContainer extends CamundaContainer<GatewayContainer>
@@ -286,6 +292,11 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
           .withStrategy(topologyCheck)
           .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
     }
+
+    public GatewayContainer withReadOnlyFileSystem() {
+      readOnlyContainer = true;
+      return this;
+    }
   }
 
   public static final class WebAppContainer extends CamundaContainer<WebAppContainer> {
@@ -309,6 +320,11 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
             withEnv("SPRING_PROFILES_ACTIVE", "tasklist, standalone,consolidated-auth");
         default -> throw new IllegalStateException("Unexpected value: " + webApp);
       }
+    }
+
+    public WebAppContainer withReadOnlyFileSystem() {
+      readOnlyContainer = true;
+      return this;
     }
 
     public enum WebApp {
