@@ -17,6 +17,7 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedActivatedJobStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationCreateStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationCreatedStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
@@ -46,6 +47,9 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpres
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpressionEvaluationWarningItemStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobListenerEventTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMatchedDecisionRuleItemStrictContract;
@@ -61,12 +65,9 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenant
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskPropertiesStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.ActivatedJobResult;
-import io.camunda.gateway.protocol.model.JobKindEnum;
-import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -164,23 +165,21 @@ public final class ResponseMapper {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
-  public static JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult>
-      toActivateJobsResponse(
-          final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
+  public static JobActivationResult<GeneratedJobActivationStrictContract> toActivateJobsResponse(
+      final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
     long currentResponseSize = 0L;
-    final io.camunda.gateway.protocol.model.JobActivationResult response =
-        new io.camunda.gateway.protocol.model.JobActivationResult();
 
-    final List<ActivatedJobResult> sizeExceedingJobs = new ArrayList<>();
-    final List<ActivatedJobResult> responseJobs = new ArrayList<>();
+    final List<GeneratedActivatedJobStrictContract> sizeExceedingJobs = new ArrayList<>();
+    final List<GeneratedActivatedJobStrictContract> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJobResult activatedJob = toActivatedJob(jobKey.getValue(), job);
+      final GeneratedActivatedJobStrictContract activatedJob =
+          toActivatedJob(jobKey.getValue(), job);
 
       // This is the message size of the message from the broker, not the size of the REST message
       final int activatedJobSize = job.getLength();
@@ -192,66 +191,58 @@ public final class ResponseMapper {
       }
     }
 
-    response.setJobs(responseJobs);
-
-    return new RestJobActivationResult(response, sizeExceedingJobs);
+    return new RestJobActivationResult(
+        new GeneratedJobActivationStrictContract(responseJobs), sizeExceedingJobs);
   }
 
-  private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
-    final var result =
-        new ActivatedJobResult()
-            .jobKey(KeyUtil.keyToString(jobKey))
-            .type(job.getType())
-            .processDefinitionId(job.getBpmnProcessId())
-            .elementId(job.getElementId())
-            .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
-            .processDefinitionVersion(job.getProcessDefinitionVersion())
-            .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
-            .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
-            .worker(bufferAsString(job.getWorkerBuffer()))
-            .retries(job.getRetries())
-            .deadline(job.getDeadline())
-            .variables(job.getVariables())
-            .customHeaders(job.getCustomHeadersObjectMap())
-            .userTask(toUserTaskProperties(job))
-            .tenantId(job.getTenantId())
-            .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
-            .listenerEventType(
-                EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
-            .tags(job.getTags());
-
-    // rootProcessInstanceKey is only set for process instances created after version 8.9
+  static GeneratedActivatedJobStrictContract toActivatedJob(
+      final long jobKey, final JobRecord job) {
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      result.rootProcessInstanceKey(KeyUtil.keyToString(rootProcessInstanceKey));
-    }
-
-    return result;
+    return new GeneratedActivatedJobStrictContract(
+        job.getType(),
+        job.getBpmnProcessId(),
+        job.getProcessDefinitionVersion(),
+        job.getElementId(),
+        job.getCustomHeadersObjectMap(),
+        bufferAsString(job.getWorkerBuffer()),
+        job.getRetries(),
+        job.getDeadline(),
+        job.getVariables(),
+        job.getTenantId(),
+        KeyUtil.keyToString(jobKey),
+        KeyUtil.keyToString(job.getProcessInstanceKey()),
+        KeyUtil.keyToString(job.getProcessDefinitionKey()),
+        KeyUtil.keyToString(job.getElementInstanceKey()),
+        EnumUtil.convert(job.getJobKind(), GeneratedJobKindEnum.class),
+        EnumUtil.convert(job.getJobListenerEventType(), GeneratedJobListenerEventTypeEnum.class),
+        toUserTaskProperties(job),
+        job.getTags(),
+        rootProcessInstanceKey > 0 ? KeyUtil.keyToString(rootProcessInstanceKey) : null);
   }
 
-  private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
+  private static GeneratedUserTaskPropertiesStrictContract toUserTaskProperties(
+      final JobRecord job) {
     if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
 
     final var headers = job.getCustomHeaders();
-    final var props = new UserTaskProperties();
+    final var action = headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME);
+    if (action == null) {
+      return null;
+    }
 
-    props.setAction(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME));
-    props.setAssignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME));
-    props.setCandidateGroups(
-        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)));
-    props.setCandidateUsers(
-        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)));
-    props.setChangedAttributes(
-        mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)));
-    props.setDueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME));
-    props.setFollowUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME));
-    props.setFormKey(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME));
-    props.setPriority(toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)));
-    props.setUserTaskKey(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME));
-
-    return props;
+    return new GeneratedUserTaskPropertiesStrictContract(
+        action,
+        headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME),
+        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)),
+        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)),
+        mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)),
+        headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME),
+        headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME),
+        headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME),
+        toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)),
+        headers.get(Protocol.USER_TASK_KEY_HEADER_NAME));
   }
 
   public static List<String> mapStringToList(final String input) {
@@ -783,32 +774,32 @@ public final class ResponseMapper {
   }
 
   static class RestJobActivationResult
-      implements JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult> {
+      implements JobActivationResult<GeneratedJobActivationStrictContract> {
 
-    private final io.camunda.gateway.protocol.model.JobActivationResult response;
-    private final List<ActivatedJobResult> sizeExceedingJobs;
+    private final GeneratedJobActivationStrictContract response;
+    private final List<GeneratedActivatedJobStrictContract> sizeExceedingJobs;
 
     RestJobActivationResult(
-        final io.camunda.gateway.protocol.model.JobActivationResult response,
-        final List<ActivatedJobResult> sizeExceedingJobs) {
+        final GeneratedJobActivationStrictContract response,
+        final List<GeneratedActivatedJobStrictContract> sizeExceedingJobs) {
       this.response = response;
       this.sizeExceedingJobs = sizeExceedingJobs;
     }
 
     @Override
     public int getJobsCount() {
-      return response.getJobs().size();
+      return response.jobs().size();
     }
 
     @Override
     public List<ActivatedJob> getJobs() {
-      return response.getJobs().stream()
-          .map(j -> new ActivatedJob(KeyUtil.keyToLong(j.getJobKey()), j.getRetries()))
+      return response.jobs().stream()
+          .map(j -> new ActivatedJob(KeyUtil.keyToLong(j.jobKey()), j.retries()))
           .toList();
     }
 
     @Override
-    public io.camunda.gateway.protocol.model.JobActivationResult getActivateJobsResponse() {
+    public GeneratedJobActivationStrictContract getActivateJobsResponse() {
       return response;
     }
 
@@ -817,13 +808,13 @@ public final class ResponseMapper {
       final var result = new ArrayList<ActivatedJob>(sizeExceedingJobs.size());
       for (final var job : sizeExceedingJobs) {
         try {
-          final var key = job.getJobKey();
-          result.add(new ActivatedJob(KeyUtil.keyToLong(key), job.getRetries()));
+          final var key = job.jobKey();
+          result.add(new ActivatedJob(KeyUtil.keyToLong(key), job.retries()));
         } catch (final NumberFormatException ignored) {
           // could happen
           LOG.warn(
               "Expected job key to be numeric, but was {}. The job cannot be returned to the broker, but it will be retried after timeout",
-              job.getJobKey());
+              job.jobKey());
         }
       }
       return result;

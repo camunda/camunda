@@ -17,7 +17,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.search.entities.JobErrorStatisticsEntity;
@@ -64,7 +64,7 @@ public class JobControllerTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @MockitoBean JobServices<JobActivationResult> jobServices;
+  @MockitoBean JobServices<GeneratedJobActivationStrictContract> jobServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -1405,7 +1405,8 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(
+                  ResponseEntity.ok().body(new GeneratedJobActivationStrictContract(List.of())));
               return mockObserver;
             });
 
@@ -1453,7 +1454,8 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(
+                  ResponseEntity.ok().body(new GeneratedJobActivationStrictContract(List.of())));
               return mockObserver;
             });
 
@@ -1503,7 +1505,8 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(
+                  ResponseEntity.ok().body(new GeneratedJobActivationStrictContract(List.of())));
               return mockObserver;
             });
 
