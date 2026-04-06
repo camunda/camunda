@@ -9,7 +9,7 @@ If temporary `test-*.yml` files are created for validation, they must be removed
 
 - `.github/workflows/release-branch-notifications.yml`
 - `.github/workflows/reject-updates-using-merge-commit.yml`
-- `.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml`
+- `.github/workflows/generate-snapshot-docker-tag.yml`
 
 ## Tier 2 — Partially testable
 
