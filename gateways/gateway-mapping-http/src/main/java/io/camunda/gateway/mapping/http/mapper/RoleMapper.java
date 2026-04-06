@@ -11,8 +11,6 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
-import io.camunda.gateway.protocol.model.RoleCreateRequest;
-import io.camunda.gateway.protocol.model.RoleUpdateRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
@@ -28,26 +26,6 @@ public class RoleMapper {
     this.roleRequestValidator = roleRequestValidator;
   }
 
-  public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final RoleCreateRequest roleCreateRequest) {
-    return RequestMapper.getResult(
-        roleRequestValidator.validateCreateRequest(roleCreateRequest),
-        () ->
-            new CreateRoleRequest(
-                roleCreateRequest.getRoleId(),
-                roleCreateRequest.getName(),
-                roleCreateRequest.getDescription()));
-  }
-
-  public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequest roleUpdateRequest, final String roleId) {
-    return RequestMapper.getResult(
-        roleRequestValidator.validateUpdateRequest(roleId, roleUpdateRequest),
-        () ->
-            new UpdateRoleRequest(
-                roleId, roleUpdateRequest.getName(), roleUpdateRequest.getDescription()));
-  }
-
   public Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
       final String roleId, final String memberId, final EntityType entityType) {
     return RequestMapper.getResult(
@@ -55,20 +33,17 @@ public class RoleMapper {
         () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
-  // ---- Strict contract methods (direct field access) ----
-
   public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
       final GeneratedRoleCreateRequestStrictContract request) {
-    return toRoleCreateRequest(
-        new RoleCreateRequest()
-            .roleId(request.roleId())
-            .name(request.name())
-            .description(request.description()));
+    return RequestMapper.getResult(
+        roleRequestValidator.validateCreateRequest(request),
+        () -> new CreateRoleRequest(request.roleId(), request.name(), request.description()));
   }
 
   public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
       final GeneratedRoleUpdateRequestStrictContract request, final String roleId) {
-    return toRoleUpdateRequest(
-        new RoleUpdateRequest().name(request.name()).description(request.description()), roleId);
+    return RequestMapper.getResult(
+        roleRequestValidator.validateUpdateRequest(roleId, request),
+        () -> new UpdateRoleRequest(roleId, request.name(), request.description()));
   }
 }

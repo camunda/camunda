@@ -16,12 +16,10 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
-import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceTags;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
-import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -67,13 +65,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTa
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
-import io.camunda.gateway.protocol.model.DocumentMetadata;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
-import io.camunda.gateway.protocol.model.TenantFilterEnum;
-import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -122,7 +113,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -147,37 +137,6 @@ public class RequestMapper {
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
 
-  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
-      final io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest assignmentRequest,
-      final long userTaskKey) {
-
-    return toUserTaskAssignmentRequest(
-        new UserTaskAssignmentRequest()
-            .action(assignmentRequest.getAction())
-            .allowOverride(assignmentRequest.getAllowOverride())
-            .assignee(assignmentRequest.getAssignee()),
-        userTaskKey);
-  }
-
-  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest, final long userTaskKey) {
-
-    final String actionValue =
-        getStringOrEmpty(assignmentRequest, UserTaskAssignmentRequest::getAction);
-
-    final boolean allowOverride =
-        assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride();
-
-    return getResult(
-        validateAssignmentRequest(assignmentRequest),
-        () ->
-            new AssignUserTaskRequest(
-                userTaskKey,
-                assignmentRequest.getAssignee(),
-                actionValue.isBlank() ? "assign" : actionValue,
-                allowOverride));
-  }
-
   public static AssignUserTaskRequest toUserTaskUnassignmentRequest(final long userTaskKey) {
     return new AssignUserTaskRequest(userTaskKey, "", "unassign", true);
   }
@@ -186,7 +145,7 @@ public class RequestMapper {
       final String documentId,
       final String storeId,
       final Part file,
-      final DocumentMetadata metadata) {
+      final GeneratedDocumentMetadataStrictContract metadata) {
     final InputStream inputStream;
     try {
       inputStream = file.getInputStream();
@@ -217,7 +176,7 @@ public class RequestMapper {
       final List<Part> parts,
       final String storeId,
       final ObjectMapper objectMapper,
-      final List<DocumentMetadata> metadataList) {
+      final List<GeneratedDocumentMetadataStrictContract> metadataList) {
 
     final boolean hasList = metadataList != null && !metadataList.isEmpty();
     final boolean hasHeaderMetadata =
@@ -264,8 +223,7 @@ public class RequestMapper {
       final List<DocumentCreateRequest> requests = new ArrayList<>(parts.size());
       for (int i = 0; i < parts.size(); i++) {
         final Part part = parts.get(i);
-        final DocumentMetadata metadata =
-            metadataList.get(i) == null ? new DocumentMetadata() : metadataList.get(i);
+        final GeneratedDocumentMetadataStrictContract metadata = metadataList.get(i);
         final InputStream inputStream;
         try {
           inputStream = part.getInputStream();
@@ -281,22 +239,21 @@ public class RequestMapper {
     }
 
     // Legacy header-based path (original implementation)
-    final Map<Part, DocumentMetadata> metadataMap =
-        parts.stream()
-            .collect(
-                Collectors.toMap(
-                    part -> part,
-                    part ->
-                        Optional.ofNullable(part.getHeader("X-Document-Metadata"))
-                            .map(
-                                header -> {
-                                  try {
-                                    return objectMapper.readValue(header, DocumentMetadata.class);
-                                  } catch (final IOException e) {
-                                    throw new RuntimeException(e);
-                                  }
-                                })
-                            .orElse(new DocumentMetadata())));
+    final Map<Part, GeneratedDocumentMetadataStrictContract> metadataMap = new HashMap<>();
+    for (final var part : parts) {
+      final var headerValue = part.getHeader("X-Document-Metadata");
+      if (headerValue != null) {
+        try {
+          metadataMap.put(
+              part,
+              objectMapper.readValue(headerValue, GeneratedDocumentMetadataStrictContract.class));
+        } catch (final IOException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        metadataMap.put(part, null);
+      }
+    }
 
     final ProblemDetail validationErrors =
         metadataMap.values().stream()
@@ -376,7 +333,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final DocumentMetadata metadata, final Part file) {
+      final GeneratedDocumentMetadataStrictContract metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -389,24 +346,24 @@ public class RequestMapper {
           Map.of());
     }
     final OffsetDateTime expiresAt;
-    if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
+    if (metadata.expiresAt() == null || metadata.expiresAt().isBlank()) {
       expiresAt = null;
     } else {
-      expiresAt = OffsetDateTime.parse(metadata.getExpiresAt());
+      expiresAt = OffsetDateTime.parse(metadata.expiresAt());
     }
     final var fileName =
-        Optional.ofNullable(metadata.getFileName()).orElse(file.getSubmittedFileName());
+        Optional.ofNullable(metadata.fileName()).orElse(file.getSubmittedFileName());
     final var contentType =
-        Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
+        Optional.ofNullable(metadata.contentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
         contentType,
         fileName,
         expiresAt,
         file.getSize(),
-        metadata.getProcessDefinitionId(),
-        KeyUtil.keyToLong(metadata.getProcessInstanceKey()),
-        metadata.getCustomProperties());
+        metadata.processDefinitionId(),
+        KeyUtil.keyToLong(metadata.processInstanceKey()),
+        metadata.customProperties());
   }
 
   private static ProblemDetail createInternalErrorProblemDetail(
@@ -414,114 +371,6 @@ public class RequestMapper {
     return GatewayErrorMapper.createProblemDetail(
         HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
   }
-
-  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final ProcessInstanceCreationInstruction request, final boolean multiTenancyEnabled) {
-    return switch (request) {
-      case final ProcessInstanceCreationInstructionById req ->
-          toCreateProcessInstance(req, multiTenancyEnabled);
-      case final ProcessInstanceCreationInstructionByKey req ->
-          toCreateProcessInstance(req, multiTenancyEnabled);
-      default ->
-          Either.left(
-              GatewayErrorMapper.createProblemDetail(
-                  HttpStatus.BAD_REQUEST,
-                  "Unsupported process instance creation instruction type: "
-                      + request.getClass().getSimpleName(),
-                  "Only process instance creation by id or key is supported."));
-    };
-  }
-
-  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final ProcessInstanceCreationInstructionById request, final boolean multiTenancyEnabled) {
-    final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
-            .flatMap(
-                tenant ->
-                    validateCreateProcessInstanceRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)));
-
-    return validationResponse.map(
-        tenantId ->
-            new ProcessInstanceCreateRequest(
-                -1L,
-                getStringOrEmpty(
-                    request, ProcessInstanceCreationInstructionById::getProcessDefinitionId),
-                getIntOrDefault(
-                    request,
-                    ProcessInstanceCreationInstructionById::getProcessDefinitionVersion,
-                    -1),
-                getMapOrEmpty(request, ProcessInstanceCreationInstructionById::getVariables),
-                tenantId,
-                request.getAwaitCompletion(),
-                request.getRequestTimeout(),
-                request.getOperationReference(),
-                request.getStartInstructions().stream()
-                    .map(
-                        instruction ->
-                            new ProcessInstanceCreationStartInstruction()
-                                .setElementId(instruction.getElementId()))
-                    .toList(),
-                request.getRuntimeInstructions().stream()
-                    .map(
-                        instruction -> {
-                          final var instructionCasted =
-                              (ProcessInstanceCreationTerminateInstruction) instruction;
-                          return new ProcessInstanceCreationRuntimeInstruction()
-                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
-                              .setAfterElementId(instructionCasted.getAfterElementId());
-                        })
-                    .toList(),
-                request.getFetchVariables(),
-                request.getTags(),
-                request.getBusinessId()));
-  }
-
-  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final ProcessInstanceCreationInstructionByKey request, final boolean multiTenancyEnabled) {
-    final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
-            .flatMap(
-                tenant ->
-                    validateCreateProcessInstanceRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)));
-
-    return validationResponse.map(
-        tenantId ->
-            new ProcessInstanceCreateRequest(
-                getKeyOrDefault(
-                    request, ProcessInstanceCreationInstructionByKey::getProcessDefinitionKey, -1L),
-                "",
-                -1,
-                getMapOrEmpty(request, ProcessInstanceCreationInstructionByKey::getVariables),
-                tenantId,
-                request.getAwaitCompletion(),
-                request.getRequestTimeout(),
-                request.getOperationReference(),
-                request.getStartInstructions().stream()
-                    .map(
-                        instruction ->
-                            new ProcessInstanceCreationStartInstruction()
-                                .setElementId(instruction.getElementId()))
-                    .toList(),
-                request.getRuntimeInstructions().stream()
-                    .map(
-                        instruction -> {
-                          final var instructionCasted =
-                              (ProcessInstanceCreationTerminateInstruction) instruction;
-                          return new ProcessInstanceCreationRuntimeInstruction()
-                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
-                              .setAfterElementId(instructionCasted.getAfterElementId());
-                        })
-                    .toList(),
-                request.getFetchVariables(),
-                request.getTags(),
-                request.getBusinessId()));
-  }
-
-  // --- Strict contract overloads for process instance creation ---
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final GeneratedProcessInstanceCreationInstructionStrictContract request,
@@ -866,11 +715,11 @@ public class RequestMapper {
     if (request.tenantFilter() == null) {
       tenantFilter = TenantFilter.PROVIDED;
     } else {
-      final var gatewayFilter = TenantFilterEnum.fromValue(request.tenantFilter().getValue());
+      final String filterValue = request.tenantFilter().getValue();
       tenantFilter =
-          switch (gatewayFilter) {
-            case ASSIGNED -> TenantFilter.ASSIGNED;
-            case PROVIDED -> TenantFilter.PROVIDED;
+          switch (filterValue) {
+            case "ASSIGNED" -> TenantFilter.ASSIGNED;
+            default -> TenantFilter.PROVIDED;
           };
     }
 
@@ -1079,53 +928,6 @@ public class RequestMapper {
     final boolean deleteHistory = request != null && Boolean.TRUE.equals(request.deleteHistory());
     return Either.right(
         new ResourceDeletionRequest(resourceKey, operationReference, deleteHistory));
-  }
-
-  public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
-      final String documentId,
-      final String storeId,
-      final Part file,
-      final GeneratedDocumentMetadataStrictContract metadata) {
-    final var docMetadata =
-        metadata != null
-            ? new DocumentMetadata()
-                .contentType(metadata.contentType())
-                .fileName(metadata.fileName())
-                .expiresAt(metadata.expiresAt())
-                .size(metadata.size())
-                .processDefinitionId(metadata.processDefinitionId())
-                .processInstanceKey(metadata.processInstanceKey())
-                .customProperties(metadata.customProperties())
-            : null;
-    return toDocumentCreateRequest(documentId, storeId, file, docMetadata);
-  }
-
-  public static Either<ProblemDetail, List<DocumentCreateRequest>>
-      toDocumentCreateRequestBatchStrict(
-          final List<Part> parts,
-          final String storeId,
-          final ObjectMapper objectMapper,
-          final List<GeneratedDocumentMetadataStrictContract> metadataList) {
-    return toDocumentCreateRequestBatch(
-        parts,
-        storeId,
-        objectMapper,
-        metadataList == null
-            ? null
-            : metadataList.stream()
-                .map(
-                    m ->
-                        m == null
-                            ? null
-                            : new DocumentMetadata()
-                                .contentType(m.contentType())
-                                .fileName(m.fileName())
-                                .expiresAt(m.expiresAt())
-                                .size(m.size())
-                                .processDefinitionId(m.processDefinitionId())
-                                .processInstanceKey(m.processInstanceKey())
-                                .customProperties(m.customProperties()))
-                .toList());
   }
 
   public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(

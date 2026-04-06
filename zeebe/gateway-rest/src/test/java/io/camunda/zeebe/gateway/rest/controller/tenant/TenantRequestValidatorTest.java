@@ -12,8 +12,8 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
-import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.regex.Pattern;
@@ -35,11 +35,12 @@ public class TenantRequestValidatorTest {
   @MethodSource("validTenantIds")
   void shouldPassTenantIdForCreateRequest(final String tenantId) {
     // given
-    final TenantCreateRequest request =
-        new TenantCreateRequest()
+    final var request =
+        GeneratedTenantCreateRequestStrictContract.builder()
             .tenantId(tenantId)
             .name("New tenant")
-            .description("A new tenant for testing");
+            .description("A new tenant for testing")
+            .build();
 
     // when
     final var validationResult = VALIDATOR.validateCreateRequest(request);
@@ -66,11 +67,12 @@ public class TenantRequestValidatorTest {
   @MethodSource("invalidTenantIds")
   void shouldFailTenantIdForCreateRequest(final String tenantId, final String errorMessage) {
     // given
-    final TenantCreateRequest request =
-        new TenantCreateRequest()
+    final var request =
+        GeneratedTenantCreateRequestStrictContract.builder()
             .tenantId(tenantId)
             .name("New tenant")
-            .description("A new tenant for testing");
+            .description("A new tenant for testing")
+            .build();
 
     // when
     final var validationResult = VALIDATOR.validateCreateRequest(request);

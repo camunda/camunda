@@ -11,8 +11,6 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
-import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.util.Either;
 import org.springframework.http.ProblemDetail;
@@ -25,48 +23,17 @@ public class UserMapper {
     this.userRequestValidator = userRequestValidator;
   }
 
-  public Either<ProblemDetail, UserDTO> toUserRequest(final UserRequest request) {
-    return RequestMapper.getResult(
-        userRequestValidator.validateCreateRequest(request),
-        () ->
-            new UserDTO(
-                request.getUsername(),
-                request.getName(),
-                request.getEmail(),
-                request.getPassword()));
-  }
-
-  public Either<ProblemDetail, UserDTO> toUserUpdateRequest(
-      final UserUpdateRequest updateRequest, final String username) {
-    return RequestMapper.getResult(
-        userRequestValidator.validateUpdateRequest(updateRequest),
-        () ->
-            new UserDTO(
-                username,
-                updateRequest.getName(),
-                updateRequest.getEmail(),
-                updateRequest.getPassword()));
-  }
-
-  // ---- Strict contract overloads (transitional) ----
-
   public Either<ProblemDetail, UserDTO> toUserRequest(
       final GeneratedUserRequestStrictContract request) {
-    return toUserRequest(
-        new UserRequest()
-            .username(request.username())
-            .password(request.password())
-            .name(request.name())
-            .email(request.email()));
+    return RequestMapper.getResult(
+        userRequestValidator.validateCreateRequest(request),
+        () -> new UserDTO(request.username(), request.name(), request.email(), request.password()));
   }
 
   public Either<ProblemDetail, UserDTO> toUserUpdateRequest(
       final GeneratedUserUpdateRequestStrictContract request, final String username) {
-    return toUserUpdateRequest(
-        new UserUpdateRequest()
-            .password(request.password())
-            .name(request.name())
-            .email(request.email()),
-        username);
+    return RequestMapper.getResult(
+        userRequestValidator.validateUpdateRequest(request),
+        () -> new UserDTO(username, request.name(), request.email(), request.password()));
   }
 }

@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
-import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateClusterVariableRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateClusterVariableRequestStrictContract;
 import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -24,19 +24,19 @@ public class ClusterVariableRequestValidator {
   }
 
   public Optional<ProblemDetail> validateTenantClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request, final String tenantId) {
+      final GeneratedCreateClusterVariableRequestStrictContract request, final String tenantId) {
     return validate(
         () ->
             clusterVariableValidator.validateTenantClusterVariableRequestWithValue(
-                request.getName(), request.getValue(), tenantId));
+                request.name(), request.value(), tenantId));
   }
 
   public Optional<ProblemDetail> validateGlobalClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request) {
+      final GeneratedCreateClusterVariableRequestStrictContract request) {
     return validate(
         () ->
             clusterVariableValidator.validateGlobalClusterVariableRequestWithValue(
-                request.getName(), request.getValue()));
+                request.name(), request.value()));
   }
 
   public Optional<ProblemDetail> validateTenantClusterVariableRequest(
@@ -50,18 +50,20 @@ public class ClusterVariableRequestValidator {
   }
 
   public Optional<ProblemDetail> validateGlobalClusterVariableUpdateRequest(
-      final String name, final UpdateClusterVariableRequest request) {
+      final String name, final GeneratedUpdateClusterVariableRequestStrictContract request) {
     return validate(
         () ->
             clusterVariableValidator.validateGlobalClusterVariableRequestWithValue(
-                name, request.getValue()));
+                name, request.value()));
   }
 
   public Optional<ProblemDetail> validateTenantClusterVariableUpdateRequest(
-      final String name, final UpdateClusterVariableRequest request, final String tenantId) {
+      final String name,
+      final GeneratedUpdateClusterVariableRequestStrictContract request,
+      final String tenantId) {
     return validate(
         () ->
             clusterVariableValidator.validateTenantClusterVariableRequestWithValue(
-                name, request.getValue(), tenantId));
+                name, request.value(), tenantId));
   }
 }

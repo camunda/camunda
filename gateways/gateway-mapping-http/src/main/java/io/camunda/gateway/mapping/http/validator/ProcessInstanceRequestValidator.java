@@ -7,40 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
-import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
-import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
-import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
-
-  public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
-      final ProcessInstanceCreationInstruction request) {
-    if (request instanceof final ProcessInstanceCreationInstructionById byId) {
-      return validateById(byId);
-    }
-    return validateByKey((ProcessInstanceCreationInstructionByKey) request);
-  }
 
   /**
    * Validate only the tags for strict contract paths (other fields validated by spec constraints).
@@ -49,172 +23,7 @@ public class ProcessInstanceRequestValidator {
     return validate(violations -> validateTags(tags, violations));
   }
 
-  private static Optional<ProblemDetail> validateByKey(
-      final ProcessInstanceCreationInstructionByKey request) {
-    return validate(
-        violations -> {
-          validateTags(request.getTags(), violations);
-        });
-  }
-
-  private static Optional<ProblemDetail> validateById(
-      final ProcessInstanceCreationInstructionById request) {
-    return validate(
-        violations -> {
-          validateTags(request.getTags(), violations);
-        });
-  }
-
   private static void validateTags(final Set<String> tags, final List<String> violations) {
     violations.addAll(TagsValidator.validate(tags));
-  }
-
-  public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(
-      final CancelProcessInstanceRequest request) {
-    return Optional.empty();
-  }
-
-  public static Optional<ProblemDetail> validateMigrateProcessInstanceRequest(
-      final ProcessInstanceMigrationInstruction request) {
-    return validate(
-        violations -> {
-          if (request.getMappingInstructions() == null
-              || request.getMappingInstructions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
-          } else {
-            validateMappingInstructions(request.getMappingInstructions(), violations);
-          }
-        });
-  }
-
-  public static Optional<ProblemDetail> validateModifyProcessInstanceRequest(
-      final ProcessInstanceModificationInstruction request) {
-    return validate(
-        violations -> {
-          validateActivateInstructions(request.getActivateInstructions(), violations);
-          validateTerminateInstructions(request.getTerminateInstructions(), violations);
-          validateMoveInstructions(request.getMoveInstructions(), violations);
-        });
-  }
-
-  private static void validateMappingInstructions(
-      final List<MigrateProcessInstanceMappingInstruction> mappingInstructions,
-      final List<String> violations) {
-    validateInstructions(
-        mappingInstructions,
-        (instruction) ->
-            (instruction.getSourceElementId() != null
-                    && !instruction.getSourceElementId().isEmpty())
-                && (instruction.getTargetElementId() != null
-                    && !instruction.getTargetElementId().isEmpty()),
-        violations,
-        ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(List.of("sourceElementId", "targetElementId")));
-  }
-
-  private static void validateActivateInstructions(
-      final List<ProcessInstanceModificationActivateInstruction> instructions,
-      final List<String> violations) {
-    validateInstructions(
-        instructions,
-        (instruction) -> instruction.getElementId() != null,
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
-    final var variableInstructions =
-        instructions.stream()
-            .flatMap(instruction -> instruction.getVariableInstructions().stream())
-            .toList();
-    validateInstructions(
-        variableInstructions,
-        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
-  }
-
-  private static void validateTerminateInstructions(
-      final List<ProcessInstanceModificationTerminateInstruction> instructions,
-      final List<String> violations) {
-    instructions.forEach(
-        instruction -> {
-          if (instruction
-              instanceof final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
-            if (byKey.getElementInstanceKey() == null) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
-            }
-          } else {
-            final String elementId =
-                ((ProcessInstanceModificationTerminateByIdInstruction) instruction).getElementId();
-            if (elementId == null || elementId.isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
-            }
-          }
-        });
-  }
-
-  private static void validateMoveInstructions(
-      final List<ProcessInstanceModificationMoveInstruction> instructions,
-      final List<String> violations) {
-    instructions.forEach(
-        instruction -> {
-          switch (instruction.getSourceElementInstruction()) {
-            case final SourceElementIdInstruction byId -> {
-              if (byId.getSourceElementId() == null || byId.getSourceElementId().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
-              }
-            }
-            case final SourceElementInstanceKeyInstruction byKey -> {
-              // Key format validation is now handled by the strict contract
-            }
-            case null -> {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementInstruction"));
-            }
-            default -> {
-              // no-op for forward compatibility
-            }
-          }
-        });
-
-    validateInstructions(
-        instructions,
-        instruction ->
-            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
-    final var variableInstructions =
-        instructions.stream()
-            .flatMap(instruction -> instruction.getVariableInstructions().stream())
-            .toList();
-    validateInstructions(
-        variableInstructions,
-        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
-  }
-
-  private static void validateMoveBatchInstructions(
-      final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions,
-      final List<String> violations) {
-    validateInstructions(
-        instructions,
-        instruction ->
-            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
-    validateInstructions(
-        instructions,
-        instruction ->
-            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
-  }
-
-  private static <T> void validateInstructions(
-      final List<T> instructions,
-      final Predicate<T> match,
-      final List<String> violations,
-      final String message) {
-    final boolean areInstructionsValid = instructions.stream().allMatch(match);
-    if (!areInstructionsValid) {
-      violations.add(message);
-    }
   }
 }

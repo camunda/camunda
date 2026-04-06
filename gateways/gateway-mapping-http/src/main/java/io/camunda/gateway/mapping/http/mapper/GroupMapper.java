@@ -11,8 +11,6 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
-import io.camunda.gateway.protocol.model.GroupCreateRequest;
-import io.camunda.gateway.protocol.model.GroupUpdateRequest;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -27,26 +25,6 @@ public class GroupMapper {
     this.groupRequestValidator = groupRequestValidator;
   }
 
-  public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GroupCreateRequest groupCreateRequest) {
-    return RequestMapper.getResult(
-        groupRequestValidator.validateCreateRequest(groupCreateRequest),
-        () ->
-            new GroupDTO(
-                groupCreateRequest.getGroupId(),
-                groupCreateRequest.getName(),
-                groupCreateRequest.getDescription()));
-  }
-
-  public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest, final String groupId) {
-    return RequestMapper.getResult(
-        groupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
-        () ->
-            new GroupDTO(
-                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
-  }
-
   public Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
       final String groupId, final String memberId, final EntityType entityType) {
     return RequestMapper.getResult(
@@ -54,20 +32,17 @@ public class GroupMapper {
         () -> new GroupMemberDTO(groupId, memberId, entityType));
   }
 
-  // ---- Strict contract methods (direct field access) ----
-
   public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
       final GeneratedGroupCreateRequestStrictContract request) {
-    return toGroupCreateRequest(
-        new GroupCreateRequest()
-            .groupId(request.groupId())
-            .name(request.name())
-            .description(request.description()));
+    return RequestMapper.getResult(
+        groupRequestValidator.validateCreateRequest(request),
+        () -> new GroupDTO(request.groupId(), request.name(), request.description()));
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
       final GeneratedGroupUpdateRequestStrictContract request, final String groupId) {
-    return toGroupUpdateRequest(
-        new GroupUpdateRequest().name(request.name()).description(request.description()), groupId);
+    return RequestMapper.getResult(
+        groupRequestValidator.validateUpdateRequest(groupId, request),
+        () -> new GroupDTO(groupId, request.name(), request.description()));
   }
 }

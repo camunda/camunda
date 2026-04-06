@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
-import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -19,8 +19,8 @@ import org.springframework.http.ProblemDetail;
 public final class UserTaskRequestValidator {
 
   public static Optional<ProblemDetail> validateAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest) {
-    if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
+      final GeneratedUserTaskAssignmentRequestStrictContract assignmentRequest) {
+    if (assignmentRequest.assignee() == null || assignmentRequest.assignee().isBlank()) {
       final ProblemDetail problemDetail =
           GatewayErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
