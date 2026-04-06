@@ -34,7 +34,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty processNameProp = new StringProperty("processName", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   public ProcessRecord() {
     super(10);
@@ -47,7 +47,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
-        .declareProperty(processNameProp);
+        .declareProperty(nameProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -60,7 +60,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     tenantIdProp.setValue(metadata.getTenantId());
     deploymentKeyProp.setValue(metadata.getDeploymentKey());
     versionTagProp.setValue(metadata.getVersionTag());
-    processNameProp.setValue(metadata.getProcessName());
+    nameProp.setValue(metadata.getName());
     return this;
   }
 
@@ -95,8 +95,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   }
 
   @Override
-  public String getProcessName() {
-    return BufferUtil.bufferAsString(processNameProp.getValue());
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
   @Override
@@ -124,13 +124,13 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     return this;
   }
 
-  public ProcessRecord setProcessName(final String processName) {
-    processNameProp.setValue(processName);
+  public ProcessRecord setName(final String name) {
+    nameProp.setValue(name);
     return this;
   }
 
-  public ProcessRecord setProcessName(final DirectBuffer processName) {
-    processNameProp.setValue(processName);
+  public ProcessRecord setName(final DirectBuffer name) {
+    nameProp.setValue(name);
     return this;
   }
 

@@ -539,7 +539,7 @@ message ProcessMetadata {
   // the tenant id of the deployed process
   string tenantId = 5;
   // the process name as defined in BPMN; null if not defined
-  optional string processName = 6;
+  optional string name = 6;
 }
 
 message DecisionMetadata {

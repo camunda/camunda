@@ -228,7 +228,7 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
-                  .setProcessName(wrapString(processName))
+                  .setName(wrapString(processName))
                   .setVersion(processVersion)
                   .setChecksum(checksum);
 
@@ -268,7 +268,7 @@ final class JsonSerializableToJsonTest {
                         "version": 12,
                         "bpmnProcessId": "testProcess",
                         "resourceName": "resource",
-                        "processName": "Test Process",
+                        "name": "Test Process",
                         "checksum": "Y2hlY2tzdW0=",
                         "processDefinitionKey": 123,
                         "duplicate": false,
@@ -374,7 +374,7 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
-                  .setProcessName(wrapString(processName))
+                  .setName(wrapString(processName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
                   .setDuplicate(true)
@@ -433,7 +433,7 @@ final class JsonSerializableToJsonTest {
                       "version": 12,
                       "processDefinitionKey": 123,
                       "resourceName": "resource",
-                      "processName": "Test Process",
+                      "name": "Test Process",
                       "duplicate": true,
                       "tenantId": "<default>",
                       "deploymentKey": 1234,
@@ -565,7 +565,7 @@ final class JsonSerializableToJsonTest {
                   "resource": "Y29udGVudHM=",
                   "checksum": "Y2hlY2tzdW0=",
                   "bpmnProcessId": "testProcess",
-                  "processName": "",
+                  "name": "",
                   "version": 12,
                   "processDefinitionKey": 123,
                   "resourceName": "resource",
@@ -605,7 +605,7 @@ final class JsonSerializableToJsonTest {
                   "resource": "Y29udGVudHM=",
                   "checksum": "Y2hlY2tzdW0=",
                   "bpmnProcessId": "testProcess",
-                  "processName": "",
+                  "name": "",
                   "version": 12,
                   "processDefinitionKey": 123,
                   "resourceName": "resource",
@@ -2747,7 +2747,7 @@ final class JsonSerializableToJsonTest {
                       "bpmnProcessId": "my_first_process",
                       "resourceName": "my_first_bpmn.bpmn",
                       "checksum": "c2hhMQ==",
-                      "processName": "",
+                      "name": "",
                       "duplicate": false,
                       "tenantId": "<default>",
                       "deploymentKey": -1,
@@ -2765,7 +2765,7 @@ final class JsonSerializableToJsonTest {
                 """
       },
       {
-        "CommandDistributionRecord with ProcessName",
+        "CommandDistributionRecord with Process Name",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final var deploymentRecord = new DeploymentRecord();
@@ -2781,7 +2781,7 @@ final class JsonSerializableToJsonTest {
                   .setVersion(1)
                   .setBpmnProcessId("my_first_process")
                   .setResourceName("my_first_bpmn.bpmn")
-                  .setProcessName("Test Process")
+                  .setName("Test Process")
                   .setChecksum(wrapString("sha1"));
 
               return new CommandDistributionRecord()
@@ -2809,7 +2809,7 @@ final class JsonSerializableToJsonTest {
                       "bpmnProcessId": "my_first_process",
                       "resourceName": "my_first_bpmn.bpmn",
                       "checksum": "c2hhMQ==",
-                      "processName": "Test Process",
+                      "name": "Test Process",
                       "duplicate": false,
                       "tenantId": "<default>",
                       "deploymentKey": -1,
@@ -4725,12 +4725,12 @@ final class JsonSerializableToJsonTest {
     """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////// ProcessRecord with ProcessName
+      //////////////////////////////////// ProcessRecord with Process Name
       /////////////////////////////////////////////////////////////////////////////////////////////
       // ///////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
-        "ProcessRecord with ProcessName",
+        "ProcessRecord with Process Name",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final String resourceName = "resource";
@@ -4750,7 +4750,7 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
-                  .setProcessName(wrapString(processName))
+                  .setName(wrapString(processName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
                   .setDeploymentKey(deploymentKey)
@@ -4767,7 +4767,7 @@ final class JsonSerializableToJsonTest {
                   "version": 12,
                   "processDefinitionKey": 123,
                   "resourceName": "resource",
-                  "processName": "Test Process",
+                  "name": "Test Process",
                   "duplicate": false,
                   "tenantId": "<default>",
                   "deploymentKey": 1234,

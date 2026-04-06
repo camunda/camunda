@@ -24,7 +24,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   private String bpmnProcessId;
   private String tenantId;
   private String versionTag;
-  private String processName;
+  private String name;
 
   public ZeebeProcessDefinitionDataDto() {}
 
@@ -77,8 +77,8 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     return this.versionTag;
   }
 
-  public String getProcessName() {
-    return this.processName;
+  public String getName() {
+    return this.name;
   }
 
   public void setResource(final byte[] resource) {
@@ -113,8 +113,8 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     this.versionTag = versionTag;
   }
 
-  public void setProcessName(final String processName) {
-    this.processName = processName;
+  public void setName(final String name) {
+    this.name = name;
   }
 
   public String toString() {
@@ -134,8 +134,8 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
         + this.getTenantId()
         + ", versionTag="
         + this.getVersionTag()
-        + ", processName="
-        + this.getProcessName()
+        + ", name="
+        + this.getName()
         + ")";
   }
 
@@ -153,7 +153,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(versionTag, that.versionTag)
-        && Objects.equals(processName, that.processName);
+        && Objects.equals(name, that.name);
   }
 
   @Override
@@ -167,7 +167,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
         bpmnProcessId,
         tenantId,
         versionTag,
-        processName);
+        name);
   }
 
   protected boolean canEqual(final Object other) {

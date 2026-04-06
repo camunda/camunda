@@ -56,7 +56,7 @@
                 "versionTag": {
                   "type": "keyword"
                 },
-                "processName": {
+                "name": {
                   "type": "keyword"
                 }
               }

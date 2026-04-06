@@ -209,7 +209,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setResourceName(deploymentResource.getResourceNameBuffer())
           .setTenantId(tenantId);
       getOptionalVersionTag(process).ifPresent(processMetadata::setVersionTag);
-      getOptionalProcessName(process).ifPresent(processMetadata::setProcessName);
+      getOptionalProcessName(process).ifPresent(processMetadata::setName);
 
       final var isDuplicate =
           isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
