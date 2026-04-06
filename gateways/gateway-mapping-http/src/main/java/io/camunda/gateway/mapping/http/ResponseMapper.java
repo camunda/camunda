@@ -198,26 +198,29 @@ public final class ResponseMapper {
   static GeneratedActivatedJobStrictContract toActivatedJob(
       final long jobKey, final JobRecord job) {
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
-    return new GeneratedActivatedJobStrictContract(
-        job.getType(),
-        job.getBpmnProcessId(),
-        job.getProcessDefinitionVersion(),
-        job.getElementId(),
-        job.getCustomHeadersObjectMap(),
-        bufferAsString(job.getWorkerBuffer()),
-        job.getRetries(),
-        job.getDeadline(),
-        job.getVariables(),
-        job.getTenantId(),
-        KeyUtil.keyToString(jobKey),
-        KeyUtil.keyToString(job.getProcessInstanceKey()),
-        KeyUtil.keyToString(job.getProcessDefinitionKey()),
-        KeyUtil.keyToString(job.getElementInstanceKey()),
-        EnumUtil.convert(job.getJobKind(), GeneratedJobKindEnum.class),
-        EnumUtil.convert(job.getJobListenerEventType(), GeneratedJobListenerEventTypeEnum.class),
-        toUserTaskProperties(job),
-        job.getTags(),
-        rootProcessInstanceKey > 0 ? KeyUtil.keyToString(rootProcessInstanceKey) : null);
+    return GeneratedActivatedJobStrictContract.builder()
+        .type(job.getType())
+        .processDefinitionId(job.getBpmnProcessId())
+        .processDefinitionVersion(job.getProcessDefinitionVersion())
+        .elementId(job.getElementId())
+        .customHeaders(job.getCustomHeadersObjectMap())
+        .worker(bufferAsString(job.getWorkerBuffer()))
+        .retries(job.getRetries())
+        .deadline(job.getDeadline())
+        .variables(job.getVariables())
+        .tenantId(job.getTenantId())
+        .jobKey(jobKey)
+        .processInstanceKey(job.getProcessInstanceKey())
+        .processDefinitionKey(job.getProcessDefinitionKey())
+        .elementInstanceKey(job.getElementInstanceKey())
+        .kind(EnumUtil.convert(job.getJobKind(), GeneratedJobKindEnum.class))
+        .listenerEventType(
+            EnumUtil.convert(
+                job.getJobListenerEventType(), GeneratedJobListenerEventTypeEnum.class))
+        .tags(job.getTags())
+        .userTask(toUserTaskProperties(job))
+        .rootProcessInstanceKey(rootProcessInstanceKey > 0 ? rootProcessInstanceKey : null)
+        .build();
   }
 
   private static GeneratedUserTaskPropertiesStrictContract toUserTaskProperties(
@@ -272,10 +275,11 @@ public final class ResponseMapper {
 
   public static GeneratedMessageCorrelationStrictContract toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
-    return new GeneratedMessageCorrelationStrictContract(
-        brokerResponse.getTenantId(),
-        KeyUtil.keyToString(brokerResponse.getMessageKey()),
-        KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()));
+    return GeneratedMessageCorrelationStrictContract.builder()
+        .tenantId(brokerResponse.getTenantId())
+        .messageKey(brokerResponse.getMessageKey())
+        .processInstanceKey(brokerResponse.getProcessInstanceKey())
+        .build();
   }
 
   public static MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
@@ -313,14 +317,18 @@ public final class ResponseMapper {
             ? internalMetadata.customProperties()
             : Map.<String, Object>of();
     final var externalMetadata =
-        new GeneratedDocumentMetadataResponseStrictContract(
-            internalMetadata.contentType(),
-            internalMetadata.fileName(),
-            Optional.ofNullable(internalMetadata.expiresAt()).map(Object::toString).orElse(null),
-            internalMetadata.size(),
-            internalMetadata.processDefinitionId(),
-            KeyUtil.keyToString(internalMetadata.processInstanceKey()),
-            customProperties);
+        GeneratedDocumentMetadataResponseStrictContract.builder()
+            .contentType(internalMetadata.contentType())
+            .fileName(internalMetadata.fileName())
+            .size(internalMetadata.size())
+            .customProperties(customProperties)
+            .expiresAt(
+                Optional.ofNullable(internalMetadata.expiresAt())
+                    .map(Object::toString)
+                    .orElse(null))
+            .processDefinitionId(internalMetadata.processDefinitionId())
+            .processInstanceKey(internalMetadata.processInstanceKey())
+            .build();
     return new GeneratedDocumentReferenceStrictContract(
         "CAMUNDA",
         response.storeId(),
@@ -359,10 +367,11 @@ public final class ResponseMapper {
     addDeployedDecisionRequirements(deployments, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(deployments, brokerResponse.formMetadata());
     addDeployedResource(deployments, brokerResponse.resourceMetadata());
-    return new GeneratedDeploymentStrictContract(
-        KeyUtil.keyToString(brokerResponse.getDeploymentKey()),
-        brokerResponse.getTenantId(),
-        deployments);
+    return GeneratedDeploymentStrictContract.builder()
+        .deploymentKey(brokerResponse.getDeploymentKey())
+        .tenantId(brokerResponse.getTenantId())
+        .deployments(deployments)
+        .build();
   }
 
   public static GeneratedDeleteResourceResponseStrictContract toDeleteResourceResponse(
@@ -396,8 +405,10 @@ public final class ResponseMapper {
 
   public static GeneratedMessagePublicationStrictContract toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
-    return new GeneratedMessagePublicationStrictContract(
-        brokerResponse.getResponse().getTenantId(), KeyUtil.keyToString(brokerResponse.getKey()));
+    return GeneratedMessagePublicationStrictContract.builder()
+        .tenantId(brokerResponse.getResponse().getTenantId())
+        .messageKey(brokerResponse.getKey())
+        .build();
   }
 
   private static void addDeployedForm(
@@ -410,12 +421,13 @@ public final class ResponseMapper {
                     null,
                     null,
                     null,
-                    new GeneratedDeploymentFormStrictContract(
-                        form.getFormId(),
-                        form.getVersion(),
-                        form.getResourceName(),
-                        form.getTenantId(),
-                        KeyUtil.keyToString(form.getFormKey())),
+                    GeneratedDeploymentFormStrictContract.builder()
+                        .formId(form.getFormId())
+                        .version(form.getVersion())
+                        .resourceName(form.getResourceName())
+                        .tenantId(form.getTenantId())
+                        .formKey(form.getFormKey())
+                        .build(),
                     null))
         .forEach(deployments::add);
   }
@@ -449,13 +461,14 @@ public final class ResponseMapper {
                 new GeneratedDeploymentMetadataStrictContract(
                     null,
                     null,
-                    new GeneratedDeploymentDecisionRequirementsStrictContract(
-                        decisionRequirement.getDecisionRequirementsId(),
-                        decisionRequirement.getDecisionRequirementsName(),
-                        decisionRequirement.getDecisionRequirementsVersion(),
-                        decisionRequirement.getResourceName(),
-                        decisionRequirement.getTenantId(),
-                        KeyUtil.keyToString(decisionRequirement.getDecisionRequirementsKey())),
+                    GeneratedDeploymentDecisionRequirementsStrictContract.builder()
+                        .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
+                        .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
+                        .version(decisionRequirement.getDecisionRequirementsVersion())
+                        .resourceName(decisionRequirement.getResourceName())
+                        .tenantId(decisionRequirement.getTenantId())
+                        .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
+                        .build(),
                     null,
                     null))
         .forEach(deployments::add);
@@ -469,14 +482,15 @@ public final class ResponseMapper {
             decision ->
                 new GeneratedDeploymentMetadataStrictContract(
                     null,
-                    new GeneratedDeploymentDecisionStrictContract(
-                        decision.getDecisionId(),
-                        decision.getVersion(),
-                        decision.getDecisionName(),
-                        decision.getTenantId(),
-                        decision.getDecisionRequirementsId(),
-                        KeyUtil.keyToString(decision.getDecisionKey()),
-                        KeyUtil.keyToString(decision.getDecisionRequirementsKey())),
+                    GeneratedDeploymentDecisionStrictContract.builder()
+                        .decisionDefinitionId(decision.getDecisionId())
+                        .version(decision.getVersion())
+                        .name(decision.getDecisionName())
+                        .tenantId(decision.getTenantId())
+                        .decisionRequirementsId(decision.getDecisionRequirementsId())
+                        .decisionDefinitionKey(decision.getDecisionKey())
+                        .decisionRequirementsKey(decision.getDecisionRequirementsKey())
+                        .build(),
                     null,
                     null,
                     null))
@@ -490,12 +504,13 @@ public final class ResponseMapper {
         .map(
             process ->
                 new GeneratedDeploymentMetadataStrictContract(
-                    new GeneratedDeploymentProcessStrictContract(
-                        process.getBpmnProcessId(),
-                        process.getVersion(),
-                        process.getResourceName(),
-                        process.getTenantId(),
-                        KeyUtil.keyToString(process.getProcessDefinitionKey())),
+                    GeneratedDeploymentProcessStrictContract.builder()
+                        .processDefinitionId(process.getBpmnProcessId())
+                        .processDefinitionVersion(process.getVersion())
+                        .resourceName(process.getResourceName())
+                        .tenantId(process.getTenantId())
+                        .processDefinitionKey(process.getProcessDefinitionKey())
+                        .build(),
                     null,
                     null,
                     null,
@@ -538,15 +553,16 @@ public final class ResponseMapper {
       final Map<String, Object> variables,
       final Set<String> tags,
       final String businessId) {
-    return new GeneratedCreateProcessInstanceStrictContract(
-        bpmnProcessId,
-        version,
-        tenantId,
-        variables != null ? variables : Map.of(),
-        KeyUtil.keyToString(processDefinitionKey),
-        KeyUtil.keyToString(processInstanceKey),
-        tags != null ? tags : Set.of(),
-        emptyToNull(businessId));
+    return GeneratedCreateProcessInstanceStrictContract.builder()
+        .processDefinitionId(bpmnProcessId)
+        .processDefinitionVersion(version)
+        .tenantId(tenantId)
+        .variables(variables != null ? variables : Map.of())
+        .processDefinitionKey(processDefinitionKey)
+        .processInstanceKey(processInstanceKey)
+        .tags(tags != null ? tags : Set.of())
+        .businessId(emptyToNull(businessId))
+        .build();
   }
 
   public static GeneratedBatchOperationCreatedStrictContract
@@ -558,8 +574,10 @@ public final class ResponseMapper {
 
   public static GeneratedSignalBroadcastStrictContract toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
-    return new GeneratedSignalBroadcastStrictContract(
-        brokerResponse.getResponse().getTenantId(), KeyUtil.keyToString(brokerResponse.getKey()));
+    return GeneratedSignalBroadcastStrictContract.builder()
+        .tenantId(brokerResponse.getResponse().getTenantId())
+        .signalKey(brokerResponse.getKey())
+        .build();
   }
 
   public static GeneratedEvaluateConditionalStrictContract toConditionalEvaluationResponse(
@@ -569,19 +587,24 @@ public final class ResponseMapper {
         response.getStartedProcessInstances().stream()
             .map(
                 instance ->
-                    new GeneratedProcessInstanceReferenceStrictContract(
-                        KeyUtil.keyToString(instance.getProcessDefinitionKey()),
-                        KeyUtil.keyToString(instance.getProcessInstanceKey())))
+                    GeneratedProcessInstanceReferenceStrictContract.builder()
+                        .processDefinitionKey(instance.getProcessDefinitionKey())
+                        .processInstanceKey(instance.getProcessInstanceKey())
+                        .build())
             .toList();
 
-    return new GeneratedEvaluateConditionalStrictContract(
-        KeyUtil.keyToString(brokerResponse.getKey()), response.getTenantId(), processInstances);
+    return GeneratedEvaluateConditionalStrictContract.builder()
+        .conditionalEvaluationKey(brokerResponse.getKey())
+        .tenantId(response.getTenantId())
+        .processInstances(processInstances)
+        .build();
   }
 
   public static GeneratedAuthorizationCreateStrictContract toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    return new GeneratedAuthorizationCreateStrictContract(
-        KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
+    return GeneratedAuthorizationCreateStrictContract.builder()
+        .authorizationKey(authorizationRecord.getAuthorizationKey())
+        .build();
   }
 
   public static GeneratedUserCreateStrictContract toUserCreateResponse(
@@ -647,20 +670,21 @@ public final class ResponseMapper {
   public static GeneratedEvaluateDecisionStrictContract toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
     final var record = brokerResponse.getResponse();
-    return new GeneratedEvaluateDecisionStrictContract(
-        record.getDecisionId(),
-        KeyUtil.keyToString(record.getDecisionKey()),
-        record.getDecisionName(),
-        record.getDecisionVersion(),
-        KeyUtil.keyToString(brokerResponse.getKey()),
-        KeyUtil.keyToString(brokerResponse.getKey()),
-        record.getDecisionRequirementsId(),
-        KeyUtil.keyToString(record.getDecisionRequirementsKey()),
-        buildEvaluatedDecisions(record),
-        emptyToNull(record.getFailedDecisionId()),
-        emptyToNull(record.getEvaluationFailureMessage()),
-        record.getDecisionOutput(),
-        record.getTenantId());
+    return GeneratedEvaluateDecisionStrictContract.builder()
+        .decisionDefinitionId(record.getDecisionId())
+        .decisionDefinitionKey(record.getDecisionKey())
+        .decisionDefinitionName(record.getDecisionName())
+        .decisionDefinitionVersion(record.getDecisionVersion())
+        .decisionEvaluationKey(brokerResponse.getKey())
+        .decisionInstanceKey(brokerResponse.getKey())
+        .decisionRequirementsId(record.getDecisionRequirementsId())
+        .decisionRequirementsKey(record.getDecisionRequirementsKey())
+        .evaluatedDecisions(buildEvaluatedDecisions(record))
+        .output(record.getDecisionOutput())
+        .tenantId(record.getTenantId())
+        .failedDecisionDefinitionId(emptyToNull(record.getFailedDecisionId()))
+        .failureMessage(emptyToNull(record.getEvaluationFailureMessage()))
+        .build();
   }
 
   private static List<GeneratedEvaluatedDecisionStrictContract> buildEvaluatedDecisions(
@@ -668,17 +692,19 @@ public final class ResponseMapper {
     return decisionEvaluationRecord.getEvaluatedDecisions().stream()
         .map(
             evaluatedDecision ->
-                new GeneratedEvaluatedDecisionStrictContract(
-                    evaluatedDecision.getDecisionId(),
-                    evaluatedDecision.getDecisionName(),
-                    evaluatedDecision.getDecisionVersion(),
-                    evaluatedDecision.getDecisionType(),
-                    evaluatedDecision.getDecisionOutput(),
-                    evaluatedDecision.getTenantId(),
-                    buildMatchedRules(evaluatedDecision.getMatchedRules()),
-                    buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()),
-                    KeyUtil.keyToString(evaluatedDecision.getDecisionKey()),
-                    evaluatedDecision.getDecisionEvaluationInstanceKey()))
+                GeneratedEvaluatedDecisionStrictContract.builder()
+                    .decisionDefinitionId(evaluatedDecision.getDecisionId())
+                    .decisionDefinitionName(evaluatedDecision.getDecisionName())
+                    .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
+                    .decisionDefinitionType(evaluatedDecision.getDecisionType())
+                    .output(evaluatedDecision.getDecisionOutput())
+                    .tenantId(evaluatedDecision.getTenantId())
+                    .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules()))
+                    .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
+                    .decisionDefinitionKey(evaluatedDecision.getDecisionKey())
+                    .decisionEvaluationInstanceKey(
+                        evaluatedDecision.getDecisionEvaluationInstanceKey())
+                    .build())
         .toList();
   }
 
