@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.LoopCardinality;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import java.util.function.Consumer;
 
 /**
  * @author Thorben Lindhauer
@@ -30,11 +31,14 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
         B extends AbstractMultiInstanceLoopCharacteristicsBuilder<B>>
     extends AbstractBaseElementBuilder<B, MultiInstanceLoopCharacteristics> {
 
+  private final ZeebeExecutionListenersBuilderImpl<B> zeebeExecutionListenersBuilder;
+
   protected AbstractMultiInstanceLoopCharacteristicsBuilder(
       final BpmnModelInstance modelInstance,
       final MultiInstanceLoopCharacteristics element,
       final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   /**
@@ -131,5 +135,26 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
 
   public B zeebeOutputElementExpression(final String outputElementExpression) {
     return zeebeOutputElement(asZeebeExpression(outputElementExpression));
+  }
+
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  public B zeebeEndExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
+  }
+
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }
