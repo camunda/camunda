@@ -22,6 +22,7 @@ import io.camunda.container.cluster.CamundaPort;
 import io.camunda.container.cluster.GatewayNode;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
 
@@ -61,11 +63,15 @@ final class Ipv6IntegrationTest {
           .withPartitionsCount(1)
           .withReplicationFactor(1)
           .withBrokersCount(1)
+          .withNetwork(network)
           .withBrokerConfig(this::configureBroker)
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
           .withGatewayConfig(this::configureGateway)
           .build();
+
+  @RegisterExtension
+  private final ContainerLogsDumper logsDumper = new ContainerLogsDumper(cluster::getNodes);
 
   @SuppressWarnings({"resource", "Convert2MethodRef", "ResultOfMethodCallIgnored"})
   @BeforeEach
