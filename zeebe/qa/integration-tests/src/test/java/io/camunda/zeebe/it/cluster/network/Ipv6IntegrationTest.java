@@ -140,7 +140,7 @@ final class Ipv6IntegrationTest {
               cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
               cfg.getCluster().getNetwork().setAdvertisedHost(hostName);
               cfg.getCluster().getNetwork().setHost(INADDR6_ANY);
-              cfg.getApi().getGrpc().setAddress(hostName);
+              cfg.getApi().getGrpc().setAddress(INADDR6_ANY);
             })
         .withProperty("camunda.security.authentication.unprotected-api", true)
         .withEnv(UNPROTECTED_API_ENV_VAR, "true")
