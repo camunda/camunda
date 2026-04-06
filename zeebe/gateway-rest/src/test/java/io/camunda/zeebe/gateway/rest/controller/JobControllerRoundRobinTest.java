@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -63,7 +63,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
+  @Autowired ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -409,7 +409,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     }
 
     @Bean
-    public ActivateJobsHandler<JobActivationResult> activateJobsHandler(
+    public ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler(
         final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
       final var handler =
           new RoundRobinActivateJobsHandler<>(
@@ -428,9 +428,9 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     }
 
     @Bean
-    public JobServices<JobActivationResult> jobServices(
+    public JobServices<GeneratedJobActivationStrictContract> jobServices(
         final BrokerClient brokerClient,
-        final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
+        final ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler) {
       return new JobServices<>(
           brokerClient,
           new SecurityContextProvider(),

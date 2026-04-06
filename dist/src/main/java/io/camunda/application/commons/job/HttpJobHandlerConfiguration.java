@@ -10,7 +10,7 @@ package io.camunda.application.commons.job;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
@@ -57,9 +57,10 @@ public class HttpJobHandlerConfiguration {
   }
 
   @Bean
-  public ActivateJobsHandler<JobActivationResult> activateJobsHandler() {
+  public ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler() {
     final var handler = buildActivateJobsHandler(brokerClient);
-    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResult>>();
+    final var future =
+        new CompletableFuture<ActivateJobsHandler<GeneratedJobActivationStrictContract>>();
     final var actor =
         Actor.newActor()
             .name(config.actorName())
@@ -69,7 +70,7 @@ public class HttpJobHandlerConfiguration {
     return handler;
   }
 
-  private ActivateJobsHandler<JobActivationResult> buildActivateJobsHandler(
+  private ActivateJobsHandler<GeneratedJobActivationStrictContract> buildActivateJobsHandler(
       final BrokerClient brokerClient) {
     if (config.longPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
@@ -82,10 +83,10 @@ public class HttpJobHandlerConfiguration {
     }
   }
 
-  private LongPollingActivateJobsHandler<JobActivationResult> buildLongPollingHandler(
-      final BrokerClient brokerClient) {
+  private LongPollingActivateJobsHandler<GeneratedJobActivationStrictContract>
+      buildLongPollingHandler(final BrokerClient brokerClient) {
     final var handler =
-        LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
+        LongPollingActivateJobsHandler.<GeneratedJobActivationStrictContract>newBuilder()
             .setBrokerClient(brokerClient)
             .setMaxMessageSize(config.maxMessageSize().toBytes())
             .setLongPollingTimeout(config.longPolling().getTimeout())

@@ -13,6 +13,7 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobCompletionRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorStatisticsQueryStrictContract;
@@ -23,7 +24,6 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTyp
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsQueryStrictContract;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
-import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
@@ -44,13 +44,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
-  private final JobServices<JobActivationResult> jobServices;
+  private final JobServices<GeneratedJobActivationStrictContract> jobServices;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final ResponseObserverProvider responseObserverProvider;
   private final MultiTenancyConfiguration multiTenancyCfg;
 
   public DefaultJobServiceAdapter(
-      final JobServices<JobActivationResult> jobServices,
+      final JobServices<GeneratedJobActivationStrictContract> jobServices,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg) {

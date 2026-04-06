@@ -10,7 +10,7 @@ package io.camunda.application.commons.service;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
-import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -108,10 +108,10 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public JobServices<JobActivationResult> jobServices(
+  public JobServices<GeneratedJobActivationStrictContract> jobServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
+      final ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler,
       final JobSearchClient jobSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
