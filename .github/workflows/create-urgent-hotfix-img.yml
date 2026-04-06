@@ -189,11 +189,11 @@ jobs:
           echo "📋 Hotfix version: $HOTFIX_VERSION"
 
           # Update versions based on branch structure:
-          # - Unified branches (stable/8.8+, main): Have clients/java-deprecated
-          # - Dedicated branches (stable/optimize-8.6/8.7): No clients/java-deprecated
+          # - Unified branches (stable/8.8+, main): Have clients/camunda-spring-boot-starter
+          # - Dedicated branches (stable/optimize-8.6/8.7): No clients/camunda-spring-boot-starter
           if [[ "${{ matrix.component }}" == "optimize" ]]; then
             # For Optimize builds:
-            if [[ -d "clients/java-deprecated" ]]; then
+            if [[ -d "clients/camunda-spring-boot-starter" ]]; then
               # Unified branch (stable/8.8+): Update BOTH BOM and optimize/pom.xml
               # BOM update: Zeebe modules get hotfix version
               # optimize/pom.xml update: Optimize modules get hotfix version (separate parent hierarchy)
@@ -259,9 +259,9 @@ jobs:
                 exit 1
               fi
 
-              # Branch detection: clients/java-deprecated only exists on unified branches (stable/8.8+)
-              # Older branches (stable/optimize-8.6/8.7) have bom and clients/java but not java-deprecated
-              if [[ -d "clients/java-deprecated" ]]; then
+              # Branch detection: clients/camunda-spring-boot-starter only exists on unified branches (stable/8.8+)
+              # Older branches (stable/optimize-8.6/8.7) have bom and clients/java but not camunda-spring-boot-starter
+              if [[ -d "clients/camunda-spring-boot-starter" ]]; then
                 # Unified branch (stable/8.8+): Pre-build Zeebe dependencies to make them available at hotfix version
                 # This ensures zeebe-client, search-client, etc. are installed locally
                 echo "📦 Unified branch: Building Zeebe dependencies first..."
