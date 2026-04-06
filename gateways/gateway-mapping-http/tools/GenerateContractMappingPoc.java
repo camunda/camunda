@@ -1562,6 +1562,25 @@ public enum %s {
         }
       }
 
+      // Coerce null List/Set fields to empty collections. The old protocol POJOs initialized
+      // all list fields to new ArrayList<>(), so null was never serialized. With
+      // @JsonInclude(ALWAYS), a null list would serialize as JSON null instead of [].
+      // Skip required+non-nullable fields (those throw on null above) and nullable fields
+      // (null carries semantic meaning, e.g. "don't change" in Changeset).
+      for (var f : fields) {
+        if (f.required() && !f.nullable()) continue;
+        if (f.nullable()) continue;
+        if (f.javaType().startsWith("java.util.List")) {
+          checks.add(
+              "    if (" + f.identifier() + " == null) " + f.identifier()
+                  + " = java.util.List.of();");
+        } else if (f.javaType().startsWith("java.util.Set")) {
+          checks.add(
+              "    if (" + f.identifier() + " == null) " + f.identifier()
+                  + " = java.util.Set.of();");
+        }
+      }
+
       constructorBody = String.join("\n", checks);
     }
 
