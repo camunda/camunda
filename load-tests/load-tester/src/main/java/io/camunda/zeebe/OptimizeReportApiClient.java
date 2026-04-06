@@ -85,8 +85,7 @@ public class OptimizeReportApiClient implements AutoCloseable {
             keycloakBaseUrl,
             realm,
             URLEncoder.encode(clientId, StandardCharsets.UTF_8),
-            URLEncoder.encode(
-                optimizeBaseUrl + API_AUTH_CALLBACK, StandardCharsets.UTF_8));
+            URLEncoder.encode(optimizeBaseUrl + API_AUTH_CALLBACK, StandardCharsets.UTF_8));
 
     LOG.debug("Getting Keycloak login page");
     final HttpResponse<String> authResponse =
@@ -135,7 +134,8 @@ public class OptimizeReportApiClient implements AutoCloseable {
   }
 
   public void ensureValidToken() throws Exception {
-    if (accessToken == null || System.currentTimeMillis() >= tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
+    if (accessToken == null
+        || System.currentTimeMillis() >= tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
       LOG.debug("Token expired or missing, re-authenticating");
       authenticateWithAuthorizationCodeFlow();
     }
@@ -442,8 +442,7 @@ public class OptimizeReportApiClient implements AutoCloseable {
             + "&code="
             + URLEncoder.encode(authorizationCode, StandardCharsets.UTF_8)
             + "&redirect_uri="
-            + URLEncoder.encode(
-                optimizeBaseUrl + API_AUTH_CALLBACK, StandardCharsets.UTF_8)
+            + URLEncoder.encode(optimizeBaseUrl + API_AUTH_CALLBACK, StandardCharsets.UTF_8)
             + "&client_secret="
             + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8);
 

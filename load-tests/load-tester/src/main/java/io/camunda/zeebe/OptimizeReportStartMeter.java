@@ -41,17 +41,17 @@ public class OptimizeReportStartMeter implements AutoCloseable {
         "Scheduling Optimize dashboard and report evaluations every {} seconds", intervalSeconds);
 
     executorService.scheduleAtFixedRate(
-            () -> {
-              try {
-                evaluateHomepage();
-                evaluateDetailedPage();
-              } catch (final Exception e) {
-                THROTTLED_LOGGER.error("Error during Optimize evaluation cycle", e);
-              }
-            },
-            10,
-            intervalSeconds,
-            TimeUnit.SECONDS);
+        () -> {
+          try {
+            evaluateHomepage();
+            evaluateDetailedPage();
+          } catch (final Exception e) {
+            THROTTLED_LOGGER.error("Error during Optimize evaluation cycle", e);
+          }
+        },
+        10,
+        intervalSeconds,
+        TimeUnit.SECONDS);
 
     LOG.info("Optimize evaluation meter started");
   }
