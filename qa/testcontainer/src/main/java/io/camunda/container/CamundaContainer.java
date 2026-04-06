@@ -30,6 +30,7 @@ import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
@@ -59,9 +60,8 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
     final boolean alreadyMounted =
         getBinds().stream().anyMatch(b -> b.getVolume().getPath().equals(CONFIG_PATH));
     if (!alreadyMounted) {
-      final var tempDir = createTempDir();
-      final var configFile = configurationBuilder.exportConfig(tempDir);
-      withFileSystemBind(configFile.toAbsolutePath().toString(), CONFIG_PATH, BindMode.READ_ONLY)
+      final var configYaml = configurationBuilder.exportConfigAsString();
+      withCopyToContainer(Transferable.of(configYaml), CONFIG_PATH)
           .withEnv("SPRING_CONFIG_ADDITIONALLOCATION", CONFIG_PATH);
     }
     super.start();

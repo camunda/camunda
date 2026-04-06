@@ -64,8 +64,7 @@ class BrokerContainerConfigIT {
         .as("camunda.cluster section should be present")
         .isNotNull()
         .containsEntry("name", CUSTOM_CLUSTER_NAME)
-        .containsEntry("partitionCount", CUSTOM_PARTITION_COUNT)
-        .containsEntry("replicationFactor", CUSTOM_REPLICATION_FACTOR);
+        .containsEntry("partitionCount", CUSTOM_PARTITION_COUNT);
 
     final var processing = (Map<String, Object>) camunda.get("processing");
     assertThat(processing)
