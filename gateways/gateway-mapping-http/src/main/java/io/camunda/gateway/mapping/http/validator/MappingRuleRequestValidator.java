@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
-import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateRequestStrictContract;
 import io.camunda.security.validation.MappingRuleValidator;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -23,20 +23,22 @@ public final class MappingRuleRequestValidator {
     this.mappingRuleValidator = mappingRuleValidator;
   }
 
-  public Optional<ProblemDetail> validateCreateRequest(final MappingRuleCreateRequest request) {
+  public Optional<ProblemDetail> validateCreateRequest(
+      final GeneratedMappingRuleCreateRequestStrictContract request) {
     return validate(
         () ->
             mappingRuleValidator.validateCreateRequest(
-                request.getMappingRuleId(),
-                request.getClaimName(),
-                request.getClaimValue(),
-                request.getName()));
+                request.mappingRuleId(),
+                request.claimName(),
+                request.claimValue(),
+                request.name()));
   }
 
-  public Optional<ProblemDetail> validateUpdateRequest(final MappingRuleUpdateRequest request) {
+  public Optional<ProblemDetail> validateUpdateRequest(
+      final GeneratedMappingRuleUpdateRequestStrictContract request) {
     return validate(
         () ->
             mappingRuleValidator.validateUpdateRequest(
-                request.getClaimName(), request.getClaimValue(), request.getName()));
+                request.claimName(), request.claimValue(), request.name()));
   }
 }

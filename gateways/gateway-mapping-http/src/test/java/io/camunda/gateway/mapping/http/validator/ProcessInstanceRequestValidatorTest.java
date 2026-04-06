@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -20,13 +19,10 @@ import org.springframework.http.ProblemDetail;
 class ProcessInstanceRequestValidatorTest {
 
   @Test
-  @DisplayName("Should accept valid processDefinitionKey format")
-  void shouldAcceptValidProcessDefinitionKey() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
-
+  @DisplayName("Should accept null tags")
+  void shouldAcceptNullTags() {
     final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceTags(null);
 
     assertThat(result).isEmpty();
   }
@@ -34,12 +30,9 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid tags")
   void shouldAcceptValidTags() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
-    request.setTags(Set.of("valid-tag", "another-tag"));
-
     final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceTags(
+            Set.of("valid-tag", "another-tag"));
 
     assertThat(result).isEmpty();
   }
@@ -47,12 +40,9 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject invalid tags")
   void shouldRejectInvalidTags() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
-    request.setTags(Set.of("1 invalid-tag", "another-tag"));
-
     final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceTags(
+            Set.of("1 invalid-tag", "another-tag"));
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();

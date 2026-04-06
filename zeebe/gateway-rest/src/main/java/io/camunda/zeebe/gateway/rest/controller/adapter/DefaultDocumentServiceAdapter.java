@@ -59,7 +59,7 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
       final List<Part> files,
       final List<GeneratedDocumentMetadataStrictContract> metadataListStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toDocumentCreateRequestBatchStrict(
+    return RequestMapper.toDocumentCreateRequestBatch(
             files, storeId, objectMapper, metadataListStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,

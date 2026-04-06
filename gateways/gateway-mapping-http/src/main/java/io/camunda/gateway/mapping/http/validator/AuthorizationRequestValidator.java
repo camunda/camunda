@@ -11,8 +11,6 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationIdBasedRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationPropertyBasedRequestStrictContract;
-import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
-import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.security.validation.AuthorizationValidator;
 import java.util.Optional;
 import java.util.Set;
@@ -24,31 +22,6 @@ public final class AuthorizationRequestValidator {
 
   public AuthorizationRequestValidator(final AuthorizationValidator authorizationValidator) {
     this.authorizationValidator = authorizationValidator;
-  }
-
-  public Optional<ProblemDetail> validateIdBasedRequest(final AuthorizationIdBasedRequest request) {
-    return validate(
-        () ->
-            authorizationValidator.validate(
-                request.getOwnerId(),
-                request.getOwnerType(),
-                request.getResourceType(),
-                request.getResourceId(),
-                null,
-                Set.copyOf(request.getPermissionTypes())));
-  }
-
-  public Optional<ProblemDetail> validatePropertyBasedRequest(
-      final AuthorizationPropertyBasedRequest request) {
-    return validate(
-        () ->
-            authorizationValidator.validate(
-                request.getOwnerId(),
-                request.getOwnerType(),
-                request.getResourceType(),
-                null,
-                request.getResourcePropertyName(),
-                Set.copyOf(request.getPermissionTypes())));
   }
 
   public Optional<ProblemDetail> validateIdBasedRequest(

@@ -11,41 +11,42 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
-import io.camunda.gateway.protocol.model.DocumentLinkRequest;
-import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentLinkRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataStrictContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class DocumentValidator {
 
-  public static Optional<ProblemDetail> validateDocumentMetadata(final DocumentMetadata metadata) {
+  public static Optional<ProblemDetail> validateDocumentMetadata(
+      final GeneratedDocumentMetadataStrictContract metadata) {
     if (metadata == null) {
       return Optional.empty();
     }
     return validate(
         violations -> {
-          if (metadata.getFileName() != null && metadata.getFileName().isBlank()) {
+          if (metadata.fileName() != null && metadata.fileName().isBlank()) {
             violations.add("The file name must not be empty, if present");
           }
 
-          if (metadata.getContentType() != null && metadata.getContentType().isBlank()) {
+          if (metadata.contentType() != null && metadata.contentType().isBlank()) {
             violations.add("The content type must not be empty, if present");
           }
 
-          if (metadata.getExpiresAt() != null) {
-            validateDate(metadata.getExpiresAt(), "expiresAt", violations);
+          if (metadata.expiresAt() != null) {
+            validateDate(metadata.expiresAt(), "expiresAt", violations);
           }
         });
   }
 
   public static Optional<ProblemDetail> validateDocumentLinkParams(
-      final DocumentLinkRequest request) {
+      final GeneratedDocumentLinkRequestStrictContract request) {
     if (request == null) {
       return Optional.empty();
     }
     return validate(
         violations -> {
-          final Long timeToLive = request.getTimeToLive();
+          final Long timeToLive = request.timeToLive();
           if (timeToLive <= 0) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(

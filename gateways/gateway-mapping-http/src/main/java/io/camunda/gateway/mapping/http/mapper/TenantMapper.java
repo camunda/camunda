@@ -11,8 +11,6 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
-import io.camunda.gateway.protocol.model.TenantCreateRequest;
-import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -27,30 +25,6 @@ public class TenantMapper {
     this.tenantRequestValidator = tenantRequestValidator;
   }
 
-  public Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest) {
-    return RequestMapper.getResult(
-        tenantRequestValidator.validateCreateRequest(tenantCreateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantCreateRequest.getTenantId(),
-                tenantCreateRequest.getName(),
-                tenantCreateRequest.getDescription()));
-  }
-
-  public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
-    return RequestMapper.getResult(
-        tenantRequestValidator.validateUpdateRequest(tenantUpdateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantId,
-                tenantUpdateRequest.getName(),
-                tenantUpdateRequest.getDescription()));
-  }
-
   public Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
       final String tenantId, final String memberId, final EntityType entityType) {
     return RequestMapper.getResult(
@@ -58,21 +32,17 @@ public class TenantMapper {
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
-  // ---- Strict contract methods (direct field access) ----
-
   public Either<ProblemDetail, TenantRequest> toTenantCreateDto(
       final GeneratedTenantCreateRequestStrictContract request) {
-    return toTenantCreateDto(
-        new TenantCreateRequest()
-            .tenantId(request.tenantId())
-            .name(request.name())
-            .description(request.description()));
+    return RequestMapper.getResult(
+        tenantRequestValidator.validateCreateRequest(request),
+        () -> new TenantRequest(null, request.tenantId(), request.name(), request.description()));
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
       final String tenantId, final GeneratedTenantUpdateRequestStrictContract request) {
-    return toTenantUpdateDto(
-        tenantId,
-        new TenantUpdateRequest().name(request.name()).description(request.description()));
+    return RequestMapper.getResult(
+        tenantRequestValidator.validateUpdateRequest(request),
+        () -> new TenantRequest(null, tenantId, request.name(), request.description()));
   }
 }

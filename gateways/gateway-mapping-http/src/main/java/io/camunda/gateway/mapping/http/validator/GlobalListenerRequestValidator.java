@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
-import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
-import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateGlobalTaskListenerRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateGlobalTaskListenerRequestStrictContract;
 import io.camunda.security.validation.IdentifierValidator;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,13 +27,13 @@ public class GlobalListenerRequestValidator {
   }
 
   public Optional<ProblemDetail> validateCreateRequest(
-      final CreateGlobalTaskListenerRequest request) {
+      final GeneratedCreateGlobalTaskListenerRequestStrictContract request) {
     return validate(
         () -> {
           final List<String> violations = new ArrayList<>();
-          identifierValidator.validateId(request.getId(), "id", violations);
-          identifierValidator.validateId(request.getType(), "type", violations);
-          if (request.getEventTypes() == null || request.getEventTypes().isEmpty()) {
+          identifierValidator.validateId(request.id(), "id", violations);
+          identifierValidator.validateId(request.type(), "type", violations);
+          if (request.eventTypes() == null || request.eventTypes().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("eventTypes"));
           }
           return violations;
@@ -50,13 +50,13 @@ public class GlobalListenerRequestValidator {
   }
 
   public Optional<ProblemDetail> validateUpdateRequest(
-      final String id, final UpdateGlobalTaskListenerRequest request) {
+      final String id, final GeneratedUpdateGlobalTaskListenerRequestStrictContract request) {
     return validate(
         () -> {
           final List<String> violations = new ArrayList<>();
           identifierValidator.validateId(id, "id", violations);
-          identifierValidator.validateId(request.getType(), "type", violations);
-          if (request.getEventTypes() == null || request.getEventTypes().isEmpty()) {
+          identifierValidator.validateId(request.type(), "type", violations);
+          if (request.eventTypes() == null || request.eventTypes().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("eventTypes"));
           }
           return violations;
