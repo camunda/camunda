@@ -1,0 +1,29 @@
+# OAuth configuration for load tests to connect to the Zeebe gateway via Identity/Keycloak.
+# In 8.7, all components are deployed separately (unlike 8.8's unified orchestration cluster).
+# The gateway is 'zeebe-gateway' and Identity uses Keycloak for OIDC tokens.
+saas:
+  # OAuth enabled — gateway enforces auth when global.identity.auth.enabled=true
+  enabled: true
+
+  # Saas.credentials configuration to connect to a Zeebe gateway with OIDC
+  credentials:
+    # Saas.existingSecret can be used to configure the secret name that should be referenced by the load tests
+    # applications to retrieve credential information.
+    #
+    # If this value is set, other credentials are not used.
+    existingSecret:
+
+    # Saas.credentials.clientId to define the clientId to connect
+    clientId: "zeebe"
+    # Saas.credentials.clientSecret to define the clientSecret to connect
+    clientSecret: "__SECRET__"
+    # Saas.credentials.zeebeRestAddress to define the rest address of the cluster (including port)
+    zeebeRestAddress: "http://zeebe-gateway:8080"
+    # SaaS.credentials.authServer to define the authentication server to retrieve JWT tokens
+    authServer: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+    # Saas.credentials.authType to define the authentication type for the starter and workers
+    authType: "OAUTH"
+    # Saas.credentials.zeebeGrpcAddress to define the grpc address of the cluster (including port)
+    zeebeGrpcAddress: "http://zeebe-gateway:26500"
+    # Saas.credentials.authorizationAudience to define the auth audience of the cluster
+    authorizationAudience: "zeebe-api"

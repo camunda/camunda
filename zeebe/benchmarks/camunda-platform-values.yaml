@@ -23,6 +23,7 @@ global:
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets:
       - name: harbor-registry
+  # Identity authentication enabled for Optimize and Zeebe gateway
 
   # Default node configuration for all the components, unless specific
   # reconfigured.
@@ -33,15 +34,26 @@ global:
   # By default, we run without Identity
   identity:
     auth:
-      enabled: false
+      enabled: true
+      zeebe:
+        existingSecret:
+          name: camunda-credentials
+        existingSecretKey: identity-zeebe-client-token
+      optimize:
+        clientId: optimize
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-optimize-client-token
   # To override the names - and remove the release name from the names
   # Allows shorter names like zeebe-0, zeebe-1, etc.
   # Especially useful for the services, which are just zeebe-gateway and zeebe
   zeebeClusterName: zeebe
 
 identity:
-  enabled: false
+  enabled: true
   fullnameOverride: identity # we override the names for simplicity of the deployment
+  firstUser:
+    existingSecret: camunda-credentials
+    existingSecretKey: identity-firstuser-password
   tolerations:
     - key: nodepool
       operator: Equal
@@ -49,8 +61,12 @@ identity:
       effect: NoSchedule
 
 identityKeycloak:
-  enabled: false
+  enabled: true
   fullnameOverride: keycloak # we override the names for simplicity of the deployment
+  auth:
+    adminUser: admin
+    existingSecret: camunda-credentials
+    passwordSecretKey: identity-keycloak-admin-password
   nodeSelector:
     component: benchmark-n2-standard-4
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
@@ -61,10 +77,27 @@ identityKeycloak:
       effect: NoSchedule
   postgresql:
     fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
+    auth:
+      existingSecret: camunda-credentials
+      secretKeys:
+        adminPasswordKey: identity-keycloak-postgresql-admin-password
+        userPasswordKey: identity-keycloak-postgresql-user-password
 
 optimize:
-  enabled: false
+  enabled: true
   fullnameOverride: optimize # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+  extraConfiguration:
+    application.yml: |
+      historyCleanup:
+        cronTrigger: '0 1 * * *'
+        ttl: 'P1D'
   tolerations:
     - key: nodepool
       operator: Equal
@@ -166,7 +199,7 @@ zeebe:
     ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: true
     ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 10m # set it to a higher value if we run with operate, so operate has enough time to consume the data
+    minimumAge: 1d # Optimize needs time to import data before ILM cleanup
 
   # Environment variables
   env:
@@ -295,28 +328,27 @@ elasticsearch:
     pdb:
       minAvailable: 2
     # Elasticsearch master-eligible node heap size.
-    # Will be converted to -Xms3g
-    heapSize: 3g
+    heapSize: 4g
     # The resources configurations for elasticsearch containers
     persistence:
       # Persistent Volume Storage Class
       storageClass: benchmark-ssd-zonal-v1
       # Persistent Volume Size
-      size: 16Gi
+      size: 512Gi
       # Persistent Volume Access Modes
       accessModes: [ "ReadWriteOnce" ]
     resources:
       requests:
-        cpu: 1
-        memory: 3Gi
+        cpu: 7
+        memory: 8Gi
       limits:
-        cpu: 2
-        memory: 6Gi
+        cpu: 7
+        memory: 8Gi
     nodeSelector:
-      component: benchmark-n2-standard-2
+      component: benchmark-n2-standard-8
       topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
     tolerations:
       - key: nodepool
         operator: Equal
-        value: n2-standard-2
+        value: n2-standard-8
         effect: NoSchedule

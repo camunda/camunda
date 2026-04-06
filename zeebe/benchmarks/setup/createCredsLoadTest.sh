@@ -1,20 +1,27 @@
 #!/usr/bin/env bash
 #
-# Copyright Camunda Services GmbH ...
+# Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+# one or more contributor license agreements. See the NOTICE file distributed
+# with this work for additional information regarding copyright ownership.
+# Licensed under the Camunda License 1.0. You may not use this file
+# except in compliance with the Camunda License 1.0.
 #
 set -euo pipefail
+
+# Contains OS specific sed function
+. utils.sh
 
 # Usage: ./createCredsLoadTest.sh [namespace]
 NS="${1:-__NAMESPACE__}"
 
-# Check if the secret already exists; if so, retrieve the existing orchestration secret
+# Check if the secret already exists; if so, retrieve the existing admin client secret
 # for the sed replacement and skip creation.
 if kubectl -n "$NS" get secret camunda-credentials &>/dev/null; then
   echo "Secret 'camunda-credentials' already exists in namespace '$NS'. Skipping creation."
-  echo "Reading existing orchestration secret from 'camunda-credentials' in namespace '$NS'."
-  ORCHESTRATION_SECRET=$(kubectl -n "$NS" get secret camunda-credentials -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 -d)
-  echo "Done Replacing __SECRET__ in load-test-values.yaml with existing orchestration secret."
-  sed_inplace "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml
+  echo "Reading existing admin client secret from 'camunda-credentials' in namespace '$NS'."
+  ZEEBE_SECRET=$(kubectl -n "$NS" get secret camunda-credentials -o jsonpath='{.data.identity-zeebe-client-token}' | base64 -d)
+  sed_inplace "s/__SECRET__/${ZEEBE_SECRET}/g" load-test-values.yaml
+  echo "Done replacing __SECRET__ in load-test-values.yaml with existing zeebe client secret."
   exit 0
 fi
 
@@ -35,6 +42,7 @@ gen_token() { openssl rand -hex 16; }
 # OIDC client secrets (32-char hex strings)
 : "${IDENTITY_ADMIN_CLIENT_TOKEN:=$(gen_token)}"
 : "${IDENTITY_OPTIMIZE_CLIENT_TOKEN:=$(gen_token)}"
+: "${IDENTITY_ZEEBE_CLIENT_TOKEN:=$(gen_token)}"
 
 echo "Creating camunda-credentials in namespace '$NS'..."
 
@@ -53,6 +61,12 @@ stringData:
   identity-postgresql-user-password: "${IDENTITY_POSTGRESQL_USER_PASSWORD}"
   identity-admin-client-token: "${IDENTITY_ADMIN_CLIENT_TOKEN}"
   identity-optimize-client-token: "${IDENTITY_OPTIMIZE_CLIENT_TOKEN}"
+  identity-zeebe-client-token: "${IDENTITY_ZEEBE_CLIENT_TOKEN}"
 EOF
 
 echo "Done. Secret 'camunda-credentials' created in namespace '$NS'."
+
+# Replace __SECRET__ placeholder in load-test-values.yaml with the zeebe client token
+# so the load test can authenticate via OAuth to the Zeebe gateway
+sed_inplace "s/__SECRET__/${IDENTITY_ZEEBE_CLIENT_TOKEN}/g" load-test-values.yaml
+echo "Replaced __SECRET__ in load-test-values.yaml with zeebe client token."

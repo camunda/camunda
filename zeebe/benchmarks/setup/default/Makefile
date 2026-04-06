@@ -27,9 +27,9 @@ else ifeq ($(secondary_storage),none)
 platform_values += -f camunda-platform-no-secondary-storage.yaml
 endif
 
-# Add Optimize values if enabled
-ifeq ($(enable_optimize),true)
-platform_values += -f camunda-platform-values-optimize.yaml
+# Disable Optimize if not enabled
+ifneq ($(enable_optimize),true)
+platform_values += --set optimize.enabled=false
 endif
 
 # Platform values with stable configuration
@@ -109,7 +109,7 @@ install-load-test:
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
-		--set global.connect.serviceName=zeebe-gateway \
+		-f load-test-values.yaml \
 		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob

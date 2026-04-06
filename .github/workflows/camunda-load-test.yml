@@ -66,7 +66,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -152,7 +152,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -437,6 +437,69 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  build-optimize-image:
+    name: Build Optimize Docker image
+    needs: calculate-image-tag
+    if: ${{ inputs.enable-optimize && inputs.reuse-tag == '' && inputs.use-official-docker-images == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Checkout Optimize source (stable/optimize-8.7)
+        uses: actions/checkout@v6
+        with:
+          ref: stable/optimize-8.7
+          path: optimize-build-src
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          minimus: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          maven-mirrors: |
+            [{"id": "camunda-nexus", "name": "Camunda Nexus", "url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "mirrorOf": "*"}]
+      - name: Build Optimize assembly
+        run: |
+          cd optimize-build-src
+          ./mvnw install -pl optimize-distro -am -DskipTests -DskipChecks -PrunAssembly -T1C
+      - name: Get Optimize version
+        id: optimize-version
+        run: |
+          cd optimize-build-src
+          echo "version=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' -f optimize/pom.xml -N exec:exec)" >> "$GITHUB_OUTPUT"
+      - name: Build and push Optimize Docker image
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: optimize-build-src
+          file: optimize-build-src/optimize.Dockerfile
+          tags: ${{ env.IMAGE_REPOSITORY }}/optimize:${{ needs.calculate-image-tag.outputs.image-tag }}
+          push: true
+          platforms: linux/amd64
+          provenance: false
+          build-args: |
+            VERSION=${{ steps.optimize-version.outputs.version }}
+            DISTRO=production
+            ARTIFACT_PATH=./optimize-distro/target
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   deploy-cluster-under-test:
     name: Deploy cluster under test
     needs:
@@ -444,13 +507,15 @@ jobs:
       - calculate-scenario-config
       - build-zeebe-image
       - build-load-test-images
+      - build-optimize-image
     # To have the possibility to re-deploy the tests without rebuilding the images,
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
       needs.calculate-image-tag.result == 'success' &&
       (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped') &&
+      (needs.build-optimize-image.result == 'success' || needs.build-optimize-image.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -551,6 +616,16 @@ jobs:
           # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
           if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
             additional_platform_config+=" ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
+          fi
+
+          # Inject Optimize image configuration when enabled
+          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+            optimize_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+            optimize_repo="${{ inputs.use-official-docker-images && 'camunda/optimize' || 'team-zeebe/optimize' }}"
+            additional_platform_config+=" \
+              --set optimize.image.registry=${optimize_registry} \
+              --set optimize.image.repository=${optimize_repo} \
+              --set optimize.image.tag=${image_tag}"
           fi
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
