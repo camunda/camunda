@@ -111,7 +111,7 @@ public class ClusterVariableController {
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
-  private ResponseEntity<Object> search(
+  public ResponseEntity<Object> search(
       @RequestBody final ClusterVariableSearchQueryRequest query,
       @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
           final boolean truncateValues) {
