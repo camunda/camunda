@@ -16,7 +16,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.container.cluster.BrokerNode;
+import io.camunda.container.cluster.ClusterNode;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStreams;
@@ -27,7 +27,7 @@ import java.util.List;
  * Java interface for the node's job stream actuator. To instantiate this interface, you can use
  * {@link Feign}; see {@link #of(String)} as an example.
  *
- * <p>You can use one of {@link #of(String)} or {@link #of(BrokerNode)} to create a new client to
+ * <p>You can use one of {@link #of(String)} or {@link #of(ClusterNode)} to create a new client to
  * use for yourself.
  */
 public interface JobStreamActuator {
@@ -37,7 +37,7 @@ public interface JobStreamActuator {
    * @param node the node to connect to
    * @return a new instance of {@link JobStreamActuator}
    */
-  static JobStreamActuator of(final BrokerNode<?> node) {
+  static JobStreamActuator of(final ClusterNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/jobstreams", node.getExternalMonitoringAddress());
     return of(endpoint);

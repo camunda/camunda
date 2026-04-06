@@ -18,7 +18,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.container.cluster.BrokerNode;
+import io.camunda.container.cluster.ClusterNode;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import org.slf4j.event.Level;
 
@@ -26,7 +26,7 @@ import org.slf4j.event.Level;
  * Java interface for any node's loggers actuator. To instantiate this interface, you can use {@link
  * Feign}; see {@link #of(String)} as an example.
  *
- * <p>You can use one of {@link #of(String)} or {@link #of(BrokerNode)} to create a new client to
+ * <p>You can use one of {@link #of(String)} or {@link #of(ClusterNode)} to create a new client to
  * use for yourself.
  *
  * <p>Adding a new method is simple: simply define the input/output here as you normally would, and
@@ -42,7 +42,7 @@ public interface LoggersActuator {
    * @param node the node to connect to
    * @return a new instance of {@link LoggersActuator}
    */
-  static LoggersActuator of(final BrokerNode<?> node) {
+  static LoggersActuator of(final ClusterNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/loggers", node.getExternalMonitoringAddress());
     return of(endpoint);
