@@ -7,14 +7,14 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [single_zone]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  single_zone        Optional. true|false to deploy the cluster on a single zone. Default: true
+  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
   -h, --help         Show this help message.
@@ -74,13 +74,6 @@ if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   exit 1
 fi
 
-# Create namespace if it doesn't exist
-if ! kubectl get namespace $namespace >/dev/null 2>&1; then
-  kubectl create namespace $namespace
-else
-  echo "Namespace '$namespace' already exists"
-fi
-
 # Pick a "random" zone, selected from the input value.
 function hashmod_zone() {
     local input="${1?"Specify an initial value to compute the zone from"}"
@@ -101,6 +94,42 @@ function hashmod_zone() {
     zone="${zones[$hashmod]}"
     echo "$zone"
 }
+
+enable_single_zone="${5:-true}"
+enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
+single_zone_annotation_name="topology.kubernetes.io/zone"
+availability_zone="~"
+
+# Create namespace if it doesn't exist
+if ! kubectl get namespace $namespace >/dev/null 2>&1; then
+  kubectl create namespace "$namespace"
+  if [[ "$enable_single_zone" == "true" ]]; then
+    availability_zone="$(hashmod_zone "$namespace")"
+    kubectl annotate namespace "$namespace" "${single_zone_annotation_name}=${availability_zone}"
+    echo "Will configure pods to deploy into the $availability_zone AZ only."
+  else
+    availability_zone="~"
+    echo "Will NOT configure pods to deploy into a single zone."
+  fi
+else
+  echo "Namespace '$namespace' already exists"
+  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
+
+  if [[ "$existing_zone" == "null" ]]
+  then
+    # Existing namespace, but not labelled. Don't change scheduling there.
+    # This is for backward compatibility reasons and prevent already running
+    # tests, scheduled over multiple zones, from being forcefully rescheduled
+    # on a new single zone.
+    # Once all the namespaces have the annotation, this backward compatibility
+    # step can be removed.
+    availability_zone="~"
+    echo "Namespace ${namespace} is NOT configured to run on a single availability zone ; scheduling will not be changed."
+  else
+    availability_zone="$existing_zone"
+    echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
+  fi
+fi
 
 # Sanitize a string to be a valid Kubernetes label value
 sanitize_k8s_label() {
@@ -147,16 +176,6 @@ cp -rv default/ $namespace
 cp -v ../*.yaml $namespace/
 
 cd $namespace
-
-enable_single_zone="${5:-true}"
-enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
-if [[ "$enable_single_zone" == "true" ]]; then
-    availability_zone="$(hashmod_zone "$namespace")"
-    echo "Will configure pods to deploy into the $availability_zone AZ only."
-else
-    availability_zone="~"
-    echo "Will NOT configure pods to deploy into a single zone."
-fi
 
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
