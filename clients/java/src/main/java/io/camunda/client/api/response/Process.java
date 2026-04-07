@@ -44,5 +44,5 @@ public interface Process {
   /**
    * @return the name of the process, or {@code null} if it is not defined in BPMN
    */
-  String getProcessName();
+  String getName();
 }

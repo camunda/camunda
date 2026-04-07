@@ -26,7 +26,7 @@ public final class ProcessImpl implements Process {
   private final int version;
   private final String resourceName;
   private final String tenantId;
-  private final String processName;
+  private final String name;
 
   public ProcessImpl(final ProcessMetadata process) {
     this(
@@ -35,7 +35,7 @@ public final class ProcessImpl implements Process {
         process.getVersion(),
         process.getResourceName(),
         process.getTenantId(),
-        process.getProcessName());
+        process.getName());
   }
 
   public ProcessImpl(
@@ -44,13 +44,13 @@ public final class ProcessImpl implements Process {
       final int version,
       final String resourceName,
       final String tenantId,
-      final String processName) {
+      final String name) {
     this.processDefinitionKey = processDefinitionKey;
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
     this.resourceName = resourceName;
     this.tenantId = tenantId;
-    this.processName = processName;
+    this.name = name;
   }
 
   @Override
@@ -79,14 +79,13 @@ public final class ProcessImpl implements Process {
   }
 
   @Override
-  public String getProcessName() {
-    return processName;
+  public String getName() {
+    return name;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        processDefinitionKey, bpmnProcessId, version, resourceName, tenantId, processName);
+    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName, tenantId, name);
   }
 
   @Override
@@ -103,7 +102,7 @@ public final class ProcessImpl implements Process {
         && Objects.equals(bpmnProcessId, process.bpmnProcessId)
         && Objects.equals(resourceName, process.resourceName)
         && Objects.equals(tenantId, process.tenantId)
-        && Objects.equals(processName, process.processName);
+        && Objects.equals(name, process.name);
   }
 
   @Override
@@ -122,8 +121,8 @@ public final class ProcessImpl implements Process {
         + ", tenantId='"
         + tenantId
         + '\''
-        + ", processName='"
-        + processName
+        + ", name='"
+        + name
         + '\''
         + '}';
   }

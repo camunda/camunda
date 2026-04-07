@@ -229,7 +229,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .processDefinitionKey("423")
                             .tenantId(tenantId)
                             .resourceName(filename)
-                            .processName(processName))));
+                            .name(processName))));
 
     // when
     final DeploymentEvent response =
@@ -269,7 +269,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .processDefinitionVersion(1)
                             .processDefinitionKey("1")
                             .tenantId(tenantId)
-                            .processName(processName1)
+                            .name(processName1)
                             .resourceName(filename1)))
             .addDeploymentsItem(
                 new DeploymentMetadataResult()
@@ -280,7 +280,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .processDefinitionKey("2")
                             .tenantId(tenantId)
                             .resourceName(filename2)
-                            .processName(processName2))));
+                            .name(processName2))));
 
     // when
     final DeploymentEvent response =

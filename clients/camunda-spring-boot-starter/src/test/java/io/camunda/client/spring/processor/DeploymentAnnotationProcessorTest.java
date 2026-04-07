@@ -315,7 +315,7 @@ public class DeploymentAnnotationProcessorTest {
       }
 
       @Override
-      public String getProcessName() {
+      public String getName() {
         return "TestProcessName";
       }
     };

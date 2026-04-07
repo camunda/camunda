@@ -166,7 +166,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         p.getProcessDefinitionVersion(),
                         p.getResourceName(),
                         p.getTenantId(),
-                        p.getProcessName())));
+                        p.getName())));
   }
 
   @Override
