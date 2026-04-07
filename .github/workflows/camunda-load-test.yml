@@ -538,7 +538,7 @@ jobs:
           # Append optimize image config if enabled
           if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
             if [[ "${{ inputs.use-official-docker-images }}" == "true" ]]; then
-              # Official images: only override if an explicit optimize-tag is provided; otherwise let Helm chart defaults apply
+              # Official images: only override if an explicit optimize-tag is provided; otherwise no image override is set
               if [[ -n "${{ inputs.optimize-tag }}" ]]; then
                 additional_platform_config+=" \
                   --set optimize.image.tag=${{ inputs.optimize-tag }}"
