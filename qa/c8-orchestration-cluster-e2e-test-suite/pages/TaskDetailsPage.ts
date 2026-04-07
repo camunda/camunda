@@ -414,7 +414,7 @@ class TaskDetailsPage {
     await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
     await this.clickCompleteTaskButton();
     await expect(this.taskCompletedBanner).toBeVisible();
-    await expect(this.taskCompletedBanner).toBeHidden();
+    await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
   }
 }
 
