@@ -44,7 +44,6 @@
     <module>clients/camunda-spring-boot-3-starter</module>
     <module>clients/camunda-spring-boot-4-starter</module>
     <module>clients/camunda-spring-boot-starter-virtual-threads</module>
-    <module>clients/spring-boot-starter-camunda-sdk-deprecated</module>
     <module>testing</module>
     <module>document</module>
     <module>security</module>
