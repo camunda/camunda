@@ -16,7 +16,7 @@ import {
   isForwardCompat,
 } from 'utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {validateResponseShape} from 'assert-json-body';
+import {validateResponseShape} from '../../../../json-body-assertions';
 import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
