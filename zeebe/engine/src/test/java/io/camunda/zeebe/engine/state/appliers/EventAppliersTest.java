@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -436,7 +437,8 @@ public class EventAppliersTest {
         final var eventAppliers = new EventAppliers();
         eventAppliers.registerEventAppliers(state);
 
-        final var goldenDir = Paths.get(MODULE_PATH + GOLDEN_FILES_FOLDER);
+        final var basePath = resolveBasePath();
+        final var goldenDir = basePath.resolve(GOLDEN_FILES_FOLDER);
         Files.createDirectories(goldenDir);
 
         for (final var intentEntry : eventAppliers.getRegisteredAppliers().entrySet()) {
@@ -452,8 +454,7 @@ public class EventAppliersTest {
             final var goldenFilePath = goldenDir.resolve(goldenFilename);
 
             final var sourcePath =
-                Paths.get(
-                    "%s%s/%s.java".formatted(MODULE_PATH, EVENT_APPLIERS_FOLDER, applierClassName));
+                basePath.resolve("%s/%s.java".formatted(EVENT_APPLIERS_FOLDER, applierClassName));
             if (Files.exists(sourcePath)) {
               Files.copy(
                   sourcePath, goldenFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -464,6 +465,26 @@ public class EventAppliersTest {
             }
           }
         }
+      }
+
+      /**
+       * Determines the base path to the module directory by checking whether the CWD is the repo
+       * root or the module directory. Fails fast if neither matches.
+       */
+      private static Path resolveBasePath() {
+        // CWD is the module directory (e.g. IntelliJ default, or Surefire)
+        if (Paths.get(EVENT_APPLIERS_FOLDER).toFile().isDirectory()) {
+          return Paths.get("");
+        }
+        // CWD is the repo root
+        if (Paths.get(MODULE_PATH + EVENT_APPLIERS_FOLDER).toFile().isDirectory()) {
+          return Paths.get(MODULE_PATH);
+        }
+        throw new IllegalStateException(
+            """
+            Cannot find event appliers folder. \
+            Run GoldenFileUpdater from the repo root or the %s module directory."""
+                .formatted(MODULE_PATH));
       }
     }
 
