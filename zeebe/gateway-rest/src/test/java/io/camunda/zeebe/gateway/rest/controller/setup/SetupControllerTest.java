@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -175,11 +175,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithMissingUsername() {
     // given
-    final var request = validUserWithPasswordRequest().username(null);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        "{\"password\":\"zabraboof\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
         """
             {
               "type": "about:blank",
@@ -195,11 +193,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankUsername() {
     // given
-    final var request = validUserWithPasswordRequest().username("");
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new GeneratedUserRequestStrictContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -215,11 +211,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
-    final var request = validUserWithPasswordRequest().password(null);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        "{\"username\":\"foo\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
         """
             {
               "type": "about:blank",
@@ -235,11 +229,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankPassword() {
     // given
-    final var request = validUserWithPasswordRequest().password("");
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new GeneratedUserRequestStrictContract("", "foo", "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -291,11 +283,9 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
-    final var request = validUserWithPasswordRequest().email(email);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", email),
         """
             {
               "type": "about:blank",
@@ -312,11 +302,9 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithTooLongUsername() {
     // given
     final var username = "x".repeat(257);
-    final var request = validUserWithPasswordRequest().username(username);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -338,11 +326,9 @@ class SetupControllerTest extends RestControllerTest {
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
-    final var request = validUserWithPasswordRequest().username(username);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -369,16 +355,12 @@ class SetupControllerTest extends RestControllerTest {
     return new UserDTO(username, "Foo Bar", "bar@example.com", "zabraboof");
   }
 
-  private UserRequest validUserWithPasswordRequest() {
-    return new UserRequest()
-        .username("foo")
-        .name("Foo Bar")
-        .email("bar@baz.com")
-        .password("zabraboof");
+  private GeneratedUserRequestStrictContract validUserWithPasswordRequest() {
+    return new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
   }
 
   private void assertRequestRejectedExceptionally(
-      final UserRequest request, final String expectedError) {
+      final Object request, final String expectedError) {
     webClient
         .post()
         .uri(USER_PATH)

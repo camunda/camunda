@@ -12,9 +12,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
-import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
-import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -519,12 +519,12 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new FlowNodeInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(ElementInstanceStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(ElementInstanceStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(GeneratedElementInstanceStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(GeneratedElementInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(ElementInstanceStateEnum.COMPLETED),
-                    String.valueOf(ElementInstanceStateEnum.ACTIVE)),
+                    String.valueOf(GeneratedElementInstanceStateEnum.COMPLETED),
+                    String.valueOf(GeneratedElementInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
     stringOperationTestCases(
@@ -637,17 +637,18 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         "errorType",
         ops -> new IncidentFilter.Builder().errorTypeOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
-            List.of(Operation.neq(String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND))),
+            List.of(
+                Operation.eq(String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
+            List.of(Operation.neq(String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND))),
             List.of(
                 Operation.in(
-                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR"))),
         true);
 
@@ -671,17 +672,17 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new IncidentFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(IncidentStateEnum.PENDING))),
-            List.of(Operation.neq(String.valueOf(IncidentStateEnum.RESOLVED))),
+            List.of(Operation.eq(String.valueOf(GeneratedIncidentStateEnum.PENDING))),
+            List.of(Operation.neq(String.valueOf(GeneratedIncidentStateEnum.RESOLVED))),
             List.of(
                 Operation.in(
-                    String.valueOf(IncidentStateEnum.PENDING),
-                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
+                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
                 Operation.like("com")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(IncidentStateEnum.PENDING),
-                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
+                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
                 Operation.like("com"))),
         true);
 

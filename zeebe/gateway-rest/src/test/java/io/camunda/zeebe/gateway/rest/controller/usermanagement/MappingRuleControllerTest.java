@@ -14,8 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
-import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
@@ -62,8 +62,8 @@ public class MappingRuleControllerTest extends RestControllerTest {
     // given
     final var dto = validCreateMappingRuleRuleDTO();
     final var request =
-        new MappingRuleCreateRequest(
-            dto.mappingRuleId(), dto.claimName(), dto.claimValue(), dto.name());
+        new GeneratedMappingRuleCreateRequestStrictContract(
+            dto.claimName(), dto.claimValue(), dto.name(), dto.mappingRuleId());
     final var mappingRecord =
         new MappingRuleRecord()
             .setMappingRuleKey(1L)
@@ -93,8 +93,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWithMissingId() {
     // given
-    final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").claimName("claim").name("name");
+    final var request = "{\"claimValue\":\"claimValue\",\"claimName\":\"claim\",\"name\":\"name\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -115,11 +114,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleCreationWitBlankId() {
     // given
     final var request =
-        new MappingRuleCreateRequest()
-            .claimName("claim")
-            .claimValue("claimValue")
-            .name("name")
-            .mappingRuleId("");
+        new GeneratedMappingRuleCreateRequestStrictContract("claim", "claimValue", "name", "");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -140,7 +135,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleCreationWithMissingClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingRuleId("id");
+        "{\"claimValue\":\"claimValue\",\"name\":\"name\",\"mappingRuleId\":\"id\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -161,11 +156,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleCreationWitBlankClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest()
-            .claimName("")
-            .claimValue("claimValue")
-            .name("name")
-            .mappingRuleId("id");
+        new GeneratedMappingRuleCreateRequestStrictContract("", "claimValue", "name", "id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -185,8 +176,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWithMissingClaimValue() {
     // given
-    final var request =
-        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingRuleId("id");
+    final var request = "{\"claimName\":\"claimName\",\"name\":\"name\",\"mappingRuleId\":\"id\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -207,11 +197,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleCreationWitBlankClaimValue() {
     // given
     final var request =
-        new MappingRuleCreateRequest()
-            .claimName("claimName")
-            .claimValue("")
-            .name("name")
-            .mappingRuleId("id");
+        new GeneratedMappingRuleCreateRequestStrictContract("claimName", "", "name", "id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -232,10 +218,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleCreationWithMissingName() {
     // given
     final var request =
-        new MappingRuleCreateRequest()
-            .claimName("claimName")
-            .claimValue("claimValue")
-            .mappingRuleId("id");
+        "{\"claimName\":\"claimName\",\"claimValue\":\"claimValue\",\"mappingRuleId\":\"id\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -262,11 +245,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleCreationWithIllegalCharactersInId(final String id) {
     // given
     final var request =
-        new MappingRuleCreateRequest()
-            .mappingRuleId(id)
-            .claimName("claimName")
-            .claimValue("claimValue")
-            .name("name");
+        new GeneratedMappingRuleCreateRequestStrictContract("claimName", "claimValue", "name", id);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -288,11 +267,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
     // given
     final var id = "x".repeat(257);
     final var request =
-        new MappingRuleCreateRequest()
-            .mappingRuleId(id)
-            .claimName("claimName")
-            .claimValue("claimValue")
-            .name("name");
+        new GeneratedMappingRuleCreateRequestStrictContract("claimName", "claimValue", "name", id);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -373,7 +348,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWithMissingClaimName() {
     // given
-    final var request = new MappingRuleUpdateRequest().claimValue("claimValue").name("name");
+    final var request = "{\"claimValue\":\"claimValue\",\"name\":\"name\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -395,7 +370,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleUpdateWitBlankClaimName() {
     // given
     final var request =
-        new MappingRuleUpdateRequest().claimName("").claimValue("claimValue").name("name");
+        new GeneratedMappingRuleUpdateRequestStrictContract("", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -416,7 +391,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWithMissingClaimValue() {
     // given
-    final var request = new MappingRuleUpdateRequest().claimName("claimName").name("name");
+    final var request = "{\"claimName\":\"claimName\",\"name\":\"name\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -438,7 +413,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleUpdateWitBlankClaimValue() {
     // given
     final var request =
-        new MappingRuleUpdateRequest().claimName("claimName").claimValue("").name("name");
+        new GeneratedMappingRuleUpdateRequestStrictContract("claimName", "", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -459,8 +434,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWithMissingName() {
     // given
-    final var request =
-        new MappingRuleUpdateRequest().claimName("claimName").claimValue("claimValue");
+    final var request = "{\"claimName\":\"claimName\",\"claimValue\":\"claimValue\"}";
 
     // when then
     assertRequestRejectedExceptionally(
@@ -487,7 +461,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   }
 
   private void assertRequestRejectedExceptionally(
-      final MappingRuleCreateRequest request, final String expectedError) {
+      final Object request, final String expectedError) {
     webClient
         .post()
         .uri(MAPPING_RULES_PATH)
@@ -502,7 +476,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   }
 
   private void assertRequestRejectedExceptionally(
-      final String id, final MappingRuleUpdateRequest request, final String expectedError) {
+      final String id, final Object request, final String expectedError) {
     webClient
         .put()
         .uri(MAPPING_RULES_PATH + "/" + id)

@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.ClockPinRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClockPinRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
@@ -58,7 +58,7 @@ public class ClockControllerTest extends RestControllerTest {
   void pinClockShouldReturnNoContent() {
     // given
     final long timestamp = 2693098555055L;
-    final var request = new ClockPinRequest().timestamp(timestamp);
+    final var request = new GeneratedClockPinRequestStrictContract(timestamp);
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
     when(clockServices.pinClock(eq(timestamp), any()))
@@ -79,13 +79,13 @@ public class ClockControllerTest extends RestControllerTest {
   }
 
   static Stream<Arguments> invalidClockPinRequests() {
-    return Stream.of(of(new ClockPinRequest(), "No timestamp provided."));
+    return Stream.of(of("{}", "No timestamp provided."));
   }
 
   @ParameterizedTest
   @MethodSource("invalidClockPinRequests")
   public void pinClockShouldReturnBadRequestIfInvalidClockPinRequestProvided(
-      final ClockPinRequest invalidRequest, final String expectedError) {
+      final String invalidRequestJson, final String expectedError) {
     // given
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
@@ -98,7 +98,7 @@ public class ClockControllerTest extends RestControllerTest {
         .uri(CLOCK_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(invalidRequest)
+        .bodyValue(invalidRequestJson)
         .exchange()
         .expectStatus()
         .isBadRequest()

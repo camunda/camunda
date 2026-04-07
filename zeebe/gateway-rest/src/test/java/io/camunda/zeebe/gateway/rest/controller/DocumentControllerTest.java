@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataStrictContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
@@ -160,10 +160,9 @@ public class DocumentControllerTest extends RestControllerTest {
                     new DocumentMetadataModel(
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
-    final var metadataToSend = new DocumentMetadata();
-    metadataToSend.setContentType(contentType.toString());
-    metadataToSend.setFileName(filename);
-    metadataToSend.setExpiresAt(timestamp.toString());
+    final var metadataToSend =
+        new GeneratedDocumentMetadataStrictContract(
+            contentType.toString(), filename, timestamp.toString(), null, null, null, null);
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename(filename);
@@ -252,21 +251,27 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new DocumentMetadata()
-                    .contentType(contentType.toString())
-                    .fileName(filename1)
-                    .expiresAt(timestamp.toString())
-                    .processInstanceKey("123")));
+                new GeneratedDocumentMetadataStrictContract(
+                    contentType.toString(),
+                    filename1,
+                    timestamp.toString(),
+                    null,
+                    null,
+                    "123",
+                    null)));
     multipartBodyBuilder
         .part("files", content2)
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new DocumentMetadata()
-                    .contentType(contentType.toString())
-                    .fileName(filename2)
-                    .expiresAt(timestamp.toString())
-                    .processInstanceKey("123")));
+                new GeneratedDocumentMetadataStrictContract(
+                    contentType.toString(),
+                    filename2,
+                    timestamp.toString(),
+                    null,
+                    null,
+                    "123",
+                    null)));
 
     // when/then
     webClient
@@ -473,13 +478,12 @@ public class DocumentControllerTest extends RestControllerTest {
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
 
-    final var metadata = new DocumentMetadata();
-    metadata.setFileName("file.txt");
-    metadata.setProcessDefinitionId("9invalid");
+    // Use raw JSON to bypass compact constructor validation
+    final var metadataJson = "{\"fileName\":\"file.txt\",\"processDefinitionId\":\"9invalid\"}";
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename("file.txt");
-    multipartBodyBuilder.part("metadata", metadata).contentType(MediaType.APPLICATION_JSON);
+    multipartBodyBuilder.part("metadata", metadataJson).contentType(MediaType.APPLICATION_JSON);
 
     // when/then
     webClient
@@ -515,7 +519,8 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final var mapper = new ObjectMapper();
     final var meta1 =
-        new DocumentMetadata().contentType(contentType.toString()).fileName(filename1);
+        new GeneratedDocumentMetadataStrictContract(
+            contentType.toString(), filename1, null, null, null, null, null);
     // Provide single-element JSON array to simulate mismatch
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(List.of(meta1)))
@@ -569,16 +574,10 @@ public class DocumentControllerTest extends RestControllerTest {
     final var mapper = new ObjectMapper();
     final var metadataList =
         List.of(
-            new DocumentMetadata()
-                .contentType(contentType.toString())
-                .fileName(filename1)
-                .expiresAt(timestamp.toString())
-                .processInstanceKey("123"),
-            new DocumentMetadata()
-                .contentType(contentType.toString())
-                .fileName(filename2)
-                .expiresAt(timestamp.toString())
-                .processInstanceKey("123"));
+            new GeneratedDocumentMetadataStrictContract(
+                contentType.toString(), filename1, timestamp.toString(), null, null, "123", null),
+            new GeneratedDocumentMetadataStrictContract(
+                contentType.toString(), filename2, timestamp.toString(), null, null, "123", null));
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
         .contentType(MediaType.APPLICATION_JSON);
@@ -637,10 +636,14 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new DocumentMetadata()
-                    .contentType(contentType.toString())
-                    .fileName("IGNORED-" + filename1)
-                    .processInstanceKey("999")));
+                new GeneratedDocumentMetadataStrictContract(
+                    contentType.toString(),
+                    "IGNORED-" + filename1,
+                    null,
+                    null,
+                    null,
+                    "999",
+                    null)));
     multipartBodyBuilder
         .part("files", content2)
         .filename(filename2)
@@ -648,22 +651,22 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new DocumentMetadata()
-                    .contentType(contentType.toString())
-                    .fileName("IGNORED-" + filename2)
-                    .processInstanceKey("999")));
+                new GeneratedDocumentMetadataStrictContract(
+                    contentType.toString(),
+                    "IGNORED-" + filename2,
+                    null,
+                    null,
+                    null,
+                    "999",
+                    null)));
 
     // Preferred metadataList (processInstanceKey 123, original file names)
     final var metadataList =
         List.of(
-            new DocumentMetadata()
-                .contentType(contentType.toString())
-                .fileName(filename1)
-                .processInstanceKey("123"),
-            new DocumentMetadata()
-                .contentType(contentType.toString())
-                .fileName(filename2)
-                .processInstanceKey("123"));
+            new GeneratedDocumentMetadataStrictContract(
+                contentType.toString(), filename1, null, null, null, "123", null),
+            new GeneratedDocumentMetadataStrictContract(
+                contentType.toString(), filename2, null, null, null, "123", null));
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
         .contentType(MediaType.APPLICATION_JSON);
@@ -686,21 +689,19 @@ public class DocumentControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectBatchDocumentWithInvalidProcessDefinitionId() throws Exception {
+  void shouldRejectBatchDocumentWithInvalidProcessDefinitionId() {
     // given — a processDefinitionId starting with a digit is invalid per the
     // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
-    final var mapper = new ObjectMapper();
 
-    final var metadata = new DocumentMetadata();
-    metadata.setFileName("file.txt");
-    metadata.setProcessDefinitionId("9invalid");
+    // Use raw JSON to bypass compact constructor validation
+    final var metadataJson = "{\"fileName\":\"file.txt\",\"processDefinitionId\":\"9invalid\"}";
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("files", content).contentType(contentType).filename("file.txt");
     multipartBodyBuilder
-        .part("metadataList", mapper.writeValueAsString(List.of(metadata)))
+        .part("metadataList", "[" + metadataJson + "]")
         .contentType(MediaType.APPLICATION_JSON);
 
     // when/then

@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.BatchOperationItemStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemStateEnum;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -85,12 +85,12 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                 .stateOperations(ops)
                 .build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(BatchOperationItemStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(BatchOperationItemStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(GeneratedBatchOperationItemStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(GeneratedBatchOperationItemStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(BatchOperationItemStateEnum.COMPLETED),
-                    String.valueOf(BatchOperationItemStateEnum.ACTIVE)),
+                    String.valueOf(GeneratedBatchOperationItemStateEnum.COMPLETED),
+                    String.valueOf(GeneratedBatchOperationItemStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
 

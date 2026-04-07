@@ -69,8 +69,7 @@ public class DefaultSystemServiceAdapter implements SystemServiceAdapter {
             jobMetricsCfg.getMaxJobTypeLength(),
             jobMetricsCfg.getMaxTenantIdLength(),
             jobMetricsCfg.getMaxUniqueKeys());
-    final var response =
-        new GeneratedSystemConfigurationResponseStrictContract(jobMetricsResponse);
+    final var response = new GeneratedSystemConfigurationResponseStrictContract(jobMetricsResponse);
     return ResponseEntity.ok(response);
   }
 }

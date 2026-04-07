@@ -13,7 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
@@ -489,17 +489,17 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new DecisionInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(DecisionInstanceStateEnum.EVALUATED))),
-            List.of(Operation.neq(String.valueOf(DecisionInstanceStateEnum.EVALUATED))),
+            List.of(Operation.eq(String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED))),
+            List.of(Operation.neq(String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED))),
             List.of(
                 Operation.in(
-                    String.valueOf(DecisionInstanceStateEnum.EVALUATED),
-                    String.valueOf(DecisionInstanceStateEnum.FAILED)),
+                    String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED),
+                    String.valueOf(GeneratedDecisionInstanceStateEnum.FAILED)),
                 Operation.like("EVALUATED")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(DecisionInstanceStateEnum.EVALUATED),
-                    String.valueOf(DecisionInstanceStateEnum.FAILED)),
+                    String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED),
+                    String.valueOf(GeneratedDecisionInstanceStateEnum.FAILED)),
                 Operation.like("EVALUATED"))),
         true);
 

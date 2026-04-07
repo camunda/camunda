@@ -13,13 +13,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
-import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
-import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
-import io.camunda.gateway.protocol.model.AuthorizationRequest;
-import io.camunda.gateway.protocol.model.OwnerTypeEnum;
-import io.camunda.gateway.protocol.model.PermissionTypeEnum;
-import io.camunda.gateway.protocol.model.ResourceTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationCreateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationIdBasedRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationPropertyBasedRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedOwnerTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPermissionTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResourceTypeEnum;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
@@ -70,7 +70,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideValidCreateAuthorizationRequests")
   void createAuthorizationShouldReturnTheKey(
-      final AuthorizationRequest providedRequest,
+      final GeneratedAuthorizationRequestStrictContract providedRequest,
       final CreateAuthorizationRequest expectedCreateRequest) {
     final var authorizationKey = 1L;
 
@@ -88,9 +88,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isCreated()
-        .expectBody(AuthorizationCreateResult.class)
+        .expectBody(GeneratedAuthorizationCreateStrictContract.class)
         .isEqualTo(
-            new AuthorizationCreateResult().authorizationKey(String.valueOf(authorizationKey)));
+            new GeneratedAuthorizationCreateStrictContract(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices).createAuthorization(captor.capture(), any());
@@ -101,7 +101,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidAuthorizationRequests")
   public void createAuthorizationShouldReturnBadRequest(
-      final AuthorizationRequest request, final String errorMessage, final String expectedTitle) {
+      final Object request, final String errorMessage, final String expectedTitle) {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(expectedTitle);
     expectedBody.setInstance(URI.create("/v2/authorizations"));
@@ -208,7 +208,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideValidUpdateAuthorizationRequests")
   void updateAuthorizationShouldReturnNoContent(
-      final AuthorizationRequest providedRequest,
+      final GeneratedAuthorizationRequestStrictContract providedRequest,
       final UpdateAuthorizationRequest expectedUpdateRequest) {
     // given
     final long authorizationKey = expectedUpdateRequest.authorizationKey();
@@ -237,7 +237,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidAuthorizationRequests")
   public void updateAuthorizationShouldReturnBadRequest(
-      final AuthorizationRequest request, final String errorMessage, final String expectedTitle) {
+      final Object request, final String errorMessage, final String expectedTitle) {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(expectedTitle);
     expectedBody.setInstance(URI.create("/v2/authorizations/1"));
@@ -319,18 +319,18 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideValidCreateAuthorizationRequests() {
-    final var permissionEnums = List.of(PermissionTypeEnum.READ);
+    final var permissionEnums = List.of(GeneratedPermissionTypeEnum.READ);
     final var permissions = Set.of(PermissionType.READ);
 
     return Stream.of(
         Arguments.of(
             // Id request
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "resourceId",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissionEnums),
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
@@ -341,12 +341,12 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Id (ANY) request
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("*")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "*",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissionEnums),
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
@@ -357,12 +357,12 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Property request
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceType(ResourceTypeEnum.USER_TASK)
-                .resourcePropertyName("assignee")
-                .permissionTypes(permissionEnums),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "assignee",
+                GeneratedResourceTypeEnum.USER_TASK,
+                permissionEnums),
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
@@ -374,18 +374,18 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideValidUpdateAuthorizationRequests() {
-    final var permissionEnums = List.of(PermissionTypeEnum.READ);
+    final var permissionEnums = List.of(GeneratedPermissionTypeEnum.READ);
     final var permissions = Set.of(PermissionType.READ);
 
     return Stream.of(
         Arguments.of(
             // Id request
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "resourceId",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissionEnums),
             new UpdateAuthorizationRequest(
                 100,
                 "ownerId",
@@ -397,12 +397,12 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Id (ANY) request
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("*")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "*",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissionEnums),
             new UpdateAuthorizationRequest(
                 200,
                 "ownerId",
@@ -414,12 +414,12 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Property request
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceType(ResourceTypeEnum.USER_TASK)
-                .resourcePropertyName("assignee")
-                .permissionTypes(permissionEnums),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "assignee",
+                GeneratedResourceTypeEnum.USER_TASK,
+                permissionEnums),
             new UpdateAuthorizationRequest(
                 300,
                 "ownerId",
@@ -432,166 +432,134 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideInvalidAuthorizationRequests() {
-    final var permissions = List.of(PermissionTypeEnum.CREATE);
+    final var permissions = List.of(GeneratedPermissionTypeEnum.CREATE);
 
     return Stream.of(
         // AuthorizationIdBasedRequest tests
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            "{\"ownerType\":\"USER\",\"resourceId\":\"resourceId\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
             "No ownerId provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "",
+                GeneratedOwnerTypeEnum.USER,
+                "resourceId",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "No ownerId provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            "{\"ownerId\":\"ownerId\",\"resourceId\":\"resourceId\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
             "No ownerType provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "Either resourceId or resourcePropertyName must be provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .permissionTypes(permissions),
+            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourceId\":\"resourceId\",\"permissionTypes\":[\"CREATE\"]}",
             "No resourceType provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE),
+            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourceId\":\"resourceId\",\"resourceType\":\"RESOURCE\"}",
             "No permissionTypes provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(List.of()),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "resourceId",
+                GeneratedResourceTypeEnum.RESOURCE,
+                List.of()),
             "No permissionTypes provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("foo!!")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "foo!!",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "The provided resourceId contains illegal characters. It must match the pattern '%s'."
                 .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
             "Bad Request"),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId!!")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("foo")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationIdBasedRequestStrictContract(
+                "ownerId!!",
+                GeneratedOwnerTypeEnum.USER,
+                "foo",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
                 .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
             "Bad Request"),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            "{\"ownerType\":\"USER\",\"resourcePropertyName\":\"resourcePropertyName\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
             "No ownerId provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "",
+                GeneratedOwnerTypeEnum.USER,
+                "resourcePropertyName",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "No ownerId provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            "{\"ownerId\":\"ownerId\",\"resourcePropertyName\":\"resourcePropertyName\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
             "No ownerType provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .permissionTypes(permissions),
+            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourcePropertyName\":\"resourcePropertyName\",\"permissionTypes\":[\"CREATE\"]}",
             "No resourceType provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE),
+            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourcePropertyName\":\"resourcePropertyName\",\"resourceType\":\"RESOURCE\"}",
             "No permissionTypes provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(List.of()),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "resourcePropertyName",
+                GeneratedResourceTypeEnum.RESOURCE,
+                List.of()),
             "No permissionTypes provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId!!")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "ownerId!!",
+                GeneratedOwnerTypeEnum.USER,
+                "resourcePropertyName",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
                 .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "Either resourceId or resourcePropertyName must be provided.",
             "Bad Request"),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("property!!")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            new GeneratedAuthorizationPropertyBasedRequestStrictContract(
+                "ownerId",
+                GeneratedOwnerTypeEnum.USER,
+                "property!!",
+                GeneratedResourceTypeEnum.RESOURCE,
+                permissions),
             "The provided resourcePropertyName contains illegal characters. It must match the pattern '%s'."
                 .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
             "Bad Request"));
