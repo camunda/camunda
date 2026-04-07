@@ -27,14 +27,12 @@ import {TenantField} from 'modules/components/TenantField';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {
   AUDIT_LOG_FILTER_FIELDS,
+  AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES,
+  AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES,
   type OperationsLogFilterField,
   type OperationsLogFilters,
 } from '../auditLogFilters';
-import {
-  auditLogEntityTypeSchema,
-  auditLogOperationTypeSchema,
-  auditLogResultSchema,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {useState} from 'react';
@@ -148,12 +146,12 @@ const Filters: React.FC = observer(() => {
                       <FilterMultiselect
                         name="operationType"
                         titleText="Operation type"
-                        items={auditLogOperationTypeSchema.options}
+                        items={AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES}
                       />
                       <FilterMultiselect
                         name="entityType"
                         titleText="Entity type"
-                        items={auditLogEntityTypeSchema.options}
+                        items={AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES}
                       />
                       <Field name="result">
                         {({input}) => (
