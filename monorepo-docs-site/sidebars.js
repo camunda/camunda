@@ -22,7 +22,6 @@ const sidebars = {
     'infrastructure-services',
     'renovate-pr-handling',
     'release',
-    'unified_identity_architecture',
     {
       type: 'category',
       label: 'Architecture',
@@ -82,6 +81,20 @@ const sidebars = {
                     'architecture/components/identity/references/rp-initiated-logout',
                   ],
                 },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Roadmap',
+          items: [
+            'architecture/roadmap/unified_identity_architecture/unified_identity_architecture',
+            {
+              type: 'category',
+              label: 'ADRs',
+              items: [
+                'architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets',
               ],
             },
           ],

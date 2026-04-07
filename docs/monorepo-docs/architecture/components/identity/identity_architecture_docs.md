@@ -1178,7 +1178,19 @@ The architectural decisions for Identity are documented as individual ADR files:
 - [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](adr/0004-multi-jwks-endpoints-per-issuer.md)
 - [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](adr/0005-support-forward-slashes-in-entity-ids.md)
 
-## 10. Risks and technical debt
+## 10. Future Evolution: Security Gateway Framework
+
+The Orchestration Cluster Identity described in this document is part of a longer-term vision for a unified identity and policy management layer across Camunda Hub and Orchestration Clusters.
+
+- A single identity plane shared between Hub and OC
+- Hexagonal architecture with pluggable backends
+- Unified policy model for both management and execution planes
+- Outbox-based policy propagation from Hub to OCs
+- Support for multi-engine and multi-tenant scenarios
+
+The Security Gateway Framework is currently in proposal phase. See [Unified Identity Architecture](../../roadmap/unified_identity_architecture/unified_identity_architecture.md) for detailed design documentation.
+
+## 11. Risks and technical debt
 
 Migration complexity and failure modes
 : Migration from Management Identity introduces complexity and potential misconfiguration (for example mismatched IdP setups, conflicting mapping rules). Mitigation: dedicated Identity Migration App, idempotent runs, detailed logs; still requires careful testing in customer environments.
@@ -1186,7 +1198,7 @@ Migration complexity and failure modes
 Dual identity model during transition
 : Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime. Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
 
-## 11. Glossary
+## 12. Glossary
 
 |              Term              |                                                    Definition                                                     |
 |--------------------------------|-------------------------------------------------------------------------------------------------------------------|
