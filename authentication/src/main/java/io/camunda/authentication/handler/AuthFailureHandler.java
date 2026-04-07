@@ -8,7 +8,7 @@
 package io.camunda.authentication.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.protocol.model.CamundaProblemDetail;
+import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
