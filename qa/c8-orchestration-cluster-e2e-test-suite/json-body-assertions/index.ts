@@ -15,12 +15,18 @@
  *
  * ## Forward-compatibility mode
  *
- * When `AJB_ALLOW_EXTRA_FIELDS=true` is set in the environment, `[EXTRA]`
- * validation errors are silently filtered out. This allows running an older
- * test suite against a newer server that returns additional fields not yet
- * declared in `responses.json`.
+ * When `AJB_ALLOW_EXTRA_FIELDS=true` is set in the environment the following
+ * validation errors are silently filtered out so that an older test suite can
+ * run against a newer server without false positives:
  *
- * All other error categories (`[MISSING]`, `[TYPE]`, `[ENUM]`) still fail.
+ *  - `[EXTRA]` — the newer server returns fields not yet declared in the
+ *    older `responses.json`.
+ *  - `[TYPE] … but got null` — the newer server returns `null` for fields
+ *    whose nullability was not yet declared in the older schema.  Real type
+ *    mismatches (e.g. expected string, got number) still fail.
+ *
+ * All other error categories (`[MISSING]`, other `[TYPE]`, `[ENUM]`) still
+ * fail as before.
  *
  * Usage: set `AJB_ALLOW_EXTRA_FIELDS: "true"` in the CI workflow `env` block
  * for forward-compatibility test runs.
@@ -37,21 +43,35 @@ export type {TypedRouteSpec} from './_generated/index.js';
 export {RESPONSE_INDEX} from './_generated/index.js';
 
 // ---------------------------------------------------------------------------
-// Forward-compatibility: filter [EXTRA] errors
+// Forward-compatibility: filter tolerable schema errors
 // ---------------------------------------------------------------------------
 
-const _allowExtraFields = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
+const _forwardCompat = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
 
 // Derive types from the generated functions so they stay in sync with
 // assert-json-body upgrades without manual maintenance.
 type ValidateOptions = Parameters<typeof _generatedValidateResponseShape>[2];
 type ValidationResult = ReturnType<typeof _generatedValidateResponseShape>;
 
-function _filterExtraFieldErrors(result: ValidationResult): ValidationResult {
-  if (!_allowExtraFields || result.ok || !result.errors) return result;
+/** Null-type pattern: `[TYPE] /some/path expected <type> but got null` */
+const _nullTypeRe = /^\[TYPE\] .+ but got null$/;
+
+function _isTolerableForwardCompatError(e: string): boolean {
+  // [EXTRA] — newer server added a field not in the older spec
+  if (e.startsWith('[EXTRA]')) return true;
+  // [TYPE] … got null — newer server returns null for a field whose
+  // nullability is not yet declared in the older schema
+  if (_nullTypeRe.test(e)) return true;
+  return false;
+}
+
+function _filterForwardCompatErrors(
+  result: ValidationResult,
+): ValidationResult {
+  if (!_forwardCompat || result.ok || !result.errors) return result;
 
   const remaining = result.errors.filter(
-    (e: string) => !e.startsWith('[EXTRA]'),
+    (e: string) => !_isTolerableForwardCompatError(e),
   );
   if (remaining.length === 0) {
     return {...result, ok: true, errors: undefined};
@@ -76,18 +96,17 @@ export function validateResponseShape<
   body: unknown,
   options?: ValidateOptions,
 ) {
-  if (!_allowExtraFields) {
+  if (!_forwardCompat) {
     return _generatedValidateResponseShape(spec, body, options);
   }
 
-  // Call without throwing so we can filter [EXTRA] errors first.
-  const result = _generatedValidateResponseShape(
-    spec,
-    body,
-    {...options, throw: false},
-  ) as ValidationResult;
+  // Call without throwing so we can filter tolerable errors first.
+  const result = _generatedValidateResponseShape(spec, body, {
+    ...options,
+    throw: false,
+  }) as ValidationResult;
 
-  const filtered = _filterExtraFieldErrors(result);
+  const filtered = _filterForwardCompatErrors(result);
   if (!filtered.ok) {
     const shouldThrow = options?.throw !== undefined ? options.throw : true;
     if (shouldThrow) {
@@ -113,19 +132,19 @@ export async function validateResponse<
   response: PlaywrightAPIResponse,
   options?: ValidateOptions,
 ) {
-  if (!_allowExtraFields) {
+  if (!_forwardCompat) {
     return _generatedValidateResponse(spec, response, options);
   }
 
   // Delegate body parsing and status checks to the base implementation
   // (handles empty bodies, non-JSON responses, etc.) but suppress throws
-  // so we can filter [EXTRA] errors before deciding whether to throw.
+  // so we can filter tolerable errors before deciding whether to throw.
   const result = (await _generatedValidateResponse(spec, response, {
     ...options,
     throw: false,
   })) as ValidationResult;
 
-  const filtered = _filterExtraFieldErrors(result);
+  const filtered = _filterForwardCompatErrors(result);
   if (!filtered.ok) {
     const shouldThrow = options?.throw !== undefined ? options.throw : true;
     if (shouldThrow) {
