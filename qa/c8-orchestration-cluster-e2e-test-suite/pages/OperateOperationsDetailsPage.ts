@@ -13,6 +13,17 @@ export class OperateOperationsDetailsPage {
   private tileElement: Locator;
   readonly state: Locator;
   readonly summaryOfItems: Locator;
+  readonly forbiddenMessage: Locator;
+  readonly backButton: Locator;
+  readonly suspendButton: Locator;
+  readonly resumeButton: Locator;
+  readonly optionsMenuButton: Locator;
+  readonly itemsTable: Locator;
+  readonly itemsTableRows: Locator;
+  readonly stateBadge: Locator;
+  readonly summaryTile: Locator;
+  readonly actorTile: Locator;
+  readonly startDateTile: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -23,6 +34,34 @@ export class OperateOperationsDetailsPage {
     this.summaryOfItems = this.tileElement
       .filter({hasText: 'Summary of items'})
       .getByRole('status');
+    this.summaryTile = this.tileElement.filter({hasText: 'Summary of items'});
+    this.actorTile = this.tileElement.filter({hasText: 'Actor'});
+    this.startDateTile = this.tileElement.filter({hasText: 'Start date'});
+    this.forbiddenMessage = page.getByText(
+      /403 - You do not have permission/,
+    );
+    this.backButton = page.getByRole('button', {
+      name: 'Back to batch operations',
+    });
+    this.suspendButton = page.getByRole('button', {name: /^Suspend$/i});
+    this.resumeButton = page.getByRole('button', {name: /^Resume$/i});
+    this.optionsMenuButton = page.getByRole('button', {name: /Options/i});
+    this.itemsTable = page.getByRole('table');
+    this.itemsTableRows = this.itemsTable.getByRole('row');
+    this.stateBadge = page.getByRole('status', {
+      name: /Batch operation status:/,
+    });
+  }
+
+  async goto(batchOperationKey: string): Promise<void> {
+    await this.page.goto(
+      `${process.env.CORE_APPLICATION_URL}/operate/batch-operations/${batchOperationKey}`,
+    );
+  }
+
+  async clickCancelFromOptionsMenu(): Promise<void> {
+    await this.optionsMenuButton.click();
+    await this.page.getByRole('menuitem', {name: /^Cancel$/i}).click();
   }
 
   async getBatchOperationStatus(): Promise<string> {
@@ -39,5 +78,11 @@ export class OperateOperationsDetailsPage {
     }
 
     throw new Error(`Could not extract batch operation ID from URL: ${url}`);
+  }
+
+  getProcessInstanceLink(processInstanceKey: string): Locator {
+    return this.page.getByRole('link', {
+      name: `View process instance ${processInstanceKey}`,
+    });
   }
 }

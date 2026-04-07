@@ -11,7 +11,6 @@ import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
-import {sleep} from '../sleep';
 import {validateResponse} from 'json-body-assertions';
 import {expectBatchState} from './batch-operation-requestHelpers';
 
@@ -44,28 +43,62 @@ export async function createCancellationBatch(
   numberOfInstances = 3,
   processDefinitionId = 'batch_cancellation_process',
 ): Promise<string> {
+  // Create instances in concurrent waves to stay fast without overwhelming
+  // Zeebe's partition request queue (which returns 503 when exhausted).
+  const WAVE_SIZE = 20;
   const processInstanceKeys: string[] = [];
-  for (let i = 0; i < numberOfInstances; i++) {
-    const startRes = await request.post(buildUrl('/process-instances'), {
-      headers: jsonHeaders(),
-      data: {
-        processDefinitionId: processDefinitionId,
-      },
-    });
-    await assertStatusCode(startRes, 200);
-    await validateResponse(
-      {
-        path: '/process-instances',
-        method: 'POST',
-        status: '200',
-      },
-      startRes,
+  for (let i = 0; i < numberOfInstances; i += WAVE_SIZE) {
+    const waveCount = Math.min(WAVE_SIZE, numberOfInstances - i);
+    const waveResponses = await Promise.all(
+      Array.from({length: waveCount}, () =>
+        request.post(buildUrl('/process-instances'), {
+          headers: jsonHeaders(),
+          data: {
+            processDefinitionId: processDefinitionId,
+          },
+        }),
+      ),
     );
-    const startJson = await startRes.json();
-    processInstanceKeys.push(String(startJson.processInstanceKey));
+    for (const startRes of waveResponses) {
+      await assertStatusCode(startRes, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        startRes,
+      );
+      const startJson = await startRes.json();
+      processInstanceKeys.push(String(startJson.processInstanceKey));
+    }
   }
 
-  await sleep(7_000);
+  // Poll until at least one instance is indexed in Elasticsearch.
+  // A fixed sleep is unreliable under variable ES indexing latency.
+  await expect(async () => {
+    let anyFound = false;
+    for (const key of processInstanceKeys) {
+      const searchRes = await request.post(
+        buildUrl('/process-instances/search'),
+        {
+          headers: jsonHeaders(),
+          data: {filter: {processInstanceKey: key}},
+        },
+      );
+      if (searchRes.ok()) {
+        const json = await searchRes.json();
+        if ((json.page?.totalItems ?? 0) > 0) {
+          anyFound = true;
+          break;
+        }
+      }
+    }
+    expect(anyFound).toBe(true);
+  }).toPass({
+    intervals: [1_000, 2_000, 3_000, 5_000, 5_000, 10_000, 10_000],
+    timeout: 60_000,
+  });
 
   const result: Record<string, string> = {};
   await expect(async () => {

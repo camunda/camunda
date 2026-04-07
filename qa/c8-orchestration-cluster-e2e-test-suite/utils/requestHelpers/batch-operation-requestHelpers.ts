@@ -126,3 +126,32 @@ export const postMigrationAssertionOptions = {
 
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;
+
+/**
+ * Returns the key of an existing COMPLETED batch operation.
+ * Uses existing cluster data so tests do not depend on the batch engine
+ * activating a newly created batch (which can be very slow in loaded clusters).
+ */
+export async function findCompletedBatchKey(
+  request: APIRequestContext,
+): Promise<string> {
+  const result: {batchKey?: string} = {};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/batch-operations/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          state: 'COMPLETED',
+          operationType: 'CANCEL_PROCESS_INSTANCE',
+        },
+        sort: [{field: 'startDate', order: 'DESC'}],
+        page: {from: 0, limit: 1},
+      },
+    });
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    expect(body.items?.length).toBeGreaterThanOrEqual(1);
+    result.batchKey = String(body.items[0].batchOperationKey);
+  }).toPass(defaultAssertionOptions);
+  return result.batchKey!;
+}
