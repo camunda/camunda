@@ -152,6 +152,7 @@ jobs:
           API_TESTS_ONLY: true
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           DATABASE: "Elasticsearch"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"

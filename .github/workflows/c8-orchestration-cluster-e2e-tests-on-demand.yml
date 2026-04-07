@@ -185,6 +185,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -322,6 +323,9 @@ jobs:
           export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
           export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
 
+          # Business ID uniqueness enforcement toggle
+          export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
+
           dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
           echo $! > dev-dist/camunda.pid
           echo "Camunda starting (PID $(cat dev-dist/camunda.pid))..."
@@ -368,6 +372,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           DATABASE: "RDBMS"
         run: |
           echo "Running API tests against H2/RDBMS backend"
