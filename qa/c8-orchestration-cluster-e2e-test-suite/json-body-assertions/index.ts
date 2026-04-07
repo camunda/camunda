@@ -22,8 +22,10 @@
  *  - `[EXTRA]` — the newer server returns fields not yet declared in the
  *    older `responses.json`.
  *  - `[TYPE] … but got null` — the newer server returns `null` for fields
- *    whose nullability was not yet declared in the older schema.  Real type
- *    mismatches (e.g. expected string, got number) still fail.
+ *    whose nullability was not yet declared in the older schema.
+ *  - `[TYPE] … expected object but got string` — the newer server returns a
+ *    JSON-serialized string where the older schema declares an object (common
+ *    when a structured field is stringified across versions).
  *
  * All other error categories (`[MISSING]`, other `[TYPE]`, `[ENUM]`) still
  * fail as before.
@@ -56,12 +58,18 @@ type ValidationResult = ReturnType<typeof _generatedValidateResponseShape>;
 /** Null-type pattern: `[TYPE] /some/path expected <type> but got null` */
 const _nullTypeRe = /^\[TYPE\] .+ but got null$/;
 
+/** Object-to-string pattern: `[TYPE] /some/path expected object but got string` */
+const _objectToStringRe = /^\[TYPE\] .+ expected object but got string$/;
+
 function _isTolerableForwardCompatError(e: string): boolean {
   // [EXTRA] — newer server added a field not in the older spec
   if (e.startsWith('[EXTRA]')) return true;
   // [TYPE] … got null — newer server returns null for a field whose
   // nullability is not yet declared in the older schema
   if (_nullTypeRe.test(e)) return true;
+  // [TYPE] … expected object but got string — newer server returns a
+  // JSON-serialized string where the older schema declares an object
+  if (_objectToStringRe.test(e)) return true;
   return false;
 }
 
