@@ -29,5 +29,5 @@ public interface IncidentState {
       long elementInstanceKey, ObjLongConsumer<IncidentRecord> resolver);
 
   /** Returns the total number of incidents currently stored in the state. */
-  int getIncidentCount();
+  long getIncidentCount();
 }

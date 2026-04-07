@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {
@@ -168,9 +167,7 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public int getIncidentCount() {
-    final var counter = new AtomicInteger(0);
-    incidentColumnFamily.forEachKey(ignore -> counter.getAndIncrement());
-    return counter.get();
+  public long getIncidentCount() {
+    return incidentColumnFamily.count();
   }
 }
