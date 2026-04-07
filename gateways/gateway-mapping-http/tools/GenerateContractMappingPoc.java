@@ -1596,12 +1596,16 @@ public enum %s {
               ? renderLongKeyCoercionHelper(field)
               : renderStructuralCoercionHelper(field))
             .collect(Collectors.joining("\n\n"));
+    // For request schemas, generate typed long accessors for LongKey fields so callers
+    // can use e.g. request.processDefinitionKeyAsLong() instead of Long.parseLong().
+    final String longKeyAccessors = emitConstraints ? renderLongKeyAccessors(fields) : "";
     final String builderCode = renderBuilder(schemaName, dtoClass, fields);
 
     final String recordBody;
     if (constructorBody.isBlank()
       && fieldReferences.isBlank()
         && coercionHelpers.isBlank()
+        && longKeyAccessors.isBlank()
         && fromProtocolFactory.isBlank()
         && builderCode.isBlank()
         && !hasInlineEnumValues) {
@@ -1613,6 +1617,9 @@ public enum %s {
       }
       if (!coercionHelpers.isBlank()) {
         sections.add(coercionHelpers);
+      }
+      if (!longKeyAccessors.isBlank()) {
+        sections.add(longKeyAccessors);
       }
       if (!fromProtocolFactory.isBlank()) {
         sections.add(fromProtocolFactory);
@@ -1722,6 +1729,41 @@ public record %s(
   }
 """
         .formatted(methodName, field.name());
+  }
+
+  /**
+   * Renders typed long accessor methods for LongKey fields on request DTOs. The compact constructor
+   * guarantees the string matches {@code ^-?[0-9]+$}, so {@code Long.parseLong} is safe.
+   * This encapsulates the string-to-long coercion in the DTO, mirroring how response DTOs
+   * encapsulate long-to-string coercion via {@code coerceXxxKey()}.
+   */
+  private static String renderLongKeyAccessors(final List<ContractField> fields) {
+    final var accessors =
+        fields.stream()
+            .filter(ContractField::longKeyCoercion)
+            .map(
+                field -> {
+                  final var methodName = field.identifier() + "AsLong";
+                  if (field.nullable()) {
+                    return """
+  /** Returns the {@code %s} parsed as a {@code Long}, or {@code null} if absent. */
+  public @Nullable Long %s() {
+    return %s == null ? null : Long.parseLong(%s);
+  }
+"""
+                        .formatted(field.name(), methodName, field.identifier(), field.identifier());
+                  } else {
+                    return """
+  /** Returns the {@code %s} parsed as a {@code long}. */
+  public long %s() {
+    return Long.parseLong(%s);
+  }
+"""
+                        .formatted(field.name(), methodName, field.identifier());
+                  }
+                })
+            .toList();
+    return accessors.isEmpty() ? "" : String.join("\n", accessors);
   }
 
   private static String renderStructuralCoercionHelper(final ContractField field) {
