@@ -427,7 +427,7 @@ final class CamundaClusterBuilderTest {
     final List<String> brokerZeroInitialContactPoints =
         brokers.get(0).getConfiguration().getCluster().getInitialContactPoints();
     final List<String> brokerOneInitialContactPoints =
-        brokers.get(0).getConfiguration().getCluster().getInitialContactPoints();
+        brokers.get(1).getConfiguration().getCluster().getInitialContactPoints();
 
     assertThat(brokerZeroInitialContactPoints)
         .as(

@@ -155,7 +155,8 @@ public class ExtendedConfigurationBuilder {
         new HashMap<String, Object>(
             Map.of("connect", Map.of("url", databaseUrl), "bulk", Map.of("size", 1)));
     if (retentionPolicyName != null) {
-      exporterConfigArgs.put("retention", Map.of("enabled", true, "policyName", "test-policy"));
+      exporterConfigArgs.put(
+          "retention", Map.of("enabled", true, "policyName", retentionPolicyName));
     }
     withExporter(
         "CamundaExporter",
