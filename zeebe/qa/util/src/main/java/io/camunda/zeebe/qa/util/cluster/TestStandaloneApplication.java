@@ -17,6 +17,7 @@ import io.camunda.configuration.Api;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.Data;
+import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -155,6 +156,14 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * started, but likely has no effect until it's restarted.
    */
   T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
+
+  /**
+   * Convenience method to modify engine job configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for engine job settings
+   * @return itself for chaining
+   */
+  T withJobConfig(final Consumer<EngineJob> modifier);
 
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();

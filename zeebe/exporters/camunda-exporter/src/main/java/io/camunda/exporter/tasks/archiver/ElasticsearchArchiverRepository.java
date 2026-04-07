@@ -55,7 +55,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
@@ -65,6 +64,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+
   private final int partitionId;
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
@@ -75,7 +75,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
-  private final Map<String, String> lastHistoricalArchiverDates = new ConcurrentHashMap<>();
   private final Cache<String, String> lifeCyclePolicyApplied;
 
   public ElasticsearchArchiverRepository(
@@ -137,10 +136,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, ProcessInstanceForListViewEntity.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            (response) ->
-                createProcessInstanceBatch(
-                    response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+        .thenApplyAsync(
+            (response) -> createProcessInstanceBatch(response, ListViewTemplate.END_DATE),
             executor);
   }
 
@@ -152,11 +149,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            (response) ->
-                createBasicBatch(
-                    response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
-            executor);
+        .thenApplyAsync(
+            (response) -> createBasicBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
   @Override
@@ -171,12 +165,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createBasicBatch(
                     response,
                     UsageMetricTUTemplate.END_TIME,
-                    usageMetricTUTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
             executor);
   }
@@ -193,12 +186,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createBasicBatch(
                     response,
                     UsageMetricTemplate.END_TIME,
-                    usageMetricTemplateDescriptor,
                     config.getUsageMetricsRolloverInterval()),
             executor);
   }
@@ -211,11 +203,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createBasicBatch(
-                    response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
-            executor);
+        .thenApplyAsync(
+            response -> createBasicBatch(response, JobMetricsBatchTemplate.END_TIME), executor);
   }
 
   @Override
@@ -226,12 +215,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createBasicBatch(
-                    response,
-                    DecisionInstanceTemplate.EVALUATION_DATE,
-                    decisionInstanceTemplateDescriptor),
+        .thenApplyAsync(
+            response -> createBasicBatch(response, DecisionInstanceTemplate.EVALUATION_DATE),
             executor);
   }
 
@@ -417,13 +402,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         });
   }
 
-  private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexPattern) {
-    return client
-        .indices()
-        .get(b -> b.index(indexPattern))
-        .thenApplyAsync(response -> new ArrayList<>(response.result().keySet()), executor);
-  }
-
   private SearchRequest createFinishedInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
@@ -449,122 +427,70 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.indices().putSettings(settingsRequest);
   }
 
-  private CompletableFuture<ProcessInstanceArchiveBatch> createProcessInstanceBatch(
-      final SearchResponse<ProcessInstanceForListViewEntity> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor) {
-    return createProcessInstanceBatch(
-        response, field, templateDescriptor, config.getRolloverInterval());
-  }
-
-  private CompletableFuture<ProcessInstanceArchiveBatch> createProcessInstanceBatch(
-      final SearchResponse<ProcessInstanceForListViewEntity> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
+  private ProcessInstanceArchiveBatch createProcessInstanceBatch(
+      final SearchResponse<ProcessInstanceForListViewEntity> response, final String field) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(
-          new ProcessInstanceArchiveBatch(null, List.of(), List.of()));
+      return new ProcessInstanceArchiveBatch(null, List.of(), List.of());
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
-        .thenApply(
-            date -> {
-              final var batchHits =
-                  hits.stream()
-                      .takeWhile(
-                          hit ->
-                              hit.fields()
-                                  .get(field)
-                                  .toJson()
-                                  .asJsonArray()
-                                  .getString(0)
-                                  .equals(endDate))
-                      .toList();
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, config.getRolloverInterval(), config.getElsRolloverDateFormat());
 
-              final List<Long> processInstanceKeys = new ArrayList<>();
-              final List<Long> rootProcessInstanceKeys = new ArrayList<>();
+    final var batchHits =
+        hits.stream()
+            .takeWhile(
+                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
+            .toList();
 
-              if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
-                batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
-              } else {
-                for (final var hit : batchHits) {
-                  final var rootKey = hit.source().getRootProcessInstanceKey();
-                  if (rootKey != null) {
-                    rootProcessInstanceKeys.add(rootKey);
-                  } else {
-                    processInstanceKeys.add(Long.valueOf(hit.id()));
-                  }
-                }
-              }
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
 
-              return new ProcessInstanceArchiveBatch(
-                  date, processInstanceKeys, rootProcessInstanceKeys);
-            });
+    if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
+      batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
+    } else {
+      for (final var hit : batchHits) {
+        final var rootKey = hit.source().getRootProcessInstanceKey();
+        if (rootKey != null) {
+          rootProcessInstanceKeys.add(rootKey);
+        } else {
+          processInstanceKeys.add(Long.valueOf(hit.id()));
+        }
+      }
+    }
+
+    return new ProcessInstanceArchiveBatch(date, processInstanceKeys, rootProcessInstanceKeys);
   }
 
-  private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
-      final SearchResponse<T> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor) {
-    return createBasicBatch(response, field, templateDescriptor, config.getRolloverInterval());
+  private <T> BasicArchiveBatch createBasicBatch(
+      final SearchResponse<T> response, final String field) {
+    return createBasicBatch(response, field, config.getRolloverInterval());
   }
 
-  private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
-      final SearchResponse<T> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
+  private <T> BasicArchiveBatch createBasicBatch(
+      final SearchResponse<T> response, final String field, final String rolloverInterval) {
     final List<Hit<T>> hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(new BasicArchiveBatch(null, List.of()));
+      return new BasicArchiveBatch(null, List.of());
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
-    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
-        .thenApply(
-            date -> {
-              final var batchHits =
-                  hits.stream()
-                      .takeWhile(
-                          hit ->
-                              hit.fields()
-                                  .get(field)
-                                  .toJson()
-                                  .asJsonArray()
-                                  .getString(0)
-                                  .equals(endDate))
-                      .toList();
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, rolloverInterval, config.getElsRolloverDateFormat());
 
-              final List<String> ids = batchHits.stream().map(Hit::id).toList();
-              return new BasicArchiveBatch(date, ids);
-            });
-  }
+    final var batchHits =
+        hits.stream()
+            .takeWhile(
+                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
+            .toList();
 
-  private CompletableFuture<String> getDateOfArchiveIndex(
-      final String endDate,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String rolloverInterval) {
-    final String templateIndexName = templateDescriptor.getIndexName();
-    final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
-    final CompletableFuture<String> dateFuture =
-        (lastHistoricalArchiverDate == null)
-            ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                fetchMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
-            : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
-
-    return dateFuture.thenApply(
-        date -> {
-          final String nextArchiverDate =
-              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
-          lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-          return nextArchiverDate;
-        });
+    final List<String> ids = batchHits.stream().map(Hit::id).toList();
+    return new BasicArchiveBatch(date, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {

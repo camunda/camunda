@@ -7,7 +7,9 @@
  */
 
 import type {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-type ElementState = 'active' | 'incidents' | 'canceled' | 'completed';
+import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.10';
+
+type ElementState = keyof Omit<ProcessDefinitionStatistic, 'elementId'>;
 
 type OverlayData = {
   payload?: unknown;

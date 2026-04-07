@@ -31,10 +31,6 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlOutcome;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.RecordAppendedKeyNames;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
-import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
-import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
-import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -170,7 +166,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
 
     flowControlOutcome
         .computeIfAbsent(
-            tagForContext(context),
+            FlowControlContext.from(context),
             FlowControlOutcome.ACCEPTED,
             this::registerFlowControlOutcomeCounter)
         .increment(size);
@@ -189,7 +185,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
 
     flowControlOutcome
         .computeIfAbsent(
-            tagForContext(context),
+            FlowControlContext.from(context),
             tagForRejection(reason),
             this::registerFlowControlOutcomeCounter)
         .increment(size);
@@ -252,16 +248,6 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
     return switch (reason) {
       case WriteRateLimitExhausted -> FlowControlOutcome.WRITE_RATE_LIMIT_EXHAUSTED;
       case RequestLimitExhausted -> FlowControlOutcome.REQUEST_LIMIT_EXHAUSTED;
-    };
-  }
-
-  private static FlowControlContext tagForContext(final WriteContext context) {
-    return switch (context) {
-      case final UserCommand ignored -> FlowControlContext.USER_COMMAND;
-      case final ProcessingResult ignored -> FlowControlContext.PROCESSING_RESULT;
-      case final InterPartition ignored -> FlowControlContext.INTER_PARTITION;
-      case final Scheduled ignored -> FlowControlContext.SCHEDULED;
-      case final Internal ignored -> FlowControlContext.INTERNAL;
     };
   }
 }

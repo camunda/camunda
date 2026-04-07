@@ -72,13 +72,13 @@ function convertToVirtualElementInstance(params: {
 
   return elementInstancePlaceholders.map((elementInstancePlaceholder) => {
     const businessObject =
-      businessObjects[elementInstancePlaceholder.flowNodeId];
+      businessObjects[elementInstancePlaceholder.elementId];
     return {
       isVirtual: true,
-      elementId: elementInstancePlaceholder.flowNodeId,
+      elementId: elementInstancePlaceholder.elementId,
       elementName: businessObject?.name,
       type: businessObject?.$type,
-      elementInstanceKey: elementInstancePlaceholder.id,
+      elementInstanceKey: elementInstancePlaceholder.elementInstanceKey,
     };
   });
 }

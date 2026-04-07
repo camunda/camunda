@@ -42,11 +42,14 @@ const businessObjects: BusinessObjects = {
   },
 };
 
+const startEventScopeId = generateUniqueID();
+const endEvent1ScopeIds = [generateUniqueID(), generateUniqueID()];
+
 const startEventModification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'ADD_TOKEN',
-    scopeId: generateUniqueID(),
+    scopeId: startEventScopeId,
     element: {id: 'startEvent_1', name: 'Start Event 1'},
     affectedTokenCount: 1,
     visibleAffectedTokenCount: 1,
@@ -62,7 +65,7 @@ const endEvent1Modification: ElementModification = {
     element: {id: 'startEvent_1', name: 'Start Event 1'},
     affectedTokenCount: 2,
     visibleAffectedTokenCount: 2,
-    scopeIds: [generateUniqueID(), generateUniqueID()],
+    scopeIds: endEvent1ScopeIds,
     parentScopeIds: {},
   },
 };
@@ -77,6 +80,8 @@ const endEvent2Modification: ElementModification = {
   },
 };
 
+const subprocessScopeIds = [generateUniqueID()];
+
 const subprocessModification: ElementModification = {
   type: 'token',
   payload: {
@@ -85,7 +90,7 @@ const subprocessModification: ElementModification = {
     element: {id: 'subprocess_1', name: 'Sub Process 1'},
     affectedTokenCount: 5,
     visibleAffectedTokenCount: 5,
-    scopeIds: [generateUniqueID()],
+    scopeIds: subprocessScopeIds,
     parentScopeIds: {},
   },
 };
@@ -109,13 +114,8 @@ describe('stores/instanceHistoryModification', () => {
       getVisibleChildPlaceholders('id', 'process_1', businessObjects),
     ).toEqual([
       {
-        flowNodeId: 'startEvent_1',
-        type: 'bpmn:StartEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'startEvent_1',
+        elementInstanceKey: startEventScopeId,
         isPlaceholder: true,
       },
     ]);
@@ -124,23 +124,13 @@ describe('stores/instanceHistoryModification', () => {
       getVisibleChildPlaceholders('id', 'subprocess_1', businessObjects),
     ).toEqual([
       {
-        flowNodeId: 'endEvent_1',
-        type: 'bpmn:EndEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'endEvent_1',
+        elementInstanceKey: endEvent1ScopeIds[0],
         isPlaceholder: true,
       },
       {
-        flowNodeId: 'endEvent_1',
-        type: 'bpmn:EndEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'endEvent_1',
+        elementInstanceKey: endEvent1ScopeIds[1],
         isPlaceholder: true,
       },
     ]);
@@ -159,23 +149,13 @@ describe('stores/instanceHistoryModification', () => {
       getVisibleChildPlaceholders('id', 'subprocess_1', businessObjects),
     ).toEqual([
       {
-        flowNodeId: 'endEvent_1',
-        type: 'bpmn:EndEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'endEvent_1',
+        elementInstanceKey: endEvent1ScopeIds[0],
         isPlaceholder: true,
       },
       {
-        flowNodeId: 'endEvent_1',
-        type: 'bpmn:EndEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'endEvent_1',
+        elementInstanceKey: endEvent1ScopeIds[1],
         isPlaceholder: true,
       },
     ]);
@@ -188,13 +168,8 @@ describe('stores/instanceHistoryModification', () => {
       getVisibleChildPlaceholders('id', 'process_1', businessObjects),
     ).toEqual([
       {
-        flowNodeId: 'startEvent_1',
-        type: 'bpmn:StartEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'startEvent_1',
+        elementInstanceKey: startEventScopeId,
         isPlaceholder: true,
       },
     ]);
@@ -213,13 +188,8 @@ describe('stores/instanceHistoryModification', () => {
       getVisibleChildPlaceholders('id', 'subprocess_1', businessObjects),
     ).toEqual([
       {
-        flowNodeId: 'endEvent_1',
-        type: 'bpmn:EndEvent',
-        id: expect.any(String),
-        endDate: null,
-        sortValues: [],
-        startDate: '',
-        treePath: '',
+        elementId: 'endEvent_1',
+        elementInstanceKey: subprocessScopeIds[0],
         isPlaceholder: true,
       },
     ]);

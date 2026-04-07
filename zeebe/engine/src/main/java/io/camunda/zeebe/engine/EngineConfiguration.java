@@ -26,6 +26,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
   public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
+  public static final boolean DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT = false;
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
@@ -103,6 +104,8 @@ public final class EngineConfiguration {
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
   private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
   private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
+  private boolean includeVariablesInJobCompletedEvent =
+      DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -472,6 +475,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setBusinessIdUniquenessEnabled(
       final boolean businessIdUniquenessEnabled) {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    return this;
+  }
+
+  public boolean isIncludeVariablesInJobCompletedEvent() {
+    return includeVariablesInJobCompletedEvent;
+  }
+
+  public EngineConfiguration setIncludeVariablesInJobCompletedEvent(
+      final boolean includeVariablesInJobCompletedEvent) {
+    this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
     return this;
   }
 }

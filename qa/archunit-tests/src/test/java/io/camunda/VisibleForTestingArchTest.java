@@ -8,10 +8,13 @@
 package io.camunda;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
+import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -22,7 +25,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.List;
+import java.util.Set;
 
 /**
  * ArchUnit rules to enforce correct usage of the {@link io.camunda.zeebe.util.VisibleForTesting}
@@ -32,106 +35,108 @@ import java.util.List;
  * accessed from test code or from within the same class (self-usage). This prevents accidental
  * usage in production code outside their intended scope.
  *
- * <p>Some classes are excluded from these rules via the {@code EXCLUDED_CLASS_NAMES} list. These
- * should be investigated and removed from the exclusion list over time.
- *
  * @see io.camunda.zeebe.util.VisibleForTesting
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public class VisibleForTestingArchTest {
-
-  static final List<String> EXCLUDED_CLASS_NAMES =
-      List.of(
-          "io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector",
-          "io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler$AsyncJobStreamRemover",
-          "io.camunda.zeebe.util.micrometer.StatefulGauge",
-          "io.camunda.application.commons.console.ping.PingConsoleTask$RetriableException",
-          "io.camunda.search.schema.IndexMappingDifference$OrderInsensitiveEquivalence",
-          "io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler$JobStreamConsumer",
-          "io.camunda.zeebe.shared.management.ActorClockEndpoint$Response");
 
   @ArchTest
   static final ArchRule CLASS_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
       classes()
           .that()
           .areAnnotatedWith(VisibleForTesting.class)
-          .should(classAccessedBySelfOrTest());
+          .should(beClassAccessedBySelfOrTest());
 
   @ArchTest
   static final ArchRule METHOD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
       methods()
           .that()
           .areAnnotatedWith(VisibleForTesting.class)
-          .should(methodAccessedBySelfOrTest());
+          .should(beMethodAccessedBySelfOrTest());
 
   @ArchTest
   static final ArchRule FIELD_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
-      fields().that().areAnnotatedWith(VisibleForTesting.class).should(fieldAccessedBySelfOrTest());
+      fields()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should(beFieldAccessedBySelfOrTest());
 
-  private static ArchCondition<JavaClass> classAccessedBySelfOrTest() {
-    return new ArchCondition<>("Classes should be accessed from test or self") {
+  @ArchTest
+  static final ArchRule CONSTRUCTOR_VISIBLE_FOR_TESTING_SHOULD_ONLY_BE_ACCESSED_FROM_TEST_OR_SELF =
+      constructors()
+          .that()
+          .areAnnotatedWith(VisibleForTesting.class)
+          .should(beConstructorAccessedBySelfOrTest());
+
+  private static ArchCondition<JavaClass> beClassAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
       @Override
-      public void check(final JavaClass javaClass, final ConditionEvents events) {
-
-        javaClass.getAccessesToSelf().stream()
-            .filter(access -> isViolation(javaClass, access.getOriginOwner()))
-            .forEach(
-                violationAccess ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            violationAccess,
-                            String.format(
-                                "Class %s is accessed from %s, which is not a test or self class.",
-                                javaClass.getFullName(),
-                                violationAccess.getOriginOwner().getFullName()))));
+      public void check(final JavaClass element, final ConditionEvents events) {
+        validateAccessViolations(
+            events, element.getAccessesToSelf(), element, "Class " + element.getFullName());
       }
     };
   }
 
-  private static ArchCondition<JavaMethod> methodAccessedBySelfOrTest() {
-    return new ArchCondition<>("Methods should be accessed from test or self") {
+  private static ArchCondition<JavaMethod> beMethodAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
       @Override
-      public void check(final JavaMethod javaMethod, final ConditionEvents events) {
-
-        javaMethod.getAccessesToSelf().stream()
-            .filter(access -> isViolation(javaMethod.getOwner(), access.getOriginOwner()))
-            .forEach(
-                violationCall ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            violationCall,
-                            String.format(
-                                "Method %s is called from %s, which is not a test or self class.",
-                                javaMethod.getFullName(),
-                                violationCall.getOriginOwner().getFullName()))));
+      public void check(final JavaMethod element, final ConditionEvents events) {
+        validateAccessViolations(
+            events,
+            element.getAccessesToSelf(),
+            element.getOwner(),
+            "Method " + element.getFullName());
       }
     };
   }
 
-  private static ArchCondition<JavaField> fieldAccessedBySelfOrTest() {
-    return new ArchCondition<>("Fields should be accessed from test or self") {
+  private static ArchCondition<JavaField> beFieldAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
       @Override
-      public void check(final JavaField javaField, final ConditionEvents events) {
-
-        javaField.getAccessesToSelf().stream()
-            .filter(fieldAccess -> isViolation(javaField.getOwner(), fieldAccess.getOriginOwner()))
-            .forEach(
-                violationAccess ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            violationAccess,
-                            String.format(
-                                "Field %s is accessed from %s, which is not a test or self class.",
-                                javaField.getFullName(),
-                                violationAccess.getOriginOwner().getFullName()))));
+      public void check(final JavaField element, final ConditionEvents events) {
+        validateAccessViolations(
+            events,
+            element.getAccessesToSelf(),
+            element.getOwner(),
+            "Field " + element.getFullName());
       }
     };
+  }
+
+  private static ArchCondition<JavaConstructor> beConstructorAccessedBySelfOrTest() {
+    return new ArchCondition<>("be accessed from test or self") {
+      @Override
+      public void check(final JavaConstructor element, final ConditionEvents events) {
+        validateAccessViolations(
+            events,
+            element.getAccessesToSelf(),
+            element.getOwner(),
+            "Constructor " + element.getFullName());
+      }
+    };
+  }
+
+  private static void validateAccessViolations(
+      final ConditionEvents events,
+      final Set<? extends JavaAccess<?>> accessesToSelf,
+      final JavaClass owner,
+      final String displayName) {
+
+    accessesToSelf.stream()
+        .filter(access -> isViolation(owner, access.getOriginOwner()))
+        .forEach(
+            violationAccess ->
+                events.add(
+                    SimpleConditionEvent.violated(
+                        violationAccess,
+                        String.format(
+                            "%s is accessed from %s, which is not a test but still requires extended visibility.",
+                            displayName, violationAccess.getOriginOwner().getFullName()))));
   }
 
   private static boolean isViolation(final JavaClass javaOwner, final JavaClass javaOriginOwner) {
-    return !isCalledBySelf(javaOwner, javaOriginOwner)
-        && !isTestClass(javaOriginOwner)
-        && !isExcludedClass(javaOwner);
+    return !isCalledBySelf(javaOwner, javaOriginOwner) && !isTestClass(javaOriginOwner);
   }
 
   private static boolean isTestClass(final JavaClass javaClass) {
@@ -139,12 +144,18 @@ public class VisibleForTestingArchTest {
     return javaClassSource.isPresent() && javaClassSource.get().toString().contains("test");
   }
 
-  private static boolean isCalledBySelf(
-      final JavaClass javaMethodOwner, final JavaClass javaMethodCallOriginOwner) {
-    return javaMethodCallOriginOwner.equals(javaMethodOwner);
+  private static boolean isCalledBySelf(final JavaClass calledClass, final JavaClass callingClass) {
+    // If the calling class is the same as the called class, it's a self-access
+    // This also covers the case of nested classes, as they can access private members of their
+    // enclosing class and vice versa
+    return topLevelClass(callingClass).equals(topLevelClass(calledClass));
   }
 
-  private static boolean isExcludedClass(final JavaClass javaClass) {
-    return EXCLUDED_CLASS_NAMES.contains(javaClass.getFullName());
+  private static JavaClass topLevelClass(final JavaClass javaClass) {
+    var topLevelClass = javaClass;
+    while (topLevelClass.getEnclosingClass().isPresent()) {
+      topLevelClass = topLevelClass.getEnclosingClass().get();
+    }
+    return topLevelClass;
   }
 }

@@ -6,6 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  AuditLogEntityType,
+  AuditLogOperationType,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+
 type OperationsLogFilterField =
   | 'processDefinitionId'
   | 'processDefinitionVersion'
@@ -44,5 +49,37 @@ const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
   'tenantId',
 ];
 
+const AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES: AuditLogEntityType[] = [
+  'USER_TASK',
+  'BATCH',
+  'RESOURCE',
+  'CLIENT',
+  'DECISION',
+  'INCIDENT',
+  'JOB',
+  'PROCESS_INSTANCE',
+  'VARIABLE',
+];
+
+const AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES: AuditLogOperationType[] = [
+  'CREATE',
+  'UPDATE',
+  'DELETE',
+  'COMPLETE',
+  'EVALUATE',
+  'ASSIGN',
+  'CANCEL',
+  'MIGRATE',
+  'MODIFY',
+  'RESOLVE',
+  'RESUME',
+  'SUSPEND',
+  'UNASSIGN',
+];
+
 export type {OperationsLogFilters, OperationsLogFilterField};
-export {AUDIT_LOG_FILTER_FIELDS};
+export {
+  AUDIT_LOG_FILTER_FIELDS,
+  AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES,
+  AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES,
+};
