@@ -437,12 +437,12 @@ public class SemanticSimilarityConfigBootstrapTest {
     @Configuration
     static class MultipleEmbeddingModelAdapterConfig {
 
-      @Bean("similarity.my-custom")
+      @Bean("my-custom")
       EmbeddingModelAdapter customEmbeddingModelAdapter() {
         return ADAPTER_A;
       }
 
-      @Bean("similarity.another-provider")
+      @Bean("another-provider")
       EmbeddingModelAdapter anotherEmbeddingModelAdapter() {
         return ADAPTER_B;
       }
@@ -488,12 +488,12 @@ public class SemanticSimilarityConfigBootstrapTest {
     @Configuration
     static class MultipleEmbeddingModelAdapterConfig {
 
-      @Bean("similarity.my-custom")
+      @Bean("my-custom")
       EmbeddingModelAdapter customEmbeddingModelAdapter() {
         return ADAPTER_A;
       }
 
-      @Bean("similarity.another-provider")
+      @Bean("another-provider")
       EmbeddingModelAdapter anotherEmbeddingModelAdapter() {
         return ADAPTER_B;
       }
@@ -521,12 +521,12 @@ public class SemanticSimilarityConfigBootstrapTest {
     @Configuration
     static class MultipleEmbeddingModelAdapterConfig {
 
-      @Bean("similarity.my-custom")
+      @Bean("my-custom")
       EmbeddingModelAdapter customEmbeddingModelAdapter() {
         return ADAPTER_A;
       }
 
-      @Bean("similarity.another-provider")
+      @Bean("another-provider")
       EmbeddingModelAdapter anotherEmbeddingModelAdapter() {
         return ADAPTER_B;
       }
@@ -594,7 +594,7 @@ public class SemanticSimilarityConfigBootstrapTest {
     @Configuration
     static class GenericEmbeddingModelAdapterConfig {
 
-      @Bean("similarity.my-generic")
+      @Bean("my-generic")
       EmbeddingModelAdapter genericEmbeddingModelAdapter() {
         return ADAPTER_A;
       }

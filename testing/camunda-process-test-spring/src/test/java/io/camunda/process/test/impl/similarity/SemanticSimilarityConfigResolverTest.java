@@ -83,7 +83,7 @@ class SemanticSimilarityConfigResolverTest {
   @Test
   void shouldMatchSingleBeanByNameWhenProviderConfigured() {
     when(applicationContext.getBeansOfType(EmbeddingModelAdapter.class))
-        .thenReturn(Map.of("similarity.my-adapter", ADAPTER_A));
+        .thenReturn(Map.of("my-adapter", ADAPTER_A));
 
     final SemanticSimilarityConfiguration config = new SemanticSimilarityConfiguration();
     config.getEmbeddingModel().setProvider("my-adapter");
@@ -115,7 +115,7 @@ class SemanticSimilarityConfigResolverTest {
   @Test
   void shouldSelectBeanByProviderName() {
     when(applicationContext.getBeansOfType(EmbeddingModelAdapter.class))
-        .thenReturn(Map.of("similarity.my-custom", ADAPTER_A, "similarity.another", ADAPTER_B));
+        .thenReturn(Map.of("my-custom", ADAPTER_A, "another", ADAPTER_B));
 
     final SemanticSimilarityConfiguration config = new SemanticSimilarityConfiguration();
     config.getEmbeddingModel().setProvider("my-custom");

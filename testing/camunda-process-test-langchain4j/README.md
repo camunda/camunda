@@ -88,11 +88,10 @@ CamundaAssert.setJudgeConfig(JudgeConfig.of(model::chat));
 ### Spring bean registration
 
 To use a custom `ChatModelAdapter` bean instead of the SPI, register it with the bean name
-`"judge.<provider>"`. The `judge.` prefix avoids name collisions with beans registered for other
-features (e.g. semantic similarity):
+`"<provider>"`:
 
 ```java
-@Bean("judge.openai")
+@Bean("openai")
 ChatModelAdapter myChatModelAdapter() {
   // custom OpenAI chat model adapter ...
 }
@@ -186,12 +185,11 @@ camunda:
         model: text-embedding-3-small
 ```
 
-Alternatively, register an `EmbeddingModelAdapter` bean with the name `"similarity.<provider>"`.
-When the provider is configured, the resolver looks for a bean named
-`"similarity.<provider>"`:
+Alternatively, register an `EmbeddingModelAdapter` bean with the name `"<provider>"`.
+When the provider is configured, the resolver looks for a bean named `"<provider>"`:
 
 ```java
-@Bean("similarity.openai")
+@Bean("openai")
 EmbeddingModelAdapter myEmbeddingModelAdapter() {
   EmbeddingModel model = OpenAiEmbeddingModel.builder()
     .apiKey(System.getenv("OPENAI_API_KEY"))
