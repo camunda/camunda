@@ -144,10 +144,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                   .search(searchRequest, Object.class)
                   .whenCompleteAsync(
                       (ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-                  .thenComposeAsync(
-                      (response) ->
-                          createArchiveBatch(
-                              response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+                  .thenApplyAsync(
+                      (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE),
                       executor);
             });
   }
@@ -160,11 +158,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            (response) ->
-                createArchiveBatch(
-                    response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
-            executor);
+        .thenApplyAsync(
+            (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
   @Override
@@ -179,7 +174,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createArchiveBatch(
                     response,
@@ -200,7 +195,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createArchiveBatch(
                     response,
@@ -217,12 +212,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
-            response ->
-                createArchiveBatch(
-                    response,
-                    DecisionInstanceTemplate.EVALUATION_DATE,
-                    decisionInstanceTemplateDescriptor),
+        .thenApplyAsync(
+            response -> createArchiveBatch(response, DecisionInstanceTemplate.EVALUATION_DATE),
             executor);
   }
 
@@ -396,18 +387,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.indices().putSettings(settingsRequest);
   }
 
-  private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response,
-      final String field,
-      final IndexTemplateDescriptor templateDescriptor) {
+  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
     return createArchiveBatch(response, field, config.getRolloverInterval());
   }
 
-  private CompletableFuture<ArchiveBatch> createArchiveBatch(
+  private ArchiveBatch createArchiveBatch(
       final SearchResponse<?> response, final String field, final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+      new ArchiveBatch(null, List.of());
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
@@ -423,7 +411,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .map(Hit::id)
             .toList();
 
-    return CompletableFuture.completedFuture(new ArchiveBatch(date, ids));
+    return new ArchiveBatch(date, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {

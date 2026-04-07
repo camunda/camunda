@@ -31,7 +31,6 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -150,7 +149,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 return sendRequestAsync(() -> client.search(request, Object.class))
                     .whenCompleteAsync(
                         (ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-                    .thenComposeAsync(
+                    .thenApplyAsync(
                         (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE),
                         executor);
               });
@@ -167,7 +166,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
@@ -182,7 +181,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createArchiveBatch(
                     response,
@@ -202,7 +201,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response ->
                 createArchiveBatch(
                     response,
@@ -218,7 +217,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenComposeAsync(
+        .thenApplyAsync(
             response -> createArchiveBatch(response, DecisionInstanceTemplate.EVALUATION_DATE),
             executor);
   }
@@ -415,14 +414,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .toQuery();
   }
 
-  private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexPattern)
-      throws IOException {
-    return client
-        .indices()
-        .get(b -> b.index(indexPattern))
-        .thenApply(r -> new ArrayList<>(r.result().keySet()));
-  }
-
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final String indexNamePattern) {
     logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
@@ -548,16 +539,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .toQuery();
   }
 
-  private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response, final String field) {
+  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
     return createArchiveBatch(response, field, config.getRolloverInterval());
   }
 
-  private CompletableFuture<ArchiveBatch> createArchiveBatch(
+  private ArchiveBatch createArchiveBatch(
       final SearchResponse<?> response, final String field, final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+      return new ArchiveBatch(null, List.of());
     }
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
@@ -572,7 +562,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .map(Hit::id)
             .toList();
 
-    return CompletableFuture.completedFuture(new ArchiveBatch(date, ids));
+    return new ArchiveBatch(date, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
