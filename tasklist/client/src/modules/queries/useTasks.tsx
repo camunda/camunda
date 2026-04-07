@@ -10,14 +10,12 @@ import {
   type InfiniteData,
   type UseInfiniteQueryOptions,
   useInfiniteQuery,
-  useQueryClient,
 } from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {type RequestError, request} from 'modules/request';
 import type {Task} from 'modules/types';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import type {TaskFilters} from 'modules/hooks/useTaskFilters';
-import chunk from 'lodash/chunk';
 import {useCurrentUser} from './useCurrentUser';
 
 const POLLING_INTERVAL = 5000;
@@ -25,15 +23,13 @@ const MAX_TASKS_DISPLAYED = 200;
 const MAX_TASKS_PER_REQUEST = 50;
 const MAX_PAGE_COUNT = Math.ceil(MAX_TASKS_DISPLAYED / MAX_TASKS_PER_REQUEST);
 
-type PageParam = {
-  pageParam?:
-    | {
-        searchBefore: [string, string];
-      }
-    | {
-        searchAfter: [string, string];
-      };
-};
+type PageParam =
+  | {
+      searchBefore: [string, string];
+    }
+  | {
+      searchAfter: [string, string];
+    };
 
 function getQueryKey(keys: unknown[]) {
   return ['tasks', ...keys];
@@ -43,7 +39,13 @@ function useTasks(
   filters: TaskFilters,
   options?: Partial<
     Pick<
-      UseInfiniteQueryOptions<Task[], RequestError | Error>,
+      UseInfiniteQueryOptions<
+        Task[],
+        RequestError | Error,
+        InfiniteData<Task[], PageParam | undefined>,
+        unknown[],
+        PageParam | undefined
+      >,
       'refetchInterval'
     >
   >,
@@ -54,8 +56,13 @@ function useTasks(
     assignee: currentUser?.userId,
     pageSize: MAX_TASKS_PER_REQUEST,
   });
-  const client = useQueryClient();
-  const result = useInfiniteQuery<Task[], RequestError | Error>({
+  const result = useInfiniteQuery<
+    Task[],
+    RequestError | Error,
+    InfiniteData<Task[], PageParam | undefined>,
+    unknown[],
+    PageParam | undefined
+  >({
     queryKey: getQueryKey(Object.values(payload)),
     queryFn: async ({pageParam}) => {
       const {response, error} = await request(
@@ -69,6 +76,7 @@ function useTasks(
       throw error ?? new Error('Could not fetch tasks');
     },
     initialPageParam: undefined,
+    maxPages: MAX_PAGE_COUNT,
     placeholderData: (previousData) => previousData,
     refetchInterval: refetchInterval ?? POLLING_INTERVAL,
     getNextPageParam: (lastPage) => {
@@ -105,36 +113,8 @@ function useTasks(
     }
 
     const {data} = await result.fetchPreviousPage();
-    function calculatePreviousTasksData(
-      data?: InfiniteData<Task[]>,
-    ): InfiniteData<Task[]> | undefined {
-      const tasks = data?.pages.flat() ?? [];
-      if (data === undefined || tasks.length <= MAX_TASKS_DISPLAYED) {
-        return data;
-      }
-      const trimmedTasks = tasks.slice(0, MAX_TASKS_DISPLAYED + 1);
-      const lastTask = trimmedTasks.pop();
 
-      return {
-        pages: chunk(trimmedTasks, MAX_TASKS_PER_REQUEST),
-        pageParams: [
-          ...data.pageParams.slice(0, MAX_PAGE_COUNT - 1),
-          {
-            searchBefore: lastTask!.sortValues,
-          },
-        ],
-      };
-    }
-    const newData = calculatePreviousTasksData(data);
-
-    client.setQueryData<InfiniteData<Task[]>>(
-      getQueryKey(Object.values(payload)),
-      () => {
-        return newData;
-      },
-    );
-
-    return newData?.pages[0] ?? [];
+    return data?.pages[0] ?? [];
   }
 
   async function fetchNextTasks() {
@@ -143,37 +123,8 @@ function useTasks(
     }
 
     const {data} = await result.fetchNextPage();
-    function calculateNextTasksData(
-      data?: InfiniteData<Task[]>,
-    ): InfiniteData<Task[]> | undefined {
-      const tasks = data?.pages.flat() ?? [];
-      if (data === undefined || tasks.length <= MAX_TASKS_DISPLAYED) {
-        return data;
-      }
-      const [firstTask, ...trimmedTasks] = tasks.slice(
-        -(MAX_TASKS_DISPLAYED + 1),
-      );
 
-      return {
-        pages: chunk(trimmedTasks, MAX_TASKS_PER_REQUEST),
-        pageParams: [
-          {
-            searchAfter: firstTask.sortValues,
-          },
-          ...data.pageParams.slice(-(MAX_PAGE_COUNT - 1)),
-        ],
-      };
-    }
-    const newData = calculateNextTasksData(data);
-
-    client.setQueryData<InfiniteData<Task[]>>(
-      getQueryKey(Object.values(payload)),
-      () => {
-        return newData;
-      },
-    );
-
-    return newData === undefined ? [] : newData.pages[newData.pages.length - 1];
+    return data === undefined ? [] : data.pages[data.pages.length - 1];
   }
 
   return {...result, fetchPreviousTasks, fetchNextTasks};
