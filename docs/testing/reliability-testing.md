@@ -195,7 +195,7 @@ For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.a
 
 ##### Architecture
 
-The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting only `name` and `tag` as inputs.
+The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
 
 ```mermaid
 graph TD
@@ -206,7 +206,7 @@ graph TD
 
     subgraph "Abstraction Layer — camunda-release-load-test.yaml"
         direction TB
-        API["Public API<br/>inputs: name, tag"]
+        API["Public API<br/>inputs: name, tag<br/>optional: optimize-tag, identity-tag, connectors-tag"]
         SANITIZE["Sanitize inputs"]
         API --> SANITIZE
     end
@@ -230,7 +230,7 @@ graph TD
 
 This decoupling provides several benefits:
 
-* **Clear API**: The release process only needs to provide a test name and tag — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
+* **Clear API**: The release process only needs to provide a test name and tag (with optional per-component image tags) — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
 * **Independent evolution**: Changes to load test infrastructure (helm values, Makefiles, scripts) don't require changes to the release process BPMN
 * **Per-branch workflows**: Each stable branch has its own copy of the release load test workflow (via backports), ensuring the correct infrastructure files are used for each version
 * **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) validates daily that release load tests can be created for all active stable branches
