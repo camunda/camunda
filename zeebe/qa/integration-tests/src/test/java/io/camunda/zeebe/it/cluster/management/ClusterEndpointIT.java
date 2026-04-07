@@ -19,6 +19,11 @@ import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
@@ -30,6 +35,7 @@ import org.junit.jupiter.api.Timeout;
 final class ClusterEndpointIT {
   private static final int BROKER_COUNT = 2;
   private static final int PARTITION_COUNT = 2;
+  private static final String SCALE_BROKERS_REQUEST_BODY = "[1,2]";
 
   @Test
   void shouldQueryCurrentClusterTopology() {
@@ -220,6 +226,21 @@ final class ClusterEndpointIT {
     }
   }
 
+  @Test
+  void shouldFailRequestWhenHavingTypoInParameter() throws IOException, InterruptedException {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+
+      // when
+      final var response = sendBrokerScaleRequest(cluster, URI.create("/brokers?dry-run=true"));
+
+      // then
+      assertThat(response.statusCode()).isEqualTo(400);
+      assertThat(response.body()).contains("Unsupported query parameter(s): dry-run");
+    }
+  }
+
   private static void movePartition(final ClusterActuator actuator) {
     final var plannedJoin = actuator.joinPartition(0, 2, 1);
     Awaitility.await()
@@ -230,6 +251,22 @@ final class ClusterEndpointIT {
         .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(leave));
   }
 
+  private static java.net.http.HttpResponse<String> sendBrokerScaleRequest(
+      final TestCluster cluster, final URI pathAndQuery) throws IOException, InterruptedException {
+    final var baseClusterEndpoint = cluster.availableGateway().actuatorUri("cluster");
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(baseClusterEndpoint + pathAndQuery.toString()))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(SCALE_BROKERS_REQUEST_BODY))
+            .build();
+
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(request, BodyHandlers.ofString());
+    }
+  }
+
+  @SuppressWarnings("resource")
   private static TestCluster createCluster(final int replicationFactor) {
     return TestCluster.builder()
         .withEmbeddedGateway(true)
