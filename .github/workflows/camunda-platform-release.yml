@@ -1286,7 +1286,7 @@ jobs:
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
       - name: Report release success to C8
         continue-on-error: true
-        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
           clientConfig: ${{ steps.secrets.outputs.clientConfig }}
           operation: publishMessage
@@ -1379,7 +1379,7 @@ jobs:
 
       - name: Report release failure to C8
         continue-on-error: true
-        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
           clientConfig: ${{ steps.secrets.outputs.clientConfig }}
           operation: publishMessage
