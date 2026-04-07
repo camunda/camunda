@@ -1400,6 +1400,7 @@ This unified architecture builds on existing identity arc42 docs and ADRs for OC
 This section contains detailed Architectural Decision Records (ADRs) for the Security Gateway Framework. Each ADR documents a specific decision, the context, alternatives considered, and consequences.
 
 - [ADR-0001: Link PolicyVersion with policy data via versioned change sets](adr/0001-policy-version-change-sets.md)
+- [ADR-0002: Placement of the Security Gateway Framework (embedded vs standalone service)](adr/0002-placement-of-the-security-gateway-framework.md)
 
 ---
 
