@@ -117,7 +117,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
   private void throwError(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
-    final JobRecord job = jobState.getJob(jobKey);
+    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
     if (job == null) {
       final var errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
