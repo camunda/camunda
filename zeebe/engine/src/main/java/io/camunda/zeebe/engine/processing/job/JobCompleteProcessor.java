@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -29,6 +30,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 
 public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecord> {
+
+  public static final String NO_JOB_FOUND_MESSAGE =
+      "Expected to complete job with key '%d', but no such job was found";
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -75,7 +79,15 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   }
 
   private void completeJob(final TypedRecord<JobRecord> command) {
-    final var job = jobState.getJob(command.getKey(), command.getAuthorizations());
+    final var jobKey = command.getKey();
+    final var job = jobState.getJob(jobKey, command.getAuthorizations());
+    if (job == null) {
+      final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
     job.setVariables(command.getValue().getVariablesBuffer());
 
     stateWriter.appendFollowUpEvent(command.getKey(), JobIntent.COMPLETED, job);
