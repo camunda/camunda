@@ -1,6 +1,6 @@
 {
   "name": "camunda-operate",
-  "version": "8.8.17-SNAPSHOT",
+  "version": "8.8.22-SNAPSHOT",
   "private": true,
   "type": "module",
   "dependencies": {
