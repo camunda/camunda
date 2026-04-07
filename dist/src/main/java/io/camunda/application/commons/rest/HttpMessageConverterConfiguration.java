@@ -55,7 +55,8 @@ public class HttpMessageConverterConfiguration {
   public MappingJackson2HttpMessageConverter gatewayRestMappingJackson2HttpMessageConverter(
       @Qualifier("gatewayRestObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
-        new PackageSpecificJackson2HttpMessageConverter("io.camunda.gateway.protocol.model");
+        new PackageSpecificJackson2HttpMessageConverter(
+            "io.camunda.gateway.mapping.http.search.contract.generated");
     messageConverter.setObjectMapper(objectMapper);
     return messageConverter;
   }
