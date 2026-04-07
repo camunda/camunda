@@ -7,6 +7,7 @@
  */
 
 import { FC, useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
@@ -33,9 +34,12 @@ const List: FC = () => {
     ? ALL_RESOURCE_TYPES
     : RESOURCE_TYPES_WITHOUT_TENANT;
 
-  const [activeTab, setActiveTab] = useState<ResourceType>(
-    authorizationTabs[0],
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<ResourceType>(() => {
+    const param = searchParams.get("resourceType") as ResourceType;
+    return param && authorizationTabs.includes(param) ? param : authorizationTabs[0];
+  });
 
   const {
     data,
@@ -78,9 +82,12 @@ const List: FC = () => {
       <TabsTitle>{t("resourceType")}</TabsTitle>
       <TabsContainer>
         <TabsVertical
+          defaultSelectedIndex={authorizationTabs.indexOf(activeTab)}
           onChange={(tab: { selectedIndex: number }) => {
+            const newTab = authorizationTabs[tab.selectedIndex];
             resetPagination();
-            setActiveTab(authorizationTabs[tab.selectedIndex]);
+            setActiveTab(newTab);
+            setSearchParams({ resourceType: newTab }, { replace: true });
           }}
         >
           <CustomTabListVertical aria-label={t("authorizationType")}>
