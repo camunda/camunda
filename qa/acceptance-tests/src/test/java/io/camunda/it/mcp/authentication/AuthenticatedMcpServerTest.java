@@ -15,8 +15,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -117,10 +117,10 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
 
     final var searchQueryResult =
         objectMapper.convertValue(
-            result.structuredContent(), ProcessDefinitionSearchQueryResult.class);
+            result.structuredContent(), GeneratedProcessDefinitionSearchQueryStrictContract.class);
 
-    return searchQueryResult.getItems().stream()
-        .map(ProcessDefinitionResult::getProcessDefinitionId)
+    return searchQueryResult.items().stream()
+        .map(GeneratedProcessDefinitionStrictContract::processDefinitionId)
         .collect(Collectors.toSet());
   }
 
