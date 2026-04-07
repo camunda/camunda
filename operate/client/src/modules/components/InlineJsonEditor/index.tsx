@@ -161,6 +161,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
             $empty={displayValue === ''}
             $editMode={!isReadOnly}
             $scrollable={isScrollable}
+            $invalid={!!fieldError}
             tabIndex={isReadOnly ? -1 : 0}
           >
             {displayValue || placeholder}
@@ -201,12 +202,12 @@ const InlineJsonEditor: React.FC<Props> = observer(
                     },
                   }}
                 />
-                {fieldError && (
-                  <div className="cds--form-requirement">{fieldError}</div>
-                )}
               </>
             </Suspense>
           </>
+        )}
+        {fieldError && (
+          <div className="cds--form-requirement">{fieldError}</div>
         )}
       </EditorWrapper>
     );

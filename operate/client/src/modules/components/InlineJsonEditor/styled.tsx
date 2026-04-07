@@ -74,8 +74,10 @@ const EditorReadonly = styled.pre<{
   $empty: boolean;
   $editMode: boolean;
   $scrollable: boolean;
+  $invalid: boolean;
 }>`
   display: block;
+  position: relative;
   text-wrap: wrap;
   width: 100%;
   min-height: ${EDITOR_MIN_HEIGHT}px;
@@ -103,11 +105,20 @@ const EditorReadonly = styled.pre<{
     outline-offset: -2px;
   }
 
+  ${({$invalid}) =>
+    $invalid &&
+    css`
+      &::after {
+        ${ring('var(--cds-support-error)')}
+      }
+    `};
+
   ${({$empty}) =>
     $empty &&
     css`
       color: var(--cds-text-placeholder);
     `};
+
   ${({$editMode}) =>
     $editMode &&
     css`
