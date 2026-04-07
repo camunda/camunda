@@ -1599,6 +1599,9 @@ public enum %s {
     // For request schemas, generate typed long accessors for LongKey fields so callers
     // can use e.g. request.processDefinitionKeyAsLong() instead of Long.parseLong().
     final String longKeyAccessors = emitConstraints ? renderLongKeyAccessors(fields) : "";
+    // For request schemas, generate xxxOrDefault() accessors for nullable fields so callers
+    // can use e.g. request.variablesOrDefault() instead of request.variables() != null ? ... : Map.of().
+    final String orDefaultAccessors = emitConstraints ? renderOrDefaultAccessors(fields) : "";
     final String builderCode = renderBuilder(schemaName, dtoClass, fields);
 
     final String recordBody;
@@ -1606,6 +1609,7 @@ public enum %s {
       && fieldReferences.isBlank()
         && coercionHelpers.isBlank()
         && longKeyAccessors.isBlank()
+        && orDefaultAccessors.isBlank()
         && fromProtocolFactory.isBlank()
         && builderCode.isBlank()
         && !hasInlineEnumValues) {
@@ -1620,6 +1624,9 @@ public enum %s {
       }
       if (!longKeyAccessors.isBlank()) {
         sections.add(longKeyAccessors);
+      }
+      if (!orDefaultAccessors.isBlank()) {
+        sections.add(orDefaultAccessors);
       }
       if (!fromProtocolFactory.isBlank()) {
         sections.add(fromProtocolFactory);
@@ -1762,6 +1769,71 @@ public record %s(
                         .formatted(field.name(), methodName, field.identifier());
                   }
                 })
+            .toList();
+    return accessors.isEmpty() ? "" : String.join("\n", accessors);
+  }
+
+  /**
+   * Renders {@code xxxOrDefault()} accessor methods for nullable fields on request DTOs that have
+   * a natural zero-value default based on their Java type. This eliminates the repetitive
+   * {@code field() != null ? field() : default} pattern in RequestMapper.
+   *
+   * <p>Only emitted for nullable fields that do NOT already have a spec-level default (those are
+   * coerced in the compact constructor, so the field is never null after construction).
+   */
+  private static String renderOrDefaultAccessors(final List<ContractField> fields) {
+    final var accessors =
+        fields.stream()
+            .filter(f -> f.nullable() && f.defaultValue() == null)
+            .map(
+                field -> {
+                  final var type = field.javaType();
+                  final var id = field.identifier();
+                  final var methodName = id + "OrDefault";
+                  if (type.equals("String")) {
+                    return """
+  /** Returns {@code %s}, or an empty string if absent. */
+  public String %s() {
+    return %s != null ? %s : "";
+  }
+"""
+                        .formatted(id, methodName, id, id);
+                  } else if (type.startsWith("java.util.Map")) {
+                    return """
+  /** Returns {@code %s}, or an empty map if absent. */
+  public %s %s() {
+    return %s != null ? %s : java.util.Map.of();
+  }
+"""
+                        .formatted(id, type, methodName, id, id);
+                  } else if (type.startsWith("java.util.List")) {
+                    return """
+  /** Returns {@code %s}, or an empty list if absent. */
+  public %s %s() {
+    return %s != null ? %s : java.util.List.of();
+  }
+"""
+                        .formatted(id, type, methodName, id, id);
+                  } else if (type.equals("Integer") || type.equals("java.lang.Integer")) {
+                    return """
+  /** Returns {@code %s}, or {@code 0} if absent. */
+  public int %s() {
+    return %s != null ? %s : 0;
+  }
+"""
+                        .formatted(id, methodName, id, id);
+                  } else if (type.equals("Long") || type.equals("java.lang.Long")) {
+                    return """
+  /** Returns {@code %s}, or {@code 0L} if absent. */
+  public long %s() {
+    return %s != null ? %s : 0L;
+  }
+"""
+                        .formatted(id, methodName, id, id);
+                  }
+                  return null;
+                })
+            .filter(s -> s != null)
             .toList();
     return accessors.isEmpty() ? "" : String.join("\n", accessors);
   }

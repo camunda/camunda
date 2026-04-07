@@ -111,7 +111,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
@@ -402,21 +401,19 @@ public class RequestMapper {
                 request.processDefinitionVersion() != null
                     ? request.processDefinitionVersion()
                     : -1,
-                request.variables() != null ? request.variables() : Map.of(),
+                request.variablesOrDefault(),
                 tenantId,
                 request.awaitCompletion(),
                 request.requestTimeout(),
                 request.operationReference(),
-                request.startInstructions() != null
-                    ? request.startInstructions().stream()
-                        .map(
-                            si ->
-                                new ProcessInstanceCreationStartInstruction()
-                                    .setElementId(si.elementId()))
-                        .toList()
-                    : List.of(),
+                request.startInstructionsOrDefault().stream()
+                    .map(
+                        si ->
+                            new ProcessInstanceCreationStartInstruction()
+                                .setElementId(si.elementId()))
+                    .toList(),
                 mapStrictRuntimeInstructions(request.runtimeInstructions()),
-                request.fetchVariables() != null ? request.fetchVariables() : List.of(),
+                request.fetchVariablesOrDefault(),
                 request.tags(),
                 request.businessId()));
   }
@@ -438,21 +435,19 @@ public class RequestMapper {
                 request.processDefinitionKeyAsLong(),
                 "",
                 -1,
-                request.variables() != null ? request.variables() : Map.of(),
+                request.variablesOrDefault(),
                 tenantId,
                 request.awaitCompletion(),
                 request.requestTimeout(),
                 request.operationReference(),
-                request.startInstructions() != null
-                    ? request.startInstructions().stream()
-                        .map(
-                            si ->
-                                new ProcessInstanceCreationStartInstruction()
-                                    .setElementId(si.elementId()))
-                        .toList()
-                    : List.of(),
+                request.startInstructionsOrDefault().stream()
+                    .map(
+                        si ->
+                            new ProcessInstanceCreationStartInstruction()
+                                .setElementId(si.elementId()))
+                    .toList(),
                 mapStrictRuntimeInstructions(request.runtimeInstructions()),
-                request.fetchVariables() != null ? request.fetchVariables() : List.of(),
+                request.fetchVariablesOrDefault(),
                 request.tags(),
                 request.businessId()));
   }
@@ -497,7 +492,7 @@ public class RequestMapper {
             new DecisionEvaluationRequest(
                 request.decisionDefinitionId() != null ? request.decisionDefinitionId() : "",
                 -1L,
-                request.variables() != null ? request.variables() : Map.of(),
+                request.variablesOrDefault(),
                 tenantId));
   }
 
@@ -509,10 +504,7 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                "",
-                request.decisionDefinitionKeyAsLong(),
-                request.variables() != null ? request.variables() : Map.of(),
-                tenantId));
+                "", request.decisionDefinitionKeyAsLong(), request.variablesOrDefault(), tenantId));
   }
 
   private static Long getAncestorKey(final String ancestorElementInstanceKey) {
@@ -520,50 +512,6 @@ public class RequestMapper {
       return -1L;
     }
     return KeyUtil.keyToLong(ancestorElementInstanceKey);
-  }
-
-  private static <R> Map<String, Object> getMapOrEmpty(
-      final R request, final Function<R, Map<String, Object>> mapExtractor) {
-    final Map<String, Object> value = request == null ? null : mapExtractor.apply(request);
-    return value == null ? Map.of() : value;
-  }
-
-  private static <R> boolean getBooleanOrDefault(
-      final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
-    final Boolean value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? defaultValue : value;
-  }
-
-  private static <R> String getStringOrEmpty(
-      final R request, final Function<R, String> valueExtractor) {
-    final String value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? "" : value;
-  }
-
-  private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
-    return getLongOrDefault(request, valueExtractor, 0L);
-  }
-
-  private static <R> long getLongOrDefault(
-      final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
-    final Long value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? defaultValue : value;
-  }
-
-  private static <R> List<String> getStringListOrEmpty(
-      final R request, final Function<R, List<String>> valueExtractor) {
-    final List<String> value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? List.of() : value;
-  }
-
-  private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
-    return getIntOrDefault(request, valueExtractor, 0);
-  }
-
-  private static <R> int getIntOrDefault(
-      final R request, final Function<R, Integer> valueExtractor, final Integer defaultValue) {
-    final Integer value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? defaultValue : value;
   }
 
   public record CompleteUserTaskRequest(
@@ -599,15 +547,16 @@ public class RequestMapper {
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final GeneratedUserTaskCompletionRequestStrictContract request, final long userTaskKey) {
+    if (request == null) {
+      return new CompleteUserTaskRequest(userTaskKey, Map.of(), "");
+    }
     return new CompleteUserTaskRequest(
-        userTaskKey,
-        request == null || request.variables() == null ? Map.of() : request.variables(),
-        request == null || request.action() == null ? "" : request.action());
+        userTaskKey, request.variablesOrDefault(), request.actionOrDefault());
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
       final GeneratedUserTaskAssignmentRequestStrictContract request, final long userTaskKey) {
-    final String action = request.action() == null ? "" : request.action();
+    final String action = request.actionOrDefault();
     final boolean allowOverride = request.allowOverride() == null || request.allowOverride();
     return getResult(
         validate(
@@ -667,9 +616,7 @@ public class RequestMapper {
             }
           }
           return new UpdateUserTaskRequest(
-              userTaskKey,
-              record,
-              request == null || request.action() == null ? "" : request.action());
+              userTaskKey, record, request == null ? "" : request.actionOrDefault());
         });
   }
 
@@ -729,13 +676,12 @@ public class RequestMapper {
               Collections.emptyList(),
               tenantFilter,
               request.timeout(),
-              request.worker() != null ? request.worker() : "",
-              request.fetchVariable() != null ? request.fetchVariable() : List.of(),
-              request.requestTimeout() != null ? request.requestTimeout() : 0L));
+              request.workerOrDefault(),
+              request.fetchVariableOrDefault(),
+              request.requestTimeoutOrDefault()));
     }
 
-    final List<String> providedTenantIds =
-        request.tenantIds() != null ? request.tenantIds() : List.of();
+    final List<String> providedTenantIds = request.tenantIdsOrDefault();
     final Either<ProblemDetail, List<String>> tenantIdsResult =
         validateTenantIds(providedTenantIds, multiTenancyEnabled, "Activate Jobs");
     if (tenantIdsResult.isLeft()) {
@@ -749,19 +695,22 @@ public class RequestMapper {
             tenantIdsResult.get(),
             tenantFilter,
             request.timeout(),
-            request.worker() != null ? request.worker() : "",
-            request.fetchVariable() != null ? request.fetchVariable() : List.of(),
-            request.requestTimeout() != null ? request.requestTimeout() : 0L));
+            request.workerOrDefault(),
+            request.fetchVariableOrDefault(),
+            request.requestTimeoutOrDefault()));
   }
 
   public static FailJobRequest toJobFailRequest(
       final GeneratedJobFailRequestStrictContract request, final long jobKey) {
+    if (request == null) {
+      return new FailJobRequest(jobKey, 0, "", 0L, Map.of());
+    }
     return new FailJobRequest(
         jobKey,
-        request == null || request.retries() == null ? 0 : request.retries(),
-        request == null || request.errorMessage() == null ? "" : request.errorMessage(),
-        request == null || request.retryBackOff() == null ? 0L : request.retryBackOff(),
-        request == null || request.variables() == null ? Map.of() : request.variables());
+        request.retries(),
+        request.errorMessageOrDefault(),
+        request.retryBackOff(),
+        request.variablesOrDefault());
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -777,16 +726,17 @@ public class RequestMapper {
             new ErrorJobRequest(
                 jobKey,
                 request.errorCode(),
-                request.errorMessage() != null ? request.errorMessage() : "",
-                request.variables() != null ? request.variables() : Map.of()));
+                request.errorMessageOrDefault(),
+                request.variablesOrDefault()));
   }
 
   public static CompleteJobRequest toJobCompletionRequest(
       final GeneratedJobCompletionRequestStrictContract request, final long jobKey) {
-    final Map<String, Object> variables =
-        request != null && request.variables() != null ? request.variables() : Map.of();
-    final var jobResult = toJobResult(request != null ? request.result() : null);
-    return new CompleteJobRequest(jobKey, variables, jobResult);
+    if (request == null) {
+      return new CompleteJobRequest(jobKey, Map.of(), new JobResult());
+    }
+    return new CompleteJobRequest(
+        jobKey, request.variablesOrDefault(), toJobResult(request.result()));
   }
 
   /**
@@ -809,7 +759,7 @@ public class RequestMapper {
     final JobResult jobResult = new JobResult();
     jobResult.setType(JobResultType.from(result.type()));
     jobResult.setDenied(result.denied() != null ? result.denied() : false);
-    jobResult.setDeniedReason(result.deniedReason() != null ? result.deniedReason() : "");
+    jobResult.setDeniedReason(result.deniedReasonOrDefault());
 
     final var corrections = result.corrections();
     if (corrections == null) {
@@ -1228,8 +1178,8 @@ public class RequestMapper {
                 request.name(),
                 request.correlationKey(),
                 request.timeToLive(),
-                request.messageId() != null ? request.messageId() : "",
-                request.variables() != null ? request.variables() : Map.of(),
+                request.messageIdOrDefault(),
+                request.variablesOrDefault(),
                 tenantId));
   }
 
@@ -1315,8 +1265,7 @@ public class RequestMapper {
                     .map(
                         element ->
                             new AdHocSubProcessActivateActivityReference(
-                                element.elementId(),
-                                element.variables() != null ? element.variables() : Map.of()))
+                                element.elementId(), element.variablesOrDefault()))
                     .toList(),
                 request.cancelRemainingInstances() != null && request.cancelRemainingInstances()));
   }
