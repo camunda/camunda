@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.MinioContainer;
@@ -41,15 +40,15 @@ final class S3BackupAuthenticationIT {
             .withoutTopologyCheck()
             .withUnifiedConfig(
                 cfg -> {
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                   final var s3Config = cfg.getData().getPrimaryStorage().getBackup().getS3();
                   cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.S3);
                   s3Config.setBucketName(BUCKET_NAME);
                   s3Config.setEndpoint(MINIO.internalEndpoint());
                   s3Config.setRegion(MINIO.region());
-                  s3Config.setAccessKey(MINIO.accessKey());
-                  s3Config.setSecretKey(MINIO.secretKey());
                 })
-            .withProperty(CREATE_SCHEMA_PROPERTY, false)
+            .withEnv("AWS_ACCESS_KEY_ID", MINIO.accessKey())
+            .withEnv("AWS_SECRET_ACCESS_KEY", MINIO.secretKey())
             .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*");
 
     // when

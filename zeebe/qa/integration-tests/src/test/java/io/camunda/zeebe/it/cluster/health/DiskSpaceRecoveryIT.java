@@ -22,7 +22,6 @@ import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Status.Code;
 import java.time.Duration;
 import java.util.Map;
@@ -33,11 +32,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.util.unit.DataSize;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Validates that a broker can recover from running out of disk space after compaction.
@@ -51,39 +48,6 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 final class DiskSpaceRecoveryIT {
   private final CamundaVolume volume = createVolume();
-  private final BrokerContainer container =
-      new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withCamundaData(volume)
-          .withRecordingExporter()
-          .withUnifiedConfig(
-              cfg -> {
-                cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
-                cfg.getData()
-                    .getPrimaryStorage()
-                    .getDisk()
-                    .getFreeSpace()
-                    .setProcessing(DataSize.ofMegabytes(8));
-                cfg.getData()
-                    .getPrimaryStorage()
-                    .getDisk()
-                    .getFreeSpace()
-                    .setReplication(DataSize.ofMegabytes(1));
-                cfg.getData()
-                    .getPrimaryStorage()
-                    .getLogStream()
-                    .setLogSegmentSize(DataSize.ofMegabytes(1));
-                cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
-                cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-              })
-          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-          .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-          .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
-
-  @SuppressWarnings("JUnitMalformedDeclaration")
-  @RegisterExtension
-  private final ContainerLogsDumper logsDumper =
-      new ContainerLogsDumper(() -> Map.of("broker", container));
-
   private CamundaClient client;
 
   @AfterEach
@@ -109,11 +73,37 @@ final class DiskSpaceRecoveryIT {
 
   @Nested
   final class WithStandardContainerTest {
-    @Container private final BrokerContainer broker = container;
+    @Container
+    private final BrokerContainer broker =
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+            .withCamundaData(volume)
+            .withRecordingExporter()
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getDisk()
+                      .getFreeSpace()
+                      .setProcessing(DataSize.ofMegabytes(8));
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getDisk()
+                      .getFreeSpace()
+                      .setReplication(DataSize.ofMegabytes(1));
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getLogStream()
+                      .setLogSegmentSize(DataSize.ofMegabytes(1));
+                  cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                })
+            .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+            .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
 
     @BeforeEach
     void beforeEach() {
-      broker.start();
       client = newClientBuilder(broker).build();
     }
 
@@ -150,8 +140,6 @@ final class DiskSpaceRecoveryIT {
                 return exportedPosition >= processedPosition;
               });
 
-      Thread.sleep(2000);
-
       // trigger a snapshot
       partitionsClient.takeSnapshot();
       // then
@@ -168,8 +156,8 @@ final class DiskSpaceRecoveryIT {
   final class WithAlreadyDiskFullTest {
     @Container
     private final BrokerContainer broker =
-        new BrokerContainer(DockerImageName.parse("camunda/zeebe:8.10-SNAPSHOT"))
-            .withZeebeData(volume)
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+            .withCamundaData(volume)
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getData()

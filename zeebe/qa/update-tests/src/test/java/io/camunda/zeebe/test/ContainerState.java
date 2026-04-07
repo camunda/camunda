@@ -158,7 +158,7 @@ final class ContainerState implements AutoCloseable {
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;
 
-    if (brokerImage == PREVIOUS_VERSION) {
+    if (brokerImage.equals(PREVIOUS_VERSION)) {
       broker
           .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
           .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
@@ -208,11 +208,10 @@ final class ContainerState implements AutoCloseable {
               .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
               .withEnv(UNPROTECTED_API_ENV_VAR, "true")
               .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-              .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
               .withNetwork(network);
 
-      if (gatewayImage == PREVIOUS_VERSION) {
+      if (gatewayImage.equals(PREVIOUS_VERSION)) {
         // Gateway configuration is not part of the Unified config yet in 8.8.x
         gateway
             .withEnv(
