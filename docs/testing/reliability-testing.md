@@ -212,7 +212,7 @@ graph TD
     end
 
     subgraph "Implementation — camunda-load-test.yml"
-        LOAD["Create load test cluster<br/>• use-official-docker-images: true<br/>• scenario: realistic<br/>• ttl: 60 days"]
+        LOAD["Create load test cluster<br/>• orchestration-tag: &lt;tag&gt;<br/>• scenario: realistic<br/>• ttl: 60 days"]
     end
 
     BPMN -->|"workflow_dispatch<br/>name + tag"| API
