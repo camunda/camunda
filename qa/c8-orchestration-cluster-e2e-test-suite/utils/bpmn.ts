@@ -22,15 +22,38 @@ export function parseUserTasksFromFile(filePath: string): UserTaskDefinition[] {
 }
 
 export function parseUserTasksFromXml(xml: string): UserTaskDefinition[] {
-  const userTaskBlocks =
-    xml.match(/<bpmn:userTask\b[^>]*>[\s\S]*?<\/bpmn:userTask>/g) || [];
+  const userTaskBlocks = xml.match(
+    /<bpmn:userTask\b[^>]*>[\s\S]*?<\/bpmn:userTask>/g,
+  );
 
-  return userTaskBlocks.map((block) => {
+  if (!userTaskBlocks || userTaskBlocks.length === 0) {
+    throw new Error('Expected at least one <bpmn:userTask> element in BPMN XML');
+  }
+
+  return userTaskBlocks.map((block, index) => {
     const openingTagMatch = block.match(/<bpmn:userTask\b([^>]*)>/);
-    const openingTag = openingTagMatch?.[1] ?? '';
 
-    const id = extractAttribute(openingTag, 'id') ?? '';
-    const name = extractAttribute(openingTag, 'name') ?? '';
+    if (!openingTagMatch) {
+      throw new Error(
+        `Failed to parse opening tag for <bpmn:userTask> at index ${index}`,
+      );
+    }
+
+    const openingTag = openingTagMatch[1];
+    const id = extractAttribute(openingTag, 'id');
+    const name = extractAttribute(openingTag, 'name');
+
+    if (!id) {
+      throw new Error(
+        `Missing required "id" attribute for <bpmn:userTask> at index ${index}`,
+      );
+    }
+
+    if (!name) {
+      throw new Error(
+        `Missing required "name" attribute for <bpmn:userTask> with id "${id}"`,
+      );
+    }
     const assignee = extractAttribute(block, 'assignee');
     const isCamundaUserTask = /<zeebe:userTask\b/.test(block);
 
