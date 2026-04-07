@@ -24,12 +24,12 @@ import org.springframework.http.ProblemDetail;
 
 /**
  * This ArchUnit test ensures that {@link ProblemDetail} from Spring is never instantiated directly
- * in the codebase. Instead, {@link io.camunda.gateway.protocol.model.CamundaProblemDetail} should
- * be used.
+ * in the codebase. Instead, {@link io.camunda.zeebe.gateway.rest.CamundaProblemDetail} should be
+ * used.
  *
  * <p>Spring Framework 7 removed the default {@code about:blank} value for the {@code type} field in
  * {@link ProblemDetail} (see spring-projects/spring-framework#35294). {@link
- * io.camunda.gateway.protocol.model.CamundaProblemDetail} restores this default to ensure backward
+ * io.camunda.zeebe.gateway.rest.CamundaProblemDetail} restores this default to ensure backward
  * compatibility with API consumers expecting the RFC 9457 compliant {@code about:blank} default
  * value.
  *
@@ -40,7 +40,7 @@ import org.springframework.http.ProblemDetail;
 public class ForbidSpringProblemDetailArchTest {
 
   private static final String CAMUNDA_PROBLEM_DETAIL_CLASS =
-      "io.camunda.gateway.protocol.model.CamundaProblemDetail";
+      "io.camunda.zeebe.gateway.rest.CamundaProblemDetail";
 
   private static final DescribedPredicate<JavaAccess<?>> PROBLEM_DETAIL_INSTANTIATION =
       new DescribedPredicate<>("instantiates or uses factory methods of ProblemDetail") {
@@ -93,7 +93,7 @@ public class ForbidSpringProblemDetailArchTest {
           .doNotHaveFullyQualifiedName(CAMUNDA_PROBLEM_DETAIL_CLASS)
           .should(NOT_INSTANTIATE_PROBLEM_DETAIL)
           .as(
-              "should use io.camunda.gateway.protocol.model.CamundaProblemDetail instead of "
+              "should use io.camunda.zeebe.gateway.rest.CamundaProblemDetail instead of "
                   + "instantiating org.springframework.http.ProblemDetail to ensure the 'type' "
                   + "field defaults to 'about:blank' as per RFC 9457");
 }

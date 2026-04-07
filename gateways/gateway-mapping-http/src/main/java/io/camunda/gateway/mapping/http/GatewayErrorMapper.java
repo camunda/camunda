@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http;
 
-import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
