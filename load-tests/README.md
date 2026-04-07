@@ -70,7 +70,7 @@ graph TD
     DAILY -- "scenario: max" --> CORE
     WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
-    RELEASE -- "scenario: realistic<br/>official Docker images" --> CORE
+    RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
     ADHOC --> CORE
