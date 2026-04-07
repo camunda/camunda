@@ -194,6 +194,48 @@ As of today (16 Jun 2025), we have load tests running:
 * One rolling release test, which is always updated
   * Release-rolling
 
+##### Architecture
+
+The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
+
+```mermaid
+graph TD
+    subgraph "Callers"
+        BPMN["Release Process<br/>(BPMN)"]
+        SCHEDULE["Scheduled Smoke Tests<br/>(daily 04:00 UTC)"]
+    end
+
+    subgraph "Abstraction Layer — camunda-release-load-test.yaml"
+        direction TB
+        API["Public API<br/>inputs: name, tag<br/>optional: optimize-tag, identity-tag, connectors-tag"]
+        SANITIZE["Sanitize inputs"]
+        API --> SANITIZE
+    end
+
+    subgraph "Implementation — camunda-load-test.yml"
+        LOAD["Create load test cluster<br/>• use-official-docker-images: true<br/>• scenario: realistic<br/>• ttl: 60 days"]
+    end
+
+    BPMN -->|"workflow_dispatch<br/>name + tag"| API
+    SCHEDULE -->|"workflow_call @stable/8.x<br/>name + tag"| API
+    SANITIZE --> LOAD
+
+    subgraph "Verification — camunda-verify-and-cleanup-load-test.yml"
+        VERIFY["await-load-test action<br/>• pod readiness<br/>• gateway connectivity"]
+        CLEANUP["Delete namespace"]
+        VERIFY --> CLEANUP
+    end
+
+    SCHEDULE -->|"after load test"| VERIFY
+```
+
+This decoupling provides several benefits:
+
+* **Clear API**: The release process only needs to provide a test name and tag (with optional per-component image tags) — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
+* **Independent evolution**: Changes to load test infrastructure (helm values, Makefiles, scripts) don't require changes to the release process BPMN
+* **Per-branch workflows**: Each stable branch has its own copy of the release load test workflow (via backports), ensuring the correct infrastructure files are used for each version
+* **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) validates daily that release load tests can be created for all active stable branches
+
 ##### Setup and integration
 
 The release load tests are created as part of the [release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn#L7-L18).
