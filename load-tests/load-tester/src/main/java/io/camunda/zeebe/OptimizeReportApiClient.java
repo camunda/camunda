@@ -351,7 +351,7 @@ public class OptimizeReportApiClient implements AutoCloseable {
   // Private — JSON transformation for detailed evaluate
   // ---------------------------------------------------------------------------
 
-  private String transformForDetailedEvaluate(final String responseBody) throws Exception {
+  String transformForDetailedEvaluate(final String responseBody) throws Exception {
     final JsonNode rootNode = OBJECT_MAPPER.readTree(responseBody);
     if (!(rootNode instanceof ObjectNode)) {
       return responseBody;
@@ -500,6 +500,15 @@ public class OptimizeReportApiClient implements AutoCloseable {
   // Inner classes — TimedResponse
   // ---------------------------------------------------------------------------
 
+  @Override
+  public void close() {
+    httpClient.close();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Inner classes — Result types
+  // ---------------------------------------------------------------------------
+
   public static class DashboardEvaluationResult {
     private final String dashboardType;
     private final int statusCode;
@@ -544,10 +553,6 @@ public class OptimizeReportApiClient implements AutoCloseable {
           dashboardType, statusCode, responseTimeMs, isSuccess());
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Inner classes — Result types
-  // ---------------------------------------------------------------------------
 
   public static class ReportEvaluationResult {
     private final String reportId;
@@ -729,11 +734,6 @@ public class OptimizeReportApiClient implements AutoCloseable {
           getTotalResponseTimeMs(),
           isAllSuccess());
     }
-  }
-
-  @Override
-  public void close() {
-    httpClient.close();
   }
 
   private static class TimedResponse {

@@ -76,7 +76,7 @@ on:
         required: false
         default: true
       enable-optimize-report-metric:
-        description: 'Enable Optimize report evaluation metrics. When enabled, the load tester will periodically evaluate Optimize dashboards and reports and expose response time metrics via Prometheus.'
+        description: 'Enable Optimize report evaluation metrics. When enabled, the load tester will periodically evaluate Optimize dashboards and reports.'
         type: boolean
         required: false
         default: false
@@ -155,7 +155,7 @@ on:
         required: false
         default: true
       enable-optimize-report-metric:
-        description: 'Enable Optimize report evaluation metrics. When enabled, the load tester will periodically evaluate Optimize dashboards and reports and expose response time metrics via Prometheus.'
+        description: 'Enable Optimize report evaluation metrics. When enabled, the load tester will periodically evaluate Optimize dashboards and reports.'
         type: boolean
         required: false
         default: false
@@ -488,9 +488,7 @@ jobs:
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
-                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}} \
-                            --set global.extraEnvVars[1].name=CONFIG_FORCE_app_enableOptimizeReportMetric \
-                            --set global.extraEnvVars[1].value=${{inputs.enable-optimize-report-metric}}"
+                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
 
           # Append scenario load-test-load configuration and custom inputs
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"

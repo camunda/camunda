@@ -26,6 +26,7 @@ public class OptimizeReportStartMeter implements AutoCloseable {
   private final OptimizeCfg optimizeCfg;
   private final OptimizeReportApiClient optimizeLoadTester;
   private final ScheduledExecutorService executorService;
+  private String cachedProcessDefinitionKey;
 
   public OptimizeReportStartMeter(final OptimizeCfg optimizeCfg) {
     this.optimizeCfg = optimizeCfg;
@@ -106,9 +107,20 @@ public class OptimizeReportStartMeter implements AutoCloseable {
     }
   }
 
+  private String resolveProcessDefinitionKey() throws Exception {
+    final String configured = optimizeCfg.getProcessDefinitionKey();
+    if (configured != null && !configured.isBlank()) {
+      return configured;
+    }
+    if (cachedProcessDefinitionKey == null) {
+      cachedProcessDefinitionKey = optimizeLoadTester.fetchFirstProcessDefinitionKey();
+    }
+    return cachedProcessDefinitionKey;
+  }
+
   private void evaluateDetailedPage() {
     try {
-      final String processDefinitionKey = optimizeLoadTester.fetchFirstProcessDefinitionKey();
+      final String processDefinitionKey = resolveProcessDefinitionKey();
       final OptimizeReportApiClient.DetailedPageResult result =
           optimizeLoadTester.evaluateDetailedPage(processDefinitionKey);
 

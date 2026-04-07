@@ -7,13 +7,14 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_optimize_report_metric]
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
-  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  namespace                       Base namespace name. Will be prefixed with "c8-" if missing.
+  secondaryStorage                Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  ttl_days                        Optional. Positive integer for namespace TTL in days. Default: 1.
+  enable_optimize                 Optional. true|false to enable Optimize. Default: true.
+  enable_optimize_report_metric   Optional. true|false to enable Optimize report evaluation metrics. Default: false.
 
 Options:
   -h, --help         Show this help message.
@@ -21,6 +22,7 @@ Options:
 Examples:
   ./newLoadTest.sh demo
   ./newLoadTest.sh perf opensearch 3 false
+  ./newLoadTest.sh perf elasticsearch 1 true true
 EOF
 }
 
@@ -69,6 +71,15 @@ enable_optimize="${4:-true}"
 enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   echo "Error: Invalid enable_optimize value '$enable_optimize'"
+  echo "Allowed values are: true or false"
+  exit 1
+fi
+
+# Validate enable_optimize_report_metric value
+enable_optimize_report_metric="${5:-false}"
+enable_optimize_report_metric=$(echo "$enable_optimize_report_metric" | tr '[:upper:]' '[:lower:]')
+if [[ "$enable_optimize_report_metric" != "true" && "$enable_optimize_report_metric" != "false" ]]; then
+  echo "Error: Invalid enable_optimize_report_metric value '$enable_optimize_report_metric'"
   echo "Allowed values are: true or false"
   exit 1
 fi
@@ -131,6 +142,7 @@ sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
+sed_inplace "s/__ENABLE_OPTIMIZE_REPORT_METRIC__/$enable_optimize_report_metric/" Makefile
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

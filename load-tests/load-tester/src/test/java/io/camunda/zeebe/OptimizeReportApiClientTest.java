@@ -10,10 +10,12 @@ package io.camunda.zeebe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.config.OptimizeCfg;
 import org.junit.jupiter.api.Test;
 
-public class OptimizeReportsApiClientTest {
+public class OptimizeReportApiClientTest {
 
   private static OptimizeReportApiClient createTester() {
     final OptimizeCfg config = new OptimizeCfg();
@@ -142,6 +144,99 @@ public class OptimizeReportsApiClientTest {
     // when / then
     assertThatThrownBy(() -> tester.extractReportIdsFromDashboard(invalidJson))
         .isInstanceOf(Exception.class);
+  }
+
+  @Test
+  public void shouldExtractOnlyReportTilesFromMixedDashboard() throws Exception {
+    // given
+    final OptimizeReportApiClient tester = createTester();
+
+    final String dashboardJson =
+        """
+        {
+          "tiles": [
+            {
+              "id": "report-id-1",
+              "type": "optimize_report"
+            },
+            {
+              "id": "text-tile-1",
+              "type": "text"
+            },
+            {
+              "id": "report-id-2",
+              "type": "optimize_report"
+            },
+            {
+              "id": "external-url-1",
+              "type": "external_url"
+            }
+          ]
+        }
+        """;
+
+    // when
+    final var reportIds = tester.extractReportIdsFromDashboard(dashboardJson);
+
+    // then
+    assertThat(reportIds).hasSize(2).containsExactly("report-id-1", "report-id-2");
+  }
+
+  @Test
+  public void shouldTransformJsonForDetailedEvaluate() throws Exception {
+    // given
+    final OptimizeReportApiClient tester = createTester();
+    final ObjectMapper objectMapper = new ObjectMapper();
+
+    final String input =
+        """
+        {
+          "result": {"data": [1, 2, 3]},
+          "data": {
+            "view": {
+              "entity": "processInstance",
+              "properties": ["frequency"]
+            },
+            "groupBy": {
+              "type": "startDate",
+              "value": {"unit": "day"}
+            },
+            "configuration": {
+              "sorting": {"by": "key", "order": "desc"}
+            }
+          }
+        }
+        """;
+
+    // when
+    final String output = tester.transformForDetailedEvaluate(input);
+    final JsonNode root = objectMapper.readTree(output);
+
+    // then
+    assertThat(root.has("result")).isFalse();
+    assertThat(root.path("data").path("view").has("entity")).isFalse();
+    assertThat(root.path("data").path("view").path("properties").get(0).asText())
+        .isEqualTo("rawData");
+    assertThat(root.path("data").path("groupBy").path("type").asText()).isEqualTo("none");
+    assertThat(root.path("data").path("groupBy").has("value")).isFalse();
+    assertThat(root.path("data").path("configuration").path("sorting").path("by").asText())
+        .isEqualTo("startDate");
+    // order should remain unchanged
+    assertThat(root.path("data").path("configuration").path("sorting").path("order").asText())
+        .isEqualTo("desc");
+  }
+
+  @Test
+  public void shouldReturnUnchangedBodyWhenNotObjectNode() throws Exception {
+    // given
+    final OptimizeReportApiClient tester = createTester();
+    final String arrayInput = "[1, 2, 3]";
+
+    // when
+    final String output = tester.transformForDetailedEvaluate(arrayInput);
+
+    // then
+    assertThat(output).isEqualTo(arrayInput);
   }
 
   @Test
