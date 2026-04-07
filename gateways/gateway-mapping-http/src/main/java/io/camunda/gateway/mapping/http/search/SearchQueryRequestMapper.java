@@ -19,6 +19,7 @@ import io.camunda.gateway.mapping.http.search.contract.DecisionDefinitionFilterM
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.DecisionRequirementsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ElementInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.GlobalJobStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.GlobalTaskListenerFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.IncidentFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.IncidentProcessInstanceStatisticsFilterMapper;
@@ -28,6 +29,7 @@ import io.camunda.gateway.mapping.http.search.contract.JobTypeStatisticsFilterMa
 import io.camunda.gateway.mapping.http.search.contract.JobWorkerStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionInstanceVersionStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskAuditLogFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskFilterMapper;
@@ -138,6 +140,10 @@ public final class SearchQueryRequestMapper {
 
   private SearchQueryRequestMapper() {}
 
+  private static OffsetDateTime toOffsetDateTime(final String text) {
+    return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
+  }
+
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
       final String startTime,
       final String endTime,
@@ -161,8 +167,8 @@ public final class SearchQueryRequestMapper {
             new UsageMetricsQuery.Builder()
                 .filter(
                     new UsageMetricsFilter.Builder()
-                        .startTime(SearchQueryFilterMapper.toOffsetDateTime(startTime))
-                        .endTime(SearchQueryFilterMapper.toOffsetDateTime(endTime))
+                        .startTime(toOffsetDateTime(startTime))
+                        .endTime(toOffsetDateTime(endTime))
                         .tenantId(tenantId)
                         .withTenants(withTenants)
                         .build())
@@ -172,7 +178,8 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, io.camunda.search.query.GlobalJobStatisticsQuery>
       toGlobalJobStatisticsQuery(
           final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
-    final var filter = SearchQueryFilterMapper.toGlobalJobStatisticsFilter(from, to, jobType);
+    final var filter =
+        GlobalJobStatisticsFilterMapper.toGlobalJobStatisticsFilter(from, to, jobType);
 
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());
@@ -313,7 +320,7 @@ public final class SearchQueryRequestMapper {
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
     }
     final var filter =
-        SearchQueryFilterMapper.toProcessDefinitionStatisticsFilter(
+        ProcessDefinitionStatisticsFilterMapper.toProcessDefinitionStatisticsFilter(
             processDefinitionKey, request.filter());
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());

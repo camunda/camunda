@@ -12,7 +12,6 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskFilterStrictContract;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.search.filter.FilterBuilders;
@@ -73,7 +72,7 @@ public final class UserTaskFilterMapper {
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.processInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            SearchQueryFilterMapper.toStrictVariableValueFilters(filter.processInstanceVariables());
+            VariableValueFilterUtil.toStrictVariableValueFilters(filter.processInstanceVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -82,7 +81,7 @@ public final class UserTaskFilterMapper {
       }
       if (!CollectionUtils.isEmpty(filter.localVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            SearchQueryFilterMapper.toStrictVariableValueFilters(filter.localVariables());
+            VariableValueFilterUtil.toStrictVariableValueFilters(filter.localVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {

@@ -25,8 +25,8 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCancelProcessInstanceRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedConditionalEvaluationInstructionStrictContract;
@@ -956,7 +956,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, io.camunda.search.filter.ProcessInstanceFilter>
       toRequiredProcessInstanceFilter(final GeneratedProcessInstanceFilterStrictContract request) {
-    final var filter = SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request);
+    final var filter = ProcessInstanceFilterMapper.toRequiredProcessInstanceFilter(request);
     if (filter.isLeft()) {
       return Either.left(createProblemDetail(filter.getLeft()).get());
     }
