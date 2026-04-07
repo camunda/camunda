@@ -37,9 +37,10 @@ public class UsageMetricRpiTest {
     engine.processInstance().ofBpmnProcessId("process").create();
 
     // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .filterRootScope()
-        .getFirst();
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
@@ -61,9 +62,10 @@ public class UsageMetricRpiTest {
     engine.message().withName("startMessage").withCorrelationKey("key-1").publish();
 
     // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .filterRootScope()
-        .getFirst();
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
@@ -85,9 +87,10 @@ public class UsageMetricRpiTest {
     engine.increaseTime(Duration.ofSeconds(2));
 
     // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .filterRootScope()
-        .getFirst();
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
@@ -109,9 +112,10 @@ public class UsageMetricRpiTest {
     engine.signal().withSignalName("startSignal").broadcast();
 
     // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .filterRootScope()
-        .getFirst();
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
@@ -133,9 +137,10 @@ public class UsageMetricRpiTest {
     engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
 
     // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .filterRootScope()
-        .getFirst();
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
@@ -166,9 +171,10 @@ public class UsageMetricRpiTest {
     engine.message().withName("waitMessage").withCorrelationKey("key-1").publish();
 
     // then - the process completes, but the RPI count must still be 1
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .filterRootScope()
-        .getFirst();
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .filterRootScope()
+            .getFirst());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
@@ -196,12 +202,13 @@ public class UsageMetricRpiTest {
     engine.signal().withSignalName("sharedSignal").broadcast();
 
     // then - both process instances should be counted
-    final var instanceCount =
+    final var activatedRecords =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filterRootScope()
             .limit(2)
-            .count();
-    assertThat(instanceCount).isEqualTo(2);
+            .asList();
+    assertThat(activatedRecords).hasSize(2);
+    engine.awaitProcessingOf(activatedRecords.getLast());
 
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
