@@ -48,7 +48,7 @@ on:
           - realistic
           - typical
           - max
-          - bigInstance
+          - archiver
         default: max
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
@@ -269,7 +269,7 @@ jobs:
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
-            bigInstance)
+            archiver)
               echo "load-test-load=--set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0" >> "$GITHUB_OUTPUT"
               echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
