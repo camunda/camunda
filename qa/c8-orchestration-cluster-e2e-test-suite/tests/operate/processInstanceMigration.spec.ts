@@ -55,82 +55,74 @@ const targetTaskCards: TaskCard[] = parseUserTasksFromFile(
   './resources/parallel_tasks_jw_v2.bpmn',
 ).filter((task) => task.name && task.assignee);
 
-test.beforeAll(async () => {
-  const parallelV1Deploy: DeployResourceResponse = await deploy([
-    './resources/parallel_tasks_jw_v1.bpmn',
-    './resources/job-worker-id-form.form',
-  ]);
-  const parallelProcessV1: ProcessDeployment = {
-    bpmnProcessId: parallelV1Deploy.processes[0].processDefinitionId,
-    version: parallelV1Deploy.processes[0].processDefinitionVersion,
-  };
-
-  parallelProcesses = await createInstances(
-    parallelProcessV1.bpmnProcessId,
-    parallelProcessV1.version,
-    PARALLEL_INSTANCE_COUNT,
-  );
-
-  // Redeploying with the same bpmnProcessId — Zeebe auto-increments the version to V2.
-  const parallelV2Deploy: DeployResourceResponse = await deploy([
-    './resources/parallel_tasks_jw_v2.bpmn',
-  ]);
-  const parallelProcessV2: ProcessDeployment = {
-    bpmnProcessId: parallelV2Deploy.processes[0].processDefinitionId,
-    version: parallelV2Deploy.processes[0].processDefinitionVersion,
-  };
-
-  testParallelProcesses = {parallelProcessV1, parallelProcessV2};
-
-  await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
-  const processV1: ProcessDeployment = {
-    bpmnProcessId: 'orderProcessMigration',
-    version: 1,
-  };
-
-  await Promise.all(
-    [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
-      createInstances(processV1.bpmnProcessId, processV1.version, 1, {
-        key1: 'myFirstCorrelationKey',
-        key2: 'mySecondCorrelationKey',
-        key3: `myCorrelationKey${index}`,
-      }),
-    ),
-  );
-
-  await deploy(['./resources/orderProcessMigration_v_2.bpmn']);
-  const processV2: ProcessDeployment = {
-    bpmnProcessId: 'orderProcessMigration',
-    version: 2,
-  };
-
-  await deploy(['./resources/orderProcessMigration_v_3.bpmn']);
-  const processV3: ProcessDeployment = {
-    bpmnProcessId: 'newOrderProcessMigration',
-    version: 1,
-  };
-
-  testProcesses = {
-    processV1,
-    processV2,
-    processV3,
-  };
-  await sleep(2000);
-});
-
-test.afterAll(async () => {
-  for (const process of parallelProcesses) {
-    await cancelProcessInstance(process.processInstanceKey as string);
-  }
-  for (const process of processes) {
-    for (const instance of process) {
-      await cancelProcessInstance(instance.processInstanceKey as string);
-    }
-  }
-});
-
 test.describe.serial('Process Instance Migration', () => {
-  test.describe.configure({retries: 0});
+  test.beforeAll(async () => {
+    const parallelV1Deploy: DeployResourceResponse = await deploy([
+      './resources/parallel_tasks_jw_v1.bpmn',
+      './resources/job-worker-id-form.form',
+    ]);
+    const parallelProcessV1: ProcessDeployment = {
+      bpmnProcessId: parallelV1Deploy.processes[0].processDefinitionId,
+      version: parallelV1Deploy.processes[0].processDefinitionVersion,
+    };
+
+    parallelProcesses = await createInstances(
+      parallelProcessV1.bpmnProcessId,
+      parallelProcessV1.version,
+      PARALLEL_INSTANCE_COUNT,
+    );
+
+    // Redeploying with the same bpmnProcessId — Zeebe auto-increments the version to V2.
+    const parallelV2Deploy: DeployResourceResponse = await deploy([
+      './resources/parallel_tasks_jw_v2.bpmn',
+    ]);
+    const parallelProcessV2: ProcessDeployment = {
+      bpmnProcessId: parallelV2Deploy.processes[0].processDefinitionId,
+      version: parallelV2Deploy.processes[0].processDefinitionVersion,
+    };
+
+    testParallelProcesses = {parallelProcessV1, parallelProcessV2};
+
+    await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
+    const processV1: ProcessDeployment = {
+      bpmnProcessId: 'orderProcessMigration',
+      version: 1,
+    };
+
+    processes = await Promise.all(
+      [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
+        createInstances(processV1.bpmnProcessId, processV1.version, 1, {
+          key1: 'myFirstCorrelationKey',
+          key2: 'mySecondCorrelationKey',
+          key3: `myCorrelationKey${index}`,
+        }),
+      ),
+    );
+
+    const newProcessMigrationV2: DeployResourceResponse = await deploy([
+      './resources/orderProcessMigration_v_2.bpmn',
+    ]);
+    const processV2: ProcessDeployment = {
+      bpmnProcessId: 'orderProcessMigration',
+      version: newProcessMigrationV2.processes[0].processDefinitionVersion,
+    };
+    const newProcessMigrationV3: DeployResourceResponse = await deploy([
+      './resources/orderProcessMigration_v_3.bpmn',
+    ]);
+    expect(processV2.version).toBeGreaterThan(processV1.version);
+
+    const processV3: ProcessDeployment = {
+      bpmnProcessId: 'newOrderProcessMigration',
+      version: newProcessMigrationV3.processes[0].processDefinitionVersion,
+    };
+
+    testProcesses = {
+      processV1,
+      processV2,
+      processV3,
+    };
+    await sleep(2000);
+  });
 
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
@@ -142,6 +134,17 @@ test.describe.serial('Process Instance Migration', () => {
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
+  });
+
+  test.afterAll(async () => {
+    for (const process of parallelProcesses) {
+      await cancelProcessInstance(process.processInstanceKey as string);
+    }
+    for (const process of processes) {
+      for (const instance of process) {
+        await cancelProcessInstance(instance.processInstanceKey as string);
+      }
+    }
   });
 
   test('Auto mapping migration', async ({
@@ -160,9 +163,10 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Filter by process name and version', async () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
 
-      // Wait for the version dropdown to be populated before selecting
+      // Wait for the process to be selected and version dropdown to be populated
       await sleep(1000);
 
+      // Ensure we're selecting the correct source version (version 1)
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
       await expect
@@ -882,6 +886,51 @@ test.describe.serial('Process Instance Migration', () => {
       await expect(operateProcessInstancePage.migratedTag).toBeVisible();
     });
   });
+});
+
+test.describe('Parallel job-based user task migration', () => {
+  test.beforeAll(async () => {
+    const parallelV1Deploy: DeployResourceResponse = await deploy([
+      './resources/parallel_tasks_jw_v1.bpmn',
+      './resources/job-worker-id-form.form',
+    ]);
+    const parallelProcessV1: ProcessDeployment = {
+      bpmnProcessId: parallelV1Deploy.processes[0].processDefinitionId,
+      version: parallelV1Deploy.processes[0].processDefinitionVersion,
+    };
+
+    parallelProcesses = await createInstances(
+      parallelProcessV1.bpmnProcessId,
+      parallelProcessV1.version,
+      PARALLEL_INSTANCE_COUNT,
+    );
+
+    // Redeploying with the same bpmnProcessId — Zeebe auto-increments the version to V2.
+    const parallelV2Deploy: DeployResourceResponse = await deploy([
+      './resources/parallel_tasks_jw_v2.bpmn',
+    ]);
+    const parallelProcessV2: ProcessDeployment = {
+      bpmnProcessId: parallelV2Deploy.processes[0].processDefinitionId,
+      version: parallelV2Deploy.processes[0].processDefinitionVersion,
+    };
+
+    expect(parallelProcessV2.version).toBeGreaterThan(
+      parallelProcessV1.version,
+    );
+
+    testParallelProcesses = {parallelProcessV1, parallelProcessV2};
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test.afterAll(async () => {
+    await Promise.all(
+      parallelProcesses.map((p) => cancelProcessInstance(p.processInstanceKey)),
+    );
+  });
 
   test('Migrate parallel job-based user tasks to Camunda user tasks', async ({
     page,
@@ -906,11 +955,13 @@ test.describe.serial('Process Instance Migration', () => {
 
     // Create V2 instances (Camunda user tasks) so Tasklist has tasks to assert on
     // before migration — V1 job-based tasks are not visible in Tasklist.
-    await createInstances(
+    const v2Instances = await createInstances(
       testParallelProcesses.parallelProcessV2.bpmnProcessId,
       testParallelProcesses.parallelProcessV2.version,
       PARALLEL_INSTANCE_COUNT,
     );
+    // Track V2 instances so afterAll cancels them on test failure.
+    parallelProcesses.push(...v2Instances);
 
     await test.step('Verify Tasklist tasks before migration', async () => {
       await navigateToApp(page, 'tasklist');
@@ -918,15 +969,21 @@ test.describe.serial('Process Instance Migration', () => {
       await tasklistHeader.clickTasksTab();
       await taskPanelPage.filterBy('All open tasks');
 
-      // Wait for task cards to be indexed in Tasklist
-      await sleep(20000);
-
-      // V2 instances have Camunda user tasks visible in Tasklist;
-      // V1 instances have job-based tasks which are not shown.
-      await taskPanelPage.assertTaskCardsPresent(targetTaskCards, {
-        expectedCount: PARALLEL_INSTANCE_COUNT,
+      // Poll until Camunda user tasks from V2 instances are indexed in Tasklist.
+      await waitForAssertion({
+        assertion: async () => {
+          // V2 instances have Camunda user tasks visible in Tasklist;
+          // V1 instances have job-based tasks which are not shown.
+          await taskPanelPage.assertTaskCardsPresent(targetTaskCards, {
+            expectedCount: PARALLEL_INSTANCE_COUNT,
+          });
+          await taskPanelPage.assertTaskCardsAbsent(sourceTaskCards);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 10,
       });
-      await taskPanelPage.assertTaskCardsAbsent(sourceTaskCards);
     });
 
     await test.step('Filter by source process and version 1', async () => {
@@ -934,7 +991,10 @@ test.describe.serial('Process Instance Migration', () => {
       await loginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.selectProcess(bpmnProcessId);
+
+      // Wait for the version dropdown to be fully populated after process selection.
       await sleep(1000);
+
       await operateFiltersPanelPage.selectVersion(sourceVersion);
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
@@ -967,7 +1027,9 @@ test.describe.serial('Process Instance Migration', () => {
         'Embedded',
         'Embedded new',
       );
+    });
 
+    await test.step('Verify auto-mapped flow nodes', async () => {
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
         {
           label: /target element for camunda form/i,
@@ -996,11 +1058,17 @@ test.describe.serial('Process Instance Migration', () => {
         'MIGRATE',
       );
       await operateProcessMigrationModePage.clickMigrationConfirmationButton();
-      await sleep(2000);
     });
 
     await test.step('Verify migrated instances appear in Operate at version 2', async () => {
+      await navigateToApp(page, 'operate');
+      await loginPage.login('demo', 'demo');
+      await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.selectProcess(bpmnProcessId);
+
+      // Wait for the version dropdown to be fully populated after process selection.
+      await sleep(1000);
+
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await waitForAssertion({
@@ -1027,11 +1095,17 @@ test.describe.serial('Process Instance Migration', () => {
       await tasklistHeader.clickTasksTab();
       await taskPanelPage.filterBy('All open tasks');
 
-      // Wait for migrated Camunda user tasks to be indexed in Tasklist
-      await sleep(20000);
-
-      await taskPanelPage.assertTaskCardsPresent(targetTaskCards, {
-        expectedCount: totalV2InstanceCount,
+      // Poll until migrated Camunda user tasks are indexed in Tasklist.
+      await waitForAssertion({
+        assertion: async () => {
+          await taskPanelPage.assertTaskCardsPresent(targetTaskCards, {
+            expectedCount: totalV2InstanceCount,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 10,
       });
     });
 
@@ -1062,6 +1136,10 @@ test.describe.serial('Process Instance Migration', () => {
       await loginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.selectProcess(bpmnProcessId);
+
+      // Wait for the version dropdown to be fully populated after process selection.
+      await sleep(1000);
+
       await operateFiltersPanelPage.selectVersion(targetVersion);
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
