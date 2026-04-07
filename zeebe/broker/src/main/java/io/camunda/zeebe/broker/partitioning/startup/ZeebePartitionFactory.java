@@ -237,21 +237,15 @@ public final class ZeebePartitionFactory {
    */
   private static int getPartitionsPerBroker(
       final ClusterConfigurationService clusterConfigurationService, final MemberId localMemberId) {
-    final var partitionDistribution = clusterConfigurationService.getPartitionDistribution();
-
-    if (partitionDistribution != null) {
-      final long partitionCount =
-          clusterConfigurationService.getMemberPartitions(localMemberId).size();
-      if (partitionCount > 0) {
-        return (int) partitionCount;
-      } else {
-        throw new IllegalStateException(
-            "Local broker with member id %s is not assigned to any partition in the topology."
-                .formatted(localMemberId));
-      }
+    final long partitionCount =
+        clusterConfigurationService.getMemberPartitions(localMemberId).size();
+    if (partitionCount > 0) {
+      return (int) partitionCount;
+    } else {
+      throw new IllegalStateException(
+          "Local broker with member id %s is not assigned to any partition in the topology."
+              .formatted(localMemberId));
     }
-    throw new IllegalStateException(
-        "Partition distribution is not available during partition construction.");
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {

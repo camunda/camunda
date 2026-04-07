@@ -34,7 +34,18 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   void removeInconsistentConfigurationListener();
 
-  List<PartitionMetadata> getMemberPartitions(final MemberId memberId);
+  default List<PartitionMetadata> getMemberPartitions(final MemberId memberId) {
+    final var partitionDistribution = getPartitionDistribution();
+
+    if (partitionDistribution != null) {
+      return partitionDistribution.partitions().stream()
+          .filter(partition -> partition.members().contains(memberId))
+          .toList();
+    }
+
+    throw new IllegalStateException(
+        "Cannot get member partitions before the topology manager is started");
+  }
 
   ClusterConfiguration getInitialClusterConfiguration();
 
