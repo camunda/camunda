@@ -140,8 +140,9 @@ test.describe('variables and incidents', () => {
 
     await page.getByRole('link', {name: 'Variables'}).click();
 
-    const editVariableButton = page.getByRole('button', {
-      name: 'Edit variable orderValue',
+    const row = page.getByRole('row', {name: /orderValue/});
+    const editVariableButton = row.getByRole('button', {
+      name: 'Edit',
     });
 
     await commonPage.addUpArrow(editVariableButton);
@@ -161,7 +162,7 @@ test.describe('variables and incidents', () => {
     await editableField.fill('99');
 
     const saveVariableButton = await page.getByRole('button', {
-      name: 'Save variable',
+      name: 'Save',
     });
 
     await expect(saveVariableButton).toBeEnabled();

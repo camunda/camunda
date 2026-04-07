@@ -836,7 +836,7 @@ describe('New Variable Modifications', () => {
     });
 
     const [deleteFirstAddedVariable] = screen.getAllByRole('button', {
-      name: /delete variable/i,
+      name: /delete/i,
     });
     await user.click(deleteFirstAddedVariable!);
 

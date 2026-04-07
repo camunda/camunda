@@ -133,17 +133,17 @@ describe('Footer', () => {
       ).not.toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
+    await user.click(screen.getByRole('button', {name: /exit/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
     const [firstEditVariableButton] = screen.getAllByRole('button', {
-      name: /edit variable/i,
+      name: /edit/i,
     });
     expect(firstEditVariableButton).toBeInTheDocument();
     await user.click(firstEditVariableButton!);
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
 
-    await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
+    await user.click(screen.getByRole('button', {name: /exit/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
   });
 

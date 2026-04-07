@@ -107,8 +107,8 @@ const VariablesTable: React.FC<Props> = ({
                     <Button
                       kind="ghost"
                       size="sm"
-                      tooltipPosition="left"
-                      iconDescription={`Edit variable ${name}`}
+                      tooltipPosition="top"
+                      iconDescription="Edit"
                       aria-label={`Edit variable ${name}`}
                       disabled={
                         isFetchingNextPage || form.getState().submitting

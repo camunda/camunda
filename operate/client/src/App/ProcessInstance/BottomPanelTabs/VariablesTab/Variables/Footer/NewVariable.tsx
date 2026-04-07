@@ -79,7 +79,6 @@ const NewVariable: React.FC = () => {
         </Field>
         <Operations>
           <MaximizeButton
-            label="Open JSON editor"
             onClick={() => {
               setIsModalVisible(true);
               tracking.track({

@@ -20,7 +20,7 @@ const Footer: React.FC<Props> = ({variant}) => {
   const form = useForm();
 
   return (
-    <FooterContainer>
+    <FooterContainer data-testid="variables-footer">
       {variant === 'add-variable' && <NewVariable />}
       {['initial', 'disabled'].includes(variant) && (
         <AddVariableButton

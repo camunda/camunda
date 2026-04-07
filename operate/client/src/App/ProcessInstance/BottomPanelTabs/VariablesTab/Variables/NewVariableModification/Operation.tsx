@@ -34,8 +34,8 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
       size="sm"
       hasIconOnly
       renderIcon={TrashCan}
-      iconDescription="Delete Variable"
-      tooltipPosition="left"
+      iconDescription="Delete"
+      tooltipPosition="top"
       onClick={() => {
         onRemove();
         modificationsStore.removeVariableModification(

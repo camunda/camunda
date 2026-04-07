@@ -70,7 +70,7 @@ describe('Add variable', () => {
         name: /value/i,
       }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
+    await user.click(screen.getByRole('button', {name: /exit/i}));
 
     expect(
       screen.queryByRole('textbox', {
@@ -106,9 +106,7 @@ describe('Add variable', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
     await waitFor(() =>
-      expect(
-        screen.getByRole('button', {name: /save variable/i}),
-      ).toBeDisabled(),
+      expect(screen.getByRole('button', {name: /save/i})).toBeDisabled(),
     );
 
     await user.type(
@@ -117,7 +115,7 @@ describe('Add variable', () => {
       }),
       'test',
     );
-    expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
 
     await user.type(
       screen.getByRole('textbox', {
@@ -126,7 +124,7 @@ describe('Add variable', () => {
       '    ',
     );
 
-    expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
 
     vi.runOnlyPendingTimers();
@@ -160,7 +158,7 @@ describe('Add variable', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
 
@@ -173,7 +171,7 @@ describe('Add variable', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
     vi.runOnlyPendingTimers();
@@ -195,7 +193,7 @@ describe('Add variable', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
 
@@ -264,7 +262,7 @@ describe('Add variable', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
     await user.type(
@@ -276,7 +274,7 @@ describe('Add variable', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
@@ -298,7 +296,7 @@ describe('Add variable', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
     expect(
@@ -324,7 +322,7 @@ describe('Add variable', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
@@ -356,7 +354,7 @@ describe('Add variable', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
     await user.type(
@@ -377,7 +375,7 @@ describe('Add variable', () => {
     expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     ).toBeDisabled();
 
@@ -398,7 +396,7 @@ describe('Add variable', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
@@ -427,9 +425,7 @@ describe('Add variable', () => {
       expect(screen.getByTestId('variable-clientNo')).toBeInTheDocument();
     });
     const withinVariable = within(screen.getByTestId('variable-clientNo'));
-    await user.click(
-      withinVariable.getByRole('button', {name: /edit variable/i}),
-    );
+    await user.click(withinVariable.getByRole('button', {name: /edit/i}));
     expect(
       screen.queryByTitle('Name should be unique'),
     ).not.toBeInTheDocument();
@@ -524,7 +520,11 @@ describe('Add variable', () => {
       await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /add variable/i}));
-    await user.click(screen.getByRole('button', {name: /open json editor/i}));
+    await user.click(
+      within(screen.getByTestId('variables-footer')).getByRole('button', {
+        name: /Open/i,
+      }),
+    );
 
     expect(
       within(screen.getByRole('dialog')).getByRole('button', {name: /cancel/i}),

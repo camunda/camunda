@@ -90,11 +90,11 @@ describe('Edit variable', () => {
     );
 
     const firstEditButton = within(firstVariableContainer).getByRole('button', {
-      name: /edit variable/i,
+      name: /edit/i,
     });
     const secondEditButton = within(secondVariableContainer).getByRole(
       'button',
-      {name: /edit variable/i},
+      {name: /edit/i},
     );
 
     expect(firstEditButton).toBeEnabled();
@@ -112,7 +112,7 @@ describe('Edit variable', () => {
     vi.runOnlyPendingTimers();
 
     const saveButton = within(firstVariableContainer).getByRole('button', {
-      name: /save variable/i,
+      name: /save/i,
     });
     await waitFor(() => {
       expect(saveButton).toBeEnabled();
@@ -167,28 +167,26 @@ describe('Edit variable', () => {
       withinFirstVariable.queryByTestId('edit-variable-value'),
     ).not.toBeInTheDocument();
     expect(
-      withinFirstVariable.queryByRole('button', {name: /exit edit mode/i}),
+      withinFirstVariable.queryByRole('button', {name: /exit/i}),
     ).not.toBeInTheDocument();
     expect(
-      withinFirstVariable.queryByRole('button', {name: /save variable/i}),
+      withinFirstVariable.queryByRole('button', {name: /save/i}),
     ).not.toBeInTheDocument();
 
     expect(
-      await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
+      await withinFirstVariable.findByRole('button', {name: /edit/i}),
     ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(
-      withinFirstVariable.getByRole('button', {name: /edit variable/i}),
-    );
+    await user.click(withinFirstVariable.getByRole('button', {name: /edit/i}));
 
     expect(
       await withinFirstVariable.findByTestId('edit-variable-value'),
     ).toBeInTheDocument();
     expect(
-      withinFirstVariable.getByRole('button', {name: /exit edit mode/i}),
+      withinFirstVariable.getByRole('button', {name: /exit/i}),
     ).toBeInTheDocument();
     expect(
-      withinFirstVariable.getByRole('button', {name: /save variable/i}),
+      withinFirstVariable.getByRole('button', {name: /save/i}),
     ).toBeInTheDocument();
   });
 
@@ -211,15 +209,13 @@ describe('Edit variable', () => {
     const withinFirstVariable = within(screen.getByTestId(`variable-clientNo`));
 
     expect(
-      await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
+      await withinFirstVariable.findByRole('button', {name: /edit/i}),
     ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(
-      withinFirstVariable.getByRole('button', {name: /edit variable/i}),
-    );
+    await user.click(withinFirstVariable.getByRole('button', {name: /edit/i}));
 
     expect(
-      withinFirstVariable.getByRole('button', {name: /save variable/i}),
+      withinFirstVariable.getByRole('button', {name: /save/i}),
     ).toBeDisabled();
   });
 
@@ -246,9 +242,7 @@ describe('Edit variable', () => {
     const withinFirstVariable = within(screen.getByTestId(`variable-clientNo`));
 
     mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(
-      withinFirstVariable.getByRole('button', {name: /edit variable/i}),
-    );
+    await user.click(withinFirstVariable.getByRole('button', {name: /edit/i}));
 
     expect(
       await screen.findByTestId('edit-variable-value'),
@@ -258,7 +252,7 @@ describe('Edit variable', () => {
       "{{invalidKey: 'value'}}",
     );
 
-    expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
     vi.runOnlyPendingTimers();
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
@@ -268,9 +262,7 @@ describe('Edit variable', () => {
 
     vi.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(
-        screen.getByRole('button', {name: /save variable/i}),
-      ).toBeEnabled(),
+      expect(screen.getByRole('button', {name: /save/i})).toBeEnabled(),
     );
 
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
@@ -340,7 +332,7 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-clientNo')).getByRole('button', {
-        name: /edit variable/i,
+        name: /edit/i,
       }),
     );
 
@@ -353,7 +345,7 @@ describe('Edit variable', () => {
     });
     expect(
       within(screen.getByTestId('variable-mwst')).getByRole('button', {
-        name: /edit variable/i,
+        name: /edit/i,
       }),
     ).toBeEnabled();
 
@@ -409,7 +401,7 @@ describe('Edit variable', () => {
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
         {
-          name: /edit variable/i,
+          name: /edit/i,
         },
       ),
     );
@@ -469,7 +461,7 @@ describe('Edit variable', () => {
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
         {
-          name: /edit variable/i,
+          name: /edit/i,
         },
       ),
     );
@@ -617,7 +609,7 @@ describe('Edit variable', () => {
     );
 
     mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(screen.getByRole('button', {name: /open json editor/i}));
+    await user.click(screen.getByRole('button', {name: /open/i}));
 
     await waitFor(() =>
       expect(screen.getByTestId('monaco-editor')).toHaveValue('123456'),
@@ -650,11 +642,11 @@ describe('Edit variable', () => {
     });
 
     expect(
-      await screen.findByRole('button', {name: /edit variable/i}),
+      await screen.findByRole('button', {name: /edit/i}),
     ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(screen.getByRole('button', {name: /edit variable/i}));
-    await user.click(screen.getByRole('button', {name: /open json editor/i}));
+    await user.click(screen.getByRole('button', {name: /edit/i}));
+    await user.click(screen.getByRole('button', {name: /open/i}));
 
     expect(
       within(screen.getByRole('dialog')).getByRole('button', {
@@ -754,11 +746,11 @@ describe('Edit variable', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /edit variable/i}),
+      screen.queryByRole('button', {name: /edit/i}),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /view full value of testVariableName/i,
+        name: /open/i,
       }),
     ).toBeInTheDocument();
   });

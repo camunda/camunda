@@ -190,7 +190,7 @@ describe('VariablesTab', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
@@ -230,7 +230,7 @@ describe('VariablesTab', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     );
     expect(
@@ -335,7 +335,7 @@ describe('VariablesTab', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
@@ -450,13 +450,13 @@ describe('VariablesTab', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
-          name: /save variable/i,
+          name: /save/i,
         }),
       ).toBeEnabled(),
     );
     await user.click(
       screen.getByRole('button', {
-        name: /save variable/i,
+        name: /save/i,
       }),
     );
 

@@ -152,7 +152,7 @@ test.describe('process instance page', () => {
 
     await page
       .getByRole('button', {
-        name: /edit variable/i,
+        name: /edit/i,
       })
       .click();
 

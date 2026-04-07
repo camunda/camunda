@@ -130,7 +130,7 @@ class OperateProcessInstancePage {
     this.statusVariable = page.getByTestId('variable-status');
     this.editVariableButton = page.getByTestId('edit-variable-button');
     this.editVariableButtonInList = this.variablesList.getByRole('button', {
-      name: /edit variable/i,
+      name: /edit/i,
     });
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
