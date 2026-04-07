@@ -8,6 +8,7 @@
 
 import type {Page, Locator} from '@playwright/test';
 import {Diagram} from './components/Diagram';
+import {JSONEditor} from './components/JSONEditor';
 
 export class ProcessInstance {
   private page: Page;
@@ -36,6 +37,7 @@ export class ProcessInstance {
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly resetZoomButton: Locator;
+  readonly variablesEditor: InstanceType<typeof JSONEditor>;
 
   constructor(page: Page) {
     this.page = page;
@@ -73,6 +75,7 @@ export class ProcessInstance {
     this.resetZoomButton = page.getByRole('button', {
       name: 'Reset diagram zoom',
     });
+    this.variablesEditor = new JSONEditor(page);
   }
 
   getEditVariableFieldSelector(variableName: string) {

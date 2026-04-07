@@ -7,6 +7,7 @@
  */
 
 import {Field, useForm} from 'react-final-form';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import {createNewVariableFieldName} from '../createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
@@ -15,9 +16,9 @@ import {
 } from '../validators';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
-import {Layer} from '@carbon/react';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
-import {TextInputField} from 'modules/components/TextInputField';
+import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
+import {Layer} from '@carbon/react';
 
 type Props = {
   variableName: string;
@@ -31,6 +32,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
 
   const {currentName, currentValue, currentId, areFormFieldsValid} =
     useVariableFormFields(variableName);
+  const fieldError = useFieldError(valueFieldName);
 
   return (
     <Layer>
@@ -43,15 +45,12 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         parse={(value) => value}
       >
         {({input}) => (
-          <TextInputField
+          <InlineJsonEditor
             {...input}
+            label="Value"
             data-testid="new-variable-value"
-            size="sm"
-            type="text"
             id={valueFieldName}
-            hideLabel
-            labelText="Value"
-            placeholder="Value"
+            fieldError={fieldError}
             onBlur={() => {
               form.mutators?.triggerValidation?.(valueFieldName);
               input.onBlur();

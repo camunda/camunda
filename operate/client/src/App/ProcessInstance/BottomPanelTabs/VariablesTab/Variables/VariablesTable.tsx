@@ -8,9 +8,9 @@
 
 import {useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button, Loading} from '@carbon/react';
+import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
-import {StructuredList, VariableName, VariableValue} from './styled';
+import {StructuredList, VariableName} from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';
 import {FieldArray} from 'react-final-form-arrays';
@@ -24,6 +24,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 
 type Props = {
   scopeId: string | null;
@@ -76,12 +77,11 @@ const VariablesTable: React.FC<Props> = ({
                 isPreview={Boolean(isTruncated)}
               />
             ) : (
-              <VariableValue $hasBackdrop={true}>
-                {isFetchingNextPage && (
-                  <Loading small data-testid="full-variable-loader" />
-                )}
-                {value}
-              </VariableValue>
+              <InlineJsonEditor
+                value={value}
+                isTruncatedValue={Boolean(isTruncated)}
+                readOnly
+              />
             ),
             width: 'auto',
           },

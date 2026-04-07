@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {Field, useForm, useFormState} from 'react-final-form';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import {Layer} from './styled';
 import {
   validateNameCharacters,
@@ -24,6 +25,7 @@ import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {MaximizeButton} from '../ViewFullVariableButton/MaximizeButton';
+import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();
@@ -33,6 +35,7 @@ const NewVariable: React.FC = () => {
   const allVariables =
     variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
     [];
+  const valueError = useFieldError('value');
 
   return (
     <>
@@ -66,14 +69,11 @@ const NewVariable: React.FC = () => {
           parse={(value) => value}
         >
           {({input}) => (
-            <TextInputField
+            <InlineJsonEditor
               {...input}
-              size="sm"
-              type="text"
+              label="Value"
               id="value"
-              hideLabel
-              labelText="Value"
-              placeholder="Value"
+              fieldError={valueError}
             />
           )}
         </Field>

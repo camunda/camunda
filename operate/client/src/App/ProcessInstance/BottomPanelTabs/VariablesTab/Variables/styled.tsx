@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {StructuredList as BaseStructuredList} from 'modules/components/StructuredList';
 import {styles} from '@carbon/elements';
 
@@ -29,22 +29,6 @@ const VariableName = styled.div`
   white-space: nowrap;
 `;
 
-type VariableValueProps = {$hasBackdrop?: boolean};
-const VariableValue = styled.div<VariableValueProps>`
-  ${({$hasBackdrop}) => {
-    return css`
-      ${styles.bodyShort01};
-      margin: var(--cds-spacing-02) 0;
-      max-height: 78px;
-      overflow-y: auto;
-      overflow-wrap: break-word;
-      ${$hasBackdrop &&
-      css`
-        position: relative;
-      `}
-    `;
-  }}
-`;
 const StructuredList = styled(BaseStructuredList)`
   padding: var(--cds-spacing-05);
   [role='table'] {
@@ -59,10 +43,4 @@ const EmptyMessageWrapper = styled.div`
   align-items: center;
 `;
 
-export {
-  VariablesContent,
-  VariableName,
-  VariableValue,
-  StructuredList,
-  EmptyMessageWrapper,
-};
+export {VariablesContent, VariableName, StructuredList, EmptyMessageWrapper};

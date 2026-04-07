@@ -155,11 +155,13 @@ test.describe('variables and incidents', () => {
 
     await editVariableButton.click();
 
-    const editableField = page.getByRole('textbox', {
-      name: /value/i,
-    });
-    await editableField.clear();
-    await editableField.fill('99');
+    await processInstancePage.variablesEditor
+      .getEditor('orderValue')
+      .click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('99');
 
     const saveVariableButton = await page.getByRole('button', {
       name: 'Save',

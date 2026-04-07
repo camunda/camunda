@@ -155,6 +155,7 @@ test.describe('process instance page', () => {
         name: /edit/i,
       })
       .click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
 
     await expect(page).toHaveScreenshot();
   });
