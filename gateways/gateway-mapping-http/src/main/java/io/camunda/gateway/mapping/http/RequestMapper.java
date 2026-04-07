@@ -435,9 +435,7 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(
-                request.processDefinitionKey() != null
-                    ? Long.parseLong(request.processDefinitionKey())
-                    : -1L,
+                request.processDefinitionKeyAsLong(),
                 "",
                 -1,
                 request.variables() != null ? request.variables() : Map.of(),
@@ -512,9 +510,7 @@ public class RequestMapper {
         tenantId ->
             new DecisionEvaluationRequest(
                 "",
-                request.decisionDefinitionKey() != null
-                    ? Long.parseLong(request.decisionDefinitionKey())
-                    : -1L,
+                request.decisionDefinitionKeyAsLong(),
                 request.variables() != null ? request.variables() : Map.of(),
                 tenantId));
   }
@@ -552,12 +548,6 @@ public class RequestMapper {
       final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
-  }
-
-  private static <R> long getKeyOrDefault(
-      final R request, final Function<R, String> valueExtractor, final Long defaultValue) {
-    final String value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? defaultValue : Long.parseLong(value);
   }
 
   private static <R> List<String> getStringListOrEmpty(
@@ -1057,9 +1047,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceMigrateRequest(
                 processInstanceKey,
-                request.targetProcessDefinitionKey() != null
-                    ? Long.parseLong(request.targetProcessDefinitionKey())
-                    : -1L,
+                request.targetProcessDefinitionKeyAsLong(),
                 request.mappingInstructions().stream()
                     .map(
                         mi ->
@@ -1294,8 +1282,8 @@ public class RequestMapper {
         tenantId ->
             new EvaluateConditionalRequest(
                 tenantId,
-                request.processDefinitionKey() != null
-                    ? Long.parseLong(request.processDefinitionKey())
+                request.processDefinitionKeyAsLong() != null
+                    ? request.processDefinitionKeyAsLong()
                     : -1L,
                 request.variables()));
   }
