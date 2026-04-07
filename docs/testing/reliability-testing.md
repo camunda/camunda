@@ -207,7 +207,10 @@ An example payload looks like this:
     "ref": workflow_ref_name,
     "inputs": {
       "name": benchmark_name,
-      "tag": release_tag
+      "tag": release_tag,
+      "optimize-tag": "optional, Docker Hub tag for Optimize",
+      "identity-tag": "optional, Docker Hub tag for Identity",
+      "connectors-tag": "optional, Docker Hub tag for Connectors"
     }
 }
 ```
