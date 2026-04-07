@@ -429,8 +429,7 @@ public final class ZeebeRocksDbFactory<
     @Override
     public void close() {
       if (isInitialized()) {
-        sharedWbm.close();
-        sharedCache.close();
+        CloseHelper.closeAll(sharedCache, sharedWbm);
         sharedCache = null;
         sharedWbm = null;
       }
