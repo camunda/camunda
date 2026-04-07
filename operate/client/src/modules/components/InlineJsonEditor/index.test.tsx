@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {render, screen, act} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {InlineJsonEditor} from './index';
 
 vi.unmock('modules/components/InlineJsonEditor');
@@ -52,7 +52,6 @@ describe('<InlineJsonEditor />', () => {
   });
 
   it('should call onValidate(false) for invalid JSON', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
     const mockOnValidate = vi.fn();
 
     const TestWrapper = () => {
@@ -74,17 +73,10 @@ describe('<InlineJsonEditor />', () => {
     await user.clear(editor);
     await user.type(editor, '{{invalid');
 
-    // Flush the 300 ms debounce
-    act(() => {
-      vi.runAllTimers();
-    });
-
     expect(mockOnValidate).toHaveBeenCalledWith(false);
-    vi.useRealTimers();
   });
 
   it('should call onValidate(true) for valid JSON', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
     const mockOnValidate = vi.fn();
 
     const TestWrapper = () => {
@@ -106,12 +98,6 @@ describe('<InlineJsonEditor />', () => {
     await user.clear(editor);
     await user.type(editor, '"valid"');
 
-    // Flush the 300 ms debounce
-    act(() => {
-      vi.runAllTimers();
-    });
-
     expect(mockOnValidate).toHaveBeenCalledWith(true);
-    vi.useRealTimers();
   });
 });

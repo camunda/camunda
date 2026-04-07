@@ -6,14 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import {lazy, Suspense, useCallback, useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {
   beautifyJSON,

@@ -123,6 +123,7 @@ const EditorReadonly = styled.pre<{
     $editMode &&
     css`
       padding-left: ${EDITOR_DECORATION_WIDTH}px;
+      border-block-end: 1px solid var(--cds-border-strong);
     `};
 `;
 
