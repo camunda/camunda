@@ -56,9 +56,4 @@ public interface ProcessDefinition {
    * @return whether the start event of the process has an associated form key
    */
   Boolean getHasStartForm();
-
-  /**
-   * @return the name of the process, or {@code null} if it is not defined in BPMN
-   */
-  String getProcessName();
 }
