@@ -15,6 +15,7 @@ camunda.operate:
     startLoadingDataOnStartup: false
   zeebe:
     gatewayAddress: someZeebeHost:999
+    requestTimeout: PT50S
   operationExecutor:
     batchSize: 555
     workerId: someWorker
