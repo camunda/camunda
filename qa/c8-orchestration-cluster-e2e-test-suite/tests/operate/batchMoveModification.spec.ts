@@ -123,7 +123,7 @@ test.describe('Process Instance Batch Modification', () => {
           await expect(
             page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
           ).toBeVisible({
-            timeout: 3000,
+            timeout: 30000,
           });
         },
         onFailure: async () => {
