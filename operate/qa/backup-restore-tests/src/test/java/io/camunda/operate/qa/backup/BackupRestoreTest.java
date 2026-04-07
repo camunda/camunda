@@ -60,6 +60,7 @@ public class BackupRestoreTest {
   public static final String VERSION = "current-test";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
+  public static final String OPERATE_TEMPLATE = "operate_template";
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
   private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
   @Autowired private OperateAPICaller operateAPICaller;
@@ -115,14 +116,9 @@ public class BackupRestoreTest {
     LOGGER.info("************ Index templates verified ************");
   }
 
-  private String componentTemplateName() {
-    return "operate_template";
-  }
-
   private void deleteComponentTemplate() throws Exception {
-    final String name = componentTemplateName();
     final var request =
-        new org.elasticsearch.client.Request("DELETE", "/_component_template/" + name);
+        new org.elasticsearch.client.Request("DELETE", "/_component_template/" + OPERATE_TEMPLATE);
     testContext.getEsClient().getLowLevelClient().performRequest(request);
     RetryOperation.newBuilder()
         .noOfRetry(10)
@@ -135,7 +131,7 @@ public class BackupRestoreTest {
                     .getEsClient()
                     .cluster()
                     .getComponentTemplate(
-                        new GetComponentTemplatesRequest(name), RequestOptions.DEFAULT);
+                        new GetComponentTemplatesRequest(OPERATE_TEMPLATE), RequestOptions.DEFAULT);
                 return false;
               } catch (final ElasticsearchStatusException e) {
                 if (e.status().getStatus() == 404) {
@@ -150,17 +146,16 @@ public class BackupRestoreTest {
   }
 
   private void assertComponentTemplateRestored() throws IOException {
-    final String name = componentTemplateName();
     final boolean exists =
         testContext
                 .getEsClient()
                 .cluster()
                 .getComponentTemplate(
-                    new GetComponentTemplatesRequest(name), RequestOptions.DEFAULT)
+                    new GetComponentTemplatesRequest(OPERATE_TEMPLATE), RequestOptions.DEFAULT)
                 .getComponentTemplates()
-                .get(name)
+                .get(OPERATE_TEMPLATE)
             != null;
-    assertThat(exists).as("Component template '%s' should be restored", name).isTrue();
+    assertThat(exists).as("Component template '%s' should be restored", OPERATE_TEMPLATE).isTrue();
     LOGGER.info("************ Component template verified ************");
   }
 
