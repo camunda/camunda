@@ -95,6 +95,7 @@ const sidebars = {
               label: 'ADRs',
               items: [
                 'architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets',
+                'architecture/roadmap/unified_identity_architecture/adr/placement-of-the-security-gateway-framework',
               ],
             },
           ],
