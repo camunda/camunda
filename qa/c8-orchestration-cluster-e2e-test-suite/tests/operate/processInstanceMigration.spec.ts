@@ -21,7 +21,7 @@ import {
   CreateProcessInstanceResponse,
   DeployResourceResponse,
 } from '@camunda8/sdk/dist/c8/lib/C8Dto';
-import {TaskCard} from '@pages/TaskPanelPage';
+import type {TaskCard} from '@pages/TaskPanelPage';
 import {parseUserTasksFromFile} from 'utils/bpmn';
 
 const PROCESS_INSTANCE_COUNT = 10;
