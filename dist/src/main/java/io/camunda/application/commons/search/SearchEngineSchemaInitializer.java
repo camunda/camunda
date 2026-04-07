@@ -13,6 +13,7 @@ import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +57,8 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     }
   }
 
-  private void synchronousSchemaInitialization(
+  @VisibleForTesting
+  void synchronousSchemaInitialization(
       final CompletableFuture<Void> future, final ExecutorService executor) throws Exception {
     try {
       future.get();
@@ -66,11 +68,15 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
           "Schema initialization task was interrupted. Shutdown signal is caught={}",
           isShutdown.get(),
           ie);
-      Thread.currentThread().interrupt();
+      if (!isShutdown.get()) {
+        // Only re-interrupt if this is not a shutdown-triggered interrupt.
+        // During shutdown, we must let Spring finish context refresh so that
+        // Broker can perform a graceful shutdown.
+        Thread.currentThread().interrupt();
+      }
     } catch (final Exception e) {
       if (isShutdown.get()) {
         LOGGER.debug("Schema initialization interrupted with shutdown.", e);
-        Thread.currentThread().interrupt();
         return;
       }
       throw e;
@@ -79,7 +85,8 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     }
   }
 
-  private void asyncSchemaInitialization(
+  @VisibleForTesting
+  void asyncSchemaInitialization(
       final CompletableFuture<Void> future, final ExecutorService executor) {
     future.whenCompleteAsync(
         (result, error) -> {
