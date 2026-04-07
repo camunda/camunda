@@ -250,6 +250,7 @@ final class ZeebeRocksDbFactoryTest {
 
     // when - then
     assertThatCode(sharedResources::close).doesNotThrowAnyException();
+    assertThat(sharedResources.isInitialized()).isFalse();
   }
 
   private static void validateDefaultExpectedOptions(
