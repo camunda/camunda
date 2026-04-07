@@ -22,7 +22,6 @@ const sidebars = {
     'infrastructure-services',
     'renovate-pr-handling',
     'release',
-    'unified_identity_architecture',
     {
       type: 'category',
       label: 'Architecture',
@@ -88,6 +87,20 @@ const sidebars = {
               type: 'doc',
               id: 'architecture/components/identity/management_identity_architecture_docs',
               label: 'Management Identity',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Roadmap',
+          items: [
+            'architecture/roadmap/unified_identity_architecture/unified_identity_architecture',
+            {
+              type: 'category',
+              label: 'ADRs',
+              items: [
+                'architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets',
+              ],
             },
           ],
         },
