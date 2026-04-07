@@ -547,6 +547,7 @@ class OperateProcessInstancePage {
   }
 
   async clickSaveVariableButton(): Promise<void> {
+    await expect(this.saveVariableButton).toBeVisible({timeout: 20000});
     await this.saveVariableButton.click();
   }
 
