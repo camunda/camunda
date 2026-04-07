@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.gateway.protocol.model.UserUpdateRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -160,11 +160,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithMissingUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username(null);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          "{\"password\":\"zabraboof\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
           """
             {
               "type": "about:blank",
@@ -180,11 +178,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username("");
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new GeneratedUserRequestStrictContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -200,11 +196,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithEmptyPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password(null);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          "{\"username\":\"foo\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
           """
             {
               "type": "about:blank",
@@ -220,11 +214,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password("");
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new GeneratedUserRequestStrictContract("", "foo", "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -276,11 +268,9 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithInvalidEmail() {
       // given
       final var email = "invalid@email.reject";
-      final var request = validUserWithPasswordRequest().email(email);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", email),
           """
             {
               "type": "about:blank",
@@ -297,11 +287,9 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithTooLongUsername() {
       // given
       final var username = "x".repeat(257);
-      final var request = validUserWithPasswordRequest().username(username);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -323,11 +311,9 @@ public class UserControllerTest {
         })
     void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
       // given
-      final var request = validUserWithPasswordRequest().username(username);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -383,10 +369,8 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new UserUpdateRequest()
-                  .name(user.name())
-                  .email(user.email())
-                  .password(user.password()))
+              new GeneratedUserUpdateRequestStrictContract(
+                  user.password(), user.name(), user.email()))
           .exchange()
           .expectStatus()
           .isOk();
@@ -398,16 +382,12 @@ public class UserControllerTest {
       return new UserDTO(username, "Foo Bar", "bar@baz.com", "zabraboof");
     }
 
-    private UserRequest validUserWithPasswordRequest() {
-      return new UserRequest()
-          .username("foo")
-          .name("Foo Bar")
-          .email("bar@baz.com")
-          .password("zabraboof");
+    private GeneratedUserRequestStrictContract validUserWithPasswordRequest() {
+      return new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
     }
 
     private void assertRequestRejectedExceptionally(
-        final UserRequest request, final String expectedError) {
+        final Object request, final String expectedError) {
       webClient
           .post()
           .uri(USER_BASE_URL)
@@ -475,10 +455,8 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new UserUpdateRequest()
-                  .name(user.name())
-                  .email(user.email())
-                  .password(user.password()))
+              new GeneratedUserUpdateRequestStrictContract(
+                  user.password(), user.name(), user.email()))
           .exchange()
           .expectStatus()
           .isForbidden()

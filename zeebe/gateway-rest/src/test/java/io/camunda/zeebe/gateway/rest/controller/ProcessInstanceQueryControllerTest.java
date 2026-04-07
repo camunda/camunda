@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
-import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
-import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -1028,17 +1028,18 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "errorType",
         ops -> new IncidentFilter.Builder().errorTypeOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
-            List.of(Operation.neq(String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND))),
+            List.of(
+                Operation.eq(String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
+            List.of(Operation.neq(String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND))),
             List.of(
                 Operation.in(
-                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR"))),
         true);
 
@@ -1062,17 +1063,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new IncidentFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(IncidentStateEnum.PENDING))),
-            List.of(Operation.neq(String.valueOf(IncidentStateEnum.RESOLVED))),
+            List.of(Operation.eq(String.valueOf(GeneratedIncidentStateEnum.PENDING))),
+            List.of(Operation.neq(String.valueOf(GeneratedIncidentStateEnum.RESOLVED))),
             List.of(
                 Operation.in(
-                    String.valueOf(IncidentStateEnum.PENDING),
-                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
+                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
                 Operation.like("com")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(IncidentStateEnum.PENDING),
-                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
+                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
                 Operation.like("com"))),
         true);
 

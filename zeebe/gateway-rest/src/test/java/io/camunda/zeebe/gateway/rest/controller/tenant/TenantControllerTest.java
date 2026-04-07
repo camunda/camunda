@@ -16,8 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.TenantCreateRequest;
-import io.camunda.gateway.protocol.model.TenantUpdateRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -112,10 +113,7 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new TenantCreateRequest()
-                  .name(tenantName)
-                  .description(tenantDescription)
-                  .tenantId(id))
+              new GeneratedTenantCreateRequestStrictContract(id, tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -147,10 +145,8 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new TenantCreateRequest()
-                  .name(tenantName)
-                  .tenantId(tenantId)
-                  .description(tenantDescription))
+              new GeneratedTenantCreateRequestStrictContract(
+                  tenantId, tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated()
@@ -183,7 +179,7 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantCreateRequest().name(tenantName))
+          .bodyValue("{\"name\":\"%s\"}".formatted(tenantName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -214,15 +210,15 @@ public class TenantControllerTest {
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
       final var tenantName = "Tenant Name";
-      final var request = new TenantCreateRequest().tenantId(id).name(tenantName);
 
-      // when
+      // when – use Map to bypass compact constructor validation; Jackson handles
+      // JSON-escaping of special characters (tab, newline, backslash, etc.)
       webClient
           .post()
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
+          .bodyValue(Map.of("tenantId", id, "name", tenantName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -247,15 +243,14 @@ public class TenantControllerTest {
     void shouldRejectTenantWithTooLongId() {
       // given
       final var id = "x".repeat(257);
-      final var request = new TenantCreateRequest().tenantId(id).name("Tenant name");
 
-      // when
+      // when – use Map to bypass compact constructor validation
       webClient
           .post()
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
+          .bodyValue(Map.of("tenantId", id, "name", "Tenant name"))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -297,7 +292,7 @@ public class TenantControllerTest {
           .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
+          .bodyValue(new GeneratedTenantUpdateRequestStrictContract(tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isOk()
@@ -332,7 +327,7 @@ public class TenantControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().description(tenantDescription))
+          .bodyValue("{\"description\":\"%s\"}".formatted(tenantDescription))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -373,7 +368,7 @@ public class TenantControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
+          .bodyValue(new GeneratedTenantUpdateRequestStrictContract(tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isNotFound();

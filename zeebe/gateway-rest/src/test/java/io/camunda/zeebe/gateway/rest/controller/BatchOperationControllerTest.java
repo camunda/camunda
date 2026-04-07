@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
-import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -205,12 +205,16 @@ class BatchOperationControllerTest extends RestControllerTest {
                 .operationTypeOperations(ops)
                 .build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE))),
-            List.of(Operation.neq(String.valueOf(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE))),
+            List.of(
+                Operation.eq(
+                    String.valueOf(GeneratedBatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE))),
+            List.of(
+                Operation.neq(
+                    String.valueOf(GeneratedBatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE))),
             List.of(
                 Operation.in(
-                    String.valueOf(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE),
-                    String.valueOf(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE)),
+                    String.valueOf(GeneratedBatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE),
+                    String.valueOf(GeneratedBatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE)),
                 Operation.like("act"))),
         true);
     customOperationTestCases(
@@ -221,12 +225,12 @@ class BatchOperationControllerTest extends RestControllerTest {
                 .stateOperations(ops)
                 .build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(BatchOperationStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(BatchOperationStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(GeneratedBatchOperationStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(GeneratedBatchOperationStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(BatchOperationStateEnum.COMPLETED),
-                    String.valueOf(BatchOperationStateEnum.ACTIVE)),
+                    String.valueOf(GeneratedBatchOperationStateEnum.COMPLETED),
+                    String.valueOf(GeneratedBatchOperationStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
     customOperationTestCases(

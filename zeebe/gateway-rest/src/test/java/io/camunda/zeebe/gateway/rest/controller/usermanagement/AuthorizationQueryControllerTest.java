@@ -14,8 +14,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.OwnerTypeEnum;
-import io.camunda.gateway.protocol.model.ResourceTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedOwnerTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResourceTypeEnum;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -101,8 +101,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   new AuthorizationEntity(
                       1L,
                       "foo",
-                      OwnerTypeEnum.USER.getValue(),
-                      ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+                      GeneratedOwnerTypeEnum.USER.getValue(),
+                      GeneratedResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       AuthorizationResourceMatcher.ID.value(),
                       "2",
                       "",
@@ -110,8 +110,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   new AuthorizationEntity(
                       2L,
                       "foo",
-                      OwnerTypeEnum.USER.getValue(),
-                      ResourceTypeEnum.RESOURCE.getValue(),
+                      GeneratedOwnerTypeEnum.USER.getValue(),
+                      GeneratedResourceTypeEnum.RESOURCE.getValue(),
                       AuthorizationResourceMatcher.ANY.value(),
                       "*",
                       null,
@@ -119,8 +119,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   new AuthorizationEntity(
                       3L,
                       "foo",
-                      OwnerTypeEnum.USER.getValue(),
-                      ResourceTypeEnum.USER_TASK.getValue(),
+                      GeneratedOwnerTypeEnum.USER.getValue(),
+                      GeneratedResourceTypeEnum.USER_TASK.getValue(),
                       AuthorizationResourceMatcher.PROPERTY.value(),
                       "",
                       "assignee",
@@ -147,8 +147,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         new AuthorizationEntity(
             100L,
             "ownerId",
-            OwnerTypeEnum.USER.getValue(),
-            ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+            GeneratedOwnerTypeEnum.USER.getValue(),
+            GeneratedResourceTypeEnum.PROCESS_DEFINITION.getValue(),
             AuthorizationResourceMatcher.ID.value(),
             "resourceId",
             "",

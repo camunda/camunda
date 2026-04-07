@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.RoleCreateRequest;
-import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -98,7 +98,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName).description(description))
+          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, roleName, description))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -119,7 +119,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue("{\"roleId\":null,\"name\":\"%s\"}".formatted(roleName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -152,7 +152,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, roleName, null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -185,7 +185,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, roleName, null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -217,7 +217,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, "name", null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -252,7 +252,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, "name", null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -294,7 +294,7 @@ public class RoleControllerTest {
           .uri("%s/%s".formatted(ROLE_BASE_URL, roleId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
           .exchange()
           .expectStatus()
           .isOk()
@@ -328,7 +328,7 @@ public class RoleControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -369,7 +369,7 @@ public class RoleControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -399,7 +399,7 @@ public class RoleControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
           .exchange()
           .expectStatus()
           .isOk()
