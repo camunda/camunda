@@ -39,5 +39,6 @@
     "@camunda8/sdk": "^8.7.29",
     "dotenv": "^17.0.0",
     "mailslurp-client": "^17.0.0"
-  }
+  },
+  "packageManager": "npm@11.12.1"
 }
