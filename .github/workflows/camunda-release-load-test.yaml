@@ -1,7 +1,13 @@
-# description: Create a Camunda load test for a given release.
-#              Abstraction layer of the actual load test creation process, to define a clear API between release process and the load test workflows.
-#              Public API - accepting inputs for test name and tag.
-#              Called by: camunda-scheduled-release-load-tests.yml (daily schedule)
+# description: Creates a load test for official release images. Abstraction layer between
+#              the release process and the load test infrastructure, with a simple public API
+#              accepting required name and tag inputs plus optional per-component
+#              tag overrides: optimize-tag, identity-tag, and connectors-tag.
+#              Uses official Docker images with scenario: realistic.
+# called-by: camunda-scheduled-release-load-tests.yml (daily schedule),
+#            release BPMN process (workflow_dispatch via GitHub API)
+# calls: camunda-load-test.yml (orchestration-tag: <tag>, scenario: realistic)
+# note: Verification and namespace cleanup are handled externally by the scheduled workflow
+#       via camunda-verify-and-cleanup-load-test.yml, not by this workflow.
 # type: CI
 # owner @camunda/reliability-testing
 name: Camunda Release load test workflow
@@ -16,6 +22,21 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
+      optimize-tag:
+        description: 'Docker image tag for Optimize. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Docker image tag for Identity. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Docker image tag for Connectors. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       name:
@@ -26,6 +47,21 @@ on:
         description: 'Specifies the tag that should be used for the release load test'
         type: string
         required: true
+      optimize-tag:
+        description: 'Docker image tag for Optimize. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Docker image tag for Identity. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Docker image tag for Connectors. If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
 
 defaults:
   run:
@@ -72,10 +108,12 @@ jobs:
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
       ref: stable/8.9
-      reuse-tag: ${{ needs.sanitize-inputs.outputs.test-tag }}
+      orchestration-tag: ${{ inputs.tag }}
       ttl: 60
-      use-official-docker-images: true
       scenario: 'realistic'
+      optimize-tag: ${{ inputs.optimize-tag }}
+      identity-tag: ${{ inputs.identity-tag }}
+      connectors-tag: ${{ inputs.connectors-tag }}
 
   notify-on-failure:
     name: Notify on failure
