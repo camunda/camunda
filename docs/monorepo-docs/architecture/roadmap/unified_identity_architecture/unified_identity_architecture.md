@@ -1,3 +1,4 @@
+
 # Unified Identity Architecture
 
 **IMPORTANT**: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models. The architecture is subject to change as we iterate on the design and gather feedback from stakeholders.
@@ -147,7 +148,7 @@ These limitations motivate a unified identity plane with consistent semantics an
 The target architecture is based on the following assumptions:
 
 - In full mode, each Orchestration Cluster is associated with exactly one Hub organization/workspace for policy management; policies are always authored “above” the cluster in Hub and projected downward.
-  - The new identity library can somehow access the current list of OCs in Hub; this is among others needed for admin UI in hub.
+  - The new identity library can somehow access the current list of OCs in Hub; this is among others needed for admin UI in Hub.
 - In OC-only mode, the Orchestration Cluster is the local source of truth for policy; there is no Hub and therefore no cross-cluster policy coordination.
 - All engines within a given Orchestration Cluster share the same OC-level; engines never talk to IdPs directly and are not configured as OIDC/SAML clients.
   - There will be one client per IDP (could be multiple per engine); we rely on roles and claims to decide which Engines each user can access and what they can do there.
@@ -160,7 +161,7 @@ The target architecture is based on the following assumptions:
 
 ---
 
-### 2.4 Preparation work and ongoing epics
+### 2.5 Preparation work and ongoing epics
 
 - [Prepare Authentication for Hub Integration](https://github.com/camunda/camunda/issues/38556)
 - Spike about extraction of code: [Spike/new replacement auth lib](https://github.com/camunda/camunda/pull/49058)
@@ -272,6 +273,7 @@ Long-term target: Org-level IdP setup and cluster provisioning are performed cen
   6. Hub Security Gateway Framework persists this configuration, produces a new `PolicyVersion`, and starts outbox-based propagation to the relevant OC(s).
 
 Outcome: The organization’s IdP is connected, tenants and roles exist, and cluster-local policy is projected to the associated OCs. Cluster admins and developers can authenticate via the Enterprise IdP and start using cluster UIs and APIs, with Hub acting as the central identity and policy entry point.
+
 ---
 
 ## 4. Target system context
@@ -362,7 +364,6 @@ Both the Hub and OC instances of the Security Gateway Framework maintain their o
 - A cluster-scoped policy projection for the relevant cluster(s) they manage.
 - Local tracking of the last applied policy version (`last_applied_version` on the OC side, `last_acked_version` per OC on the Hub side).
 - Local session state.
-
 
 #### 5.1.1 Full mode (Hub + OC)
 
@@ -555,16 +556,16 @@ This unified model allows:
 
 The following table summarizes which information must be known to which component:
 
-| Information type                             | Hub (full mode) | OC (full mode)                                                      | OC-only mode (OC) | Engine                                 |
-|---------------------------------------------|-----------------|---------------------------------------------------------------------|-------------------|----------------------------------------|
-| IdP client credentials (client IDs/secrets) | Yes (managed centrally or per-tenant) | Yes (cluster-local credentials / secrets per OC / tenant / engine)  | Yes | No               |
-| IdP connections per tenant (OIDC/SAML)      | Yes (for Hub apps) | Yes (for cluster-side authn)                                        | Yes               | No (trusts OC)                         |
-| Tenant              | Yes (SoT)       | Yes (projection per cluster)                                        | Yes (SoT)         | Indirectly via OC commands             |
-| Mapping rules (claims → roles/tenants)      | Yes (SoT)       | Yes (projection per cluster)                                        | Yes               | No                                     |
-| Roles and groups                            | Yes (SoT)       | Yes (projection per cluster)                                        | Yes               | No (only resulting permissions)        |
-| Authorizations (role/group → resource perms)| Yes (SoT)       | Yes (projection per cluster; engine-scoped and tenant-scoped views) | Yes            | Indirectly (via engine-local projections) |
-| Policy versions and outbox state            | Yes (`PolicyVersion`, `OutboxEvent`, `OcSyncState`) | Yes (`last_applied_version` per cluster)                            | Yes (local policy versions only) | No explicit versioning; consumes OC-level updates |
-| Session data                                | Yes (Hub sessions only) | Yes (cluster sessions only)                                         | Yes               | No                                     |
+| Information type                             | Hub (full mode)                                                | OC (full mode)                                                      | OC-only mode (OC)                        | Engine                                 |
+|---------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------|------------------------------------------|----------------------------------------|
+| IdP client credentials (client IDs/secrets) | Yes (managed centrally or per-tenant)                          | Yes (cluster-local credentials / secrets per OC / tenant / engine)  | Yes                                      | No                                     |
+| IdP connections per tenant (OIDC/SAML)      | Yes (for Hub apps)                                             | Yes (for cluster-side authn)                                        | Yes                                      | No (trusts OC)                         |
+| Tenant                                      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes (SoT)                                | Indirectly via OC commands             |
+| Mapping rules (claims → roles/tenants)      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                                      | No                                     |
+| Roles and groups                            | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                                      | No (only resulting permissions)        |
+| Authorizations (role/group → resource perms)| Yes (SoT)                                                      | Yes (projection per cluster; engine-scoped and tenant-scoped views) | Yes                                      | Indirectly (via engine-local projections) |
+| Policy versions and outbox state            | Yes (`PolicyVersion`, `OutboxEvent`, `OcSyncState`)            | Yes (`last_applied_version` per cluster)                            | Yes (local policy versions only)         | No explicit versioning; consumes OC-level updates |
+| Session data                                | Yes (Hub sessions only)                                        | Yes (cluster sessions only)                                         | Yes                                      | No                                     |
 
 Engines only need to know the effective permissions resulting from the policy model; they neither talk to IdPs nor store policy versions.
 
@@ -861,9 +862,35 @@ erDiagram
   EntityRevision ||--o{ PolicyVersionChange : referenced_by
 ```
 
-### 5.3.5 Example database rows (Hub)
+### 5.3.5 Consistency guarantees
 
-The following simplified rows show selected database rows for the same entities used in examples A/B/C in section `5.3.6`.
+The outbox-based propagation provides the following consistency characteristics:
+
+- Eventual consistency across layers
+  - Policy changes become visible in this order:
+    - Hub (immediately in the Admin UI after commit).
+    - OC (after outbox dispatch and a successful apply).
+    - Engines (after OC-to-engine propagation via the engine command path).
+  - There may be short windows where Hub and OC/engines disagree on the currently effective policy; operational tooling should reflect per-OC sync status.
+- Delivery semantics
+  - At-least-once delivery from Hub to each OC:
+    - Failed `OutboxEvent`s are retried according to `attempts` and `next_attempt_at`.
+  - Idempotent apply on the OC side:
+    - Each `PolicyVersion` is applied at most once per OC; replays with the same `policyVersionId` are ignored.
+- Ordering
+  - Within a single OC:
+    - `PolicyVersion.version_number` is strictly increasing.
+    - A `POLICY_DIFF` for version `V` is only accepted if its `base_version` matches the OC’s `last_applied_version`.
+  - If an OC falls behind or misses one or more versions, it rejects the diff and requests a fresh snapshot.
+- Snapshots as a safety net
+  - Hub can at any time fall back to sending a `POLICY_SNAPSHOT` that reconstructs the full desired state up to a target version.
+  - Applying a snapshot overwrites the local projection and resets the OC back to a known-good baseline.
+
+---
+
+### 5.3.6 Example database rows (Hub)
+
+The following simplified rows show selected database rows for the same entities used in examples A/B/C in section `5.3.7`.
 
 **OcSyncState**
 
@@ -909,7 +936,7 @@ The following simplified rows show selected database rows for the same entities 
 | `chg-5` | `pv-2` | 2 | `AUTHORIZATION` | `authz-support-task` | `UPSERT` | `ALL` |  | `rev-authz-support-task-v2` |
 | `chg-6` | `pv-3` | 1 | `AUTHORIZATION` | `authz-engine2-support` | `UPSERT` | `ENGINE` | `engine-2` | `rev-authz-engine2-support-v3` |
 
-### 5.3.6 Example policy versions (initial + 2 updates)
+### 5.3.7 Example policy versions (initial + 2 updates)
 
 The following examples show one initial policy and two incremental updates for the same cluster.
 
@@ -1020,6 +1047,7 @@ These examples illustrate the expected apply behavior:
 - OC at version `2` can apply diff `3` directly.
 - OC at version `1` cannot apply diff `3` without first applying version `2` (or requesting a snapshot).
 
+---
 
 ### 5.4 Security Gateway Framework – hexagonal architecture
 
@@ -1137,7 +1165,6 @@ Persistent sessions are required for the OC authentication UX and remain part of
 ### 5.6 Single shared Admin UI
 
 TODO
-
 
 ### 5.7 Scoped Policies
 
@@ -1365,7 +1392,103 @@ sequenceDiagram
 
 ## 7. Deployment view
 
+### 7.1 Self-Managed deployment
 
+In Self-Managed, the customer owns and operates all infrastructure. Two deployment modes are supported, mirroring the general modes described in section 4.
+
+#### 7.1.1 OC-only mode (standalone Orchestration Cluster)
+
+The most common Self-Managed topology. Hub is not present; the Orchestration Cluster is the local source of truth for all policy. The Admin UI runs in read/write mode. The customer's Enterprise IdP (Keycloak, Entra, Okta, etc.) is configured directly on the OC.
+
+- OC acts as local SoT for identity and policy.
+- The Enterprise IdP is integrated directly via OIDC/SAML; no Camunda-operated broker is involved.
+- Multiple engines per cluster are supported with OC-level policy propagation.
+- Suitable for production use cases that do not require cross-cluster policy management.
+
+```mermaid
+---
+title: Self-Managed Deployment – OC-only mode
+---
+flowchart TB
+  subgraph Customer["Customer-managed Infrastructure"]
+    subgraph Execution["Execution Plane"]
+      Operate["Operate"]
+      Tasklist["Tasklist"]
+      AdminUI["Admin UI (read/write)"]
+
+      subgraph OC["Orchestration Cluster"]
+        SecGatOC["Security Gateway Framework"]
+      end
+
+      Operate & Tasklist & AdminUI --> OC
+    end
+
+    DBs[("DBs (Primary / Secondary)")]
+    OC --> DBs
+  end
+
+  EnterpriseIdP[["Enterprise IdP</br>(Keycloak, Entra, Okta, ...)"]]
+  OC --> EnterpriseIdP
+```
+
+#### 7.1.2 Full mode (Hub + Orchestration Cluster, self-managed)
+
+An advanced Self-Managed topology where the customer also operates Hub. Hub becomes the central policy SoT, and policy is propagated via the outbox pattern to each OC. The Admin UI on OC runs in read-only mode; all policy authoring happens in Hub.
+
+- Hub and all OC instances are deployed and operated by the customer on their own infrastructure.
+- The Enterprise IdP is integrated at both Hub (management plane auth) and OC (execution plane auth) levels.
+- Policy flows top-down: Hub → OC → Engine, same as in SaaS, but without a Camunda-operated broker.
+- Suitable for large-scale or multi-cluster Self-Managed environments requiring centralized policy governance.
+
+```mermaid
+---
+title: Self-Managed Deployment – Full mode (Hub + OC)
+---
+flowchart TB
+  subgraph Customer["Customer-managed Infrastructure"]
+    subgraph MgmtPlane["Management Plane"]
+      Console["Console"]
+      WebModeler["Web Modeler"]
+      AdminHub["Admin UI (read/write)"]
+
+      subgraph Hub["Hub"]
+        SecGatHub["Security Gateway Framework"]
+      end
+
+      Console & WebModeler & AdminHub --> Hub
+    end
+
+    subgraph Execution["Execution Plane"]
+      Operate["Operate"]
+      Tasklist["Tasklist"]
+      AdminOC["Admin UI (read-only)"]
+
+      subgraph OC["Orchestration Cluster"]
+        SecGatOC["Security Gateway Framework"]
+      end
+
+      Operate & Tasklist & AdminOC --> OC
+    end
+
+    HubDB[("Hub DB")]
+    OCDB[("OC DB (Primary / Secondary)")]
+
+    Hub --> OC
+    Hub --> HubDB
+    OC --> OCDB
+  end
+
+  EnterpriseIdP[["Enterprise IdP</br>(Keycloak, Entra, Okta, ...)"]]
+  Hub & OC --> EnterpriseIdP
+```
+
+---
+
+### 7.2 SaaS deployment
+
+?
+
+---
 
 ## 8. Crosscutting concepts (target)
 
@@ -1391,9 +1514,9 @@ This unified architecture builds on existing identity arc42 docs and ADRs for OC
 - Exact SPI boundaries for OC/engine command creation.
 - Migration path from current Auth0-based SaaS setup to “Enterprise IdP as SoT” while keeping Auth0 as a private implementation detail.
 - If the endpoints to apply policy changes are public, Hub will not be aware of what a customer applies to OC and will run out of sync.
-- How will the Hub know which cluster it should talk to?
-- Who will initiate the communication between Hub and OCs? Does OC know about Hub?
 - Which data should be persisted directly by security gateway (like sessions) and which should go via engine / exporter? (We will need policy metadata, but this is not of interest for the engine so will not be part of any record through the engine)
+- How can we apply a snapshot multiple times? How could we reset the projections in primary and secondary storage?
+-
 
 ### 9.2 Detailed ADRs
 
@@ -1401,6 +1524,7 @@ This section contains detailed Architectural Decision Records (ADRs) for the Sec
 
 - [ADR-0001: Link PolicyVersion with policy data via versioned change sets](adr/0001-policy-version-change-sets.md)
 - [ADR-0002: Placement of the Security Gateway Framework (embedded vs standalone service)](adr/0002-placement-of-the-security-gateway-framework.md)
+- [ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)](adr/0003-Push-vs-Pull-Policy-Propagation.md)
 
 ---
 
