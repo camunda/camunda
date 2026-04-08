@@ -912,12 +912,14 @@ final class JsonSerializableToJsonTest {
                         ],
                         "completionConditionFulfilled": true,
                         "cancelRemainingInstances": true
-                      }
+                      },
+                      "priority": 0
                     }
                   ],
                   "timeout": 2,
                   "tenantIds": [],
-                  "tenantFilter": "PROVIDED"
+                  "tenantFilter": "PROVIDED",
+                  "usePriority": false
                 }
                 """
       },
@@ -943,7 +945,8 @@ final class JsonSerializableToJsonTest {
                   "jobs": [],
                   "timeout": -1,
                   "tenantIds": [],
-                  "tenantFilter": "PROVIDED"
+                  "tenantFilter": "PROVIDED",
+                  "usePriority": false
                 }
                 """
       },
@@ -1098,7 +1101,8 @@ final class JsonSerializableToJsonTest {
                     ],
                     "completionConditionFulfilled": true,
                     "cancelRemainingInstances": true
-                  }
+                  },
+                  "priority": 0
                 }
                 """
       },
@@ -1153,7 +1157,8 @@ final class JsonSerializableToJsonTest {
                     "activateElements": [],
                     "completionConditionFulfilled": false,
                     "cancelRemainingInstances": false
-                  }
+                  },
+                  "priority": 0
                 }
                 """
       },
@@ -1213,7 +1218,8 @@ final class JsonSerializableToJsonTest {
                     "activateElements": [],
                     "completionConditionFulfilled": false,
                     "cancelRemainingInstances": false
-                  }
+                  },
+                  "priority": 0
                 }
                 """
       },

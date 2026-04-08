@@ -169,6 +169,9 @@
                 },
                 "rootProcessInstanceKey": {
                   "type": "long"
+                },
+                "priority": {
+                  "type": "integer"
                 }
               }
             },
@@ -180,6 +183,9 @@
             },
             "tenantFilter": {
               "type": "keyword"
+            },
+            "usePriority": {
+              "type": "boolean"
             }
           }
         }

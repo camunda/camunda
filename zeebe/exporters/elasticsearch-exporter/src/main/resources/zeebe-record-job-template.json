@@ -144,6 +144,9 @@
             },
             "rootProcessInstanceKey": {
               "type": "long"
+            },
+            "priority": {
+              "type": "integer"
             }
           }
         }
