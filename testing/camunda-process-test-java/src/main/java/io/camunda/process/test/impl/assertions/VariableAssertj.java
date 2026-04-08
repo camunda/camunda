@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.ThrowingConsumer;
@@ -52,7 +53,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private final CamundaDataSource dataSource;
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
   private final CamundaAssertJsonMapper jsonMapper;
-  private JudgeConfig judgeConfig;
+  private final JudgeAssertj judgeAssertj;
   private SemanticSimilarityConfig semanticSimilarityConfig;
 
   public VariableAssertj(
@@ -66,7 +67,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
-    this.judgeConfig = judgeConfig;
+    judgeAssertj = new JudgeAssertj(judgeConfig);
     this.semanticSimilarityConfig = semanticSimilarityConfig;
   }
 
@@ -359,12 +360,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   // --- Judge evaluation methods ---
 
-  JudgeConfig getJudgeConfig() {
-    return judgeConfig;
-  }
-
-  void setJudgeConfig(final JudgeConfig judgeConfig) {
-    this.judgeConfig = judgeConfig;
+  void withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
+    judgeAssertj.withJudgeConfig(modifier);
   }
 
   public void hasVariableSatisfiesJudge(
@@ -372,7 +369,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final VariableSelector variableSelector,
       final String expectation) {
 
-    assertJudgeHasAllRequiredSettings();
+    judgeAssertj.assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
     final String rawValue =
@@ -380,7 +377,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             variableSelector,
             () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
 
-    evaluateJudge(variableSelector.describe(), expectation, judgeConfig.getThreshold(), rawValue);
+    evaluateJudge(variableSelector, expectation, rawValue);
   }
 
   public void hasLocalVariableSatisfiesJudge(
@@ -389,13 +386,21 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final VariableSelector variableSelector,
       final String expectation) {
 
-    assertJudgeHasAllRequiredSettings();
+    judgeAssertj.assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
     final String rawValue =
         waitForLocalVariable(processInstanceKey, elementSelector, variableSelector);
 
-    evaluateJudge(variableSelector.describe(), expectation, judgeConfig.getThreshold(), rawValue);
+    evaluateJudge(variableSelector, expectation, rawValue);
+  }
+
+  private void evaluateJudge(
+      final VariableSelector variableSelector, final String expectation, final String rawValue) {
+    judgeAssertj.evaluateExpectation(
+        expectation,
+        rawValue,
+        String.format(" for %s variable '%s'", actual, variableSelector.describe()));
   }
 
   private String assertVariableExists(
@@ -443,61 +448,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     return result.get();
   }
 
-  private void evaluateJudge(
-      final String variableName,
-      final String expectation,
-      final double threshold,
-      final String variableValue) {
-
-    final JudgeEvaluation evaluation =
-        new JudgeEvaluation(judgeConfig.getChatModel(), expectation, judgeConfig.getCustomPrompt());
-
-    try {
-      final JudgeEvaluation.Result result = evaluation.evaluate(variableValue);
-
-      if (!result.passed(threshold)) {
-        fail(
-            "%s variable '%s' did not satisfy judge expectation.\n"
-                + "  Expectation: %s\n"
-                + "  Actual value: %s\n"
-                + "  Score: %.2f (threshold: %.2f)\n"
-                + "  Reasoning: %s",
-            actual,
-            variableName,
-            expectation,
-            variableValue,
-            result.getScore(),
-            threshold,
-            result.getReasoning());
-      }
-    } catch (final JudgeResponseParseException e) {
-      fail(
-          "%s judge evaluation failed for variable '%s'.\n"
-              + "  The judge LLM returned an unparseable response.\n"
-              + "  Cause: %s\n"
-              + "  Raw response: %s",
-          actual, variableName, e.getCause().getMessage(), e.getRawResponse());
-    }
-  }
-
-  private void assertJudgeHasAllRequiredSettings() {
-    if (judgeConfig == null) {
-      throw new IllegalStateException(
-          "JudgeConfig is not set. Ensure to provide a JudgeConfig instance to use judge assertions.");
-    }
-    if (judgeConfig.getChatModel() == null) {
-      throw new IllegalStateException(
-          "JudgeConfig has no ChatModelAdapter configured. "
-              + "Use JudgeConfig.of(chatModel) or withJudgeConfig(config -> config.withChatModelAdapter(chatModel)).");
-    }
-  }
-
-  private static void assertExpectationNotEmpty(final String expectation) {
-    if (expectation == null || expectation.trim().isEmpty()) {
-      throw new IllegalArgumentException("expectation must not be null or empty");
-    }
-  }
-
   // --- Semantic similarity evaluation methods ---
 
   SemanticSimilarityConfig getSemanticSimilarityConfig() {
@@ -542,6 +492,12 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 () ->
                     findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
+  }
+
+  private static void assertExpectationNotEmpty(final String expectation) {
+    if (expectation == null || expectation.trim().isEmpty()) {
+      throw new IllegalArgumentException("expectation must not be null or empty");
+    }
   }
 
   private void evaluateSimilarity(
@@ -599,11 +555,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   private List<Variable> findGlobalVariablesBySelector(
       final long processInstanceKey, final VariableSelector selector) {
-    return ensureVariablesAreNotTruncated(
-        dataSource.findVariables(
-            filter ->
-                selector.applyFilter(
-                    filter.processInstanceKey(processInstanceKey).scopeKey(processInstanceKey))));
+    return findLocalVariablesBySelector(processInstanceKey, processInstanceKey, selector);
   }
 
   private List<Variable> findLocalVariablesBySelector(

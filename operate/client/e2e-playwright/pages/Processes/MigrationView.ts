@@ -17,6 +17,8 @@ export class MigrationView {
   readonly confirmButton: Locator;
   readonly summaryNotification: Locator;
   readonly migrationConfirmationModal: Locator;
+  readonly step1Header: Locator;
+  readonly step2Header: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -42,6 +44,9 @@ export class MigrationView {
     });
 
     this.summaryNotification = page.getByRole('main').getByRole('status');
+
+    this.step1Header = page.getByText('Migration step 1 - mapping elements');
+    this.step2Header = page.getByText('Migration step 2 - confirm');
   }
 
   async selectTargetProcess(option: string) {

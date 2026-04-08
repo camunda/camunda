@@ -1,54 +1,38 @@
-# Contributing to the RDBMS Module
+---
+toc_min_heading_level: 2
+toc_max_heading_level: 4
+---
+
+# Contributing to the RDBMS module
 
 This guide provides practical development guidelines for contributors working on the `db/rdbms`
 module. For high-level architectural decisions (ADRs) and a component overview, see the
-[architecture documentation](../../docs/rdbms.md).
-
-## Table of Contents
-
-- [Module Structure](#module-structure)
-- [Development Guidelines](#development-guidelines)
-  - [General Conventions](#general-conventions)
-  - [Adding a New Entity](#adding-a-new-entity)
-    - [1. Create the DbModel](#1-create-the-dbmodel)
-    - [2. Create the DbQuery](#2-create-the-dbquery)
-    - [3. Create the SearchColumn Enum](#3-create-the-searchcolumn-enum)
-    - [4. Create the Mapper Interface](#4-create-the-mapper-interface)
-    - [5. Create the Mapper XML](#5-create-the-mapper-xml)
-    - [6. Create the DbReader](#6-create-the-dbreader)
-    - [7. Create the Writer](#7-create-the-writer)
-    - [8. Register in RdbmsService](#8-register-in-rdbmsservice)
-  - [Adding a New Field to an Existing Entity](#adding-a-new-field-to-an-existing-entity)
-- [Liquibase Guidelines](#liquibase-guidelines)
-  - [Changeset Conventions](#changeset-conventions)
-  - [Data Types](#data-types)
-  - [Database-Specific Code](#database-specific-code-in-liquibase)
-- [MyBatis Guidelines](#mybatis-guidelines)
-  - [Common Practices](#common-practices)
-  - [Using Commons.xml](#using-commonsxml)
-  - [Database-Specific SQL](#database-specific-sql)
-  - [Oracle-Specific Pitfalls](#oracle-specific-pitfalls)
-  - [Other Database-Specific Considerations](#other-database-specific-considerations)
+[architecture documentation](./rdbms_architecture_docs.md).
 
 ---
 
-## Module Structure
+## Module structure
 
 ```
 db/rdbms/
 ├── src/main/java/io/camunda/db/rdbms/
 │   ├── read/
 │   │   ├── domain/          # DbQuery records (e.g. ProcessDefinitionDbQuery)
+│   │   ├── mapper/          # Entity mappers: DbModel → API entity (used when direct MyBatis
+│   │   │                    #   result mapping is not sufficient)
+│   │   ├── security/        # RdbmsResourceAccessController (authorization filter)
 │   │   ├── service/         # DbReader implementations (e.g. ProcessDefinitionDbReader)
 │   │   └── RdbmsReaderConfig.java
 │   ├── sql/
 │   │   ├── columns/         # SearchColumn enums (e.g. ProcessDefinitionSearchColumn)
-│   │   ├── typehandler/     # MyBatis TypeHandlers
+│   │   ├── typehandler/     # MyBatis TypeHandlers (generic JSON/null handling and
+│   │   │                    #   DB-specific handlers for PostgreSQL array, Oracle XML, etc.)
 │   │   └── *Mapper.java     # MyBatis Mapper interfaces
 │   ├── write/
 │   │   ├── domain/          # DbModel records (e.g. ProcessDefinitionDbModel)
 │   │   ├── queue/           # ExecutionQueue, QueueItem, Mergers
-│   │   └── service/         # Writer implementations (e.g. ProcessDefinitionWriter)
+│   │   ├── service/         # Writer implementations (e.g. ProcessDefinitionWriter)
+│   │   └── util/            # Internal write-path utilities (e.g. TruncateUtil)
 │   └── RdbmsService.java    # Main entry point, wires readers and writers
 │
 └── src/main/resources/
@@ -73,24 +57,35 @@ db/rdbms-schema/
 
 ---
 
-## Development Guidelines
+## Development guidelines
 
-### General Conventions
+### General conventions
 
-- **No Spring in the `db/rdbms` module**: Spring is only used in `dist/` to wire components
-  together. The `db/rdbms` module itself is Spring-free; use constructor injection everywhere.
+- **No Spring IoC in the `db/rdbms` module**: Spring bean annotations (`@Component`, `@Bean`,
+  `@Autowired`, etc.) are not used in `db/rdbms`. All wiring is done externally in `dist/` using
+  constructor injection. `LiquibaseSchemaManager` is the only class that extends a Spring-Liquibase
+  integration base class; it carries no Spring annotations itself.
 - **CQRS**: Read and write paths are strictly separated. Readers use MyBatis mappers directly;
   writers enqueue operations through the `ExecutionQueue`.
 - **Immutable domain models**: DbModels and DbQueries are Java `record` types. Use the nested
   `Builder` to construct them.
 - **Queue-based writes**: Never call mapper methods directly from a writer. Always enqueue
   operations via `ExecutionQueue.executeInQueue(...)`.
-- **Always run all supported databases** before merging: schema and SQL changes must be verified
-  against H2, PostgreSQL, MariaDB, MySQL, MSSQL, and Oracle.
+- **Run your target database** before testing: use the `db/docker-compose.yml` file to start
+  the database you are working with locally. For example, to start PostgreSQL:
+
+  ```bash
+  cd db/
+  docker compose up postgres -d
+  ```
+
+  H2 runs in-process during tests and does not need a separate container. MySQL and MariaDB share
+  the same port (3306), so start only one at a time. Before merging, verify schema and SQL changes
+  against all supported databases: H2, PostgreSQL, MariaDB, MySQL, MSSQL, and Oracle.
 
 ---
 
-### Adding a New Entity
+### Adding a new entity
 
 This section walks through adding support for a completely new entity — for example, a fictional
 `Widget` entity — by following the same patterns used by `ProcessDefinition`.
@@ -303,7 +298,7 @@ final var widgetReader = new WidgetDbReader(widgetMapper, readerConfig);
 
 ---
 
-### Adding a New Field to an Existing Entity
+### Adding a new field to an existing entity
 
 Adding a new column to an existing entity requires changes in the following places:
 
@@ -323,9 +318,9 @@ Adding a new column to an existing entity requires changes in the following plac
 
 ---
 
-## Liquibase Guidelines
+## Liquibase guidelines
 
-### Changeset Conventions
+### Changeset conventions
 
 - **One changeset file per release**: e.g., `changesets/8.9.0.xml`. New changesets for the next
   release go in a new version file.
@@ -378,7 +373,7 @@ whether the change has already been applied and mark it as ran if yes. For examp
 
 ---
 
-### Data Types
+### Data types
 
 Use the following Liquibase-level types which are mapped correctly across all supported databases:
 
@@ -459,7 +454,7 @@ Rules:
 
 ---
 
-### Database-Specific Code in Liquibase
+### Database-specific code in Liquibase
 
 When a Liquibase type or syntax is not portable across databases, use:
 
@@ -471,9 +466,9 @@ When a Liquibase type or syntax is not portable across databases, use:
 
 ---
 
-## MyBatis Guidelines
+## MyBatis guidelines
 
-### Common Practices
+### Common practices
 
 - **Always prefix table names** with `${prefix}` to support configurable schema prefixes:
 
@@ -500,7 +495,7 @@ When a Liquibase type or syntax is not portable across databases, use:
 
 ---
 
-### Using Commons.xml
+### Using `Commons.xml`
 
 `Commons.xml` (namespace `io.camunda.db.rdbms.sql.Commons`) contains reusable SQL fragments for
 cross-cutting concerns. Always use these instead of duplicating the SQL.
@@ -561,7 +556,7 @@ The `operationCondition` fragment expects a variable named `operation` in scope 
 
 ---
 
-### Database-Specific SQL
+### Database-specific SQL
 
 When a single SQL statement cannot be written in a way that works on all supported databases, use
 the `databaseId` attribute to provide separate implementations. MyBatis selects the matching
@@ -646,7 +641,7 @@ syntax differ from other databases.
 
 ---
 
-### Oracle-Specific Pitfalls
+### Oracle-specific pitfalls
 
 Oracle has several unique behaviors that require explicit workarounds:
 
@@ -715,7 +710,7 @@ an XMLTABLE-based approach that passes the list as an XML document and parses it
 
 The `OracleXmlArrayTypeHandler` converts a Java `List<Long>` into an Oracle XML document of the
 form `<d><r>1</r><r>2</r>…</d>`, which `XMLTABLE` then parses back into a relational result set.
-See the `OracleXmlArrayTypeHandler` implementation in `db/rdbms/src/main/java/…/typehandler/` for
+See the `OracleXmlArrayTypeHandler` implementation in `db/rdbms/src/main/java/…/sql/typehandler/` for
 details.
 
 #### NULL ordering
@@ -727,7 +722,7 @@ ordering. Since you are using the shared `orderBy` fragment, this is handled aut
 
 ---
 
-### Other Database-Specific Considerations
+### Other database-specific considerations
 
 #### MariaDB / MySQL
 
@@ -770,4 +765,64 @@ ordering. Since you are using the shared `orderBy` fragment, this is handled aut
   inference). See `SequenceFlowMapper.xml` for the `USING dual` pattern and
   `PersistentWebSessionMapper.xml` for the `USING (SELECT … CAST(…)) source` pattern.
 - When adding new SQL functions, verify H2 compatibility first since test coverage depends on it.
+
+---
+
+## Adding a new export handler
+
+This section explains how to wire a new Zeebe record type into the RDBMS exporter
+(`zeebe/exporters/rdbms-exporter`). It assumes that the `db/rdbms` writer for the entity (e.g.
+`WidgetWriter`) already exists. If not, follow the [Adding a new entity](#adding-a-new-entity)
+guide first.
+
+### 1. Implement `RdbmsExportHandler`
+
+Create a handler class in
+`zeebe/exporters/rdbms-exporter/src/main/java/io/camunda/exporter/rdbms/handlers/`:
+
+**File:** `WidgetExportHandler.java`
+
+```java
+public class WidgetExportHandler implements RdbmsExportHandler<WidgetRecordValue> {
+
+  private final WidgetWriter widgetWriter;
+
+  public WidgetExportHandler(final WidgetWriter widgetWriter) {
+    this.widgetWriter = widgetWriter;
+  }
+
+  @Override
+  public boolean canExport(final Record<WidgetRecordValue> record) {
+    return record.getIntent() == WidgetIntent.CREATED;
+  }
+
+  @Override
+  public void export(final Record<WidgetRecordValue> record) {
+    widgetWriter.create(
+        new WidgetDbModel.WidgetDbModelBuilder()
+            .widgetKey(record.getValue().getWidgetKey())
+            .name(record.getValue().getName())
+            .build());
+  }
+}
+```
+
+### 2. Register the handler in `RdbmsExporterWrapper`
+
+Add a `builder.withHandler(...)` call in `createHandlers()`. If the record type only appears on
+partition 1 (e.g. definition-level data), place the call inside the
+`if (partitionId == PROCESS_DEFINITION_PARTITION)` block:
+
+```java
+builder.withHandler(
+    ValueType.WIDGET,
+    new WidgetExportHandler(rdbmsWriters.getWidgetWriter()));
+```
+
+### 3. Add audit log support (optional)
+
+If the entity should generate audit log entries, implement `AuditLogTransformer` in
+`zeebe/exporter-common/…/auditlog/transformers/` and register it in
+`AuditLogTransformerRegistry`. The `RdbmsExporterWrapper` will automatically pick it up when
+`auditLog.enabled` is `true`.
 
