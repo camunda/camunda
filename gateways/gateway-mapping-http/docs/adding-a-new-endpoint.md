@@ -76,11 +76,11 @@ JAVA_HOME="$HOME/.jenv/versions/21.0.9" java tools/GenerateContractMappingPoc.ja
 
 The generator reads the YAML specs from `zeebe/gateway-protocol/src/main/proto/v2/` and produces:
 
-| Output | Location | Naming convention |
-|--------|----------|-------------------|
+|         Output          |                               Location                                |           Naming convention           |
+|-------------------------|-----------------------------------------------------------------------|---------------------------------------|
 | **Strict contract DTO** | `gateways/gateway-mapping-http/src/main/java/.../contract/generated/` | `Generated<SchemaName>StrictContract` |
-| **Controller** | `zeebe/gateway-rest/src/main/java/.../controller/generated/` | `Generated<Resource>Controller` |
-| **Adapter interface** | `zeebe/gateway-rest/src/main/java/.../controller/adapter/` | `<Resource>ServiceAdapter` |
+| **Controller**          | `zeebe/gateway-rest/src/main/java/.../controller/generated/`          | `Generated<Resource>Controller`       |
+| **Adapter interface**   | `zeebe/gateway-rest/src/main/java/.../controller/adapter/`            | `<Resource>ServiceAdapter`            |
 
 For a schema named `UserTaskAssignmentRequest`, the generated DTO is
 `GeneratedUserTaskAssignmentRequestStrictContract` — an immutable Java record with:
@@ -275,18 +275,18 @@ return RequestMapper.toMyRequest(request, key)
 
 ## Layer Reference
 
-| Layer | Module | Key files |
-|-------|--------|-----------|
-| **OpenAPI spec** | `zeebe/gateway-protocol` | `src/main/proto/v2/*.yaml` |
-| **Generator** | `gateway-mapping-http` | `tools/GenerateContractMappingPoc.java` |
-| **Generated DTOs** | `gateway-mapping-http` | `src/main/java/.../contract/generated/Generated*StrictContract.java` |
-| **RequestMapper** | `gateway-mapping-http` | `src/main/java/.../RequestMapper.java` |
-| **ResponseMapper** | `gateway-mapping-http` | `src/main/java/.../ResponseMapper.java` |
-| **Validators** | `gateway-mapping-http` | `src/main/java/.../validator/*Validator.java` |
-| **Intermediate records** | `gateway-mapping-http` | `src/main/java/.../MappedCommandRequests.java` |
-| **Generated controllers** | `gateway-rest` | `src/main/java/.../controller/generated/Generated*Controller.java` |
-| **Adapter interfaces** | `gateway-rest` | `src/main/java/.../controller/adapter/*ServiceAdapter.java` |
-| **Adapter implementations** | `gateway-rest` | `src/main/java/.../controller/adapter/Default*ServiceAdapter.java` |
+|            Layer            |          Module          |                              Key files                               |
+|-----------------------------|--------------------------|----------------------------------------------------------------------|
+| **OpenAPI spec**            | `zeebe/gateway-protocol` | `src/main/proto/v2/*.yaml`                                           |
+| **Generator**               | `gateway-mapping-http`   | `tools/GenerateContractMappingPoc.java`                              |
+| **Generated DTOs**          | `gateway-mapping-http`   | `src/main/java/.../contract/generated/Generated*StrictContract.java` |
+| **RequestMapper**           | `gateway-mapping-http`   | `src/main/java/.../RequestMapper.java`                               |
+| **ResponseMapper**          | `gateway-mapping-http`   | `src/main/java/.../ResponseMapper.java`                              |
+| **Validators**              | `gateway-mapping-http`   | `src/main/java/.../validator/*Validator.java`                        |
+| **Intermediate records**    | `gateway-mapping-http`   | `src/main/java/.../MappedCommandRequests.java`                       |
+| **Generated controllers**   | `gateway-rest`           | `src/main/java/.../controller/generated/Generated*Controller.java`   |
+| **Adapter interfaces**      | `gateway-rest`           | `src/main/java/.../controller/adapter/*ServiceAdapter.java`          |
+| **Adapter implementations** | `gateway-rest`           | `src/main/java/.../controller/adapter/Default*ServiceAdapter.java`   |
 
 ---
 
@@ -313,3 +313,4 @@ Tracing `POST /v2/user-tasks/{userTaskKey}/assignment` end to end:
    error → 400, success → `userTaskServices.assignUserTask(key, assignee, action, allowOverride, auth)`
 
 7. **Response:** 204 No Content (void command, no ResponseMapper needed)
+
