@@ -56,7 +56,6 @@ import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
 import org.apache.hc.client5.http.ssl.HttpClientHostnameVerifier;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
@@ -163,13 +162,7 @@ public class HttpClientFactory {
     // while waiting for a connection. A request interceptor runs after the connection is
     // acquired, right before bytes are written to the socket.
     builder.addRequestInterceptorLast(
-        (request, entity, context) -> {
-          try {
-            credentialsProvider.applyCredentials(request::setHeader);
-          } catch (final IOException e) {
-            throw new HttpException("Failed to apply credentials to request", e);
-          }
-        });
+        (request, entity, context) -> credentialsProvider.applyCredentials(request::setHeader));
 
     final List<AsyncExecChainHandler> chainHandlers = config.getChainHandlers();
     IntStream.range(0, chainHandlers.size())
