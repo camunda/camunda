@@ -20,8 +20,7 @@ import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
 import type { License } from "@camunda/camunda-api-zod-schemas/8.10";
 import { observer } from "mobx-react-lite";
-import { themeStore } from "src/common/theme/theme";
-import type { ThemeOption } from "src/common/theme/theme";
+import { themeStore, isThemeOption } from "src/common/theme/theme";
 
 const LOGOUT_DELAY = 1000;
 
@@ -86,7 +85,9 @@ const AppHeader = observer(
             themeSelector: {
               currentTheme: selectedTheme,
               onChange: (theme: string) => {
-                changeTheme(theme as ThemeOption);
+                if (isThemeOption(theme)) {
+                  changeTheme(theme);
+                }
               },
             },
           },

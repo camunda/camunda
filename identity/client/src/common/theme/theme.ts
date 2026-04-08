@@ -71,5 +71,5 @@ class Theme {
 
 const themeStore = new Theme();
 
-export { themeStore };
+export { themeStore, isThemeOption };
 export type { ThemeOption };
