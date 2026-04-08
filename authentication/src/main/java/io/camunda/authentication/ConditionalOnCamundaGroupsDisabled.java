@@ -33,8 +33,7 @@ public @interface ConditionalOnCamundaGroupsDisabled {
   class OnGroupsClaimPresentCondition implements Condition {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final String groupsClaim =
-          context.getEnvironment().getProperty(GROUPS_CLAIM_PROPERTY);
+      final String groupsClaim = context.getEnvironment().getProperty(GROUPS_CLAIM_PROPERTY);
       return groupsClaim != null && !groupsClaim.isEmpty();
     }
   }
