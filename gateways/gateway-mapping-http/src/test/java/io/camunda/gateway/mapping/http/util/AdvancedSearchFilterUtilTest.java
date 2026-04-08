@@ -9,17 +9,15 @@ package io.camunda.gateway.mapping.http.util;
 
 import static org.assertj.core.api.Assertions.*;
 
-import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
-import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
-import io.camunda.gateway.protocol.model.AdvancedStringFilter;
-import io.camunda.gateway.protocol.model.BasicStringFilter;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedIntegerFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedStringFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBasicStringFilterStrictContract;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.filter.Operator;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -70,33 +68,101 @@ class AdvancedSearchFilterUtilTest {
               Operation.lte(OffsetDateTime.now())),
           List.of(Operation.in(OffsetDateTime.now(), OffsetDateTime.now().minusDays(1))));
 
-  private <F, T> F constructFilter(
-      final Class<F> fClass, final Class<T> pClass, final List<Operation<T>> operations)
-      throws Exception {
-    final var filter = fClass.getDeclaredConstructor().newInstance();
-    for (final Operation<T> op : operations) {
-      final var operator = op.operator();
-      final var methodName = "set$%s".formatted(StringUtils.capitalize(operator.getValue()));
-      final var existsName = "set$%s".formatted(StringUtils.capitalize(Operator.EXISTS.getValue()));
-      final var method =
-          switch (operator) {
-            case IN -> filter.getClass().getMethod(methodName, List.class);
-            case EXISTS, NOT_EXISTS -> filter.getClass().getMethod(existsName, Boolean.class);
-            default -> filter.getClass().getMethod(methodName, pClass);
-          };
-      method.setAccessible(true);
-      switch (operator) {
-        case IN ->
-            method.invoke(
-                filter,
-                op.values().stream()
-                    .map(v -> AdvancedSearchFilterUtil.convertValue(pClass, v))
-                    .toList());
-        case EXISTS, NOT_EXISTS -> method.invoke(filter, operator.equals(Operator.EXISTS));
-        default -> method.invoke(filter, AdvancedSearchFilterUtil.convertValue(pClass, op.value()));
+  // --- Record-based filter constructors ---
+
+  private static GeneratedAdvancedIntegerFilterStrictContract intFilter(
+      final List<Operation<Integer>> operations) {
+    Integer eq = null, neq = null, gt = null, gte = null, lt = null, lte = null;
+    Boolean exists = null;
+    List<Integer> in = null;
+    for (final Operation<Integer> op : operations) {
+      switch (op.operator()) {
+        case EQUALS -> eq = op.value();
+        case NOT_EQUALS -> neq = op.value();
+        case EXISTS -> exists = true;
+        case NOT_EXISTS -> exists = false;
+        case GREATER_THAN -> gt = op.value();
+        case GREATER_THAN_EQUALS -> gte = op.value();
+        case LOWER_THAN -> lt = op.value();
+        case LOWER_THAN_EQUALS -> lte = op.value();
+        case IN -> in = op.values();
+        default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
       }
     }
-    return filter;
+    return new GeneratedAdvancedIntegerFilterStrictContract(eq, neq, exists, gt, gte, lt, lte, in);
+  }
+
+  private static GeneratedBasicStringFilterStrictContract basicStringFilter(
+      final List<Operation<String>> operations) {
+    String eq = null, neq = null;
+    Boolean exists = null;
+    List<String> in = null;
+    for (final Operation<String> op : operations) {
+      switch (op.operator()) {
+        case EQUALS -> eq = op.value();
+        case NOT_EQUALS -> neq = op.value();
+        case EXISTS -> exists = true;
+        case NOT_EXISTS -> exists = false;
+        case IN -> in = op.values();
+        default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
+      }
+    }
+    return new GeneratedBasicStringFilterStrictContract(eq, neq, exists, in, null);
+  }
+
+  private static GeneratedBasicStringFilterStrictContract basicStringFilterFromLong(
+      final List<Operation<Long>> operations) {
+    return basicStringFilter(
+        operations.stream()
+            .map(
+                op ->
+                    new Operation<>(
+                        op.operator(),
+                        op.values() != null
+                            ? op.values().stream().map(String::valueOf).toList()
+                            : null))
+            .toList());
+  }
+
+  private static GeneratedAdvancedStringFilterStrictContract advancedStringFilter(
+      final List<Operation<String>> operations) {
+    String eq = null, neq = null, like = null;
+    Boolean exists = null;
+    List<String> in = null;
+    for (final Operation<String> op : operations) {
+      switch (op.operator()) {
+        case EQUALS -> eq = op.value();
+        case NOT_EQUALS -> neq = op.value();
+        case EXISTS -> exists = true;
+        case NOT_EXISTS -> exists = false;
+        case IN -> in = op.values();
+        case LIKE -> like = op.value();
+        default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
+      }
+    }
+    return new GeneratedAdvancedStringFilterStrictContract(eq, neq, exists, in, null, like);
+  }
+
+  private static GeneratedAdvancedDateTimeFilterStrictContract dateTimeFilter(
+      final List<Operation<OffsetDateTime>> operations) {
+    String eq = null, neq = null, gt = null, gte = null, lt = null, lte = null;
+    Boolean exists = null;
+    List<String> in = null;
+    for (final Operation<OffsetDateTime> op : operations) {
+      switch (op.operator()) {
+        case EQUALS -> eq = op.value().toString();
+        case NOT_EQUALS -> neq = op.value().toString();
+        case EXISTS -> exists = true;
+        case NOT_EXISTS -> exists = false;
+        case GREATER_THAN -> gt = op.value().toString();
+        case GREATER_THAN_EQUALS -> gte = op.value().toString();
+        case LOWER_THAN -> lt = op.value().toString();
+        case LOWER_THAN_EQUALS -> lte = op.value().toString();
+        case IN -> in = op.values().stream().map(OffsetDateTime::toString).toList();
+        default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
+      }
+    }
+    return new GeneratedAdvancedDateTimeFilterStrictContract(eq, neq, exists, gt, gte, lt, lte, in);
   }
 
   private static Stream<Arguments> provideAdvancedFilterParameters() {
@@ -104,32 +170,30 @@ class AdvancedSearchFilterUtilTest {
     // AdvancedIntegerFilter
     BASIC_LONG_OPERATIONS.stream()
         .map(ops -> ops.stream().map(AdvancedSearchFilterUtilTest::toIntOperation).toList())
-        .map(ops -> Arguments.of(AdvancedIntegerFilter.class, Integer.class, Integer.class, ops))
+        .map(ops -> Arguments.of(intFilter(ops), Integer.class, ops))
         .forEach(streamBuilder::add);
     LONG_OPERATIONS.stream()
         .map(ops -> ops.stream().map(AdvancedSearchFilterUtilTest::toIntOperation).toList())
-        .map(ops -> Arguments.of(AdvancedIntegerFilter.class, Integer.class, Integer.class, ops))
+        .map(ops -> Arguments.of(intFilter(ops), Integer.class, ops))
         .forEach(streamBuilder::add);
     // BasicStringFilter
     BASIC_STRING_OPERATIONS.stream()
-        .map(ops -> Arguments.of(BasicStringFilter.class, String.class, String.class, ops))
+        .map(ops -> Arguments.of(basicStringFilter(ops), String.class, ops))
         .forEach(streamBuilder::add);
     // BasicStringFilter - String keys to long
     BASIC_LONG_OPERATIONS.stream()
-        .map(ops -> Arguments.of(BasicStringFilter.class, String.class, Long.class, ops))
+        .map(ops -> Arguments.of(basicStringFilterFromLong(ops), Long.class, ops))
         .forEach(streamBuilder::add);
     // AdvancedStringFilter
     BASIC_STRING_OPERATIONS.stream()
-        .map(ops -> Arguments.of(AdvancedStringFilter.class, String.class, String.class, ops))
+        .map(ops -> Arguments.of(advancedStringFilter(ops), String.class, ops))
         .forEach(streamBuilder::add);
     STRING_OPERATIONS.stream()
-        .map(ops -> Arguments.of(AdvancedStringFilter.class, String.class, String.class, ops))
+        .map(ops -> Arguments.of(advancedStringFilter(ops), String.class, ops))
         .forEach(streamBuilder::add);
     // AdvancedDateTimeFilter
     DATE_TIME_OPERATIONS.stream()
-        .map(
-            ops ->
-                Arguments.of(AdvancedDateTimeFilter.class, String.class, OffsetDateTime.class, ops))
+        .map(ops -> Arguments.of(dateTimeFilter(ops), OffsetDateTime.class, ops))
         .forEach(streamBuilder::add);
     return streamBuilder.build();
   }
@@ -143,13 +207,7 @@ class AdvancedSearchFilterUtilTest {
   @ParameterizedTest
   @MethodSource("provideAdvancedFilterParameters")
   public <T> void shouldMapAdvancedFilterCorrectly(
-      final Class<?> filterClass,
-      final Class<T> filterValueClass,
-      final Class<T> mappedClass,
-      final List<Operation<T>> operations)
-      throws Exception {
-    // given
-    final var filter = constructFilter(filterClass, filterValueClass, operations);
+      final Object filter, final Class<T> mappedClass, final List<Operation<T>> operations) {
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, mappedClass);
     // then
@@ -160,8 +218,9 @@ class AdvancedSearchFilterUtilTest {
   @Test
   public void shouldMapToStringOperations() {
     // given
-    final var filter = new AdvancedIntegerFilter();
-    filter.set$Eq(10);
+    final var filter =
+        new GeneratedAdvancedIntegerFilterStrictContract(
+            10, null, null, null, null, null, null, null);
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, String.class);
     // then
@@ -172,8 +231,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   public void shouldMapToLongOperations() {
     // given
-    final var filter = new BasicStringFilter();
-    filter.set$Eq("10");
+    final var filter = new GeneratedBasicStringFilterStrictContract("10", null, null, null, null);
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, Long.class);
     // then
@@ -184,8 +242,9 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldThrowExceptionWhenCannotConvert() {
     // given
-    final var filter = new AdvancedIntegerFilter();
-    filter.set$Eq(10);
+    final var filter =
+        new GeneratedAdvancedIntegerFilterStrictContract(
+            10, null, null, null, null, null, null, null);
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Boolean.class))
@@ -196,8 +255,9 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldThrowExceptionWhenDateInvalid() {
     // given
-    final var filter = new AdvancedDateTimeFilter();
-    filter.set$Eq("2023-11-11T10:10:10.1010+0100");
+    final var filter =
+        new GeneratedAdvancedDateTimeFilterStrictContract(
+            "2023-11-11T10:10:10.1010+0100", null, null, null, null, null, null, null);
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, OffsetDateTime.class))
@@ -208,8 +268,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldThrowExceptionWhenLongValueInvalid() {
     // given
-    final var filter = new BasicStringFilter();
-    filter.set$Eq("meow");
+    final var filter = new GeneratedBasicStringFilterStrictContract("meow", null, null, null, null);
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
