@@ -25,6 +25,15 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.AssignUserTaskRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.BroadcastSignalRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.CompleteJobRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.CompleteUserTaskRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.DecisionEvaluationRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.ErrorJobRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.FailJobRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateJobRequest;
+import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateUserTaskRequest;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract;
@@ -517,35 +526,6 @@ public class RequestMapper {
     }
     return KeyUtil.keyToLong(ancestorElementInstanceKey);
   }
-
-  public record CompleteUserTaskRequest(
-      long userTaskKey, Map<String, Object> variables, String action) {}
-
-  public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
-
-  public record AssignUserTaskRequest(
-      long userTaskKey, String assignee, String action, boolean allowOverride) {}
-
-  public record FailJobRequest(
-      long jobKey,
-      int retries,
-      String errorMessage,
-      Long retryBackoff,
-      Map<String, Object> variables) {}
-
-  public record ErrorJobRequest(
-      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
-
-  public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
-
-  public record UpdateJobRequest(
-      long jobKey, Long operationReference, UpdateJobChangeset changeset) {}
-
-  public record BroadcastSignalRequest(
-      String signalName, Map<String, Object> variables, String tenantId) {}
-
-  public record DecisionEvaluationRequest(
-      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
 
   // ---- Strict contract methods (direct field access) ----
 
