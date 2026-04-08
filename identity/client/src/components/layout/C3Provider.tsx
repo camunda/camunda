@@ -7,6 +7,7 @@
  */
 
 import { C3UserConfigurationProvider } from "@camunda/camunda-composite-components";
+import { C3ThemePersister } from "src/common/theme/C3ThemePersister";
 import { useEffect } from "react";
 import { useApiCall } from "src/utility/api";
 import { getSaasUserToken } from "src/utility/api/authentication";
@@ -48,7 +49,9 @@ const C3Provider: React.FC<Props> = ({ children }) => {
       }}
       currentApp="identity"
       stage={STAGE === "unknown" ? "dev" : STAGE}
+      handleTheme
     >
+      <C3ThemePersister />
       {children}
     </C3UserConfigurationProvider>
   );

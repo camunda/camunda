@@ -9,7 +9,7 @@
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { g10, bodyShort01 } from "@carbon/elements";
+import { bodyShort01 } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useApi } from "src/utility/api";
@@ -19,10 +19,11 @@ import LateLoading from "src/components/layout/LateLoading";
 import { addHandler, removeHandler } from "src/utility/api/request";
 import { activateSession } from "src/utility/auth";
 import { C3Provider } from "../layout/C3Provider";
+import { ThemeProvider } from "src/common/theme/ThemeProvider";
 
 const GlobalStyle = createGlobalStyle`
   body {
-    background: ${g10.background};
+    background: var(--cds-background);
     font-size: ${bodyShort01.fontSize};
     font-weight: ${bodyShort01.fontSize};
     line-height: ${bodyShort01.lineHeight};
@@ -126,14 +127,16 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
 };
 
 const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => (
-  <AppRootWrapper>
-    <ErrorBoundary>
-      <C3Provider>
-        <GlobalStyle />
-        <AppContent>{children}</AppContent>
-      </C3Provider>
-    </ErrorBoundary>
-  </AppRootWrapper>
+  <ThemeProvider>
+    <AppRootWrapper>
+      <ErrorBoundary>
+        <C3Provider>
+          <GlobalStyle />
+          <AppContent>{children}</AppContent>
+        </C3Provider>
+      </ErrorBoundary>
+    </AppRootWrapper>
+  </ThemeProvider>
 );
 
 export default AppRoot;
