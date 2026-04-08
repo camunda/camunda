@@ -241,7 +241,7 @@ public class CamundaMultiDBExtension
     this(new TestStandaloneBroker());
   }
 
-  public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
+  public CamundaMultiDBExtension(final TestStandaloneApplication<?> testApplication) {
     defaultTestApplication = testApplication;
   }
 
@@ -540,7 +540,7 @@ public class CamundaMultiDBExtension
                     user);
               } catch (final ClassCastException e) {
                 LOGGER.warn(
-                    "Could not create client for user, as the application is not configured for basic authentication: %s",
+                    "Could not create client for user, as the application is not configured for basic authentication",
                     e);
               }
             });

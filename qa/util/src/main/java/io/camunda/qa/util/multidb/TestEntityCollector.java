@@ -84,7 +84,14 @@ public class TestEntityCollector {
       field.setAccessible(true);
       return expectedType.cast(field.get(null));
     } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      throw new IllegalStateException(
+          String.format(
+              "Failed to access value of static field '%s' on class '%s' (annotation=%s, expectedType=%s)",
+              field.getName(),
+              field.getDeclaringClass().getName(),
+              annotationClass.getName(),
+              expectedType.getName()),
+          ex);
     }
   }
 

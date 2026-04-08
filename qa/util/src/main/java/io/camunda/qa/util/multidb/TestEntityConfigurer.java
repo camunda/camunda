@@ -7,6 +7,7 @@
  */
 package io.camunda.qa.util.multidb;
 
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestClient;
@@ -152,7 +153,7 @@ public class TestEntityConfigurer {
                         configuredResourceType(p),
                         resourceId,
                         null,
-                        configuredPermissions(p)));
+                        configuredPermissionType(p)));
     final var propertyBasedAuthorizations =
         p.resourcePropertyNames().stream()
             .map(
@@ -163,15 +164,32 @@ public class TestEntityConfigurer {
                         configuredResourceType(p),
                         null,
                         resourcePropertyName,
-                        configuredPermissions(p)));
+                        configuredPermissionType(p)));
     return Stream.concat(idBasedAuthorizations, propertyBasedAuthorizations);
   }
 
   private static @NonNull AuthorizationResourceType configuredResourceType(final Permissions p) {
+    final var resourceType = p.resourceType();
+    if (resourceType == ResourceType.UNKNOWN_ENUM_VALUE) {
+      throw new IllegalArgumentException(
+          "Unsupported resource type "
+              + resourceType
+              + ". Please use a value supported by AuthorizationResourceType.");
+    }
     return AuthorizationResourceType.valueOf(p.resourceType().name());
   }
 
-  private static @NonNull Set<PermissionType> configuredPermissions(final Permissions p) {
+  private static @NonNull Set<PermissionType> configuredPermissionType(final Permissions p) {
+    final var permissionType = p.permissionType();
+    if (permissionType == null) {
+      throw new IllegalArgumentException("Permission type must not be null");
+    }
+    if (permissionType == io.camunda.client.api.search.enums.PermissionType.UNKNOWN_ENUM_VALUE) {
+      throw new IllegalArgumentException(
+          "Unsupported permission type: "
+              + permissionType
+              + ". Please use a value supported by PermissionType.");
+    }
     return Set.of(PermissionType.valueOf(p.permissionType().name()));
   }
 
