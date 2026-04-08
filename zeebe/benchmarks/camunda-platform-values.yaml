@@ -32,6 +32,13 @@ global:
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets:
       - name: harbor-registry
+
+  # Default node configuration for all the components, unless specific
+  # reconfigured.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
   # Identity authentication is enabled for Optimize
   identity:
     auth:
@@ -52,8 +59,6 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
-  nodeSelector:
-    component: benchmark-n2-standard-4
   tolerations:
     - key: nodepool
       operator: Equal
@@ -70,6 +75,7 @@ optimize:
         ttl: 'P1D'
   nodeSelector:
     component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
     - key: nodepool
       operator: Equal
@@ -81,6 +87,7 @@ identityKeycloak:
   fullnameOverride: keycloak # we override the names for simplicity of the deployment
   nodeSelector:
     component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
     - key: nodepool
       operator: Equal
@@ -97,6 +104,11 @@ connectors:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: connectors-security-authentication-oidc-secret
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 webModeler:
   enabled: false
@@ -149,9 +161,6 @@ orchestration:
       cpu: 3000m
       memory: 2Gi
 
-  nodeSelector:
-    component: benchmark-n2-standard-4
-
   tolerations:
     - key: nodepool
       operator: Equal
@@ -162,7 +171,7 @@ orchestration:
   pvcSize: "64Gi"
   ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
-  pvcStorageClassName: "ssd"
+  pvcStorageClassName: benchmark-ssd-zonal-v1
   # @extra core.containerSecurityContext defines the security options the container should be run with
   containerSecurityContext:
     ## @param core.containerSecurityContext.allowPrivilegeEscalation
@@ -299,7 +308,7 @@ elasticsearch:
     persistence:
       ## @param elasticsearch.master.persistence.size
       size: 512Gi
-      storageClass: "ssd"
+      storageClass: benchmark-ssd-zonal-v1
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
@@ -310,6 +319,7 @@ elasticsearch:
         memory: 8Gi
     nodeSelector:
       component: benchmark-n2-standard-8
+      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
     tolerations:
       - key: nodepool
         operator: Equal
