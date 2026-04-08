@@ -35,7 +35,8 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
   FailJobCommandStep2 retries(int remainingRetries);
 
   interface FailJobCommandStep2
-      extends FinalCommandStep<FailJobResponse>, CommandWithVariables<FailJobCommandStep2> {
+      extends JobCallbackFinalCommandStep<FailJobResponse>,
+          CommandWithVariables<FailJobCommandStep2> {
     // the place for new optional parameters
 
     /**
