@@ -63,7 +63,7 @@ public final class OAuthCredentialsCache {
   /**
    * Monotonically increasing counter incremented after every successful token refresh. Used by
    * {@link #forceRefreshIfChanged} to detect that a concurrent caller already refreshed while this
-   * thread was waiting for the lock, so the expensive Keycloak HTTP call can be skipped.
+   * thread was waiting for the lock, so a potential redundant auth call can be skipped.
    */
   private final AtomicLong refreshGeneration = new AtomicLong(0);
 
