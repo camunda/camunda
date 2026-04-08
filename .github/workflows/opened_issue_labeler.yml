@@ -13,8 +13,20 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-    - uses: github/issue-labeler@v3.4
+    - name: Generate GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+      with:
+        github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+        github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+        github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+        github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+    - uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
       with:
         configuration-path: .github/opened_issue_labeler.yml
         enable-versioned-regex: 0
-        repo-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+        repo-token: ${{ steps.github-token.outputs.token }}
