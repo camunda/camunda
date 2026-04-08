@@ -16,7 +16,6 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,14 +44,8 @@ public class FormDbReader extends AbstractEntityReader<FormEntity> implements Fo
     final var dbQuery = FormDbQuery.of(b -> b.filter(query.filter()).sort(dbSort).page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for form with filter {}", dbQuery);
-    final var totalHits = formMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits = formMapper.search(dbQuery);
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> formMapper.count(dbQuery), () -> formMapper.search(dbQuery), dbPage, dbSort);
   }
 
   public Optional<FormEntity> findOne(final Long formKey) {
