@@ -1,10 +1,7 @@
-# Extra env vars for the HOCON-based load tester (application.conf)
-# - ZEEBE_ADDRESS: the app reads this, not ZEEBE_GRPC_ADDRESS set by the chart
-# - CONFIG_FORCE_app_tls: gateway doesn't have TLS, override chart default (tls=true)
+# Override TLS to false — saas.enabled injects -Dapp.tls=true but our
+# internal gateway has no TLS certificate, so we need plaintext gRPC.
 global:
   extraEnvVars:
-    - name: ZEEBE_ADDRESS
-      value: "http://zeebe-gateway:26500"
     - name: CONFIG_FORCE_app_tls
       value: "false"
 

@@ -390,12 +390,12 @@ jobs:
           minimus: true
       - uses: ./.github/actions/build-frontend
         name: Build Operate Frontend
-        if: ${{ inputs.build-frontend }}
+        if: ${{ inputs.build-frontend && inputs.enable-operate }}
         with:
           directory: ./operate/client
       - uses: ./.github/actions/build-frontend
         name: Build Tasklist Frontend
-        if: ${{ inputs.build-frontend }}
+        if: ${{ inputs.build-frontend && inputs.enable-tasklist }}
         with:
           directory: ./tasklist/client
       - uses: ./.github/actions/build-frontend
@@ -419,6 +419,7 @@ jobs:
           dockerfile: 'Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Operate Docker Image
+        if: ${{ inputs.enable-operate }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/operate'
           revision: ${{ inputs.ref }}
@@ -428,6 +429,7 @@ jobs:
           dockerfile: 'operate.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Tasklist Docker Image
+        if: ${{ inputs.enable-tasklist }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/tasklist'
           revision: ${{ inputs.ref }}

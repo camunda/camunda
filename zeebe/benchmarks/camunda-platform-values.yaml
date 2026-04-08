@@ -79,9 +79,6 @@ identityKeycloak:
     adminUser: admin
     existingSecret: camunda-credentials
     passwordSecretKey: identity-keycloak-admin-password
-  nodeSelector:
-    component: benchmark-n2-standard-4
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
     - key: nodepool
       operator: Equal
@@ -129,21 +126,7 @@ operate:
   # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
     enabled: true
-    minimumAge: 30m # there is no need to keep data longer for our benchmarks, otherwise we will fill up ES pretty quick
-  env:
-    - name: OPERATE_LOG_APPENDER
-      value: Stackdriver
-    - name: OPERATE_LOG_STACKDRIVER_SERVICENAME
-      value: operate
-    - name: OPERATE_LOG_STACKDRIVER_SERVICEVERSION
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-  logging:
-    level:
-      io.camunda.operate: INFO
-  nodeSelector:
-    component: benchmark-n2-standard-4
+    minimumAge: 1d
   tolerations:
     - key: nodepool
       operator: Equal
@@ -163,18 +146,6 @@ tasklist:
   # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
     enabled: true
-    minimumAge: 30m # there is no need to keep data longer for our benchmarks, otherwise we will fill up ES pretty quick
-  env:
-    - name: TASKLIST_LOG_APPENDER
-      value: Stackdriver
-    - name: TASKLIST_LOG_STACKDRIVER_SERVICENAME
-      value: tasklist
-    - name: TASKLIST_LOG_STACKDRIVER_SERVICEVERSION
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-  nodeSelector:
-    component: benchmark-n2-standard-4
   tolerations:
     - key: nodepool
       operator: Equal
@@ -191,17 +162,6 @@ connectors:
     limits:
       cpu: 2
       memory: 2Gi
-  env:
-    - name: CONNECTORS_LOG_APPENDER
-      value: Stackdriver
-    - name: CONNECTORS_LOG_STACKDRIVER_SERVICENAME
-      value: connectors
-    - name: CONNECTORS_LOG_STACKDRIVER_SERVICEVERSION
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-  nodeSelector:
-    component: benchmark-n2-standard-4
   tolerations:
     - key: nodepool
       operator: Equal
@@ -323,10 +283,6 @@ zeebe:
     requests:
       cpu: 3000m
       memory: 2Gi
-
-  nodeSelector:
-    component: benchmark-n2-standard-4
-
   tolerations:
     - key: nodepool
       operator: Equal
