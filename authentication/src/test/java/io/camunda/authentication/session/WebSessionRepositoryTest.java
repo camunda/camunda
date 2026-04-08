@@ -153,8 +153,9 @@ class WebSessionRepositoryTest {
   }
 
   @Test
-  void shouldNotPropagateExceptionWhenUpsertFails() {
+  void shouldNotPropagateExceptionWhenUpsertFailsAfterRetries() {
     // given
+    final var upsertAttempts = new java.util.concurrent.atomic.AtomicInteger(0);
     final PersistentWebSessionClient failingClient =
         new PersistentWebSessionClient() {
           @Override
@@ -165,6 +166,7 @@ class WebSessionRepositoryTest {
           @Override
           public void upsertPersistentWebSession(
               final PersistentWebSessionEntity persistentWebSessionEntity) {
+            upsertAttempts.incrementAndGet();
             throw new CamundaSearchException("Failed to execute index request");
           }
 
@@ -187,6 +189,93 @@ class WebSessionRepositoryTest {
 
     // when / then
     assertThatNoException().isThrownBy(() -> repository.save(webSession));
+    assertThat(upsertAttempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotPropagateRuntimeExceptionWhenUpsertFailsAfterRetries() {
+    // given
+    final var upsertAttempts = new java.util.concurrent.atomic.AtomicInteger(0);
+    final PersistentWebSessionClient failingClient =
+        new PersistentWebSessionClient() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            return null;
+          }
+
+          @Override
+          public void upsertPersistentWebSession(
+              final PersistentWebSessionEntity persistentWebSessionEntity) {
+            upsertAttempts.incrementAndGet();
+            throw new RuntimeException("Connection refused");
+          }
+
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {}
+
+          @Override
+          public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+            return SearchQueryResult.of(b -> b.items(new ArrayList<>()));
+          }
+        };
+    final var repository =
+        new WebSessionRepository(
+            failingClient,
+            new WebSessionMapper(
+                new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
+            null);
+    final var webSession = repository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+
+    // when / then
+    assertThatNoException().isThrownBy(() -> repository.save(webSession));
+    assertThat(upsertAttempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldSucceedOnRetryAfterTransientFailure() {
+    // given
+    final var upsertAttempts = new java.util.concurrent.atomic.AtomicInteger(0);
+    final var savedEntities = new HashMap<String, PersistentWebSessionEntity>();
+    final PersistentWebSessionClient transientFailureClient =
+        new PersistentWebSessionClient() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            return savedEntities.get(sessionId);
+          }
+
+          @Override
+          public void upsertPersistentWebSession(
+              final PersistentWebSessionEntity persistentWebSessionEntity) {
+            if (upsertAttempts.incrementAndGet() < 3) {
+              throw new RuntimeException("Connection refused");
+            }
+            savedEntities.put(persistentWebSessionEntity.id(), persistentWebSessionEntity);
+          }
+
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {}
+
+          @Override
+          public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+            return SearchQueryResult.of(b -> b.items(new ArrayList<>(savedEntities.values())));
+          }
+        };
+    final var repository =
+        new WebSessionRepository(
+            transientFailureClient,
+            new WebSessionMapper(
+                new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
+            null);
+    final var webSession = repository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+
+    // when
+    repository.save(webSession);
+
+    // then
+    assertThat(upsertAttempts.get()).isEqualTo(3);
+    assertThat(transientFailureClient.getPersistentWebSession(webSession.getId())).isNotNull();
   }
 
   static final class PersistentWebSessionClientStub implements PersistentWebSessionClient {
