@@ -11,12 +11,17 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 public final class DataReadMeterQueryProvider {
 
   private DataReadMeterQueryProvider() {}
+
+  public static List<ReadQuery> getDefaultQueries(final Collection<String> disabledQueries) {
+    return getDefaultQueries().stream().filter(q -> !disabledQueries.contains(q.name())).toList();
+  }
 
   public static List<ReadQuery> getDefaultQueries() {
     return List.of(
