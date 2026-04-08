@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +28,20 @@ import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class CamundaClientCredentials {
+
+  /**
+   * Grace period before actual token expiry during which the token is considered invalid,
+   * triggering a proactive refresh. This prevents a race where a token that is valid at check time
+   * expires before the request reaches the server.
+   */
+  private static final Duration EXPIRY_GRACE_PERIOD = Duration.ofSeconds(30);
+
+  /**
+   * Soft expiry period before actual token expiry during which the token is still valid but a
+   * background refresh should be triggered. This is larger than the grace period, giving the
+   * background refresh time to complete before the token becomes invalid.
+   */
+  private static final Duration PROACTIVE_REFRESH_PERIOD = Duration.ofSeconds(60);
 
   @JsonAlias({"accesstoken", "access_token"})
   private String accessToken;
@@ -70,7 +85,22 @@ public final class CamundaClientCredentials {
 
   @JsonIgnore
   public boolean isValid() {
-    return expiry.toInstant().isAfter(Instant.now());
+    return expiry.toInstant().minus(EXPIRY_GRACE_PERIOD).isAfter(Instant.now());
+  }
+
+  /**
+   * Returns true if the token is still valid but nearing expiry and should be refreshed in the
+   * background. This allows the current token to keep being served while a new one is fetched
+   * asynchronously, avoiding the cliff edge where all threads discover the token is invalid at the
+   * same time.
+   */
+  @JsonIgnore
+  public boolean shouldRefreshProactively() {
+    final Instant now = Instant.now();
+    final Instant expiryInstant = expiry.toInstant();
+    // Token is in the proactive refresh window: still valid but nearing expiry
+    return expiryInstant.minus(PROACTIVE_REFRESH_PERIOD).isBefore(now)
+        && expiryInstant.minus(EXPIRY_GRACE_PERIOD).isAfter(now);
   }
 
   @Override
