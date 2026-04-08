@@ -145,11 +145,11 @@ final class PartitionLeaveTest {
       ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
 
       // then -- partition-1's data is removed
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/1")).doesNotExist();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/1")).doesNotExist();
       // then -- all other data is still there
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/2")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/1")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/2")).isNotEmptyDirectory();
     } finally {
       broker0.close();
       broker1.close();
@@ -206,10 +206,10 @@ final class PartitionLeaveTest {
                   .join());
 
       // then -- all data remains
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/1")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/2")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/1")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/2")).isNotEmptyDirectory();
     } finally {
       broker0.close();
       broker1.close();
