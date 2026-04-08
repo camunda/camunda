@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
 public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
-  public static final String GROUP_NAME = "raft-partition";
+  public static final String GROUP_NAME = "default";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
   private final ConcurrencyControl concurrencyControl;
