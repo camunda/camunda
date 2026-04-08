@@ -59,6 +59,8 @@ public final class CamundaClientEnvironmentVariables {
   public static final String OAUTH_ENV_CACHE_PATH = "CAMUNDA_CLIENT_CONFIG_PATH";
   public static final String OAUTH_ENV_CONNECT_TIMEOUT = "CAMUNDA_AUTH_CONNECT_TIMEOUT";
   public static final String OAUTH_ENV_READ_TIMEOUT = "CAMUNDA_AUTH_READ_TIMEOUT";
+  public static final String OAUTH_ENV_PROACTIVE_TOKEN_REFRESH_THRESHOLD =
+      "CAMUNDA_AUTH_PROACTIVE_TOKEN_REFRESH_THRESHOLD";
   public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH =
       "CAMUNDA_CLIENT_ASSERTION_KEYSTORE_PATH";
   public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PASSWORD =

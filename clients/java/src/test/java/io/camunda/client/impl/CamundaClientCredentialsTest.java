@@ -17,6 +17,7 @@ package io.camunda.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Test;
@@ -80,8 +81,8 @@ public final class CamundaClientCredentialsTest {
   }
 
   @Test
-  void shouldRefreshProactivelyWhenTokenIsInSoftExpiryWindow() {
-    // given — token expires in 45 seconds: within the 60s proactive window but comfortably
+  void shouldRefreshProactivelyWhenTokenIsWithinRefreshThreshold() {
+    // given — token expires in 45 seconds: within the 60s refresh threshold but comfortably
     // beyond the 5s grace period, so isValid()=true and shouldRefreshProactively()=true
     final ZonedDateTime expiresInFortyFiveSeconds = ZonedDateTime.now().plusSeconds(45);
     final CamundaClientCredentials credentials =
@@ -89,7 +90,7 @@ public final class CamundaClientCredentialsTest {
 
     // when
     final boolean valid = credentials.isValid();
-    final boolean shouldRefresh = credentials.shouldRefreshProactively();
+    final boolean shouldRefresh = credentials.shouldRefreshProactively(Duration.ofSeconds(60));
 
     // then
     assertThat(valid).isTrue();
@@ -97,14 +98,14 @@ public final class CamundaClientCredentialsTest {
   }
 
   @Test
-  void shouldNotRefreshProactivelyWhenTokenIsFarFromExpiry() {
-    // given — token expires in 120 seconds: well beyond the 60s proactive window
+  void shouldNotRefreshProactivelyWhenTokenExpiryIsBeyondRefreshThreshold() {
+    // given — token expires in 120 seconds: well beyond the 60s refresh threshold
     final ZonedDateTime expiresInTwoMinutes = ZonedDateTime.now().plusSeconds(120);
     final CamundaClientCredentials credentials =
         new CamundaClientCredentials("token", expiresInTwoMinutes, "Bearer");
 
     // when
-    final boolean shouldRefresh = credentials.shouldRefreshProactively();
+    final boolean shouldRefresh = credentials.shouldRefreshProactively(Duration.ofSeconds(60));
 
     // then
     assertThat(shouldRefresh).isFalse();
@@ -113,7 +114,7 @@ public final class CamundaClientCredentialsTest {
   @Test
   void shouldRefreshProactivelyWhenTokenIsAlreadyWithinGracePeriod() {
     // given — token expires in 2 seconds: past the grace period (so isValid()=false) and also
-    // inside the proactive window. shouldRefreshProactively() is independent of validity;
+    // inside the refresh threshold. shouldRefreshProactively() is independent of validity;
     // callers compose the two predicates, so here we expect both: not valid, and refresh due.
     final ZonedDateTime expiresInTwoSeconds = ZonedDateTime.now().plusSeconds(2);
     final CamundaClientCredentials credentials =
@@ -121,7 +122,7 @@ public final class CamundaClientCredentialsTest {
 
     // when
     final boolean valid = credentials.isValid();
-    final boolean shouldRefresh = credentials.shouldRefreshProactively();
+    final boolean shouldRefresh = credentials.shouldRefreshProactively(Duration.ofSeconds(60));
 
     // then
     assertThat(valid).isFalse();
