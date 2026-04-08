@@ -189,6 +189,43 @@ class WebSessionRepositoryTest {
     assertThatNoException().isThrownBy(() -> repository.save(webSession));
   }
 
+  @Test
+  void shouldNotPropagateRuntimeExceptionWhenUpsertFails() {
+    // given
+    final PersistentWebSessionClient failingClient =
+        new PersistentWebSessionClient() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            return null;
+          }
+
+          @Override
+          public void upsertPersistentWebSession(
+              final PersistentWebSessionEntity persistentWebSessionEntity) {
+            throw new RuntimeException("Connection refused");
+          }
+
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {}
+
+          @Override
+          public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+            return SearchQueryResult.of(b -> b.items(new ArrayList<>()));
+          }
+        };
+    final var repository =
+        new WebSessionRepository(
+            failingClient,
+            new WebSessionMapper(
+                new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
+            null);
+    final var webSession = repository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+
+    // when / then
+    assertThatNoException().isThrownBy(() -> repository.save(webSession));
+  }
+
   static final class PersistentWebSessionClientStub implements PersistentWebSessionClient {
 
     private final Map<String, PersistentWebSessionEntity> persistentWebSessions;

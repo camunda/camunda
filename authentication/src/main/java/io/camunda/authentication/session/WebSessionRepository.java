@@ -110,6 +110,12 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
             e.getMessage(),
             e.getReason(),
             e);
+      } catch (final RuntimeException e) {
+        LOGGER.warn(
+            "Failed to save web session [{}] to persistent storage: {}",
+            webSession.getId(),
+            e.getMessage(),
+            e);
       }
     }
   }
