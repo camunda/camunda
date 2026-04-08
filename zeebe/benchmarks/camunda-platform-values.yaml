@@ -43,6 +43,18 @@ global:
         clientId: optimize
         existingSecret: camunda-credentials
         existingSecretKey: identity-optimize-client-token
+      operate:
+        clientId: operate
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-operate-client-token
+      tasklist:
+        clientId: tasklist
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-tasklist-client-token
+      connectors:
+        clientId: connectors
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-connectors-client-token
   # To override the names - and remove the release name from the names
   # Allows shorter names like zeebe-0, zeebe-1, etc.
   # Especially useful for the services, which are just zeebe-gateway and zeebe
@@ -104,21 +116,103 @@ optimize:
       value: n2-standard-4
       effect: NoSchedule
 
+operate:
+  enabled: true
+  fullnameOverride: operate # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 600m
+      memory: 400Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    enabled: true
+    minimumAge: 30m # there is no need to keep data longer for our benchmarks, otherwise we will fill up ES pretty quick
+  env:
+    - name: OPERATE_LOG_APPENDER
+      value: Stackdriver
+    - name: OPERATE_LOG_STACKDRIVER_SERVICENAME
+      value: operate
+    - name: OPERATE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+  logging:
+    level:
+      io.camunda.operate: INFO
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+tasklist:
+  enabled: true
+  fullnameOverride: tasklist # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 400m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    enabled: true
+    minimumAge: 30m # there is no need to keep data longer for our benchmarks, otherwise we will fill up ES pretty quick
+  env:
+    - name: TASKLIST_LOG_APPENDER
+      value: Stackdriver
+    - name: TASKLIST_LOG_STACKDRIVER_SERVICENAME
+      value: tasklist
+    - name: TASKLIST_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
 connectors:
-  enabled: false
+  enabled: true
   fullnameOverride: connectors # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+  env:
+    - name: CONNECTORS_LOG_APPENDER
+      value: Stackdriver
+    - name: CONNECTORS_LOG_STACKDRIVER_SERVICENAME
+      value: connectors
+    - name: CONNECTORS_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+  nodeSelector:
+    component: benchmark-n2-standard-4
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 webModeler:
   enabled: false
   fullnameOverride: web-modeler # we override the names for simplicity of the deployment
 
 postgresql:
-  enabled: false
-
-operate:
-  enabled: false
-
-tasklist:
   enabled: false
 
 zeebe:

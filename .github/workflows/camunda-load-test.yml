@@ -67,6 +67,21 @@ on:
         type: boolean
         required: false
         default: true
+      enable-operate:
+        description: 'Enable Operate for load testing'
+        type: boolean
+        required: false
+        default: false
+      enable-tasklist:
+        description: 'Enable Tasklist for load testing'
+        type: boolean
+        required: false
+        default: false
+      enable-connectors:
+        description: 'Enable Connectors for load testing'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -153,6 +168,21 @@ on:
         type: boolean
         required: false
         default: true
+      enable-operate:
+        description: 'Enable Operate for load testing'
+        type: boolean
+        required: false
+        default: false
+      enable-tasklist:
+        description: 'Enable Tasklist for load testing'
+        type: boolean
+        required: false
+        default: false
+      enable-connectors:
+        description: 'Enable Connectors for load testing'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -392,6 +422,26 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Operate Docker Image
+        if: ${{ inputs.enable-operate == true }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/operate'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'operate.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Tasklist Docker Image
+        if: ${{ inputs.enable-tasklist == true }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/tasklist'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'tasklist.Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -547,7 +597,7 @@ jobs:
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
           # Create the namespace for the load test
-          ./newBenchmark.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          ./newBenchmark.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} ${{ inputs.enable-operate }} ${{ inputs.enable-tasklist }} ${{ inputs.enable-connectors }}
           # Annotate namespace with the workflow run URL for traceability
           kubectl annotate namespace ${{ env.NAMESPACE }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
@@ -629,9 +679,40 @@ jobs:
               --set optimize.image.tag=${image_tag}"
           fi
 
+          # Inject Operate image configuration when enabled
+          if [[ "${{ inputs.enable-operate }}" == "true" ]]; then
+            operate_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+            operate_repo="${{ inputs.use-official-docker-images && 'camunda/operate' || 'team-zeebe/operate' }}"
+            additional_platform_config+=" \
+              --set operate.image.registry=${operate_registry} \
+              --set operate.image.repository=${operate_repo} \
+              --set operate.image.tag=${image_tag}"
+          fi
+
+          # Inject Tasklist image configuration when enabled
+          if [[ "${{ inputs.enable-tasklist }}" == "true" ]]; then
+            tasklist_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+            tasklist_repo="${{ inputs.use-official-docker-images && 'camunda/tasklist' || 'team-zeebe/tasklist' }}"
+            additional_platform_config+=" \
+              --set tasklist.image.registry=${tasklist_registry} \
+              --set tasklist.image.repository=${tasklist_repo} \
+              --set tasklist.image.tag=${image_tag}"
+          fi
+
+          # Inject Connectors image configuration when enabled (always official image)
+          if [[ "${{ inputs.enable-connectors }}" == "true" ]]; then
+            additional_platform_config+=" \
+              --set connectors.image.registry=docker.io \
+              --set connectors.image.repository=camunda/connectors-bundle \
+              --set connectors.image.tag=8.7.19"
+          fi
+
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
+            enable_operate=${{ inputs.enable-operate }} \
+            enable_tasklist=${{ inputs.enable-tasklist }} \
+            enable_connectors=${{ inputs.enable-connectors }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment

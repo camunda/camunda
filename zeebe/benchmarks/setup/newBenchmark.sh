@@ -7,13 +7,15 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newBenchmark.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
+Usage: newBenchmark.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_operate] [enable_tasklist] [enable_single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  enable_operate     Optional. true|false to enable Operate. Default: false.
+  enable_tasklist    Optional. true|false to enable Tasklist. Default: false.
   enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
@@ -21,7 +23,7 @@ Options:
 
 Examples:
   ./newBenchmark.sh demo
-  ./newBenchmark.sh perf opensearch 3 true
+  ./newBenchmark.sh perf opensearch 3 true true true
 EOF
 }
 
@@ -70,6 +72,24 @@ enable_optimize="${4:-true}"
 enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   echo "Error: Invalid enable_optimize value '$enable_optimize'"
+  echo "Allowed values are: true or false"
+  exit 1
+fi
+
+# Validate enable_operate value
+enable_operate="${5:-false}"
+enable_operate=$(echo "$enable_operate" | tr '[:upper:]' '[:lower:]')
+if [[ "$enable_operate" != "true" && "$enable_operate" != "false" ]]; then
+  echo "Error: Invalid enable_operate value '$enable_operate'"
+  echo "Allowed values are: true or false"
+  exit 1
+fi
+
+# Validate enable_tasklist value
+enable_tasklist="${6:-false}"
+enable_tasklist=$(echo "$enable_tasklist" | tr '[:upper:]' '[:lower:]')
+if [[ "$enable_tasklist" != "true" && "$enable_tasklist" != "false" ]]; then
+  echo "Error: Invalid enable_tasklist value '$enable_tasklist'"
   echo "Allowed values are: true or false"
   exit 1
 fi
@@ -188,6 +208,8 @@ cd $namespace
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
+sed_inplace "s/__ENABLE_OPERATE__/$enable_operate/" Makefile
+sed_inplace "s/__ENABLE_TASKLIST__/$enable_tasklist/" Makefile
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
 
 # Add/update helm repositories
