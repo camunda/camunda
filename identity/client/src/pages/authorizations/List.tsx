@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState, useMemo, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { FC, useMemo, useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
@@ -26,20 +26,33 @@ import {
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
 import { isTenantsApiEnabled } from "src/configuration";
+import { Paths } from "src/components/global/routePaths";
 import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
+  const navigate = useNavigate();
+  const { id } = useParams<{ id?: string }>();
   const authorizationTabs = isTenantsApiEnabled
     ? ALL_RESOURCE_TYPES
     : RESOURCE_TYPES_WITHOUT_TENANT;
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [activeTab, setActiveTab] = useState<ResourceType>(() => {
-    const param = searchParams.get("resourceType") as ResourceType;
-    return param && authorizationTabs.includes(param) ? param : authorizationTabs[0];
+    return authorizationTabs.find((tab) => tab === id) ?? authorizationTabs[0];
   });
+
+  useEffect(() => {
+    const routeTab = authorizationTabs.find((tab) => tab === id);
+    const nextActiveTab = routeTab ?? authorizationTabs[0];
+
+    setActiveTab(nextActiveTab);
+
+    if (!routeTab) {
+      void navigate(`${Paths.authorizations()}/${nextActiveTab}`, {
+        replace: true,
+      });
+    }
+  }, [authorizationTabs, id, navigate]);
 
   const {
     data,
@@ -82,12 +95,12 @@ const List: FC = () => {
       <TabsTitle>{t("resourceType")}</TabsTitle>
       <TabsContainer>
         <TabsVertical
-          defaultSelectedIndex={authorizationTabs.indexOf(activeTab)}
+          selectedIndex={authorizationTabs.indexOf(activeTab)}
           onChange={(tab: { selectedIndex: number }) => {
             const newTab = authorizationTabs[tab.selectedIndex];
             resetPagination();
             setActiveTab(newTab);
-            setSearchParams({ resourceType: newTab }, { replace: true });
+            void navigate(`${Paths.authorizations()}/${newTab}`);
           }}
         >
           <CustomTabListVertical aria-label={t("authorizationType")}>
