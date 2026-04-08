@@ -127,13 +127,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 /**
- * This class is way too big and also way too big to be all static, causing leaky abstraction (e.g.
- * identifierPattern being passed through multiple layers to the IdentifierValidator).
- *
- * <p>As refactoring it at once would be a huge task, it should be split up and changed to be more
- * OOP piece by piece.
- *
- * <p>the split-up classes should be put in the @io.camunda.gateway.mapping.http.mapper package
+ * Maps strict contract DTOs to service-layer request types.
  *
  * <h3>Null-coercion convention</h3>
  *
