@@ -1,8 +1,0 @@
-{{! Custom template, derived from beanValidation.mustache template.
-  Diff: removes the @NotNull emission for oneOf types so that properties are never validated automatically as non-null.
-  The simple model creates merged properties for oneOf types, so the non-null validation is not always correct.
-  It is easier to let users add it manually when needed.
-}}
-{{#isContainer}}{{^isPrimitiveType}}{{^isEnum}}@Valid
-{{/isEnum}}{{/isPrimitiveType}}{{/isContainer}}{{^isContainer}}{{^isPrimitiveType}}@Valid
-{{/isPrimitiveType}}{{/isContainer}}{{^openApiNullable}}{{>beanValidationCore}}{{/openApiNullable}}{{#openApiNullable}}{{^useOptional}}{{>beanValidationCore}}{{/useOptional}}{{/openApiNullable}}{{#useOptional}}{{#openApiNullable}}{{#isContainer}}{{^required}}{{>beanValidationCore}}{{/required}}{{/isContainer}}{{/openApiNullable}}{{#openApiNullable}}{{#required}}{{>beanValidationCore}}{{/required}}{{/openApiNullable}}{{/useOptional}}
