@@ -69,8 +69,9 @@ class BatchOperationChunkCreatedHandlerTest {
     // when
     final var idList = underTest.generateIds(record);
 
-    // then
-    assertThat(idList).containsExactly(String.valueOf(record.getValue().getBatchOperationKey()));
+    // then - composite ID (batchKey:chunkKey) to avoid entity sharing with CreatedHandler
+    assertThat(idList)
+        .containsExactly(record.getValue().getBatchOperationKey() + ":" + record.getKey());
   }
 
   @Test
@@ -118,25 +119,22 @@ class BatchOperationChunkCreatedHandlerTest {
   @Test
   void shouldUpsertWithScriptEntityOnFlush() throws PersistenceException {
     // given
-    final var entity =
-        new BatchOperationEntity().setId("123").setOperationsTotalCount(123).setEndDate(null);
+    final var entity = new BatchOperationEntity().setId("123:456").setEndDate(null);
+    final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
+    underTest.updateEntity(record, entity);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(entity, mockRequest);
 
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 123);
+    final Map<String, Object> expectedParams = new HashMap<>();
+    expectedParams.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 1);
 
-    // then
+    // then - the ES document ID should be just the batchKey (123), not the composite entity ID
     final var scriptCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockRequest, times(1))
         .upsertWithScript(
-            eq(indexName),
-            eq(entity.getId()),
-            eq(entity),
-            scriptCaptor.capture(),
-            eq(updateFields));
+            eq(indexName), eq("123"), eq(entity), scriptCaptor.capture(), eq(expectedParams));
 
     final var script = scriptCaptor.getValue();
 
