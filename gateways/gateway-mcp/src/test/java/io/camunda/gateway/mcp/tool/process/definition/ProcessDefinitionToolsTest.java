@@ -15,9 +15,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
