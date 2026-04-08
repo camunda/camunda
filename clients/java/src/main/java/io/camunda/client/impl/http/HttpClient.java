@@ -455,10 +455,6 @@ public final class HttpClient implements AutoCloseable {
       return null;
     }
 
-    // Credentials are NOT applied here — they are injected at wire time by
-    // CredentialsInterceptor (AsyncExecChainHandler) to prevent stale tokens
-    // on requests that sit in the Apache async pipeline queue.
-
     return requestBuilder.build();
   }
 
