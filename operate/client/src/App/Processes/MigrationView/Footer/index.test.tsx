@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {Footer} from './index';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
@@ -18,6 +18,7 @@ import {mockMigrateProcessInstancesBatchOperation} from 'modules/mocks/api/v2/pr
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 type Props = {
   children?: React.ReactNode;
@@ -53,6 +54,7 @@ const Wrapper = ({children}: Props) => {
         >
           map element
         </button>
+        <LocationLog />
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -185,7 +187,10 @@ describe('Footer', () => {
   });
 
   it('should perform migration batch operation successfully and expand operations panel', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
+    mockMigrateProcessInstancesBatchOperation().withDelay({
+      batchOperationKey: 'migrate-operation-123',
+      batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
+    });
 
     processInstanceMigrationStore.setBatchOperationQuery({
       active: true,
@@ -208,19 +213,127 @@ describe('Footer', () => {
     await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
     await user.click(withinModal.getByRole('button', {name: /confirm/i}));
 
-    vi.runOnlyPendingTimers();
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(
+      screen.getByTestId('migration-operation-spinner'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('migration-operation-spinner'),
+      ).not.toBeInTheDocument();
+    });
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(false);
+    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
 
     expect(tracking.track).toHaveBeenCalledWith({
       eventName: 'batch-operation',
       operationType: 'MIGRATE_PROCESS_INSTANCE',
     });
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
-
     expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith(
       expect.objectContaining({kind: 'error'}),
     );
+  });
 
-    vi.useRealTimers();
+  it('should show an auth error and keep the migration view open when batch migration creation is forbidden', async () => {
+    mockMigrateProcessInstancesBatchOperation().withServerError(403);
+
+    processInstanceMigrationStore.setBatchOperationQuery({
+      active: true,
+      ids: ['1', '2'],
+    });
+    processInstanceMigrationStore.setTargetProcessDefinitionKey(
+      'target-process-key',
+    );
+    processInstanceMigrationStore.setSourceProcessDefinitionKey(
+      'source-process-key',
+    );
+
+    const {user} = render(<Footer />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
+    await user.click(screen.getByRole('button', {name: /next/i}));
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    const withinModal = within(screen.getByRole('dialog'));
+    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
+    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('migration-operation-spinner'),
+      ).not.toBeInTheDocument();
+    });
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation could not be created',
+      subtitle: 'You do not have permission',
+      isDismissable: true,
+    });
+
+    expect(tracking.track).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-confirmed',
+    });
+    expect(tracking.track).not.toHaveBeenCalledWith({
+      eventName: 'batch-operation',
+      operationType: 'MIGRATE_PROCESS_INSTANCE',
+    });
+  });
+
+  it('should show an error and keep the migration view open when batch migration creation fails', async () => {
+    mockMigrateProcessInstancesBatchOperation().withServerError(500);
+
+    processInstanceMigrationStore.setBatchOperationQuery({
+      active: true,
+      ids: ['1', '2'],
+    });
+    processInstanceMigrationStore.setTargetProcessDefinitionKey(
+      'target-process-key',
+    );
+    processInstanceMigrationStore.setSourceProcessDefinitionKey(
+      'source-process-key',
+    );
+
+    const {user} = render(<Footer />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
+    await user.click(screen.getByRole('button', {name: /next/i}));
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    const withinModal = within(screen.getByRole('dialog'));
+    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
+    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('migration-operation-spinner'),
+      ).not.toBeInTheDocument();
+    });
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation could not be created',
+      subtitle: undefined,
+      isDismissable: true,
+    });
+
+    expect(tracking.track).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-confirmed',
+    });
+    expect(tracking.track).not.toHaveBeenCalledWith({
+      eventName: 'batch-operation',
+      operationType: 'MIGRATE_PROCESS_INSTANCE',
+    });
   });
 });
