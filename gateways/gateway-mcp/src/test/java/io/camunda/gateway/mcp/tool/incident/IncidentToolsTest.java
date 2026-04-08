@@ -19,11 +19,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;

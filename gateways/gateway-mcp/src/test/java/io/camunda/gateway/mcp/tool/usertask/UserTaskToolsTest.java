@@ -18,11 +18,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;

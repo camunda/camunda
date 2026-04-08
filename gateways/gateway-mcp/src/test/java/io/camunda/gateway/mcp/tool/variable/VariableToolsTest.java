@@ -15,10 +15,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableStrictContract;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
