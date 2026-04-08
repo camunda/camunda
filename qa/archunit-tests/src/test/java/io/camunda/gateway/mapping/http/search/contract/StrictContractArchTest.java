@@ -17,6 +17,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * ArchUnit rules for the strict contract response layer.
@@ -47,6 +48,8 @@ public final class StrictContractArchTest {
       ArchRuleDefinition.classes()
           .that()
           .resideInAPackage("io.camunda.gateway.mapping.http.search.contract.generated")
+          .and()
+          .haveSimpleNameEndingWith("StrictContract")
           .and()
           .areTopLevelClasses()
           .and()
@@ -83,6 +86,8 @@ public final class StrictContractArchTest {
           .that()
           .resideInAPackage("io.camunda.gateway.mapping.http.search.contract.generated")
           .and()
+          .haveSimpleNameEndingWith("StrictContract")
+          .and()
           .areTopLevelClasses()
           .and()
           .areNotEnums()
@@ -90,11 +95,33 @@ public final class StrictContractArchTest {
           .areNotInterfaces()
           .should()
           .haveSimpleNameStartingWith("Generated")
-          .andShould()
-          .haveSimpleNameEndingWith("StrictContract")
           .because(
               "generated strict contract DTOs must follow the Generated*StrictContract naming "
                   + "convention so that tooling can identify code-generated types");
+
+  /**
+   * Generated strict contract DTOs must be explicitly {@link NullMarked}. Nullness is enforced as
+   * part of the boundary SDK contract, so generated types must consistently opt into non-null by
+   * default semantics.
+   */
+  @ArchTest
+  static final ArchRule GENERATED_STRICT_CONTRACTS_MUST_BE_NULL_MARKED =
+      ArchRuleDefinition.classes()
+          .that()
+          .resideInAPackage("io.camunda.gateway.mapping.http.search.contract.generated")
+          .and()
+          .haveSimpleNameEndingWith("StrictContract")
+          .and()
+          .areTopLevelClasses()
+          .and()
+          .areNotEnums()
+          .and()
+          .areNotInterfaces()
+          .should()
+          .beAnnotatedWith(NullMarked.class)
+          .because(
+              "generated strict contract DTOs must be @NullMarked "
+                  + "to enforce non-null-by-default boundary contracts");
 
   /**
    * Generated strict contract DTOs must not depend on protocol-model search entity types. The
@@ -107,6 +134,8 @@ public final class StrictContractArchTest {
       ArchRuleDefinition.noClasses()
           .that()
           .resideInAPackage("io.camunda.gateway.mapping.http.search.contract.generated")
+          .and()
+          .haveSimpleNameEndingWith("StrictContract")
           .should()
           .dependOnClassesThat()
           .resideInAPackage("io.camunda.search.entities..")
