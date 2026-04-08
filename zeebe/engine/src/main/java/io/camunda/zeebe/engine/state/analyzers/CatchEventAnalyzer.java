@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.state.analyzers;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -129,10 +131,18 @@ public final class CatchEventAnalyzer {
     final var elementId = processInstanceRecord.getElementIdBuffer();
     final var elementType = processInstanceRecord.getBpmnElementType();
 
-    final var element = process.getElementById(elementId, elementType, ExecutableActivity.class);
+    final var element = process.getElementById(elementId, elementType, ExecutableFlowElement.class);
+
+    // Only elements that implement ExecutableCatchEventSupplier can host catch events (e.g.
+    // boundary events or error event subprocesses). Elements like intermediate throw events or
+    // end events do not support catch events — skip them and let the caller continue searching
+    // in parent scopes.
+    if (!(element instanceof final ExecutableCatchEventSupplier catchEventSupplier)) {
+      return availableCatchEvents;
+    }
 
     final Optional<ExecutableCatchEvent> errorCatchEvent =
-        element.getEvents().stream()
+        catchEventSupplier.getEvents().stream()
             .filter(ExecutableCatchEvent::isError)
             // Because a catch event can not contain an expression, we ignore it if not set.
             .filter(catchEvent -> catchEvent.getError().getErrorCode().isPresent())
