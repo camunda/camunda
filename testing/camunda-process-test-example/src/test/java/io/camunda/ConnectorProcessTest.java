@@ -15,6 +15,13 @@
  */
 package io.camunda;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,15 +36,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.testcontainers.Testcontainers;
+import org.wiremock.spring.EnableWireMock;
 
+@EnableWireMock
 @SpringBootTest(
     properties = {
       "camunda.process-test.runtime-mode=managed",
       "camunda.process-test.connectors-enabled=true",
-      "camunda.process-test.connectors-secrets.WEATHER_URL=https://api.open-meteo.com/v1/forecast"
+      "camunda.process-test.connectors-secrets.WEATHER_URL=http://host.testcontainers.internal:${wiremock.server.port}/forecast"
     })
 @CamundaSpringProcessTest
 public class ConnectorProcessTest {
@@ -47,8 +59,22 @@ public class ConnectorProcessTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  @Value("${wiremock.server.port}")
+  private int wireMockPort;
+
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
+
+  @BeforeEach
+  void setup() {
+    Testcontainers.exposeHostPorts(wireMockPort);
+
+    // Create a stub for the HTTP endpoint that is invoked by the Connector
+    stubFor(
+        get(urlPathEqualTo("/forecast"))
+            .willReturn(
+                aResponse().withStatus(200).withBodyFile("weather-forecast-response.json")));
+  }
 
   @Test
   void shouldInvokeConnectors() throws Exception {
@@ -94,8 +120,18 @@ public class ConnectorProcessTest {
     // then
     assertThatProcessInstance(processInstance)
         .hasCompletedElements(byName("Receive weather request"), byName("Get weather info"))
-        .hasVariableNames("temperature", "rain", "weather_code")
+        .hasVariable("temperature", 6.2)
+        .hasVariable("rain", 0)
+        .hasVariable("weather_code", 0)
         .isCompleted();
+
+    // Assert that the HTTP endpoint was invoked with the expected parameters
+    verify(
+        getRequestedFor(urlPathEqualTo("/forecast"))
+            .withQueryParam("latitude", equalTo(String.valueOf(weatherInfoRequest.latitude)))
+            .withQueryParam("longitude", equalTo(String.valueOf(weatherInfoRequest.longitude)))
+            .withQueryParam("timezone", equalTo(weatherInfoRequest.timezone))
+            .withQueryParam("current", equalTo("temperature_2m,rain,weather_code")));
   }
 
   record WeatherInfoRequest(String key, double latitude, double longitude, String timezone) {}
