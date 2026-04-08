@@ -3,7 +3,7 @@ toc_min_heading_level: 2
 toc_max_heading_level: 5
 ---
 
-# Architecture Documentation
+# Management Identity Architecture Documentation
 
 ## 1. Introduction and goals
 
@@ -154,7 +154,7 @@ Mapping rules and Optimize tenants
 : Mapping rules connect IdP claims (for example groups and attributes) to roles and tenants in Management Identity. Optimize uses these tenants for data and access segmentation.
 
 Spring profile-based deployment modes
-: The active deployment modes are selected via Spring profiles (`keycloak`, `oidc`). The legacy `saas` profile remains in code for backward compatibility but is deprecated and no longer used in current deployments.
+: The active deployment modes are selected via Spring profiles (`keycloak`, `oidc`). The legacy `saas` profile remains in code for backward compatibility but is deprecated and no longer used in current deployments. See section 10. Technical dept.
 
 Alignment with Orchestration Cluster Identity concepts
 : Where consistent and useful, Management Identity uses concepts aligned with Orchestration Cluster Identity (users, groups, roles, tenants, mapping rules, authorizations). Runtime-specific semantics remain defined by Orchestration Cluster Identity.
@@ -366,7 +366,6 @@ sequenceDiagram
   MGMT_API-->>APP: Resolved identity (roles, groups, tenants)
   APP-->>USER: Session established, app rendered
 ```
-
 ### 6.2 User login via external OIDC IdP (Keycloak as broker)
 
 Scenario: the enterprise uses an external IdP (for example Okta or Microsoft Entra ID). Keycloak is configured as an OIDC broker and forwards authentication to the external IdP.
@@ -417,7 +416,6 @@ sequenceDiagram
   MGMT_API-->>APP: Resolved identity (roles, groups, tenants)
   APP-->>USER: Session established, app rendered
 ```
-
 ### 6.3 User login via direct external OIDC provider (profile `oidc`)
 
 Scenario: a platform user logs into Console, Web Modeler, or Optimize when Management Identity is configured directly against an external OIDC provider (no Keycloak involved).
@@ -460,12 +458,11 @@ sequenceDiagram
   MGMT_API-->>APP: Resolved identity (roles, groups, tenants)
   APP-->>USER: Session established, app rendered
 ```
-
 ### 6.4 Machine-to-machine access via Keycloak (client credentials)
 
 Scenario: an automated service calls the Management Identity API using client credentials against the default Keycloak IdP.
 
-This is not a typical use case; typical M2M integrations are carried out via orchestration cluster APIs, so OC Identity.
+This is not a typical use case; typical M2M integrations are carried out via orchestration cluster (OC) APIs.
 
 1. The service requests a JWT access token from Keycloak using the OAuth2 client credentials grant.
 2. Keycloak validates the client credentials and issues an access token.
@@ -497,12 +494,9 @@ sequenceDiagram
   MGMT_DB-->>MGMT_API: Client roles, permissions
   MGMT_API-->>SERVICE: API response
 ```
-
 ### 6.5 Machine-to-machine access via external OIDC provider (client credentials)
 
 Scenario: an automated service calls the Management Identity API using a token issued directly by an external OIDC provider (no Keycloak involved).
-
-Note: unlike the Orchestration Cluster-side client support introduced in Camunda 8.8, `private_key_jwt` client authentication has not yet been ported to Management Identity. The flow described here therefore assumes standard client-credentials authentication at the external IdP.
 
 1. The service requests a JWT access token directly from the external OIDC provider using the OAuth2 client credentials grant.
 2. The external OIDC provider validates the client credentials and issues an access token.
@@ -534,8 +528,58 @@ sequenceDiagram
   MGMT_DB-->>MGMT_API: Resolved roles from mapping rules
   MGMT_API-->>SERVICE: API response
 ```
+### 6.6 OIDC with private_key_jwt client authentication (Management Identity server-side OAuth client)
 
-### 6.6 Admin operations: managing users and roles (Keycloak profile)
+> **Available since**: Camunda 8.9 (issue [#3328](https://github.com/camunda/identity/issues/3328)).
+
+Scenario: Management Identity itself needs to call the IdP token endpoint in OIDC mode (for example during authorization code exchange, refresh token flow, or to perform token introspection). For this Management Identity-side client authentication to the IdP, Management Identity can use either `client_secret_basic` or `private_key_jwt` instead of transmitting a static client secret.
+
+When `private_key_jwt` is configured, Management Identity loads a private key from a keystore and builds a signed JWT (client assertion) to authenticate to the IdP. This is more secure than transmitting a client secret, as only the assertion signature needs validation at the IdP and the private key never leaves Management Identity.
+
+Configured via (Management Identity-side):
+
+- `camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt` (or omit to default to `client_secret_basic`)
+- `camunda.security.authentication.oidc.assertion.keystore.*` (path, password, keyAlias, keyPassword)
+- Optional `assertion.kidSource`, `assertion.kidDigestAlgorithm`, `assertion.kidEncoding`, `assertion.kidCase`
+
+Flow:
+
+1. Management Identity needs to call the IdP token endpoint (for example to exchange an authorization code for tokens).
+2. Management Identity loads the configured private key and certificate from the keystore and builds a JSON Web Key (JWK).
+3. A signed `client_assertion` JWT is created, containing the JWK information (including `kid` and `x5t#S256`).
+4. Management Identity sends a token request with `client_assertion` and `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
+5. The IdP validates the assertion signature using the registered public key/certificate for that Management Identity OAuth client.
+6. The IdP returns tokens (access token, ID token, or refresh token).
+
+```mermaid
+sequenceDiagram
+  box Management Identity
+    participant AUTHN as Spring Security / Token Handler
+    participant ASSERTION as AssertionJwkProvider
+    participant CONV as NimbusJwtClientAuthenticationParametersConverter
+  end
+  box External
+    participant IDP as OIDC IdP
+  end
+
+  AUTHN->>ASSERTION: Load private key/cert from keystore
+  ASSERTION-->>AUTHN: JSON Web Key (JWK)
+  AUTHN->>CONV: Build signed client_assertion JWT
+  CONV-->>AUTHN: client_assertion
+  AUTHN->>IDP: Token request + client_assertion
+  IDP->>IDP: Validate client assertion
+  IDP-->>AUTHN: Token response
+```
+
+Participants:
+
+* Spring Security: orchestrates Management Identity-side OAuth client calls to the IdP token endpoint.
+* Token Handler: wraps Spring Security OAuth2 client to build assertion-based token requests.
+* `AssertionJwkProvider`: loads key material and builds a JSON Web Key (JWK) for signing assertions.
+* `NimbusJwtClientAuthenticationParametersConverter`: builds and injects the signed `client_assertion`.
+* OIDC IdP: validates Management Identity's client assertion and issues tokens.
+
+### 6.7 Admin operations: managing users and roles (Keycloak profile)
 
 Scenario: a platform administrator uses the Management Identity UI to create a new user and assign a role to that user (keycloak profile only).
 
@@ -670,8 +714,7 @@ This section only highlights differences or specifics for Management Identity. F
 - Authentication
   - OIDC via Keycloak or external IdP.
   - Authorization code flow for human users; `AuthController` handles the OIDC callback and `CookieService` manages session cookies for browser-based UI access.
-  - Client credentials for platform services and external tools.
-  - `private_key_jwt` client authentication support introduced for Orchestration Cluster-side clients has not yet been ported to Management Identity.
+  - Client credentials for platform services and external tools, using supported OAuth2 client authentication methods such as `client_secret_basic` and `private_key_jwt`.
   - Token validation in active profiles is performed by `SmJwtFilter` (a `JwtFilter` subclass) using the Identity SDK.
 
 - Authorization
@@ -742,6 +785,8 @@ External IdP dependency
 : For OIDC, availability and correctness of the external IdP (Keycloak or third-party) are critical. Misconfigured claims or mapping rules can lead to over- or under-provisioned access.
 Mitigation: mapping rule validation; comprehensive integration tests for common IdP configurations.
 
+Legacy `saas` profile and SaaS extended support
+: Since 8.8, Management Identity is no longer used in SaaS to serve the web applications. The legacy saas Spring profile remains in parts of the Management Identity codebase, is deprecated and unused for current Self-Managed deployments, but must stay supported for SaaS extended support until April 2028.
 
 ## 11. Glossary
 
@@ -759,9 +804,11 @@ Mitigation: mapping rule validation; comprehensive integration tests for common 
 | Tenant (Optimize)         | Logical partition for reporting and data isolation in Optimize. Stored in `TenantRepository`. Distinct from runtime tenants in Orchestration Cluster Identity. |
 | Mapping rule              | Entity mapping IdP token claims (for example group names, attributes) to Management Identity roles or Optimize tenants; evaluated by mapping rule services in the `oidc` profile. |
 | OIDC                      | OpenID Connect; the protocol used for authentication and token issuance between platform apps, IdP, and Management Identity. |
-| Client credentials grant  | OAuth2 flow for machine-to-machine access; a service authenticates with its client ID and secret to obtain a token. |
+| Client credentials grant  | OAuth2 flow for machine-to-machine access; a service authenticates as a client (for example with `client_secret_basic` or `private_key_jwt`) to obtain a token. |
 | Authorization code flow   | OAuth2/OIDC flow for interactive user login via a browser redirect to the IdP. |
 | JWKS                      | JSON Web Key Set; the public key endpoint exposed by Keycloak/IdP, used by JWT filters to validate incoming JWT signatures. |
+| `private_key_jwt`         | OAuth2 client authentication method where the client signs a JWT assertion with a private key instead of using a static secret; more secure and auditable than `client_secret_basic`. |
+| Client assertion          | Signed JWT used to authenticate Management Identity or a client to the IdP token endpoint when using `private_key_jwt` client authentication. |
 | WebSecurityConfig         | Spring configuration class that defines the security filter chain for the Management Identity API. |
 | SmJwtFilter               | Self-Managed JWT filter; validates tokens and handles session cookie refresh for browser flows. |
 | JwtAuthenticationToken    | Spring Security Authentication object set on the `SecurityContext` after JWT validation. |
