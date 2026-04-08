@@ -7,7 +7,7 @@
  */
 
 import styled from "styled-components";
-import { linkInverse, spacing04 } from "@carbon/elements";
+import { spacing04 } from "@carbon/elements";
 import { Link as BaseLink } from "@carbon/react";
 import { FC, ReactNode } from "react";
 import useTranslate from "../../utility/localization";
@@ -28,7 +28,7 @@ const Link = styled(BaseLink)`
 
 export const LightLink = styled(Link)`
   display: inline;
-  color: ${linkInverse} !important;
+  color: var(--cds-link-inverse) !important;
 `;
 
 type DocumentationLinkProps = {
