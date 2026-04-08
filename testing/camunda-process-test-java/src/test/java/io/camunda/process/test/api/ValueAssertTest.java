@@ -524,9 +524,7 @@ public class ValueAssertTest {
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(model));
 
       // when / then - should not throw; the null value is passed to the embedding model
-      CamundaAssert.assertThatValue("some text")
-          .isSimilarTo("expectation A")
-          .isSimilarTo("expectation B");
+      CamundaAssert.assertThatValue(null).isSimilarTo("expectation A");
     }
 
     @Test
