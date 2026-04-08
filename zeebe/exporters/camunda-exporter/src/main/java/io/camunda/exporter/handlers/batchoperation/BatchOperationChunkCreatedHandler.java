@@ -11,7 +11,6 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,18 +20,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This handler updates the {@link BatchOperationEntity} and increases the total number of items of
- * a batch operation. This is not done in the {@link BatchOperationUpdateTask} because - depending
- * on the configuration <code>exportItemsOnCreation</code> - the operation items are not exported
- * and therefore cannot be counted properly. <br>
+ * This handler resets the {@code endDate} of a {@link BatchOperationEntity} to {@code null} on each
+ * CHUNK_CREATED event. This ensures the {@link BatchOperationUpdateTask} will re-process this batch
+ * operation to update completion/failure counts. <br>
  * <br>
- * Additionally to the {@link BatchOperationChunkCreatedItemHandler}, this handler removes an
- * existing endDate of the batch operation from the document. This way the {@link
- * BatchOperationUpdateTask} will process this batch operation again to update all counts. <br>
+ * This is necessary because sometimes the {@code COMPLETED} event from one partition is exported
+ * before all {@code CHUNK_CREATED} events are exported from another partition. Resetting {@code
+ * endDate} forces the update task to re-evaluate the counts. <br>
  * <br>
- * This process is necessary because sometimes the <code>COMPLETED</code> event from one partition
- * is exported before all <code>CHUNK_CREATED</code> events are exported from another partition. In
- * that case the numbers would forever be wrong.
+ * Note: {@code operationsTotalCount} is no longer incremented here. It is now set atomically by the
+ * {@link BatchOperationInitializedHandler} when the INITIALIZED event is exported, avoiding
+ * double-counting when CREATED and CHUNK_CREATED events land in the same exporter flush cycle.
  */
 public class BatchOperationChunkCreatedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationChunkRecordValue> {
@@ -71,9 +69,8 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public void updateEntity(
       final Record<BatchOperationChunkRecordValue> record, final BatchOperationEntity entity) {
-    // set to just the size of the current chunk. delta update is performed in the update script
-    entity.setOperationsTotalCount(
-        entity.getOperationsTotalCount() + record.getValue().getItems().size());
+    // No fields to update on the entity. The flush script resets endDate to null so that
+    // BatchOperationUpdateTask re-processes this batch operation.
   }
 
   @Override
@@ -82,17 +79,10 @@ public class BatchOperationChunkCreatedHandler
     // Use upsertWithScript to be resilient against cross-partition ordering: if the batch operation
     // document has not been created yet (e.g., a slow partition's CREATED event export), the upsert
     // creates a minimal document from the entity. When the document already exists, the script
-    // atomically increments the total count and resets endDate to null so that the
-    // BatchOperationUpdateTask will re-process this batch operation to update all counts.
+    // resets endDate to null so that the BatchOperationUpdateTask will re-process this batch
+    // operation to update all counts.
     batchRequest.upsertWithScript(
-        indexName,
-        entity.getId(),
-        entity,
-        """
-            ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
-            ctx._source.endDate = null;
-        """,
-        Map.of(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, entity.getOperationsTotalCount()));
+        indexName, entity.getId(), entity, "ctx._source.endDate = null;", Map.of());
   }
 
   @Override
