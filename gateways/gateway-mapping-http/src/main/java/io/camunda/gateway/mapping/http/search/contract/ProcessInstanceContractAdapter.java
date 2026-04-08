@@ -16,6 +16,7 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public final class ProcessInstanceContractAdapter {
 
@@ -62,7 +63,7 @@ public final class ProcessInstanceContractAdapter {
    * Maps the internal CANCELED state to the API's TERMINATED state. All other states map directly
    * by name.
    */
-  private static GeneratedProcessInstanceStateEnum toProtocolState(
+  private static @Nullable GeneratedProcessInstanceStateEnum toProtocolState(
       final ProcessInstanceState value) {
     if (value == null) {
       return null;
@@ -73,7 +74,7 @@ public final class ProcessInstanceContractAdapter {
     return GeneratedProcessInstanceStateEnum.fromValue(value.name());
   }
 
-  private static String emptyToNull(final String value) {
+  private static @Nullable String emptyToNull(final String value) {
     return value == null || value.isEmpty() ? null : value;
   }
 }

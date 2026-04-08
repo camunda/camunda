@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 @NullMarked
@@ -29,14 +30,16 @@ public final class VariableValueFilterUtil {
   private VariableValueFilterUtil() {}
 
   public static Either<List<String>, List<VariableValueFilter>> toStrictVariableValueFilters(
-      final List<GeneratedVariableValueFilterPropertyStrictContract> filters) {
-    if (CollectionUtils.isEmpty(filters)) {
+      final @Nullable List<GeneratedVariableValueFilterPropertyStrictContract> filters) {
+    final List<GeneratedVariableValueFilterPropertyStrictContract> safeFilters =
+        filters == null ? List.of() : filters;
+    if (CollectionUtils.isEmpty(safeFilters)) {
       return Either.right(List.of());
     }
 
     final List<String> validationErrors = new ArrayList<>();
     final List<VariableValueFilter> variableValueFilters =
-        filters.stream()
+        safeFilters.stream()
             .flatMap(
                 filter -> {
                   if (filter.name() == null) {
