@@ -471,4 +471,16 @@ public final class DeployResourceTest extends ClientTest {
         assertThat(resource2.getContent().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
     }
 
+    @Test
+    public void shouldFailWhenBatchSendWithoutResources() {
+        // when/then
+        assertThatThrownBy(() ->
+                client.newDeployResourceCommand()
+                        .batch()
+                        .send()
+                        .join()
+        ).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("At least one resource must be added");
+    }
+
 }
