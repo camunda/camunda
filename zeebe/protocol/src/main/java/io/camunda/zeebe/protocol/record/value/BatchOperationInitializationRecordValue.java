@@ -42,4 +42,16 @@ public interface BatchOperationInitializationRecordValue
    * @return the current page size of the search query
    */
   int getSearchQueryPageSize();
+
+  /**
+   * The partition-local total count of items found during initialization. This count is set once
+   * per partition when initialization finishes (INITIALIZED event) and is used by exporters to
+   * atomically increment the global {@code operationsTotalCount} on the batch operation document.
+   *
+   * <p>Returns {@code -1} when not set (backward compatibility with records produced before this
+   * field was introduced).
+   *
+   * @return the partition-local total item count, or {@code -1} if not set
+   */
+  int getOperationsTotalCount();
 }

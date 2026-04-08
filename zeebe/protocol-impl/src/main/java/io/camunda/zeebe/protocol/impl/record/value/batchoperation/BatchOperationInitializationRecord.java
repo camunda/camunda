@@ -21,6 +21,7 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_SEARCH_RESULT_CURSOR_KEY = "searchResultCursor";
   public static final String PROP_SEARCH_QUERY_PAGE_SIZE = "searchQueryPageSize";
+  public static final String PROP_OPERATIONS_TOTAL_COUNT = "operationsTotalCount";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
 
@@ -28,12 +29,15 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
       new StringProperty(PROP_SEARCH_RESULT_CURSOR_KEY, "");
   private final IntegerProperty searchQueryPageSize =
       new IntegerProperty(PROP_SEARCH_QUERY_PAGE_SIZE, 0);
+  private final IntegerProperty operationsTotalCountProp =
+      new IntegerProperty(PROP_OPERATIONS_TOTAL_COUNT, -1);
 
   public BatchOperationInitializationRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp)
         .declareProperty(searchResultCursorProp)
-        .declareProperty(searchQueryPageSize);
+        .declareProperty(searchQueryPageSize)
+        .declareProperty(operationsTotalCountProp);
   }
 
   @Override
@@ -69,9 +73,22 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getOperationsTotalCount() {
+    return operationsTotalCountProp.getValue();
+  }
+
+  public BatchOperationInitializationRecord setOperationsTotalCount(
+      final int operationsTotalCount) {
+    operationsTotalCountProp.reset();
+    operationsTotalCountProp.setValue(operationsTotalCount);
+    return this;
+  }
+
   public void wrap(final BatchOperationInitializationRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setSearchResultCursor(record.getSearchResultCursor());
     setSearchQueryPageSize(record.getSearchQueryPageSize());
+    setOperationsTotalCount(record.getOperationsTotalCount());
   }
 }
