@@ -1,0 +1,33 @@
+# Page snapshot
+
+```yaml
+- main [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - img "Camunda logo" [ref=e8]
+      - heading "Operate" [level=1] [ref=e10]
+    - generic [ref=e11]:
+      - generic [ref=e14]:
+        - generic [ref=e16]: Username
+        - generic [ref=e18]:
+          - textbox "Username" [ref=e19]
+          - alert [ref=e20]
+      - generic [ref=e22]:
+        - generic [ref=e23]: Password
+        - generic [ref=e25]:
+          - textbox "Password" [ref=e26]
+          - generic:
+            - button "Show password" [ref=e27] [cursor=pointer]:
+              - img [ref=e28]
+            - tooltip
+      - button "Login" [ref=e31] [cursor=pointer]
+      - generic [ref=e32]:
+        - text: Non-Production License. If you would like information on production usage, please refer to our
+        - link "terms & conditions page" [ref=e33] [cursor=pointer]:
+          - /url: https://legal.camunda.com/#self-managed-non-production-terms
+        - text: or
+        - link "contact sales" [ref=e34] [cursor=pointer]:
+          - /url: https://camunda.com/contact/
+        - text: .
+  - generic [ref=e35]: © Camunda Services GmbH 2026. All rights reserved. | 0.0.0-SNAPSHOT
+```
