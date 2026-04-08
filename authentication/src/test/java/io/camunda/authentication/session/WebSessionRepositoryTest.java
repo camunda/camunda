@@ -8,10 +8,12 @@
 package io.camunda.authentication.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -148,6 +150,43 @@ class WebSessionRepositoryTest {
 
     // then
     assertThat(persistentWebSessionClient.getAllPersistentWebSessions().items()).isEmpty();
+  }
+
+  @Test
+  void shouldNotPropagateExceptionWhenUpsertFails() {
+    // given
+    final PersistentWebSessionClient failingClient =
+        new PersistentWebSessionClient() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            return null;
+          }
+
+          @Override
+          public void upsertPersistentWebSession(
+              final PersistentWebSessionEntity persistentWebSessionEntity) {
+            throw new CamundaSearchException("Failed to execute index request");
+          }
+
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {}
+
+          @Override
+          public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+            return SearchQueryResult.of(b -> b.items(new ArrayList<>()));
+          }
+        };
+    final var repository =
+        new WebSessionRepository(
+            failingClient,
+            new WebSessionMapper(
+                new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
+            null);
+    final var webSession = repository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+
+    // when / then
+    assertThatNoException().isThrownBy(() -> repository.save(webSession));
   }
 
   static final class PersistentWebSessionClientStub implements PersistentWebSessionClient {
