@@ -629,9 +629,7 @@ jobs:
           # Build load test configuration
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
-                            --set global.image.pullSecrets[0].name=harbor-registry \
-                            --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
-                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
+                            --set global.image.pullSecrets[0].name=harbor-registry"
 
           # Append scenario load-test-load configuration and custom inputs
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
