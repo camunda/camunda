@@ -124,6 +124,13 @@ import org.springframework.http.ProblemDetail;
  * OOP piece by piece.
  *
  * <p>the split-up classes should be put in the @io.camunda.gateway.mapping.http.mapper package
+ *
+ * <h3>Null-coercion convention</h3>
+ *
+ * <p>Strict contract records generate {@code fooOrDefault()} accessors for nullable fields whose
+ * internal representation requires a non-null value (e.g. {@code String → ""}, {@code Map →
+ * Map.of()}, {@code List → List.of()}, {@code Integer → 0}, {@code Long → 0L}). Prefer these
+ * accessors over inline {@code foo() != null ? foo() : default} when writing new mapper methods.
  */
 public class RequestMapper {
 
@@ -397,7 +404,7 @@ public class RequestMapper {
         tenantId ->
             new ProcessInstanceCreateRequest(
                 -1L,
-                request.processDefinitionId() != null ? request.processDefinitionId() : "",
+                request.processDefinitionId(),
                 request.processDefinitionVersion() != null
                     ? request.processDefinitionVersion()
                     : -1,
@@ -490,10 +497,7 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                request.decisionDefinitionId() != null ? request.decisionDefinitionId() : "",
-                -1L,
-                request.variablesOrDefault(),
-                tenantId));
+                request.decisionDefinitionId(), -1L, request.variablesOrDefault(), tenantId));
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
@@ -1056,7 +1060,7 @@ public class RequestMapper {
   private static ProcessInstanceModificationVariableInstruction mapVariableInstructionFromContract(
       final GeneratedModifyProcessInstanceVariableInstructionStrictContract variable) {
     return new ProcessInstanceModificationVariableInstruction()
-        .setElementId(variable.scopeId() != null ? variable.scopeId() : "")
+        .setElementId(variable.scopeId())
         .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.variables())));
   }
 
