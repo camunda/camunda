@@ -267,7 +267,7 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
     const res = await request.post(buildUrl('/process-instances/deletion'), {
-      headers: jsonHeaders(token), // ovverrides default demo:demo
+      headers: jsonHeaders(token), // overrides default demo:demo
       data: {
         filter: {
           processInstanceKey: someInstanceKey,

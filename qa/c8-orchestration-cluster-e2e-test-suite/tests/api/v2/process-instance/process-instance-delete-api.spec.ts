@@ -146,9 +146,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
     const response = await request.post(
-      buildUrl(`/process-instances/${processInstanceKeyToDelete}/deletion`),
+      buildUrl(`/process-instances/${someInstanceKey}/deletion`),
       {
-        headers: jsonHeaders(token),
+        headers: jsonHeaders(token), // overrides default demo:demo
       },
     );
     await assertForbiddenRequest(
