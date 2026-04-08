@@ -188,31 +188,24 @@ func TestValidatePort(t *testing.T) {
 	}
 }
 
-func TestDockerCommandEnvOverridesVersion(t *testing.T) {
-	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9-SNAPSHOT")
-	base := []string{"CAMUNDA_VERSION=8.9.0-SNAPSHOT", "FOO=bar"}
+func TestShouldNotSupportDockerFlagOnStart(t *testing.T) {
+	// given
+	settings := types.C8RunSettings{}
 
-	result := dockerCommandEnv(base)
+	// when
+	startFlagSet := createStartFlagSet(&settings)
 
-	assert.Contains(t, result, "CAMUNDA_VERSION=8.9-SNAPSHOT")
-	assert.Equal(t, []string{"CAMUNDA_VERSION=8.9.0-SNAPSHOT", "FOO=bar"}, base)
+	// then
+	assert.Nil(t, startFlagSet.Lookup("docker"))
 }
 
-func TestDockerCommandEnvAddsVersionWhenMissing(t *testing.T) {
-	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9-SNAPSHOT")
-	base := []string{"FOO=bar"}
+func TestShouldNotSupportDockerFlagOnStop(t *testing.T) {
+	// given
+	settings := types.C8RunSettings{}
 
-	result := dockerCommandEnv(base)
+	// when
+	stopFlagSet := createStopFlagSet(&settings)
 
-	assert.Contains(t, result, "CAMUNDA_VERSION=8.9-SNAPSHOT")
-	assert.Equal(t, []string{"FOO=bar"}, base)
-}
-
-func TestDockerCommandEnvNoOverrideWithoutDockerVersion(t *testing.T) {
-	t.Setenv("CAMUNDA_DOCKER_VERSION", "")
-	base := []string{"CAMUNDA_VERSION=8.9.0-SNAPSHOT"}
-
-	result := dockerCommandEnv(base)
-
-	assert.Equal(t, base, result)
+	// then
+	assert.Nil(t, stopFlagSet.Lookup("docker"))
 }

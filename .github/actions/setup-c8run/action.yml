@@ -175,7 +175,6 @@ runs:
       shell: bash
       working-directory: ./c8run
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
         JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
         JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
