@@ -112,7 +112,7 @@ public class JobCallbackCommandWrapper {
 
     // a retried command has invoked scheduleExecutionUsing already, so we do not complete the
     // future here, it will be completed by the retry action
-    if (!(outcome instanceof CommandOutcome.Retried)) {
+    if (outcome != null) {
       resultFuture.complete(outcome);
     }
   }

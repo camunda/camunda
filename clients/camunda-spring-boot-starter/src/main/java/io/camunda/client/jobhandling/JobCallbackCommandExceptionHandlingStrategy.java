@@ -122,7 +122,7 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
       command.increaseBackoffUsing(backoffSupplier);
       LOG.warn("Retrying {} after {} '{}' with backoff", command, codeType, code);
       command.scheduleExecutionUsing(scheduledExecutorService);
-      return new CommandOutcome.Retried(exception, command.getAttempts()); // retry scheduled
+      return null; // retry scheduled
     }
 
     if (failureCodes.test(code)) {

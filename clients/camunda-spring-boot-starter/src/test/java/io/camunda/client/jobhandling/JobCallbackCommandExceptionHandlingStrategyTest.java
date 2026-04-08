@@ -85,7 +85,7 @@ public class JobCallbackCommandExceptionHandlingStrategyTest {
     final CommandOutcome outcome = strategy.handleCommandError(command, exception);
 
     // then
-    assertThat(outcome).isExactlyInstanceOf(CommandOutcome.Retried.class);
+    assertThat(outcome).isNull();
     verify(command).increaseBackoffUsing(backoffSupplier);
     verify(command).scheduleExecutionUsing(executor);
   }
