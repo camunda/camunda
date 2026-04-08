@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -55,10 +55,7 @@ public final class RdbmsExporter {
   private long lastPosition = -1;
   private long lastFlushedPosition = -1;
   private ScheduledTask currentFlushTask = null;
-  private ScheduledTask currentCleanupTask = null;
-  private ScheduledTask currentUsageMetricsCleanupTask = null;
-  private ScheduledTask currentJobBatchMetricsCleanupTask = null;
-  private ScheduledTask currentHistoryDeletionTask = null;
+  private RdbmsBackgroundTaskManager backgroundTaskManager = null;
 
   // Track the oldest record timestamp in the current batch for exporting latency calculation
   private long oldestRecordTimestampInBatch = -1;
@@ -133,17 +130,12 @@ public final class RdbmsExporter {
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
-    // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
-    // itself
-    currentCleanupTask =
-        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
-    currentUsageMetricsCleanupTask =
-        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupUsageMetricsHistory);
-    currentJobBatchMetricsCleanupTask =
-        controller.scheduleCancellableTask(
-            Duration.ofSeconds(1), this::cleanupJobBatchMetricsHistory);
-    currentHistoryDeletionTask =
-        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::deleteHistory);
+    // Start background tasks (history cleanup and deletion) in a separate thread pool,
+    // decoupled from the main export thread
+    backgroundTaskManager =
+        new RdbmsBackgroundTaskManager(
+            partitionId, historyCleanupService, historyDeletionService, LOG);
+    backgroundTaskManager.start();
 
     LOG.info(
         "[RDBMS Exporter P{}] Exporter opened with last exported position {}",
@@ -156,17 +148,9 @@ public final class RdbmsExporter {
       if (currentFlushTask != null) {
         currentFlushTask.cancel();
       }
-      if (currentCleanupTask != null) {
-        currentCleanupTask.cancel();
-      }
-      if (currentUsageMetricsCleanupTask != null) {
-        currentUsageMetricsCleanupTask.cancel();
-      }
-      if (currentJobBatchMetricsCleanupTask != null) {
-        currentJobBatchMetricsCleanupTask.cancel();
-      }
-      if (currentHistoryDeletionTask != null) {
-        currentHistoryDeletionTask.cancel();
+      if (backgroundTaskManager != null) {
+        backgroundTaskManager.close();
+        backgroundTaskManager = null;
       }
 
       try {
@@ -276,17 +260,9 @@ public final class RdbmsExporter {
     if (currentFlushTask != null) {
       currentFlushTask.cancel();
     }
-    if (currentCleanupTask != null) {
-      currentCleanupTask.cancel();
-    }
-    if (currentUsageMetricsCleanupTask != null) {
-      currentUsageMetricsCleanupTask.cancel();
-    }
-    if (currentJobBatchMetricsCleanupTask != null) {
-      currentJobBatchMetricsCleanupTask.cancel();
-    }
-    if (currentHistoryDeletionTask != null) {
-      currentHistoryDeletionTask.cancel();
+    if (backgroundTaskManager != null) {
+      backgroundTaskManager.close();
+      backgroundTaskManager = null;
     }
 
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
@@ -367,73 +343,6 @@ public final class RdbmsExporter {
     } finally {
       currentFlushTask =
           controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
-    }
-  }
-
-  @VisibleForTesting
-  void cleanupHistory() {
-    try {
-      final var newDuration =
-          historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now());
-      currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
-    } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{}] Failed to cleanup history, retrying ... {}",
-          partitionId,
-          e.getMessage());
-      currentCleanupTask =
-          controller.scheduleCancellableTask(
-              historyCleanupService.getCurrentCleanupInterval(partitionId), this::cleanupHistory);
-    }
-  }
-
-  @VisibleForTesting
-  void cleanupUsageMetricsHistory() {
-
-    try {
-      historyCleanupService.cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
-    } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{}] Failed to cleanup usage metrics history, retrying ... {}",
-          partitionId,
-          e.getMessage());
-    }
-    currentUsageMetricsCleanupTask =
-        controller.scheduleCancellableTask(
-            historyCleanupService.getUsageMetricsHistoryCleanupInterval(),
-            this::cleanupUsageMetricsHistory);
-  }
-
-  @VisibleForTesting
-  void cleanupJobBatchMetricsHistory() {
-    try {
-      historyCleanupService.cleanupJobBatchMetricsHistory(partitionId, OffsetDateTime.now());
-    } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{}] Failed to cleanup job batch metrics history, retrying ... {}",
-          partitionId,
-          e.getMessage());
-    }
-    currentJobBatchMetricsCleanupTask =
-        controller.scheduleCancellableTask(
-            historyCleanupService.getJobBatchMetricsHistoryCleanupInterval(),
-            this::cleanupJobBatchMetricsHistory);
-  }
-
-  @VisibleForTesting
-  void deleteHistory() {
-    try {
-      final var newDuration = historyDeletionService.deleteHistory(partitionId);
-      currentHistoryDeletionTask =
-          controller.scheduleCancellableTask(newDuration, this::deleteHistory);
-    } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{}] Failed to delete history, retrying ... {}",
-          partitionId,
-          e.getMessage());
-      currentHistoryDeletionTask =
-          controller.scheduleCancellableTask(
-              historyDeletionService.getCurrentDelayBetweenRuns(), this::deleteHistory);
     }
   }
 

@@ -41,6 +41,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -58,11 +59,14 @@ class RdbmsExporterTest {
   private RdbmsSchemaManager schemaManager;
 
   private ScheduledTask flushTask;
-  private ScheduledTask cleanupTask;
-  private ScheduledTask usageMetricsCleanupTask;
-  private ScheduledTask historyDeletionTask;
-  private ScheduledTask jobMetricsBatchCleanupTask;
   private RdbmsPurger rdbmsPurger;
+
+  @AfterEach
+  void tearDown() {
+    if (exporter != null) {
+      exporter.close();
+    }
+  }
 
   @Test
   void shouldCallCorrectHandler() {
@@ -238,9 +242,6 @@ class RdbmsExporterTest {
     // then
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
     verify(flushTask).cancel();
-    verify(cleanupTask).cancel();
-    verify(usageMetricsCleanupTask).cancel();
-    verify(historyDeletionTask).cancel();
   }
 
   @Test
@@ -258,8 +259,8 @@ class RdbmsExporterTest {
     createExporter(b -> b.queueSize(0));
 
     // then
-    // only cleanup task
-    verify(controller, times(4)).scheduleCancellableTask(any(), any());
+    // no flush task scheduled via controller when queue size is zero
+    verify(controller, times(0)).scheduleCancellableTask(any(), any());
   }
 
   @Test
@@ -268,8 +269,8 @@ class RdbmsExporterTest {
     createExporter(b -> b.flushInterval(Duration.ZERO));
 
     // then
-    // only cleanup task
-    verify(controller, times(4)).scheduleCancellableTask(any(), any());
+    // no flush task scheduled via controller when flush interval is zero
+    verify(controller, times(0)).scheduleCancellableTask(any(), any());
   }
 
   @Test
@@ -277,7 +278,7 @@ class RdbmsExporterTest {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
     final var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-    verify(controller, times(5))
+    verify(controller, times(1))
         .scheduleCancellableTask(any(Duration.class), runnableCaptor.capture());
     final var runnable = runnableCaptor.getAllValues().getFirst();
 
@@ -287,7 +288,7 @@ class RdbmsExporterTest {
 
     // then
     // captures the initial and the rescheduled call
-    verify(controller, times(6)).scheduleCancellableTask(any(Duration.class), any());
+    verify(controller, times(2)).scheduleCancellableTask(any(Duration.class), any());
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
   }
 
@@ -301,9 +302,6 @@ class RdbmsExporterTest {
 
     // then
     verify(flushTask).cancel();
-    verify(cleanupTask).cancel();
-    verify(usageMetricsCleanupTask).cancel();
-    verify(historyDeletionTask).cancel();
     verify(rdbmsPurger).purgeRdbms();
   }
 
@@ -404,9 +402,8 @@ class RdbmsExporterTest {
     // given - schema manager returns true for isInitialized
     createExporter(b -> b, true);
 
-    // then - exporter should have opened successfully
-    verify(controller, times(5))
-        .scheduleCancellableTask(any(Duration.class), any()); // flush + 3 scheduled tasks
+    // then - exporter should have opened successfully (only flush task scheduled via controller)
+    verify(controller, times(1)).scheduleCancellableTask(any(Duration.class), any());
   }
 
   @Test
@@ -427,7 +424,7 @@ class RdbmsExporterTest {
   void shouldRescheduleTaskAfterSuccessfulFlush() {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+    final var initialScheduleCount = 1; // only flush task
 
     // when
     exporter.flushAndReschedule();
@@ -441,7 +438,7 @@ class RdbmsExporterTest {
   void shouldRescheduleTaskEvenWhenFlushThrowsException() {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+    final var initialScheduleCount = 1; // only flush task
 
     // Mock the rdbmsWriter to throw an exception on flush
     doAnswer(
@@ -457,68 +454,6 @@ class RdbmsExporterTest {
     // then - a new task should still be scheduled (thanks to the finally block)
     verify(controller, times(initialScheduleCount + 1))
         .scheduleCancellableTask(any(Duration.class), any());
-  }
-
-  @Test
-  void shouldCatchExceptionAndRescheduleCleanupHistory() {
-    // given
-    createExporter(b -> b);
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
-
-    // Mock the historyCleanupService to throw an exception
-    when(historyCleanupService.cleanupHistory(anyInt(), any()))
-        .thenThrow(new RuntimeException("Simulated cleanup failure"));
-    when(historyCleanupService.getCurrentCleanupInterval(anyInt()))
-        .thenReturn(Duration.ofSeconds(1));
-
-    // when - should not throw exception
-    exporter.cleanupHistory();
-
-    // then - a new task should be scheduled
-    verify(controller, times(initialScheduleCount + 1))
-        .scheduleCancellableTask(any(Duration.class), any());
-    verify(historyCleanupService).getCurrentCleanupInterval(anyInt());
-  }
-
-  @Test
-  void shouldCatchExceptionAndRescheduleCleanupUsageMetricsHistory() {
-    // given
-    createExporter(b -> b);
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
-
-    // Mock the historyCleanupService to throw an exception
-    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
-        .thenThrow(new RuntimeException("Simulated usage metrics cleanup failure"));
-    when(historyCleanupService.getUsageMetricsHistoryCleanupInterval())
-        .thenReturn(Duration.ofSeconds(1));
-
-    // when - should not throw exception
-    exporter.cleanupUsageMetricsHistory();
-
-    // then - a new task should be scheduled
-    verify(controller, times(initialScheduleCount + 1))
-        .scheduleCancellableTask(any(Duration.class), any());
-    verify(historyCleanupService).getUsageMetricsHistoryCleanupInterval();
-  }
-
-  @Test
-  void shouldCatchExceptionAndRescheduleDeleteHistory() {
-    // given
-    createExporter(b -> b);
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
-
-    // Mock the historyDeletionService to throw an exception
-    when(historyDeletionService.deleteHistory(anyInt()))
-        .thenThrow(new RuntimeException("Simulated deletion failure"));
-    when(historyDeletionService.getCurrentDelayBetweenRuns()).thenReturn(Duration.ofSeconds(1));
-
-    // when - should not throw exception
-    exporter.deleteHistory();
-
-    // then - a new task should be scheduled
-    verify(controller, times(initialScheduleCount + 1))
-        .scheduleCancellableTask(any(Duration.class), any());
-    verify(historyDeletionService).getCurrentDelayBetweenRuns();
   }
 
   // ------------------------------------------------
@@ -561,19 +496,10 @@ class RdbmsExporterTest {
       final boolean schemaInitialized,
       final boolean openExporter) {
     flushTask = mock(ScheduledTask.class);
-    cleanupTask = mock(ScheduledTask.class);
-    usageMetricsCleanupTask = mock(ScheduledTask.class);
-    historyDeletionTask = mock(ScheduledTask.class);
-    jobMetricsBatchCleanupTask = mock(ScheduledTask.class);
 
     controller = mock(Controller.class);
     when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
-    when(controller.scheduleCancellableTask(any(), any()))
-        .thenReturn(flushTask)
-        .thenReturn(cleanupTask)
-        .thenReturn(usageMetricsCleanupTask)
-        .thenReturn(historyDeletionTask)
-        .thenReturn(jobMetricsBatchCleanupTask);
+    when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
 
     rdbmsWriters = mock(RdbmsWriters.class);
     executionQueue = new StubExecutionQueue();
