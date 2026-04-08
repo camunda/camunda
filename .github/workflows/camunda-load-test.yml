@@ -204,6 +204,27 @@ defaults:
     shell: bash
 
 jobs:
+  show-summary:
+    name: Summarize workflow inputs
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Show summary
+        run: |-
+          INPUTS=$(cat <<EOF | jq . --sort-keys
+          ${{ toJSON(inputs) }}
+          EOF
+          )
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          # Load test configuration
+
+          A load test was created with the following inputs:
+
+          \`\`\`json
+          $INPUTS
+          \`\`\`
+          EOF
+
   calculate-image-tag:
     name: Calculate Image Tag
     runs-on: ubuntu-latest
