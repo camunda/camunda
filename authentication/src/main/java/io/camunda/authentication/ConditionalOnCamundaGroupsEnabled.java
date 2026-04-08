@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication;
 
+import static io.camunda.security.configuration.OidcAuthenticationConfiguration.GROUPS_CLAIM_PROPERTY;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -14,10 +15,27 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 
+/**
+ * Condition that matches when the OIDC groups-claim property is <b>not</b> configured, meaning the
+ * platform should manage groups internally (Groups API enabled, Groups UI visible).
+ */
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 @Documented
-@ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' == ''")
-public @interface ConditionalOnCamundaGroupsEnabled {}
+@Conditional(ConditionalOnCamundaGroupsEnabled.OnGroupsClaimAbsentCondition.class)
+public @interface ConditionalOnCamundaGroupsEnabled {
+
+  class OnGroupsClaimAbsentCondition implements Condition {
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final String groupsClaim =
+          context.getEnvironment().getProperty(GROUPS_CLAIM_PROPERTY);
+      return groupsClaim == null || groupsClaim.isEmpty();
+    }
+  }
+}
