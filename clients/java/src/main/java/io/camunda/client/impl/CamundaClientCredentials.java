@@ -30,26 +30,25 @@ import java.util.Objects;
 public final class CamundaClientCredentials {
 
   /**
-   * Grace period before actual token expiry during which the token is considered invalid,
-   * triggering a proactive refresh. This prevents a race where a token that is valid at check time
-   * expires before the request reaches the server.
+   * Small safety margin subtracted from the actual token expiry when deciding whether the token
+   * is still usable. Guards against clock skew and in-flight latency between this check and the
+   * server validating the token; it is not a policy knob for refresh timing.
    */
-  private static final Duration EXPIRY_GRACE_PERIOD = Duration.ofSeconds(30);
+  private static final Duration EXPIRY_GRACE_PERIOD = Duration.ofSeconds(5);
 
   /**
-   * Soft expiry period before actual token expiry during which the token is still valid but a
-   * background refresh should be triggered. This is larger than the grace period, giving the
-   * background refresh time to complete before the token becomes invalid.
+   * Window before actual expiry during which a background refresh should be triggered eagerly.
+   * The token is still considered valid inside this window; this is purely a policy knob for how
+   * early we want to start refreshing so callers don't have to block on a synchronous refresh at
+   * the cliff edge.
    */
   private static final Duration PROACTIVE_REFRESH_PERIOD = Duration.ofSeconds(60);
 
-  @JsonAlias({"accesstoken", "access_token"})
-  private String accessToken;
-
-  private ZonedDateTime expiry;
-
   @JsonAlias({"tokentype", "token_type"})
   private String tokenType;
+  @JsonAlias({"accesstoken", "access_token"})
+  private String accessToken;
+  private ZonedDateTime expiry;
 
   public CamundaClientCredentials() {}
 
@@ -89,18 +88,15 @@ public final class CamundaClientCredentials {
   }
 
   /**
-   * Returns true if the token is still valid but nearing expiry and should be refreshed in the
-   * background. This allows the current token to keep being served while a new one is fetched
-   * asynchronously, avoiding the cliff edge where all threads discover the token is invalid at the
-   * same time.
+   * Returns true if the token has entered the proactive refresh window and a background refresh
+   * should be triggered. This is independent of {@link #isValid()}: callers should compose the
+   * two, using {@code isValid()} to decide whether the token can still be served and this method
+   * to decide whether to kick off an eager refresh alongside. This avoids the cliff edge where
+   * all threads discover the token is invalid at the same time.
    */
   @JsonIgnore
   public boolean shouldRefreshProactively() {
-    final Instant now = Instant.now();
-    final Instant expiryInstant = expiry.toInstant();
-    // Token is in the proactive refresh window: still valid but nearing expiry
-    return expiryInstant.minus(PROACTIVE_REFRESH_PERIOD).isBefore(now)
-        && expiryInstant.minus(EXPIRY_GRACE_PERIOD).isAfter(now);
+    return expiry.toInstant().minus(PROACTIVE_REFRESH_PERIOD).isBefore(Instant.now());
   }
 
   @Override
