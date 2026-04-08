@@ -53,10 +53,10 @@ public final class CamundaClientCredentialsTest {
 
   @Test
   void shouldBeInvalidWhenTokenExpiresWithinGracePeriod() {
-    // given — token that expires in 15 seconds (within the 30-second grace period)
-    final ZonedDateTime expiresInFifteenSeconds = ZonedDateTime.now().plusSeconds(15);
+    // given — token that expires in 2 seconds (within the 5-second grace period)
+    final ZonedDateTime expiresInTwoSeconds = ZonedDateTime.now().plusSeconds(2);
     final CamundaClientCredentials credentials =
-        new CamundaClientCredentials("token", expiresInFifteenSeconds, "Bearer");
+        new CamundaClientCredentials("token", expiresInTwoSeconds, "Bearer");
 
     // when
     final boolean valid = credentials.isValid();
@@ -67,10 +67,10 @@ public final class CamundaClientCredentialsTest {
 
   @Test
   void shouldBeValidWhenTokenExpiresWellAfterGracePeriod() {
-    // given — token that expires in 120 seconds (well beyond the 30-second grace period)
-    final ZonedDateTime expiresInTwoMinutes = ZonedDateTime.now().plusSeconds(120);
+    // given — token that expires in 30 seconds (well beyond the 5-second grace period)
+    final ZonedDateTime expiresInThirtySeconds = ZonedDateTime.now().plusSeconds(30);
     final CamundaClientCredentials credentials =
-        new CamundaClientCredentials("token", expiresInTwoMinutes, "Bearer");
+        new CamundaClientCredentials("token", expiresInThirtySeconds, "Bearer");
 
     // when
     final boolean valid = credentials.isValid();
@@ -81,8 +81,8 @@ public final class CamundaClientCredentialsTest {
 
   @Test
   void shouldRefreshProactivelyWhenTokenIsInSoftExpiryWindow() {
-    // given — token expires in 45 seconds: within the 60s proactive window, but beyond the 30s
-    // grace period, so isValid()=true but shouldRefreshProactively()=true
+    // given — token expires in 45 seconds: within the 60s proactive window but comfortably
+    // beyond the 5s grace period, so isValid()=true and shouldRefreshProactively()=true
     final ZonedDateTime expiresInFortyFiveSeconds = ZonedDateTime.now().plusSeconds(45);
     final CamundaClientCredentials credentials =
         new CamundaClientCredentials("token", expiresInFortyFiveSeconds, "Bearer");
@@ -111,19 +111,20 @@ public final class CamundaClientCredentialsTest {
   }
 
   @Test
-  void shouldNotRefreshProactivelyWhenTokenIsAlreadyInGracePeriod() {
-    // given — token expires in 15 seconds: already past the grace period threshold,
-    // so isValid()=false and shouldRefreshProactively()=false
-    final ZonedDateTime expiresInFifteenSeconds = ZonedDateTime.now().plusSeconds(15);
+  void shouldRefreshProactivelyWhenTokenIsAlreadyWithinGracePeriod() {
+    // given — token expires in 2 seconds: past the grace period (so isValid()=false) and also
+    // inside the proactive window. shouldRefreshProactively() is independent of validity;
+    // callers compose the two predicates, so here we expect both: not valid, and refresh due.
+    final ZonedDateTime expiresInTwoSeconds = ZonedDateTime.now().plusSeconds(2);
     final CamundaClientCredentials credentials =
-        new CamundaClientCredentials("token", expiresInFifteenSeconds, "Bearer");
+        new CamundaClientCredentials("token", expiresInTwoSeconds, "Bearer");
 
     // when
     final boolean valid = credentials.isValid();
     final boolean shouldRefresh = credentials.shouldRefreshProactively();
 
-    // then — not valid, so proactive refresh is irrelevant (synchronous refresh will happen)
+    // then
     assertThat(valid).isFalse();
-    assertThat(shouldRefresh).isFalse();
+    assertThat(shouldRefresh).isTrue();
   }
 }
