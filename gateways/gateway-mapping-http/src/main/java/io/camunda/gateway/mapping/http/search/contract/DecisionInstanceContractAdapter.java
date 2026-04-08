@@ -25,6 +25,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputE
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Contract adaptation layer for decision instance response projections.
@@ -119,7 +120,7 @@ public final class DecisionInstanceContractAdapter {
   private static List<GeneratedEvaluatedDecisionInputItemStrictContract> toEvaluatedInputs(
       final List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
     if (decisionInstanceInputEntities == null) {
-      return null;
+      return List.of();
     }
     return decisionInstanceInputEntities.stream()
         .map(
@@ -132,7 +133,7 @@ public final class DecisionInstanceContractAdapter {
   private static List<GeneratedMatchedDecisionRuleItemStrictContract> toMatchedRules(
       final List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
     if (decisionInstanceOutputEntities == null) {
-      return null;
+      return List.of();
     }
     final var outputEntitiesMappedByRule =
         decisionInstanceOutputEntities.stream()
@@ -159,7 +160,7 @@ public final class DecisionInstanceContractAdapter {
         .toList();
   }
 
-  private static GeneratedDecisionInstanceStateEnum toDecisionInstanceStateEnum(
+  private static @Nullable GeneratedDecisionInstanceStateEnum toDecisionInstanceStateEnum(
       final DecisionInstanceState state) {
     if (state == null) {
       return null;
@@ -172,7 +173,7 @@ public final class DecisionInstanceContractAdapter {
     };
   }
 
-  private static GeneratedDecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+  private static @Nullable GeneratedDecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
       final DecisionDefinitionType decisionDefinitionType) {
     if (decisionDefinitionType == null) {
       return null;

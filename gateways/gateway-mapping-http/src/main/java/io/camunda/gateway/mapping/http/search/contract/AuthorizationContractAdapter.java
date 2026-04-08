@@ -16,6 +16,7 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResour
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.AuthorizationEntity;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public final class AuthorizationContractAdapter {
 
@@ -53,7 +54,7 @@ public final class AuthorizationContractAdapter {
         .build();
   }
 
-  private static String emptyToNull(final String value) {
+  private static @Nullable String emptyToNull(final String value) {
     return value == null || value.isEmpty() ? null : value;
   }
 }

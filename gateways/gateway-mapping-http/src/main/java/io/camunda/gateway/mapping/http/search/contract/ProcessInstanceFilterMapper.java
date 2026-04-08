@@ -219,8 +219,8 @@ public final class ProcessInstanceFilterMapper {
   }
 
   private static void applyTagsAndVariables(
-      final Set<String> tags,
-      final List<GeneratedVariableValueFilterPropertyStrictContract> variables,
+      final @Nullable Set<String> tags,
+      final @Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables,
       final Builder builder,
       final List<String> validationErrors) {
     if (!CollectionUtils.isEmpty(tags)) {
