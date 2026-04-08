@@ -10,6 +10,7 @@ package io.camunda.authentication.session;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
@@ -33,8 +34,15 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
           RetryConfig.custom()
               .maxAttempts(MAX_RETRY_ATTEMPTS)
               .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_RETRY_DELAY_MS, 2))
-              .retryExceptions(RuntimeException.class)
+              .retryOnException(WebSessionRepository::isTransientFailure)
               .build());
+
+  private static boolean isTransientFailure(final Throwable throwable) {
+    if (throwable instanceof final CamundaSearchException cse) {
+      return cse.getReason() != Reason.INVALID_ARGUMENT && cse.getReason() != Reason.FORBIDDEN;
+    }
+    return throwable instanceof RuntimeException;
+  }
 
   private final PersistentWebSessionClient persistentWebSessionClient;
   private final WebSessionMapper webSessionMapper;
@@ -121,35 +129,24 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
 
   private void upsertWithRetry(
       final WebSession webSession, final PersistentWebSessionEntity entity) {
-    final var redactedId = redactSessionId(webSession.getId());
     try {
       Retry.decorateRunnable(
-              UPSERT_RETRY,
-              () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
+              UPSERT_RETRY, () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
           .run();
     } catch (final CamundaSearchException e) {
       LOGGER.warn(
-          "Failed to save web session [{}] to persistent storage after {} attempts: {} (reason: {})",
-          redactedId,
+          "Failed to save web session to persistent storage after {} attempts: {} (reason: {})",
           MAX_RETRY_ATTEMPTS,
           e.getMessage(),
           e.getReason(),
           e);
     } catch (final RuntimeException e) {
       LOGGER.warn(
-          "Failed to save web session [{}] to persistent storage after {} attempts: {}",
-          redactedId,
+          "Failed to save web session to persistent storage after {} attempts: {}",
           MAX_RETRY_ATTEMPTS,
           e.getMessage(),
           e);
     }
-  }
-
-  private static String redactSessionId(final String sessionId) {
-    if (sessionId == null || sessionId.length() <= 8) {
-      return "***";
-    }
-    return sessionId.substring(0, 8) + "...";
   }
 
   private Optional<WebSession> toWebSession(
