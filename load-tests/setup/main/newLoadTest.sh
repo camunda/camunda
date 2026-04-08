@@ -146,10 +146,17 @@ cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIREC
 cp -v  "values/camunda-platform-values-defaults.yaml"             "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml"  "$TARGET_DIRECTORY/"
 
+# Don't configure Elasticsearch unless specifically enabled (secondary storage,
+# or via Optimize)
+elasticsearchEnabled=false
+
 # Storage-specific copies.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
     cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"
+    if [ "$secondaryStorage" = elasticsearch ]; then
+      elasticsearchEnabled=true
+    fi
     ;;
   postgresql|mysql|mariadb)
     cp -v "values/camunda-platform-values-rdbms.yaml"            "$TARGET_DIRECTORY/"
@@ -162,10 +169,20 @@ case "$secondaryStorage" in
 esac
 
 if [[ "$enable_optimize" == "true" ]]; then
-  # Optimize needs specifically Elasticsearch (independently from the secondary
-  # storage configuration).
-  cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
-  cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$TARGET_DIRECTORY/"
+  # Optimize uses either Elasticsearch or OpenSearch (if configured as the
+  # secondary storage), or fallbacks to Elasticsearch if another secondary
+  # storage is used.
+  # We only request and configure Elasticsearch in this fallback case ; ES or
+  # OS should have been configured as part of the secondary storage
+  # configuration before, otherwise.
+  if [[ ! "$secondaryStorage" =~ ^(elasticsearch|opensearch)$ ]]; then
+    # Secondary storage is not ES nor OS: Forcefully configures Optimize to
+    # use Elasticsearch.
+    elasticsearchEnabled=true
+    echo "Forcefully enabling Elasticsearch for Optimize"
+    cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
+    cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$TARGET_DIRECTORY/"
+  fi
 fi
 
 cd "$TARGET_DIRECTORY"
@@ -189,6 +206,7 @@ author: "$git_author"
 deadlineDate: "$deadline_date"
 # Can be unset using "topologyZone: ~"
 topologyZone: $availability_zone
+
 # Propagated to the camunda-load-tests (load-tester) subchart via Helm global
 # coalescing.
 global:
@@ -196,6 +214,11 @@ global:
     camunda.io/created-by: "$git_author"
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
+
+elasticsearch:
+  # Elasticsearch settings are configured through the options from
+  # charts/load-test-setup/values.yaml
+  enabled: $elasticsearchEnabled
 EOF
 
 # Add/update helm repositories

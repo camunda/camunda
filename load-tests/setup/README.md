@@ -153,6 +153,7 @@ The load-test-setup chart owns all the resources deployed for a single load test
 * the `camunda-credentials` secret
 * the leader-balancer cronjob
 * the chaos-killer cronjob (optional, disabled by default)
+* the Elasticsearch ECK custom resource (optional, disabled by default — set `elasticsearch.enabled=true`)
 
 It is parameterized by a values file baked at scaffold time:
 

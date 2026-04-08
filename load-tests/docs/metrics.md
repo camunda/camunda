@@ -322,8 +322,8 @@ Disk usage as a ratio of used to total capacity across Elasticsearch persistent 
 - **Unit:** ratio (0–1.0)
 
 ```promql
-kubelet_volume_stats_used_bytes{namespace=~"$namespace", persistentvolumeclaim=~".*elastic.*"}
-/ kubelet_volume_stats_capacity_bytes{namespace=~"$namespace", persistentvolumeclaim=~".*elastic.*"}
+kubelet_volume_stats_used_bytes{namespace=~"$namespace", persistentvolumeclaim=~".*elasticsearch.*"}
+/ kubelet_volume_stats_capacity_bytes{namespace=~"$namespace", persistentvolumeclaim=~".*elasticsearch.*"}
 ```
 
 ---

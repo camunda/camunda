@@ -111,7 +111,7 @@ data:
             minimum-age: "1d"
           elasticsearch:
             aws-enabled: false
-            url: "http://elastic:9200"
+            url: "http://elasticsearch-es-http:9200"
             cluster-name: "elasticsearch"
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
@@ -253,7 +253,7 @@ data:
           elasticsearch:
             className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             args:
-              url: "http://elastic:9200"
+              url: "http://elasticsearch-es-http:9200"
               index:
                 prefix: "zeebe-record"
               retention:

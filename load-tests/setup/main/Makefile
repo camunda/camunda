@@ -70,14 +70,17 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
-
-	ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
-		platform_values += --set elasticsearch.enabled=false
-	endif
 else
-	# Optimize needs Elasticsearch or OpenSearch, so enable Elasticsearch if
-	# we are not already creating a cluster for secondary storage.
 	ifeq ($(filter $(secondary_storage),elasticsearch opensearch),)
+		# When deploying the OpenSearch secondary storage, Optimize is
+		# configured via the camunda-platform-values-opensearch.yaml file.
+		#
+		# If we are not using OpenSearch as a secondary storage, Optimize will
+		# be configured with the Elasticsearch backend, either:
+		# * Using the same Elasticsearch cluster as the secondary storage, if
+		#   the secondary storage is also Elasticsearch.
+		# * Or using its dedicated Elasticsearch cluster, different from the
+		#   configured secondary storage.
 		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 	endif
 endif
@@ -87,8 +90,8 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
-	es_prom_exporter_es_uri := http://elastic:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
+	es_prom_exporter_es_uri := http://elasticsearch-es-http:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
@@ -97,8 +100,8 @@ else ifeq ($(enable_optimize),true)
 	# Here, the secondary storage is either none or a RDBMS database.
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
-	es_prom_exporter_es_uri := http://elastic:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
+	es_prom_exporter_es_uri := http://elasticsearch-es-http:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
 else
 	install_es_prom_exporter := false
 endif
