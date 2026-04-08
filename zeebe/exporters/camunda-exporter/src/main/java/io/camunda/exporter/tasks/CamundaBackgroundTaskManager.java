@@ -11,30 +11,32 @@ import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager;
+import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
-public final class BackgroundTaskManager implements CloseableSilently {
+/**
+ * Manages background tasks for the Camunda (search engine) exporter. Delegates the generic task
+ * lifecycle management to {@link BackgroundTaskManager} and additionally closes
+ * search-engine-specific repositories on shutdown.
+ */
+public final class CamundaBackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
   private final ArchiverRepository archiverRepository;
   private final IncidentUpdateRepository incidentRepository;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
   private final HistoryDeletionRepository historyDeletionRepository;
   private final Logger logger;
-  private final ScheduledThreadPoolExecutor executor;
-  private final List<RunnableTask> tasks;
-  private final Duration closeTimeout;
+  private final BackgroundTaskManager delegate;
 
-  private int submittedTasks = 0;
-
-  BackgroundTaskManager(
+  CamundaBackgroundTaskManager(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository archiverRepository,
       final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
@@ -56,26 +58,15 @@ public final class BackgroundTaskManager implements CloseableSilently {
         Objects.requireNonNull(
             historyDeletionRepository, "must specify a history deletion repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
-    this.executor = Objects.requireNonNull(executor, "must specify an executor");
-    this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
-    this.closeTimeout = closeTimeout;
+    delegate = new BackgroundTaskManager(partitionId, logger, executor, tasks, closeTimeout);
   }
 
   @Override
   public void close() {
-    // Stop all running tasks gracefully, so they don't reschedule themselves, but they can still
-    // finish the current run
-    CloseHelper.closeAll(tasks);
-    executor.shutdown();
-    try {
-      executor.awaitTermination(closeTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    } catch (final InterruptedException ignored) {
-      // interrupted, will close the executor later
-    }
-    if (!executor.isTerminated()) {
-      executor.shutdownNow();
-    }
+    // Stop all running tasks gracefully and shut down the executor via the delegate
+    delegate.close();
 
+    // Close search-engine-specific repositories
     CloseHelper.closeAll(
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,
@@ -85,21 +76,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
   }
 
   public void start() {
-    // make sure this is retry-able, as this is called in the exporter's open phase, which can be
-    // retried; in this case, we don't want to resubmit previously submitted tasks
-    final var unsubmittedTasks = tasks.size() - submittedTasks;
-    if (unsubmittedTasks == 0) {
-      return;
-    }
-
-    logger.debug(
-        "Starting {} background tasks (with {} previously submitted tasks out of {} tasks)",
-        unsubmittedTasks,
-        submittedTasks,
-        tasks.size());
-    for (; submittedTasks < tasks.size(); submittedTasks++) {
-      final var task = tasks.get(submittedTasks);
-      executor.submit(task);
-    }
+    delegate.start();
   }
 }

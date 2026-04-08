@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.tasks;
+package io.camunda.zeebe.exporter.common.tasks;
 
-import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
+import io.camunda.zeebe.exporter.common.tasks.util.ReschedulingTaskLogger;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletableFuture;

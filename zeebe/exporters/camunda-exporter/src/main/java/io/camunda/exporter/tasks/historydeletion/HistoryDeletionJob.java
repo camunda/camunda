@@ -9,7 +9,6 @@ package io.camunda.exporter.tasks.historydeletion;
 
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
-import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -19,6 +18,7 @@ import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.ArrayList;
 import java.util.Comparator;

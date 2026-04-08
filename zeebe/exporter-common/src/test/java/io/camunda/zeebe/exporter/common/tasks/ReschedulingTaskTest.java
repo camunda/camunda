@@ -5,13 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.tasks;
+package io.camunda.zeebe.exporter.common.tasks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +29,7 @@ final class ReschedulingTaskTest {
   private static final ScheduledThreadPoolExecutor EXECUTOR =
       Mockito.spy(new ScheduledThreadPoolExecutor(1));
 
-  private final ArchiverJob archiverJob = mock(ArchiverJob.class);
+  private final BackgroundTask archiverJob = mock(BackgroundTask.class);
 
   @Test
   void shouldRescheduleTaskOnError() {

@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.tasks.utils;
+package io.camunda.zeebe.exporter.common.tasks.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import java.util.UUID;
 import java.util.stream.IntStream;
