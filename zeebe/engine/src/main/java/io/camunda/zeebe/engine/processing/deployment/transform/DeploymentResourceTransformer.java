@@ -15,6 +15,18 @@ import io.camunda.zeebe.util.Either;
 interface DeploymentResourceTransformer {
 
   /**
+   * Determines if this transformer can handle the given resource.
+   *
+   * <p>Transformers are checked in order, and the first transformer that returns {@code true} will
+   * be used to process the resource. This allows transformers to make decisions based on file
+   * extension, content, or any other criteria.
+   *
+   * @param resource the resource to check
+   * @return {@code true} if this transformer can handle the resource, {@code false} otherwise
+   */
+  boolean canTransform(DeploymentResource resource);
+
+  /**
    * Step 1 of transforming the given resource: The transformer should add the deployed resource's
    * metadata to the deployment record, but not write any event records yet.
    *
@@ -33,6 +45,15 @@ interface DeploymentResourceTransformer {
    * Step 2 of transforming the given resource: The transformer should update the previously created
    * metadata (if necessary) and eventually write the actual event record(s) (e.g. "process
    * created").
+   *
+   * <p><b>Versioning invariant:</b> implementations must check {@link
+   * DeploymentRecord#hasDuplicatesOnly()} first and return immediately when it is {@code true},
+   * because no event records need to be written for an all-duplicate deployment. When the
+   * deployment does contain at least one non-duplicate resource, every resource that was
+   * individually marked as a duplicate in {@link #createMetadata} must have its {@code duplicate}
+   * flag cleared and must receive a fresh key and a new version number before the record is written
+   * — see {@link
+   * io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord#hasDuplicatesOnly()}.
    *
    * @param resource the resource to transform
    * @param deployment the deployment record containing the metadata created in {@link

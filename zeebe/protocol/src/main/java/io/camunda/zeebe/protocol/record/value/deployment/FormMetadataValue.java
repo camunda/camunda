@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value.deployment;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.Arrays;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -59,6 +60,14 @@ public interface FormMetadataValue extends RecordValue, TenantOwned {
    *     {@code false}
    */
   boolean isDuplicate();
+
+  /**
+   * Returns {@code true} if this form metadata represents the same content as the given checksum
+   * and resource name. Both parameters must be non-null.
+   */
+  default boolean isDuplicateOf(final byte[] checksum, final String resourceName) {
+    return Arrays.equals(getChecksum(), checksum) && getResourceName().equals(resourceName);
+  }
 
   /**
    * @return the key of the deployment this form was deployed with

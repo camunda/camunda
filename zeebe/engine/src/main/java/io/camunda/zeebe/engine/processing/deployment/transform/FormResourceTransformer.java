@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.LongSupplier;
@@ -36,19 +38,24 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final FormState formState;
-  private final ValidationConfig config;
+  private final EngineConfiguration config;
 
   public FormResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
       final FormState formState,
-      final ValidationConfig config) {
+      final EngineConfiguration config) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.formState = formState;
     this.config = config;
+  }
+
+  @Override
+  public boolean canTransform(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".form");
   }
 
   @Override
@@ -80,13 +87,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findFirst()
         .ifPresent(
             metadata -> {
-              var key = metadata.getFormKey();
               if (metadata.isDuplicate()) {
                 // create new version as the deployment contains at least one other non-duplicate
                 // resource and all resources in a deployment should be versioned together
-                key = keyGenerator.nextKey();
                 metadata
-                    .setFormKey(key)
+                    .setFormKey(keyGenerator.nextKey())
                     .setVersion(
                         formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
                     .setDuplicate(false)
@@ -104,19 +109,13 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
       final var failureMessage =
           String.format(
               "Failed to parse form JSON. '%s': %s",
-              resource.getResourceName(), getFailureExceptionMessage(e));
+              resource.getResourceName(), e.getCause().getMessage());
       return Either.left(new Failure(failureMessage));
     } catch (final IOException e) {
       final var failureMessage =
-          String.format("'%s': %s", resource.getResourceName(), getFailureExceptionMessage(e));
+          String.format("'%s': %s", resource.getResourceName(), e.getCause().getMessage());
       return Either.left(new Failure(failureMessage));
     }
-  }
-
-  private static String getFailureExceptionMessage(final Exception exception) {
-    return Optional.ofNullable(exception.getCause())
-        .map(Throwable::getMessage)
-        .orElse(exception.getMessage());
   }
 
   private Either<Failure, ?> checkForDuplicateFormId(
@@ -139,11 +138,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   private Either<Failure, ?> checkForFormIdLength(
       final String formId, final DeploymentResource resource) {
 
-    if (formId != null && formId.length() > config.maxIdFieldLength()) {
+    if (formId != null && formId.length() > config.getMaxIdFieldLength()) {
       final var failureMessage =
           String.format(
               "The ID of a form must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-              config.maxIdFieldLength(), formId, resource.getResourceName());
+              config.getMaxIdFieldLength(), formId, resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     }
 
@@ -169,15 +168,12 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findLatestFormById(formRecord.getFormId(), tenantId)
         .ifPresentOrElse(
             latestForm -> {
-              final boolean isDuplicate =
-                  latestForm.getChecksum().equals(formRecord.getChecksumBuffer())
-                      && latestForm.getResourceName().equals(formRecord.getResourceNameBuffer());
-
-              if (isDuplicate) {
-                final int latestVersion = latestForm.getVersion();
+              if (formRecord.isDuplicateOf(
+                  BufferUtil.bufferAsArray(latestForm.getChecksum()),
+                  BufferUtil.bufferAsString(latestForm.getResourceName()))) {
                 formRecord
                     .setFormKey(latestForm.getFormKey())
-                    .setVersion(latestVersion)
+                    .setVersion(latestForm.getVersion())
                     .setDeploymentKey(latestForm.getDeploymentKey())
                     .setDuplicate(true);
               } else {

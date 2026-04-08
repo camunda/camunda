@@ -74,6 +74,12 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
+  public boolean canTransform(final DeploymentResource resource) {
+    final var resourceName = resource.getResourceName();
+    return resourceName.endsWith(".bpmn") || resourceName.endsWith(".xml");
+  }
+
+  @Override
   public Either<Failure, Void> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,

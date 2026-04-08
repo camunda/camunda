@@ -42,6 +42,8 @@ public class ResourceDeploymentTest {
   private static final String TEST_RESOURCE_WITH_BLANK_ID = "/resource/test-rpa_with_blank_id.rpa";
   private static final String TEST_RESOURCE_1_ID = "Rpa_0w7r08e";
   private static final String TEST_RESOURCE_2_ID = "Rpa_6s1b76p";
+  private static final String TEST_GENERIC_RESOURCE_1 = "/resource/test-generic-1.txt";
+  private static final String TEST_GENERIC_RESOURCE_2 = "/resource/test-generic-2.txt";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -269,20 +271,68 @@ public class ResourceDeploymentTest {
   }
 
   @Test
-  public void shouldIncreaseVersionIfResourceNameDiffers() {
-    // given
+  public void shouldBeDuplicateIfResourceNameDiffers() {
+    // given - two deployments with the same content and resource ID but different filenames
     final var resource = readResource(TEST_RESOURCE_1);
-    engine.deployment().withJsonResource(resource, "test-rpa-1.rpa").deploy();
+    final var firstDeployment =
+        engine.deployment().withJsonResource(resource, "test-rpa-1.rpa").deploy();
+    final var resourceV1 = firstDeployment.getValue().getResourceMetadata().get(0);
 
-    // when
+    // when - same content deployed under a different filename
     final var deploymentEvent =
         engine.deployment().withJsonResource(resource, "renamed-test-rpa-1.rpa").deploy();
 
-    // then
+    // then - the resource is a duplicate because resourceId and checksum are unchanged.
+    // Note: the resourceName field reflects the new filename even for duplicates, so users
+    // can see which filename was used in each deployment (rename is tracked).
     assertThat(deploymentEvent.getValue().getResourceMetadata())
-        .extracting(ResourceMetadataValue::getVersion)
-        .describedAs("Expect that the Resource version is increased")
-        .containsExactly(2);
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasVersion(1)
+                    .hasResourceKey(resourceV1.getResourceKey())
+                    .hasResourceName("renamed-test-rpa-1.rpa")
+                    .isDuplicate());
+  }
+
+  @Test
+  public void shouldCreateNewResourceWhenGenericResourceIsRenamed() {
+    // given - first deployment under original filename (filename is the resource ID for generic
+    // resources)
+    final var firstDeployment =
+        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+    final var resourceV1 = firstDeployment.getValue().getResourceMetadata().get(0);
+
+    // when - same content deployed under a different filename
+    final var secondDeployment =
+        engine
+            .deployment()
+            .withJsonResource(
+                readResource(TEST_GENERIC_RESOURCE_1), "/resource/renamed-generic-1.txt")
+            .deploy();
+
+    // then - a new, separate resource is created because the filename (= resource ID) changed.
+    // For generic resources, renaming the file is the way to create a new, independently
+    // versioned resource. This is distinct from the structured resource case (e.g. RPA) where
+    // the resource ID comes from the content and a filename rename is treated as a duplicate.
+    assertThat(secondDeployment.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasResourceId("/resource/renamed-generic-1.txt")
+                    .hasResourceName("/resource/renamed-generic-1.txt")
+                    .hasVersion(1)
+                    .isNotDuplicate());
+
+    // and the original resource is unaffected (still at version 1 under the old name)
+    assertThat(resourceV1)
+        .satisfies(
+            metadata ->
+                Assertions.assertThat(metadata)
+                    .hasResourceId(TEST_GENERIC_RESOURCE_1)
+                    .hasVersion(1));
   }
 
   @Test
@@ -548,5 +598,152 @@ public class ResourceDeploymentTest {
       fail("Failed to calculate the checksum", e);
     }
     return checksum;
+  }
+
+  @Test
+  public void shouldDeployGenericResourceAndReturnMetadata() {
+    // when
+    final var deploymentEvent =
+        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(deploymentEvent.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasResourceId(TEST_GENERIC_RESOURCE_1)
+                    .hasVersion(1)
+                    .hasVersionTag("")
+                    .hasResourceName(TEST_GENERIC_RESOURCE_1)
+                    .hasChecksum(getChecksum(TEST_GENERIC_RESOURCE_1))
+                    .isNotDuplicate()
+                    .hasDeploymentKey(deploymentEvent.getKey()));
+  }
+
+  @Test
+  public void shouldWriteResourceRecordForGenericResource() {
+    // when
+    final var deployment =
+        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+
+    // then
+    final Record<Resource> record = RecordingExporter.resourceRecords().getFirst();
+
+    Assertions.assertThat(record)
+        .hasIntent(ResourceIntent.CREATED)
+        .hasValueType(ValueType.RESOURCE)
+        .hasRecordType(RecordType.EVENT);
+
+    final Resource resourceRecord = record.getValue();
+    Assertions.assertThat(resourceRecord)
+        .hasResourceId(TEST_GENERIC_RESOURCE_1)
+        .hasResourceName(TEST_GENERIC_RESOURCE_1)
+        .hasVersion(1)
+        .hasVersionTag("")
+        .hasDeploymentKey(deployment.getKey());
+
+    assertThat(resourceRecord.getResourceKey()).isPositive();
+    assertThat(resourceRecord.isDuplicate()).isFalse();
+  }
+
+  @Test
+  public void shouldDeployGenericResourceDuplicateInSeparateCommand() {
+    // given
+    final var firstDeployment =
+        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+    final var resourceV1 = firstDeployment.getValue().getResourceMetadata().get(0);
+
+    // when
+    final var secondDeployment =
+        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+
+    // then
+    assertThat(secondDeployment.getValue().getResourceMetadata()).hasSize(1);
+    final var resourceMetadata = secondDeployment.getValue().getResourceMetadata().get(0);
+    Assertions.assertThat(resourceMetadata)
+        .hasVersion(1)
+        .hasResourceKey(resourceV1.getResourceKey())
+        .isDuplicate();
+  }
+
+  @Test
+  public void shouldIncreaseVersionForGenericResourceWithChangedContent() {
+    // given
+    engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+
+    // when
+    final var secondDeployment =
+        engine
+            .deployment()
+            .withJsonResource(readResource(TEST_GENERIC_RESOURCE_2), TEST_GENERIC_RESOURCE_1)
+            .deploy();
+
+    // then
+    assertThat(secondDeployment.getValue().getResourceMetadata())
+        .extracting(ResourceMetadataValue::getVersion)
+        .describedAs("Expect that the resource version is increased")
+        .containsExactly(2);
+  }
+
+  @Test
+  public void shouldRejectGenericDeploymentWithDuplicateResourceName() {
+    // given
+    final var resource = readResource(TEST_GENERIC_RESOURCE_1);
+
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonResource(resource, TEST_GENERIC_RESOURCE_1)
+            .withJsonResource(resource, TEST_GENERIC_RESOURCE_1)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the resource ids to be unique within a deployment"
+                    + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1));
+  }
+
+  @Test
+  public void shouldRejectGenericDeploymentWithSameNameButDifferentContent() {
+    // given
+    final var resource1 = readResource(TEST_GENERIC_RESOURCE_1);
+    final var resource2 = readResource(TEST_GENERIC_RESOURCE_2);
+
+    // when - two different files deployed under the same name
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonResource(resource1, TEST_GENERIC_RESOURCE_1)
+            .withJsonResource(resource2, TEST_GENERIC_RESOURCE_1)
+            .expectRejection()
+            .deploy();
+
+    // then - duplicate resource ID (filename) is rejected
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the resource ids to be unique within a deployment"
+                    + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1));
   }
 }

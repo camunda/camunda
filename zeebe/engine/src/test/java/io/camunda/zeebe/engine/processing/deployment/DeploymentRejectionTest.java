@@ -144,21 +144,24 @@ public class DeploymentRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNotParsable() {
-    // when
-    final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE
-            .deployment()
-            .withXmlResource("not a process".getBytes(UTF_8))
-            .expectRejection()
-            .deploy();
+  public void shouldDeployNonBpmnXmlAsGenericResource() {
+    // when - deploy invalid BPMN/XML content with .xml extension
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource("not a process".getBytes(UTF_8)).deploy();
 
-    // then
-    Assertions.assertThat(rejectedDeployment)
-        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasIntent(DeploymentIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    // then - it should be accepted as a generic resource, not rejected
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(DeploymentIntent.CREATED);
+
+    assertThat(deployment.getValue().getResourceMetadata())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            metadata ->
+                Assertions.assertThat(metadata)
+                    .hasResourceName("process.xml")
+                    .hasVersion(1));
   }
 
   @Test
@@ -702,6 +705,88 @@ public class DeploymentRejectionTest {
 
     // when
     final var deployment = ENGINE.deployment().withXmlClasspathResource(resource).deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasIntent(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void
+      shouldRejectDeploymentIfLinkedResourceNotIncludedForServiceTaskWithBindingTypeDeployment() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "serviceTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("test-rpa-resource")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .isEqualTo(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.bpmn':
+            - Element: serviceTask > extensionElements > linkedResources > linkedResource
+                - ERROR: Expected to find resource with id 'test-rpa-resource' in current deployment, but not found.
+            """);
+  }
+
+  @Test
+  public void
+      shouldDeploySuccessfullyIfLinkedResourceIncludedForServiceTaskWithBindingTypeDeployment() {
+    // given
+    final var rpaResource =
+        """
+        {
+          "id": "test-rpa-resource",
+          "resourceType": "RPA"
+        }
+        """;
+    final var process =
+        Bpmn.createExecutableProcess("process-linked-resource-success")
+            .startEvent()
+            .serviceTask(
+                "serviceTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("test-rpa-resource")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withJsonResource(rpaResource.getBytes(UTF_8), "resource.rpa")
+            .deploy();
 
     // then
     Assertions.assertThat(deployment)
