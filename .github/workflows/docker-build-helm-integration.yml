@@ -292,7 +292,7 @@ jobs:
   helm-deploy:
     name: Helm chart Integration Tests
     needs: [build-and-push, format-identifier]
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@test-report-json-change
     secrets: inherit
     with:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
