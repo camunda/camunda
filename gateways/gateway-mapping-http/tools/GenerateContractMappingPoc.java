@@ -35,12 +35,7 @@ public class GenerateContractMappingPoc {
   private static final Path OUT_BASE = ROOT.resolve("src/main/java");
   private static final String TARGET_PACKAGE = "io.camunda.gateway.mapping.http.search.contract.generated";
   private static final String SEARCH_PACKAGE = "io.camunda.gateway.mapping.http.search";
-  private static final String PROTOCOL_PACKAGE = "io.camunda.gateway.protocol.model";
   private static final String CONTROLLER_PACKAGE = "io.camunda.zeebe.gateway.rest.controller.generated";
-  private static final Path PROTOCOL_MODEL_SOURCE_DIR =
-      ROOT.resolve("../gateway-model/target/generated-sources/openapi/src/main/io/camunda/gateway/protocol/model")
-          .normalize();
-  private static final Set<String> AVAILABLE_PROTOCOL_TYPES = discoverProtocolModelTypes();
   /** Schema names for which a strict contract DTO has been generated (populated at startup). */
   private static final Set<String> AVAILABLE_STRICT_CONTRACTS = new LinkedHashSet<>();
 
@@ -1584,8 +1579,6 @@ public enum %s {
       constructorBody = String.join("\n", checks);
     }
 
-    final String fromProtocolFactory =
-      renderFromProtocolFactory(schemaName, dtoClass, fields);
     final String fieldReferences = renderFieldReferences(schemaName, fields);
 
     final String coercionHelpers =
@@ -1610,7 +1603,6 @@ public enum %s {
         && coercionHelpers.isBlank()
         && longKeyAccessors.isBlank()
         && orDefaultAccessors.isBlank()
-        && fromProtocolFactory.isBlank()
         && builderCode.isBlank()
         && !hasInlineEnumValues) {
       recordBody = "";
@@ -1627,9 +1619,6 @@ public enum %s {
       }
       if (!orDefaultAccessors.isBlank()) {
         sections.add(orDefaultAccessors);
-      }
-      if (!fromProtocolFactory.isBlank()) {
-        sections.add(fromProtocolFactory);
       }
       if (!builderCode.isBlank()) {
         sections.add(builderCode);
@@ -1842,19 +1831,6 @@ public record %s(
     final var methodName = "coerce" + capitalizeIdentifier(field.identifier());
     if (field.hasStrictObjectType()) {
       final var strictType = field.typeInfo().strictDtoClass();
-      final var protocolType = field.typeInfo().protocolJavaType();
-      final var protocolConvertible = field.typeInfo().protocolConvertible();
-      final var protocolBranch =
-          protocolConvertible
-              ? """
-    if (value instanceof %s protocolValue) {
-      return %s.fromProtocol(protocolValue);
-    }
-"""
-                  .formatted(protocolType, strictType)
-              : "";
-      final var protocolPart =
-          protocolConvertible ? " or " + protocolType : "";
       return """
   public static %s %s(final Object value) {
     if (value == null) {
@@ -1863,38 +1839,22 @@ public record %s(
     if (value instanceof %s strictValue) {
       return strictValue;
     }
-%s
+
     throw new IllegalArgumentException(
-        \"%s must be a %s%s, but was \" + value.getClass().getName());
+        \"%s must be a %s, but was \" + value.getClass().getName());
   }
 """
           .formatted(
               strictType,
               methodName,
               strictType,
-              protocolBranch,
               field.name(),
-              strictType,
-              protocolPart);
+              strictType);
     }
 
     if (field.hasStrictListType()) {
       final var elementInfo = field.typeInfo().elementType();
       final var strictType = elementInfo.strictDtoClass();
-      final var protocolType = elementInfo.protocolJavaType();
-      final var protocolConvertible = elementInfo.protocolConvertible();
-      final var protocolItemBranch =
-          protocolConvertible
-              ? """
-      } else if (item instanceof %s protocolItem) {
-        result.add(%s.fromProtocol(protocolItem));
-"""
-                  .formatted(protocolType, strictType)
-              : "";
-      final var listTypeDescription =
-          protocolConvertible
-              ? strictType + " or " + protocolType
-              : strictType;
       return """
   public static java.util.List<%s> %s(final Object value) {
     if (value == null) {
@@ -1911,7 +1871,7 @@ public record %s(
         result.add(null);
       } else if (item instanceof %s strictItem) {
         result.add(strictItem);
-%s
+
       } else {
         throw new IllegalArgumentException(
             \"%s must contain only %s items, but got \"
@@ -1925,82 +1885,14 @@ public record %s(
               strictType,
               methodName,
               field.name(),
-              listTypeDescription,
               strictType,
               strictType,
-              protocolItemBranch,
+              strictType,
               field.name(),
-              listTypeDescription);
+              strictType);
     }
 
     return "";
-  }
-
-  private static String renderFromProtocolFactory(
-      final String schemaName, final String dtoClass, final List<ContractField> fields) {
-    if (!supportsFromProtocolFactory(schemaName)) {
-      return "";
-    }
-    final var protocolType = PROTOCOL_PACKAGE + "." + schemaName;
-    final var args =
-        fields.stream()
-            .map(
-                field -> {
-                  final var sourceAccess =
-                      "source." + protocolGetterName(field.mapperMethod()) + "()";
-                  if (field.longKeyCoercion()) {
-                    return "coerce"
-                        + capitalizeIdentifier(field.identifier())
-                        + "("
-                        + sourceAccess
-                        + ")";
-                  }
-                  if (field.hasStrictObjectType() || field.hasStrictListType()) {
-                    return "coerce"
-                        + capitalizeIdentifier(field.identifier())
-                        + "("
-                        + sourceAccess
-                        + ")";
-                  }
-                  return sourceAccess;
-                })
-            .collect(Collectors.joining(",\n        "));
-    return """
-  public static %s fromProtocol(final %s source) {
-    if (source == null) {
-      return null;
-    }
-    return new %s(
-        %s);
-  }
-"""
-          .formatted(dtoClass, protocolType, dtoClass, args);
-  }
-
-  private static String protocolGetterName(final String propertyName) {
-    final var capitalized = capitalizeIdentifier(propertyName);
-    return "get" + capitalized;
-  }
-
-  private static boolean supportsFromProtocolFactory(final String schemaName) {
-    return false;
-  }
-
-  private static Set<String> discoverProtocolModelTypes() {
-    if (!Files.isDirectory(PROTOCOL_MODEL_SOURCE_DIR)) {
-      return Set.of();
-    }
-
-    try (final var stream = Files.list(PROTOCOL_MODEL_SOURCE_DIR)) {
-      return stream
-          .filter(path -> path.getFileName().toString().endsWith(".java"))
-          .map(path -> path.getFileName().toString())
-          .map(name -> name.substring(0, name.length() - ".java".length()))
-          .collect(Collectors.toCollection(LinkedHashSet::new));
-    } catch (final IOException e) {
-      throw new IllegalStateException(
-          "Failed to discover protocol model types in " + PROTOCOL_MODEL_SOURCE_DIR, e);
-    }
   }
 
   private static String renderBuilder(
@@ -2374,25 +2266,6 @@ public record %s(
         + "@Nullable "
         + baseType.substring(lastDot + 1)
         + genericSuffix;
-  }
-
-  private static String extractSchemaNameFromStrictClass(String strictDtoClass) {
-    // "GeneratedFooStrictContract" → "Foo"
-    var name = strictDtoClass;
-    if (name.startsWith("Generated")) {
-      name = name.substring("Generated".length());
-    }
-    if (name.endsWith("StrictContract")) {
-      name = name.substring(0, name.length() - "StrictContract".length());
-    }
-    // The mapper class name uses the schema name, which for Result schemas has "Result" suffix
-    // but the DTO class name strips it. We need the original schema name.
-    // Look up in the mapper: dtoClassName strips "Result" suffix, so we need to check if
-    // adding "Result" back gives us a valid protocol type.
-    if (AVAILABLE_PROTOCOL_TYPES.contains(name + "Result")) {
-      return name + "Result";
-    }
-    return name;
   }
 
   private static Map<SchemaKey, SchemaDef> loadSchemas(Path specDir) throws IOException {
@@ -2870,28 +2743,28 @@ public record %s(
       return TypeInfo.scalar("Object");
     }
 
-    final var protocolType = PROTOCOL_PACKAGE + "." + key.schemaName();
+    final var schemaName = key.schemaName();
     if (resolvingStack.contains(key)) {
       if (hasStrictContractType(schema)) {
-        final var strictType = dtoClassName(key.schemaName());
-        return TypeInfo.strictObject(strictType, protocolType, supportsFromProtocolFactory(key.schemaName()));
+        final var strictType = dtoClassName(schemaName);
+        return TypeInfo.strictObject(strictType, schemaName);
       }
-      return TypeInfo.scalar(protocolType);
+      return TypeInfo.scalar("Object");
     }
 
     if (hasStrictContractType(schema)) {
-      final var strictType = dtoClassName(key.schemaName());
-      return TypeInfo.strictObject(strictType, protocolType, supportsFromProtocolFactory(key.schemaName()));
+      final var strictType = dtoClassName(schemaName);
+      return TypeInfo.strictObject(strictType, schemaName);
     }
 
     // Filter property schemas (oneOf with inline primitive + $ref) are registered in
     // AVAILABLE_STRICT_CONTRACTS but have no properties on the parent schema node.
     // Resolve them to the sealed interface type with self-deserializing flag.
-    if (AVAILABLE_STRICT_CONTRACTS.contains(key.schemaName())
+    if (AVAILABLE_STRICT_CONTRACTS.contains(schemaName)
         && isPolymorphicSchema(schema)
         && isFilterPropertySchema(schema)) {
-      final var strictType = dtoClassName(key.schemaName());
-      return TypeInfo.selfDeserializingObject(strictType, protocolType);
+      final var strictType = dtoClassName(schemaName);
+      return TypeInfo.selfDeserializingObject(strictType, schemaName);
     }
 
     if (!schema.node().enumValues().isEmpty()) {
@@ -3349,21 +3222,19 @@ public record %s(
       boolean strictObjectType,
       String strictDtoClass,
       String protocolJavaType,
-      boolean protocolConvertible,
       /** True for types with their own @JsonDeserialize that don't need coercion helpers. */
       boolean selfDeserializing,
       TypeInfo elementType) {
 
     static TypeInfo scalar(final String javaType) {
-      return new TypeInfo(javaType, false, null, null, false, false, null);
+      return new TypeInfo(javaType, false, null, null, false, null);
     }
 
     static TypeInfo strictObject(
         final String strictDtoClass,
-        final String protocolJavaType,
-        final boolean protocolConvertible) {
+        final String protocolJavaType) {
       return new TypeInfo(
-          strictDtoClass, true, strictDtoClass, protocolJavaType, protocolConvertible, false, null);
+          strictDtoClass, true, strictDtoClass, protocolJavaType, false, null);
     }
 
     /** A strict object type that handles its own deserialization (e.g., filter properties). */
@@ -3371,7 +3242,7 @@ public record %s(
         final String strictDtoClass,
         final String protocolJavaType) {
       return new TypeInfo(
-          strictDtoClass, true, strictDtoClass, protocolJavaType, false, true, null);
+          strictDtoClass, true, strictDtoClass, protocolJavaType, true, null);
     }
 
     static TypeInfo listOf(final TypeInfo elementType) {
@@ -3380,7 +3251,6 @@ public record %s(
           false,
           null,
           null,
-          false,
           false,
           elementType);
     }
@@ -3392,7 +3262,6 @@ public record %s(
           null,
           null,
           false,
-          false,
           elementType);
     }
 
@@ -3402,7 +3271,6 @@ public record %s(
           false,
           null,
           null,
-          false,
           false,
           valueType);
     }
@@ -4205,9 +4073,9 @@ public record %s(
     if (isBinary) return "Part";
     if (refSchema != null) {
       String resolved = resolveSchemaType(refSchema);
-      // If the resolved type is not a known protocol or strict-contract type,
-      // it's a scalar alias (e.g. TenantId → type: string) — fall back to String.
-      if (resolved.equals(refSchema) && !AVAILABLE_PROTOCOL_TYPES.contains(resolved)) {
+      // If the resolved type equals the original schema name, it is not a known
+      // strict-contract type — it is a scalar alias (e.g. TenantId → type: string).
+      if (resolved.equals(refSchema)) {
         resolved = "String";
       }
       return isArray ? "List<" + resolved + ">" : resolved;
@@ -4382,7 +4250,6 @@ public record %s(
       return TARGET_PACKAGE + "." + raw;
     if (raw.startsWith("Generated") && raw.endsWith("Enum"))
       return TARGET_PACKAGE + "." + raw;
-    if (AVAILABLE_PROTOCOL_TYPES.contains(raw)) return PROTOCOL_PACKAGE + "." + raw;
     return null; // unknown — caller may need to add manually
   }
 
@@ -4402,7 +4269,6 @@ public record %s(
     final var searchRequestDto = SEARCH_REQUEST_DTO_MAP.get(schemaName);
     if (searchRequestDto != null) return searchRequestDto;
     if (AVAILABLE_STRICT_CONTRACTS.contains(schemaName)) return dtoClassName(schemaName);
-    if (AVAILABLE_PROTOCOL_TYPES.contains(schemaName)) return schemaName;
     return schemaName; // fallback to original name
   }
 
