@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -226,7 +227,7 @@ public class Engine implements RecordProcessor {
       return true;
     }
 
-    final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
+    final boolean banned = isProcessInstanceBanned(typedCommand);
 
     if (!banned) {
       return true;
@@ -236,6 +237,17 @@ public class Engine implements RecordProcessor {
     return intent == ProcessInstanceIntent.CANCEL
         || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
         || intent == ProcessInstanceBatchIntent.TERMINATE;
+  }
+
+  private boolean isProcessInstanceBanned(final TypedRecord<?> typedCommand) {
+    final UnpackedObject value = typedCommand.getValue();
+    if (value instanceof ProcessInstanceRelated) {
+      final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
+      if (processInstanceKey >= 0) {
+        return processingState.getBannedInstanceState().isBanned(typedCommand);
+      }
+    }
+    return false;
   }
 
   private void handleUnexpectedError(
