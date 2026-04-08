@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration id="Config_test123">
+  <settings>
+    <timeout>30000</timeout>
+    <retries>3</retries>
+  </settings>
+  <parameters>
+    <param name="endpoint">https://api.example.com</param>
+    <param name="apiKey">secret-key-123</param>
+  </parameters>
+</configuration>

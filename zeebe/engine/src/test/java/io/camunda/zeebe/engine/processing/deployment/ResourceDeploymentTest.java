@@ -44,6 +44,7 @@ public class ResourceDeploymentTest {
   private static final String TEST_RESOURCE_2_ID = "Rpa_6s1b76p";
   private static final String TEST_GENERIC_RESOURCE_1 = "/resource/test-generic-1.txt";
   private static final String TEST_GENERIC_RESOURCE_2 = "/resource/test-generic-2.txt";
+  private static final String TEST_GENERIC_XML_CONFIG = "/resource/test-generic-config.xml";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -745,5 +746,44 @@ public class ResourceDeploymentTest {
                 "Expected the resource ids to be unique within a deployment"
                     + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
                 TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1));
+  }
+
+  @Test
+  public void shouldDeployNonBpmnXmlFileAsGenericResource() {
+    // given - an XML file that is not BPMN
+
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(TEST_GENERIC_XML_CONFIG).deploy();
+
+    // then - it should be deployed as a generic resource, not fail as invalid BPMN
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+
+    assertThat(deploymentEvent.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasResourceId(TEST_GENERIC_XML_CONFIG)
+                    .hasVersion(1)
+                    .hasResourceName(TEST_GENERIC_XML_CONFIG)
+                    .hasChecksum(getChecksum(TEST_GENERIC_XML_CONFIG))
+                    .isNotDuplicate()
+                    .hasDeploymentKey(deploymentEvent.getKey()));
+
+    // Verify resource record was created
+    final Record<Resource> record = RecordingExporter.resourceRecords().getFirst();
+    Assertions.assertThat(record)
+        .hasIntent(ResourceIntent.CREATED)
+        .hasValueType(ValueType.RESOURCE)
+        .hasRecordType(RecordType.EVENT);
+    Assertions.assertThat(record.getValue())
+        .hasResourceId(TEST_GENERIC_XML_CONFIG)
+        .hasVersion(1)
+        .hasResourceName(TEST_GENERIC_XML_CONFIG)
+        .hasChecksum(getChecksum(TEST_GENERIC_XML_CONFIG));
   }
 }

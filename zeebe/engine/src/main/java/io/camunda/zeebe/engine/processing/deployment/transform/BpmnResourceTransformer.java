@@ -76,7 +76,17 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   @Override
   public boolean canTransform(final DeploymentResource resource) {
     final var resourceName = resource.getResourceName();
-    return resourceName.endsWith(".bpmn") || resourceName.endsWith(".xml");
+    // .bpmn files must always be handled by this transformer (even if invalid)
+    if (resourceName.endsWith(".bpmn")) {
+      return true;
+    }
+    // .xml files: try to parse as BPMN and only handle if it's valid BPMN
+    // Note: This requires parsing the resource, which will be done again in createMetadata().
+    // This is necessary to distinguish BPMN .xml files from generic .xml files.
+    if (resourceName.endsWith(".xml")) {
+      return readProcessDefinition(resource).isRight();
+    }
+    return false;
   }
 
   @Override
