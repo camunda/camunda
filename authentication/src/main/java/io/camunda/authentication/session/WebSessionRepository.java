@@ -9,6 +9,7 @@ package io.camunda.authentication.session;
 
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.UUID;
@@ -99,9 +100,17 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   private void saveWebSessionIfChanged(final WebSession webSession) {
     if (webSession.isChanged()) {
       LOGGER.debug("Web Session {} changed, save in storage.", webSession);
-      Optional.of(webSession)
-          .map(webSessionMapper::toPersistentWebSession)
-          .ifPresent(persistentWebSessionClient::upsertPersistentWebSession);
+      final var entity = webSessionMapper.toPersistentWebSession(webSession);
+      try {
+        persistentWebSessionClient.upsertPersistentWebSession(entity);
+      } catch (final CamundaSearchException e) {
+        LOGGER.warn(
+            "Failed to save web session [{}] to persistent storage: {} (reason: {})",
+            webSession.getId(),
+            e.getMessage(),
+            e.getReason(),
+            e);
+      }
     }
   }
 
