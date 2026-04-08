@@ -1035,11 +1035,13 @@ package %s;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.annotation.Generated;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Wrapper for the plain-value branch of the %s oneOf.
  * Represents a direct value match (implicit $eq).
  */
+@NullMarked
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record %s(%s value) implements %s {
@@ -1330,7 +1332,8 @@ public enum %s {
           || FORCE_NULLABLE_FIELDS.contains(schema.schemaName() + "." + propertyName);
         final var typeInfo = resolveTypeInfo(node, contextFile, allSchemas, new ArrayDeque<>());
         final var typeOverride = FORCE_TYPE_OVERRIDES.get(schema.schemaName() + "." + propertyName);
-        final var javaType = typeOverride != null ? typeOverride : typeInfo.javaType();
+          final var javaType =
+            normalizeEmittedType(typeOverride != null ? typeOverride : typeInfo.javaType());
       final var isLongKeyCoercion =
           "String".equals(javaType)
               && isLongKeySemantic(node, contextFile, allSchemas, new ArrayDeque<>());
@@ -1402,11 +1405,14 @@ public enum %s {
   private static String renderStrictDto(
       String sourceFile, String schemaName, String dtoClass, List<ContractField> fields,
       String sealedParent, boolean emitConstraints) {
-    final boolean hasNullable = fields.stream().anyMatch(ContractField::nullable);
+    final boolean hasNullable = fields.stream().anyMatch(GenerateContractMappingPoc::isNullAssignableField) || !fields.isEmpty();
     final boolean hasRequiredNonNullable = fields.stream().anyMatch(f -> f.required() && !f.nullable());
     final var coercionFields = fields.stream().filter(ContractField::requiresCoercion).toList();
     final boolean hasLongKeyCoercion = !coercionFields.isEmpty();
     final boolean hasListCoercion = fields.stream().anyMatch(ContractField::hasStrictListType);
+    final boolean hasListType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.List"));
+    final boolean hasSetType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.Set"));
+    final boolean hasMapType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.Map"));
     final boolean hasJsonProperty = fields.stream().anyMatch(f -> !f.name().equals(f.identifier()));
     final boolean hasInlineEnumValues = fields.stream().anyMatch(f -> !f.inlineEnumValues().isEmpty());
     final boolean hasSchema = fields.stream().anyMatch(f -> f.description() != null || f.defaultValue() != null);
@@ -1425,6 +1431,9 @@ public enum %s {
         + (hasLongKeyCoercion ? "import io.camunda.gateway.mapping.http.util.KeyUtil;\n" : "")
         + (hasSchema ? "import io.swagger.v3.oas.annotations.media.Schema;\n" : "")
         + "import jakarta.annotation.Generated;\n"
+        + (hasListType ? "import java.util.List;\n" : "")
+        + (hasSetType ? "import java.util.Set;\n" : "")
+        + (hasMapType ? "import java.util.Map;\n" : "")
         + (hasListCoercion || hasRequiredNonNullable ? "import java.util.ArrayList;\n" : "")
         + "import org.jspecify.annotations.NullMarked;\n"
         + (hasNullable ? "import org.jspecify.annotations.Nullable;\n" : "");
@@ -1447,7 +1456,7 @@ public enum %s {
                     return "    "
                         + schemaAnnotation
                         + jsonProp
-                        + (f.nullable() ? annotateNullable(fieldType) : fieldType)
+                      + (isNullAssignableField(f) ? annotateNullable(fieldType) : fieldType)
                         + " "
                         + f.identifier();
                 })
@@ -1709,11 +1718,19 @@ public record %s(
 
   private static String renderLongKeyCoercionHelper(final ContractField field) {
     final var methodName = "coerce" + capitalizeIdentifier(field.identifier());
-    return """
-  public static String %s(final Object value) {
+    final var returnType = isNullAssignableField(field) ? annotateNullable("String") : "String";
+    final var inputType = isNullAssignableField(field) ? "@Nullable Object" : "Object";
+    final var nullGuard =
+        isNullAssignableField(field)
+            ? """
     if (value == null) {
       return null;
     }
+"""
+            : "";
+    return """
+  public static %s %s(final %s value) {
+%s
     if (value instanceof String stringValue) {
       return stringValue;
     }
@@ -1724,7 +1741,7 @@ public record %s(
         \"%s must be a String or Number, but was \" + value.getClass().getName());
   }
 """
-        .formatted(methodName, field.name());
+  .formatted(returnType, methodName, inputType, nullGuard, field.name());
   }
 
   /**
@@ -1740,7 +1757,7 @@ public record %s(
             .map(
                 field -> {
                   final var methodName = field.identifier() + "AsLong";
-                  if (field.nullable()) {
+                  if (isNullAssignableField(field)) {
                     return """
   /** Returns the {@code %s} parsed as a {@code Long}, or {@code null} if absent. */
   public @Nullable Long %s() {
@@ -1773,7 +1790,7 @@ public record %s(
   private static String renderOrDefaultAccessors(final List<ContractField> fields) {
     final var accessors =
         fields.stream()
-            .filter(f -> f.nullable() && f.defaultValue() == null)
+          .filter(f -> isNullAssignableField(f) && f.defaultValue() == null)
             .map(
                 field -> {
                   final var type = field.javaType();
@@ -1829,13 +1846,21 @@ public record %s(
 
   private static String renderStructuralCoercionHelper(final ContractField field) {
     final var methodName = "coerce" + capitalizeIdentifier(field.identifier());
-    if (field.hasStrictObjectType()) {
-      final var strictType = field.typeInfo().strictDtoClass();
-      return """
-  public static %s %s(final Object value) {
+    final var inputType = isNullAssignableField(field) ? "@Nullable Object" : "Object";
+    final var nullGuard =
+        isNullAssignableField(field)
+            ? """
     if (value == null) {
       return null;
     }
+"""
+            : "";
+    if (field.hasStrictObjectType()) {
+      final var strictType = field.typeInfo().strictDtoClass();
+      final var returnType = isNullAssignableField(field) ? annotateNullable(strictType) : strictType;
+      return """
+  public static %s %s(final %s value) {
+%s
     if (value instanceof %s strictValue) {
       return strictValue;
     }
@@ -1845,8 +1870,10 @@ public record %s(
   }
 """
           .formatted(
-              strictType,
+              returnType,
               methodName,
+              inputType,
+              nullGuard,
               strictType,
               field.name(),
               strictType);
@@ -1855,11 +1882,13 @@ public record %s(
     if (field.hasStrictListType()) {
       final var elementInfo = field.typeInfo().elementType();
       final var strictType = elementInfo.strictDtoClass();
+      final var returnType =
+          isNullAssignableField(field)
+              ? annotateNullable("java.util.List<" + strictType + ">")
+              : "java.util.List<" + strictType + ">";
       return """
-  public static java.util.List<%s> %s(final Object value) {
-    if (value == null) {
-      return null;
-    }
+  public static %s %s(final %s value) {
+%s
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
           \"%s must be a List of %s, but was \" + value.getClass().getName());
@@ -1868,7 +1897,8 @@ public record %s(
     final var result = new ArrayList<%s>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
-        result.add(null);
+        throw new IllegalArgumentException(
+            \"%s must not contain null items.\");
       } else if (item instanceof %s strictItem) {
         result.add(strictItem);
 
@@ -1882,11 +1912,14 @@ public record %s(
   }
 """
           .formatted(
-              strictType,
-              methodName,
+      returnType,
+      methodName,
+      inputType,
+      nullGuard,
               field.name(),
               strictType,
               strictType,
+      field.name(),
               strictType,
               field.name(),
               strictType);
@@ -1978,7 +2011,7 @@ public record %s(
         .map(
           f ->
             "    private "
-              + (f.requiresCoercion() ? "Object" : f.effectiveJavaType())
+              + builderStorageType(f)
               + " "
               + f.identifier()
               + ";")
@@ -2045,24 +2078,31 @@ public record %s(
 
   private static String renderOptionalBuilderSetterImplementation(
       final ContractField field, final String optionalStepName, final boolean policyAwareRequired) {
-    final var nullableAnnotation = field.nullable() ? "@Nullable " : "";
+    final var fieldNullable = isNullAssignableField(field);
     if (!field.requiresCoercion()) {
+      final var parameterType =
+        fieldNullable ? annotateNullable(field.effectiveJavaType()) : field.effectiveJavaType();
+      final var policyType =
+        fieldNullable
+          ? annotateNullableTypeArgument(field.effectiveJavaType())
+          : field.effectiveJavaType();
+
       final var optionalPolicyOverload =
-          policyAwareRequired && field.nullable()
+          policyAwareRequired && fieldNullable
               ? """
 
     @Override
     public %s %s(final %s %s, final ContractPolicy.FieldPolicy<%s> policy) {
-      this.%s = policy.apply(%s, Fields.%s, null);
+      this.%s = policy.apply(%s, Fields.%s, this);
       return this;
     }
 """
                   .formatted(
                       optionalStepName,
                       field.identifier(),
-                      annotateNullable(field.effectiveJavaType()),
+          parameterType,
                       field.identifier(),
-                      field.effectiveJavaType(),
+          policyType,
                       field.identifier(),
                       field.identifier(),
                       toConstantName(field.identifier()))
@@ -2078,44 +2118,49 @@ public record %s(
           .formatted(
               optionalStepName,
               field.identifier(),
-              field.nullable() ? annotateNullable(field.effectiveJavaType()) : field.effectiveJavaType(),
+              parameterType,
               field.identifier(),
               field.identifier(),
               field.identifier()))
           + optionalPolicyOverload;
     }
 
+    final var stringParameterType =
+        fieldNullable ? annotateNullable(field.javaType()) : field.javaType();
+    final var stringPolicyType =
+        fieldNullable ? annotateNullableTypeArgument(field.javaType()) : field.javaType();
+
     final var optionalStringPolicyOverload =
-        policyAwareRequired && field.nullable()
+        policyAwareRequired && fieldNullable
             ? """
 
     public Builder %s(final %s %s, final ContractPolicy.FieldPolicy<%s> policy) {
-      this.%s = policy.apply(%s, Fields.%s, null);
+      this.%s = policy.apply(%s, Fields.%s, this);
       return this;
     }
 """
                 .formatted(
                     field.identifier(),
-                    annotateNullable(field.javaType()),
+                    stringParameterType,
                     field.identifier(),
-                    field.javaType(),
+                    stringPolicyType,
                     field.identifier(),
                     field.identifier(),
                     toConstantName(field.identifier()))
             : "";
 
     final var optionalObjectPolicyOverload =
-        policyAwareRequired && field.nullable()
+      policyAwareRequired && fieldNullable
             ? """
 
     @Override
-    public %s %s(final @Nullable Object %s, final ContractPolicy.FieldPolicy<Object> policy) {
-      this.%s = policy.apply(%s, Fields.%s, null);
+    public %s %s(final @Nullable Object %s, final ContractPolicy.FieldPolicy<@Nullable Object> policy) {
+      this.%s = policy.apply(%s, Fields.%s, this);
       return this;
     }
 """
                 .formatted(
-            optionalStepName,
+                  optionalStepName,
                     field.identifier(),
                     field.identifier(),
                     field.identifier(),
@@ -2137,15 +2182,15 @@ public record %s(
     }
 """
         .formatted(
-        optionalStepName,
+          optionalStepName,
             field.identifier(),
-            field.nullable() ? annotateNullable(field.javaType()) : field.javaType(),
+          stringParameterType,
             field.identifier(),
             field.identifier(),
             field.identifier(),
-        optionalStepName,
+          optionalStepName,
             field.identifier(),
-            field.nullable() ? "@Nullable Object" : "Object",
+            fieldNullable ? "@Nullable Object" : "Object",
             field.identifier(),
             field.identifier(),
             field.identifier()))
@@ -2153,52 +2198,60 @@ public record %s(
         + optionalObjectPolicyOverload;
   }
 
-    private static String renderOptionalStepMethod(
+  private static String renderOptionalStepMethod(
       final ContractField field, final String optionalStepName, final boolean policyAwareRequired) {
+    final var fieldNullable = isNullAssignableField(field);
     if (!field.requiresCoercion()) {
+      final var parameterType =
+          fieldNullable ? annotateNullable(field.effectiveJavaType()) : field.effectiveJavaType();
+      final var policyType =
+          fieldNullable
+              ? annotateNullableTypeArgument(field.effectiveJavaType())
+              : field.effectiveJavaType();
+
       final var optionalPolicyOverload =
-        policyAwareRequired && field.nullable()
-          ? """
+          policyAwareRequired && fieldNullable
+              ? """
 
     %s %s(final %s %s, final ContractPolicy.FieldPolicy<%s> policy);
   """
-            .formatted(
-              optionalStepName,
-              field.identifier(),
-              annotateNullable(field.effectiveJavaType()),
-              field.identifier(),
-              field.effectiveJavaType())
-          : "";
+                  .formatted(optionalStepName, field.identifier(), parameterType, field.identifier(), policyType)
+              : "";
 
       return ("""
     %s %s(final %s %s);
   """
-        .formatted(optionalStepName, field.identifier(), field.nullable() ? annotateNullable(field.effectiveJavaType()) : field.effectiveJavaType(), field.identifier()))
-        + optionalPolicyOverload;
+          .formatted(optionalStepName, field.identifier(), parameterType, field.identifier()))
+          + optionalPolicyOverload;
     }
 
+    final var stringParameterType =
+        fieldNullable ? annotateNullable(field.javaType()) : field.javaType();
+    final var stringPolicyType =
+        fieldNullable ? annotateNullableTypeArgument(field.javaType()) : field.javaType();
+
     final var optionalStringPolicyOverload =
-      policyAwareRequired && field.nullable()
-        ? """
+        policyAwareRequired && fieldNullable
+            ? """
 
     %s %s(final %s %s, final ContractPolicy.FieldPolicy<%s> policy);
   """
-          .formatted(
-            optionalStepName,
-            field.identifier(),
-            annotateNullable(field.javaType()),
-            field.identifier(),
-            field.javaType())
-        : "";
+                .formatted(
+                    optionalStepName,
+                    field.identifier(),
+                    stringParameterType,
+                    field.identifier(),
+                    stringPolicyType)
+            : "";
 
     final var optionalObjectPolicyOverload =
-      policyAwareRequired && field.nullable()
-        ? """
+        policyAwareRequired && fieldNullable
+            ? """
 
-    %s %s(final @Nullable Object %s, final ContractPolicy.FieldPolicy<Object> policy);
+    %s %s(final @Nullable Object %s, final ContractPolicy.FieldPolicy<@Nullable Object> policy);
   """
-          .formatted(optionalStepName, field.identifier(), field.identifier())
-        : "";
+                .formatted(optionalStepName, field.identifier(), field.identifier())
+            : "";
 
     return ("""
     %s %s(final %s %s);
@@ -2208,27 +2261,44 @@ public record %s(
       .formatted(
         optionalStepName,
         field.identifier(),
-        field.nullable() ? annotateNullable(field.javaType()) : field.javaType(),
+        stringParameterType,
         field.identifier(),
         optionalStepName,
         field.identifier(),
-        field.nullable() ? "@Nullable Object" : "Object",
+        fieldNullable ? "@Nullable Object" : "Object",
         field.identifier()))
       + optionalStringPolicyOverload
       + optionalObjectPolicyOverload;
-    }
+  }
 
-    private static String stepInterfaceName(final ContractField field) {
+  private static String stepInterfaceName(final ContractField field) {
     return capitalizeIdentifier(field.identifier()) + "Step";
-    }
+  }
 
   private static String renderBuildArg(
       final ContractField field, final boolean policyAwareRequired) {
     final var fieldValue = "this." + field.identifier();
-    return field.requiresCoercion()
-        ? "coerce" + capitalizeIdentifier(field.identifier()) + "(" + fieldValue + ")"
+    final var requiredValue =
+      field.required() && !field.nullable()
+        ? "java.util.Objects.requireNonNull("
+          + fieldValue
+          + ", \""
+          + field.name()
+          + " must be set\")"
         : fieldValue;
+    return field.requiresCoercion()
+      ? "coerce" + capitalizeIdentifier(field.identifier()) + "(" + requiredValue + ")"
+      : requiredValue;
   }
+
+    private static String builderStorageType(final ContractField field) {
+    final var storageType = field.requiresCoercion() ? "Object" : field.effectiveJavaType();
+    return annotateNullable(storageType);
+    }
+
+    private static boolean isNullAssignableField(final ContractField field) {
+      return field.nullable() || !field.required();
+    }
 
   private static boolean supportsPolicyAwareBuilder(final String schemaName) {
     return true;
@@ -2253,19 +2323,23 @@ public record %s(
     return result.toString();
   }
 
-  /** Positions {@code @Nullable} correctly for TYPE_USE on qualified type names. */
   private static String annotateNullable(final String type) {
-    final int genericStart = type.indexOf('<');
-    final String baseType = genericStart >= 0 ? type.substring(0, genericStart) : type;
-    final String genericSuffix = genericStart >= 0 ? type.substring(genericStart) : "";
-    final int lastDot = baseType.lastIndexOf('.');
-    if (lastDot < 0) {
-      return "@Nullable " + type;
-    }
-    return baseType.substring(0, lastDot + 1)
-        + "@Nullable "
-        + baseType.substring(lastDot + 1)
-        + genericSuffix;
+    return "@Nullable " + simplifyCollectionTypeName(type);
+  }
+
+  private static String normalizeEmittedType(final String type) {
+    return type.replace(TARGET_PACKAGE + ".", "");
+  }
+
+  private static String annotateNullableTypeArgument(final String type) {
+    return annotateNullable(type);
+  }
+
+  private static String simplifyCollectionTypeName(final String type) {
+    return type
+        .replace("java.util.List", "List")
+        .replace("java.util.Set", "Set")
+        .replace("java.util.Map", "Map");
   }
 
   private static Map<SchemaKey, SchemaDef> loadSchemas(Path specDir) throws IOException {

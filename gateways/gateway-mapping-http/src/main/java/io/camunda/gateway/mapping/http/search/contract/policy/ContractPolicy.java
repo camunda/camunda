@@ -131,7 +131,7 @@ public final class ContractPolicy {
   }
 
   @FunctionalInterface
-  public interface FieldPolicy<T> {
+  public interface FieldPolicy<T extends @Nullable Object> {
     T apply(T value, FieldRef field, Object sourceEntity);
   }
 }

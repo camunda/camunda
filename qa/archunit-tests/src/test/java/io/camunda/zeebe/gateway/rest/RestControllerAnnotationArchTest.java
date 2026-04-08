@@ -38,4 +38,17 @@ public class RestControllerAnnotationArchTest {
           .areAnnotatedWith(Controller.class)
           .should()
           .beAnnotatedWith(ConditionalOnRestGatewayEnabled.class);
+
+  /**
+   * REST controllers must never expose internal search entities directly. All controller-facing
+   * payloads are required to go through the strict boundary contract.
+   */
+  @ArchTest
+  public static final ArchRule RULE_REST_CONTROLLERS_MUST_NOT_DEPEND_ON_SEARCH_ENTITIES =
+      ArchRuleDefinition.noClasses()
+          .that()
+          .resideInAnyPackage("io.camunda.zeebe.gateway.rest.controller..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("io.camunda.search.entities..");
 }
