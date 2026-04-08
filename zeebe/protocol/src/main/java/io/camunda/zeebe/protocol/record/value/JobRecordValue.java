@@ -158,6 +158,15 @@ public interface JobRecordValue
    */
   long getRootProcessInstanceKey();
 
+  /**
+   * Returns the priority of the job. Priority is used for priority-based job activation when
+   * workers request jobs with {@code usePriority=true}. Higher values indicate higher priority.
+   * Jobs with higher priority are activated before jobs with lower priority.
+   *
+   * @return the priority of the job, default is 0
+   */
+  int getPriority();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
   interface JobResultValue {

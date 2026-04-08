@@ -271,6 +271,16 @@ public abstract class AbstractThrowEventBuilder<
   }
 
   @Override
+  public B zeebeJobPriority(final String priority) {
+    return jobWorkerPropertiesBuilder.zeebeJobPriority(priority);
+  }
+
+  @Override
+  public B zeebeJobPriorityExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobPriorityExpression(expression);
+  }
+
+  @Override
   public B zeebeInputExpression(final String sourceExpression, final String target) {
     return variablesMappingBuilder.zeebeInputExpression(sourceExpression, target);
   }

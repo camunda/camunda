@@ -80,4 +80,13 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the tenant filtering strategy used for job activation
    */
   TenantFilter getTenantFilter();
+
+  /**
+   * Returns whether jobs should be activated in priority order (highest priority first). When
+   * {@code true}, jobs with higher priority values are activated before jobs with lower priority
+   * values. When {@code false}, jobs are activated in FIFO order.
+   *
+   * @return {@code true} if priority-based activation is requested, {@code false} for FIFO ordering
+   */
+  boolean isUsePriority();
 }

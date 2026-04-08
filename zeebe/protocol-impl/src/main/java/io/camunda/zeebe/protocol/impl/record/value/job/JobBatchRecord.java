@@ -41,6 +41,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
   private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
+  private static final StringValue USE_PRIORITY_KEY = new StringValue("usePriority");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
@@ -57,9 +58,10 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
+  private final BooleanProperty usePriorityProp = new BooleanProperty(USE_PRIORITY_KEY, false);
 
   public JobBatchRecord() {
-    super(10);
+    super(11);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
@@ -69,7 +71,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(variablesProp)
         .declareProperty(truncatedProp)
         .declareProperty(tenantIdsProp)
-        .declareProperty(tenantFilterProp);
+        .declareProperty(tenantFilterProp)
+        .declareProperty(usePriorityProp);
   }
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
@@ -218,5 +221,15 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   @JsonIgnore
   public DirectBuffer getWorkerBuffer() {
     return workerProp.getValue();
+  }
+
+  @Override
+  public boolean isUsePriority() {
+    return usePriorityProp.getValue();
+  }
+
+  public JobBatchRecord setUsePriority(final boolean usePriority) {
+    usePriorityProp.setValue(usePriority);
+    return this;
   }
 }

@@ -18,6 +18,7 @@ public class JobWorkerProperties extends UserTaskProperties {
 
   private Expression type;
   private Expression retries;
+  private Expression priority;
   private List<LinkedResource> linkedResources;
 
   public Expression getType() {
@@ -34,6 +35,14 @@ public class JobWorkerProperties extends UserTaskProperties {
 
   public void setRetries(final Expression retries) {
     this.retries = retries;
+  }
+
+  public Expression getPriority() {
+    return priority;
+  }
+
+  public void setPriority(final Expression priority) {
+    this.priority = priority;
   }
 
   public List<LinkedResource> getLinkedResources() {

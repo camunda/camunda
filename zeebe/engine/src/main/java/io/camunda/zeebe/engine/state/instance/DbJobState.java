@@ -72,6 +72,20 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffColumnFamily;
   private long nextBackOffDueDate;
 
+  // [[type, invertedPriority, key], tenant_id] => nil
+  // invertedPriority = Long.MAX_VALUE - priority (for descending order)
+  private final DbLong invertedPriorityKey;
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> priorityJobKey;
+  private final DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>
+      typePriorityJobKey;
+  private final DbTenantAwareKey<
+          DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>>
+      tenantAwareTypePriorityJobKey;
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>>,
+          DbNil>
+      activatableByPriorityColumnFamily;
+
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
@@ -107,6 +121,19 @@ public final class DbJobState implements JobState, MutableJobState {
     backoffColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
+
+    // Priority-based activatable index: [[type, invertedPriority, jobKey], tenantId]
+    invertedPriorityKey = new DbLong();
+    priorityJobKey = new DbCompositeKey<>(invertedPriorityKey, fkJob);
+    typePriorityJobKey = new DbCompositeKey<>(jobTypeKey, priorityJobKey);
+    tenantAwareTypePriorityJobKey =
+        new DbTenantAwareKey<>(tenantIdKey, typePriorityJobKey, PlacementType.SUFFIX);
+    activatableByPriorityColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY,
+            transactionContext,
+            tenantAwareTypePriorityJobKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -128,7 +155,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobState(State.ACTIVATED);
 
-    makeJobNotActivatable(type, tenantId);
+    makeJobNotActivatable(type, key, tenantId, record.getPriority());
 
     addJobDeadline(key, deadline);
   }
@@ -163,13 +190,14 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId());
+    makeJobNotActivatable(record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+    makeJobNotActivatable(
+        updatedValue.getTypeBuffer(), key, updatedValue.getTenantId(), updatedValue.getPriority());
   }
 
   @Override
@@ -182,7 +210,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(type, tenantId);
+    makeJobNotActivatable(type, key, tenantId, record.getPriority());
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
@@ -194,13 +222,21 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
-        makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+        makeJobNotActivatable(
+            updatedValue.getTypeBuffer(),
+            key,
+            updatedValue.getTenantId(),
+            updatedValue.getPriority());
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+      makeJobNotActivatable(
+          updatedValue.getTypeBuffer(),
+          key,
+          updatedValue.getTenantId(),
+          updatedValue.getPriority());
     }
   }
 
@@ -312,7 +348,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
-    makeJobActivatable(type, key, record.getTenantId());
+    makeJobActivatable(type, key, record.getTenantId(), record.getPriority());
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
@@ -325,7 +361,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobState(newState);
 
     if (newState == State.ACTIVATABLE) {
-      makeJobActivatable(type, key, updatedValue.getTenantId());
+      makeJobActivatable(type, key, updatedValue.getTenantId(), updatedValue.getPriority());
     }
 
     if (newState != State.ACTIVATED) {
@@ -423,6 +459,28 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
+  public void forEachActivatableJobsByPriority(
+      final DirectBuffer type,
+      final List<String> tenantIds,
+      final BiFunction<Long, JobRecord, Boolean> callback) {
+    jobTypeKey.wrapBuffer(type);
+
+    activatableByPriorityColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        tenantAwareCompositeKey -> {
+          // Key structure: [[type, invertedPriority, jobKey], tenantId]
+          final DbLong jobKey = tenantAwareCompositeKey.wrappedKey().second().second().inner();
+          final String tenantId = tenantAwareCompositeKey.tenantKey().toString();
+
+          if (tenantIds.contains(tenantId)) {
+            return visitJob(jobKey.getValue(), callback::apply);
+          }
+          // we want to continue with the iteration
+          return true;
+        });
+  }
+
+  @Override
   public JobRecord getJob(final long key) {
     jobKey.wrapLong(key);
     final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
@@ -498,7 +556,8 @@ public final class DbJobState implements JobState, MutableJobState {
     statesJobColumnFamily.update(fkJob, jobState);
   }
 
-  private void makeJobActivatable(final DirectBuffer type, final long key, final String tenantId) {
+  private void makeJobActivatable(
+      final DirectBuffer type, final long key, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
@@ -508,15 +567,26 @@ public final class DbJobState implements JobState, MutableJobState {
     // Need to upsert here because jobs can be marked as failed (and thus made activatable)
     // without activating them first
     activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
+
+    // Also write to priority-based index
+    // Use inverted priority so that higher priority values come first in iteration
+    invertedPriorityKey.wrapLong(Long.MAX_VALUE - priority);
+    activatableByPriorityColumnFamily.upsert(tenantAwareTypePriorityJobKey, DbNil.INSTANCE);
   }
 
-  private void makeJobNotActivatable(final DirectBuffer type, final String tenantId) {
+  private void makeJobNotActivatable(
+      final DirectBuffer type, final long key, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
 
     jobTypeKey.wrapBuffer(type);
+    jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
     activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
+
+    // Also delete from priority-based index
+    invertedPriorityKey.wrapLong(Long.MAX_VALUE - priority);
+    activatableByPriorityColumnFamily.deleteIfExists(tenantAwareTypePriorityJobKey);
   }
 
   private void addJobDeadline(final long job, final long deadline) {

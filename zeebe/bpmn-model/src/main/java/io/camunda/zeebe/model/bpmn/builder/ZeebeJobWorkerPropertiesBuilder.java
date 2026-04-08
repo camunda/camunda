@@ -61,4 +61,22 @@ public interface ZeebeJobWorkerPropertiesBuilder<T> {
    * @return the builder instance
    */
   T zeebeTaskHeader(final String key, final String value);
+
+  /**
+   * Sets a static priority for the job. Priority is used for priority-based job activation when
+   * workers request jobs with {@code usePriority=true}. Higher values indicate higher priority.
+   *
+   * @param priority the priority of the job (e.g., "50")
+   * @return the builder instance
+   */
+  T zeebeJobPriority(final String priority);
+
+  /**
+   * Sets a dynamic priority for the job that is retrieved from the given expression.
+   *
+   * @param expression the expression for the priority of the job (e.g., "orderValue > 1000 ? 90 :
+   *     10")
+   * @return the builder instance
+   */
+  T zeebeJobPriorityExpression(final String expression);
 }

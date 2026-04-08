@@ -104,6 +104,11 @@ public final class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient withUsePriority(final boolean usePriority) {
+    jobBatchRecord.setUsePriority(usePriority);
+    return this;
+  }
+
   public JobActivationClient expectRejection() {
     expectation = REJECTION_EXPECTATION_SUPPLIER;
     return this;

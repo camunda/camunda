@@ -40,5 +40,11 @@ public final class TaskDefinitionTransformer {
         expressionLanguage.parseExpression(taskDefinition.getRetries());
 
     jobWorkerProperties.setRetries(retriesExpression);
+
+    final String priority = taskDefinition.getPriority();
+    if (priority != null && !priority.isBlank()) {
+      final Expression priorityExpression = expressionLanguage.parseExpression(priority);
+      jobWorkerProperties.setPriority(priorityExpression);
+    }
   }
 }

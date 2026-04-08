@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import org.agrona.DirectBuffer;
 public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
+  private Expression defaultJobPriority;
 
   public ExecutableProcess(final String id) {
     super(id);
@@ -36,6 +38,25 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   public AbstractFlowElement getElementById(final String id) {
     return flowElements.get(wrapString(id));
+  }
+
+  /**
+   * Gets the default job priority expression for this process. This is used when a job worker
+   * element does not specify its own priority.
+   *
+   * @return the default job priority expression, or {@code null} if not set (defaults to 0)
+   */
+  public Expression getDefaultJobPriority() {
+    return defaultJobPriority;
+  }
+
+  /**
+   * Sets the default job priority expression for this process.
+   *
+   * @param defaultJobPriority the default job priority expression
+   */
+  public void setDefaultJobPriority(final Expression defaultJobPriority) {
+    this.defaultJobPriority = defaultJobPriority;
   }
 
   /**

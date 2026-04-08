@@ -126,6 +126,7 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey, tenantId).map(p::type))
         .flatMap(
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
+        .flatMap(p -> evalPriorityExp(jobWorkerProps.getPriority(), context).map(p::priority))
         .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
@@ -428,6 +429,34 @@ public final class BpmnJobBehavior {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey, tenantId);
   }
 
+  private Either<Failure, Integer> evalPriorityExp(
+      final Expression taskPriority, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
+    final var tenantId = context.getTenantId();
+
+    // Task-level priority takes precedence
+    if (taskPriority != null) {
+      return expressionBehavior
+          .evaluateLongExpression(taskPriority, scopeKey, tenantId)
+          .map(Long::intValue);
+    }
+
+    // Fall back to process-level default priority
+    final var deployedProcess =
+        stateBehavior.getProcess(context.getProcessDefinitionKey(), tenantId);
+    if (deployedProcess.isPresent()) {
+      final var defaultPriority = deployedProcess.get().getProcess().getDefaultJobPriority();
+      if (defaultPriority != null) {
+        return expressionBehavior
+            .evaluateLongExpression(defaultPriority, scopeKey, tenantId)
+            .map(Long::intValue);
+      }
+    }
+
+    // Default priority is 0
+    return Either.right(0);
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final JobProperties props,
@@ -442,6 +471,7 @@ public final class BpmnJobBehavior {
         .setJobKind(jobKind)
         .setListenerEventType(jobListenerEventType)
         .setRetries(props.getRetries().intValue())
+        .setPriority(props.getPriority() != null ? props.getPriority() : 0)
         .setCustomHeaders(encodedHeaders)
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
@@ -565,6 +595,7 @@ public final class BpmnJobBehavior {
   public static final class JobProperties {
     private String type;
     private Long retries;
+    private Integer priority;
     private String assignee;
     private String candidateGroups;
     private String candidateUsers;
@@ -589,6 +620,15 @@ public final class BpmnJobBehavior {
 
     public Long getRetries() {
       return retries;
+    }
+
+    public JobProperties priority(final Integer priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public Integer getPriority() {
+      return priority;
     }
 
     public JobProperties assignee(final String assignee) {

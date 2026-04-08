@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Optional;
 
@@ -39,6 +40,7 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
     context.addProcess(process);
     context.setCurrentProcess(process);
     transformExecutionListeners(element, process, context.getExpressionLanguage());
+    transformDefaultJobPriority(element, process, context.getExpressionLanguage());
   }
 
   private void transformExecutionListeners(
@@ -51,5 +53,20 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
             listeners ->
                 executionListenerTransformer.transform(
                     element, flowNode, listeners.getExecutionListeners(), expressionLanguage));
+  }
+
+  private void transformDefaultJobPriority(
+      final Process element,
+      final ExecutableProcess process,
+      final ExpressionLanguage expressionLanguage) {
+
+    final var priorityDefinition = element.getSingleExtensionElement(ZeebePriorityDefinition.class);
+    if (priorityDefinition != null) {
+      final String priority = priorityDefinition.getPriority();
+      if (priority != null && !priority.isBlank()) {
+        final var priorityExpression = expressionLanguage.parseExpression(priority);
+        process.setDefaultJobPriority(priorityExpression);
+      }
+    }
   }
 }

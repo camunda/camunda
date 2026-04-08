@@ -65,4 +65,17 @@ public class ZeebeJobWorkerPropertiesBuilderImpl<B extends AbstractBaseElementBu
 
     return elementBuilder;
   }
+
+  @Override
+  public B zeebeJobPriority(final String priority) {
+    final ZeebeTaskDefinition taskDefinition =
+        elementBuilder.getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
+    taskDefinition.setPriority(priority);
+    return elementBuilder;
+  }
+
+  @Override
+  public B zeebeJobPriorityExpression(final String expression) {
+    return zeebeJobPriority(elementBuilder.asZeebeExpression(expression));
+  }
 }

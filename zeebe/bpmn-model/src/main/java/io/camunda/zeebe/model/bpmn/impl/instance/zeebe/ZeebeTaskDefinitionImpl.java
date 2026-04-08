@@ -29,6 +29,7 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
 
   protected static Attribute<String> typeAttribute;
   protected static Attribute<String> retriesAttribute;
+  protected static Attribute<String> priorityAttribute;
 
   public ZeebeTaskDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -54,6 +55,16 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
     retriesAttribute.setValue(this, retries);
   }
 
+  @Override
+  public String getPriority() {
+    return priorityAttribute.getValue(this);
+  }
+
+  @Override
+  public void setPriority(final String priority) {
+    priorityAttribute.setValue(this, priority);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -72,6 +83,12 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_RETRIES)
             .defaultValue(ZeebeTaskDefinition.DEFAULT_RETRIES)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    priorityAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_PRIORITY)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

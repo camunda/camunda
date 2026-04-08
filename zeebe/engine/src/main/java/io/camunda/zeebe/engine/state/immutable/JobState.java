@@ -42,6 +42,19 @@ public interface JobState {
       final List<String> tenantIds,
       BiFunction<Long, JobRecord, Boolean> callback);
 
+  /**
+   * Iterates over activatable jobs in priority order (highest priority first). Jobs with the same
+   * priority are returned in creation order (FIFO).
+   *
+   * @param type the job type to filter by
+   * @param tenantIds the tenant IDs to filter by
+   * @param callback a callback applied to each job; return false to stop iteration
+   */
+  void forEachActivatableJobsByPriority(
+      DirectBuffer type,
+      final List<String> tenantIds,
+      BiFunction<Long, JobRecord, Boolean> callback);
+
   JobRecord getJob(long key);
 
   JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds);

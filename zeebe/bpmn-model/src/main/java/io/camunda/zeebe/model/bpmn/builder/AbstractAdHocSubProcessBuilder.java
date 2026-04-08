@@ -111,6 +111,16 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
   }
 
   @Override
+  public B zeebeJobPriority(final String priority) {
+    return jobWorkerPropertiesBuilder.zeebeJobPriority(priority);
+  }
+
+  @Override
+  public B zeebeJobPriorityExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobPriorityExpression(expression);
+  }
+
+  @Override
   protected <T extends FlowNode> T createTarget(final Class<T> typeClass, final String identifier) {
     if (isDone) {
       // add the element after the ad-hoc sub-process

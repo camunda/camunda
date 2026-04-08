@@ -28,4 +28,24 @@ public interface ZeebeTaskDefinition extends BpmnModelElementInstance {
   String getRetries();
 
   void setRetries(String retries);
+
+  /**
+   * Gets the priority expression or literal value for jobs created from this task definition.
+   *
+   * <p>Priority is used for priority-based job activation when workers request jobs with {@code
+   * usePriority=true}. Higher values indicate higher priority. Jobs with higher priority are
+   * activated before jobs with lower priority.
+   *
+   * @return the priority expression/literal, or {@code null} if not set (inherits from process or
+   *     defaults to 0)
+   */
+  String getPriority();
+
+  /**
+   * Sets the priority expression or literal value for jobs created from this task definition.
+   *
+   * @param priority the priority expression (e.g., "50") or FEEL expression (e.g., "=orderValue >
+   *     1000 ? 90 : 10")
+   */
+  void setPriority(String priority);
 }

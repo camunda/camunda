@@ -31,6 +31,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -77,6 +78,9 @@ final class JobBatchCollector {
    * large, but there was at least one job to activate. On failure, it will return that job and its
    * key. On success, it will return the amount of jobs activated.
    *
+   * <p>When {@code usePriority} is true in the batch record, jobs are collected in priority order
+   * (highest priority first). Otherwise, jobs are collected in FIFO order.
+   *
    * @param record the batch activate command; jobs and their keys will be added directly into it
    * @param tenantIds the tenant IDs to use for filtering jobs
    * @return the amount of activated jobs per jobKind on success, or a job which was too large to
@@ -102,56 +106,87 @@ final class JobBatchCollector {
                 .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
                 .build());
     final var deadline = clock.millis() + value.getTimeout();
+    final var usePriority = value.isUsePriority();
 
-    jobState.forEachActivatableJobs(
-        value.getTypeBuffer(),
-        tenantIds,
-        (key, jobRecord) -> {
-          if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
-            // Skip Jobs the user is not authorized for
-            return true;
-          }
+    final var jobIterationCallback =
+        createJobIterationCallback(
+            record,
+            value,
+            jobIterator,
+            jobKeyIterator,
+            requestedVariables,
+            maxActivatedCount,
+            activatedCount,
+            unwritableJob,
+            jobCountPerJobKind,
+            authorizedProcessIds,
+            deadline);
 
-          // fill in the job record properties first in order to accurately estimate its size before
-          // adding it to the batch
-          jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
-          jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
-
-          // the expected length is based on the current record's length plus the length of the job
-          // record we would add to the batch, the number of bytes taken by the additional job key,
-          // as well as an 8 KB buffer.
-          final var jobRecordLength = jobRecord.getLength();
-          final var expectedEventLength =
-              record.getLength()
-                  + jobRecordLength
-                  + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
-          if (activatedCount.value <= maxActivatedCount
-              && canWriteEventOfLength.test(expectedEventLength)) {
-            appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
-            activatedCount.increment();
-
-            // track the count of activated jobs by their JobKind
-            jobCountPerJobKind.merge(jobRecord.getJobKind(), 1, Integer::sum);
-
-          } else {
-            // if no jobs were activated, then the current job is simply too large, and we cannot
-            // activate it
-            if (activatedCount.value == 0) {
-              unwritableJob.set(new TooLargeJob(key, jobRecord, expectedEventLength));
-            }
-
-            value.setTruncated(true);
-            return false;
-          }
-
-          return activatedCount.value < maxActivatedCount;
-        });
+    // Choose iteration strategy based on usePriority flag
+    if (usePriority) {
+      jobState.forEachActivatableJobsByPriority(
+          value.getTypeBuffer(), tenantIds, jobIterationCallback);
+    } else {
+      jobState.forEachActivatableJobs(value.getTypeBuffer(), tenantIds, jobIterationCallback);
+    }
 
     if (unwritableJob.ref != null) {
       return Either.left(unwritableJob.ref);
     }
 
     return Either.right(jobCountPerJobKind);
+  }
+
+  private BiFunction<Long, JobRecord, Boolean> createJobIterationCallback(
+      final TypedRecord<JobBatchRecord> record,
+      final JobBatchRecord value,
+      final ValueArray<JobRecord> jobIterator,
+      final ValueArray<LongValue> jobKeyIterator,
+      final Collection<DirectBuffer> requestedVariables,
+      final int maxActivatedCount,
+      final MutableInteger activatedCount,
+      final MutableReference<TooLargeJob> unwritableJob,
+      final Map<JobKind, Integer> jobCountPerJobKind,
+      final Set<AuthorizationScope> authorizedProcessIds,
+      final long deadline) {
+    return (key, jobRecord) -> {
+      if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
+        // Skip Jobs the user is not authorized for
+        return true;
+      }
+
+      // fill in the job record properties first in order to accurately estimate its size before
+      // adding it to the batch
+      jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
+      jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
+
+      // the expected length is based on the current record's length plus the length of the job
+      // record we would add to the batch, the number of bytes taken by the additional job key,
+      // as well as an 8 KB buffer.
+      final var jobRecordLength = jobRecord.getLength();
+      final var expectedEventLength =
+          record.getLength() + jobRecordLength + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+      if (activatedCount.value <= maxActivatedCount
+          && canWriteEventOfLength.test(expectedEventLength)) {
+        appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
+        activatedCount.increment();
+
+        // track the count of activated jobs by their JobKind
+        jobCountPerJobKind.merge(jobRecord.getJobKind(), 1, Integer::sum);
+
+      } else {
+        // if no jobs were activated, then the current job is simply too large, and we cannot
+        // activate it
+        if (activatedCount.value == 0) {
+          unwritableJob.set(new TooLargeJob(key, jobRecord, expectedEventLength));
+        }
+
+        value.setTruncated(true);
+        return false;
+      }
+
+      return activatedCount.value < maxActivatedCount;
+    };
   }
 
   private boolean isAuthorizedForJob(

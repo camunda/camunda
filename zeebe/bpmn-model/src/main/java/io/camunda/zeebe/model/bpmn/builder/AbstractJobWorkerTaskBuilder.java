@@ -61,4 +61,14 @@ public abstract class AbstractJobWorkerTaskBuilder<
   public B zeebeTaskHeader(final String key, final String value) {
     return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
   }
+
+  @Override
+  public B zeebeJobPriority(final String priority) {
+    return jobWorkerPropertiesBuilder.zeebeJobPriority(priority);
+  }
+
+  @Override
+  public B zeebeJobPriorityExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobPriorityExpression(expression);
+  }
 }
