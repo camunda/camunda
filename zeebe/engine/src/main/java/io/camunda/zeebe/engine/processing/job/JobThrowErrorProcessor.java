@@ -15,14 +15,17 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -30,17 +33,17 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
+public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
   /**
    * Marker element ID. This ID is used to indicate that a given catch event could not be found. The
@@ -60,63 +63,65 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
-  private final DefaultJobCommandPreconditionGuard defaultProcessor;
+  private final JobCommandPreconditionChecker preconditionChecker;
   private final CatchEventAnalyzer stateAnalyzer;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final ProcessState processState;
+  private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final StateWriter stateWriter;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator,
-      final JobProcessingMetrics jobMetrics) {
+      final JobProcessingMetrics jobMetrics,
+      final Writers writers) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
-    defaultProcessor =
-        new DefaultJobCommandPreconditionGuard("throw an error for", jobState, this::acceptCommand);
+    preconditionChecker =
+        new JobCommandPreconditionChecker(
+            "throw an error for", List.of(State.ACTIVATABLE, State.ACTIVATED));
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
+    stateWriter = writers.state();
+    responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
+
     this.eventPublicationBehavior = eventPublicationBehavior;
     this.jobMetrics = jobMetrics;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    return defaultProcessor.onCommand(command, commandControl);
+  public void processRecord(final TypedRecord<JobRecord> record) {
+    final long jobKey = record.getKey();
+    final JobState.State state = jobState.getState(jobKey);
+
+    preconditionChecker
+        .check(state, jobKey)
+        .ifRightOrLeft(
+            job -> throwError(record),
+            rejection -> {
+              rejectionWriter.appendRejection(record, rejection.getLeft(), rejection.getRight());
+              responseWriter.writeRejectionOnCommand(
+                  record, rejection.getLeft(), rejection.getRight());
+            });
   }
 
-  @Override
-  public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
-      final long jobKey,
-      final Intent intent,
-      final JobRecord job) {
-    jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
-
-    if (NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
-      raiseIncident(jobKey, job, stateWriter, foundCatchEvent.getLeft());
-      return;
-    }
-
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
-  }
-
-  private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+  private void throwError(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
-
     final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
     if (job == null) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+      final var errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
@@ -125,10 +130,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var jobKind = job.getJobKind();
     if (jobKind == JobKind.EXECUTION_LISTENER) {
       final long processInstanceKey = job.getProcessInstanceKey();
-      commandControl.reject(
-          RejectionType.INVALID_STATE,
-          String.format(
-              ERROR_REJECTION_MESSAGE, jobKind, jobKey, job.getType(), processInstanceKey));
+      final var errorMessage =
+          ERROR_REJECTION_MESSAGE.formatted(jobKind, jobKey, job.getType(), processInstanceKey);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
@@ -144,25 +149,28 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var foundCatchEvent =
         stateAnalyzer.findErrorCatchEvent(
             errorCode, serviceTaskInstance, Optional.of(job.getErrorMessageBuffer()));
-    this.foundCatchEvent = foundCatchEvent;
 
     if (foundCatchEvent.isLeft()) {
       job.setElementId(NO_CATCH_EVENT_FOUND);
-
-      commandControl.accept(JobIntent.ERROR_THROWN, job);
+      writeThrowErrorEvent(jobKey, job, command);
+      raiseIncident(jobKey, job, foundCatchEvent.getLeft());
     } else if (!serviceTaskInstanceIsActive(serviceTaskInstance)) {
-      commandControl.reject(
-          RejectionType.INVALID_STATE,
-          "Expected to find active service task, but was " + serviceTaskInstance);
+      final var errorMessage =
+          "Expected to find active service task, but was %s".formatted(serviceTaskInstance);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
     } else if (!eventScopeInstanceState.canTriggerEvent(
         foundCatchEvent.get().getElementInstance().getKey(),
         foundCatchEvent.get().getCatchEvent().getId())) {
-      commandControl.reject(
-          RejectionType.INVALID_STATE,
-          "Expected to find event scope that is accepting events, but was "
-              + foundCatchEvent.get().getElementInstance());
+      final var elementInstance = foundCatchEvent.get().getElementInstance();
+      final var errorMessage =
+          "Expected to find event scope that is accepting events, but was %s"
+              .formatted(elementInstance);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
     } else {
-      commandControl.accept(JobIntent.ERROR_THROWN, job);
+      writeThrowErrorEvent(jobKey, job, command);
+      eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
     }
   }
 
@@ -170,8 +178,14 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
   }
 
-  private void raiseIncident(
-      final long key, final JobRecord job, final StateWriter stateWriter, final Failure failure) {
+  private void writeThrowErrorEvent(
+      final long jobKey, final JobRecord job, final TypedRecord<JobRecord> command) {
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
+    responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
+    jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
+  }
+
+  private void raiseIncident(final long key, final JobRecord job, final Failure failure) {
 
     final var treePathProperties =
         new ElementTreePathBuilder()
