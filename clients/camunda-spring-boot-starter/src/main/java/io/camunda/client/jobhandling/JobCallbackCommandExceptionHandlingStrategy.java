@@ -31,8 +31,6 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
   public static final Predicate<Integer> REST_RETRYABLE =
       code -> Set.of(429, 502, 503, 504).contains(code);
   public static final Predicate<Integer> REST_IGNORABLE = code -> code == 404;
-  public static final Predicate<Integer> REST_FAILURE = code -> code >= 400 && code <= 499;
-
   public static final Set<Status.Code> RETRIABLE_CODES =
       EnumSet.of(
           Status.Code.CANCELLED,
@@ -42,15 +40,6 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
           Status.Code.UNAVAILABLE,
           Status.Code.DATA_LOSS);
   public static final Set<Status.Code> IGNORABLE_FAILURE_CODES = EnumSet.of(Status.Code.NOT_FOUND);
-  public static final Set<Status.Code> FAILURE_CODES =
-      EnumSet.of(
-          Status.Code.INVALID_ARGUMENT,
-          Status.Code.PERMISSION_DENIED,
-          Status.Code.FAILED_PRECONDITION,
-          Status.Code.OUT_OF_RANGE,
-          Status.Code.UNIMPLEMENTED,
-          Status.Code.INTERNAL,
-          Status.Code.UNAUTHENTICATED);
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService scheduledExecutorService;
@@ -78,7 +67,7 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
       final JobCallbackCommandWrapper command, final ClientHttpException exception) {
     final int code = exception.code();
     return handleError(
-        command, exception, "http status code", code, REST_IGNORABLE, REST_RETRYABLE, REST_FAILURE);
+        command, exception, "http status code", code, REST_IGNORABLE, REST_RETRYABLE);
   }
 
   private CommandOutcome handleGrpcError(
@@ -90,8 +79,7 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
         "gRPC status code",
         code,
         IGNORABLE_FAILURE_CODES::contains,
-        RETRIABLE_CODES::contains,
-        FAILURE_CODES::contains);
+        RETRIABLE_CODES::contains);
   }
 
   private <T> CommandOutcome handleError(
@@ -100,8 +88,7 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
       final String codeType,
       final T code,
       final Predicate<T> ignorableCodes,
-      final Predicate<T> retryableCodes,
-      final Predicate<T> failureCodes) {
+      final Predicate<T> retryableCodes) {
     if (ignorableCodes.test(code)) {
       LOG.debug("Ignoring {} with {} '{}'", command, codeType, code);
       return new CommandOutcome.Ignored(exception, command.getAttempts());
@@ -124,14 +111,8 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
       command.scheduleExecutionUsing(scheduledExecutorService);
       return null; // retry scheduled
     }
-
-    if (failureCodes.test(code)) {
-      LOG.error(
-          "Failed to execute {} due to non-retriable {} '{}'", command, codeType, code, exception);
-      return new CommandOutcome.Failed(exception, command.getAttempts());
-    }
-
-    LOG.error("Failed to execute {} due to unexpected {} '{}'", command, codeType, code, exception);
+    LOG.error(
+        "Failed to execute {} due to non-retriable {} '{}'", command, codeType, code, exception);
     return new CommandOutcome.Failed(exception, command.getAttempts());
   }
 }
