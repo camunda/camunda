@@ -71,6 +71,19 @@ public class ConfigTest {
     assertThat(workerCfg.getMessageName()).isEqualTo("messageName");
     assertThat(workerCfg.isSendMessage()).isFalse();
     assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("correlationKey-var");
+
+    // optimize
+    final var optimizeCfg = appCfg.getOptimize();
+    assertThat(optimizeCfg).isNotNull();
+
+    assertThat(optimizeCfg.getBaseUrl()).isEqualTo("http://localhost:8083");
+    assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://localhost:18080");
+    assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
+    assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
+    assertThat(optimizeCfg.getClientSecret()).isEqualTo("demo-optimize-secret");
+    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
+    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
+    assertThat(optimizeCfg.getEvaluationIntervalSeconds()).isEqualTo(60);
   }
 
   @Test
@@ -143,6 +156,19 @@ public class ConfigTest {
     assertThat(workerCfg.getMessageName()).isEqualTo("msg");
     assertThat(workerCfg.isSendMessage()).isTrue();
     assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
+
+    // optimize
+    final var optimizeCfg = appCfg.getOptimize();
+    assertThat(optimizeCfg).isNotNull();
+
+    assertThat(optimizeCfg.getBaseUrl()).isEqualTo("http://localhost:8083");
+    assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://localhost:18080");
+    assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
+    assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
+    assertThat(optimizeCfg.getClientSecret()).isEqualTo("demo-optimize-secret");
+    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
+    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
+    assertThat(optimizeCfg.getEvaluationIntervalSeconds()).isEqualTo(60);
   }
 
   @Test

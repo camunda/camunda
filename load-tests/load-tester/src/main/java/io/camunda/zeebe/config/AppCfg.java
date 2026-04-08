@@ -19,10 +19,12 @@ public class AppCfg {
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
+  private OptimizeCfg optimize;
   private AuthCfg auth;
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
+  private boolean enableOptimizeReportMetric = false;
 
   private String disabledQueries = "";
 
@@ -64,6 +66,14 @@ public class AppCfg {
 
   public void setWorker(final WorkerCfg worker) {
     this.worker = worker;
+  }
+
+  public OptimizeCfg getOptimize() {
+    return optimize;
+  }
+
+  public void setOptimize(final OptimizeCfg optimize) {
+    this.optimize = optimize;
   }
 
   public int getMonitoringPort() {
@@ -122,5 +132,13 @@ public class AppCfg {
         .map(String::trim)
         .filter(s -> !s.isBlank())
         .toList();
+  }
+
+  public boolean isEnableOptimizeReportMetric() {
+    return enableOptimizeReportMetric;
+  }
+
+  public void setEnableOptimizeReportMetric(final boolean enableOptimizeReportMetric) {
+    this.enableOptimizeReportMetric = enableOptimizeReportMetric;
   }
 }
