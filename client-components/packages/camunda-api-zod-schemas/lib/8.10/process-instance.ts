@@ -266,6 +266,24 @@ const createCancellationBatchOperation: Endpoint = {
 	getUrl: () => `/${API_VERSION}/process-instances/cancellation`,
 };
 
+const createDeletionBatchOperationRequestBodySchema = z.object({
+	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
+});
+
+type CreateDeletionBatchOperationRequestBody = z.infer<typeof createDeletionBatchOperationRequestBodySchema>;
+
+const createDeletionBatchOperationResponseBodySchema = z.object({
+	batchOperationKey: z.string(),
+	batchOperationType: processInstanceBatchOperationTypeSchema,
+});
+
+type CreateDeletionBatchOperationResponseBody = z.infer<typeof createDeletionBatchOperationResponseBodySchema>;
+
+const createDeletionBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/deletion`,
+};
+
 const createMigrationBatchOperationRequestBodySchema = z.object({
 	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
 	migrationPlan: z.object({
@@ -371,6 +389,7 @@ export {
 	getProcessInstanceSequenceFlows,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
+	createDeletionBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
@@ -388,6 +407,7 @@ export {
 	getProcessInstanceSequenceFlowsResponseBodySchema,
 	createIncidentResolutionBatchOperationResponseBodySchema,
 	createCancellationBatchOperationResponseBodySchema,
+	createDeletionBatchOperationResponseBodySchema,
 	createMigrationBatchOperationResponseBodySchema,
 	createModificationBatchOperationResponseBodySchema,
 	resolveProcessInstanceIncidentsResponseBodySchema,
@@ -416,6 +436,8 @@ export type {
 	CreateIncidentResolutionBatchOperationResponseBody,
 	CreateCancellationBatchOperationRequestBody,
 	CreateCancellationBatchOperationResponseBody,
+	CreateDeletionBatchOperationRequestBody,
+	CreateDeletionBatchOperationResponseBody,
 	CreateMigrationBatchOperationRequestBody,
 	CreateMigrationBatchOperationResponseBody,
 	CreateModificationBatchOperationRequestBody,
