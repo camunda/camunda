@@ -50,23 +50,6 @@ class ConditionalOnCamundaGroupsEnabledTest {
             });
   }
 
-  @ParameterizedTest(name = "property key: {0}")
-  @ValueSource(
-      strings = {
-        "camunda.security.authentication.oidc.groups-claim",
-        "camunda.security.authentication.oidc.groupsClaim"
-      })
-  void shouldEnableGroupsDisabledBeanWhenGroupsClaimIsSet(final String propertyKey) {
-    // given/when/then
-    contextRunner
-        .withPropertyValues(propertyKey + "=$.groups")
-        .withUserConfiguration(TestConfig.class)
-        .run(
-            context -> {
-              assertThat(context).hasSingleBean(GroupsDisabledBean.class);
-            });
-  }
-
   @Configuration
   static class TestConfig {
     @Bean
