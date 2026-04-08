@@ -98,7 +98,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTenantFilter(request.tenantFilter())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
-            .setVariables(request.fetchVariable());
+            .setVariables(request.fetchVariable())
+            .setUsePriority(request.usePriority());
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
@@ -232,7 +233,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       long timeout,
       String worker,
       List<String> fetchVariable,
-      long requestTimeout) {}
+      long requestTimeout,
+      boolean usePriority) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout) {}
 }

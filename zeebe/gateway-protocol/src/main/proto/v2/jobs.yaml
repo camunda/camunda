@@ -307,6 +307,12 @@ components:
             The tenant filtering strategy - determines whether to use provided tenant IDs or
             assigned tenant IDs from the authenticated principal's authorized tenants.
           default: PROVIDED
+        usePriority:
+          description: >
+            If true, jobs are activated in priority order (highest priority first).
+            If false (default), jobs are activated in FIFO order.
+          type: boolean
+          default: false
       required:
         - type
         - timeout

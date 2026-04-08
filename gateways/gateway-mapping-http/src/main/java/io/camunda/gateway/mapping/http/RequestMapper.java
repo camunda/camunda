@@ -981,7 +981,8 @@ public class RequestMapper {
         activationRequest.getTimeout(),
         getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
         getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
-        getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout));
+        getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout),
+        getBooleanOrFalse(activationRequest, JobActivationRequest::getUsePriority));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
@@ -1160,6 +1161,11 @@ public class RequestMapper {
       final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
     final Boolean value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
+  }
+
+  private static <R> boolean getBooleanOrFalse(
+      final R request, final Function<R, Boolean> valueExtractor) {
+    return getBooleanOrDefault(request, valueExtractor, false);
   }
 
   private static <R> String getStringOrEmpty(

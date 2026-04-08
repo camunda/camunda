@@ -24,6 +24,9 @@ message StreamActivatedJobsRequest {
   repeated string tenantIds = 6;
   // the tenant filtering strategy - determines whether to use provided tenant IDs or assigned tenant IDs
   TenantFilter tenantFilter = 7;
+  // if true, jobs are streamed in priority order (highest priority first);
+  // if false (default), jobs are streamed in FIFO order
+  bool usePriority = 8;
 }
 
 message ActivateJobsRequest {
@@ -48,6 +51,9 @@ message ActivateJobsRequest {
   repeated string tenantIds = 7;
   // the tenant filtering strategy - determines whether to use provided tenant IDs or assigned tenant IDs
   TenantFilter tenantFilter = 8;
+  // if true, jobs are activated in priority order (highest priority first);
+  // if false (default), jobs are activated in FIFO order
+  bool usePriority = 9;
 }
 
 message ActivateJobsResponse {
