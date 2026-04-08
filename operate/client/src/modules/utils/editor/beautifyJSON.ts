@@ -20,9 +20,26 @@ function beautifyJSON(value: string) {
 
 function beautifyTruncatedJSON(value: string) {
   try {
-    const parsedValue = JSON.parse(untruncateJson(value));
+    const {completed, collectionDepth} = untruncateJson(value);
+    const parsedValue = JSON.parse(completed);
+    const pretty = JSON.stringify(parsedValue, null, '\t');
 
-    return JSON.stringify(parsedValue, null, '\t');
+    if (collectionDepth === 0) {
+      return pretty;
+    }
+
+    // Walk backwards through the pretty-printed output, skipping the last
+    // `collectionDepth` closing lines (the `}` / `]` that were synthesized
+    // by untruncateJson to make the JSON parseable).
+    let pos = pretty.length;
+    for (let i = 0; i < collectionDepth; i++) {
+      const newlinePos = pretty.lastIndexOf('\n', pos - 1);
+      if (newlinePos === -1) {
+        break;
+      }
+      pos = newlinePos;
+    }
+    return pretty.slice(0, pos);
   } catch {
     return value;
   }

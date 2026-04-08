@@ -33,25 +33,6 @@ const EditorWrapper = styled.div<{
   height: 100%;
   position: relative;
 
-  .monaco-editor {
-    width: 100% !important;
-    --vscode-editor-background: var(--cds-field) !important;
-    --vscode-editorGutter-background: var(--cds-field) !important;
-    background-color: var(--cds-field) !important;
-
-    &:focus-within::after {
-      ${ring('var(--cds-focus, #0f62fe)')}
-    }
-
-    ${({$invalid}) =>
-      $invalid &&
-      css`
-        &:focus-within::after {
-          ${ring('var(--cds-support-error)')}
-        }
-      `}
-  }
-
   ${({$invalid}) =>
     $invalid &&
     css`
@@ -69,24 +50,20 @@ const EditorLoader = styled.div<{$height: number}>`
   height: ${({$height}) => $height}px;
 `;
 
-const EditorReadonly = styled.pre<{
+const ReadOnlyEditorWrapper = styled.div<{
   $height: number;
   $empty: boolean;
   $editMode: boolean;
   $scrollable: boolean;
   $invalid: boolean;
 }>`
-  display: block;
+  display: inline-block;
   position: relative;
-  text-wrap: wrap;
   width: 100%;
   min-height: ${EDITOR_MIN_HEIGHT}px;
-  font-size: ${EDITOR_FONT_SIZE}px;
-  line-height: ${EDITOR_LINE_HEIGHT}px;
-  font-family: ${EDITOR_FONT_FAMILY};
+  cursor: pointer;
   padding-top: ${EDITOR_PADDING_TOP}px;
   padding-bottom: ${EDITOR_PADDING_BOTTOM}px;
-  tab-size: 2;
   background-color: var(--cds-field);
 
   ${({$scrollable, $height}) =>
@@ -99,11 +76,6 @@ const EditorReadonly = styled.pre<{
           height: auto;
           overflow: visible;
         `}
-
-  &:focus-visible {
-    outline: 2px solid var(--cds-focus);
-    outline-offset: -2px;
-  }
 
   ${({$invalid}) =>
     $invalid &&
@@ -127,4 +99,46 @@ const EditorReadonly = styled.pre<{
     `};
 `;
 
-export {EditorWrapper, EditorLoader, EditorReadonly};
+const ReadOnlyEditorContent = styled.pre`
+  font-size: ${EDITOR_FONT_SIZE}px;
+  line-height: ${EDITOR_LINE_HEIGHT}px;
+  font-family: ${EDITOR_FONT_FAMILY};
+  tab-size: 2;
+  text-wrap: wrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-focus);
+    outline-offset: -2px;
+  }
+`;
+
+const WriteModeEditor = styled.div<{
+  $invalid?: boolean;
+}>`
+  .monaco-editor {
+    width: 100% !important;
+    --vscode-editor-background: var(--cds-field) !important;
+    --vscode-editorGutter-background: var(--cds-field) !important;
+    background-color: var(--cds-field) !important;
+
+    &:focus-within::after {
+      ${ring('var(--cds-focus)')}
+    }
+
+    ${({$invalid}) =>
+      $invalid &&
+      css`
+        &:focus-within::after {
+          ${ring('var(--cds-support-error)')}
+        }
+      `}
+  }
+`;
+
+export {
+  EditorWrapper,
+  EditorLoader,
+  ReadOnlyEditorWrapper,
+  ReadOnlyEditorContent,
+  WriteModeEditor,
+};

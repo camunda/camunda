@@ -12,10 +12,12 @@ import {useVariable} from 'modules/queries/variables/useVariable';
 import type {ViewFullVariableButtonShowProps} from '../types';
 import {InlineLoading} from '../../Operations/styled';
 import {MaximizeButton} from '../MaximizeButton';
+import {Button} from '@carbon/react';
 
 const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   variableName,
   variableKey,
+  buttonLabel,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const {data, isLoading} = useVariable(variableKey, {
@@ -23,15 +25,21 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   });
   const variableValue = data?.value;
 
+  const handleOpen = () => {
+    setIsModalVisible(true);
+  };
+
   return isLoading ? (
     <InlineLoading data-testid="variable-operation-spinner" />
   ) : (
     <>
-      <MaximizeButton
-        onClick={() => {
-          setIsModalVisible(true);
-        }}
-      />
+      {buttonLabel ? (
+        <Button kind="ghost" size="sm" onClick={handleOpen}>
+          {buttonLabel}
+        </Button>
+      ) : (
+        <MaximizeButton onClick={handleOpen} />
+      )}
       {variableValue !== undefined && (
         <JSONEditorModal
           value={variableValue}

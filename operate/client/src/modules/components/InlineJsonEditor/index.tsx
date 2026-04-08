@@ -12,7 +12,7 @@ import {
   beautifyJSON,
   beautifyTruncatedJSON,
 } from 'modules/utils/editor/beautifyJSON';
-import {EditorLoader, EditorReadonly, EditorWrapper} from './styled';
+import {EditorLoader, EditorWrapper, WriteModeEditor} from './styled';
 import {
   EDITOR_DECORATION_WIDTH,
   EDITOR_FONT_SIZE,
@@ -23,6 +23,7 @@ import {
   EDITOR_MIN_HEIGHT,
   EDITOR_MAX_LINES,
 } from './constants';
+import {ReadOnlyEditor} from './ReadOnlyEditor';
 
 const JSONEditor = lazy(async () => {
   const [{loadMonaco}, {JSONEditor}] = await Promise.all([
@@ -50,6 +51,7 @@ type Props = {
   fieldError?: string;
   id?: string;
   'data-testid'?: string;
+  renderButton?: () => React.ReactNode;
 };
 
 function computeHeight(text: string, maxLines: number): number {
@@ -75,6 +77,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
     fieldError,
     autoFocus,
     'data-testid': dataTestId,
+    renderButton,
   }) => {
     const isReadOnly = readOnly === true || onChange === undefined;
 
@@ -95,14 +98,6 @@ const InlineJsonEditor: React.FC<Props> = observer(
     }, [isEditing, editingValue, formattedValue]);
 
     const height = computeHeight(displayValue, maxLines);
-
-    const lineCount = useMemo(() => {
-      return Math.max(1, (displayValue || '').split('\n').length);
-    }, [displayValue]);
-
-    const isScrollable = useMemo(() => {
-      return lineCount > maxLines;
-    }, [lineCount, maxLines]);
 
     const handleChange = (newValue: string) => {
       onChange?.(newValue);
@@ -146,26 +141,26 @@ const InlineJsonEditor: React.FC<Props> = observer(
         $invalid={!!fieldError}
       >
         {isReadOnly || !isEditing ? (
-          <EditorReadonly
+          <ReadOnlyEditor
             data-testid={
               dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
             }
-            $height={height}
-            $empty={displayValue === ''}
-            $editMode={!isReadOnly}
-            $scrollable={isScrollable}
-            $invalid={!!fieldError}
-            tabIndex={isReadOnly ? -1 : 0}
-          >
-            {displayValue || placeholder}
-          </EditorReadonly>
+            value={displayValue}
+            placeholder={placeholder}
+            isReadOnly={isReadOnly}
+            maxLines={maxLines}
+            fieldError={fieldError}
+            label={label}
+            height={height}
+            renderButton={renderButton}
+          />
         ) : (
           <>
             <label htmlFor={id} className="cds--visually-hidden">
               {label ?? 'Value'}
             </label>
             <Suspense fallback={<EditorLoader $height={height} />}>
-              <>
+              <WriteModeEditor $invalid={!!fieldError}>
                 <JSONEditor
                   loading={null}
                   value={displayValue}
@@ -195,7 +190,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
                     },
                   }}
                 />
-              </>
+              </WriteModeEditor>
             </Suspense>
           </>
         )}
@@ -206,4 +201,5 @@ const InlineJsonEditor: React.FC<Props> = observer(
     );
   },
 );
+
 export {InlineJsonEditor};

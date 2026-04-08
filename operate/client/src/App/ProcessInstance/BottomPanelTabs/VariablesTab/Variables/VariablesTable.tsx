@@ -81,6 +81,19 @@ const VariablesTable: React.FC<Props> = ({
                 value={value}
                 isTruncatedValue={Boolean(isTruncated)}
                 readOnly
+                renderButton={
+                  isTruncated
+                    ? () => (
+                        <ViewFullVariableButton
+                          mode="show"
+                          variableKey={variableKey}
+                          variableName={name}
+                          variableValue={value}
+                          buttonLabel="Show all"
+                        />
+                      )
+                    : undefined
+                }
               />
             ),
             width: 'auto',
