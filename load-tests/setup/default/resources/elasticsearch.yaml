@@ -1,0 +1,73 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+spec:
+  version: 8.18.0
+
+  nodeSets:
+  - config:
+      # Disable mmap for compatibility with containers that lack the required vm.max_map_count sysctl
+      node.store.allow_mmap: "false"
+
+      # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
+      logger.org.elasticsearch.deprecation: "OFF"
+
+      # Authenticate unauthenticated requests as the "anonymous" user with the "superuser" role.
+      # This is not a recommended production configuration, but is OK for the load tests environment.
+      # See https://www.elastic.co/docs/deploy-manage/users-roles/cluster-or-deployment-auth/file-based#k8s-basic for additional users.
+      xpack.security.authc:
+        # https://www.elastic.co/docs/deploy-manage/users-roles/cluster-or-deployment-auth/anonymous-access
+        anonymous:
+          username: anonymous
+          roles: superuser
+
+    count: 3
+    name: masters
+
+    podTemplate:
+      metadata: {}
+
+      spec:
+        containers:
+        - name: elasticsearch
+          env:
+          # https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/manage-compute-resources#k8s-elasticsearch-memory
+          - name: ES_JAVA_OPTS
+            value: -Xms3g -Xmx3g
+
+          resources:
+            limits:
+              cpu: "7"
+              memory: 8Gi
+            requests:
+              cpu: "7"
+              memory: 8Gi
+
+        nodeSelector:
+          component: benchmark-n2-standard-8
+          topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+        tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-8
+
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        storageClassName: benchmark-ssd-zonal-v1
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 512Gi
+
+  http:
+    tls:
+      selfSignedCertificate:
+        # Disable TLS on the HTTP API.
+        # This is not a recommended production configuration, but is OK for the load tests environment.
+        # See https://www.elastic.co/docs/deploy-manage/security/k8s-https-settings#k8s-disable-tls for more details.
+        disabled: true
