@@ -10,7 +10,6 @@ package io.camunda.authentication.session;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
@@ -39,7 +38,10 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
 
   private static boolean isTransientFailure(final Throwable throwable) {
     if (throwable instanceof final CamundaSearchException cse) {
-      return cse.getReason() != Reason.INVALID_ARGUMENT && cse.getReason() != Reason.FORBIDDEN;
+      return switch (cse.getReason()) {
+        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
+        default -> false;
+      };
     }
     return throwable instanceof RuntimeException;
   }
