@@ -96,6 +96,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
+  private final Duration proactiveTokenRefreshThreshold;
   // client assertion
   private final boolean clientAssertionEnabled;
   private final Path clientAssertionKeystorePath;
@@ -126,6 +127,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
+    proactiveTokenRefreshThreshold = builder.getProactiveTokenRefreshThreshold();
     clientAssertionEnabled = builder.clientAssertionEnabled();
     clientAssertionKeystorePath = builder.getClientAssertionKeystorePath();
     clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
@@ -142,7 +144,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   public void applyCredentials(final CredentialsApplier applier) throws IOException {
     final CamundaClientCredentials camundaClientCredentials =
         credentialsCache.computeIfMissingOrInvalid(
-            clientId, this::fetchCredentials, this::triggerProactiveRefresh);
+            clientId,
+            this::fetchCredentials,
+            this::triggerProactiveRefresh,
+            proactiveTokenRefreshThreshold);
 
     String type = camundaClientCredentials.getTokenType();
     if (type == null || type.isEmpty()) {

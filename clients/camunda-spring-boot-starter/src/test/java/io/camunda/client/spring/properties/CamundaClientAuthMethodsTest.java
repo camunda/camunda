@@ -17,9 +17,11 @@ package io.camunda.client.spring.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.spring.CamundaClientPropertiesTestConfig;
 import io.camunda.client.spring.properties.CamundaClientAuthProperties.AuthMethod;
 import java.net.URI;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -151,6 +153,32 @@ public class CamundaClientAuthMethodsTest {
     @Test
     void shouldLoadDefaultsBasic() {
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.none);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = CamundaClientPropertiesTestConfig.class)
+  public class ProactiveTokenRefreshThresholdDefault {
+    @Autowired CamundaClientProperties properties;
+
+    @Test
+    void shouldDefaultToBuilderConstant() {
+      assertThat(properties.getAuth().getProactiveTokenRefreshThreshold())
+          .isEqualTo(OAuthCredentialsProviderBuilder.DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
+      properties = {"camunda.client.auth.proactive-token-refresh-threshold=90s"})
+  public class ProactiveTokenRefreshThresholdOverride {
+    @Autowired CamundaClientProperties properties;
+
+    @Test
+    void shouldBindCustomThreshold() {
+      assertThat(properties.getAuth().getProactiveTokenRefreshThreshold())
+          .isEqualTo(Duration.ofSeconds(90));
     }
   }
 }

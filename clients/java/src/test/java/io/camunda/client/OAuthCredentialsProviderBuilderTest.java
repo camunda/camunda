@@ -15,6 +15,7 @@
  */
 package io.camunda.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -160,5 +161,109 @@ public final class OAuthCredentialsProviderBuilderTest {
     assertThatCode(builder::build)
         .hasMessageContaining("Keystore path does not exist")
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectNegativeProactiveTokenRefreshThreshold() {
+    // given
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .authorizationServerUrl("http://some.url")
+            .proactiveTokenRefreshThreshold(Duration.ofSeconds(-1));
+
+    // then
+    assertThatCode(builder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Proactive token refresh threshold")
+        .hasMessageContaining("expected a positive duration");
+  }
+
+  @Test
+  void shouldRejectZeroProactiveTokenRefreshThreshold() {
+    // given
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .authorizationServerUrl("http://some.url")
+            .proactiveTokenRefreshThreshold(Duration.ZERO);
+
+    // then
+    assertThatCode(builder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Proactive token refresh threshold")
+        .hasMessageContaining("expected a positive duration");
+  }
+
+  @Test
+  void shouldRejectProactiveTokenRefreshThresholdEqualToGracePeriod() {
+    // given — exactly equal to the grace period: not strictly larger, so must be rejected
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .authorizationServerUrl("http://some.url")
+            .proactiveTokenRefreshThreshold(
+                io.camunda.client.impl.CamundaClientCredentials.EXPIRY_GRACE_PERIOD);
+
+    // then
+    assertThatCode(builder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be strictly larger than the expiry grace period");
+  }
+
+  @Test
+  void shouldRejectProactiveTokenRefreshThresholdBelowGracePeriod() {
+    // given — below the 5s grace period
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .authorizationServerUrl("http://some.url")
+            .proactiveTokenRefreshThreshold(Duration.ofSeconds(1));
+
+    // then
+    assertThatCode(builder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be strictly larger than the expiry grace period");
+  }
+
+  @Test
+  void shouldApplyDefaultProactiveTokenRefreshThresholdWhenUnset() {
+    // given
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder().audience("a").clientId("b").clientSecret("c");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getProactiveTokenRefreshThreshold())
+        .isEqualTo(OAuthCredentialsProviderBuilder.DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD);
+  }
+
+  @Test
+  void shouldAcceptCustomProactiveTokenRefreshThreshold() {
+    // given
+    final Duration custom = Duration.ofSeconds(90);
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .authorizationServerUrl("http://some.url")
+            .proactiveTokenRefreshThreshold(custom);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getProactiveTokenRefreshThreshold()).isEqualTo(custom);
   }
 }
