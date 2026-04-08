@@ -36,16 +36,6 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
               .retryOnException(WebSessionRepository::isTransientFailure)
               .build());
 
-  private static boolean isTransientFailure(final Throwable throwable) {
-    if (throwable instanceof final CamundaSearchException cse) {
-      return switch (cse.getReason()) {
-        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
-        default -> false;
-      };
-    }
-    return throwable instanceof RuntimeException;
-  }
-
   private final PersistentWebSessionClient persistentWebSessionClient;
   private final WebSessionMapper webSessionMapper;
   private final HttpServletRequest request;
@@ -57,6 +47,16 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     this.persistentWebSessionClient = persistentWebSessionClient;
     this.webSessionMapper = webSessionMapper;
     this.request = request;
+  }
+
+  private static boolean isTransientFailure(final Throwable throwable) {
+    if (throwable instanceof final CamundaSearchException cse) {
+      return switch (cse.getReason()) {
+        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
+        default -> false;
+      };
+    }
+    return throwable instanceof RuntimeException;
   }
 
   @Override
