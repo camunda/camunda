@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {act, render, screen, within} from 'modules/testing-library';
+import {act, render, screen, waitFor, within} from 'modules/testing-library';
 import {Footer} from './index';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
@@ -19,6 +19,7 @@ import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/que
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {createProcessDefinition} from 'modules/testUtils';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 type Props = {
   children?: React.ReactNode;
@@ -54,6 +55,7 @@ const Wrapper = ({children}: Props) => {
         >
           map element
         </button>
+        <LocationLog />
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -197,6 +199,10 @@ describe('Footer', () => {
 
   it('should perform migration batch operation successfully and expand operations panel', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
+    mockMigrateProcessInstancesBatchOperation().withDelay({
+      batchOperationKey: 'migrate-operation-123',
+      batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
+    });
 
     processInstanceMigrationStore.setBatchOperationQuery({
       ids: ['1', '2'],
@@ -218,7 +224,23 @@ describe('Footer', () => {
     await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
     await user.click(withinModal.getByRole('button', {name: /confirm/i}));
 
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Migrating...')).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
     vi.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(screen.queryByText('Migrating...')).not.toBeInTheDocument();
+    });
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(false);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?active=true&incidents=true&processDefinitionId=bigVarProcess&processDefinitionVersion=1',
+    );
 
     expect(tracking.track).toHaveBeenCalledWith({
       eventName: 'batch-operation',
@@ -235,5 +257,99 @@ describe('Footer', () => {
     );
 
     vi.useRealTimers();
+  });
+
+  it('should show an auth warning and keep the migration view open when batch migration creation is forbidden', async () => {
+    mockMigrateProcessInstancesBatchOperation().withServerError(403);
+
+    processInstanceMigrationStore.setBatchOperationQuery({
+      ids: ['1', '2'],
+    });
+    processInstanceMigrationStore.setTargetProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'target-process-key'}),
+    );
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'source-process-key'}),
+    );
+
+    const {user} = render(<Footer />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
+    await user.click(screen.getByRole('button', {name: /next/i}));
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    const withinModal = within(screen.getByRole('dialog'));
+    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
+    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Migrating...')).not.toBeInTheDocument();
+    });
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'warning',
+      title: "You don't have permission to perform this operation",
+      subtitle: 'Please contact the administrator if you need access.',
+      isDismissable: true,
+    });
+    expect(tracking.track).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-confirmed',
+    });
+    expect(tracking.track).not.toHaveBeenCalledWith({
+      eventName: 'batch-operation',
+      operationType: 'MIGRATE_PROCESS_INSTANCE',
+    });
+  });
+
+  it('should show an error and keep the migration view open when batch migration creation fails', async () => {
+    mockMigrateProcessInstancesBatchOperation().withServerError(500);
+
+    processInstanceMigrationStore.setBatchOperationQuery({
+      ids: ['1', '2'],
+    });
+    processInstanceMigrationStore.setTargetProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'target-process-key'}),
+    );
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'source-process-key'}),
+    );
+
+    const {user} = render(<Footer />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
+    await user.click(screen.getByRole('button', {name: /next/i}));
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    const withinModal = within(screen.getByRole('dialog'));
+    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
+    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Migrating...')).not.toBeInTheDocument();
+    });
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation could not be created',
+      subtitle: undefined,
+      isDismissable: true,
+    });
+    expect(tracking.track).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-confirmed',
+    });
+    expect(tracking.track).not.toHaveBeenCalledWith({
+      eventName: 'batch-operation',
+      operationType: 'MIGRATE_PROCESS_INSTANCE',
+    });
   });
 });
