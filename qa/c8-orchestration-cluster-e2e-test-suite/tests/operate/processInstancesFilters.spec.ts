@@ -68,6 +68,11 @@ test.beforeAll(async () => {
   await deploy(['./resources/Versioned Process_2.bpmn']);
   await deploy(['./resources/ProcessToCancel.bpmn']);
   await deploy(['./resources/NamedEventsProcess.bpmn']);
+
+  for (let i = 0; i < 120; i++) {
+    await deploy(['./resources/Version Scrolling Process 1.bpmn']);
+    await deploy(['./resources/Version Scrolling Process 2.bpmn']);
+  }
 });
 
 test.describe('Process Instances Filters', () => {
@@ -842,5 +847,61 @@ test.describe('Process Instances Filters', () => {
         ],
       );
     });
+  });
+
+  test('Verify version scrolling has more than 100 versions', async ({
+    operateFiltersPanelPage,
+    page,
+  }) => {
+      await test.step('Select process with many versions and select version 1', async ({}) => {
+        await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+        await operateFiltersPanelPage.selectVersion('1');
+        await waitForAssertion({
+          assertion: async () => {
+            expect(
+              await operateFiltersPanelPage.processVersionFilter.innerText(),
+            ).toBe('1');
+          },
+          onFailure: async () => {
+            await page.reload();
+            await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+            await operateFiltersPanelPage.selectVersion('1');
+          },
+        });
+      });
+
+      await test.step('Select process with many versions and select version 200', async ({}) => {
+        await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+        await operateFiltersPanelPage.selectVersion('200');
+        await waitForAssertion({
+          assertion: async () => {
+            expect(
+              await operateFiltersPanelPage.processVersionFilter.innerText(),
+            ).toBe('200');
+          },
+          onFailure: async () => {
+            await page.reload();
+            await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+            await operateFiltersPanelPage.selectVersion('200');
+          },
+        });
+      });
+
+      await test.step('Select process with many versions and select version 87', async ({}) => {
+        await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+        await operateFiltersPanelPage.selectVersion('87');
+        await waitForAssertion({
+          assertion: async () => {
+            expect(
+              await operateFiltersPanelPage.processVersionFilter.innerText(),
+            ).toBe('87');
+          },
+          onFailure: async () => {
+            await page.reload();
+            await operateFiltersPanelPage.selectProcess('Version Scrolling Process');
+            await operateFiltersPanelPage.selectVersion('87');
+          },
+        });
+      });
   });
 });
