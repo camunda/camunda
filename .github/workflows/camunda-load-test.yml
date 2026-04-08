@@ -52,11 +52,6 @@ on:
         type: string
         default: ""
         required: false
-      perform-read-benchmarks:
-        description: 'Perform continuous read benchmarks on secondary storage. This may influence the exporter performance as it puts more load on the secondary database. The metrics are available in the Data-Layer dashboard.'
-        type: boolean
-        required: false
-        default: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -71,17 +66,12 @@ on:
         description: 'Enable Operate for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       enable-tasklist:
         description: 'Enable Tasklist for load testing'
         type: boolean
         required: false
-        default: false
-      enable-connectors:
-        description: 'Enable Connectors for load testing'
-        type: boolean
-        required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -153,11 +143,6 @@ on:
         default: ""
         type: string
         required: false
-      perform-read-benchmarks:
-        description: 'Perform continuous read benchmarks on secondary storage. This may influence the exporter performance as it puts more load on the secondary database. The metrics are available in the Data-Layer dashboard.'
-        type: boolean
-        required: false
-        default: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -172,17 +157,12 @@ on:
         description: 'Enable Operate for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       enable-tasklist:
         description: 'Enable Tasklist for load testing'
         type: boolean
         required: false
-        default: false
-      enable-connectors:
-        description: 'Enable Connectors for load testing'
-        type: boolean
-        required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -437,25 +417,63 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'Dockerfile'
+      - uses: actions/upload-artifact@v4
+        name: Upload distball for webapp builds
+        with:
+          name: camunda-distball
+          path: ${{ steps.build-camunda.outputs.distball }}
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-webapp-images:
+    name: Build Operate and Tasklist Docker images
+    needs: [calculate-image-tag, build-zeebe-image]
+    if: ${{ inputs.reuse-tag == '' && inputs.use-official-docker-images == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: camunda-distball
       - uses: ./.github/actions/build-platform-docker
         name: Build Operate Docker Image
-        if: ${{ inputs.enable-operate == true }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/operate'
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
+          distball: 'camunda-zeebe-*.tar.gz'
           dockerfile: 'operate.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Tasklist Docker Image
-        if: ${{ inputs.enable-tasklist == true }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/tasklist'
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
+          distball: 'camunda-zeebe-*.tar.gz'
           dockerfile: 'tasklist.Dockerfile'
       - name: Observe build status
         if: always()
@@ -577,6 +595,7 @@ jobs:
       - calculate-image-tag
       - calculate-scenario-config
       - build-zeebe-image
+      - build-webapp-images
       - build-load-test-images
       - build-optimize-image
     # To have the possibility to re-deploy the tests without rebuilding the images,
@@ -585,6 +604,7 @@ jobs:
       always() &&
       needs.calculate-image-tag.result == 'success' &&
       (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
+      (needs.build-webapp-images.result == 'success' || needs.build-webapp-images.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped') &&
       (needs.build-optimize-image.result == 'success' || needs.build-optimize-image.result == 'skipped')
     runs-on: ubuntu-latest
@@ -617,7 +637,7 @@ jobs:
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
           # Create the namespace for the load test
-          ./newBenchmark.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} ${{ inputs.enable-operate }} ${{ inputs.enable-tasklist }} ${{ inputs.enable-connectors }}
+          ./newBenchmark.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} ${{ inputs.enable-operate }} ${{ inputs.enable-tasklist }}
           # Annotate namespace with the workflow run URL for traceability
           kubectl annotate namespace ${{ env.NAMESPACE }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
@@ -717,20 +737,11 @@ jobs:
               --set tasklist.image.tag=${image_tag}"
           fi
 
-          # Inject Connectors image configuration when enabled (always official image)
-          if [[ "${{ inputs.enable-connectors }}" == "true" ]]; then
-            additional_platform_config+=" \
-              --set connectors.image.registry=docker.io \
-              --set connectors.image.repository=camunda/connectors-bundle \
-              --set connectors.image.tag=8.7.19"
-          fi
-
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
             enable_operate=${{ inputs.enable-operate }} \
             enable_tasklist=${{ inputs.enable-tasklist }} \
-            enable_connectors=${{ inputs.enable-connectors }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment

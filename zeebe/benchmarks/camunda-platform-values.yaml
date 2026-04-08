@@ -315,14 +315,14 @@ zeebe:
       # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
       value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
 
-  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     limits:
-      cpu: 2000m
-      memory: 4Gi
+      cpu: 3000m
+      memory: 2Gi
     requests:
-      cpu: 2000m
-      memory: 4Gi
+      cpu: 3000m
+      memory: 2Gi
 
   nodeSelector:
     component: benchmark-n2-standard-4
@@ -336,7 +336,7 @@ zeebe:
   # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
   pvcAccessMode: [ "ReadWriteOnce" ]
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: 48Gi
+  pvcSize: 64Gi
   # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
   pvcStorageClassName: benchmark-ssd-zonal-v1
 
@@ -422,7 +422,7 @@ elasticsearch:
     pdb:
       minAvailable: 2
     # Elasticsearch master-eligible node heap size.
-    heapSize: 4g
+    heapSize: 3g
     # The resources configurations for elasticsearch containers
     persistence:
       # Persistent Volume Storage Class

@@ -14,8 +14,8 @@ Arguments:
   secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  enable_operate     Optional. true|false to enable Operate. Default: false.
-  enable_tasklist    Optional. true|false to enable Tasklist. Default: false.
+  enable_operate     Optional. true|false to enable Operate. Default: true.
+  enable_tasklist    Optional. true|false to enable Tasklist. Default: true.
   enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
@@ -77,7 +77,7 @@ if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
 fi
 
 # Validate enable_operate value
-enable_operate="${5:-false}"
+enable_operate="${5:-true}"
 enable_operate=$(echo "$enable_operate" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_operate" != "true" && "$enable_operate" != "false" ]]; then
   echo "Error: Invalid enable_operate value '$enable_operate'"
@@ -86,7 +86,7 @@ if [[ "$enable_operate" != "true" && "$enable_operate" != "false" ]]; then
 fi
 
 # Validate enable_tasklist value
-enable_tasklist="${6:-false}"
+enable_tasklist="${6:-true}"
 enable_tasklist=$(echo "$enable_tasklist" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_tasklist" != "true" && "$enable_tasklist" != "false" ]]; then
   echo "Error: Invalid enable_tasklist value '$enable_tasklist'"
