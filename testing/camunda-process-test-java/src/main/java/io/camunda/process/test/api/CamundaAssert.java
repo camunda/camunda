@@ -29,12 +29,14 @@ import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
+import io.camunda.process.test.impl.assertions.ValueAssertj;
 import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.time.Duration;
@@ -432,6 +434,16 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssertj assertThat(final EvaluateDecisionResponse response) {
     return assertThatDecision(response);
+  }
+
+  /**
+   * To verify a raw string value.
+   *
+   * @param actual the string value to assert on
+   * @return the assertion object
+   */
+  public static ValueAssert assertThatValue(final String actual) {
+    return new ValueAssertj(actual, judgeConfig);
   }
 
   // ======== Internal ========
