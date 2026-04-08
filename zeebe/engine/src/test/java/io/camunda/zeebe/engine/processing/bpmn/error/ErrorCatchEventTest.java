@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -182,6 +183,40 @@ public final class ErrorCatchEventTest {
                         .endEvent())
             .boundaryEvent("error", b -> b.error(ERROR_CODE))
             .endEvent()
+            .done(),
+        "error-event-subprocess"
+      },
+      {
+        "boundary event on message intermediate throw event in subprocess",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent(
+                            TASK_ELEMENT_ID, AbstractThrowEventBuilder::messageEventDefinition)
+                        .zeebeJobType(JOB_TYPE)
+                        .endEvent())
+            .boundaryEvent("error-boundary", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done(),
+        "error-boundary"
+      },
+      {
+        "error event subprocess on message end event",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "error-event-subprocess",
+                s ->
+                    s.startEvent("error-start-event")
+                        .error(ERROR_CODE)
+                        .interrupting(true)
+                        .endEvent())
+            .startEvent()
+            .endEvent(TASK_ELEMENT_ID, AbstractThrowEventBuilder::messageEventDefinition)
+            .zeebeJobType(JOB_TYPE)
             .done(),
         "error-event-subprocess"
       },
