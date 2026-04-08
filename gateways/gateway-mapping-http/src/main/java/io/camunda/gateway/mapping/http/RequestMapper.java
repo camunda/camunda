@@ -8,18 +8,12 @@
 package io.camunda.gateway.mapping.http;
 
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentMetadata;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceTags;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -72,7 +66,14 @@ import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTa
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskCompletionRequestStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskUpdateRequestStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.mapping.http.validator.AdHocSubProcessRequestValidator;
+import io.camunda.gateway.mapping.http.validator.ConditionalRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
+import io.camunda.gateway.mapping.http.validator.JobRequestValidator;
+import io.camunda.gateway.mapping.http.validator.MessageRequestValidator;
+import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
+import io.camunda.gateway.mapping.http.validator.SignalRequestValidator;
+import io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -543,12 +544,7 @@ public class RequestMapper {
     final String action = request.actionOrDefault();
     final boolean allowOverride = request.allowOverride() == null || request.allowOverride();
     return getResult(
-        validate(
-            violations -> {
-              if (request.assignee() == null || request.assignee().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("assignee"));
-              }
-            }),
+        UserTaskRequestValidator.validateAssignmentRequest(request),
         () ->
             new AssignUserTaskRequest(
                 userTaskKey,
@@ -560,24 +556,8 @@ public class RequestMapper {
   public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
       final GeneratedUserTaskUpdateRequestStrictContract request, final long userTaskKey) {
     final var changeset = request != null ? request.changeset() : null;
-    final boolean changesetEmpty =
-        changeset == null
-            || (changeset.followUpDate() == null
-                && changeset.dueDate() == null
-                && changeset.candidateGroups() == null
-                && changeset.candidateUsers() == null
-                && changeset.priority() == null);
     return getResult(
-        validate(
-            violations -> {
-              if (request == null || (request.action() == null && changesetEmpty)) {
-                violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
-              }
-              if (!changesetEmpty) {
-                validateDate(changeset.dueDate(), "due date", violations);
-                validateDate(changeset.followUpDate(), "follow-up date", violations);
-              }
-            }),
+        UserTaskRequestValidator.validateUpdateRequest(request),
         () -> {
           final var record = new UserTaskRecord();
           if (changeset != null) {
@@ -607,27 +587,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final GeneratedJobActivationRequestStrictContract request,
       final boolean multiTenancyEnabled) {
-    final var validationError =
-        validate(
-            violations -> {
-              if (request.type() == null || request.type().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
-              }
-              if (request.timeout() == null) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeout"));
-              } else if (request.timeout() < 1) {
-                violations.add(
-                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                        "timeout", request.timeout(), "greater than 0"));
-              }
-              if (request.maxJobsToActivate() == null) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("maxJobsToActivate"));
-              } else if (request.maxJobsToActivate() < 1) {
-                violations.add(
-                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                        "maxJobsToActivate", request.maxJobsToActivate(), "greater than 0"));
-              }
-            });
+    final var validationError = JobRequestValidator.validateActivationRequest(request);
     if (validationError.isPresent()) {
       return Either.left(validationError.get());
     }
@@ -700,12 +660,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
       final GeneratedJobErrorRequestStrictContract request, final long jobKey) {
     return getResult(
-        validate(
-            violations -> {
-              if (request.errorCode() == null || request.errorCode().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
-              }
-            }),
+        JobRequestValidator.validateErrorRequest(request),
         () ->
             new ErrorJobRequest(
                 jobKey,
@@ -811,13 +766,7 @@ public class RequestMapper {
       final GeneratedJobUpdateRequestStrictContract request, final long jobKey) {
     final var cs = request.changeset();
     return getResult(
-        validate(
-            violations -> {
-              if (cs == null || (cs.retries() == null && cs.timeout() == null)) {
-                violations.add(
-                    ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("retries", "timeout")));
-              }
-            }),
+        JobRequestValidator.validateUpdateRequest(request),
         () ->
             new UpdateJobRequest(
                 jobKey,
@@ -832,13 +781,7 @@ public class RequestMapper {
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Broadcast Signal")
             .flatMap(
                 tenantId ->
-                    validate(
-                            violations -> {
-                              if (request.signalName() == null) {
-                                violations.add(
-                                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("signalName"));
-                              }
-                            })
+                    SignalRequestValidator.validateBroadcastRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -860,14 +803,7 @@ public class RequestMapper {
       return Either.right(new DocumentLinkParams(Duration.ZERO));
     }
     return getResult(
-        validate(
-            violations -> {
-              if (request.timeToLive() <= 0) {
-                violations.add(
-                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                        "timeToLive", request.timeToLive(), "greater than 0"));
-              }
-            }),
+        DocumentValidator.validateDocumentLinkParams(request),
         () -> new DocumentLinkParams(Duration.ofMillis(request.timeToLive())));
   }
 
@@ -958,26 +894,7 @@ public class RequestMapper {
       final long processInstanceKey,
       final GeneratedProcessInstanceMigrationInstructionStrictContract request) {
     return getResult(
-        validate(
-            violations -> {
-              if (request.mappingInstructions() == null
-                  || request.mappingInstructions().isEmpty()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
-              } else {
-                final boolean allValid =
-                    request.mappingInstructions().stream()
-                        .allMatch(
-                            mi ->
-                                (mi.sourceElementId() != null && !mi.sourceElementId().isEmpty())
-                                    && (mi.targetElementId() != null
-                                        && !mi.targetElementId().isEmpty()));
-                if (!allValid) {
-                  violations.add(
-                      ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(
-                          List.of("sourceElementId", "targetElementId")));
-                }
-              }
-            }),
+        ProcessInstanceRequestValidator.validateMigrationInstructions(request),
         () ->
             new ProcessInstanceMigrateRequest(
                 processInstanceKey,
@@ -1142,18 +1059,7 @@ public class RequestMapper {
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Publish Message")
             .flatMap(
                 tenantId ->
-                    validate(
-                            violations -> {
-                              if (request.name() == null || request.name().isBlank()) {
-                                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
-                              }
-                              if (request.correlationKey() != null
-                                  && request.correlationKey().length() > maxNameFieldLength) {
-                                violations.add(
-                                    ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                                        "correlationKey", maxNameFieldLength));
-                              }
-                            })
+                    MessageRequestValidator.validatePublicationRequest(request, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1175,19 +1081,7 @@ public class RequestMapper {
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
-                    validate(
-                            violations -> {
-                              if (request.name() == null || request.name().isBlank()) {
-                                violations.add(
-                                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("messageName"));
-                              }
-                              if (request.correlationKey() != null
-                                  && request.correlationKey().length() > maxNameFieldLength) {
-                                violations.add(
-                                    ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                                        "correlationKey", maxNameFieldLength));
-                              }
-                            })
+                    MessageRequestValidator.validateCorrelationRequest(request, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1203,13 +1097,7 @@ public class RequestMapper {
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Conditional")
             .flatMap(
                 tenantId ->
-                    validate(
-                            violations -> {
-                              if (request.variables() == null || request.variables().isEmpty()) {
-                                violations.add(
-                                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
-                              }
-                            })
+                    ConditionalRequestValidator.validateEvaluateRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1227,21 +1115,7 @@ public class RequestMapper {
           final String adHocSubProcessInstanceKey,
           final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract request) {
     return getResult(
-        validate(
-            violations -> {
-              if (request.elements() == null || request.elements().isEmpty()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements"));
-              } else {
-                for (int i = 0; i < request.elements().size(); i++) {
-                  final var elementId = request.elements().get(i).elementId();
-                  if (elementId == null || elementId.isBlank()) {
-                    violations.add(
-                        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(
-                            "elements[%d].elementId".formatted(i)));
-                  }
-                }
-              }
-            }),
+        AdHocSubProcessRequestValidator.validateActivateActivitiesRequest(request),
         () ->
             new AdHocSubProcessActivateActivitiesRequest(
                 Long.parseLong(adHocSubProcessInstanceKey),
