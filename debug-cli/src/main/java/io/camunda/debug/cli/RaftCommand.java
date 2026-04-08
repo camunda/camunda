@@ -33,7 +33,7 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
 
   @Command(
       name = "metadata",
-      description = "Print content of raft metastore (raft-partition-*.meta)")
+      description = "Print content of raft metastore (default-partition-*.meta)")
   public int metadata() throws Exception {
     spec.commandLine().getOut().println(convertToJson());
     return 0;
@@ -41,7 +41,7 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
 
   @Command(
       name = "configuration",
-      description = "Print content of raft configuration file (raft-partition-*.conf)")
+      description = "Print content of raft configuration file (default-partition-*.conf)")
   public int configuration() throws Exception {
     spec.commandLine().getOut().println(convertToJson());
     return 0;
