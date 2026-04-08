@@ -367,8 +367,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  build-zeebe-image:
-    name: Build Zeebe Docker image
+  build-platform-images:
+    name: Build platform Docker images
     needs: calculate-image-tag
     if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
@@ -417,46 +417,6 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'Dockerfile'
-      - uses: actions/upload-artifact@v4
-        name: Upload distball for webapp builds
-        with:
-          name: camunda-distball
-          path: ${{ steps.build-camunda.outputs.distball }}
-          retention-days: 1
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  build-webapp-images:
-    name: Build Operate and Tasklist Docker images
-    needs: [calculate-image-tag, build-zeebe-image]
-    if: ${{ inputs.reuse-tag == '' && inputs.use-official-docker-images == false }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref }}
-      - uses: ./.github/actions/setup-build
-        with:
-          dockerhub-readonly: true
-          harbor: true
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: camunda-distball
       - uses: ./.github/actions/build-platform-docker
         name: Build Operate Docker Image
         with:
@@ -464,7 +424,7 @@ jobs:
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          distball: 'camunda-zeebe-*.tar.gz'
+          distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'operate.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Tasklist Docker Image
@@ -473,7 +433,7 @@ jobs:
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          distball: 'camunda-zeebe-*.tar.gz'
+          distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'tasklist.Dockerfile'
       - name: Observe build status
         if: always()
@@ -594,8 +554,7 @@ jobs:
     needs:
       - calculate-image-tag
       - calculate-scenario-config
-      - build-zeebe-image
-      - build-webapp-images
+      - build-platform-images
       - build-load-test-images
       - build-optimize-image
     # To have the possibility to re-deploy the tests without rebuilding the images,
@@ -603,8 +562,7 @@ jobs:
     if: |
       always() &&
       needs.calculate-image-tag.result == 'success' &&
-      (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
-      (needs.build-webapp-images.result == 'success' || needs.build-webapp-images.result == 'skipped') &&
+      (needs.build-platform-images.result == 'success' || needs.build-platform-images.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped') &&
       (needs.build-optimize-image.result == 'success' || needs.build-optimize-image.result == 'skipped')
     runs-on: ubuntu-latest
