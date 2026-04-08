@@ -275,9 +275,9 @@ const TopPanel: React.FC = observer(() => {
   useEffect(() => {
     if (!isModificationModeEnabled) {
       if (selectedElementId) {
-        tracking.track({eventName: 'metadata-popover-opened'});
+        tracking.track({eventName: 'element-details-tab-opened'});
       } else {
-        tracking.track({eventName: 'metadata-popover-closed'});
+        tracking.track({eventName: 'element-details-tab-closed'});
       }
     }
   }, [isModificationModeEnabled, selectedElementId]);

@@ -111,12 +111,13 @@ describe('<BottomPanelTabs />', () => {
 
     render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
+    expect(screen.getByRole('link', {name: /^Details$/i})).toBeVisible();
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(screen.getByRole('link', {name: /^Listeners$/i})).toBeVisible();
     expect(screen.getByRole('link', {name: /^Operations Log$/i})).toBeVisible();
   });
 
-  it('should not show Details, Input Mappings, or Output Mappings when no element is selected', async () => {
+  it('should not show Input Mappings or Output Mappings when no element is selected', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -127,9 +128,7 @@ describe('<BottomPanelTabs />', () => {
     render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
-    expect(
-      screen.queryByRole('link', {name: /^Details$/i}),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', {name: /^Details$/i})).toBeVisible();
     expect(
       screen.queryByRole('link', {name: /^Input Mappings$/i}),
     ).not.toBeInTheDocument();
@@ -280,6 +279,14 @@ describe('<BottomPanelTabs />', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Details$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );
@@ -717,7 +724,7 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
-  it('should redirect details tab when no element is selected', async () => {
+  it('should not redirect details tab when no element is selected', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -733,7 +740,7 @@ describe('<BottomPanelTabs />', () => {
     });
 
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceVariables({
+      Paths.processInstanceDetails({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );

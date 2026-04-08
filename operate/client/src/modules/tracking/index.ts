@@ -116,10 +116,10 @@ type Events =
       eventName: 'incident-filters-cleared';
     }
   | {
-      eventName: 'metadata-popover-opened';
+      eventName: 'element-details-tab-opened';
     }
   | {
-      eventName: 'metadata-popover-closed';
+      eventName: 'element-details-tab-closed';
     }
   | {
       eventName: 'diagram-zoom-in';

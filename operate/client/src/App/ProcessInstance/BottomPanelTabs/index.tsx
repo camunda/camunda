@@ -80,7 +80,7 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       key: 'details',
       selected: currentPage === 'process-details-details',
       title: 'Details',
-      visible: hasSelection,
+      visible: true,
     },
     {
       label: 'Variables',
