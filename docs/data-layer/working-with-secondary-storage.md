@@ -19,7 +19,8 @@ implementation.
 2. [Schema & Field Type Guidance](#2-schema--field-type-guidance)
 3. [Query & Aggregation Best Practices](#3-query--aggregation-best-practices)
 4. [Common Pitfalls & Examples](#4-common-pitfalls--examples)
-5. [References](#5-references)
+5. [Camunda ES/OS Exporter Flushing Behavior](#5-camunda-esos-exporter-flushing-behavior)
+6. [References](#6-references)
 
 ---
 
@@ -693,7 +694,116 @@ ORDER BY history_cleanup_date LIMIT 1000;
 
 ---
 
-## 5. References
+## 5. Camunda ES/OS Exporter Flushing Behavior
+
+The Camunda exporter caches entities based on their id and type before flushing them to ES/OS.
+Flushes are triggered when either of the following thresholds is reached:
+
+- Exporter batch writer batch size
+- Exporter batch writer memory
+- Flush delay
+
+This means that the cached entities may get modified multiple times (and by multiple handlers)
+before they are flushed to secondary storage. As a result, when making export handler changes:
+
+**Do**:
+- Design handlers to be independent of flush timing
+- Check if other handlers modify the same entity in ways that can affect data consistency if the
+flush timing changes (see example below)
+
+**Do not**:
+- Make flush logic dependent on the state of the entity at the time of creation or modification
+
+**Pitfall Example**:
+
+Both of the handlers below modify the same record type and set the same ids, so they modify the same
+cached entity between flushes.
+
+```java
+// HandlerA
+@Override
+public boolean handlesRecord(final Record<ExampleRecordValue> record) {
+  return true;
+}
+
+@Override
+public List<String> generateIds(final Record<ExampleRecordValue> record) {
+  return List.of(record.getId());
+}
+
+@Override
+public void updateEntity(final Record<ExampleRecordValue> record, final ExampleEntity entity) {
+  if (record.getIntent() == UPDATED) {
+    entity.setStatus(UPDATED);
+    entity.setUpdateTime(record.getTimestamp());
+  }
+  // ....
+}
+
+@Override
+public void flush(final ExampleEntity entity, final BatchRequest batchRequest) {
+  final Map<String, Object> updateFields = new LinkedHashMap<>();
+  if (entity.getStatus() == UPDATED) {
+    updateFields.put(TIME, entity.getUpdateTime());
+  }
+  batchRequest.upsert(
+    indexName, entity.getId(), entity, updateFields);
+}
+```
+
+```java
+// HandlerB
+@Override
+public boolean handlesRecord(final Record<ExampleRecordValue> record) {
+  return record.getIntent() == MIGRATED;
+}
+
+@Override
+public List<String> generateIds(final Record<ExampleRecordValue> record) {
+  return List.of(record.getId());
+}
+
+@Override
+public void updateEntity(final Record<ExampleRecordValue> record, final ExampleEntity entity) {
+  entity.setStatus(MIGRATED);
+}
+
+@Override
+public void flush(final ExampleEntity entity, final BatchRequest batchRequest) {
+  final Map<String, Object> updateFields = new LinkedHashMap<>();
+  updateFields.put(STATUS, entity.getStatus());
+  batchRequest.upsert(
+    indexName, entity.getId(), entity, updateFields);
+}
+```
+
+HandlerA sets the status and update time when the record is updated, while HandlerB updates the status
+when the record has a `MIGRATED` intent. However, in the flush logic of HandlerA we only set the
+update time if the entity state is `UPDATED` at the time of the flush. If a second record with
+`MIGRATED` intent is also processed, this can lead to inconsistent behavior depending on when the
+flush is triggered. The following scenarios are possible:
+
+Scenario A:
+1. HandlerA handles `UPDATED` record → entity status set to `UPDATED` and creation time is set
+2. Flush triggered → HandlerA flushes entity with `UPDATED` status and creation time
+3. HandlerB handles `MIGRATED` record → entity status set to `MIGRATED`
+4. Flush triggered → HandlerB flushes entity with `MIGRATED` status.
+
+Final state in secondary storage: status = MIGRATED, update time = updated
+
+Scenario B:
+1. HandlerA handles `UPDATED` record → entity status set to `UPDATED` and creation time is set
+3. HandlerB handles `MIGRATED` record → entity status set to `MIGRATED`
+4. Flush triggered → HandlerA flushes, but does not include `TIME` in the update fields because the
+entity status is not `UPDATED`. The status in secondary storage will be updated to `MIGRATED`
+already at this point. HandlerB flushes entity with `MIGRATED` status (which does not change
+anything in secondary storage since this change was already reflected after HandlerA's flush).
+
+Final state in secondary storage: status = MIGRATED, update time = not updated
+
+---
+
+## 6. References
 
 |             Resource              |                                      Location                                       |
 |-----------------------------------|-------------------------------------------------------------------------------------|
