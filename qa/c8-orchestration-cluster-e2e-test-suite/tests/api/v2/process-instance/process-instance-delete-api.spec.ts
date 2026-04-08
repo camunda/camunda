@@ -6,13 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, request, test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, createSingleInstance, deploy} from '../../../../utils/zeebeClient';
 import {
-  assertBadRequest,
-  assertConflictRequest,
   assertForbiddenRequest,
-  assertInvalidArgument,
   assertInvalidState,
   assertNotFoundRequest,
   assertStatusCode,
@@ -29,7 +26,7 @@ import {
 } from '@requestHelpers';
 import { cleanupUsers } from 'utils/usersCleanup';
 
-test.describe.parallel('Delete Single Process instance API Tests', () => {
+test.describe.parallel('Delete Single Process Instance API Tests', () => {
     let processInstanceKeyToDelete: string = '';
     let activeProcessInstanceKeyToDelete: string = '';
     let userWithResourcesAuthorizationToSendRequest: {
