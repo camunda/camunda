@@ -39,7 +39,7 @@
           {
             "justification": "JobHandling classes are not part of the public API surface and should be excluded.",
             "matcher": "java-package",
-            "match": "/io\\.camunda\\.client\\.spring\\.jobhandling(\\..*)?/"
+            "match": "/io\\.camunda\\.client\\.jobhandling(\\..*)?/"
           },
           {
             "justification": "Annotation value classes are not part of the public API surface and should be excluded.",

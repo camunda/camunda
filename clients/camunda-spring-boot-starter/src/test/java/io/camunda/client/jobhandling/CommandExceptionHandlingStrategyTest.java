@@ -33,17 +33,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class DefaultCommandExceptionHandlingStrategyTest {
+public class CommandExceptionHandlingStrategyTest {
 
   private BackoffSupplier backoffSupplier;
   private ScheduledExecutorService executor;
-  private DefaultCommandExceptionHandlingStrategy strategy;
+  private CommandExceptionHandlingStrategy strategy;
 
   @BeforeEach
   void setUp() {
     backoffSupplier = BackoffSupplier.newBackoffBuilder().build();
     executor = mock(ScheduledExecutorService.class);
-    strategy = new DefaultCommandExceptionHandlingStrategy(backoffSupplier, executor);
+    strategy = new CommandExceptionHandlingStrategy(backoffSupplier, executor);
   }
 
   @ParameterizedTest
@@ -85,7 +85,7 @@ public class DefaultCommandExceptionHandlingStrategyTest {
     final CommandOutcome outcome = strategy.handleCommandError(command, exception);
 
     // then
-    assertThat(outcome).isNull();
+    assertThat(outcome).isExactlyInstanceOf(CommandOutcome.Retried.class);
     verify(command).increaseBackoffUsing(backoffSupplier);
     verify(command).scheduleExecutionUsing(executor);
   }

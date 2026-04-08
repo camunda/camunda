@@ -24,4 +24,6 @@ public sealed interface CommandOutcome {
   record Failed(Throwable cause, int attempts) implements CommandOutcome {}
 
   record Ignored(Throwable cause, int attempts) implements CommandOutcome {}
+
+  record Retried(Throwable cause, int attempts) implements CommandOutcome {}
 }

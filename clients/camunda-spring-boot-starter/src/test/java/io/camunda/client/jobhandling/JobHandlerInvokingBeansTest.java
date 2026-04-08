@@ -204,7 +204,7 @@ public class JobHandlerInvokingBeansTest {
   }
 
   private static CommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
-    return new DefaultCommandExceptionHandlingStrategy(
+    return new CommandExceptionHandlingStrategy(
         BackoffSupplier.newBackoffBuilder().build(),
         CamundaClientExecutorService.createDefault().getScheduledExecutor());
   }

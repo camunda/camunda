@@ -137,8 +137,8 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final DefaultCommandExceptionHandlingStrategy strategy =
-        new DefaultCommandExceptionHandlingStrategy(backoff, executor);
+    final CommandExceptionHandlingStrategy strategy =
+        new CommandExceptionHandlingStrategy(backoff, executor);
 
     final CommandWrapper wrapper =
         new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
@@ -175,8 +175,8 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final DefaultCommandExceptionHandlingStrategy strategy =
-        new DefaultCommandExceptionHandlingStrategy(backoff, executor);
+    final CommandExceptionHandlingStrategy strategy =
+        new CommandExceptionHandlingStrategy(backoff, executor);
 
     // maxRetries=1 means only 1 attempt allowed, no retries
     final CommandWrapper wrapper =
@@ -202,8 +202,8 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final DefaultCommandExceptionHandlingStrategy strategy =
-        new DefaultCommandExceptionHandlingStrategy(backoff, executor);
+    final CommandExceptionHandlingStrategy strategy =
+        new CommandExceptionHandlingStrategy(backoff, executor);
 
     final CommandWrapper wrapper =
         new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
@@ -299,8 +299,8 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final DefaultCommandExceptionHandlingStrategy strategy =
-        new DefaultCommandExceptionHandlingStrategy(backoff, executor);
+    final CommandExceptionHandlingStrategy strategy =
+        new CommandExceptionHandlingStrategy(backoff, executor);
 
     final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
     final CommandWrapper wrapper =
@@ -339,8 +339,8 @@ public class CommandWrapperTest {
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff =
         BackoffSupplier.newBackoffBuilder().jitterFactor(0).backoffFactor(2).build();
-    final DefaultCommandExceptionHandlingStrategy strategy =
-        new DefaultCommandExceptionHandlingStrategy(backoff, executor);
+    final CommandExceptionHandlingStrategy strategy =
+        new CommandExceptionHandlingStrategy(backoff, executor);
 
     // initial delay in CommandWrapper is 50ms
     final CommandWrapper wrapper =
@@ -396,13 +396,13 @@ public class CommandWrapperTest {
     }
 
     @Override
-    public T join(final long timeout, final TimeUnit unit) {
-      throw new UnsupportedOperationException();
+    public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
+      return cancel(mayInterruptIfRunning);
     }
 
     @Override
-    public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
-      return cancel(mayInterruptIfRunning);
+    public T join(final long timeout, final TimeUnit unit) {
+      throw new UnsupportedOperationException();
     }
   }
 }

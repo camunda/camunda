@@ -21,7 +21,6 @@ import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
-import io.camunda.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.DefaultJobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobWorkerFactory;
@@ -71,7 +70,7 @@ public class CamundaClientAllAutoConfiguration {
   public CommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
       final BackoffSupplier backoffSupplier,
       final CamundaClientExecutorService scheduledExecutorService) {
-    return new DefaultCommandExceptionHandlingStrategy(
+    return new CommandExceptionHandlingStrategy(
         backoffSupplier, scheduledExecutorService.getScheduledExecutor());
   }
 

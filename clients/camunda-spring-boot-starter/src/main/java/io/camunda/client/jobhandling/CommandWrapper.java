@@ -109,8 +109,9 @@ public class CommandWrapper {
     final CommandOutcome outcome =
         commandExceptionHandlingStrategy.handleCommandError(this, throwable);
 
-    // returns either a final outcome or null if the command will be retried
-    if (outcome != null) {
+    // a retried command has invoked scheduleExecutionUsing already, so we do not complete the
+    // future here, it will be completed by the retry action
+    if (!(outcome instanceof CommandOutcome.Retried)) {
       resultFuture.complete(outcome);
     }
   }
