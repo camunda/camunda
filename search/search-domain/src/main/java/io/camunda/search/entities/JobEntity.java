@@ -24,6 +24,7 @@ public record JobEntity(
     JobKind kind,
     ListenerEventType listenerEventType,
     Integer retries,
+    Integer priority,
     Boolean isDenied,
     String deniedReason,
     Boolean hasFailedWithRetriesLeft,
@@ -58,6 +59,7 @@ public record JobEntity(
     private JobKind kind;
     private ListenerEventType listenerEventType;
     private Integer retries;
+    private Integer priority;
     private Boolean isDenied;
     private String deniedReason;
     private Boolean hasFailedWithRetriesLeft;
@@ -108,6 +110,11 @@ public record JobEntity(
 
     public Builder retries(final Integer retries) {
       this.retries = retries;
+      return this;
+    }
+
+    public Builder priority(final Integer priority) {
+      this.priority = priority;
       return this;
     }
 
@@ -206,6 +213,7 @@ public record JobEntity(
           requireNonNull(kind, "Expected non-null field for kind."),
           requireNonNull(listenerEventType, "Expected non-null field for listenerEventType."),
           retries,
+          priority,
           isDenied,
           deniedReason,
           hasFailedWithRetriesLeft,

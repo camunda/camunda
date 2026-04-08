@@ -26,6 +26,7 @@ public class JobEntityTransformer
         .kind(toJobKind(value.getJobKind()))
         .listenerEventType(toListenerEventType(value.getListenerEventType()))
         .retries(value.getRetries())
+        .priority(value.getPriority())
         .isDenied(value.isDenied())
         .deniedReason(value.getDeniedReason())
         .hasFailedWithRetriesLeft(value.isJobFailedWithRetriesLeft())

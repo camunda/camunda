@@ -40,6 +40,9 @@
       "retries": {
         "type": "integer"
       },
+      "priority": {
+        "type": "integer"
+      },
       "state": {
         "type": "keyword"
       },
