@@ -145,6 +145,16 @@ function mockResponses({
       });
     }
 
+    if (route.request().url().includes('/v2/process-instances/migration')) {
+      return route.fulfill({
+        status: 200,
+        json: {
+          batchOperationKey: '1234567890',
+          batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
+        },
+      });
+    }
+
     route.continue();
   };
 }
