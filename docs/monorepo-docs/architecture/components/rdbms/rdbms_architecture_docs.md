@@ -33,12 +33,14 @@ Key Features & Benefits:
 - **Provide RDBMS as secondary storage backend** for the Orchestration Cluster as an alternative to
   Elasticsearch/OpenSearch, without changing external API behavior or request/response semantics for
   clients.
-- **Support multiple relational databases** (PostgreSQL/Aurora, MariaDB, MySQL, SQL Server, Oracle, H2
+- **Support multiple relational databases** (PostgreSQL/Aurora, MariaDB, MySQL, SQL Server, Oracle,
+  H2
   for single-broker) under a documented support policy, including schema management via Liquibase.
 - **Persist and expose orchestration data** (process instances, user tasks, etc.) by exporting Zeebe
   records into RDBMS and serving all read access via the Orchestration Cluster (v2 REST API and
   internal readers), not by direct DB access.
-- **Support lifecycle operations on RDBMS data**, including automatic history cleanup (TTL-based marking
+- **Support lifecycle operations on RDBMS data**, including automatic history cleanup (TTL-based
+  marking
   plus batch deletion) and consistent backup/restore together with Zeebe log via exporter position
   tracking.
 - **Expose configuration options** for connectivity, pooling, TLS, credentials, table prefixing, and
@@ -98,7 +100,7 @@ flowchart LR
   USER --> Camunda_8 --> RDBMS_DB
 ```
 
-| Entity  |                           Description                            |
+| Entity  | Description                                                      |
 |---------|------------------------------------------------------------------|
 | User    | The user which uses Camunda.                                     |
 | Camunda | The whole camunda platform, including broker, webapps, ...       |
@@ -130,14 +132,14 @@ flowchart LR
   restGateway --> RDBMS_SERVICE
 ```
 
-|     Entity     |                                                                                               Description                                                                                               |
-|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| User           | The user which uses Camunda.                                                                                                                                                                            |
-| Camunda        | The whole camunda platform, including broker, webapps, ...                                                                                                                                              |
-| RDBMS Exporter | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is a configured exporter with id `rdbms`.  |
-| EntityDbReader | Each entity (processInstance, user, role) has a Reader interface (e.g. ProcessInstanceReader). For each of these interfaces, RDBMS provides a DbReader implementation (e.g. ProcessInstanceDbReader)    |
-| RDBMS Service  | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                     |
-| RDBMS          | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                        |
+| Entity         | Description                                                                                                                                                                                            |
+|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| User           | The user which uses Camunda.                                                                                                                                                                           |
+| Camunda        | The whole camunda platform, including broker, webapps, ...                                                                                                                                             |
+| RDBMS Exporter | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is a configured exporter with id `rdbms`. |
+| EntityDbReader | Each entity (processInstance, user, role) has a Reader interface (e.g. ProcessInstanceReader). For each of these interfaces, RDBMS provides a DbReader implementation (e.g. ProcessInstanceDbReader)   |
+| RDBMS Service  | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                   |
+| RDBMS          | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                       |
 
 ## 4. Solution Strategy
 
@@ -185,17 +187,17 @@ flowchart TD
   RDBMS_WRITER --> RDBMS_DB[("RDBMS (e.g. Postgres)")]
 ```
 
-|            Entity            |                                                                                               Description                                                                                               |
+| Entity                       | Description                                                                                                                                                                                             |
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | User                         | The user which uses Camunda.                                                                                                                                                                            |
 | REST Gateway                 | The v2 REST API, e.g.: `io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController`                                                                                                             |
-| Camunda Service              | A camunda service, e.g.: `io.camunda.service.ProcessInstanceServices`. It uses either a SearchClient for query data or the broker client to send commands to Zeebe.                                    |
+| Camunda Service              | A camunda service, e.g.: `io.camunda.service.ProcessInstanceServices`. It uses either a SearchClient for query data or the broker client to send commands to Zeebe.                                     |
 | Broker Client                | Is used to send commands to zeebe.                                                                                                                                                                      |
 | Zeebe Engine                 | The engine works on commands and produces the records which are processed later by the exporters.                                                                                                       |
 | RDBMS Exporter               | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
 | ProcessInstanceExportHandler | An example record handler, here for records for processInstances.                                                                                                                                       |
 | ProcessInstanceWriter        | Is used by the RDBMS exporter and its handlers to write processInstance data.                                                                                                                           |
-| RDBMS Service                | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                     |
+| RDBMS Service                | Entry Point to the database module which provides readers for the search client as well as writers for the exporter.                                                                                    |
 | ProcessInstanceReader        | Is the general API interface to read data from the secondary storage (here processInstance as example). Has to be implemented by the secondary storage implementation.                                  |
 | ProcessInstanceDbReader      | The RDBMS implementation of the ProcessInstanceReader.                                                                                                                                                  |
 | RDBMS                        | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                        |
@@ -354,22 +356,42 @@ configurations cover:
 These properties are loaded and available in all Liquibase scripts as well as in MyBatis mappers
 via `${db.vendor.property}` placeholders.
 
+## 6. Runtime View
+
+_No runtime view documented yet._
+
+## 7. Deployment View
+
+_No deployment view documented yet._
+
+## 8. Crosscutting Concepts
+
+_No crosscutting concepts documented yet._
+
 ## 9. Architecture Decisions
 
-See the [ADRs](./adr/) for detailed architecture decision records:
+See the ADRs for detailed architecture decision records:
 
 - [ADR-0001: Use MyBatis as the ORM Framework for the RDBMS Module](./adr/0001-use-mybatis-as-orm-framework.md)
 - [ADR-0002: Use Liquibase for Database Schema Management](./adr/0002-use-liquibase-for-schema-management.md)
+
+## 10. Quality requirements
+
+_No quality requirements documented yet._
+
+## 11. Risks and Technical Debt
+
+_No risks or technical debt documented yet._
 
 ## 12. Glossary
 
 | Term           | Definition                                                                              |
 |----------------|-----------------------------------------------------------------------------------------|
-| RDBMS          | Relational Database Management System (e.g. H2, Postgres, MariaDB, Oracle)             |
+| RDBMS          | Relational Database Management System (e.g. H2, Postgres, MariaDB, Oracle)              |
 | ES             | Elasticsearch — search and analytics engine used as Camunda secondary storage           |
 | OS             | OpenSearch — open-source search and analytics engine used as Camunda secondary storage  |
 | CQRS           | Command Query Responsibility Segregation — separates read and write operations          |
 | ORM            | Object-Relational Mapping — technique for mapping objects to relational database tables |
-| MyBatis        | SQL mapping framework used as the ORM layer in the RDBMS module                        |
-| Liquibase      | Database schema change management tool used in the RDBMS module                        |
+| MyBatis        | SQL mapping framework used as the ORM layer in the RDBMS module                         |
+| Liquibase      | Database schema change management tool used in the RDBMS module                         |
 | ExecutionQueue | Internal queue that batches SQL statements before sending them to the database          |
