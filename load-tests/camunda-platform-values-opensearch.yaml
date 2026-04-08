@@ -77,10 +77,11 @@ resources:
 persistence:
   enabled: true
   size: 512Gi
-  storageClass: "ssd"
+  storageClass: benchmark-ssd-zonal-v1
 
 nodeSelector:
   component: benchmark-n2-standard-8
+  topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
 tolerations:
   - key: nodepool
