@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  type InfiniteData,
-  type UseInfiniteQueryOptions,
-  useInfiniteQuery,
-} from '@tanstack/react-query';
+import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import {api} from 'v1/api';
 import {type RequestError, request} from 'common/api/request';
 import type {Task} from 'v1/api/types';
@@ -39,18 +35,7 @@ function getQueryKey(keys: unknown[]) {
 
 function useTasks(
   filters: TaskFilters,
-  options?: Partial<
-    Pick<
-      UseInfiniteQueryOptions<
-        Task[],
-        RequestError | Error,
-        InfiniteData<Task[], PageParam | undefined>,
-        unknown[],
-        PageParam | undefined
-      >,
-      'refetchInterval'
-    >
-  >,
+  options?: {refetchInterval?: number | false},
 ) {
   const {refetchInterval} = options ?? {};
   const {data: currentUser} = useCurrentUser();
