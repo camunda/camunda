@@ -89,8 +89,12 @@ class BatchOperationCommandsTest {
 
   @Test
   void shouldAppendFinishInitializationCommand() {
+    // given
+    final int operationsTotalCount = 42;
+
     // when
-    appender.appendFinishInitializationCommand(mockBuilder, BATCH_OPERATION_KEY);
+    appender.appendFinishInitializationCommand(
+        mockBuilder, BATCH_OPERATION_KEY, operationsTotalCount);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationInitializationRecord.class);
@@ -103,6 +107,7 @@ class BatchOperationCommandsTest {
 
     final var command = commandCaptor.getValue();
     assertThat(command.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(command.getOperationsTotalCount()).isEqualTo(operationsTotalCount);
   }
 
   @Test

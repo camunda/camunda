@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationInitializationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -96,6 +97,8 @@ class BatchOperationInitializedHandlerTest {
     // then
     assertThat(entity.getStartDate()).isNotNull();
     assertThat(entity.getState()).isEqualTo(BatchOperationState.ACTIVE);
+    // operationsTotalCount must NOT be set on the shared entity (stored in handler-local map)
+    assertThat(entity.getOperationsTotalCount()).isZero();
   }
 
   @Test
@@ -109,7 +112,7 @@ class BatchOperationInitializedHandlerTest {
             .setStartDate(startDate);
     final var mockRequest = mock(BatchRequest.class);
 
-    // when
+    // when — no updateEntity call, so pending count defaults to -1
     underTest.flush(entity, mockRequest);
 
     // then
@@ -119,6 +122,89 @@ class BatchOperationInitializedHandlerTest {
             eq(entity.getId()),
             eq(entity),
             eq(BatchOperationInitializedHandler.CONDITIONAL_UPDATE_SCRIPT),
-            eq(Map.of("state", BatchOperationState.ACTIVE.name(), "startDate", startDate)));
+            eq(
+                Map.of(
+                    "state",
+                    BatchOperationState.ACTIVE.name(),
+                    "startDate",
+                    startDate,
+                    "operationsTotalCount",
+                    -1)));
+  }
+
+  @Test
+  void shouldIncludeOperationsTotalCountInScriptParams() throws PersistenceException {
+    // given
+    final var recordValue =
+        ImmutableBatchOperationInitializationRecordValue.builder()
+            .from(factory.generateObject(BatchOperationInitializationRecordValue.class))
+            .withOperationsTotalCount(42)
+            .build();
+    final Record<BatchOperationInitializationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_INITIALIZATION,
+            r -> r.withIntent(BatchOperationIntent.INITIALIZED).withValue(recordValue));
+
+    final var entity = new BatchOperationEntity().setId("123");
+    underTest.updateEntity(record, entity);
+
+    entity.setState(BatchOperationState.ACTIVE).setStartDate(OffsetDateTime.now());
+
+    final var mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(entity, mockRequest);
+
+    // then — the count from the record (42) should be in the script params
+    verify(mockRequest, times(1))
+        .upsertWithScript(
+            eq(indexName),
+            eq(entity.getId()),
+            eq(entity),
+            eq(BatchOperationInitializedHandler.CONDITIONAL_UPDATE_SCRIPT),
+            eq(
+                Map.of(
+                    "state", BatchOperationState.ACTIVE.name(),
+                    "startDate", entity.getStartDate(),
+                    "operationsTotalCount", 42)));
+    // operationsTotalCount must NOT be set on the entity
+    assertThat(entity.getOperationsTotalCount()).isZero();
+  }
+
+  @Test
+  void shouldIgnoreNegativeOperationsTotalCount() throws PersistenceException {
+    // given — record with operationsTotalCount = -1 (backward compat)
+    final var recordValue =
+        ImmutableBatchOperationInitializationRecordValue.builder()
+            .from(factory.generateObject(BatchOperationInitializationRecordValue.class))
+            .withOperationsTotalCount(-1)
+            .build();
+    final Record<BatchOperationInitializationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_INITIALIZATION,
+            r -> r.withIntent(BatchOperationIntent.INITIALIZED).withValue(recordValue));
+
+    final var entity = new BatchOperationEntity().setId("456");
+    underTest.updateEntity(record, entity);
+
+    entity.setState(BatchOperationState.ACTIVE).setStartDate(OffsetDateTime.now());
+
+    final var mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(entity, mockRequest);
+
+    // then — -1 is passed through; the Painless script guards with >= 0
+    verify(mockRequest, times(1))
+        .upsertWithScript(
+            eq(indexName),
+            eq(entity.getId()),
+            eq(entity),
+            eq(BatchOperationInitializedHandler.CONDITIONAL_UPDATE_SCRIPT),
+            eq(
+                Map.of(
+                    "state", BatchOperationState.ACTIVE.name(),
+                    "startDate", entity.getStartDate(),
+                    "operationsTotalCount", -1)));
   }
 }

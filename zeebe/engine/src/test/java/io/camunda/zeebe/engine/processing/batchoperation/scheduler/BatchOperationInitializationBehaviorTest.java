@@ -83,7 +83,7 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
 
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, 2);
     verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
     verify(metrics).recordItemsPerPartition(2, BatchOperationType.CANCEL_PROCESS_INSTANCE);
     verify(metrics)
@@ -110,7 +110,7 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(success.cursor()).isEqualTo("cursor2");
 
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, 4);
     verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
     verify(metrics).recordItemsPerPartition(4, BatchOperationType.CANCEL_PROCESS_INSTANCE);
   }
@@ -231,7 +231,7 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
 
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, 0);
     verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
     verify(metrics).recordItemsPerPartition(0, BatchOperationType.CANCEL_PROCESS_INSTANCE);
   }
@@ -247,6 +247,8 @@ class BatchOperationInitializationBehaviorTest {
     initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
+    verify(commandBuilder)
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, 8); // 5 + 3
     verify(metrics).recordItemsPerPartition(8, BatchOperationType.CANCEL_PROCESS_INSTANCE); // 5 + 3
   }
 
@@ -265,7 +267,7 @@ class BatchOperationInitializationBehaviorTest {
     final var success = (InitializationOutcome.Success) result;
     assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, 2);
     verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
     verify(metrics).recordItemsPerPartition(2, BatchOperationType.DELETE_PROCESS_INSTANCE);
     verify(metrics)
