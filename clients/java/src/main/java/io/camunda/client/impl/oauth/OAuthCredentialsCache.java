@@ -29,10 +29,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -114,14 +116,15 @@ public final class OAuthCredentialsCache {
       final String clientId,
       final SupplierWithIO<CamundaClientCredentials> zeebeClientCredentialsConsumer)
       throws IOException {
-    return computeIfMissingOrInvalid(clientId, zeebeClientCredentialsConsumer, null);
+    return computeIfMissingOrInvalid(clientId, zeebeClientCredentialsConsumer, null, null);
   }
 
   /**
    * Returns a valid cached token, or fetches a new one if missing/invalid. When a {@code
-   * proactiveRefreshCallback} is provided and the cached token is valid but nearing expiry (as
-   * determined by {@link CamundaClientCredentials#shouldRefreshProactively()}), the callback is
-   * invoked to trigger a background refresh while the still-valid token is returned immediately.
+   * proactiveRefreshCallback} is provided and the cached token is valid but within {@code
+   * proactiveTokenRefreshThreshold} of expiry (as determined by {@link
+   * CamundaClientCredentials#shouldRefreshProactively(Duration)}), the callback is invoked to
+   * trigger a background refresh while the still-valid token is returned immediately.
    *
    * <p>This method first checks the in-memory cache (a fast HashMap lookup) before falling back to
    * reading from the on-disk YAML cache. Under high throughput (~300 req/s), this avoids hundreds
@@ -130,8 +133,18 @@ public final class OAuthCredentialsCache {
   public synchronized CamundaClientCredentials computeIfMissingOrInvalid(
       final String clientId,
       final SupplierWithIO<CamundaClientCredentials> zeebeClientCredentialsConsumer,
-      final Runnable proactiveRefreshCallback)
+      final Runnable proactiveRefreshCallback,
+      final Duration proactiveTokenRefreshThreshold)
       throws IOException {
+
+    // Contract: if a proactive-refresh callback is provided, the threshold must be too.
+    // This is enforced here rather than letting a null threshold NPE inside
+    // shouldRefreshProactively() so mis-wiring is caught at the boundary.
+    if (proactiveRefreshCallback != null) {
+      Objects.requireNonNull(
+          proactiveTokenRefreshThreshold,
+          "proactiveTokenRefreshThreshold must be non-null when a proactive refresh callback is provided");
+    }
 
     // Fast path: check the in-memory cache first (no disk I/O).
     // This is the hot path under steady-state load — the token is valid in memory
@@ -139,7 +152,8 @@ public final class OAuthCredentialsCache {
     final Optional<CamundaClientCredentials> inMemoryCredentials = get(clientId);
     if (inMemoryCredentials.isPresent() && inMemoryCredentials.get().isValid()) {
       final CamundaClientCredentials credentials = inMemoryCredentials.get();
-      if (proactiveRefreshCallback != null && credentials.shouldRefreshProactively()) {
+      if (proactiveRefreshCallback != null
+          && credentials.shouldRefreshProactively(proactiveTokenRefreshThreshold)) {
         proactiveRefreshCallback.run();
       }
       return credentials;
@@ -160,7 +174,8 @@ public final class OAuthCredentialsCache {
                 });
     if (optionalCredentials.isPresent()) {
       final CamundaClientCredentials credentials = optionalCredentials.get();
-      if (proactiveRefreshCallback != null && credentials.shouldRefreshProactively()) {
+      if (proactiveRefreshCallback != null
+          && credentials.shouldRefreshProactively(proactiveTokenRefreshThreshold)) {
         proactiveRefreshCallback.run();
       }
       return credentials;
