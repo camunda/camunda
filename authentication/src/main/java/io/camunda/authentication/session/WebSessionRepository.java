@@ -10,6 +10,9 @@ package io.camunda.authentication.session;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +24,17 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(WebSessionRepository.class);
   private static final String POLLING_HEADER = "x-is-polling";
+  private static final int MAX_RETRY_ATTEMPTS = 3;
+  private static final long INITIAL_RETRY_DELAY_MS = 100;
+
+  private static final Retry UPSERT_RETRY =
+      Retry.of(
+          "web-session-upsert",
+          RetryConfig.custom()
+              .maxAttempts(MAX_RETRY_ATTEMPTS)
+              .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_RETRY_DELAY_MS, 2))
+              .retryExceptions(RuntimeException.class)
+              .build());
 
   private final PersistentWebSessionClient persistentWebSessionClient;
   private final WebSessionMapper webSessionMapper;
@@ -101,23 +115,41 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     if (webSession.isChanged()) {
       LOGGER.debug("Web Session {} changed, save in storage.", webSession);
       final var entity = webSessionMapper.toPersistentWebSession(webSession);
-      try {
-        persistentWebSessionClient.upsertPersistentWebSession(entity);
-      } catch (final CamundaSearchException e) {
-        LOGGER.warn(
-            "Failed to save web session [{}] to persistent storage: {} (reason: {})",
-            webSession.getId(),
-            e.getMessage(),
-            e.getReason(),
-            e);
-      } catch (final RuntimeException e) {
-        LOGGER.warn(
-            "Failed to save web session [{}] to persistent storage: {}",
-            webSession.getId(),
-            e.getMessage(),
-            e);
-      }
+      upsertWithRetry(webSession, entity);
     }
+  }
+
+  private void upsertWithRetry(
+      final WebSession webSession, final PersistentWebSessionEntity entity) {
+    final var redactedId = redactSessionId(webSession.getId());
+    try {
+      Retry.decorateRunnable(
+              UPSERT_RETRY,
+              () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
+          .run();
+    } catch (final CamundaSearchException e) {
+      LOGGER.warn(
+          "Failed to save web session [{}] to persistent storage after {} attempts: {} (reason: {})",
+          redactedId,
+          MAX_RETRY_ATTEMPTS,
+          e.getMessage(),
+          e.getReason(),
+          e);
+    } catch (final RuntimeException e) {
+      LOGGER.warn(
+          "Failed to save web session [{}] to persistent storage after {} attempts: {}",
+          redactedId,
+          MAX_RETRY_ATTEMPTS,
+          e.getMessage(),
+          e);
+    }
+  }
+
+  private static String redactSessionId(final String sessionId) {
+    if (sessionId == null || sessionId.length() <= 8) {
+      return "***";
+    }
+    return sessionId.substring(0, 8) + "...";
   }
 
   private Optional<WebSession> toWebSession(
