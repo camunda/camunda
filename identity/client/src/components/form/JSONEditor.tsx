@@ -17,6 +17,7 @@ import { Copy, Edit } from "@carbon/react/icons";
 import Flex from "src/components/layout/Flex.tsx";
 import { spacing03 } from "@carbon/elements";
 import { useNotifications } from "src/components/notifications";
+import { themeStore } from "src/common/theme/theme.ts";
 
 type EditorFirstParam = Parameters<
   NonNullable<ComponentProps<typeof JSONEditor>["onMount"]>
@@ -45,6 +46,7 @@ const JSONEditor: FC<JSONEditorProps> = observer(
       <Editor
         options={{ ...options, readOnly }}
         language="json"
+        theme={themeStore.actualTheme === "dark" ? "vs-dark" : "light"}
         value={value}
         height="32vh"
         width="100%"
