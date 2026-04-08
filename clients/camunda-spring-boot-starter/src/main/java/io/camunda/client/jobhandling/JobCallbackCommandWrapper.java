@@ -15,7 +15,7 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.MetricsRecorder;
@@ -26,11 +26,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
-public class CommandWrapper {
+public class JobCallbackCommandWrapper {
 
-  private final FinalCommandStep<?> command;
+  private final JobCallbackFinalCommandStep<?> command;
   private final ActivatedJob job;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final JobCallbackCommandExceptionHandlingStrategy
+      jobCallbackCommandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final CounterMetricsContext metricsContext;
   private long currentRetryDelay = 50L;
@@ -40,16 +41,16 @@ public class CommandWrapper {
   private final AtomicBoolean started = new AtomicBoolean(false);
   private Runnable retryAction;
 
-  public CommandWrapper(
-      final FinalCommandStep<?> command,
+  public JobCallbackCommandWrapper(
+      final JobCallbackFinalCommandStep<?> command,
       final ActivatedJob job,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final CounterMetricsContext metricsContext,
       final int maxRetries) {
     this.command = command;
     this.job = job;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.maxRetries = maxRetries;
     this.metricsRecorder = metricsRecorder;
     this.metricsContext = metricsContext;
@@ -107,7 +108,7 @@ public class CommandWrapper {
 
   private void handleError(final Throwable throwable) {
     final CommandOutcome outcome =
-        commandExceptionHandlingStrategy.handleCommandError(this, throwable);
+        jobCallbackCommandExceptionHandlingStrategy.handleCommandError(this, throwable);
 
     // a retried command has invoked scheduleExecutionUsing already, so we do not complete the
     // future here, it will be completed by the retry action

@@ -19,13 +19,14 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.metrics.MetricsRecorder;
 
 public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSupplier {
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final JobCallbackCommandExceptionHandlingStrategy
+      jobCallbackCommandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
 
   public DefaultJobExceptionHandlerSupplier(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder) {
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
   }
 
@@ -36,6 +37,6 @@ public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSu
         context.retryBackoff(),
         context.maxRetries(),
         metricsRecorder,
-        commandExceptionHandlingStrategy);
+        jobCallbackCommandExceptionHandlingStrategy);
   }
 }

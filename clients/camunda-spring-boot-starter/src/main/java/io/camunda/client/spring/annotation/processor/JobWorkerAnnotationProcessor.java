@@ -24,7 +24,7 @@ import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.BeanJobHandlerFactory;
-import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.client.jobhandling.JobCallbackCommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.ManagedJobWorker;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -48,7 +48,8 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerAnnotationProcessor.class);
 
   private final JobWorkerManager jobWorkerManager;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final JobCallbackCommandExceptionHandlingStrategy
+      jobCallbackCommandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
@@ -56,12 +57,12 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
 
   public JobWorkerAnnotationProcessor(
       final JobWorkerManager jobWorkerManager,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy) {
     this.jobWorkerManager = jobWorkerManager;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
@@ -87,7 +88,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
                           jobWorkerValue,
                           new BeanJobHandlerFactory(
                               methodInfo,
-                              commandExceptionHandlingStrategy,
+                              jobCallbackCommandExceptionHandlingStrategy,
                               parameterResolverStrategy,
                               resultProcessorStrategy,
                               metricsRecorder)))

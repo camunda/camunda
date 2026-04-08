@@ -33,17 +33,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class CommandExceptionHandlingStrategyTest {
+public class JobCallbackCommandExceptionHandlingStrategyTest {
 
   private BackoffSupplier backoffSupplier;
   private ScheduledExecutorService executor;
-  private CommandExceptionHandlingStrategy strategy;
+  private JobCallbackCommandExceptionHandlingStrategy strategy;
 
   @BeforeEach
   void setUp() {
     backoffSupplier = BackoffSupplier.newBackoffBuilder().build();
     executor = mock(ScheduledExecutorService.class);
-    strategy = new CommandExceptionHandlingStrategy(backoffSupplier, executor);
+    strategy = new JobCallbackCommandExceptionHandlingStrategy(backoffSupplier, executor);
   }
 
   @ParameterizedTest
@@ -52,7 +52,7 @@ public class CommandExceptionHandlingStrategyTest {
       names = {"NOT_FOUND"})
   void shouldReturnIgnoredForIgnorableStatusCodes(final Status.Code code) {
     // given
-    final CommandWrapper command = commandWithRetries();
+    final JobCallbackCommandWrapper command = commandWithRetries();
     final StatusRuntimeException exception = new StatusRuntimeException(code.toStatus());
 
     // when
@@ -78,7 +78,7 @@ public class CommandExceptionHandlingStrategyTest {
       })
   void shouldScheduleRetryForRetriableStatusCodes(final Status.Code code) {
     // given
-    final CommandWrapper command = commandWithRetries();
+    final JobCallbackCommandWrapper command = commandWithRetries();
     final StatusRuntimeException exception = new StatusRuntimeException(code.toStatus());
 
     // when
@@ -103,7 +103,7 @@ public class CommandExceptionHandlingStrategyTest {
       })
   void shouldReturnFailedWhenRetriesExhaustedForRetriableStatusCodes(final Status.Code code) {
     // given
-    final CommandWrapper command = commandWithoutRetries();
+    final JobCallbackCommandWrapper command = commandWithoutRetries();
     final StatusRuntimeException exception = new StatusRuntimeException(code.toStatus());
 
     // when
@@ -129,7 +129,7 @@ public class CommandExceptionHandlingStrategyTest {
       })
   void shouldReturnFailedForNonRetriableFailureStatusCodes(final Status.Code code) {
     // given
-    final CommandWrapper command = commandWithRetries();
+    final JobCallbackCommandWrapper command = commandWithRetries();
     final StatusRuntimeException exception = new StatusRuntimeException(code.toStatus());
 
     // when
@@ -147,7 +147,7 @@ public class CommandExceptionHandlingStrategyTest {
       names = {"OK", "UNKNOWN", "ALREADY_EXISTS"})
   void shouldReturnFailedForUnexpectedStatusCodes(final Status.Code code) {
     // given
-    final CommandWrapper command = commandWithRetries();
+    final JobCallbackCommandWrapper command = commandWithRetries();
     final StatusRuntimeException exception = new StatusRuntimeException(code.toStatus());
 
     // when
@@ -162,7 +162,7 @@ public class CommandExceptionHandlingStrategyTest {
   @Test
   void shouldReturnFailedForNonGrpcException() {
     // given
-    final CommandWrapper command = commandWithRetries();
+    final JobCallbackCommandWrapper command = commandWithRetries();
     final RuntimeException exception = new RuntimeException("connection reset");
 
     // when
@@ -174,15 +174,15 @@ public class CommandExceptionHandlingStrategyTest {
     verify(executor, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
   }
 
-  private CommandWrapper commandWithRetries() {
-    final CommandWrapper command = mock(CommandWrapper.class);
+  private JobCallbackCommandWrapper commandWithRetries() {
+    final JobCallbackCommandWrapper command = mock(JobCallbackCommandWrapper.class);
     when(command.hasMoreRetries()).thenReturn(true);
     when(command.getAttempts()).thenReturn(1);
     return command;
   }
 
-  private CommandWrapper commandWithoutRetries() {
-    final CommandWrapper command = mock(CommandWrapper.class);
+  private JobCallbackCommandWrapper commandWithoutRetries() {
+    final JobCallbackCommandWrapper command = mock(JobCallbackCommandWrapper.class);
     when(command.hasMoreRetries()).thenReturn(false);
     when(command.getAttempts()).thenReturn(3);
     return command;

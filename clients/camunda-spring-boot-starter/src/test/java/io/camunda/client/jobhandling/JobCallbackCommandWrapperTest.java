@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
@@ -42,16 +42,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings("unchecked")
-public class CommandWrapperTest {
+public class JobCallbackCommandWrapperTest {
 
-  private FinalCommandStep<Object> command;
+  private JobCallbackFinalCommandStep<Object> command;
   private ActivatedJob job;
   private MetricsRecorder metricsRecorder;
   private CounterMetricsContext metricsContext;
 
   @BeforeEach
   void setUp() {
-    command = mock(FinalCommandStep.class);
+    command = mock(JobCallbackFinalCommandStep.class);
     job = mock(ActivatedJob.class);
     when(job.getDeadline()).thenReturn(Long.MAX_VALUE);
     metricsRecorder = new DefaultNoopMetricsRecorder();
@@ -63,9 +63,10 @@ public class CommandWrapperTest {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
@@ -87,12 +88,13 @@ public class CommandWrapperTest {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final StatusRuntimeException error = new StatusRuntimeException(Status.INTERNAL);
     when(strategy.handleCommandError(any(), any())).thenReturn(new CommandOutcome.Failed(error, 1));
 
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
     sendFuture.completeExceptionally(error);
@@ -109,13 +111,14 @@ public class CommandWrapperTest {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final StatusRuntimeException error = new StatusRuntimeException(Status.NOT_FOUND);
     when(strategy.handleCommandError(any(), any()))
         .thenReturn(new CommandOutcome.Ignored(error, 1));
 
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
     sendFuture.completeExceptionally(error);
@@ -137,11 +140,11 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final CommandExceptionHandlingStrategy strategy =
-        new CommandExceptionHandlingStrategy(backoff, executor);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        new JobCallbackCommandExceptionHandlingStrategy(backoff, executor);
 
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
@@ -175,12 +178,12 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final CommandExceptionHandlingStrategy strategy =
-        new CommandExceptionHandlingStrategy(backoff, executor);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        new JobCallbackCommandExceptionHandlingStrategy(backoff, executor);
 
     // maxRetries=1 means only 1 attempt allowed, no retries
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 1);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 1);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
@@ -202,11 +205,11 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final CommandExceptionHandlingStrategy strategy =
-        new CommandExceptionHandlingStrategy(backoff, executor);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        new JobCallbackCommandExceptionHandlingStrategy(backoff, executor);
 
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
@@ -222,11 +225,12 @@ public class CommandWrapperTest {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
 
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsyncWithMetrics(increaser);
 
@@ -244,13 +248,14 @@ public class CommandWrapperTest {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final RuntimeException error = new RuntimeException("fail");
     when(strategy.handleCommandError(any(), any())).thenReturn(new CommandOutcome.Failed(error, 1));
     final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
 
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsyncWithMetrics(increaser);
 
@@ -266,9 +271,10 @@ public class CommandWrapperTest {
   void doubleExecuteThrowsIllegalStateException() {
     when(command.send()).thenReturn(asCamundaFuture(new CompletableFuture<>()));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     wrapper.executeAsync();
 
@@ -279,9 +285,10 @@ public class CommandWrapperTest {
   void doubleExecuteWithMetricsThrowsIllegalStateException() {
     when(command.send()).thenReturn(asCamundaFuture(new CompletableFuture<>()));
 
-    final CommandExceptionHandlingStrategy strategy = mock(CommandExceptionHandlingStrategy.class);
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     wrapper.executeAsync();
 
@@ -299,12 +306,12 @@ public class CommandWrapperTest {
 
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
-    final CommandExceptionHandlingStrategy strategy =
-        new CommandExceptionHandlingStrategy(backoff, executor);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        new JobCallbackCommandExceptionHandlingStrategy(backoff, executor);
 
     final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 3);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsyncWithMetrics(increaser);
 
@@ -339,12 +346,12 @@ public class CommandWrapperTest {
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final BackoffSupplier backoff =
         BackoffSupplier.newBackoffBuilder().jitterFactor(0).backoffFactor(2).build();
-    final CommandExceptionHandlingStrategy strategy =
-        new CommandExceptionHandlingStrategy(backoff, executor);
+    final JobCallbackCommandExceptionHandlingStrategy strategy =
+        new JobCallbackCommandExceptionHandlingStrategy(backoff, executor);
 
     // initial delay in CommandWrapper is 50ms
-    final CommandWrapper wrapper =
-        new CommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 5);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(command, job, strategy, metricsRecorder, metricsContext, 5);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 

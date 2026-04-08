@@ -203,8 +203,8 @@ public class JobHandlerInvokingBeansTest {
     return arguments.stream();
   }
 
-  private static CommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
-    return new CommandExceptionHandlingStrategy(
+  private static JobCallbackCommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
+    return new JobCallbackCommandExceptionHandlingStrategy(
         BackoffSupplier.newBackoffBuilder().build(),
         CamundaClientExecutorService.createDefault().getScheduledExecutor());
   }

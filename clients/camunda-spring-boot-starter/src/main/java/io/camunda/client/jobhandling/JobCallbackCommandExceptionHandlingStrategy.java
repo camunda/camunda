@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CommandExceptionHandlingStrategy {
+public final class JobCallbackCommandExceptionHandlingStrategy {
   public static final Predicate<Integer> REST_RETRYABLE =
       code -> Set.of(429, 502, 503, 504).contains(code);
   public static final Predicate<Integer> REST_IGNORABLE = code -> code == 404;
@@ -55,7 +55,7 @@ public final class CommandExceptionHandlingStrategy {
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService scheduledExecutorService;
 
-  public CommandExceptionHandlingStrategy(
+  public JobCallbackCommandExceptionHandlingStrategy(
       final BackoffSupplier backoffSupplier,
       final ScheduledExecutorService scheduledExecutorService) {
     this.backoffSupplier = backoffSupplier;
@@ -63,7 +63,7 @@ public final class CommandExceptionHandlingStrategy {
   }
 
   public CommandOutcome handleCommandError(
-      final CommandWrapper command, final Throwable throwable) {
+      final JobCallbackCommandWrapper command, final Throwable throwable) {
     if (throwable instanceof final StatusRuntimeException exception) {
       return handleGrpcError(command, exception);
     }
@@ -75,14 +75,14 @@ public final class CommandExceptionHandlingStrategy {
   }
 
   private CommandOutcome handleRestError(
-      final CommandWrapper command, final ClientHttpException exception) {
+      final JobCallbackCommandWrapper command, final ClientHttpException exception) {
     final int code = exception.code();
     return handleError(
         command, exception, "http status code", code, REST_IGNORABLE, REST_RETRYABLE, REST_FAILURE);
   }
 
   private CommandOutcome handleGrpcError(
-      final CommandWrapper command, final StatusRuntimeException exception) {
+      final JobCallbackCommandWrapper command, final StatusRuntimeException exception) {
     final Status.Code code = exception.getStatus().getCode();
     return handleError(
         command,
@@ -95,7 +95,7 @@ public final class CommandExceptionHandlingStrategy {
   }
 
   private <T> CommandOutcome handleError(
-      final CommandWrapper command,
+      final JobCallbackCommandWrapper command,
       final Exception exception,
       final String codeType,
       final T code,

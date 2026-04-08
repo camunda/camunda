@@ -32,19 +32,20 @@ import java.util.List;
 
 public class BeanJobHandlerFactory implements JobHandlerFactory {
   private final MethodInfo methodInfo;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final JobCallbackCommandExceptionHandlingStrategy
+      jobCallbackCommandExceptionHandlingStrategy;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final MetricsRecorder metricsRecorder;
 
   public BeanJobHandlerFactory(
       final MethodInfo methodInfo,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
       final MetricsRecorder metricsRecorder) {
     this.methodInfo = methodInfo;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
     this.metricsRecorder = metricsRecorder;
@@ -77,7 +78,7 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
         methodInfo::invoke,
         autoComplete,
         maxRetries,
-        commandExceptionHandlingStrategy,
+        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         createParameterResolvers(context.camundaClient()),
         createResultProcessor(context.camundaClient()));

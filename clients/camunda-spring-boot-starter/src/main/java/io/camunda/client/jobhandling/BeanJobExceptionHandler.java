@@ -16,7 +16,7 @@
 package io.camunda.client.jobhandling;
 
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
 public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BeanJobExceptionHandler.class);
   private final MetricsRecorder metricsRecorder;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final JobCallbackCommandExceptionHandlingStrategy
+      jobCallbackCommandExceptionHandlingStrategy;
   private final int maxRetries;
   private final Duration retryBackoff;
 
@@ -43,27 +44,28 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
       final Duration retryBackoff,
       final int maxRetries,
       final MetricsRecorder metricsRecorder,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy) {
+      final JobCallbackCommandExceptionHandlingStrategy
+          jobCallbackCommandExceptionHandlingStrategy) {
     super(
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
         ctx -> retryBackoff,
         DEFAULT_VARIABLES_PROVIDER);
     this.metricsRecorder = metricsRecorder;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
   }
 
-  private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command,
+  private JobCallbackCommandWrapper createCommandWrapper(
+      final JobCallbackFinalCommandStep<?> command,
       final ActivatedJob job,
       final int maxRetries,
       final CounterMetricsContext metricsContext) {
-    return new CommandWrapper(
+    return new JobCallbackCommandWrapper(
         command,
         job,
-        commandExceptionHandlingStrategy,
+        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         metricsContext,
         maxRetries);
@@ -78,7 +80,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
     final JobClient jobClient = context.getJobClient();
     if (exception instanceof final JobError jobError) {
       LOG.trace("Caught job error on {}", job);
-      final CommandWrapper command =
+      final JobCallbackCommandWrapper command =
           createCommandWrapper(
               createFailJobCommand(jobClient, context.getActivatedJob(), jobError),
               context.getActivatedJob(),
@@ -87,7 +89,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
       command.executeAsyncWithMetrics(MetricsRecorder::increaseFailed);
     } else if (exception instanceof final BpmnError bpmnError) {
       LOG.trace("Caught BPMN error on {}", job);
-      final CommandWrapper command =
+      final JobCallbackCommandWrapper command =
           createCommandWrapper(
               createThrowErrorCommand(jobClient, context.getActivatedJob(), bpmnError),
               context.getActivatedJob(),
@@ -100,7 +102,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
     }
   }
 
-  private FinalCommandStep<ThrowErrorResponse> createThrowErrorCommand(
+  private JobCallbackFinalCommandStep<ThrowErrorResponse> createThrowErrorCommand(
       final JobClient jobClient, final ActivatedJob job, final BpmnError bpmnError) {
     final ThrowErrorCommandStep2 command =
         jobClient
@@ -110,7 +112,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
     return JobHandlingUtil.applyVariables(bpmnError.getVariables(), command);
   }
 
-  private FinalCommandStep<FailJobResponse> createFailJobCommand(
+  private JobCallbackFinalCommandStep<FailJobResponse> createFailJobCommand(
       final JobClient jobClient, final ActivatedJob job, final JobError jobError) {
     final int retries =
         jobError.getRetries() == null ? (job.getRetries() - 1) : jobError.getRetries();

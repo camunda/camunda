@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.client.jobhandling.JobCallbackCommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.ManagedJobWorker;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -43,7 +43,8 @@ public class JobWorkerAnnotationProcessorTest {
 
   @Mock private JobWorkerManager jobWorkerManager;
 
-  @Mock private CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  @Mock
+  private JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy;
 
   @Mock private MetricsRecorder metricsRecorder;
 

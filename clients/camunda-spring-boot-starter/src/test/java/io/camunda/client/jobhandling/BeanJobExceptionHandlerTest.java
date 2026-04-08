@@ -46,11 +46,11 @@ public class BeanJobExceptionHandlerTest {
   @Test
   void shouldHandleAnyException() {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
-        mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
+            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandExceptionHandlingStrategy);
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -75,11 +75,11 @@ public class BeanJobExceptionHandlerTest {
   @Test
   void shouldHandleJobError() {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
-        mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
+            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandExceptionHandlingStrategy);
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -105,11 +105,11 @@ public class BeanJobExceptionHandlerTest {
   @Test
   void shouldHandleBpmnError() {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
-        mock(CommandExceptionHandlingStrategy.class);
+    final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy =
+        mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
+            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandExceptionHandlingStrategy);
     final JobClient jobClient = mock(JobClient.class);
     final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
     final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);
