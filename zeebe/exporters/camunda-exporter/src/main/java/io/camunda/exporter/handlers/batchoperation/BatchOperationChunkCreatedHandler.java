@@ -60,7 +60,11 @@ public class BatchOperationChunkCreatedHandler
 
   @Override
   public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getBatchOperationKey()));
+    // Use a composite ID (batchOperationKey:chunkKey) so that each chunk gets its own cached entity
+    // in the ExporterBatchWriter. This prevents sharing the entity with
+    // BatchOperationCreatedHandler (which uses just the batchOperationKey as ID), avoiding
+    // double-counting of operationsTotalCount.
+    return List.of(record.getValue().getBatchOperationKey() + ":" + record.getKey());
   }
 
   @Override
@@ -84,9 +88,13 @@ public class BatchOperationChunkCreatedHandler
     // creates a minimal document from the entity. When the document already exists, the script
     // atomically increments the total count and resets endDate to null so that the
     // BatchOperationUpdateTask will re-process this batch operation to update all counts.
+
+    // The entity ID is "batchKey:chunkKey", but the ES document ID is just the batchKey.
+    final String batchOperationKey = entity.getId().split(":")[0];
+
     batchRequest.upsertWithScript(
         indexName,
-        entity.getId(),
+        batchOperationKey,
         entity,
         """
             ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
