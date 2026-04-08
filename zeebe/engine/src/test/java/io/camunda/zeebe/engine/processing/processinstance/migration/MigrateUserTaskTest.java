@@ -14,9 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -1206,6 +1208,68 @@ public class MigrateUserTaskTest {
             r ->
                 r.getValue().getBpmnProcessId().equals(targetProcessId)
                     && r.getValue().getElementId().equals("B"));
+  }
+
+  @Test
+  public void shouldRejectImplementationMigrationWhenJobForJobWorkerUserTaskCannotBeFound() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .zeebeFormId("invalidformid")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate a job for user task 'A' \
+                on process instance with key '%d', \
+                but could not find job with key '0'. \
+                Please resolve any incidents on the user task before migrating the process instance.""",
+                processInstanceKey))
+        .hasKey(processInstanceKey);
   }
 
   private static void verifyFormOperationsWork(final long userTaskKey) {
