@@ -279,4 +279,281 @@ test.describe('process instance page', () => {
 
     await expect(page).toHaveScreenshot();
   });
+
+  test('inline JSON view - running instance', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page.getByTestId('variable-payload')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON view - scrollable', async ({page, processInstancePage}) => {
+    const longJsonVariable = {
+      variableKey: '2251799813687144-longPayload',
+      name: 'longPayload',
+      value: '{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [longJsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page.getByTestId('variable-longPayload')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON edit - error state', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^edit$/i})
+      .click();
+
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('{invalid');
+
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('JSON viewer modal - running instance - view mode', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+        variable: jsonVariable,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^open/i})
+      .click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('JSON viewer modal - running instance - edit mode', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+        variable: jsonVariable,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^edit$/i})
+      .click();
+
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^open/i})
+      .click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page
+      .locator('.monaco-editor .cursor')
+      .first()
+      .waitFor({state: 'visible'});
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('JSON viewer modal - completed instance', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2551799813954282-payload',
+      name: 'payload',
+      value: '{"result":"success","items":3}',
+      isTruncated: false,
+      tenantId: '<default>',
+      processInstanceKey: '2551799813954282',
+      scopeKey: '2551799813954282',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: completedInstance.detail,
+        callHierarchy: completedInstance.callHierarchy,
+        elementInstances: completedInstance.elementInstances,
+        statistics: completedInstance.statistics,
+        sequenceFlows: completedInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: completedInstance.xml,
+        variable: jsonVariable,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: completedInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^open/i})
+      .click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await expect(page).toHaveScreenshot();
+  });
 });

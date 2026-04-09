@@ -39,6 +39,7 @@ function mockResponses({
   xml,
   incidents,
   auditLogs,
+  variable,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -49,6 +50,7 @@ function mockResponses({
   xml?: string;
   incidents?: QueryProcessInstanceIncidentsResponseBody;
   auditLogs?: QueryAuditLogsResponseBody;
+  variable?: Variable;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -135,6 +137,19 @@ function mockResponses({
             totalItems: variables?.length ?? 0,
           },
         }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route.request().method() === 'GET' &&
+      route.request().url().match(/\/v2\/variables\/[^/?]+$/)
+    ) {
+      return route.fulfill({
+        status: variable === undefined ? 400 : 200,
+        body: JSON.stringify(variable),
         headers: {
           'content-type': 'application/json',
         },
