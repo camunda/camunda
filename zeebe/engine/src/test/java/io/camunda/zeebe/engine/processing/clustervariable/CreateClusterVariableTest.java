@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -133,6 +134,26 @@ public final class CreateClusterVariableTest {
   }
 
   @Test
+  public void createTenantScopedClusterVariableWithInvalidTenant() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_INVALID_TENANT")
+            .setTenantScope()
+            .withTenantId("invalid-tenant-id")
+            .withValue("\"VALUE\"")
+            .expectRejection()
+            .create();
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.CREATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to create cluster variable for tenant with ID 'invalid-tenant-id', but no tenant with this ID exists.");
+  }
+
+  @Test
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlap() {
     // given
     final var recordGlobal =
@@ -169,9 +190,10 @@ public final class CreateClusterVariableTest {
     final ClusterVariableRecord clusterVariableRecord =
         new ClusterVariableRecord().setName(clusterVariableName);
     final ClusterVariableState clusterVariableState = mock(ClusterVariableState.class);
+    final TenantState tenantState = mock(TenantState.class);
     final ClusterVariableRecordValidator clusterVariableRecordValidator =
         new ClusterVariableRecordValidator(
-            clusterVariableState, new ClusterVariableValidationConfiguration(10));
+            clusterVariableState, tenantState, new ClusterVariableValidationConfiguration(10));
     // when
     final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
     // then
