@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -40,12 +40,12 @@ public class TestRestOperateClient implements AutoCloseable {
 
   public TestRestOperateClient(final URI endpoint, final String username, final String password) {
     this(endpoint);
-    this.authenticationApplier = addBasicAuthHeader(username, password);
+    authenticationApplier = addBasicAuthHeader(username, password);
   }
 
-  public TestRestOperateClient(final URI endpoint, CredentialsProvider credentialsProvider) {
+  public TestRestOperateClient(final URI endpoint, final CredentialsProvider credentialsProvider) {
     this(endpoint);
-    this.authenticationApplier = applyCredentialsProvider(credentialsProvider);
+    authenticationApplier = applyCredentialsProvider(credentialsProvider);
   }
 
   public TestRestOperateClient(final URI endpoint) {
@@ -99,7 +99,7 @@ public class TestRestOperateClient implements AutoCloseable {
     return HttpRequest.newBuilder().uri(new URI(uri)).header("content-type", "application/json");
   }
 
-  private Consumer<Builder> addBasicAuthHeader(String username, String password) {
+  private Consumer<Builder> addBasicAuthHeader(final String username, final String password) {
     return builder -> {
       if (username != null) {
         builder =
@@ -113,7 +113,7 @@ public class TestRestOperateClient implements AutoCloseable {
     };
   }
 
-  private HttpResponse<String> sendRequest(Builder requestBuilder) throws Exception {
+  private HttpResponse<String> sendRequest(final Builder requestBuilder) throws Exception {
     if (authenticationApplier != null) {
       authenticationApplier.accept(requestBuilder);
     }
@@ -124,11 +124,11 @@ public class TestRestOperateClient implements AutoCloseable {
   }
 
   private Either<Exception, HttpResponse<String>> sendRequestCatchingException(
-      Builder requestBuilder) {
+      final Builder requestBuilder) {
 
     try {
       return Either.right(sendRequest(requestBuilder));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Either.left(e);
     }
   }
@@ -154,7 +154,7 @@ public class TestRestOperateClient implements AutoCloseable {
     final Builder processInstanceRequest;
     try {
       processInstanceRequest = createProcessInstanceRequest(key);
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       return Either.left(e);
     }
 
@@ -172,11 +172,11 @@ public class TestRestOperateClient implements AutoCloseable {
   }
 
   protected static Consumer<Builder> applyCredentialsProvider(
-      CredentialsProvider credentialsProvider) {
+      final CredentialsProvider credentialsProvider) {
     return builder -> {
       try {
         credentialsProvider.applyCredentials(builder::header);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException("Could not apply credentials", e);
       }
     };
@@ -184,6 +184,6 @@ public class TestRestOperateClient implements AutoCloseable {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record ProcessInstanceResult(
-      @JsonProperty("items") List<ProcessInstance> processInstances,
+      @JsonProperty("items") List<ProcessInstanceImpl> processInstances,
       @JsonProperty("total") long total) {}
 }
