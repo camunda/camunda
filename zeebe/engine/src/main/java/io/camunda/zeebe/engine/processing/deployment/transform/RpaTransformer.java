@@ -38,7 +38,7 @@ public class RpaTransformer extends DefaultResourceTransformer {
   }
 
   @Override
-  protected Either<Failure, ResourceInfo> parseResourceId(final DeploymentResource resource) {
+  protected Either<Failure, ResourceInfo> parseResourceInfo(final DeploymentResource resource) {
     try {
       final var rpaResource =
           JSON_MAPPER.readValue(resource.getResource(), ParsedRpaResource.class);

@@ -8,9 +8,11 @@
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 
 interface DeploymentResourceTransformer {
 
@@ -33,10 +35,12 @@ interface DeploymentResourceTransformer {
    * @param resource the resource to transform
    * @param deployment the deployment to add the deployed resource to
    * @param context optional parameter to store additional information
-   * @return either {@link Either.Right} if the resource is transformed successfully, or {@link
-   *     Either.Left} if the transformation failed
+   * @return either {@link Either.Right} containing the Optional<ResourceInfo> if the resource is
+   *     transformed successfully, or {@link Either.Left} if the transformation failed. Returns
+   *     Optional.empty() for resources that don't have a parseable resource ID (e.g., legacy BPMN
+   *     resources).
    */
-  Either<Failure, Void> createMetadata(
+  Either<Failure, Optional<ResourceInfo>> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context);

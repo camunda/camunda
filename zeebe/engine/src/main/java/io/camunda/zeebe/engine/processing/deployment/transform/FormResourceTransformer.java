@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
+import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -58,7 +59,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
+  public Either<Failure, Optional<ResourceInfo>> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
@@ -71,15 +72,12 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                         valid -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
                           appendMetadataToFormRecord(formRecord, form, resource, deployment);
-                          return null;
+                          return Optional.<ResourceInfo>empty();
                         }));
   }
 
   @Override
   public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.formMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))

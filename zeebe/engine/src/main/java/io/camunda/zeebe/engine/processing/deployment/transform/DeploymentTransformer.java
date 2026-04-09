@@ -39,8 +39,6 @@ public final class DeploymentTransformer {
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
-  // Track BPMN resources for deployment binding validation
-  private List<BpmnResource> bpmnResources;
 
   private final BpmnResourceTransformer bpmnResourceTransformer;
 
@@ -108,8 +106,7 @@ public final class DeploymentTransformer {
         .flatMap(ok -> buildMetadataForAllResources(deploymentEvent))
         // Step 3: Check for conflicting resource IDs within the single deployment (already done in
         // step 2)
-        // Step 4: Check if all deployment bindings are satisfied
-        .flatMap(ok -> validateDeploymentBindings(deploymentEvent))
+        // Step 4: Check if all deployment bindings are satisfied (already done in step 2)
         // Step 5: Write the actual resources/deployment to state
         .map(
             ok -> {
@@ -148,7 +145,7 @@ public final class DeploymentTransformer {
     boolean success = true;
 
     // Track BPMN resources separately for deployment binding validation (step 4)
-    bpmnResources = new ArrayList<>();
+    final List<BpmnResource> bpmnResources = new ArrayList<>();
 
     final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
     while (resourceIterator.hasNext()) {
@@ -172,7 +169,8 @@ public final class DeploymentTransformer {
       return Either.left(new Failure(rejectionReason));
     }
 
-    return Either.right(null);
+    // Step 4: Validate deployment bindings for BPMN resources
+    return validateDeploymentBindings(deploymentEvent, bpmnResources);
   }
 
   /**
@@ -181,10 +179,12 @@ public final class DeploymentTransformer {
    * present in the deployment.
    *
    * @param deploymentEvent the deployment record
+   * @param bpmnResources the list of BPMN resources in the deployment
    * @return Either.right(null) if validation succeeds, or Either.left with validation errors
    */
-  private Either<Failure, Void> validateDeploymentBindings(final DeploymentRecord deploymentEvent) {
-    if (bpmnResources == null || bpmnResources.isEmpty()) {
+  private Either<Failure, Void> validateDeploymentBindings(
+      final DeploymentRecord deploymentEvent, final List<BpmnResource> bpmnResources) {
+    if (bpmnResources.isEmpty()) {
       return Either.right(null);
     }
 
@@ -217,11 +217,16 @@ public final class DeploymentTransformer {
 
   /**
    * Step 5: Writes the actual resource records to state. This is called after all validation has
-   * passed.
+   * passed. Skips writing if the deployment contains only duplicates (versioning invariant).
    *
    * @param deploymentEvent the deployment record with metadata
    */
   private void writeResourceRecords(final DeploymentRecord deploymentEvent) {
+    // Check if all resources are duplicates - if so, skip writing entirely (versioning invariant)
+    if (deploymentEvent.hasDuplicatesOnly()) {
+      return;
+    }
+
     final StringBuilder errors = new StringBuilder();
     boolean success = true;
 

@@ -16,6 +16,7 @@ import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
+import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
@@ -76,7 +77,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
+  public Either<Failure, Optional<ResourceInfo>> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
@@ -92,7 +93,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
           .map(
               valid -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
-                return null;
+                return Optional.<ResourceInfo>empty();
               });
 
     } else {
@@ -104,9 +105,6 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   @Override
   public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.decisionRequirementsMetadata().stream()
         .filter(drg -> checksum.equals(drg.getChecksumBuffer()))

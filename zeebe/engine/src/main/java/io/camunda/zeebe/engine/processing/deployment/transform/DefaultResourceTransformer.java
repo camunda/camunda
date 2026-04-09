@@ -93,16 +93,16 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
    * @param resource the raw deployment resource
    * @return either the parsed {@link ResourceInfo}, or a {@link Failure} if the resource is invalid
    */
-  protected Either<Failure, ResourceInfo> parseResourceId(final DeploymentResource resource) {
+  protected Either<Failure, ResourceInfo> parseResourceInfo(final DeploymentResource resource) {
     return Either.right(ResourceInfo.of(resource.getResourceName()));
   }
 
   @Override
-  public final Either<Failure, Void> createMetadata(
+  public final Either<Failure, Optional<ResourceInfo>> createMetadata(
       final DeploymentResource deploymentResource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
-    return parseResourceId(deploymentResource)
+    return parseResourceInfo(deploymentResource)
         .flatMap(
             resourceInfo ->
                 checkForConflictingResourceIds(resourceInfo, deploymentResource, deployment)
@@ -112,17 +112,14 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
                               deployment.resourceMetadata().add();
                           appendMetadataToResourceRecord(
                               resourceMetadataRecord, resourceInfo, deploymentResource, deployment);
-                          return SUCCESS;
+                          return Either.right(Optional.of(resourceInfo));
                         }));
   }
 
   @Override
   public final void writeRecords(
       final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
-    parseResourceId(resource)
+    parseResourceInfo(resource)
         .map(resourceInfo -> deployment.findResourceMetadataByResourceId(resourceInfo.id()))
         .ifRight(
             metadata -> {
@@ -221,7 +218,7 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
    * @param id the resource identifier (must not be null or blank)
    * @param versionTag an optional version tag
    */
-  record ResourceInfo(String id, Optional<String> versionTag) {
+  public record ResourceInfo(String id, Optional<String> versionTag) {
 
     static ResourceInfo of(final String id) {
       return new ResourceInfo(id, Optional.empty());

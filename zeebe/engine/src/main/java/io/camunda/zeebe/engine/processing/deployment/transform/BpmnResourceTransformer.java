@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
+import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -90,7 +91,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
+  public Either<Failure, Optional<ResourceInfo>> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
@@ -121,7 +122,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .map(
                         ok -> {
                           createProcessMetadata(deployment, resource, definition, context);
-                          return null;
+                          return Optional.<ResourceInfo>empty();
                         });
 
               } else {
@@ -134,9 +135,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   @Override
   public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.processesMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
