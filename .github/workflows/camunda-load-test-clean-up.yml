@@ -48,10 +48,21 @@ jobs:
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
         uses: slackapi/slack-github-action@v3.0.1
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
@@ -105,10 +116,21 @@ jobs:
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
         uses: slackapi/slack-github-action@v3.0.1
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
