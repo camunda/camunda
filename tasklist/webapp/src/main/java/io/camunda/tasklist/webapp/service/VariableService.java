@@ -20,8 +20,6 @@ import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.VariableStore.FlowNodeTree;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.store.VariableStore.VariableMap;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.dto.VariableDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
@@ -412,62 +410,6 @@ public class VariableService {
     return flowNodeTrees.computeIfAbsent(processInstanceId, pi -> new FlowNodeTree());
   }
 
-  public List<VariableSearchResponse> getVariableSearchResponses(
-      final String taskId, final Set<String> variableNames) {
-
-    final TaskEntity task = taskStore.getTask(taskId);
-    final List<GetVariablesRequest> requests =
-        Collections.singletonList(
-            VariableStore.GetVariablesRequest.createFrom(task)
-                .setVarNames(new ArrayList<>(variableNames))
-                .setFieldNames(Collections.emptySet()));
-
-    final List<VariableSearchResponse> vars = new ArrayList<>();
-    switch (task.getState()) {
-      case CREATED -> {
-        final Map<String, VariableEntity> nameToOriginalVariables = new HashMap<>();
-        getRuntimeVariablesDTOPerTaskId(requests)
-            .forEach(
-                originalVar -> nameToOriginalVariables.put(originalVar.getName(), originalVar));
-        final Map<String, DraftTaskVariableEntity> nameToDraftVariable = new HashMap<>();
-        draftVariableStore
-            .getVariablesByTaskIdAndVariableNames(taskId, new ArrayList<>(variableNames))
-            .forEach(draftVar -> nameToDraftVariable.put(draftVar.getName(), draftVar));
-
-        nameToOriginalVariables.forEach(
-            (name, originalVar) -> {
-              if (nameToDraftVariable.containsKey(name)) {
-                vars.add(
-                    VariableSearchResponse.createFrom(originalVar, nameToDraftVariable.get(name)));
-              } else {
-                vars.add(VariableSearchResponse.createFrom(originalVar));
-              }
-            });
-
-        // creating variable responses for draft variables without original values
-        CollectionUtils.removeAll(nameToDraftVariable.keySet(), nameToOriginalVariables.keySet())
-            .forEach(
-                draftVariableName ->
-                    vars.add(
-                        VariableSearchResponse.createFrom(
-                            nameToDraftVariable.get(draftVariableName))));
-      }
-      case COMPLETED -> {
-        final Map<String, List<SnapshotTaskVariableEntity>> variablesByTaskIds =
-            variableStore.getTaskVariablesPerTaskId(requests);
-        if (variablesByTaskIds.size() > 0) {
-          vars.addAll(
-              variablesByTaskIds.values().iterator().next().stream()
-                  .map(VariableSearchResponse::createFrom)
-                  .toList());
-        }
-      }
-      default -> {}
-    }
-
-    return vars.stream().sorted(Comparator.comparing(VariableSearchResponse::getName)).toList();
-  }
-
   public List<VariableDTO> getVariables(
       final String taskId, final List<String> variableNames, final Set<String> fieldNames) {
     final TaskEntity task = taskStore.getTask(taskId);
@@ -531,34 +473,6 @@ public class VariableService {
                       Entry::getKey, e -> VariableDTO.createFromTaskVariables(e.getValue()))));
     }
     return result;
-  }
-
-  public VariableResponse getVariableResponse(final String variableId) {
-    try {
-      // 1st search in runtime variables
-      final VariableEntity runtimeVariable =
-          variableStore.getRuntimeVariable(variableId, Collections.emptySet());
-      final VariableResponse variableResponse = VariableResponse.createFrom(runtimeVariable);
-      draftVariableStore.getById(variableId).ifPresent(variableResponse::addDraft);
-      return variableResponse;
-    } catch (final NotFoundException ex) {
-      // 2nd then search in draft task variables
-      return draftVariableStore
-          .getById(variableId)
-          .map(VariableResponse::createFrom)
-          .orElseGet(
-              () -> {
-                try {
-                  // 3rd search in task variables (for completed tasks)
-                  final SnapshotTaskVariableEntity taskVariable =
-                      variableStore.getTaskVariable(variableId, Collections.emptySet());
-                  return VariableResponse.createFrom(taskVariable);
-                } catch (final NotFoundException ex2) {
-                  throw new NotFoundApiException(
-                      String.format("Variable with id %s not found.", variableId));
-                }
-              });
-    }
   }
 
   public static String getDraftVariableId(final String idPrefix, final String name) {

@@ -29,8 +29,6 @@ import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.webapp.CommonUtils;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.dto.VariableDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
@@ -45,7 +43,6 @@ import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -178,71 +175,6 @@ class VariableServiceTest {
   }
 
   @Test
-  void getVariableSearchResponsesForCreatedTask() {
-    // given
-    final String taskId = "taskId_557";
-    final var flowNodeInstanceId = 557L;
-    final TaskEntity task =
-        new TaskEntity()
-            .setId(taskId)
-            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
-            .setProcessInstanceId("123")
-            .setState(TaskState.CREATED);
-    when(taskStore.getTask(taskId)).thenReturn(task);
-    final int variableSizeThreshold = 100;
-    mockReturnOriginalVariables(
-        List.of(
-            createVariableEntity(flowNodeInstanceId, "A_numVar", "123", variableSizeThreshold),
-            createVariableEntity(
-                flowNodeInstanceId,
-                "C_objVar",
-                "{\"propA\":1,\"propB\":\"strVal\"}",
-                variableSizeThreshold)));
-    final var numDraftVariable =
-        new DraftTaskVariableEntity()
-            .setId(VariableService.getDraftVariableId(taskId, "A_numVar"))
-            .setName("A_numVar")
-            .setValue("456")
-            .setFullValue("456");
-    final var strDraftVariable =
-        new DraftTaskVariableEntity()
-            .setId(VariableService.getDraftVariableId(taskId, "B_strVar"))
-            .setName("B_strVar")
-            .setValue("\"strVarValue\"")
-            .setFullValue("\"strVarValue\"");
-    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, emptyList()))
-        .thenReturn(List.of(numDraftVariable, strDraftVariable));
-
-    // when
-    final var result = instance.getVariableSearchResponses(taskId, emptySet());
-
-    // then
-    assertThat(result)
-        .containsExactly(
-            new VariableSearchResponse()
-                .setId(String.format("%s-%s", flowNodeInstanceId, "A_numVar"))
-                .setName("A_numVar")
-                .setValue("123")
-                .setPreviewValue("123")
-                .setDraft(
-                    new VariableSearchResponse.DraftSearchVariableValue()
-                        .setPreviewValue("456")
-                        .setValue("456")),
-            new VariableSearchResponse()
-                .setId(VariableService.getDraftVariableId(taskId, "B_strVar"))
-                .setName("B_strVar")
-                .setDraft(
-                    new VariableSearchResponse.DraftSearchVariableValue()
-                        .setPreviewValue("\"strVarValue\"")
-                        .setValue("\"strVarValue\"")),
-            new VariableSearchResponse()
-                .setId(String.format("%s-%s", flowNodeInstanceId, "C_objVar"))
-                .setName("C_objVar")
-                .setValue("{\"propA\":1,\"propB\":\"strVal\"}")
-                .setPreviewValue("{\"propA\":1,\"propB\":\"strVal\"}"));
-  }
-
-  @Test
   void getVariablesPerTaskIdForCreatedTask() {
     final String taskId = "taskId_557";
     final var flowNodeInstanceId = 557L;
@@ -330,146 +262,6 @@ class VariableServiceTest {
                 .setValue("[\"val1\", \"val2\", \"val3\"]")
                 .setIsValueTruncated(true)
                 .setPreviewValue("[\"val1\", \"val2\","));
-  }
-
-  @Test
-  void getVariableResponseWhenOnlyOriginalVariableExists() {
-    // given
-    final String variableId = "123-varA";
-    when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenReturn(createVariableEntity(123L, "varA", "123", 100));
-    when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
-
-    // when
-    final var result = instance.getVariableResponse(variableId);
-
-    // then
-    assertThat(result)
-        .isEqualTo(
-            new VariableResponse()
-                .setId(variableId)
-                .setName("varA")
-                .setValue("123")
-                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
-    verify(draftVariableStore).getById(variableId);
-    verify(variableStore, never()).getTaskVariable(any(), any());
-  }
-
-  @Test
-  void getVariableResponseWhenOriginalVariableExistsWithDraftValue() {
-    // given
-    final String variableId = "123-varB";
-    when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenReturn(createVariableEntity(123L, "varB", "123", 100));
-    when(draftVariableStore.getById(variableId))
-        .thenReturn(
-            Optional.of(
-                new DraftTaskVariableEntity()
-                    .setId(variableId)
-                    .setName("varB")
-                    .setValue("557")
-                    .setFullValue("557")));
-
-    // when
-    final var result = instance.getVariableResponse(variableId);
-
-    // then
-    assertThat(result)
-        .isEqualTo(
-            new VariableResponse()
-                .setId(variableId)
-                .setName("varB")
-                .setValue("123")
-                .setDraft(new VariableResponse.DraftVariableValue().setValue("557"))
-                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
-    verify(draftVariableStore).getById(variableId);
-    verify(variableStore, never()).getTaskVariable(any(), any());
-  }
-
-  @Test
-  void getVariableResponseWhenOnlyDraftValueExists() {
-    // given
-    final String variableId = "id456-strVal";
-    when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenThrow(NotFoundException.class);
-    when(draftVariableStore.getById(variableId))
-        .thenReturn(
-            Optional.of(
-                new DraftTaskVariableEntity()
-                    .setId(variableId)
-                    .setName("strVal")
-                    .setIsPreview(true)
-                    .setValue("\"previewValue")
-                    .setFullValue("\"previewValue+fullValue\"")));
-
-    // when
-    final var result = instance.getVariableResponse(variableId);
-
-    // then
-    assertThat(result)
-        .isEqualTo(
-            new VariableResponse()
-                .setId(variableId)
-                .setName("strVal")
-                .setValue(null)
-                .setDraft(
-                    new VariableResponse.DraftVariableValue()
-                        .setValue("\"previewValue+fullValue\""))
-                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
-    verify(draftVariableStore).getById(variableId);
-    verify(variableStore, never()).getTaskVariable(any(), any());
-  }
-
-  @Test
-  void getVariableResponseWhenOnlyTaskVariableExists() {
-    // given
-    final String variableId = "id789-arrayVar";
-    when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenThrow(NotFoundException.class);
-    when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
-    when(variableStore.getTaskVariable(variableId, emptySet()))
-        .thenReturn(
-            new SnapshotTaskVariableEntity()
-                .setId(variableId)
-                .setTaskId("id789")
-                .setName("arrayVar")
-                .setIsPreview(true)
-                .setValue("[\"val1\", \"val2\",")
-                .setFullValue("[\"val1\", \"val2\", \"val3\"]"));
-
-    // when
-    final var result = instance.getVariableResponse(variableId);
-
-    // then
-    assertThat(result)
-        .isEqualTo(
-            new VariableResponse()
-                .setId(variableId)
-                .setName("arrayVar")
-                .setValue("[\"val1\", \"val2\", \"val3\"]")
-                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
-  }
-
-  @Test
-  void getVariableResponseWhenNoOriginalDraftAndTaskVariableExistThenNotFoundExceptionExpected() {
-    // given
-    final String variableId = "idUnknown-var";
-    when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenThrow(NotFoundException.class);
-    when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
-    when(variableStore.getTaskVariable(variableId, emptySet())).thenThrow(NotFoundException.class);
-
-    // when - then
-    assertThatThrownBy(() -> instance.getVariableResponse(variableId))
-        .isInstanceOf(NotFoundApiException.class)
-        .hasMessage("Variable with id %s not found.", variableId);
-  }
-
-  @Test
-  void getVariableResponseWhenTaskNotFoundOrTenantWithoutAccess() {
-    when(taskStore.getTask("123")).thenThrow(NotFoundException.class);
-    assertThatThrownBy(() -> instance.getVariableSearchResponses("123", null))
-        .isInstanceOf(NotFoundException.class);
   }
 
   @Test
