@@ -143,9 +143,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
       >
         {isReadOnly || !isEditing ? (
           <ReadOnlyEditor
-            data-testid={
-              dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
-            }
+            data-testid={dataTestId}
             value={displayValue}
             placeholder={placeholder}
             isReadOnly={isReadOnly}

@@ -17,7 +17,7 @@ interface Props {
   isReadOnly: boolean;
   fieldError?: string;
   height: number;
-  maxLines: number;
+  maxLines?: number;
   label?: string;
   'data-testid'?: string;
   renderButton?: () => React.ReactNode;
@@ -73,9 +73,6 @@ const ReadOnlyEditor: React.FC<Props> = ({
 
   return (
     <ReadOnlyEditorWrapper
-      data-testid={
-        dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
-      }
       $height={height}
       $empty={value === ''}
       $editMode={!isReadOnly}
@@ -83,8 +80,11 @@ const ReadOnlyEditor: React.FC<Props> = ({
       $invalid={!!fieldError}
     >
       <ReadOnlyEditorContent
+        data-testid={
+          dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
+        }
         tabIndex={0}
-        role="button"
+        role={isReadOnly ? 'button' : undefined}
         aria-label={isReadOnly ? `Copy ${label}` : undefined}
         onClick={isReadOnly ? handleCopy : undefined}
         onKeyDown={isReadOnly ? handleCopyKeyDown : undefined}

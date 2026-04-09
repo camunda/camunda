@@ -28,16 +28,20 @@ function beautifyTruncatedJSON(value: string) {
       return pretty;
     }
 
-    // Walk backwards through the pretty-printed output, skipping the last
-    // `collectionDepth` closing lines (the `}` / `]` that were synthesized
-    // by untruncateJson to make the JSON parseable).
+    // Strip the synthesized closing tokens (} / ]) character-by-character from
+    // the end of the pretty-printed output, skipping over whitespace between
+    // them. This avoids the line-based approach dropping meaningful content
+    // when closing brackets appear inline (e.g. `"a": []`).
     let pos = pretty.length;
     for (let i = 0; i < collectionDepth; i++) {
-      const newlinePos = pretty.lastIndexOf('\n', pos - 1);
-      if (newlinePos === -1) {
+      while (pos > 0 && /\s/.test(pretty[pos - 1]!)) {
+        pos--;
+      }
+      if (pos > 0 && (pretty[pos - 1] === ']' || pretty[pos - 1] === '}')) {
+        pos--;
+      } else {
         break;
       }
-      pos = newlinePos;
     }
     return pretty.slice(0, pos);
   } catch {
