@@ -559,7 +559,6 @@
           "old": "method io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::deploymentPostProcessor(org.springframework.context.ApplicationEventPublisher)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
         },
-
         {
           "ignore": true,
           "code": "java.method.removed",
