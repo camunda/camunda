@@ -30,7 +30,8 @@ public class ZeebeExecutionListenerTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Collections.emptyList();
+    return Collections.singletonList(
+        new ChildElementAssumption(BpmnModelConstants.ZEEBE_NS, ZeebeTaskHeaders.class, 0, 1));
   }
 
   @Override

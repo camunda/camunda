@@ -16,12 +16,17 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,5 +153,41 @@ public class CallActivityBuilderTest {
         .hasSize(1)
         .extracting(ZeebeCalledElement::getVersionTag)
         .containsExactly("v1");
+  }
+
+  @Test
+  void shouldSetExecutionListenerHeaders() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "callActivity",
+                c ->
+                    c.zeebeExecutionListener(
+                        listener ->
+                            listener
+                                .end()
+                                .type("el_end_type")
+                                .zeebeTaskHeader("aKey", "aValue")
+                                .zeebeTaskHeader("bKey", "bValue")))
+            .done();
+
+    // then
+    assertThat(getExecutionListeners(instance.getModelElementById("callActivity")))
+        .singleElement()
+        .satisfies(
+            listener ->
+                assertThat(listener.getTaskHeaders().getHeaders())
+                    .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
+                    .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue")));
+  }
+
+  private Collection<ZeebeExecutionListener> getExecutionListeners(
+      final ModelElementInstance elementInstance) {
+    return elementInstance
+        .getUniqueChildElementByType(ExtensionElements.class)
+        .getUniqueChildElementByType(ZeebeExecutionListeners.class)
+        .getChildElementsByType(ZeebeExecutionListener.class);
   }
 }

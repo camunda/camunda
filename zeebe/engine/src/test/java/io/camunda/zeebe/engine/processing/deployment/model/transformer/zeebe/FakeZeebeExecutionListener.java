@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.ModelInstance;
@@ -28,6 +29,7 @@ public final class FakeZeebeExecutionListener implements ZeebeExecutionListener 
   private final String eventType;
   private final String type;
   private final String retries;
+  private ZeebeTaskHeaders taskHeaders;
 
   public FakeZeebeExecutionListener(
       final String eventType, final String type, final String retries) {
@@ -194,4 +196,14 @@ public final class FakeZeebeExecutionListener implements ZeebeExecutionListener 
 
   @Override
   public void setRetries(final String retries) {}
+
+  @Override
+  public ZeebeTaskHeaders getTaskHeaders() {
+    return taskHeaders;
+  }
+
+  @Override
+  public void setTaskHeaders(final ZeebeTaskHeaders taskHeaders) {
+    this.taskHeaders = taskHeaders;
+  }
 }
