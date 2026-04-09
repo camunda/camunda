@@ -284,6 +284,54 @@
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withPermissions(java.lang.Iterable<? extends io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue>)",
           "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.List<java.lang.Long> io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue::getMessageKeys()",
+          "justification": "MessageBatchRecord no longer carries message keys. The batch expiry processor now queries state directly instead of reading keys from the command record. Old records with keys deserialize safely as unknown properties are ignored."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.List<java.lang.Long> io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue::getMessageKeys()",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue::withMessageKeys(java.lang.Iterable<? extends java.lang.Long>)",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue::withMessageKeys(java.lang.Long[])",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder::addAllMessageKeys(java.lang.Iterable<? extends java.lang.Long>)",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder::addMessageKey(java.lang.Long)",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder::addMessageKeys(java.lang.Long[])",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder::withMessageKeys(java.lang.Iterable<? extends java.lang.Long>)",
+          "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
         }
       ]
     }
