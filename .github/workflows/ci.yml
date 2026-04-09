@@ -191,7 +191,7 @@ jobs:
     name: "Lint / Flattened POM Metadata"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
@@ -204,7 +204,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Bootstrap reactor modules
-        run: ./mvnw clean install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true
+        run: ./mvnw clean install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -PskipFrontendBuild
       - name: Generate flattened POMs
         run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
       - name: Validate flattened POM metadata
