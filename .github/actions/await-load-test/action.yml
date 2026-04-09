@@ -1,6 +1,7 @@
 # description: Waits for a load test deployment to be healthy and connected.
-#              Verifies all pods are ready, then checks Prometheus metrics
-#              for a successful Topology gRPC call to confirm gateway connectivity.
+#              Verifies all pods are ready (with retry logic to handle pod reschedules),
+#              then checks Prometheus metrics for a successful Topology gRPC call
+#              to confirm gateway connectivity.
 # owner: @camunda/reliability-testing
 name: Await Load Test
 description: 'Wait for a load test namespace to be healthy and connected to the gateway'
@@ -10,9 +11,9 @@ inputs:
     description: 'Kubernetes namespace where the load test is deployed'
     required: true
   pod-timeout:
-    description: 'Timeout in seconds to wait for all pods to be ready'
+    description: 'Overall deadline in seconds to wait for all pods to be ready (shared across retries, not per-attempt)'
     required: false
-    default: '600'
+    default: '800'
   connectivity-timeout:
     description: 'Max time in seconds to wait for gateway connectivity'
     required: false
@@ -21,6 +22,10 @@ inputs:
     description: 'Port on svc/clients that serves Prometheus metrics'
     required: false
     default: '9600'
+  pod-ready-retries:
+    description: 'Maximum number of attempts to wait for pods to be ready (retries on pod reschedule)'
+    required: false
+    default: '3'
 
 outputs:
   status:
@@ -36,6 +41,7 @@ runs:
       env:
         NAMESPACE: ${{ inputs.namespace }}
         POD_TIMEOUT: ${{ inputs.pod-timeout }}
+        POD_READY_RETRIES: ${{ inputs.pod-ready-retries }}
         CONNECTIVITY_TIMEOUT: ${{ inputs.connectivity-timeout }}
         METRICS_PORT: ${{ inputs.metrics-port }}
       run: |
@@ -48,27 +54,71 @@ runs:
           exit 1
         fi
 
+        # Retry wrapper for kubectl wait. Pods may be rescheduled during the wait
+        # window, causing "NotFound" errors when kubectl wait tries to watch a pod
+        # whose name changed. Retrying re-resolves the label selector.
+        wait_for_pods() {
+          local label="$1"
+          local description="$2"
+          local max_retries="${POD_READY_RETRIES}"
+          local retry_delay=10
+          local wait_output
+          local start_time elapsed remaining
+
+          start_time=$(date +%s)
+
+          for attempt in $(seq 1 "$max_retries"); do
+            elapsed=$(( $(date +%s) - start_time ))
+            remaining=$(( POD_TIMEOUT - elapsed ))
+
+            if [[ "$remaining" -le 0 ]]; then
+              echo "::error::Overall timeout (${POD_TIMEOUT}s) exceeded waiting for ${description}"
+              return 1
+            fi
+
+            echo "Waiting for ${description} to be ready (attempt ${attempt}/${max_retries}, timeout: ${remaining}s)..."
+            wait_output=$(kubectl wait --for=condition=ready pod \
+                -l "$label" \
+                --timeout="${remaining}s" -n "$NAMESPACE" 2>&1) && {
+              echo "$wait_output"
+              echo "${description} are ready in $NAMESPACE"
+              return 0
+            }
+            echo "$wait_output"
+
+            # Only retry on NotFound errors (pod rescheduled); fail immediately on other errors
+            if ! echo "$wait_output" | grep -q "NotFound"; then
+              echo "::error::Not all ${description} are ready in $NAMESPACE"
+              return 1
+            fi
+
+            if [[ "$attempt" -lt "$max_retries" ]]; then
+              elapsed=$(( $(date +%s) - start_time ))
+              remaining=$(( POD_TIMEOUT - elapsed ))
+              if [[ "$remaining" -le "$retry_delay" ]]; then
+                echo "Not enough time remaining (${remaining}s) to retry. Giving up."
+                break
+              fi
+              echo "Pod was rescheduled (NotFound). Retrying in ${retry_delay}s..."
+              sleep "$retry_delay"
+            fi
+          done
+
+          echo "::error::Not all ${description} are ready in $NAMESPACE after ${max_retries} attempts"
+          return 1
+        }
+
         # Wait for platform pods (camunda-platform helm chart)
-        echo "Waiting for Camunda platform pods to be ready (timeout: ${POD_TIMEOUT}s)..."
-        if ! kubectl wait --for=condition=ready pod \
-            -l app=camunda-platform \
-            --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE"; then
-          echo "::error::Not all platform pods are ready in $NAMESPACE"
+        if ! wait_for_pods "app=camunda-platform" "Camunda platform pods"; then
           echo "status=failure" >> "$GITHUB_OUTPUT"
           exit 1
         fi
-        echo "Camunda platform pods are ready in $NAMESPACE"
 
         # Wait for load test client pods (starter + workers from load test helm chart)
-        echo "Waiting for load test client pods to be ready (timeout: ${POD_TIMEOUT}s)..."
-        if ! kubectl wait --for=condition=ready pod \
-            -l app.kubernetes.io/component=zeebe-client \
-            --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE"; then
-          echo "::error::Not all load test client pods are ready in $NAMESPACE"
+        if ! wait_for_pods "app.kubernetes.io/component=zeebe-client" "load test client pods"; then
           echo "status=failure" >> "$GITHUB_OUTPUT"
           exit 1
         fi
-        echo "All load test client pods are ready in $NAMESPACE"
 
         # Port-forward to the clients service metrics endpoint
         local_port=$((METRICS_PORT + RANDOM % 1000))
