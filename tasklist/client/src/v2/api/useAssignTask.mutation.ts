@@ -7,7 +7,7 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
@@ -17,7 +17,6 @@ import {getUseTaskQueryKey} from './useTask.query';
 
 function useAssignTask() {
   const client = useQueryClient();
-  const {t} = useTranslation();
 
   function refetchTask(userTaskKey: string) {
     return client.fetchQuery({
