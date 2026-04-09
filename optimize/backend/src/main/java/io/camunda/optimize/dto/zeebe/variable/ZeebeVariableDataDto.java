@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.variable;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
 import java.util.Objects;
@@ -26,6 +27,7 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
 
   public ZeebeVariableDataDto() {}
 
+  @JsonIgnore
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");

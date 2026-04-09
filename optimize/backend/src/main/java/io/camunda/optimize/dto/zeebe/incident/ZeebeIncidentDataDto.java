@@ -31,6 +31,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
 
   public ZeebeIncidentDataDto() {}
 
+  @JsonIgnore
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");

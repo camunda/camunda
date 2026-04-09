@@ -146,6 +146,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return processDefinitionKey;
   }
 
+  @JsonIgnore
   @Override
   public int getPriority() {
     throw new UnsupportedOperationException("Operation not supported");
