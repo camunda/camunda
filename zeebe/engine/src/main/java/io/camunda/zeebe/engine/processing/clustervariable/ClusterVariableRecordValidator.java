@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.clustervariable;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
@@ -17,12 +18,15 @@ import org.apache.commons.lang3.StringUtils;
 public class ClusterVariableRecordValidator {
 
   private final ClusterVariableState clusterVariableState;
+  private final TenantState tenantState;
   private final ClusterVariableValidationConfiguration validationConfig;
 
   public ClusterVariableRecordValidator(
       final ClusterVariableState clusterVariableState,
+      final TenantState tenantState,
       final ClusterVariableValidationConfiguration validationConfig) {
     this.clusterVariableState = clusterVariableState;
+    this.tenantState = tenantState;
     this.validationConfig = validationConfig;
   }
 
@@ -103,7 +107,10 @@ public class ClusterVariableRecordValidator {
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
               "Invalid cluster variable scope. Tenant-scoped variables must have a non-blank tenant ID."));
-    } else if (clusterVariableRecord.isTenantScoped() || clusterVariableRecord.isGloballyScoped()) {
+    } else if (clusterVariableRecord.isTenantScoped()) {
+      // Validate that the tenant exists
+      return validateTenantExists(clusterVariableRecord);
+    } else if (clusterVariableRecord.isGloballyScoped()) {
       return Either.right(clusterVariableRecord);
     } else {
       return Either.left(
@@ -111,5 +118,19 @@ public class ClusterVariableRecordValidator {
               RejectionType.INVALID_ARGUMENT,
               "Invalid cluster variable scope. The scope must be either 'GLOBAL' or 'TENANT'."));
     }
+  }
+
+  private Either<Rejection, ClusterVariableRecord> validateTenantExists(
+      final ClusterVariableRecord clusterVariableRecord) {
+    final var tenantId = clusterVariableRecord.getTenantId();
+    final var tenantExists = tenantState.getTenantById(tenantId).isPresent();
+    if (!tenantExists) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              "Expected to create cluster variable for tenant with ID '%s', but no tenant with this ID exists."
+                  .formatted(tenantId)));
+    }
+    return Either.right(clusterVariableRecord);
   }
 }
