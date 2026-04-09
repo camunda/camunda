@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -106,9 +108,36 @@ public interface BrokerStartupContext {
 
   ExporterRepository getExporterRepository();
 
+  /**
+   * Returns the partition manager for the default physical tenant, or {@code null} if no default
+   * manager has been started yet. This is a convenience shortcut for {@code
+   * getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME)}.
+   */
   PartitionManagerImpl getPartitionManager();
 
+  /**
+   * Replaces the default physical tenant's partition manager. Passing {@code null} removes it.
+   * Prefer {@link #addPartitionManager(String, PartitionManagerImpl)} / {@link
+   * #removePartitionManager(String)} for multi-tenant code paths.
+   */
   void setPartitionManager(PartitionManagerImpl partitionManager);
+
+  /** Returns all currently registered partition managers, keyed by physical tenant ID. */
+  Map<String, PartitionManagerImpl> getPartitionManagers();
+
+  /** Registers a partition manager for the given physical tenant ID. */
+  void addPartitionManager(String physicalTenantId, PartitionManagerImpl partitionManager);
+
+  /** Deregisters the partition manager for the given physical tenant ID. */
+  void removePartitionManager(String physicalTenantId);
+
+  /**
+   * Returns the broker-wide shared RocksDB cache and write buffer manager. Allocated once per
+   * broker and shared across every physical tenant's partition manager.
+   */
+  SharedRocksDbResources getSharedRocksDbResources();
+
+  void setSharedRocksDbResources(SharedRocksDbResources sharedRocksDbResources);
 
   BrokerAdminServiceImpl getBrokerAdminService();
 
