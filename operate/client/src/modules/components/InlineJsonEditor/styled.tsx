@@ -29,9 +29,14 @@ const ring = (color: string) => css`
 
 const EditorWrapper = styled.div<{
   $invalid?: boolean;
+  $height: number;
 }>`
   height: 100%;
   position: relative;
+
+  ${({$height}) => css`
+    max-height: ${$height}px;
+  `};
 
   ${({$invalid}) =>
     $invalid &&
@@ -71,6 +76,21 @@ const ReadOnlyEditorWrapper = styled.div<{
       ? css`
           max-height: ${$height}px;
           overflow-y: auto;
+
+          &::-webkit-scrollbar {
+            width: 12px;
+          }
+          &::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 0;
+          }
+          &::-webkit-scrollbar-thumb {
+            background: var(--monaco-scrollbar-thumb);
+            border-radius: 0;
+          }
+          &::-webkit-scrollbar-thumb:hover {
+            background: var(--monaco-scrollbar-thumb-hover);
+          }
         `
       : css`
           height: auto;

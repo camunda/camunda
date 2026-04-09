@@ -139,6 +139,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
         onBlur={handleBlur}
         onFocus={handleFocus}
         $invalid={!!fieldError}
+        $height={height}
       >
         {isReadOnly || !isEditing ? (
           <ReadOnlyEditor

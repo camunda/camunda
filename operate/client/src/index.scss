@@ -105,10 +105,18 @@ svg {
 
 .cds--g10 {
   @include theme.theme(themes.$g10);
+
+  // Monaco editor scrollbar colours – light theme (mirrors Monaco's "light" / "vs" theme)
+  --monaco-scrollbar-thumb: rgba(100, 100, 100, 0.4);
+  --monaco-scrollbar-thumb-hover: rgba(100, 100, 100, 0.7);
 }
 
 .cds--g100 {
   @include theme.theme(themes.$g100);
+
+  // Monaco editor scrollbar colours – dark theme (mirrors Monaco's "vs-dark" theme)
+  --monaco-scrollbar-thumb: rgba(121, 121, 121, 0.4);
+  --monaco-scrollbar-thumb-hover: rgba(100, 100, 100, 0.7);
 }
 
 .cds--data-table-container {
