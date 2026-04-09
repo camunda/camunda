@@ -614,6 +614,8 @@ jobs:
             --set orchestration.image.repository=${camunda_repo} \
             --set orchestration.image.tag=${image_tag}"
 
+          additional_load_test_setup_configuration=""
+
           # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
           if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
             if [[ -n "${{ inputs.optimize-tag }}" ]]; then
@@ -651,7 +653,7 @@ jobs:
           # is assuming to be always published by the dedicated CI running on
           # the main branch.
           if [[ "${{ needs.build-metrics-exporter-image.result }}" == "success" ]]; then
-            sed -i "s|metrics-exporter:latest|metrics-exporter:${image_tag}|" resources/metrics-exporter.yaml
+            additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${image_tag}"
           fi
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
@@ -659,13 +661,16 @@ jobs:
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="$additional_platform_config" \
-            additional_load_test_configuration="$load_test_config"
+            additional_load_test_configuration="$load_test_config" \
+            additional_load_test_setup_configuration="$additional_load_test_setup_configuration"
+
       - name: Annotate namespace with workflow run URL
         run: |
           # Traceability annotation, applied after `make install` has created the namespace.
           kubectl annotate namespace ${{ env.NAMESPACE }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --overwrite
+
       - name: Summarize platform deployment
         if: success()
         run: |
