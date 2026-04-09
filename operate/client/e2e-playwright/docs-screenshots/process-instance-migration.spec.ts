@@ -243,6 +243,9 @@ test.describe('process instance migration', () => {
 
     await migrationView.confirmMigration();
 
+    await expect(migrationView.step1Header).toBeHidden();
+    await expect(migrationView.step2Header).toBeHidden();
+
     await processesPage.diagram.moveCanvasHorizontally(-200);
 
     await expect(

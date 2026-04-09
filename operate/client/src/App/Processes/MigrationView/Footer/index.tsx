@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, Modal} from '@carbon/react';
+import {Button, InlineLoading, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Container} from './styled';
@@ -25,31 +25,41 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 const Footer: React.FC = observer(() => {
   const navigate = useNavigate();
 
-  const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
-    onSuccess: () => {
-      tracking.track({
-        eventName: 'batch-operation',
-        operationType: 'MIGRATE_PROCESS_INSTANCE',
-      });
-    },
-    onError: ({message}) =>
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: message.includes('403')
-          ? 'You do not have permission'
-          : undefined,
-        isDismissable: true,
-      }),
-  });
+  const {isPending, mutate: migrateProcess} =
+    useMigrateProcessInstancesBatchOperation({
+      onSuccess: () => {
+        tracking.track({
+          eventName: 'batch-operation',
+          operationType: 'MIGRATE_PROCESS_INSTANCE',
+        });
+      },
+      onError: (error) => {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Operation could not be created',
+          subtitle:
+            error.response?.status === 403
+              ? 'You do not have permission'
+              : undefined,
+          isDismissable: true,
+        });
+      },
+    });
 
   return (
     <Container orientation="horizontal" gap={5}>
+      {isPending && (
+        <InlineLoading
+          data-testid="migration-operation-spinner"
+          title="Migration operation is being created"
+        />
+      )}
       <ModalStateManager
         renderLauncher={({setOpen}) => (
           <Button
             kind="secondary"
             size="sm"
+            disabled={isPending}
             onClick={() => {
               setOpen(true);
             }}
@@ -102,6 +112,7 @@ const Footer: React.FC = observer(() => {
           <Button
             kind="secondary"
             size="sm"
+            disabled={isPending}
             onClick={() =>
               processInstanceMigrationStore.setCurrentStep('elementMapping')
             }
@@ -114,6 +125,7 @@ const Footer: React.FC = observer(() => {
               <Button
                 aria-label="Confirm"
                 size="sm"
+                disabled={isPending}
                 onClick={() => {
                   setOpen(true);
                 }}
@@ -172,37 +184,43 @@ const Footer: React.FC = observer(() => {
                       sourceProcessDefinitionKey ?? undefined,
                   });
 
-                  migrateProcess({
-                    filter: requestBody.filter,
-                    migrationPlan: {
-                      targetProcessDefinitionKey,
-                      mappingInstructions: Object.entries(elementMapping).map(
-                        ([sourceElementId, targetElementId]) => ({
-                          sourceElementId,
-                          targetElementId,
-                        }),
-                      ),
-                    },
-                  });
-
-                  panelStatesStore.expandOperationsPanel();
-                  processInstanceMigrationStore.disable();
-
                   tracking.track({
                     eventName: 'process-instance-migration-confirmed',
                   });
 
-                  navigate(
-                    Locations.processes({
-                      active: true,
-                      incidents: true,
-                      ...(selectedTargetProcess
-                        ? {process: selectedTargetProcess.bpmnProcessId}
-                        : {}),
-                      ...(selectedTargetVersion
-                        ? {version: selectedTargetVersion.toString()}
-                        : {}),
-                    }),
+                  setOpen(false);
+                  migrateProcess(
+                    {
+                      filter: requestBody.filter,
+                      migrationPlan: {
+                        targetProcessDefinitionKey,
+                        mappingInstructions: Object.entries(elementMapping).map(
+                          ([sourceElementId, targetElementId]) => ({
+                            sourceElementId,
+                            targetElementId,
+                          }),
+                        ),
+                      },
+                    },
+                    {
+                      onSuccess: () => {
+                        panelStatesStore.expandOperationsPanel();
+                        processInstanceMigrationStore.disable();
+
+                        navigate(
+                          Locations.processes({
+                            active: true,
+                            incidents: true,
+                            ...(selectedTargetProcess
+                              ? {process: selectedTargetProcess.bpmnProcessId}
+                              : {}),
+                            ...(selectedTargetVersion
+                              ? {version: selectedTargetVersion.toString()}
+                              : {}),
+                          }),
+                        );
+                      },
+                    },
                   );
                 }}
               />
