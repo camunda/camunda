@@ -170,30 +170,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     }
   }
 
-  private Either<Failure, ?> checkForConflictingBpmnIds(
-      final BpmnModelInstance process,
-      final DeploymentResource resource,
-      final DeploymentRecord record) {
-
-    final var bpmnProcessIds =
-        process.getDefinitions().getChildElementsByType(Process.class).stream()
-            .map(BaseElement::getId)
-            .toList();
-
-    return record.getProcessesMetadata().stream()
-        .filter(metadata -> bpmnProcessIds.contains(metadata.getBpmnProcessId()))
-        .findFirst()
-        .map(
-            previousResource -> {
-              final var failureMessage =
-                  String.format(
-                      "Duplicated process id in resources '%s' and '%s'",
-                      previousResource.getResourceName(), resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(Either.right(null));
-  }
-
   private void createProcessMetadata(
       final DeploymentRecord deploymentEvent,
       final DeploymentResource deploymentResource,
