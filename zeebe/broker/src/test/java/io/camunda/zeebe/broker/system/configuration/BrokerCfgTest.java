@@ -416,6 +416,62 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldDefaultPhysicalTenantIdsToDefaultOnly() {
+    // given + when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+
+    // then
+    assertThat(cfg.getExperimental().getPhysicalTenantIds()).containsExactly("default");
+  }
+
+  @Test
+  public void shouldImplicitlyIncludeDefaultPhysicalTenant() {
+    // given + when
+    final BrokerCfg cfg = TestConfigReader.readConfig("physical-tenants", environment);
+
+    // then
+    assertThat(cfg.getExperimental().getPhysicalTenantIds())
+        .containsExactly("default", "tenant-2", "tenant-3");
+  }
+
+  @Test
+  public void shouldDeduplicatePhysicalTenantIds() {
+    // given
+    final ExperimentalCfg experimentalCfg = new ExperimentalCfg();
+    experimentalCfg.setPhysicalTenantIds(List.of("default", "tenant-2", "tenant-2"));
+
+    // when
+    experimentalCfg.init(new BrokerCfg(), BROKER_BASE);
+
+    // then
+    assertThat(experimentalCfg.getPhysicalTenantIds()).containsExactly("default", "tenant-2");
+  }
+
+  @Test
+  public void shouldRejectBlankPhysicalTenantId() {
+    // given
+    final ExperimentalCfg experimentalCfg = new ExperimentalCfg();
+    experimentalCfg.setPhysicalTenantIds(List.of("default", "   "));
+
+    // when + then
+    Assertions.assertThatThrownBy(() -> experimentalCfg.init(new BrokerCfg(), BROKER_BASE))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("blank");
+  }
+
+  @Test
+  public void shouldRejectPhysicalTenantIdWithPathSeparator() {
+    // given
+    final ExperimentalCfg experimentalCfg = new ExperimentalCfg();
+    experimentalCfg.setPhysicalTenantIds(List.of("default", "tenant/2"));
+
+    // when + then
+    Assertions.assertThatThrownBy(() -> experimentalCfg.init(new BrokerCfg(), BROKER_BASE))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("path separator");
+  }
+
+  @Test
   public void shouldReadDefaultEmbedGateway() {
     assertDefaultEmbeddedGatewayEnabled(true);
   }

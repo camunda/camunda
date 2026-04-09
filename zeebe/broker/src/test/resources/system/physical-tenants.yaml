@@ -1,0 +1,6 @@
+zeebe:
+  broker:
+    experimental:
+      physicalTenantIds:
+        - tenant-2
+        - tenant-3
