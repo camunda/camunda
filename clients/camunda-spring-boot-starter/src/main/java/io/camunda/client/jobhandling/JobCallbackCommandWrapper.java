@@ -31,6 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -54,14 +56,14 @@ public class JobCallbackCommandWrapper {
   private final long deadline;
   private final MetricsRecorder metricsRecorder;
   private final CounterMetricsContext metricsContext;
-  private long currentRetryDelay = 50L;
-  private int invocationCounter = 0;
   private final int maxRetries;
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService scheduledExecutorService;
   private final CompletableFuture<CommandOutcome> resultFuture = new CompletableFuture<>();
   private final AtomicBoolean started = new AtomicBoolean(false);
-  private Runnable retryAction;
+  private final Runnable action;
+  private final AtomicLong currentRetryDelay = new AtomicLong(50L);
+  private final AtomicInteger invocationCounter = new AtomicInteger(0);
 
   public JobCallbackCommandWrapper(
       final JobCallbackFinalCommandStep<?> command,
@@ -99,6 +101,7 @@ public class JobCallbackCommandWrapper {
     this.increaser = increaser;
     this.backoffSupplier = backoffSupplier;
     this.scheduledExecutorService = scheduledExecutorService;
+    action = this::doExecute;
   }
 
   private static BiConsumer<MetricsRecorder, CounterMetricsContext> findIncreaser(
@@ -117,23 +120,22 @@ public class JobCallbackCommandWrapper {
   }
 
   public CompletableFuture<CommandOutcome> executeAsync() {
-    return execute(() -> doExecute(increaser));
+    return execute();
   }
 
-  private CompletableFuture<CommandOutcome> execute(final Runnable action) {
+  private CompletableFuture<CommandOutcome> execute() {
     if (!started.compareAndSet(false, true)) {
       throw new IllegalStateException("JobCallbackCommandWrapper has already been executed");
     }
 
-    retryAction = action;
     action.run();
 
     return resultFuture;
   }
 
-  private void doExecute(final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
+  private void doExecute() {
     try {
-      invocationCounter++;
+      invocationCounter.getAndIncrement();
       command
           .send()
           .whenComplete(
@@ -144,7 +146,7 @@ public class JobCallbackCommandWrapper {
                   } else {
                     increaser.accept(metricsRecorder, metricsContext);
                     resultFuture.complete(
-                        new CommandOutcome.Completed(response, invocationCounter));
+                        new CommandOutcome.Completed(response, invocationCounter.get()));
                   }
                 } catch (final RuntimeException e) {
                   LOG.warn(
@@ -169,11 +171,11 @@ public class JobCallbackCommandWrapper {
   }
 
   void increaseBackoff() {
-    currentRetryDelay = backoffSupplier.supplyRetryDelay(currentRetryDelay);
+    currentRetryDelay.getAndUpdate(backoffSupplier::supplyRetryDelay);
   }
 
   void scheduleExecution() {
-    scheduledExecutorService.schedule(retryAction, currentRetryDelay, TimeUnit.MILLISECONDS);
+    scheduledExecutorService.schedule(action, currentRetryDelay.get(), TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -189,7 +191,7 @@ public class JobCallbackCommandWrapper {
   }
 
   public int getAttempts() {
-    return invocationCounter;
+    return invocationCounter.get();
   }
 
   public boolean hasMoreRetries() {
@@ -198,7 +200,7 @@ public class JobCallbackCommandWrapper {
       // another worker anyway
       return false;
     }
-    return (invocationCounter < maxRetries);
+    return (invocationCounter.get() < maxRetries);
   }
 
   private boolean jobDeadlineExceeded() {
