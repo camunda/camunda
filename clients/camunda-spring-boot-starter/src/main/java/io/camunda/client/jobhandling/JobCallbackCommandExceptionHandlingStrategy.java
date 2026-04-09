@@ -28,9 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class JobCallbackCommandExceptionHandlingStrategy {
-  public static final Predicate<Integer> REST_RETRYABLE =
-      code -> Set.of(429, 502, 503, 504).contains(code);
-  public static final Predicate<Integer> REST_IGNORABLE = code -> code == 404;
+  public static final Set<Integer> REST_RETRYABLE_CODES = Set.of(429, 502, 503, 504);
+  public static final Set<Integer> REST_IGNORABLE_CODES = Set.of(404);
   public static final Set<Status.Code> RETRIABLE_CODES =
       EnumSet.of(
           Status.Code.CANCELLED,
@@ -67,7 +66,12 @@ public final class JobCallbackCommandExceptionHandlingStrategy {
       final JobCallbackCommandWrapper command, final ClientHttpException exception) {
     final int code = exception.code();
     return handleError(
-        command, exception, "http status code", code, REST_IGNORABLE, REST_RETRYABLE);
+        command,
+        exception,
+        "http status code",
+        code,
+        REST_IGNORABLE_CODES::contains,
+        REST_RETRYABLE_CODES::contains);
   }
 
   private CommandOutcome handleGrpcError(
