@@ -70,15 +70,11 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for audit logs with filter {}", dbQuery);
-    final var totalHits = auditLogMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits =
-        auditLogMapper.search(dbQuery).stream().map(AuditLogEntityMapper::toEntity).toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> auditLogMapper.count(dbQuery),
+        () -> auditLogMapper.search(dbQuery).stream().map(AuditLogEntityMapper::toEntity).toList(),
+        dbPage,
+        dbSort);
   }
 
   public SearchQueryResult<AuditLogEntity> search(final AuditLogQuery query) {
