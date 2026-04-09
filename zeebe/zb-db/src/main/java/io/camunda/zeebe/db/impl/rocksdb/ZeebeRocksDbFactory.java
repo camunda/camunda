@@ -235,8 +235,7 @@ public final class ZeebeRocksDbFactory<
 
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
-    final var blockCacheMemory =
-        totalMemoryBudgetPerPartition / SharedRocksDbResources.CACHE_RATIO_OF_MEMORY_LIMIT;
+    final var blockCacheMemoryPerPartition = sharedRocksDbResources.cacheSize / partitionCount;
     // flushing the memtables is done asynchronously, so there may be multiple memtables in memory,
     // although only a single one is writable. once we have too many memtables, writes will stop.
     // since prefix iteration is our bread n butter, we will build an additional filter for each
@@ -251,7 +250,7 @@ public final class ZeebeRocksDbFactory<
     final var memtablePrefixFilterMemory = 0.15;
     final var memtableMemory =
         Math.round(
-            ((totalMemoryBudgetPerPartition - blockCacheMemory)
+            ((totalMemoryBudgetPerPartition - blockCacheMemoryPerPartition)
                     / (double) maxConcurrentMemtableCount)
                 * (1 - memtablePrefixFilterMemory));
 
@@ -368,7 +367,7 @@ public final class ZeebeRocksDbFactory<
   }
 
   public record SharedRocksDbResources(
-      LRUCache sharedCache, WriteBufferManager sharedWbm, long reservedMemory)
+      LRUCache sharedCache, WriteBufferManager sharedWbm, long reservedMemory, long cacheSize)
       implements AutoCloseable {
 
     // memoryLimit represents the total memory budget we expect RocksDB to use on this node.
@@ -391,7 +390,7 @@ public final class ZeebeRocksDbFactory<
       final long cacheSize = memoryLimit / CACHE_RATIO_OF_MEMORY_LIMIT;
       final LRUCache sharedCache = new LRUCache(cacheSize, 8, false, 0.15);
       final WriteBufferManager sharedWbm = new WriteBufferManager(cacheSize / 4, sharedCache);
-      return new SharedRocksDbResources(sharedCache, sharedWbm, memoryLimit);
+      return new SharedRocksDbResources(sharedCache, sharedWbm, memoryLimit, cacheSize);
     }
 
     @Override
