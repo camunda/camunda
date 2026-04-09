@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -38,14 +37,14 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final FormState formState;
-  private final EngineConfiguration config;
+  private final ValidationConfig config;
 
   public FormResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
       final FormState formState,
-      final EngineConfiguration config) {
+      final ValidationConfig config) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
@@ -138,11 +137,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   private Either<Failure, ?> checkForFormIdLength(
       final String formId, final DeploymentResource resource) {
 
-    if (formId != null && formId.length() > config.getMaxIdFieldLength()) {
+    if (formId != null && formId.length() > config.maxIdFieldLength()) {
       final var failureMessage =
           String.format(
               "The ID of a form must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-              config.getMaxIdFieldLength(), formId, resource.getResourceName());
+              config.maxIdFieldLength(), formId, resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     }
 

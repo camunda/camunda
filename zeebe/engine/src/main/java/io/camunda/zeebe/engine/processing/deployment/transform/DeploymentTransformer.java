@@ -40,6 +40,8 @@ public final class DeploymentTransformer {
   private RejectionType rejectionType;
   private String rejectionReason;
 
+  private final BpmnResourceTransformer bpmnResourceTransformer;
+
   public DeploymentTransformer(
       final StateWriter stateWriter,
       final ProcessingState processingState,
@@ -51,7 +53,7 @@ public final class DeploymentTransformer {
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
     this.config = config;
 
-    final var bpmnResourceTransformer =
+    bpmnResourceTransformer =
         new BpmnResourceTransformer(
             keyGenerator,
             stateWriter,
@@ -170,8 +172,7 @@ public final class DeploymentTransformer {
   }
 
   private boolean isBpmnResource(final DeploymentResource resource) {
-    return resource.getResourceName().endsWith(".bpmn")
-        || resource.getResourceName().endsWith(".xml");
+    return bpmnResourceTransformer.canTransform(resource);
   }
 
   private boolean createMetadata(
@@ -180,6 +181,7 @@ public final class DeploymentTransformer {
       final DeploymentResourceContext context,
       final StringBuilder errors) {
     final var transformer = getResourceTransformer(deploymentResource);
+    final var resourceName = deploymentResource.getResourceName();
 
     if (resourceName.length() > config.maxNameFieldLength()) {
       errors.append(
@@ -228,8 +230,7 @@ public final class DeploymentTransformer {
     return rejectionReason;
   }
 
-  private DeploymentResourceTransformer getResourceTransformer(
-      final DeploymentResource resource) {
+  private DeploymentResourceTransformer getResourceTransformer(final DeploymentResource resource) {
     return resourceTransformers.stream()
         .filter(transformer -> transformer.canTransform(resource))
         .findFirst()

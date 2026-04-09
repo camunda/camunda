@@ -63,7 +63,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
       final DecisionState decisionState,
-      final EngineConfiguration engineConfiguration) {
+      final ValidationConfig engineConfiguration) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
