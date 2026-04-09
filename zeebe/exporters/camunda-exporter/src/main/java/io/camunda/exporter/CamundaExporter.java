@@ -91,9 +91,11 @@ public class CamundaExporter implements Exporter {
   private Context context;
   private long lastFlushTimestamp = 0L;
 
-  // Tracks the clock value at the time scheduleDelayedFlush was last called.
-  // Used in flushAndReschedule to detect when the clock is pinned and not advancing,
-  // so we can bypass the time-based flush guard and flush unconditionally.
+  // Tracks the clock value at the time scheduleDelayedFlush was last called. Used in
+  // flushAndReschedule to detect when the clock is pinned and not advancing. Without this field,
+  // the case where now > lastFlushTimestamp but now - lastFlushTimestamp < flushDelayMs would
+  // be silently missed: neither the elapsed-time guard nor the backward-clock guard fires, so the
+  // exporter would never flush as long as the clock stays at that pinned value.
   private long lastScheduledFromTimestamp = 0L;
 
   private long flushDelayMs;
@@ -324,8 +326,9 @@ public class CamundaExporter implements Exporter {
     long nextDelayMs = flushDelayMs;
     if (lastFlushTimestamp > 0) {
       // Cap at flushDelayMs to avoid scheduling far into the future when the clock is pinned to a
-      // time in the past, which would make `now - lastFlushTimestamp` negative and thus
-      // `flushDelayMs - (now - lastFlushTimestamp)` larger than flushDelayMs.
+      // time in the past. When now < lastFlushTimestamp, the expression
+      // `flushDelayMs - (now - lastFlushTimestamp)` becomes `flushDelayMs + positive_value`,
+      // which is larger than flushDelayMs. Capping ensures the delay stays within [0, flushDelayMs].
       nextDelayMs = Math.min(flushDelayMs, Math.max(0, flushDelayMs - (now - lastFlushTimestamp)));
     }
 
