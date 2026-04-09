@@ -66,6 +66,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -113,14 +114,14 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final CamundaManagementClient camundaManagementClient;
 
   private final JsonMapper jsonMapper;
-  private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
       final CamundaManagementClient camundaManagementClient,
-      final CamundaAssertAwaitBehavior awaitBehavior,
+      final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier,
       final JsonMapper jsonMapper,
       final ConditionalBehaviorEngine conditionalBehaviorEngine) {
 
@@ -130,7 +131,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
-    this.awaitBehavior = awaitBehavior;
+    this.awaitBehaviorSupplier = awaitBehaviorSupplier;
     this.jsonMapper = jsonMapper;
     this.conditionalBehaviorEngine = conditionalBehaviorEngine;
   }
@@ -196,7 +197,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public JobWorkerMockBuilder mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
     final BpmnExampleDataReader exampleDataReader =
-        new BpmnExampleDataReader(client, awaitBehavior);
+        new BpmnExampleDataReader(client, awaitBehaviorSupplier.get());
 
     return new JobWorkerMockBuilderImpl(jobType, client, exampleDataReader);
   }
@@ -306,7 +307,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeJobWithExampleData(final JobSelector jobSelector) {
     final CamundaClient client = createClient();
     final BpmnExampleDataReader exampleDataReader =
-        new BpmnExampleDataReader(client, awaitBehavior);
+        new BpmnExampleDataReader(client, awaitBehaviorSupplier.get());
 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
@@ -450,7 +451,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector) {
     final CamundaClient client = createClient();
     final BpmnExampleDataReader exampleDataReader =
-        new BpmnExampleDataReader(client, awaitBehavior);
+        new BpmnExampleDataReader(client, awaitBehaviorSupplier.get());
 
     // completing the user task inside the await block to handle the eventual consistency of the API
     awaitUserTask(
@@ -677,17 +678,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaClient client,
       final Consumer<UserTask> userTaskConsumer) {
 
-    awaitBehavior.untilAsserted(
-        () -> findUserTask(userTaskSelector, client),
-        userTask -> {
-          assertThat(userTask)
-              .withFailMessage(
-                  "Expected to complete user task [%s] but no user task is available.",
-                  userTaskSelector.describe())
-              .isPresent();
+    awaitBehaviorSupplier
+        .get()
+        .untilAsserted(
+            () -> findUserTask(userTaskSelector, client),
+            userTask -> {
+              assertThat(userTask)
+                  .withFailMessage(
+                      "Expected to complete user task [%s] but no user task is available.",
+                      userTaskSelector.describe())
+                  .isPresent();
 
-          userTask.ifPresent(userTaskConsumer);
-        });
+              userTask.ifPresent(userTaskConsumer);
+            });
   }
 
   private Optional<UserTask> findUserTask(
@@ -710,16 +713,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private void awaitJob(
       final JobSelector jobSelector, final CamundaClient client, final Consumer<Job> jobConsumer) {
 
-    awaitBehavior.untilAsserted(
-        () -> findJob(jobSelector, client),
-        job -> {
-          assertThat(job)
-              .withFailMessage(
-                  "Expected to complete job [%s] but no job is available.", jobSelector.describe())
-              .isPresent();
+    awaitBehaviorSupplier
+        .get()
+        .untilAsserted(
+            () -> findJob(jobSelector, client),
+            job -> {
+              assertThat(job)
+                  .withFailMessage(
+                      "Expected to complete job [%s] but no job is available.",
+                      jobSelector.describe())
+                  .isPresent();
 
-          job.ifPresent(jobConsumer);
-        });
+              job.ifPresent(jobConsumer);
+            });
   }
 
   private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
@@ -741,17 +747,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaClient client,
       final Consumer<Incident> incidentConsumer) {
 
-    awaitBehavior.untilAsserted(
-        () -> findIncident(incidentSelector, client),
-        incident -> {
-          assertThat(incident)
-              .withFailMessage(
-                  "Expected to resolve an incident [%s] but no incident was found.",
-                  incidentSelector.describe())
-              .isPresent();
+    awaitBehaviorSupplier
+        .get()
+        .untilAsserted(
+            () -> findIncident(incidentSelector, client),
+            incident -> {
+              assertThat(incident)
+                  .withFailMessage(
+                      "Expected to resolve an incident [%s] but no incident was found.",
+                      incidentSelector.describe())
+                  .isPresent();
 
-          incident.ifPresent(incidentConsumer);
-        });
+              incident.ifPresent(incidentConsumer);
+            });
   }
 
   private Optional<Incident> findIncident(
@@ -809,17 +817,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaClient client,
       final Consumer<ProcessInstance> processInstanceConsumer) {
 
-    awaitBehavior.untilAsserted(
-        () -> findProcessInstance(processInstanceSelector, client),
-        processInstance -> {
-          assertThat(processInstance)
-              .withFailMessage(
-                  "Expected to update variables for process instance [%s] but no process instance is available.",
-                  processInstanceSelector.describe())
-              .isPresent();
+    awaitBehaviorSupplier
+        .get()
+        .untilAsserted(
+            () -> findProcessInstance(processInstanceSelector, client),
+            processInstance -> {
+              assertThat(processInstance)
+                  .withFailMessage(
+                      "Expected to update variables for process instance [%s] but no process instance is available.",
+                      processInstanceSelector.describe())
+                  .isPresent();
 
-          processInstance.ifPresent(processInstanceConsumer);
-        });
+              processInstance.ifPresent(processInstanceConsumer);
+            });
   }
 
   private void awaitElementInstance(
@@ -828,16 +838,18 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaClient client,
       final Consumer<ElementInstance> elementInstanceConsumer) {
 
-    awaitBehavior.untilAsserted(
-        () -> findElementInstance(processInstanceKey, elementSelector, client),
-        elementInstance -> {
-          assertThat(elementInstance)
-              .withFailMessage(
-                  "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
-                  elementSelector.describe(), processInstanceKey)
-              .isPresent();
+    awaitBehaviorSupplier
+        .get()
+        .untilAsserted(
+            () -> findElementInstance(processInstanceKey, elementSelector, client),
+            elementInstance -> {
+              assertThat(elementInstance)
+                  .withFailMessage(
+                      "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
+                      elementSelector.describe(), processInstanceKey)
+                  .isPresent();
 
-          elementInstance.ifPresent(elementInstanceConsumer);
-        });
+              elementInstance.ifPresent(elementInstanceConsumer);
+            });
   }
 }
