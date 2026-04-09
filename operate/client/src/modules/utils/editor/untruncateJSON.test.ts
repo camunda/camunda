@@ -165,9 +165,9 @@ describe('untruncateJson', () => {
   });
 
   it('handles a cut off string in an array with an escaped character', () => {
-    expect(
-      untruncateJson('["hello", "\\"Dr.]\\" Leo Spaceman').completed,
-    ).toBe('["hello", "\\"Dr.]\\" Leo Spaceman"]');
+    expect(untruncateJson('["hello", "\\"Dr.]\\" Leo Spaceman').completed).toBe(
+      '["hello", "\\"Dr.]\\" Leo Spaceman"]',
+    );
   });
 
   it('handles a string in an object key cut off at a "\\"', () => {

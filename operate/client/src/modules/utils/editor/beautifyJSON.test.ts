@@ -27,8 +27,6 @@ describe('beautifyTruncatedJSON', () => {
   });
 
   it('strips the synthesized closing brace for a truncated object', () => {
-    // Input is truncated after the value — untruncateJson adds `}` with collectionDepth 1.
-    // beautifyTruncatedJSON should return the pretty content without the closing `}`.
     const result = beautifyTruncatedJSON('{"a": 1');
 
     expect(result).toBe('{\n\t"a": 1\n');
@@ -41,19 +39,14 @@ describe('beautifyTruncatedJSON', () => {
   });
 
   it('strips multiple synthesized closing tokens for nested truncated collections', () => {
-    // {"a": [1, 2  →  untruncateJson adds `]}` (collectionDepth 2)
     const result = beautifyTruncatedJSON('{"a": [1, 2');
 
-    // Should end with the last real content line, without `]` or `}`
     expect(result).toBe('{\n\t"a": [\n\t\t1,\n\t\t2\n\t');
   });
 
   it('preserves inline closers that are real content when only one depth is synthesized', () => {
-    // {"a": [] is a complete value for key "a"; only the outer `}` is synthesized.
-    // Truncation is at the object level: `{"a": []` → collectionDepth 1.
     const result = beautifyTruncatedJSON('{"a": []');
 
-    // The `"a": []` line must be kept; only the trailing `}` is removed.
     expect(result).toContain('"a": []');
     expect(result).not.toMatch(/\}$/);
   });

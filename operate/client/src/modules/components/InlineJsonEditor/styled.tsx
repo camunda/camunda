@@ -29,14 +29,8 @@ const ring = (color: string) => css`
 
 const EditorWrapper = styled.div<{
   $invalid?: boolean;
-  $height: number;
 }>`
-  height: 100%;
   position: relative;
-
-  ${({$height}) => css`
-    max-height: ${$height}px;
-  `};
 
   ${({$invalid}) =>
     $invalid &&
