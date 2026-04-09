@@ -46,7 +46,7 @@ public class BackupRestoreTest {
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
+  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/camunda";
   @Autowired private OperateAPICaller operateAPICaller;
 
   @Autowired private DataGenerator dataGenerator;

@@ -33,9 +33,9 @@ public class StartupIT {
   public static final String VERSION = "current-test";
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupIT.class);
   //  values for local test:
-  //  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
+  //  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/camunda";
   //  public static final String VERSION = "8.1.0-alpha4";
-  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
+  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/camunda";
   public TestRestTemplate restTemplate = new TestRestTemplate();
   private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private GenericContainer operateContainer;

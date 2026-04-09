@@ -81,7 +81,7 @@ public class TestContainerUtil {
   public static final String TENANT_1 = "tenant_1";
   public static final String TENANT_2 = "tenant_2";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
-  private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/operate";
+  private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/camunda";
   private static final Integer OPERATE_HTTP_PORT = 8080;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
