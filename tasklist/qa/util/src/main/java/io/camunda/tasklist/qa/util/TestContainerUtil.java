@@ -429,7 +429,8 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", indexPrefix)
           // ---
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort));
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
+          .withEnv("SPRING_PROFILES_ACTIVE", "tasklist, standalone, consolidated-auth");
     } else {
       final String elsHost = testContext.getInternalElsHost();
       final Integer elsPort = testContext.getInternalElsPort();
@@ -442,7 +443,7 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
           // ---
-          .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
+          .withEnv("SPRING_PROFILES_ACTIVE", "tasklist, standalone, consolidated-auth")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
