@@ -59,9 +59,11 @@ jobs:
           # These are indicated by a dollar sign and curly braces (`${placeholder}`).
           # Please refer to this action's README for all available placeholders.
           #
-          # WARNING: The stale backport tracker parses "Backport of #NNNN" from this description
-          # to link backport PRs to their parent. Changing this format will break tracking.
-          # See: .ci/scripts/stale-backport-scripts/collect-stale-backports.sh (line ~87)
+          # WARNING: The stale backport tracker depends on two things:
+          #   1. PR author being "backport-action" or "monorepo-devops-automation[bot]"
+          #   2. Body containing "Backport of #NNNN" (parsed to link to parent PR)
+          # Changing either will break tracking.
+          # See: .ci/scripts/stale-backport-scripts/collect-stale-backports.sh
           pull_description: |-
             ⤵️ Backport of #${pull_number} → `${target_branch}`
 
