@@ -132,23 +132,30 @@ public class JobCallbackCommandWrapper {
   }
 
   private void doExecute(final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
-    invocationCounter++;
-    command
-        .send()
-        .whenComplete(
-            (response, throwable) -> {
-              try {
-                if (throwable != null) {
-                  handleError(throwable);
-                } else {
-                  increaser.accept(metricsRecorder, metricsContext);
-                  resultFuture.complete(new CommandOutcome.Completed(response, invocationCounter));
+    try {
+      invocationCounter++;
+      command
+          .send()
+          .whenComplete(
+              (response, throwable) -> {
+                try {
+                  if (throwable != null) {
+                    handleError(throwable);
+                  } else {
+                    increaser.accept(metricsRecorder, metricsContext);
+                    resultFuture.complete(
+                        new CommandOutcome.Completed(response, invocationCounter));
+                  }
+                } catch (final RuntimeException e) {
+                  LOG.warn(
+                      "An unexpected error occurred during handling of job callback command", e);
+                  resultFuture.completeExceptionally(e);
                 }
-              } catch (final RuntimeException e) {
-                LOG.info("An unexpected error occurred during handling of job callback command", e);
-                resultFuture.completeExceptionally(e);
-              }
-            });
+              });
+    } catch (final RuntimeException e) {
+      LOG.warn("An unexpected error occurred during handling of job callback command", e);
+      resultFuture.completeExceptionally(e);
+    }
   }
 
   private void handleError(final Throwable throwable) {
