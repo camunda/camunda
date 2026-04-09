@@ -56,13 +56,13 @@ const ReadOnlyEditorWrapper = styled.div<{
   $scrollable: boolean;
   $invalid: boolean;
 }>`
-  display: inline-block;
   position: relative;
   width: 100%;
   min-height: ${EDITOR_MIN_HEIGHT}px;
   cursor: pointer;
   padding-top: ${EDITOR_PADDING_TOP}px;
   padding-bottom: ${EDITOR_PADDING_BOTTOM}px;
+  letter-spacing: 0;
 
   ${({$scrollable, $height}) =>
     $scrollable
