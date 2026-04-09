@@ -46,6 +46,7 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -98,14 +99,17 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final long tokenFetchInitialBackoffMs;
   private final double tokenFetchBackoffMultiplier;
   private final Set<Integer> tokenFetchRetryableStatusCodes;
+  private final Duration tokenFetchNonRetryableCooldown;
 
   /**
    * Latched when the token endpoint returns an HTTP response whose status code is not configured as
-   * retryable in {@code tokenFetchRetryableStatusCodes}. Once set, every subsequent token fetch
-   * fails immediately without contacting the OIDC provider, until this client instance is
-   * recreated.
+   * retryable in {@code tokenFetchRetryableStatusCodes}. While set, every subsequent token fetch
+   * fails immediately without contacting the OIDC provider. The latch self-clears after {@code
+   * tokenFetchNonRetryableCooldown} elapses, after which the next call attempts a fresh fetch and,
+   * on continued failure, re-arms the latch with a new cooldown.
    */
-  private final AtomicReference<IOException> permanentFailure = new AtomicReference<>();
+  private final AtomicReference<NonRetryableFailureState> nonRetryableFailure =
+      new AtomicReference<>();
 
   // client assertion
   private final boolean clientAssertionEnabled;
@@ -142,6 +146,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     tokenFetchInitialBackoffMs = builder.getTokenFetchInitialBackoff().toMillis();
     tokenFetchBackoffMultiplier = builder.getTokenFetchBackoffMultiplier();
     tokenFetchRetryableStatusCodes = builder.getTokenFetchRetryableStatusCodes();
+    tokenFetchNonRetryableCooldown = builder.getTokenFetchNonRetryableCooldown();
     clientAssertionEnabled = builder.clientAssertionEnabled();
     clientAssertionKeystorePath = builder.getClientAssertionKeystorePath();
     clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
@@ -188,10 +193,11 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     if (!statusCode.isUnauthorized()) {
       return false;
     }
-    // Short-circuit if the token endpoint has already permanently failed: no point in attempting
-    // another fetch, and skipping it preserves the "single ERROR at trip time" promise by avoiding
-    // log spam from this method's IOException catch on every subsequent rejected request.
-    if (permanentFailure.get() != null) {
+    // Short-circuit while the non-retryable failure cooldown is active: no point in attempting
+    // another fetch, and skipping it avoids log spam from this method's IOException catch on
+    // every subsequent rejected request.
+    final NonRetryableFailureState latched = nonRetryableFailure.get();
+    if (latched != null && Instant.now().isBefore(latched.cooldownUntil())) {
       return false;
     }
 
@@ -283,14 +289,24 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   private CamundaClientCredentials fetchCredentials() throws IOException {
-    final IOException latched = permanentFailure.get();
+    final NonRetryableFailureState latched = nonRetryableFailure.get();
     if (latched != null) {
-      LOG.debug(
-          "Rejecting token fetch: OAuth credentials provider is permanently disabled", latched);
-      throw new IOException(
-          "OAuth credentials provider permanently disabled due to earlier non-retryable token "
-              + "endpoint response. Restart the client after fixing the OAuth configuration.",
-          latched);
+      if (Instant.now().isBefore(latched.cooldownUntil())) {
+        LOG.debug(
+            "Rejecting token fetch for clientId={}: OAuth credentials provider is in"
+                + " non-retryable cooldown until {}",
+            clientId,
+            latched.cooldownUntil(),
+            latched.cause());
+        throw new IOException(
+            "OAuth credentials provider is in non-retryable failure cooldown until "
+                + latched.cooldownUntil()
+                + " due to earlier non-retryable token endpoint response.",
+            latched.cause());
+      }
+      // cooldown elapsed — clear and probe. If another thread already cleared or re-armed, respect
+      // its decision.
+      nonRetryableFailure.compareAndSet(latched, null);
     }
 
     IOException lastException = null;
@@ -299,7 +315,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     for (int attempt = 1; attempt <= tokenFetchMaxRetries; attempt++) {
       try {
         return doFetchCredentials();
-      } catch (final PermanentOAuthFailureException e) {
+      } catch (final NonRetryableOAuthFailureException e) {
         // already latched inside doFetchCredentials; surface the underlying IOException
         throw (IOException) e.getCause();
       } catch (final IOException e) {
@@ -364,16 +380,22 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
                   "Failed while requesting access token with status code %d and message %s.",
                   statusCode, connection.getResponseMessage()));
       if (!tokenFetchRetryableStatusCodes.contains(statusCode)) {
-        if (permanentFailure.compareAndSet(null, error)) {
-          LOG.error(
-              "OAuth credentials provider permanently disabled after non-retryable HTTP {} from "
-                  + "token endpoint {}. This client instance will reject all future token "
-                  + "requests until restarted. Verify clientId, clientSecret, audience, and token "
-                  + "URL configuration.",
-              statusCode,
-              authorizationServerUrl);
-        }
-        throw new PermanentOAuthFailureException(error);
+        final Instant cooldownUntil = Instant.now().plus(tokenFetchNonRetryableCooldown);
+        // Unconditional set — re-arming on every trip intentionally refreshes the cooldown so
+        // persistent misconfiguration produces periodic ERROR logs (every cooldown window) rather
+        // than a single one that scrolls out of buffer. Per-trip ERROR logging is the whole point.
+        nonRetryableFailure.set(new NonRetryableFailureState(error, cooldownUntil));
+        LOG.error(
+            "OAuth credentials provider latched non-retryable failure for clientId={} after HTTP"
+                + " {} from token endpoint {}. Token fetches will fail fast until {} ({}), then a"
+                + " fresh attempt will be made. Verify clientId, clientSecret, audience, and token"
+                + " URL configuration.",
+            clientId,
+            statusCode,
+            authorizationServerUrl,
+            cooldownUntil,
+            tokenFetchNonRetryableCooldown);
+        throw new NonRetryableOAuthFailureException(error);
       }
       throw new RetryableOAuthFailureException(error, parseRetryAfterMs(connection));
     }
@@ -505,12 +527,35 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   /**
+   * Snapshot of a non-retryable failure plus the instant until which subsequent fetches should fail
+   * fast. Stored in an {@link AtomicReference} so the latch can be cleared atomically when the
+   * cooldown elapses and re-armed on repeated failures.
+   */
+  private static final class NonRetryableFailureState {
+    private final IOException cause;
+    private final Instant cooldownUntil;
+
+    NonRetryableFailureState(final IOException cause, final Instant cooldownUntil) {
+      this.cause = cause;
+      this.cooldownUntil = cooldownUntil;
+    }
+
+    IOException cause() {
+      return cause;
+    }
+
+    Instant cooldownUntil() {
+      return cooldownUntil;
+    }
+  }
+
+  /**
    * Internal marker thrown by {@link #doFetchCredentials()} when a non-retryable HTTP response is
    * received, so the retry loop in {@link #fetchCredentials()} can distinguish it from a retryable
    * IOException without re-inspecting the underlying cause. Never escapes this class.
    */
-  private static final class PermanentOAuthFailureException extends IOException {
-    PermanentOAuthFailureException(final IOException cause) {
+  private static final class NonRetryableOAuthFailureException extends IOException {
+    NonRetryableOAuthFailureException(final IOException cause) {
       super(cause);
     }
   }

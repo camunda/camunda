@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.net.ssl.SSLHandshakeException;
 import org.apache.hc.core5.http.HttpHeaders;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -1085,7 +1086,7 @@ public final class OAuthCredentialsProviderTest {
       // then — second call must NOT hit the endpoint
       assertThatThrownBy(() -> provider.applyCredentials(applier))
           .isInstanceOf(IOException.class)
-          .hasMessageContaining("permanently disabled");
+          .hasMessageContaining("non-retryable failure cooldown");
       assertThat(requestCount()).isEqualTo(afterFirst);
     }
 
@@ -1104,7 +1105,7 @@ public final class OAuthCredentialsProviderTest {
       // then
       assertThatThrownBy(() -> provider.applyCredentials(applier))
           .isInstanceOf(IOException.class)
-          .hasMessageContaining("permanently disabled");
+          .hasMessageContaining("non-retryable failure cooldown");
       assertThat(requestCount()).isEqualTo(1);
     }
 
@@ -1123,7 +1124,7 @@ public final class OAuthCredentialsProviderTest {
       // then
       assertThatThrownBy(() -> provider.applyCredentials(applier))
           .isInstanceOf(IOException.class)
-          .hasMessageContaining("permanently disabled");
+          .hasMessageContaining("non-retryable failure cooldown");
       assertThat(requestCount()).isEqualTo(1);
     }
 
@@ -1181,7 +1182,7 @@ public final class OAuthCredentialsProviderTest {
       // then — second call must NOT hit the endpoint
       assertThatThrownBy(() -> provider.applyCredentials(applier))
           .isInstanceOf(IOException.class)
-          .hasMessageContaining("permanently disabled");
+          .hasMessageContaining("non-retryable failure cooldown");
       assertThat(requestCount()).isEqualTo(1);
     }
 
@@ -1225,6 +1226,68 @@ public final class OAuthCredentialsProviderTest {
           .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
       assertThat(requestCount()).isEqualTo(2);
       assertThat(elapsedMs).isGreaterThanOrEqualTo(900L);
+    }
+
+    @Test
+    void shouldProbeAfterNonRetryableCooldownElapses() {
+      // given — 401 on first call, success on second. Cooldown is 50ms so the test waits briefly.
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                  .willReturn(WireMock.aResponse().withStatus(401))
+                  .willSetStateTo("after-401"));
+      stubTokenSuccess("after-401");
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder().tokenFetchNonRetryableCooldown(Duration.ofMillis(50)).build();
+
+      // when — first call trips the latch
+      assertThatThrownBy(() -> provider.applyCredentials(applier)).isInstanceOf(IOException.class);
+      assertThat(requestCount()).isEqualTo(1);
+
+      // during cooldown — still fail fast
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("non-retryable failure cooldown");
+      assertThat(requestCount()).isEqualTo(1);
+
+      // after cooldown — fresh attempt succeeds
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> provider.applyCredentials(applier));
+      assertThat(requestCount()).isEqualTo(2);
+      assertThat(applier.getCredentials())
+          .contains(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldReArmLatchOnRepeatedNonRetryableFailure() {
+      // given — always 401, short cooldown
+      stubAlwaysStatus(401);
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder().tokenFetchNonRetryableCooldown(Duration.ofMillis(50)).build();
+
+      // when — first trip
+      assertThatThrownBy(() -> provider.applyCredentials(applier)).isInstanceOf(IOException.class);
+      assertThat(requestCount()).isEqualTo(1);
+
+      // wait for cooldown to elapse, probe re-fails and re-arms
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () ->
+                  assertThatThrownBy(() -> provider.applyCredentials(applier))
+                      .isInstanceOf(IOException.class)
+                      .hasMessageNotContaining("non-retryable failure cooldown"));
+      assertThat(requestCount()).isEqualTo(2);
+
+      // immediately after re-arm — fail fast again
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("non-retryable failure cooldown");
+      assertThat(requestCount()).isEqualTo(2);
     }
 
     @Test
@@ -1371,6 +1434,54 @@ public final class OAuthCredentialsProviderTest {
           .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
       assertThat(requestCount()).isEqualTo(2);
       assertThat(elapsedMs).isLessThan(500L);
+    }
+
+    @Test
+    void builderShouldRejectNegativeCooldown() {
+      assertThatThrownBy(
+              () ->
+                  retryProviderBuilder()
+                      .tokenFetchNonRetryableCooldown(Duration.ofSeconds(-1))
+                      .build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("tokenFetchNonRetryableCooldown")
+          .hasMessageContaining("non-negative");
+    }
+
+    @Test
+    void shouldBuildProviderFromAllTokenFetchEnvVars() throws IOException {
+      // given — set every new token-fetch env var, with values distinct from the defaults
+      final io.camunda.client.impl.util.Environment env =
+          io.camunda.client.impl.util.Environment.system();
+      env.put("CAMUNDA_AUTH_TOKEN_FETCH_MAX_RETRIES", "2");
+      env.put("CAMUNDA_AUTH_TOKEN_FETCH_INITIAL_BACKOFF_MS", "10");
+      env.put("CAMUNDA_AUTH_TOKEN_FETCH_BACKOFF_MULTIPLIER", "3.0");
+      env.put("CAMUNDA_AUTH_TOKEN_FETCH_RETRYABLE_STATUS_CODES", "418, 429");
+      env.put("CAMUNDA_AUTH_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN_MS", "12345");
+      try {
+        // when — build without explicit overrides: env vars must flow through
+        final OAuthCredentialsProviderBuilder builder =
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .authorizationServerUrl(tokenUrlString())
+                .credentialsCachePath(cacheFilePath.toString());
+        builder.build();
+
+        // then — every knob reflects the env var value
+        assertThat(builder.getTokenFetchMaxRetries()).isEqualTo(2);
+        assertThat(builder.getTokenFetchInitialBackoff()).isEqualTo(Duration.ofMillis(10));
+        assertThat(builder.getTokenFetchBackoffMultiplier()).isEqualTo(3.0);
+        assertThat(builder.getTokenFetchRetryableStatusCodes()).containsExactlyInAnyOrder(418, 429);
+        assertThat(builder.getTokenFetchNonRetryableCooldown()).isEqualTo(Duration.ofMillis(12345));
+      } finally {
+        env.remove("CAMUNDA_AUTH_TOKEN_FETCH_MAX_RETRIES");
+        env.remove("CAMUNDA_AUTH_TOKEN_FETCH_INITIAL_BACKOFF_MS");
+        env.remove("CAMUNDA_AUTH_TOKEN_FETCH_BACKOFF_MULTIPLIER");
+        env.remove("CAMUNDA_AUTH_TOKEN_FETCH_RETRYABLE_STATUS_CODES");
+        env.remove("CAMUNDA_AUTH_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN_MS");
+      }
     }
   }
 }
