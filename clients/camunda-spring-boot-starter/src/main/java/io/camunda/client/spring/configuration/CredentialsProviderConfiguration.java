@@ -93,6 +93,11 @@ public class CredentialsProviderConfiguration {
             .readTimeout(camundaClientProperties.getAuth().getReadTimeout())
             .proactiveTokenRefreshThreshold(
                 camundaClientProperties.getAuth().getProactiveTokenRefreshThreshold())
+            .tokenFetchMaxRetries(camundaClientProperties.getAuth().getTokenFetchMaxRetries())
+            .tokenFetchInitialBackoff(
+                camundaClientProperties.getAuth().getTokenFetchInitialBackoff())
+            .tokenFetchBackoffMultiplier(
+                camundaClientProperties.getAuth().getTokenFetchBackoffMultiplier())
             .clientAssertionKeystorePath(
                 camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
             .clientAssertionKeystorePassword(

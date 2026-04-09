@@ -371,6 +371,8 @@ public final class OAuthCredentialsProviderTest {
             .authorizationServerUrl(tokenUrlString())
             .credentialsCachePath(cacheFilePath.toString())
             .readTimeout(Duration.ofMillis(500))
+            // disable retries: this test asserts the read-timeout behavior of a single fetch
+            .tokenFetchMaxRetries(1)
             .build();
     currentWiremockRuntimeInfo
         .getWireMock()
@@ -927,6 +929,294 @@ public final class OAuthCredentialsProviderTest {
           .audience(AUDIENCE)
           .authorizationServerUrl(tokenHttpsUrlString())
           .credentialsCachePath(cacheFilePath.toString());
+    }
+  }
+
+  @Nested
+  final class RetryAndLatchTests {
+
+    private static final String SCENARIO = "token-retry";
+
+    private OAuthCredentialsProviderBuilder retryProviderBuilder() {
+      return new OAuthCredentialsProviderBuilder()
+          .clientId(CLIENT_ID)
+          .clientSecret(SECRET)
+          .audience(AUDIENCE)
+          .authorizationServerUrl(tokenUrlString())
+          .credentialsCachePath(cacheFilePath.toString())
+          // keep wall-clock cost negligible
+          .tokenFetchInitialBackoff(Duration.ofMillis(10))
+          .tokenFetchBackoffMultiplier(2.0)
+          .tokenFetchMaxRetries(5);
+    }
+
+    private void stubTokenStatus(final int status, final String fromState, final String toState) {
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(fromState)
+                  .willReturn(WireMock.aResponse().withStatus(status))
+                  .willSetStateTo(toState));
+    }
+
+    private void stubTokenSuccess(final String fromState) {
+      final HashMap<String, String> body = new HashMap<>();
+      body.put("access_token", ACCESS_TOKEN);
+      body.put("token_type", TOKEN_TYPE);
+      body.put(
+          "expires_in",
+          String.valueOf(
+              EXPIRY.getLong(ChronoField.INSTANT_SECONDS) - Instant.now().getEpochSecond()));
+      try {
+        currentWiremockRuntimeInfo
+            .getWireMock()
+            .register(
+                WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                    .inScenario(SCENARIO)
+                    .whenScenarioStateIs(fromState)
+                    .willReturn(
+                        WireMock.aResponse()
+                            .withStatus(200)
+                            .withBody(jsonMapper.writeValueAsString(body))));
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    private void stubAlwaysStatus(final int status) {
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .willReturn(WireMock.aResponse().withStatus(status)));
+    }
+
+    private int requestCount() {
+      return currentWiremockRuntimeInfo
+          .getWireMock()
+          .find(RequestPatternBuilder.allRequests())
+          .size();
+    }
+
+    @Test
+    void shouldRetryOn429WithExponentialBackoff() throws IOException {
+      // given
+      stubTokenStatus(429, com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED, "second");
+      stubTokenStatus(429, "second", "third");
+      stubTokenSuccess("third");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      provider.applyCredentials(applier);
+
+      // then
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldRetryOn5xx() throws IOException {
+      // given
+      stubTokenStatus(503, com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED, "second");
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      provider.applyCredentials(applier);
+
+      // then
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldRetryOn404() throws IOException {
+      // given
+      stubTokenStatus(404, com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED, "second");
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      provider.applyCredentials(applier);
+
+      // then
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldFailAfterMaxRetriesWithoutLatching() throws IOException {
+      // given
+      stubAlwaysStatus(429);
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder().tokenFetchMaxRetries(2).build();
+
+      // when / then — first call fails after 2 attempts, surfacing the last 429
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 429");
+      assertThat(requestCount()).isEqualTo(2);
+
+      // and a second call retries again (no latch)
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 429");
+      assertThat(requestCount()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldTripLatchOn401AndFailAllSubsequentCallsWithoutHttpRequest() {
+      // given
+      stubAlwaysStatus(401);
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when — first call hits the endpoint and trips the latch
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 401");
+      final int afterFirst = requestCount();
+      assertThat(afterFirst).isEqualTo(1);
+
+      // then — second call must NOT hit the endpoint
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("permanently disabled");
+      assertThat(requestCount()).isEqualTo(afterFirst);
+    }
+
+    @Test
+    void shouldTripLatchOn403() {
+      // given
+      stubAlwaysStatus(403);
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 403");
+      assertThat(requestCount()).isEqualTo(1);
+
+      // then
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("permanently disabled");
+      assertThat(requestCount()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldTripLatchOn400() {
+      // given
+      stubAlwaysStatus(400);
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 400");
+      assertThat(requestCount()).isEqualTo(1);
+
+      // then
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("permanently disabled");
+      assertThat(requestCount()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRespectConfiguredMaxRetries() {
+      // given
+      stubAlwaysStatus(429);
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder().tokenFetchMaxRetries(1).build();
+
+      // when
+      assertThatThrownBy(() -> provider.applyCredentials(applier)).isInstanceOf(IOException.class);
+
+      // then — exactly 1 attempt, no retries
+      assertThat(requestCount()).isEqualTo(1);
+    }
+
+    @Test
+    void builderShouldRejectInvalidConfig() {
+      assertThatThrownBy(() -> retryProviderBuilder().tokenFetchMaxRetries(0).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("tokenFetchMaxRetries");
+      assertThatThrownBy(
+              () -> retryProviderBuilder().tokenFetchInitialBackoff(Duration.ZERO).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("tokenFetchInitialBackoff");
+      assertThatThrownBy(() -> retryProviderBuilder().tokenFetchBackoffMultiplier(0.5).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("tokenFetchBackoffMultiplier");
+    }
+
+    @Test
+    void shouldRetryRequestShouldShortCircuitWhenLatchTripped() {
+      // given — trip the latch via a 401
+      stubAlwaysStatus(401);
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      assertThatThrownBy(() -> provider.applyCredentials(applier)).isInstanceOf(IOException.class);
+      assertThat(requestCount()).isEqualTo(1);
+
+      // when — gRPC interceptor calls shouldRetryRequest with a 401 status
+      final boolean shouldRetry =
+          provider.shouldRetryRequest(
+              new io.camunda.client.CredentialsProvider.StatusCode() {
+                @Override
+                public int code() {
+                  return 401;
+                }
+
+                @Override
+                public boolean isUnauthorized() {
+                  return true;
+                }
+              });
+
+      // then — no retry, no extra HTTP request to the token endpoint
+      assertThat(shouldRetry).isFalse();
+      assertThat(requestCount()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRetryOnIOExceptionAndEventuallySucceed() throws IOException {
+      // given — first request resets the connection (IOException on client side), second succeeds
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                  .willReturn(
+                      WireMock.aResponse()
+                          .withFault(
+                              com.github.tomakehurst.wiremock.http.Fault.CONNECTION_RESET_BY_PEER))
+                  .willSetStateTo("after-reset"));
+      stubTokenSuccess("after-reset");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      provider.applyCredentials(applier);
+
+      // then — network error was retried and the retry succeeded
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void builderShouldRejectSubMillisecondInitialBackoff() {
+      assertThatThrownBy(
+              () -> retryProviderBuilder().tokenFetchInitialBackoff(Duration.ofNanos(500)).build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("tokenFetchInitialBackoff")
+          .hasMessageContaining("at least 1 millisecond");
     }
   }
 }

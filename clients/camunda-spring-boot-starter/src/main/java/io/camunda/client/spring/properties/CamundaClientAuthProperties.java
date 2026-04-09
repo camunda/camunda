@@ -118,6 +118,25 @@ public class CamundaClientAuthProperties {
    */
   private Duration proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
 
+  /**
+   * The maximum number of attempts (including the initial one) when fetching a token from the OAuth
+   * authorization server. Retries are only attempted on transient failures (HTTP 404, 429, 5xx, or
+   * IOException).
+   */
+  private int tokenFetchMaxRetries = DEFAULT_TOKEN_FETCH_MAX_RETRIES;
+
+  /**
+   * The initial backoff duration applied between token fetch retry attempts. Subsequent delays grow
+   * geometrically by {@link #tokenFetchBackoffMultiplier}.
+   */
+  private Duration tokenFetchInitialBackoff = DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF;
+
+  /**
+   * The multiplier applied to the backoff duration between successive token fetch retry attempts.
+   * Must be greater than or equal to 1.0.
+   */
+  private double tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+
   @NestedConfigurationProperty
   private CamundaClientAuthClientAssertionProperties clientAssertion =
       new CamundaClientAuthClientAssertionProperties();
@@ -184,6 +203,30 @@ public class CamundaClientAuthProperties {
 
   public void setProactiveTokenRefreshThreshold(final Duration proactiveTokenRefreshThreshold) {
     this.proactiveTokenRefreshThreshold = proactiveTokenRefreshThreshold;
+  }
+
+  public int getTokenFetchMaxRetries() {
+    return tokenFetchMaxRetries;
+  }
+
+  public void setTokenFetchMaxRetries(final int tokenFetchMaxRetries) {
+    this.tokenFetchMaxRetries = tokenFetchMaxRetries;
+  }
+
+  public Duration getTokenFetchInitialBackoff() {
+    return tokenFetchInitialBackoff;
+  }
+
+  public void setTokenFetchInitialBackoff(final Duration tokenFetchInitialBackoff) {
+    this.tokenFetchInitialBackoff = tokenFetchInitialBackoff;
+  }
+
+  public double getTokenFetchBackoffMultiplier() {
+    return tokenFetchBackoffMultiplier;
+  }
+
+  public void setTokenFetchBackoffMultiplier(final double tokenFetchBackoffMultiplier) {
+    this.tokenFetchBackoffMultiplier = tokenFetchBackoffMultiplier;
   }
 
   public String getCredentialsCachePath() {
@@ -344,6 +387,12 @@ public class CamundaClientAuthProperties {
         + readTimeout
         + ", proactiveTokenRefreshThreshold="
         + proactiveTokenRefreshThreshold
+        + ", tokenFetchMaxRetries="
+        + tokenFetchMaxRetries
+        + ", tokenFetchInitialBackoff="
+        + tokenFetchInitialBackoff
+        + ", tokenFetchBackoffMultiplier="
+        + tokenFetchBackoffMultiplier
         + ", clientAssertion="
         + clientAssertion
         + '}';
