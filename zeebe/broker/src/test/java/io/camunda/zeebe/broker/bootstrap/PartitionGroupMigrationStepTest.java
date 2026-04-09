@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -178,6 +179,36 @@ class PartitionGroupMigrationStepTest {
     assertThat(migratedDir.resolve("default-partition-1.meta")).exists();
     assertThat(migratedDir.resolve("default-partition-1.conf")).exists();
     assertThat(migratedDir.resolve("default-partition-1-1.log")).exists();
+  }
+
+  @Test
+  void shouldLeaveNoLegacyPrefixedFiles() throws Exception {
+    // given — two partitions populated with the full set of file types
+    for (final int id : new int[] {1, 2}) {
+      final var partitionDir = dataDir.resolve("raft-partition/partitions/" + id);
+      Files.createDirectories(partitionDir);
+      Files.createFile(partitionDir.resolve("raft-partition-partition-" + id + ".meta"));
+      Files.createFile(partitionDir.resolve("raft-partition-partition-" + id + ".conf"));
+      Files.createFile(partitionDir.resolve(".raft-partition-partition-" + id + ".lock"));
+      Files.createFile(partitionDir.resolve(".raft-partition-partition-" + id + ".lock.tmp"));
+      Files.createFile(partitionDir.resolve("raft-partition-partition-" + id + "-1.log"));
+      Files.createFile(partitionDir.resolve("raft-partition-partition-" + id + "-1.log_0-deleted"));
+    }
+
+    // when
+    final var future = sut.startup(mockContext);
+    assertThat(future).succeedsWithin(TIME_OUT);
+
+    // then — no file anywhere under the data directory carries the legacy prefix
+    try (final Stream<Path> tree = Files.walk(dataDir)) {
+      assertThat(tree)
+          .filteredOn(Files::isRegularFile)
+          .allSatisfy(
+              path ->
+                  assertThat(path.getFileName().toString())
+                      .as("File %s should not carry the legacy 'raft-partition' prefix", path)
+                      .doesNotContain("raft-partition"));
+    }
   }
 
   @Test
