@@ -67,6 +67,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final String HEADER_AUTH_KEY = "Authorization";
   private static final String JWT_ASSERTION_TYPE =
       "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+  static final int MAX_TOKEN_FETCH_RETRIES = 4;
+  static final long INITIAL_BACKOFF_MS = 1_000L;
+  static final double BACKOFF_MULTIPLIER = 2.0;
+  static final long MAX_BACKOFF_MS = 30_000L;
 
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -191,11 +195,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       throw new UncheckedIOException("Failed while encoding OAuth request parameters: ", e);
     }
   }
-
-  private static final int MAX_TOKEN_FETCH_RETRIES = 3;
-  private static final long INITIAL_BACKOFF_MS = 1_000L;
-  private static final double BACKOFF_MULTIPLIER = 2.0;
-  private static final long MAX_BACKOFF_MS = 30_000L;
 
   private CamundaClientCredentials fetchCredentials() throws IOException {
     IOException lastException = null;
