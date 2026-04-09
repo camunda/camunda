@@ -46,6 +46,8 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
@@ -303,16 +305,24 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       } catch (final IOException e) {
         lastException = e;
         if (attempt < tokenFetchMaxRetries) {
-          final long jitteredBackoffMs = withEqualJitter(backoffMs);
+          // Honor a server-provided Retry-After hint when present: sleep at least that long but
+          // not less than our computed backoff. Otherwise fall back to jittered exponential.
+          final Long retryAfterMs =
+              (e instanceof RetryableOAuthFailureException)
+                  ? ((RetryableOAuthFailureException) e).retryAfterMs()
+                  : null;
+          final long sleepMs =
+              retryAfterMs != null ? Math.max(retryAfterMs, backoffMs) : withEqualJitter(backoffMs);
           LOG.warn(
-              "Token fetch failed for clientId={} (attempt {}/{}), retrying in {}ms: {}",
+              "Token fetch failed for clientId={} (attempt {}/{}), retrying in {}ms{}: {}",
               clientId,
               attempt,
               tokenFetchMaxRetries,
-              jitteredBackoffMs,
+              sleepMs,
+              retryAfterMs != null ? " (honoring Retry-After)" : "",
               e.getMessage());
           try {
-            Thread.sleep(jitteredBackoffMs);
+            Thread.sleep(sleepMs);
           } catch (final InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while waiting to retry token fetch", ie);
@@ -365,7 +375,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         }
         throw new PermanentOAuthFailureException(error);
       }
-      throw error;
+      throw new RetryableOAuthFailureException(error, parseRetryAfterMs(connection));
     }
 
     try (final InputStream in = connection.getInputStream();
@@ -446,6 +456,40 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   /**
+   * Parses the {@code Retry-After} response header per RFC 7231 §7.1.3. Supports both the
+   * delta-seconds form ({@code Retry-After: 120}) and the HTTP-date form ({@code Retry-After: Fri,
+   * 31 Dec 1999 23:59:59 GMT}). Returns {@code null} if the header is absent, empty, or
+   * unparseable.
+   */
+  private static Long parseRetryAfterMs(final HttpURLConnection connection) {
+    final String header = connection.getHeaderField("Retry-After");
+    if (header == null) {
+      return null;
+    }
+    final String trimmed = header.trim();
+    if (trimmed.isEmpty()) {
+      return null;
+    }
+    try {
+      final long seconds = Long.parseLong(trimmed);
+      if (seconds < 0) {
+        return null;
+      }
+      // Guard against overflow: cap at Long.MAX_VALUE / 1000 before multiplying.
+      return seconds > Long.MAX_VALUE / 1000 ? Long.MAX_VALUE : seconds * 1000L;
+    } catch (final NumberFormatException ignored) {
+      // fall through to HTTP-date parsing
+    }
+    try {
+      final ZonedDateTime when = ZonedDateTime.parse(trimmed, DateTimeFormatter.RFC_1123_DATE_TIME);
+      final long deltaMs = Duration.between(ZonedDateTime.now(when.getZone()), when).toMillis();
+      return deltaMs < 0 ? 0L : deltaMs;
+    } catch (final Exception ignored) {
+      return null;
+    }
+  }
+
+  /**
    * Applies equal jitter to a backoff value: returns a random value in {@code [baseMs/2, baseMs]}.
    * This prevents coordinated retry storms when many clients (e.g. pods restarting after a
    * deployment) hit the OAuth endpoint at the same time, which is exactly the scenario this
@@ -468,6 +512,24 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final class PermanentOAuthFailureException extends IOException {
     PermanentOAuthFailureException(final IOException cause) {
       super(cause);
+    }
+  }
+
+  /**
+   * Internal marker thrown by {@link #doFetchCredentials()} when a retryable HTTP response is
+   * received, optionally carrying the {@code Retry-After} hint parsed from the response headers so
+   * the retry loop can honor it. Never escapes this class.
+   */
+  private static final class RetryableOAuthFailureException extends IOException {
+    private final Long retryAfterMs;
+
+    RetryableOAuthFailureException(final IOException cause, final Long retryAfterMs) {
+      super(cause);
+      this.retryAfterMs = retryAfterMs;
+    }
+
+    Long retryAfterMs() {
+      return retryAfterMs;
     }
   }
 }
