@@ -48,11 +48,13 @@ public class BeanJobExceptionHandlerTest {
   @Test
   void shouldHandleAnyException() {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final BackoffSupplier backoffSupplier = mock(BackoffSupplier.class);
-    final ScheduledExecutorService scheduledExecutorService = mock(ScheduledExecutorService.class);
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, backoffSupplier, scheduledExecutorService);
+            Duration.ZERO,
+            0,
+            metricsRecorder,
+            mock(BackoffSupplier.class),
+            mock(ScheduledExecutorService.class));
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
