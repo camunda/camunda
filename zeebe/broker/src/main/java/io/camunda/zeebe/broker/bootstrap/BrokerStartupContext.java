@@ -109,20 +109,6 @@ public interface BrokerStartupContext {
 
   ExporterRepository getExporterRepository();
 
-  /**
-   * Returns the partition manager for the default physical tenant, or {@code null} if no default
-   * manager has been started yet. This is a convenience shortcut for {@code
-   * getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME)}.
-   */
-  PartitionManagerImpl getPartitionManager();
-
-  /**
-   * Replaces the default physical tenant's partition manager. Passing {@code null} removes it.
-   * Prefer {@link #addPartitionManager(String, PartitionManagerImpl)} / {@link
-   * #removePartitionManager(String)} for multi-tenant code paths.
-   */
-  void setPartitionManager(PartitionManagerImpl partitionManager);
-
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManagerImpl> getPartitionManagers();
 

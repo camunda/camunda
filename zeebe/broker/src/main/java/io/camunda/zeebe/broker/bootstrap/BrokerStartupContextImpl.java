@@ -287,20 +287,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public PartitionManagerImpl getPartitionManager() {
-    return partitionManagers.get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
-  }
-
-  @Override
-  public void setPartitionManager(final PartitionManagerImpl partitionManager) {
-    if (partitionManager == null) {
-      partitionManagers.remove(PartitionManagerImpl.DEFAULT_GROUP_NAME);
-    } else {
-      partitionManagers.put(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionManager);
-    }
-  }
-
-  @Override
   public Map<String, PartitionManagerImpl> getPartitionManagers() {
     return Collections.unmodifiableMap(partitionManagers);
   }
