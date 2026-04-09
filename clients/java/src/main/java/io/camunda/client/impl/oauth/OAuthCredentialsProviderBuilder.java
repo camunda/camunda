@@ -37,6 +37,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_MAX_RETRIES;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
@@ -86,11 +87,12 @@ public final class OAuthCredentialsProviderBuilder {
   public static final int DEFAULT_TOKEN_FETCH_MAX_RETRIES = 5;
   public static final Duration DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF = Duration.ofSeconds(1);
   public static final double DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER = 2.0;
+  public static final Duration DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN = Duration.ofMinutes(5);
 
   /**
    * HTTP status codes from the token endpoint that should trigger a retry with backoff. Any other
-   * non-200 status code is treated as a permanent failure and trips the latch. {@code IOException}
-   * (network/timeout) is always retried independently of this set.
+   * non-200 status code is treated as a non-retryable failure and trips the latch. {@code
+   * IOException} (network/timeout) is always retried independently of this set.
    */
   public static final Set<Integer> DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES =
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList(404, 429, 500, 502, 503, 504)));
@@ -118,6 +120,7 @@ public final class OAuthCredentialsProviderBuilder {
   private Duration tokenFetchInitialBackoff;
   private Double tokenFetchBackoffMultiplier;
   private Set<Integer> tokenFetchRetryableStatusCodes;
+  private Duration tokenFetchNonRetryableCooldown;
   private boolean applyEnvironmentOverrides = true;
   private Path clientAssertionKeystorePath;
   private String clientAssertionKeystorePassword;
@@ -465,8 +468,9 @@ public final class OAuthCredentialsProviderBuilder {
 
   /**
    * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
-   * non-200 status code outside this set trips the permanent-failure latch and disables this
-   * provider until the client is recreated. The default is {@link
+   * non-200 status code outside this set trips the non-retryable-failure cooldown: token fetches
+   * fail fast for the duration configured via {@link #tokenFetchNonRetryableCooldown(Duration)}
+   * (default 5 minutes), after which the provider automatically probes again. The default is {@link
    * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default; callers
    * wanting to extend or shrink the default should derive from {@link
    * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}.
@@ -501,6 +505,37 @@ public final class OAuthCredentialsProviderBuilder {
    */
   public Set<Integer> getTokenFetchRetryableStatusCodes() {
     return tokenFetchRetryableStatusCodes;
+  }
+
+  /**
+   * The cooldown duration applied after the token endpoint returns a non-retryable response. For
+   * the length of this cooldown, all subsequent token fetches fail immediately without contacting
+   * the OIDC provider. After the cooldown elapses, the next call clears the latch and attempts a
+   * fresh fetch; if it fails again non-retryably, the latch re-arms with a new cooldown. This
+   * prevents hammering the OIDC provider during misconfiguration while still allowing automatic
+   * recovery from transient non-retryable-looking failures (e.g. credential rotation in-flight,
+   * load balancer flaps). The default is {@link #DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchNonRetryableCooldown(
+      final Duration tokenFetchNonRetryableCooldown) {
+    this.tokenFetchNonRetryableCooldown = tokenFetchNonRetryableCooldown;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchNonRetryableCooldown(
+      final String tokenFetchNonRetryableCooldownMs) {
+    if (tokenFetchNonRetryableCooldownMs != null) {
+      return tokenFetchNonRetryableCooldown(
+          Duration.ofMillis(Long.parseLong(tokenFetchNonRetryableCooldownMs)));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchNonRetryableCooldown(Duration)
+   */
+  public Duration getTokenFetchNonRetryableCooldown() {
+    return tokenFetchNonRetryableCooldown;
   }
 
   public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
@@ -722,6 +757,8 @@ public final class OAuthCredentialsProviderBuilder {
         this::tokenFetchBackoffMultiplier, OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER);
     applyEnvironmentValueIfNotNull(
         this::tokenFetchRetryableStatusCodes, OAUTH_ENV_TOKEN_FETCH_RETRYABLE_STATUS_CODES);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchNonRetryableCooldown, OAUTH_ENV_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN);
   }
 
   private void applyDefaults() {
@@ -750,6 +787,9 @@ public final class OAuthCredentialsProviderBuilder {
     }
     if (tokenFetchRetryableStatusCodes == null) {
       tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
+    }
+    if (tokenFetchNonRetryableCooldown == null) {
+      tokenFetchNonRetryableCooldown = DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
     }
     if (clientAssertionKeystoreKeyPassword == null) {
       clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
@@ -843,6 +883,13 @@ public final class OAuthCredentialsProviderBuilder {
     if (tokenFetchRetryableStatusCodes == null) {
       throw new IllegalArgumentException(
           "tokenFetchRetryableStatusCodes must not be null (use an empty set to disable retries).");
+    }
+    if (tokenFetchNonRetryableCooldown.isNegative()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchNonRetryableCooldown is %s, expected a non-negative duration (use"
+                  + " Duration.ZERO to disable the cooldown).",
+              tokenFetchNonRetryableCooldown));
     }
   }
 

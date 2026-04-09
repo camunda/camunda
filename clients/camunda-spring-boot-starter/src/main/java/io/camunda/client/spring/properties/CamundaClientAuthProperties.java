@@ -140,10 +140,17 @@ public class CamundaClientAuthProperties {
 
   /**
    * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
-   * non-200 status code outside this set permanently disables this credentials provider until the
-   * client is recreated.
+   * non-200 status code outside this set trips a non-retryable failure latch that fails fast for
+   * the duration of tokenFetchNonRetryableCooldown.
    */
   private Set<Integer> tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
+
+  /**
+   * Duration for which token fetches fail fast after the token endpoint returns a non-retryable
+   * response. After the cooldown elapses, the next call retries; if it fails again non-retryably,
+   * the latch re-arms with a new cooldown. Set to Duration.ZERO to disable the cooldown entirely.
+   */
+  private Duration tokenFetchNonRetryableCooldown = DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
 
   @NestedConfigurationProperty
   private CamundaClientAuthClientAssertionProperties clientAssertion =
@@ -243,6 +250,14 @@ public class CamundaClientAuthProperties {
 
   public void setTokenFetchRetryableStatusCodes(final Set<Integer> tokenFetchRetryableStatusCodes) {
     this.tokenFetchRetryableStatusCodes = tokenFetchRetryableStatusCodes;
+  }
+
+  public Duration getTokenFetchNonRetryableCooldown() {
+    return tokenFetchNonRetryableCooldown;
+  }
+
+  public void setTokenFetchNonRetryableCooldown(final Duration tokenFetchNonRetryableCooldown) {
+    this.tokenFetchNonRetryableCooldown = tokenFetchNonRetryableCooldown;
   }
 
   public String getCredentialsCachePath() {
@@ -411,6 +426,8 @@ public class CamundaClientAuthProperties {
         + tokenFetchBackoffMultiplier
         + ", tokenFetchRetryableStatusCodes="
         + tokenFetchRetryableStatusCodes
+        + ", tokenFetchNonRetryableCooldown="
+        + tokenFetchNonRetryableCooldown
         + ", clientAssertion="
         + clientAssertion
         + '}';
