@@ -1810,6 +1810,7 @@ jobs:
       - database-integration-tests
       - dependency-cycle-check
       - detect-changes
+      - detect-new-flaky-tests
       - docker-checks
       - general-unit-tests
       - history-tests

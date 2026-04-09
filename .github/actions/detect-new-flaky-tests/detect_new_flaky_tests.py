@@ -195,7 +195,9 @@ def main() -> None:
 
     print(f"{PREFIX} Known flaky tests from main/stable (last 30 days): {len(known_flaky_tests)} entries")
 
-    # BigQuery format: {test_class_name, test_name}  →  key = "class.method"
+    # BigQuery test_name may include parameters and suffixes, e.g.
+    #   "shouldDoSomething(CamundaRdbmsTestApplication) camundaWithOracleDB"
+    # Keep the raw keys for full fidelity in debug output.
     known_keys: set[str] = set()
     for known in known_flaky_tests:
         key = f"{known['test_class_name']}.{known['test_name']}"
@@ -212,10 +214,13 @@ def main() -> None:
 
     new_flaky_tests: list[dict] = []
     for test in processed_pr_tests:
-        key = get_test_key(test)
-        is_known = key in known_keys
-        status = "KNOWN (already flaky on main/stable)" if is_known else "NEW (not seen on main/stable)"
-        print(f"{PREFIX}   {key} → {status}")
+        pr_key = get_test_key(test)
+        # PR keys are normalized (no params), BigQuery keys may have params/suffixes.
+        # Match if the PR key equals the known key OR the known key starts with the PR key.
+        is_known = any(k == pr_key or k.startswith(pr_key) for k in known_keys)
+        matched = [k for k in known_keys if k == pr_key or k.startswith(pr_key)] if is_known else []
+        status = f"KNOWN (matched: {matched})" if is_known else "NEW (not seen on main/stable)"
+        print(f"{PREFIX}   {pr_key} → {status}")
         if not is_known:
             new_flaky_tests.append(test)
 
