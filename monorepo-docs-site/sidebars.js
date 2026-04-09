@@ -26,6 +26,7 @@ const sidebars = {
       type: 'category',
       label: 'Architecture',
       items: [
+        'architecture/overall_architecture',
         {
           type: 'category',
           label: 'Components',
@@ -96,6 +97,7 @@ const sidebars = {
               items: [
                 'architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets',
                 'architecture/roadmap/unified_identity_architecture/adr/placement-of-the-security-gateway-framework',
+                'architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation',
               ],
             },
           ],
