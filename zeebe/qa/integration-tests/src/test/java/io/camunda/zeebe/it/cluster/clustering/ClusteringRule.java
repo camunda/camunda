@@ -119,7 +119,7 @@ public class ClusteringRule extends ExternalResource {
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
-      PartitionManagerImpl.GROUP_NAME + "/partitions/1";
+      PartitionManagerImpl.DEFAULT_GROUP_NAME + "/partitions/1";
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();

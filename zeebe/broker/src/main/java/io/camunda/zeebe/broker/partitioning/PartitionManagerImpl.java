@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
-  public static final String GROUP_NAME = "default";
+  public static final String DEFAULT_GROUP_NAME = "default";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
   private final ConcurrencyControl concurrencyControl;
@@ -345,7 +345,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, partitionId),
+            PartitionId.from(DEFAULT_GROUP_NAME, partitionId),
             members,
             membersWithPriority,
             targetPriority,
@@ -397,7 +397,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, partitionId),
+            PartitionId.from(DEFAULT_GROUP_NAME, partitionId),
             members,
             Map.of(localMember, targetPriority),
             targetPriority,

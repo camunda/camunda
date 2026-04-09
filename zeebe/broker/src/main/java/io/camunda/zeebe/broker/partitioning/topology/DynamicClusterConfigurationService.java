@@ -86,7 +86,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
                           partitionDistribution =
                               new PartitionDistribution(
                                   ConfigurationUtil.getPartitionDistributionFrom(
-                                      configuration, PartitionManagerImpl.GROUP_NAME));
+                                      configuration, PartitionManagerImpl.DEFAULT_GROUP_NAME));
                           initialClusterConfiguration = configuration;
                           started.complete(null);
                         } catch (final Exception topologyConversionFailed) {
