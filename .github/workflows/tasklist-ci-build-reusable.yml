@@ -47,18 +47,10 @@ env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
-  utils-get-snapshot-docker-tag:
-    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
-    secrets: inherit
-    permissions:
-      contents: read
-
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [ utils-get-snapshot-docker-tag ]
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -105,34 +97,6 @@ jobs:
       - name: Build backend
         run: |
           ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      #########################################################################
-      # Build Docker image
-      - name: Build Docker image
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/tasklist' || 'registry.camunda.cloud/team-hto/tasklist' }}
-          version: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.CI_IMAGE_TAG }}
-            ${{ env.PR_IMAGE_TAG }}
-          push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
-          dockerfile: tasklist.Dockerfile
-
-      #########################################################################
-      # Build SNAPSHOT Docker image
-      - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: camunda/tasklist
-          version: |
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
-          push: true
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics

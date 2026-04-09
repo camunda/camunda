@@ -295,8 +295,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
-      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda
+      CAMUNDA_TEST_DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
       TEST_OWNER: Data Layer
     strategy:
@@ -325,11 +325,11 @@ jobs:
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
-        id: build-tasklist-docker
+        id: build-camunda-docker
         with:
-          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
-          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
-          dockerfile: tasklist.Dockerfile
+          repository: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE }}
+          version: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }}
+          dockerfile: camunda.Dockerfile
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Tasklist backup restore Tests
@@ -341,8 +341,8 @@ jobs:
           -DskipChecks
           -DtasklistDatabase=${{ matrix.database }}
           -DskipTests=false
-          -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
-          -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          -Dtasklist.currentVersion.docker.tag=${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }}
+          -Dtasklist.currentVersion.docker.repo=${{ env.CAMUNDA_TEST_DOCKER_IMAGE }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
@@ -383,8 +383,8 @@ jobs:
     env:
       TEST_TYPE: Integration
       TEST_OWNER: Core Features
-      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda
+      CAMUNDA_TEST_DOCKER_IMAGE_TAG: current-test
     services:
       registry:
         image: registry:3
@@ -394,10 +394,6 @@ jobs:
       - uses: actions/checkout@v6
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@v3.3.0
-        with:
-          ignore: DL3018 # redundant when pinning the base image
-          dockerfile: tasklist.Dockerfile
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -411,11 +407,11 @@ jobs:
           maven-extra-args: -D skip.fe.build -D skipOptimize
       - uses: ./.github/actions/build-platform-docker
         with:
-          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
-          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
+          repository: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE }}
+          version: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }}
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw \
@@ -425,8 +421,8 @@ jobs:
             -Dtest=StartupIT \
             -Dsurefire.failIfNoSpecifiedTests=false \
             -Dspring.profiles.active=docker-test \
-            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
-            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} \
+            -Dtasklist.currentVersion.docker.tag=${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }} \
+            -Dtasklist.currentVersion.docker.repo=${{ env.CAMUNDA_TEST_DOCKER_IMAGE }} \
             test
       - name: Upload Test Report
         if: failure()

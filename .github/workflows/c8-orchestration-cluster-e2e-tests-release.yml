@@ -103,16 +103,12 @@ jobs:
           echo "Updating docker images to version: $release_version for base: $base"
 
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
-            echo "Updating separate service images (zeebe, tasklist, operate)"
+            echo "Updating separate service images (zeebe)"
             # Update zeebe image
             sed -i.bak "s|image: camunda/zeebe:.*|image: camunda/zeebe:$release_version|g" "$compose_file"
-            # Update tasklist image
-            sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
-            # Update operate image
-            sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
 
             echo "Updated docker-compose.yml with separate services:"
-            grep -E "image: camunda/(zeebe|tasklist|operate):" "$compose_file"
+            grep "image: camunda/zeebe:" "$compose_file"
           else
             echo "Updating unified camunda service image"
             # Replace the camunda image tag in docker-compose.yml
@@ -457,8 +453,6 @@ jobs:
 
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
             sed -i.bak "s|image: camunda/zeebe:.*|image: camunda/zeebe:$release_version|g" "$compose_file"
-            sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
-            sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
           else
             sed -i.bak "s|image:.*camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
           fi
@@ -703,16 +697,12 @@ jobs:
           echo "Updating docker images to version: $release_version for base: $base"
 
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
-            echo "Updating separate service images (zeebe, tasklist, operate)"
+            echo "Updating separate service images (zeebe)"
             # Update zeebe image
             sed -i.bak "s|image: camunda/zeebe:.*|image: camunda/zeebe:$release_version|g" "$compose_file"
-            # Update tasklist image
-            sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
-            # Update operate image
-            sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
 
             echo "Updated docker-compose.yml with separate services:"
-            grep -E "image: camunda/(zeebe|tasklist|operate):" "$compose_file"
+            grep "image: camunda/zeebe:" "$compose_file"
           else
             echo "Updating unified camunda service image"
             # Replace the camunda image tag in docker-compose.yml

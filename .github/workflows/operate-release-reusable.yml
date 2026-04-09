@@ -103,8 +103,6 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
             secret/data/products/operate/release_process GITHUB_TOKEN;
 
@@ -203,82 +201,6 @@ jobs:
               echo "'${f}' file was created, skip upload"
             fi
           done
-
-      # Upload: Upload Docker Image
-      - name: Upload Docker Image
-        env:
-          IMAGE_NAME: 'camunda/operate'
-          IMAGE_TAG: ${{ inputs.releaseVersion }}
-          IS_LATEST: ${{ inputs.isLatest }}
-          VERSION: ${{ inputs.releaseVersion }}
-          DOCKER_USERNAME: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          DOCKER_PASSWORD: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-        run: |
-          echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-          docker buildx create --use
-
-          commit_hash=$(git rev-parse --verify HEAD)
-          date_time_stamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-
-          export VERSION="$VERSION"
-          export DATE="$date_time_stamp"
-          export REVISION="$commit_hash"
-          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-          sudo apt update
-          sudo apt install -y jq
-          sudo apt install -y bash
-
-          # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
-          # able to perform the checks before pushing
-          # First amd64
-          docker buildx build \
-            -f operate.Dockerfile \
-            -t "$IMAGE_NAME:$IMAGE_TAG" \
-            --build-arg VERSION="$VERSION" \
-            --build-arg DATE="$date_time_stamp" \
-            --build-arg REVISION="$commit_hash" \
-            --platform linux/amd64 \
-            --provenance false \
-            --load \
-            .
-          export ARCHITECTURE=amd64
-          bash ./.ci/docker/test/verify.sh "$IMAGE_NAME:$IMAGE_TAG"
-
-          # Now arm64
-          docker buildx build \
-            -f operate.Dockerfile \
-            -t "$IMAGE_NAME:$IMAGE_TAG" \
-            --build-arg VERSION="$VERSION" \
-            --build-arg DATE="$date_time_stamp" \
-            --build-arg REVISION="$commit_hash" \
-            --platform linux/arm64 \
-            --provenance false \
-            --load \
-            .
-          export ARCHITECTURE=arm64
-          bash ./.ci/docker/test/verify.sh "$IMAGE_NAME:$IMAGE_TAG"
-
-          if "${CREATE_A_RELEASE}"; then
-            docker buildx build -f operate.Dockerfile . \
-            --platform linux/arm64,linux/amd64 \
-            --build-arg VERSION="$VERSION" \
-            --build-arg REVISION="$commit_hash" \
-            --build-arg DATE="$date_time_stamp" \
-            --provenance false \
-            -t "$IMAGE_NAME:$IMAGE_TAG" \
-            --push
-
-            if "${IS_LATEST}"; then
-              docker buildx build -f operate.Dockerfile . \
-              --platform linux/arm64,linux/amd64 \
-              --build-arg VERSION="$VERSION" \
-              --build-arg REVISION="$commit_hash" \
-              --build-arg DATE="$date_time_stamp" \
-              --provenance false \
-              -t "$IMAGE_NAME":latest \
-              --push
-            fi
-          fi
 
       #########################################################################
       # Notify: send Slack notification of release failure

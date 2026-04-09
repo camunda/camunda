@@ -86,13 +86,6 @@ jobs:
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-      # Build the docker image to verify the built artifacts and the Dockerfile
-      # It does NOT push the image to the registry
-      - name: Build Docker image
-        uses: ./.github/actions/build-platform-docker
-        with:
-          dockerfile: operate.Dockerfile
-          repository: "registry.camunda.cloud/team-operate/camunda-operate"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -474,11 +467,11 @@ jobs:
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
+        id: build-camunda-docker
         with:
-          repository: localhost:5000/camunda/operate
+          repository: localhost:5000/camunda/camunda
           version: ${{ env.DOCKER_IMAGE_TAG }}
-          dockerfile: operate.Dockerfile
+          dockerfile: camunda.Dockerfile
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Operate backup restore Tests
