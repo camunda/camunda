@@ -36,6 +36,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -44,7 +45,10 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -69,7 +73,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private ExporterRepository exporterRepository = mock(ExporterRepository.class);
-  private PartitionManagerImpl partitionManager;
+  private final Map<String, PartitionManagerImpl> partitionManagers = new LinkedHashMap<>();
+  private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
   private JobStreamService jobStreamService = mock(JobStreamService.class);
   private ClusterConfigurationService clusterConfigurationService =
@@ -273,12 +278,42 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   @Override
   public PartitionManagerImpl getPartitionManager() {
-    return partitionManager;
+    return partitionManagers.get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
   }
 
   @Override
   public void setPartitionManager(final PartitionManagerImpl partitionManager) {
-    this.partitionManager = partitionManager;
+    if (partitionManager == null) {
+      partitionManagers.remove(PartitionManagerImpl.DEFAULT_GROUP_NAME);
+    } else {
+      partitionManagers.put(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionManager);
+    }
+  }
+
+  @Override
+  public Map<String, PartitionManagerImpl> getPartitionManagers() {
+    return Collections.unmodifiableMap(partitionManagers);
+  }
+
+  @Override
+  public void addPartitionManager(
+      final String physicalTenantId, final PartitionManagerImpl partitionManager) {
+    partitionManagers.put(physicalTenantId, partitionManager);
+  }
+
+  @Override
+  public void removePartitionManager(final String physicalTenantId) {
+    partitionManagers.remove(physicalTenantId);
+  }
+
+  @Override
+  public RocksDbResources getRocksDbResources() {
+    return sharedRocksDbResources;
+  }
+
+  @Override
+  public void setRocksDbResources(final RocksDbResources sharedRocksDbResources) {
+    this.sharedRocksDbResources = sharedRocksDbResources;
   }
 
   @Override
