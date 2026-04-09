@@ -1331,6 +1331,8 @@ jobs:
       - zeebe-unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      flaky_tests_data: ${{ steps.collect-results.outputs.flaky_tests_data }}
     permissions:
       pull-requests: write
       contents: read
@@ -1393,6 +1395,86 @@ jobs:
           name: |
             zeebe-unit-tests-*
             integration-tests-*
+
+  detect-new-flaky-tests:
+    name: detect new flaky tests
+    if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+    needs:
+      - utils-flaky-tests-summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check if there are flaky tests to analyze
+        id: check
+        env:
+          FLAKY_DATA: ${{ needs.utils-flaky-tests-summary.outputs.flaky_tests_data }}
+        shell: bash
+        run: |
+          if [[ -z "$FLAKY_DATA" ]] || [[ "$FLAKY_DATA" == '[]' ]]; then
+            echo "has_flaky_tests=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_flaky_tests=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import Secrets
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+      - name: Login to Google Cloud
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+
+      - name: Setup Google Cloud SDK
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Query known flaky tests from BigQuery
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: query-known-flaky
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "known_flaky_tests<<BQEOF"
+            bq query --format=json --use_legacy_sql=false --quiet=true \
+              'SELECT DISTINCT test_class_name, test_name
+               FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
+               LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
+                 ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
+               WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+                 AND ts.ci_url="https://github.com/camunda/camunda"
+                 AND test_status = "flaky"
+                 AND (
+                   (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
+                   OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
+                 )'
+            echo "BQEOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Detect new flaky tests
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        uses: ./.github/actions/detect-new-flaky-tests
+        with:
+          pr-flaky-tests-data: '${{ needs.utils-flaky-tests-summary.outputs.flaky_tests_data }}'
+          known-flaky-tests: '${{ steps.query-known-flaky.outputs.known_flaky_tests }}'
+          pr-number: ${{ github.event.pull_request.number }}
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
