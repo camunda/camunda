@@ -35,12 +35,22 @@ const ReadOnlyEditor: React.FC<Props> = ({
   'data-testid': dataTestId,
 }) => {
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(value);
-    notificationsStore.displayNotification({
-      kind: 'success',
-      title: `${label} copied to clipboard`,
-      isDismissable: true,
-    });
+    navigator.clipboard.writeText(value).then(
+      () => {
+        notificationsStore.displayNotification({
+          kind: 'success',
+          title: `${label} copied to clipboard`,
+          isDismissable: true,
+        });
+      },
+      () => {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: `Failed to copy ${label} to clipboard`,
+          isDismissable: true,
+        });
+      },
+    );
   }, [value, label]);
 
   const handleCopyKeyDown = useCallback(
