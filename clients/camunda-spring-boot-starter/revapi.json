@@ -647,6 +647,36 @@
         },
         {
           "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.JobWorker",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.Variable",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.common.exception.ZeebeBpmnError",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
           "code": "java.class.noLongerImplementsInterface",
           "old": "class io.camunda.client.jobhandling.parameter.CompatActivatedJobParameterResolver.ActivatedJobProxy",
           "new": "class io.camunda.client.jobhandling.parameter.CompatActivatedJobParameterResolver.ActivatedJobProxy",
