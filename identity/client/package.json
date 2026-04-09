@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.55",
-    "@camunda/camunda-composite-components": "0.22.5",
+    "@camunda/camunda-composite-components": "0.22.6",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.100.0",
     "@monaco-editor/react": "4.7.0",
@@ -63,7 +63,7 @@
     "rollup-plugin-sbom": "3.0.5",
     "sass": "1.97.3",
     "typescript": "5.9.3",
-    "vite": "7.3.1",
+    "vite": "7.3.2",
     "vite-plugin-svgr": "^4.3.0"
   },
   "stableVersion": "8.9.0-SNAPSHOT",
