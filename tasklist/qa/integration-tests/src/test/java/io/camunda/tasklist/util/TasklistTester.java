@@ -8,41 +8,21 @@
 package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.TestCheck.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
-import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
-import io.camunda.zeebe.protocol.Protocol;
 import jakarta.annotation.PostConstruct;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -165,27 +145,6 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester createAndDeployProcess(final BpmnModelInstance process) {
-    processDefinitionKey =
-        ZeebeTestUtil.deployProcess(
-            camundaClient, process, process.getDefinitions().getId() + ".bpmn");
-    return this;
-  }
-
-  public TasklistTester migrateProcessInstance(
-      final String oldTaskMapping, final String newTaskMapping) {
-    camundaClient
-        .newMigrateProcessInstanceCommand(Long.valueOf(processInstanceId))
-        .migrationPlan(
-            new MigrationPlanBuilderImpl()
-                .withTargetProcessDefinitionKey(Long.valueOf(processDefinitionKey))
-                .addMappingInstruction(oldTaskMapping, newTaskMapping)
-                .build())
-        .send()
-        .join();
-    return this;
-  }
-
   public TasklistTester createAndDeploySimpleProcess(
       final String processId, final String flowNodeBpmnId, final String tenantId) {
     final BpmnModelInstance process =
@@ -199,118 +158,8 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester createCreatedAndCompletedTasks(
-      final String processId, final String flowNodeBpmnId, final int created, final int completed) {
-    createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
-    // complete tasks
-    for (int i = 0; i < completed; i++) {
-      startProcessInstance(processId)
-          .waitUntil()
-          .taskIsCreated(flowNodeBpmnId)
-          .and()
-          .claimAndCompleteHumanTask(flowNodeBpmnId);
-    }
-    // start more process instances
-    for (int i = 0; i < created; i++) {
-      startProcessInstance(processId).waitUntil().taskIsCreated(flowNodeBpmnId);
-    }
-    return this;
-  }
-
-  public TasklistTester createFailedTasks(
-      final String processId,
-      final String flowNodeBpmnId,
-      final int numberOfTasks,
-      final int numberOfRetries)
-      throws IOException {
-    createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
-
-    for (int i = 0; i < numberOfTasks; i++) {
-      startProcessInstance(processId).waitUntil().taskIsCreated(flowNodeBpmnId);
-    }
-
-    ZeebeTestUtil.failTaskWithRetries(
-        camundaClient,
-        Protocol.USER_TASK_JOB_TYPE,
-        TestUtil.createRandomString(10),
-        numberOfTasks,
-        numberOfRetries,
-        null);
-
-    return this;
-  }
-
-  public List<TaskSearchResponse> getCreatedTasks() throws IOException {
-    final var searchRequest = new TaskSearchRequest().setState(TaskState.CREATED);
-
-    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_ENDPOINT), searchRequest);
-
-    return objectMapper.readValue(
-        result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
-  }
-
-  public List<TaskSearchResponse> getCompletedTasks() throws IOException {
-    final var searchRequest = new TaskSearchRequest().setState(TaskState.COMPLETED);
-
-    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_ENDPOINT), searchRequest);
-
-    return objectMapper.readValue(
-        result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
-  }
-
-  public List<TaskSearchResponse> getAllTasks() throws IOException {
-    final var searchRequest = new TaskSearchRequest();
-
-    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_ENDPOINT), searchRequest);
-
-    return objectMapper.readValue(
-        result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
-  }
-
-  public TaskResponse getTaskById(final String taskId) throws IOException {
-    final var result = mockMvcHelper.doRequest(get(REST_GET_TASK, taskId));
-    return objectMapper.readValue(result.getContentAsString(), TaskResponse.class);
-  }
-
-  public List<VariableSearchResponse> getTaskVariables() throws IOException {
-    assertThat(taskId).isNotNull();
-
-    return getTaskVariablesByTaskId(taskId);
-  }
-
-  public List<VariableSearchResponse> getTaskVariablesByTaskId(final String taskId)
-      throws IOException {
-    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_TASK_VARIABLES, taskId));
-    return objectMapper.readValue(
-        result.getContentAsString(), new TypeReference<List<VariableSearchResponse>>() {});
-  }
-
-  public TasklistTester assignTask(final String taskKey) {
-    mockMvcHelper.doRequest(patch(REST_ASSIGN_ENDPOINT, taskKey));
-    return this;
-  }
-
-  public TasklistTester unassignTask(final String taskKey) {
-    mockMvcHelper.doRequest(patch(REST_UNASSIGN_ENDPOINT, taskKey));
-    return this;
-  }
-
-  public TasklistTester completeTask(final String taskKey, final List<VariableInputDTO> variables) {
-    final TaskCompleteRequest completeRequest = new TaskCompleteRequest();
-    completeRequest.setVariables(variables);
-    final var result =
-        mockMvcHelper.doRequest(patch(REST_COMPLETE_ENDPOINT, taskId), completeRequest);
-    return this;
-  }
-
   public TasklistTester deployProcess(final String... classpathResources) {
     processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, classpathResources);
-    return this;
-  }
-
-  public TasklistTester deployProcessForTenant(
-      final String tenantId, final String... classpathResources) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(tenantId, camundaClient, classpathResources);
     return this;
   }
 
@@ -325,26 +174,8 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester processIsDeleted() {
-    databaseTestExtension.waitFor(processIsDeletedCheck, processDefinitionKey);
-    return this;
-  }
-
   public TasklistTester startProcessInstance(final String bpmnProcessId) {
     return startProcessInstance(bpmnProcessId, null);
-  }
-
-  public TasklistTester startProcessInstances(
-      final String bpmnProcessId, final Integer numberOfInstances) {
-    IntStream.range(0, numberOfInstances).forEach(i -> startProcessInstance(bpmnProcessId));
-    return this;
-  }
-
-  public TasklistTester startProcessInstances(
-      final String bpmnProcessId, final Integer numberOfInstances, final String payload) {
-    IntStream.range(0, numberOfInstances)
-        .forEach(i -> startProcessInstance(bpmnProcessId, payload));
-    return this;
   }
 
   public TasklistTester startProcessInstance(final String bpmnProcessId, final String payload) {
@@ -359,47 +190,10 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester formExists(final String formId) {
-    return formExists(formId, null);
-  }
-
-  public TasklistTester formExists(final String formId, final Long versionId) {
-    databaseTestExtension.waitFor(formExistsCheck, processDefinitionKey, formId, versionId);
-    return this;
-  }
-
   public TasklistTester taskIsCreated(final String flowNodeBpmnId) {
     databaseTestExtension.waitFor(taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
-    return this;
-  }
-
-  public TasklistTester taskHasCandidateUsers(final String flowNodeBpmnId) {
-    databaseTestExtension.waitFor(taskHasCandidateUsers, processInstanceId, flowNodeBpmnId);
-    // update taskId
-    resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
-    return this;
-  }
-
-  public TasklistTester tasksAreCreated(final String flowNodeBpmnId, final int taskCount) {
-    databaseTestExtension.waitFor(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
-    // update taskId
-    resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
-    return this;
-  }
-
-  public TasklistTester taskIsCanceled(final String flowNodeBpmnId) {
-    databaseTestExtension.waitFor(taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
-    // update taskId
-    resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
-    return this;
-  }
-
-  public TasklistTester taskIsFailed(final String flowNodeBpmnId) {
-    databaseTestExtension.waitFor(taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
-    // update taskId
-    resolveTaskId(flowNodeBpmnId, TaskState.FAILED);
     return this;
   }
 
@@ -416,119 +210,6 @@ public class TasklistTester {
     } catch (final Exception ex) {
       taskId = null;
     }
-  }
-
-  public TasklistTester taskIsCompleted(final String flowNodeBpmnId) {
-    databaseTestExtension.waitFor(taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
-    // update taskId
-    resolveTaskId(flowNodeBpmnId, TaskState.COMPLETED);
-    return this;
-  }
-
-  public TasklistTester taskIsAssigned(final String taskId) {
-    databaseTestExtension.waitFor(taskIsAssignedCheck, taskId);
-    return this;
-  }
-
-  public TasklistTester taskVariableExists(final String varName) {
-    databaseTestExtension.waitFor(taskVariableExists, taskId, varName);
-    return this;
-  }
-
-  public TasklistTester variablesExist(final String... varNames) {
-    databaseTestExtension.waitFor(variablesExist, processInstanceId, varNames);
-    return this;
-  }
-
-  public TasklistTester claimAndCompleteHumanTask(
-      final String flowNodeBpmnId, final String... variables) {
-    claimHumanTask(flowNodeBpmnId);
-
-    return completeHumanTask(flowNodeBpmnId, variables);
-  }
-
-  public TasklistTester claimHumanTask(final String flowNodeBpmnId) {
-    // resolve taskId, if not yet resolved
-    if (taskId == null) {
-      resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
-      if (taskId == null) {
-        fail(
-            String.format(
-                "Cannot resolveTaskId for flowNodeBpmnId=%s processDefinitionKey=%s state=%s",
-                flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
-      }
-    }
-    assignTask(taskId);
-
-    taskIsAssigned(taskId);
-
-    return this;
-  }
-
-  public TasklistTester completeHumanTask(final String flowNodeBpmnId, final String... variables) {
-    // resolve taskId, if not yet resolved
-    if (taskId == null) {
-      resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
-      if (taskId == null) {
-        fail(
-            String.format(
-                "Cannot resolveTaskId for flowNodeBpmnId=%s processDefinitionKey=%s state=%s",
-                flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
-      }
-    }
-
-    final List<VariableInputDTO> variablesInput = createVariablesList(variables);
-    completeTask(taskId, variablesInput);
-
-    return taskIsCompleted(flowNodeBpmnId);
-  }
-
-  public TasklistTester completeZeebeUserTask(
-      final String flowNodeBpmnId, final Map<String, Object> variables) {
-    // resolve taskId, if not yet resolved
-    if (taskId == null) {
-      resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
-      if (taskId == null) {
-        fail(
-            String.format(
-                "Cannot resolveTaskId for flowNodeBpmnId=%s processDefinitionKey=%s state=%s",
-                flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
-      }
-    }
-    camundaClient.newCompleteUserTaskCommand(Long.valueOf(taskId)).variables(variables).send();
-    return taskIsCompleted(flowNodeBpmnId);
-  }
-
-  private List<VariableInputDTO> createVariablesList(final String... variables) {
-    assertThat(variables.length % 2).isEqualTo(0);
-    final List<VariableInputDTO> result = new ArrayList<>();
-    for (int i = 0; i < variables.length; i = i + 2) {
-      result.add(new VariableInputDTO().setName(variables[i]).setValue(variables[i + 1]));
-    }
-    return result;
-  }
-
-  private String variableAsGraphqlInput(final VariableInputDTO variable) {
-    return String.format(
-        VARIABLE_INPUT_PATTERN,
-        variable.getName(),
-        StringEscapeUtils.escapeJson(variable.getValue()));
-  }
-
-  public TasklistTester completeUserTaskInZeebe() {
-    ZeebeTestUtil.completeTask(
-        camundaClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
-    return this;
-  }
-
-  public TasklistTester cancelProcessInstance() {
-    ZeebeTestUtil.cancelProcessInstance(camundaClient, Long.parseLong(processInstanceId));
-    return this;
-  }
-
-  public TasklistTester deleteResource(final String resourceKey) {
-    ZeebeTestUtil.deleteResource(camundaClient, Long.valueOf(resourceKey));
-    return this;
   }
 
   public TasklistTester and() {

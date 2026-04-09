@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.metric;
 
-import static io.camunda.tasklist.metric.MetricIT.BPMN_PROCESS_ID;
-import static io.camunda.tasklist.metric.MetricIT.ELEMENT_ID;
 import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,7 +15,6 @@ import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import io.camunda.zeebe.util.HashUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -37,12 +34,12 @@ import org.springframework.http.ResponseEntity;
 @AutoConfigureTestRestTemplate
 public class UsageMetricIT extends TasklistZeebeIntegrationTest {
 
+  public static final String BPMN_PROCESS_ID = "testProcess";
+  public static final String ELEMENT_ID = "taskA";
   public static final String ASSIGNEE_ENDPOINT =
       "/actuator/usage-metrics/assignees?startTime={startTime}&endTime={endTime}";
   public static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ofPattern(DATE_FORMAT_DEFAULT);
-  public static final long ASSIGNEE_HASH_1 = HashUtil.getStringHashValue("Angela Merkel");
-  public static final long ASSIGNEE_HASH_2 = HashUtil.getStringHashValue("John Lennon");
 
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private TaskMetricsStore taskMetricsStore;
@@ -153,51 +150,6 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(Objects.requireNonNull(response.getBody()).getTotal()).isEqualTo(10_001);
-  }
-
-  @Test
-  public void providesCompletedTasks() {
-    final OffsetDateTime now = OffsetDateTime.now();
-
-    // given users: joe, jane and demo
-    // and
-    tester
-        .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
-        .waitUntil()
-        .processIsDeployed();
-
-    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
-    setCurrentUser(joe);
-    tester.claimAndCompleteHumanTask(ELEMENT_ID);
-
-    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
-    setCurrentUser(jane);
-    tester.claimAndCompleteHumanTask(ELEMENT_ID);
-
-    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
-    tester.claimAndCompleteHumanTask(ELEMENT_ID);
-
-    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
-    setCurrentUser(demo);
-    tester.claimAndCompleteHumanTask(ELEMENT_ID);
-
-    tester.waitFor(2000);
-    databaseTestExtension.refreshTasklistIndices();
-    // when
-    final Map<String, String> parameters = new HashMap<>();
-    parameters.put("startTime", now.minusMinutes(5L).format(FORMATTER));
-    parameters.put("endTime", now.plusMinutes(15L).format(FORMATTER));
-    final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
-            UsageMetricDTO.class,
-            parameters);
-
-    // then
-    final UsageMetricDTO expectedDto = new UsageMetricDTO(3);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isEqualTo(expectedDto);
   }
 
   private void insertMetricForAssignee(

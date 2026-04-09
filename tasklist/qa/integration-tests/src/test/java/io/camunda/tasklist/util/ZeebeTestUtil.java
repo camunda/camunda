@@ -15,7 +15,6 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
-import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -121,11 +120,6 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
-  public static void deleteResource(final CamundaClient client, final long resourceKey) {
-    client.newDeleteResourceCommand(resourceKey).send().join();
-    LOGGER.debug("Deletion of resource [{}] was performed", resourceKey);
-  }
-
   /**
    * @param client client
    * @param bpmnProcessId bpmnProcessId
@@ -172,11 +166,6 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(processInstanceEvent.getProcessInstanceKey());
   }
 
-  public static void cancelProcessInstance(
-      final CamundaClient client, final long processInstanceKey) {
-    client.newCancelInstanceCommand(processInstanceKey).send().join();
-  }
-
   public static void completeTask(
       final CamundaClient client,
       final String jobType,
@@ -205,74 +194,6 @@ public abstract class ZeebeTestUtil {
         });
   }
 
-  public static Long failTask(
-      final CamundaClient client,
-      final String jobType,
-      final String workerName,
-      final int numberOfFailures,
-      final String errorMessage) {
-    return handleTasks(
-            client,
-            jobType,
-            workerName,
-            numberOfFailures,
-            ((jobClient, job) -> {
-              final FailJobCommandStep2 failCommand =
-                  jobClient.newFailCommand(job.getKey()).retries(job.getRetries() - 1);
-              if (errorMessage != null) {
-                failCommand.errorMessage(errorMessage);
-              }
-              failCommand.send().join();
-            }))
-        .get(0);
-  }
-
-  public static Long failTaskWithRetries(
-      final CamundaClient client,
-      final String jobType,
-      final String workerName,
-      final int numberOfJobs,
-      final int numberOfRetries,
-      final String errorMessage) {
-    return handleTasks(
-            client,
-            jobType,
-            workerName,
-            numberOfJobs,
-            ((jobClient, job) -> {
-              final FailJobCommandStep2 failCommand =
-                  jobClient.newFailCommand(job.getKey()).retries(numberOfRetries);
-              if (errorMessage != null) {
-                failCommand.errorMessage(errorMessage);
-              }
-              failCommand.send().join();
-            }))
-        .get(0);
-  }
-
-  public static Long throwErrorInTask(
-      final CamundaClient client,
-      final String jobType,
-      final String workerName,
-      final int numberOfFailures,
-      final String errorCode,
-      final String errorMessage) {
-    return handleTasks(
-            client,
-            jobType,
-            workerName,
-            numberOfFailures,
-            ((jobClient, job) -> {
-              jobClient
-                  .newThrowErrorCommand(job.getKey())
-                  .errorCode(errorCode)
-                  .errorMessage(errorMessage)
-                  .send()
-                  .join();
-            }))
-        .get(0);
-  }
-
   private static List<Long> handleTasks(
       final CamundaClient client,
       final String jobType,
@@ -297,16 +218,5 @@ public abstract class ZeebeTestUtil {
               });
     }
     return jobKeys;
-  }
-
-  public static void resolveIncident(
-      final CamundaClient client, final Long jobKey, final Long incidentKey) {
-    client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
-    client.newResolveIncidentCommand(incidentKey).send().join();
-  }
-
-  public static void updateVariables(
-      final CamundaClient client, final Long scopeKey, final String newPayload) {
-    client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
 }

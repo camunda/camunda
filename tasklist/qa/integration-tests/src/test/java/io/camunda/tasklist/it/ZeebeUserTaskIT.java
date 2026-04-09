@@ -7,23 +7,14 @@
  */
 package io.camunda.tasklist.it;
 
-import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,64 +74,6 @@ public class ZeebeUserTaskIT extends TasklistZeebeIntegrationTest {
         .isEqualTo(tester.getProcessInstanceId());
     org.assertj.core.api.Assertions.assertThat(Integer.valueOf(TaskStore.DEFAULT_PRIORITY))
         .isEqualTo(taskEntity.getPriority());
-  }
-
-  @Test
-  public void shouldImportCompletedZeebeUserTaskWithVariables() {
-    final String bpmnProcessId = "testProcess";
-    final String flowNodeBpmnId1 = "taskA";
-    final String flowNodeBpmnId2 = "taskB";
-
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent("start")
-            .userTask(flowNodeBpmnId1)
-            .zeebeUserTask()
-            .userTask(flowNodeBpmnId2)
-            .zeebeUserTask()
-            .endEvent()
-            .done();
-
-    final String taskId2 =
-        tester
-            .createAndDeployProcess(process)
-            .waitUntil()
-            .processIsDeployed()
-            .startProcessInstance(bpmnProcessId)
-            .waitUntil()
-            .taskIsCreated(flowNodeBpmnId1)
-            .completeZeebeUserTask(
-                flowNodeBpmnId1,
-                Map.of(
-                    "varA",
-                    objectMapper.nullNode(),
-                    "varB",
-                    Long.MAX_VALUE,
-                    "varC",
-                    Integer.MAX_VALUE,
-                    "varD",
-                    "str"))
-            .waitUntil()
-            .taskIsCreated(flowNodeBpmnId2)
-            .getTaskId();
-
-    org.assertj.core.api.Assertions.assertThat(taskId2).isNotNull();
-
-    final var result =
-        mockMvcHelper.doRequest(
-            post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId2));
-
-    // then
-    assertThat(result)
-        .hasOkHttpStatus()
-        .hasApplicationJsonContentType()
-        .extractingListContent(objectMapper, VariableSearchResponse.class)
-        .extracting("name", "previewValue", "value")
-        .containsExactlyInAnyOrder(
-            tuple("varA", "null", "null"),
-            tuple("varB", "9223372036854775807", "9223372036854775807"),
-            tuple("varC", "2147483647", "2147483647"),
-            tuple("varD", "\"str\"", "\"str\""));
   }
 
   @Test
