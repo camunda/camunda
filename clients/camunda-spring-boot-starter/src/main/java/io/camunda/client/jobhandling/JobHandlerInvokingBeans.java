@@ -81,8 +81,10 @@ public class JobHandlerInvokingBeans implements JobHandler {
       LOG.trace("Auto completing {}", job);
       final JobCallbackCommandWrapper command =
           createCommandWrapper(
-              createCompleteCommand(jobClient, job, result), job, counterMetricsContext);
-      command.executeAsyncWithMetrics(MetricsRecorder::increaseCompleted);
+              createCompleteCommand(jobClient, job, result),
+              job.getDeadline(),
+              counterMetricsContext);
+      command.executeAsync();
     } else {
       if (result != null) {
         LOG.warn("Result provided but auto complete disabled for job {}", job);
@@ -92,11 +94,11 @@ public class JobHandlerInvokingBeans implements JobHandler {
 
   private JobCallbackCommandWrapper createCommandWrapper(
       final JobCallbackFinalCommandStep<?> command,
-      final ActivatedJob job,
+      final long deadline,
       final CounterMetricsContext metricsContext) {
     return new JobCallbackCommandWrapper(
         command,
-        job,
+        deadline,
         jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         metricsContext,

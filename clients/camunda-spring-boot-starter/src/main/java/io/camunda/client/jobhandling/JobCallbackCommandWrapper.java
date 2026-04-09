@@ -15,8 +15,10 @@
  */
 package io.camunda.client.jobhandling;
 
+import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.JobCallbackFinalCommandStep;
-import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
@@ -25,11 +27,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JobCallbackCommandWrapper {
-
+  private static final Logger LOG = LoggerFactory.getLogger(JobCallbackCommandWrapper.class);
+  final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser;
   private final JobCallbackFinalCommandStep<?> command;
-  private final ActivatedJob job;
+  private final long deadline;
   private final JobCallbackCommandExceptionHandlingStrategy
       jobCallbackCommandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
@@ -43,26 +48,36 @@ public class JobCallbackCommandWrapper {
 
   public JobCallbackCommandWrapper(
       final JobCallbackFinalCommandStep<?> command,
-      final ActivatedJob job,
+      final long deadline,
       final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final CounterMetricsContext metricsContext,
       final int maxRetries) {
     this.command = command;
-    this.job = job;
+    this.deadline = deadline;
     this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.maxRetries = maxRetries;
     this.metricsRecorder = metricsRecorder;
     this.metricsContext = metricsContext;
+    increaser = findIncreaser();
+  }
+
+  private BiConsumer<MetricsRecorder, CounterMetricsContext> findIncreaser() {
+    if (command instanceof CompleteJobCommandStep1) {
+      return MetricsRecorder::increaseCompleted;
+    }
+    if (command instanceof FailJobCommandStep2) {
+      return MetricsRecorder::increaseFailed;
+    }
+    if (command instanceof ThrowErrorCommandStep2) {
+      return MetricsRecorder::increaseBpmnError;
+    }
+    LOG.warn("Unknown command type, no metrics will be increased: {}", command.getClass());
+    return (m, c) -> {};
   }
 
   public CompletableFuture<CommandOutcome> executeAsync() {
-    return execute(this::doExecute);
-  }
-
-  public CompletableFuture<CommandOutcome> executeAsyncWithMetrics(
-      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
-    return execute(() -> doExecuteWithMetrics(increaser));
+    return execute(() -> doExecute(increaser));
   }
 
   private CompletableFuture<CommandOutcome> execute(final Runnable action) {
@@ -76,22 +91,7 @@ public class JobCallbackCommandWrapper {
     return resultFuture;
   }
 
-  private void doExecute() {
-    invocationCounter++;
-    command
-        .send()
-        .whenComplete(
-            (response, throwable) -> {
-              if (throwable != null) {
-                handleError(throwable);
-              } else {
-                resultFuture.complete(new CommandOutcome.Completed(response, invocationCounter));
-              }
-            });
-  }
-
-  private void doExecuteWithMetrics(
-      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
+  private void doExecute(final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
     invocationCounter++;
     command
         .send()
@@ -130,8 +130,8 @@ public class JobCallbackCommandWrapper {
     return "{"
         + "command="
         + command.getClass()
-        + ", job="
-        + job
+        + ", deadline="
+        + deadline
         + ", currentRetryDelay="
         + currentRetryDelay
         + '}';
@@ -151,6 +151,6 @@ public class JobCallbackCommandWrapper {
   }
 
   private boolean jobDeadlineExceeded() {
-    return (System.currentTimeMillis() > job.getDeadline());
+    return (System.currentTimeMillis() > deadline);
   }
 }

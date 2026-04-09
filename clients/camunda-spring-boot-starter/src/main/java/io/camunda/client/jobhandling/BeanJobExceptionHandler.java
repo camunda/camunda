@@ -59,12 +59,12 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
 
   private JobCallbackCommandWrapper createCommandWrapper(
       final JobCallbackFinalCommandStep<?> command,
-      final ActivatedJob job,
+      final long deadline,
       final int maxRetries,
       final CounterMetricsContext metricsContext) {
     return new JobCallbackCommandWrapper(
         command,
-        job,
+        deadline,
         jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         metricsContext,
@@ -83,19 +83,19 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
       final JobCallbackCommandWrapper command =
           createCommandWrapper(
               createFailJobCommand(jobClient, context.getActivatedJob(), jobError),
-              context.getActivatedJob(),
+              context.getActivatedJob().getDeadline(),
               maxRetries,
               metricsContext);
-      command.executeAsyncWithMetrics(MetricsRecorder::increaseFailed);
+      command.executeAsync();
     } else if (exception instanceof final BpmnError bpmnError) {
       LOG.trace("Caught BPMN error on {}", job);
       final JobCallbackCommandWrapper command =
           createCommandWrapper(
               createThrowErrorCommand(jobClient, context.getActivatedJob(), bpmnError),
-              context.getActivatedJob(),
+              context.getActivatedJob().getDeadline(),
               maxRetries,
               metricsContext);
-      command.executeAsyncWithMetrics(MetricsRecorder::increaseBpmnError);
+      command.executeAsync();
     } else {
       metricsRecorder.increaseFailed(metricsContext);
       super.handleJobException(context);
