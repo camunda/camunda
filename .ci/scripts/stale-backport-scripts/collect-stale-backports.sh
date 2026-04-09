@@ -69,8 +69,13 @@ for repo in "${REPO_LIST[@]}"; do
     branch_args+=(--search "base:stable/")
   fi
 
-  # Fetch backport PRs created by backport-action targeting stable branches
-  gh pr list "${common_args[@]}" "${branch_args[@]}" --author backport-action > "$TMPDIR_WORK/backport_prs.json"
+  # Fetch backport PRs targeting stable branches.
+  # Backport PRs may be authored by either:
+  #   - backport-action (via BACKPORT_ACTION_PAT on older stable branches)
+  #   - monorepo-devops-automation[bot] (via GitHub App token on main / newer branches)
+  gh pr list "${common_args[@]}" "${branch_args[@]}" --author backport-action > "$TMPDIR_WORK/backport_prs_pat.json"
+  gh pr list "${common_args[@]}" "${branch_args[@]}" --author 'monorepo-devops-automation[bot]' > "$TMPDIR_WORK/backport_prs_app.json"
+  jq -s 'add' "$TMPDIR_WORK/backport_prs_pat.json" "$TMPDIR_WORK/backport_prs_app.json" > "$TMPDIR_WORK/backport_prs.json"
 
   pr_count=$(jq 'length' "$TMPDIR_WORK/backport_prs.json")
   echo "  📋 Found $pr_count open backport PR(s) on stable/* branches" >&2
