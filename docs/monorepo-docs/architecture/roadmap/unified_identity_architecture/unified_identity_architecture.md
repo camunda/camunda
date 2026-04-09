@@ -1080,7 +1080,7 @@ graph LR
       PR["PolicyRepository"]
       OX["OutboxPort"]
       IDP_P["IdpPort"]
-      CMD_P["OcCommandPort"]
+      CMD_P["EngineCommandPort</br>(OC runtime only)"]
       FT_P["FeatureTogglePort"]
     end
   end
@@ -1089,7 +1089,7 @@ graph LR
     PR_I["PolicyRepository</br>Hub: Spring Data JPA</br>OC: RDBMS / ES adapter"]
     OX_I["OutboxPort</br>SQL transactional outbox</br>(same TX as business change)"]
     IDP_I["IdpPort</br>OIDC/SAML client</br>(Keycloak, Entra, Auth0)"]
-    CMD_I["OcCommandPort</br>Identity command adapter</br>(OC backend service layer)"]
+    CMD_I["EngineCommandPort</br>Engine projection command adapter</br>(OC backend service layer)"]
     FT_I["FeatureTogglePort</br>Spring @ConfigurationProperties</br>or Unleash / LaunchDarkly"]
   end
 
@@ -1108,20 +1108,88 @@ graph LR
   FT_P -->|"implemented by"| FT_I
 ```
 
-**Outbound port responsibilities and example implementations:**
+**Inbound port responsibilities and example usage by profile:**
 
-| Port interface | Responsibility | Example implementations |
-|---|---|---|
-| `PolicyRepository` | Persist and query tenants, roles, mapping rules, principals, authorizations | Hub: Spring Data JPA; OC: RDBMS adapter, Elasticsearch adapter |
-| `OutboxPort` | Write outbox events transactionally alongside business changes | SQL transactional outbox (same DB as policy store) |
-| `IdpPort` | Resolve IdP metadata, validate tokens, fetch claim mappings | OIDC client (Keycloak, Entra, Auth0), SAML adapter |
-| `OcCommandPort` | Emit identity persistence commands so OC stores the identity model through its command path | OC identity command adapter backed by engine command handling; no-op stub in Hub |
-| `FeatureTogglePort` | Gate capabilities (outbox publishing, multi-tenancy, shadow-mode evaluation) | Spring `@ConfigurationProperties`, Unleash, LaunchDarkly |
-| `SessionStore` | Persist and retrieve authenticated sessions (create, read, update, delete, cleanup) | Redis (distributed), SQL database, in-memory cache |
+| Inbound port | Responsibility | Used in profiles | Typical host-side adapters |
+|---|---|---|---|
+| `AuthorizationService` | Evaluate whether the current principal is allowed to access a Hub or OC resource. Resolves the effective permission set from token/session context, roles, groups, mapping rules, and scoped authorizations. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Spring Security filter chain, method-security interceptor, API authorization middleware |
+| `TenantService` | Resolve and validate the active tenant context for the current request. Provides tenant-aware policy lookup and ensures tenant scoping is applied consistently before authorization decisions are made. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Request filter, tenant resolver, REST controller support |
+| `PolicyService` | Handle policy authoring and policy read operations in the local source-of-truth runtime. Validates and persists changes to tenants, roles, groups, mapping rules, principals, and authorizations. | `HUB`, `OC_STANDALONE` | Admin REST controller, Admin UI backend |
+| `PolicyApplyService` | Accept and apply externally produced policy payloads (`POLICY_SNAPSHOT`, `POLICY_DIFF`) to the local projection. Performs version checks, idempotency handling, and apply orchestration. | `OC_MANAGED` | `POST /identity/policies/apply` controller |
+
+**Outbound port responsibilities and example usage by profile:**
+
+| Outbound port | Responsibility | Used in profiles | Typical host-side implementations                                                |
+|---|---|---|----------------------------------------------------------------------------------|
+| `PolicyRepository` | Persist and query tenants, roles, mapping rules, principals, and authorizations. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Hub: Spring Data JPA adapter; OC: RDBMS/Commands and Camunda Services            |
+| `OutboxPort` | Persist and dispatch outbox records transactionally with policy changes for Hub-to-OC propagation. | `HUB` | SQL transactional outbox adapter (same DB transaction as policy write)           |
+| `IdpPort` | Resolve IdP metadata, validate tokens, and provide claims needed for principal mapping. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | OIDC client adapter (Keycloak, Entra, Auth0), SAML adapter                       |
+| `EngineCommandPort` | Emit engine-scoped projection commands from OC to engines after local apply or local authoring changes. | `OC_MANAGED`, `OC_STANDALONE` | OC engine command adapter backed by engine command handling                      |
+| `FeatureTogglePort` | Expose runtime feature switches for mode-gated behavior (for example outbox dispatch, shadow evaluation). | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Spring `@ConfigurationProperties` adapter, Unleash adapter, LaunchDarkly adapter |
+| `SessionStore` | Persist and retrieve authenticated sessions (create, read, update, delete, cleanup). | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Redis adapter, SQL session adapter, in-memory adapter                            |
 
 This design guarantees that **swapping a database, replacing the IdP client, or providing a custom command backend requires only a new adapter class** — no changes to the domain core.
 
-#### 5.4.1 Why a shared Security Gateway Framework layer?
+#### 5.4.1 Runtime profiles and mode switching
+
+The same library core is reused in all deployments. **In every runtime profile, AuthN and AuthZ enforcement is always active** — the library always configures a Spring Security filter chain to authenticate inbound requests and enforce scope-aware authorization decisions. What differs per profile is which additional capabilities (authoring, outbox dispatch, engine projection) are switched on.
+
+Hub enforces AuthN/AuthZ for its own application scope: Console, Web Modeler, and the Admin UI are all protected by Hub-scoped roles and authorizations. This is exactly the same `AuthorizationService` and `IdpPort` used by OC, just configured with Hub-scoped resources instead of cluster/engine resources.
+
+| Profile | AuthN/AuthZ enforcement | Policy source | Outbox dispatch to OCs | Engine projection |
+|---|---|---|---|---|
+| `HUB` | ✅ Hub-scoped (org, workspace, cluster resources) | Hub is SoT | ✅ via `OutboxPort` | ❌ no engines in Hub |
+| `OC_MANAGED` | ✅ Cluster-scoped (engine, tenant, task resources) | Receives from Hub | ❌ | ✅ via `EngineCommandPort` |
+| `OC_STANDALONE` | ✅ Cluster-scoped (engine, tenant, task resources) | OC is local SoT | ❌ | ✅ via `EngineCommandPort` |
+
+```mermaid
+flowchart TB
+  Start["Library bootstrap"] --> Profile{"runtime.profile"}
+
+  Profile -->|"HUB"| Hub["Enable Hub services<br>AuthN/AuthZ (Hub-scoped)<br>PolicyAuthoring + Versioning + OutboxDispatch"]
+  Profile -->|"OC_MANAGED"| OCM["Enable OC managed services<br>AuthN/AuthZ (cluster-scoped)<br>RemotePolicyApply + ProjectionToEngine"]
+  Profile -->|"OC_STANDALONE"| OCS["Enable OC standalone services<br>AuthN/AuthZ (cluster-scoped)<br>LocalPolicyAuthoring + ProjectionToEngine"]
+
+  Core["Always-on core<br>Spring Security filter chain<br>Scope resolver + Session handling<br>IdpPort (all modes)"]
+
+  Hub --> HubIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyService"]
+  OCM --> OCMIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyApplyService"]
+  OCS --> OCSIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyService"]
+
+  Hub --> HubPorts["Outbound ports required:<br>PolicyRepository, IdpPort, OutboxPort, SessionStore"]
+  OCM --> OCMPorts["Outbound ports required:<br>PolicyRepository, IdpPort, EngineCommandPort, SessionStore"]
+  OCS --> OCSPorts["Outbound ports required:<br>PolicyRepository, IdpPort, EngineCommandPort, SessionStore"]
+```
+
+```mermaid
+flowchart LR
+  subgraph SharedCore["Shared library core (all modes)"]
+    SpringSec["Spring Security<br>filter chain configuration"]
+    AuthN["AuthN pipeline<br>(IdpPort → token validation<br>+ session management)"]
+    AuthZ["AuthZ evaluator<br>(scope-aware RBAC/ABAC<br>for Hub or cluster resources)"]
+    Domain["Unified policy domain<br>(Tenant/Role/Group/MappingRule/Principal/Authz)"]
+    Apply["Snapshot/Diff apply engine<br>(idempotent, version-checked)"]
+
+    SpringSec --> AuthN
+  end
+
+  subgraph HubRuntime["HUB runtime only"]
+    HubAuthoring["Policy authoring<br>(Hub-scoped: org/workspace/cluster)"]
+    HubOutbox["Outbox dispatcher<br>(PolicyVersion + OutboxPort)"]
+    HubAuthoring --> HubOutbox
+  end
+
+  subgraph OcRuntime["OC runtime (managed + standalone)"]
+    OcWrite["Policy apply or local write"]
+    OcProject["Engine projection<br>(EngineCommandPort)"]
+    OcWrite --> OcProject
+  end
+
+  Domain --> HubAuthoring
+  Apply --> OcWrite
+```
+
+#### 5.4.2 Why a shared Security Gateway Framework layer?
 
 The extra layer between UIs/clients and engines is intentional:
 
