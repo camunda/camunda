@@ -21,6 +21,7 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.ThrowErrorResponse;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
@@ -29,32 +30,34 @@ import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.time.Duration;
+import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BeanJobExceptionHandler.class);
   private final MetricsRecorder metricsRecorder;
-  private final JobCallbackCommandExceptionHandlingStrategy
-      jobCallbackCommandExceptionHandlingStrategy;
   private final int maxRetries;
   private final Duration retryBackoff;
+  private final BackoffSupplier backoffSupplier;
+  private final ScheduledExecutorService scheduledExecutorService;
 
   public BeanJobExceptionHandler(
       final Duration retryBackoff,
       final int maxRetries,
       final MetricsRecorder metricsRecorder,
-      final JobCallbackCommandExceptionHandlingStrategy
-          jobCallbackCommandExceptionHandlingStrategy) {
+      final BackoffSupplier backoffSupplier,
+      final ScheduledExecutorService scheduledExecutorService) {
     super(
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
         ctx -> retryBackoff,
         DEFAULT_VARIABLES_PROVIDER);
     this.metricsRecorder = metricsRecorder;
-    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
+    this.backoffSupplier = backoffSupplier;
+    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   private JobCallbackCommandWrapper createCommandWrapper(
@@ -65,10 +68,11 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
     return new JobCallbackCommandWrapper(
         command,
         deadline,
-        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         metricsContext,
-        maxRetries);
+        maxRetries,
+        backoffSupplier,
+        scheduledExecutorService);
   }
 
   @Override

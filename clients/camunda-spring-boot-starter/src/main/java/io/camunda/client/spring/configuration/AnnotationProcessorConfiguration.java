@@ -15,7 +15,8 @@
  */
 package io.camunda.client.spring.configuration;
 
-import io.camunda.client.jobhandling.JobCallbackCommandExceptionHandlingStrategy;
+import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
@@ -50,15 +51,17 @@ public class AnnotationProcessorConfiguration {
   @Bean
   public JobWorkerAnnotationProcessor jobWorkerPostProcessor(
       final JobWorkerManager jobWorkerManager,
-      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final BackoffSupplier backoffSupplier,
+      final CamundaClientExecutorService camundaClientExecutorService) {
     return new JobWorkerAnnotationProcessor(
         jobWorkerManager,
-        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         parameterResolverStrategy,
-        resultProcessorStrategy);
+        resultProcessorStrategy,
+        backoffSupplier,
+        camundaClientExecutorService.getScheduledExecutor());
   }
 }

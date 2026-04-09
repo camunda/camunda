@@ -21,7 +21,6 @@ import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.DefaultJobExceptionHandlerSupplier;
-import io.camunda.client.jobhandling.JobCallbackCommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobWorkerFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
@@ -66,15 +65,6 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public JobCallbackCommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
-      final BackoffSupplier backoffSupplier,
-      final CamundaClientExecutorService scheduledExecutorService) {
-    return new JobCallbackCommandExceptionHandlingStrategy(
-        backoffSupplier, scheduledExecutorService.getScheduledExecutor());
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
   public ParameterResolverStrategy parameterResolverStrategy(final JsonMapper jsonMapper) {
     return new DefaultParameterResolverStrategy(jsonMapper);
   }
@@ -89,10 +79,11 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public JobExceptionHandlerSupplier jobExceptionHandlingSupplier(
-      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder) {
+      final MetricsRecorder metricsRecorder,
+      final BackoffSupplier backoffSupplier,
+      final CamundaClientExecutorService scheduledExecutorService) {
     return new DefaultJobExceptionHandlerSupplier(
-        jobCallbackCommandExceptionHandlingStrategy, metricsRecorder);
+        metricsRecorder, backoffSupplier, scheduledExecutorService.getScheduledExecutor());
   }
 
   @Bean

@@ -15,6 +15,7 @@
  */
 package io.camunda.client.jobhandling;
 
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.JobCallbackFinalCommandStep;
@@ -22,26 +23,42 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JobCallbackCommandWrapper {
+  public static final Set<Integer> REST_RETRYABLE_CODES = Set.of(429, 502, 503, 504);
+  public static final Set<Integer> REST_IGNORABLE_CODES = Set.of(404);
+  public static final Set<Status.Code> RETRIABLE_CODES =
+      EnumSet.of(
+          Status.Code.CANCELLED,
+          Status.Code.DEADLINE_EXCEEDED,
+          Status.Code.RESOURCE_EXHAUSTED,
+          Status.Code.ABORTED,
+          Status.Code.UNAVAILABLE,
+          Status.Code.DATA_LOSS);
+  public static final Set<Status.Code> IGNORABLE_FAILURE_CODES = EnumSet.of(Status.Code.NOT_FOUND);
   private static final Logger LOG = LoggerFactory.getLogger(JobCallbackCommandWrapper.class);
   private final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser;
   private final JobCallbackFinalCommandStep<?> command;
   private final long deadline;
-  private final JobCallbackCommandExceptionHandlingStrategy
-      jobCallbackCommandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final CounterMetricsContext metricsContext;
   private long currentRetryDelay = 50L;
   private int invocationCounter = 0;
   private final int maxRetries;
+  private final BackoffSupplier backoffSupplier;
+  private final ScheduledExecutorService scheduledExecutorService;
   private final CompletableFuture<CommandOutcome> resultFuture = new CompletableFuture<>();
   private final AtomicBoolean started = new AtomicBoolean(false);
   private Runnable retryAction;
@@ -49,35 +66,39 @@ public class JobCallbackCommandWrapper {
   public JobCallbackCommandWrapper(
       final JobCallbackFinalCommandStep<?> command,
       final long deadline,
-      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final CounterMetricsContext metricsContext,
-      final int maxRetries) {
+      final int maxRetries,
+      final BackoffSupplier backoffSupplier,
+      final ScheduledExecutorService scheduledExecutorService) {
     this(
         command,
         deadline,
-        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         metricsContext,
         maxRetries,
-        findIncreaser(command));
+        findIncreaser(command),
+        backoffSupplier,
+        scheduledExecutorService);
   }
 
   JobCallbackCommandWrapper(
       final JobCallbackFinalCommandStep<?> command,
       final long deadline,
-      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final CounterMetricsContext metricsContext,
       final int maxRetries,
-      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
+      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser,
+      final BackoffSupplier backoffSupplier,
+      final ScheduledExecutorService scheduledExecutorService) {
     this.command = command;
     this.deadline = deadline;
-    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.maxRetries = maxRetries;
     this.metricsRecorder = metricsRecorder;
     this.metricsContext = metricsContext;
     this.increaser = increaser;
+    this.backoffSupplier = backoffSupplier;
+    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   private static BiConsumer<MetricsRecorder, CounterMetricsContext> findIncreaser(
@@ -131,8 +152,7 @@ public class JobCallbackCommandWrapper {
   }
 
   private void handleError(final Throwable throwable) {
-    final CommandOutcome outcome =
-        jobCallbackCommandExceptionHandlingStrategy.handleCommandError(this, throwable);
+    final CommandOutcome outcome = handleCommandError(throwable);
 
     // a retried command has invoked scheduleExecutionUsing already, so we do not complete the
     // future here, it will be completed by the retry action
@@ -141,11 +161,11 @@ public class JobCallbackCommandWrapper {
     }
   }
 
-  public void increaseBackoffUsing(final BackoffSupplier backoffSupplier) {
+  void increaseBackoff() {
     currentRetryDelay = backoffSupplier.supplyRetryDelay(currentRetryDelay);
   }
 
-  public void scheduleExecutionUsing(final ScheduledExecutorService scheduledExecutorService) {
+  void scheduleExecution() {
     scheduledExecutorService.schedule(retryAction, currentRetryDelay, TimeUnit.MILLISECONDS);
   }
 
@@ -176,5 +196,69 @@ public class JobCallbackCommandWrapper {
 
   private boolean jobDeadlineExceeded() {
     return (System.currentTimeMillis() > deadline);
+  }
+
+  private CommandOutcome handleCommandError(final Throwable throwable) {
+    if (throwable instanceof final StatusRuntimeException exception) {
+      return handleGrpcError(exception);
+    }
+    if (throwable instanceof final ClientHttpException exception) {
+      return handleRestError(exception);
+    }
+    LOG.error("Failed to execute {} due to unexpected exception", this, throwable);
+    return new CommandOutcome.Failed(throwable, getAttempts());
+  }
+
+  private CommandOutcome handleRestError(final ClientHttpException exception) {
+    final int code = exception.code();
+    return handleError(
+        exception,
+        "http status code",
+        code,
+        REST_IGNORABLE_CODES::contains,
+        REST_RETRYABLE_CODES::contains);
+  }
+
+  private CommandOutcome handleGrpcError(final StatusRuntimeException exception) {
+    final Status.Code code = exception.getStatus().getCode();
+    return handleError(
+        exception,
+        "gRPC status code",
+        code,
+        IGNORABLE_FAILURE_CODES::contains,
+        RETRIABLE_CODES::contains);
+  }
+
+  private <T> CommandOutcome handleError(
+      final Exception exception,
+      final String codeType,
+      final T code,
+      final Predicate<T> ignorableCodes,
+      final Predicate<T> retryableCodes) {
+    if (ignorableCodes.test(code)) {
+      LOG.debug("Ignoring {} with {} '{}'", command, codeType, code);
+      return new CommandOutcome.Ignored(exception, getAttempts());
+    }
+
+    if (retryableCodes.test(code)) {
+      if (!hasMoreRetries()) {
+        LOG.error(
+            "Failed to execute {} after {} attempts, {} '{}'",
+            this,
+            getAttempts(),
+            codeType,
+            code,
+            exception);
+        return new CommandOutcome.Failed(exception, getAttempts());
+      }
+
+      increaseBackoff();
+      LOG.warn("Retrying {} after {} '{}' with backoff", command, codeType, code);
+      scheduleExecution();
+      return null; // retry scheduled
+    }
+    LOG.error(
+        "Failed to execute {} due to non-retriable {} '{}'", command, codeType, code, exception);
+    return new CommandOutcome.Failed(exception, getAttempts());
   }
 }

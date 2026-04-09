@@ -19,6 +19,7 @@ import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperti
 import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperties.DEFAULT_MAX_RETRIES;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
@@ -29,26 +30,29 @@ import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
 import io.camunda.client.metrics.MetricsRecorder;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class BeanJobHandlerFactory implements JobHandlerFactory {
   private final MethodInfo methodInfo;
-  private final JobCallbackCommandExceptionHandlingStrategy
-      jobCallbackCommandExceptionHandlingStrategy;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final MetricsRecorder metricsRecorder;
+  private final BackoffSupplier backoffSupplier;
+  private final ScheduledExecutorService scheduledExecutorService;
 
   public BeanJobHandlerFactory(
       final MethodInfo methodInfo,
-      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
-      final MetricsRecorder metricsRecorder) {
+      final MetricsRecorder metricsRecorder,
+      final BackoffSupplier backoffSupplier,
+      final ScheduledExecutorService scheduledExecutorService) {
     this.methodInfo = methodInfo;
-    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
     this.metricsRecorder = metricsRecorder;
+    this.backoffSupplier = backoffSupplier;
+    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   private List<ParameterResolver> createParameterResolvers(final CamundaClient camundaClient) {
@@ -78,9 +82,10 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
         methodInfo::invoke,
         autoComplete,
         maxRetries,
-        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         createParameterResolvers(context.camundaClient()),
-        createResultProcessor(context.camundaClient()));
+        createResultProcessor(context.camundaClient()),
+        backoffSupplier,
+        scheduledExecutorService);
   }
 }

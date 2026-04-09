@@ -53,6 +53,7 @@ import io.camunda.client.spring.testsupport.JobWorkerPermutationsUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,10 +73,11 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                backoffSupplier(),
+                scheduledExecutorService())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
@@ -102,10 +104,11 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                backoffSupplier(),
+                scheduledExecutorService())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -124,10 +127,11 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                backoffSupplier(),
+                scheduledExecutorService())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -147,10 +151,11 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                backoffSupplier(),
+                scheduledExecutorService())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -203,10 +208,12 @@ public class JobHandlerInvokingBeansTest {
     return arguments.stream();
   }
 
-  private static JobCallbackCommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
-    return new JobCallbackCommandExceptionHandlingStrategy(
-        BackoffSupplier.newBackoffBuilder().build(),
-        CamundaClientExecutorService.createDefault().getScheduledExecutor());
+  private static BackoffSupplier backoffSupplier() {
+    return BackoffSupplier.newBackoffBuilder().build();
+  }
+
+  private static ScheduledExecutorService scheduledExecutorService() {
+    return CamundaClientExecutorService.createDefault().getScheduledExecutor();
   }
 
   private static MetricsRecorder metricsRecorder() {

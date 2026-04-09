@@ -19,6 +19,7 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
@@ -31,6 +32,7 @@ import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 
 /** Zeebe JobHandler that invokes a bean */
@@ -41,29 +43,31 @@ public class JobHandlerInvokingBeans implements JobHandler {
   private final BeanMethod method;
   private final boolean autoComplete;
   private final int maxRetries;
-  private final JobCallbackCommandExceptionHandlingStrategy
-      jobCallbackCommandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
   private final ResultProcessor resultProcessor;
+  private final BackoffSupplier backoffSupplier;
+  private final ScheduledExecutorService scheduledExecutorService;
 
   public JobHandlerInvokingBeans(
       final String jobWorkerName,
       final BeanMethod method,
       final boolean autoComplete,
       final int maxRetries,
-      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
-      final ResultProcessor resultProcessor) {
+      final ResultProcessor resultProcessor,
+      final BackoffSupplier backoffSupplier,
+      final ScheduledExecutorService scheduledExecutorService) {
     this.jobWorkerName = jobWorkerName;
     this.method = method;
     this.autoComplete = autoComplete;
     this.maxRetries = maxRetries;
-    this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
     this.resultProcessor = resultProcessor;
+    this.backoffSupplier = backoffSupplier;
+    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   @Override
@@ -99,10 +103,11 @@ public class JobHandlerInvokingBeans implements JobHandler {
     return new JobCallbackCommandWrapper(
         command,
         deadline,
-        jobCallbackCommandExceptionHandlingStrategy,
         metricsRecorder,
         metricsContext,
-        maxRetries);
+        maxRetries,
+        backoffSupplier,
+        scheduledExecutorService);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {
