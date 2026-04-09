@@ -23,12 +23,14 @@ Examples:
   ./newLoadTest.sh demo
   ./newLoadTest.sh perf opensearch 3 false
 
-This script scaffolds the per-namespace folder including rendered Kubernetes
-manifests under resources/ (namespace + credentials). The cluster itself is
-unchanged by this script — namespace and secret are created on first
-`make install` via `kubectl apply -f resources/...`. Reruns of `make install`
-after a TTL deletion recreate both from the same baked manifests, so
-credentials stay in sync with `load-test-values.yaml`.
+This script scaffolds the per-namespace folder including a local "umbrella"
+Helm chart parameterized by umbrella-values.yaml (namespace, deadline, AZ)
+and umbrella-values.secrets.yaml (generated passwords/tokens). The cluster
+itself is unchanged by this script — the namespace, credentials secret,
+leader-balancer cronjob, and Optimize cleanup job are created on first
+`make install` via the umbrella Helm release. Reruns of `make install`
+after a TTL deletion reinstall the same chart, so credentials stay in sync
+with `load-test-values.yaml`.
 EOF
 }
 
@@ -141,10 +143,11 @@ else
   exit 1
 fi
 
-# Generate credentials. These are baked into resources/camunda-credentials.yaml
+# Generate credentials. These are baked into umbrella-values.secrets.yaml
 # and (for the orchestration OIDC secret) into load-test-values.yaml. Any
-# subsequent `make install` reapplies the same manifest, so the secret in the
-# cluster always matches the value the load test starter authenticates with.
+# subsequent `make install` reinstalls the umbrella chart, so the secret in
+# the cluster always matches the value the load test starter authenticates
+# with.
 # `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
 # returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
 # SIGPIPE doesn't trip `set -e` in the caller.
@@ -168,12 +171,12 @@ IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 mkdir -p "$namespace"
 
 # Scaffold the always-copied files into the namespace folder root: the
-# Makefile, the resources/ manifests, four storage-agnostic values files
+# Makefile, the charts dependencies, four storage-agnostic values files
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  default/Makefile                              "$namespace/"
-cp -rv default/resources/                            "$namespace/"
+cp -rv default/charts/                               "$namespace/"
 cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
 cp -v  default/values/load-test-values.yaml                 "$namespace/"
 cp -v  default/values/values-stable.yaml                    "$namespace/"
@@ -197,52 +200,70 @@ esac
 
 cd "$namespace"
 
+cat <<EOF > umbrella-values.yaml
+name: "$namespace"
+author: "$git_author"
+deadlineDate: "$deadline_date"
+# Can be unset using "topologyZone: ~"
+topologyZone: $availability_zone
+EOF
+
+# Configure credentials in a separated files to make sure this one is clearly
+# identified as "secret" and is not accidentally committed with git.
+cat <<EOF > umbrella-values.secrets.yaml
+credentials:
+  identity:
+    firstuser:
+      password: "$IDENTITY_FIRSTUSER_PASSWORD"
+    keycloak:
+      admin:
+        password: "$IDENTITY_KEYCLOAK_ADMIN_PASSWORD"
+      postgresql:
+        admin:
+          password: "$IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD"
+        user:
+          password: "$IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD"
+    postgresql:
+      admin:
+        password: "$IDENTITY_POSTGRESQL_ADMIN_PASSWORD"
+      user:
+        password: "$IDENTITY_POSTGRESQL_USER_PASSWORD"
+    admin:
+      client:
+        token: "$IDENTITY_ADMIN_CLIENT_TOKEN"
+    optimize:
+      client:
+        token: "$IDENTITY_OPTIMIZE_CLIENT_TOKEN"
+  orchestration:
+    security:
+      authentication:
+        oidc:
+          secret: "$ORCHESTRATION_SECRET"
+  connectors:
+    security:
+      authentication:
+        oidc:
+          secret: "$CONNECTORS_SECRET"
+EOF
+
 # Bake values into the rendered Makefile. The deadline lives only in
-# resources/namespace.yaml (single source of truth) — check-deadline parses
+# umbrella-values.yaml (single source of truth) — check-deadline parses
 # it out of there so the user only edits one place to extend the TTL.
 sed_inplace "s/__NAMESPACE__/$namespace/"           Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
-# Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
+# Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE) flow into
 # the upstream yaml files via the same sed pass.
-sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
-sed_targets=(*.yaml resources/namespace.yaml)
+sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml
+sed_targets=(*.yaml)
 [[ -d databases ]] && sed_targets+=(databases/*.yaml)
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
 sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
-sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
-
-# When single-zone is disabled the topology annotation has no useful value;
-# strip the annotation line and the now-empty `annotations:` key so the manifest
-# stays tidy.
-if [[ "$enable_single_zone" != "true" ]]; then
-  sed_inplace "/topology.kubernetes.io\\/zone:/d" resources/namespace.yaml
-  # `sed_inplace` splits args on whitespace and the `annotations:` line pattern
-  # contains literal spaces, so call sed directly with OS-aware -i flag.
-  detect_os
-  if [ "${GO_OS}" == "darwin" ]; then
-    sed -i '' -e '/^  annotations:$/d' resources/namespace.yaml
-  else
-    sed -i    -e '/^  annotations:$/d' resources/namespace.yaml
-  fi
-fi
 
 # Bake the orchestration OIDC secret into the load-test starter values.
 sed_inplace "s|__SECRET__|$ORCHESTRATION_SECRET|" load-test-values.yaml
-
-# Bake the credential values into the secret manifest.
-sed_inplace "s|__IDENTITY_FIRSTUSER_PASSWORD__|$IDENTITY_FIRSTUSER_PASSWORD|"                                 resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_KEYCLOAK_ADMIN_PASSWORD__|$IDENTITY_KEYCLOAK_ADMIN_PASSWORD|"                       resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD__|$IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD|" resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD__|$IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD|"   resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_POSTGRESQL_ADMIN_PASSWORD__|$IDENTITY_POSTGRESQL_ADMIN_PASSWORD|"                   resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_POSTGRESQL_USER_PASSWORD__|$IDENTITY_POSTGRESQL_USER_PASSWORD|"                     resources/camunda-credentials.yaml
-sed_inplace "s|__ORCHESTRATION_SECRET__|$ORCHESTRATION_SECRET|"                                               resources/camunda-credentials.yaml
-sed_inplace "s|__CONNECTORS_SECRET__|$CONNECTORS_SECRET|"                                                     resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_ADMIN_CLIENT_TOKEN__|$IDENTITY_ADMIN_CLIENT_TOKEN|"                                 resources/camunda-credentials.yaml
-sed_inplace "s|__IDENTITY_OPTIMIZE_CLIENT_TOKEN__|$IDENTITY_OPTIMIZE_CLIENT_TOKEN|"                           resources/camunda-credentials.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
@@ -250,15 +271,22 @@ helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-he
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 helm repo update
 
+# The directory where local Helm Charts will be stored in.
+CHARTS_DIR="charts"
+
 # Clone Platform Helm so we can run the latest chart
-git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git
+git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git "$CHARTS_DIR/camunda-platform-helm"
 
 # Make deps
-helm dependency build "camunda-platform-helm/charts/$helm_chart"
+helm dependency build "$CHARTS_DIR/camunda-platform-helm/charts/$helm_chart"
+
+echo "Update Umbrella chart dependencies with latest values from the Camunda Platform chart..."
+helm dependency update "$CHARTS_DIR/umbrella"
+helm dependency build "$CHARTS_DIR/umbrella"
 
 echo
 echo "Scaffolding complete. Next steps:"
 echo "  cd $namespace"
-echo "  make install   # applies resources/namespace.yaml + resources/camunda-credentials.yaml and deploys"
+echo "  make install"
 echo
-echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). To extend, edit deadline-date in resources/namespace.yaml and run \`make create-namespace\`."
+echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). To extend, edit deadlineDate in umbrella-values.yaml and run \`make install-umbrella\`."

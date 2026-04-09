@@ -1,0 +1,23 @@
+apiVersion: v2
+name: umbrella
+description: Deploy all resources for load testing Camunda
+type: application
+# TODO: bump to 1.0.0 once we have finished the "umbrella" Helm Chart migration
+version: "0.1.0"
+
+dependencies: []
+  #- name: camunda-platform
+  #  version: ">=15.0.0 || >=15.0.0-alpha0"
+  #  repository: file://../camunda-platform-helm/charts/camunda-platform-8.10
+
+  #- name: prometheus-elasticsearch-exporter
+  #  version: 7.2.1
+  #  repository: oci://ghcr.io/prometheus-community/charts
+
+  #- name: postgresql
+  #  version: 18.5.16
+  #  repository: oci://registry-1.docker.io/bitnamicharts
+
+  #- name: opensearch
+  #  version: 2.31.0
+  #  repository: https://opensearch-project.github.io/helm-charts/

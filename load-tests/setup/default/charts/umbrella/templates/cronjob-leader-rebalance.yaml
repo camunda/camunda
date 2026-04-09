@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: leader-balancer
+  labels:
+    app: leader-balancer
+spec:
+  concurrencyPolicy: Allow
+  jobTemplate:
+    metadata:
+      name: leader-balancer
+    spec:
+      template:
+        metadata:
+          labels:
+            app: leader-balancer
+        spec:
+          containers:
+          - name: leader-balancer
+            image: curlimages/curl:7.87.0
+            command: ["/bin/sh", "-c"]
+            args:
+              - |-
+                curl -L -v -X POST "{{ .Values.camundaManagementUrl }}/actuator/rebalance"
+
+          restartPolicy: OnFailure
+  schedule: '*/10 * * * *'
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 3
+  suspend: false
