@@ -12,7 +12,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
-import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -59,20 +58,19 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Optional<ResourceInfo>> createMetadata(
+  public Either<Failure, Void> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
     return parseForm(resource)
         .flatMap(
             form ->
-                checkForConflictingFormIds(form.id, resource, deployment)
-                    .flatMap(valid -> checkForFormIdLength(form.id, resource))
+                checkForFormIdLength(form.id, resource)
                     .map(
                         valid -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
                           appendMetadataToFormRecord(formRecord, form, resource, deployment);
-                          return Optional.<ResourceInfo>empty();
+                          return null;
                         }));
   }
 
@@ -117,23 +115,6 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
               e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       return Either.left(new Failure(failureMessage));
     }
-  }
-
-  private Either<Failure, ?> checkForConflictingFormIds(
-      final String formId, final DeploymentResource resource, final DeploymentRecord record) {
-    return record.getFormMetadata().stream()
-        .filter(metadata -> metadata.getFormId().equals(formId))
-        .findFirst()
-        .map(
-            duplicatedForm -> {
-              final var failureMessage =
-                  String.format(
-                      "Expected the form ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      formId, duplicatedForm.getResourceName(), resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(NO_VALIDATION_ERROR);
   }
 
   private Either<Failure, ?> checkForFormIdLength(

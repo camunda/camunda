@@ -16,7 +16,6 @@ import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
-import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
@@ -29,8 +28,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -38,7 +35,6 @@ import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.LongSupplier;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 
@@ -77,7 +73,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
-  public Either<Failure, Optional<ResourceInfo>> createMetadata(
+  public Either<Failure, Void> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
@@ -86,14 +82,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      return checkForConflictingIds(resource, parsedDrg, deployment)
-          .flatMap(valid -> checkDrdIdNameLength(resource, parsedDrg))
+      return checkDrdIdNameLength(resource, parsedDrg)
           .flatMap(valid -> checkDecisionIdLength(resource, parsedDrg))
           .flatMap(valid -> checkDecisionNameLength(resource, parsedDrg))
           .map(
               valid -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
-                return Optional.<ResourceInfo>empty();
+                return null;
               });
 
     } else {
@@ -168,88 +163,6 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                                 .setDeploymentKey(decision.getDeploymentKey()));
                       });
             });
-  }
-
-  private Either<Failure, ?> checkForConflictingIds(
-      final DeploymentResource resource,
-      final ParsedDecisionRequirementsGraph parsedDrg,
-      final DeploymentRecord deploymentEvent) {
-
-    return checkConflictingDrgIds(resource, parsedDrg, deploymentEvent)
-        .flatMap(noDuplicates -> checkConflictingDecisionIds(resource, parsedDrg, deploymentEvent));
-  }
-
-  private Either<Failure, ?> checkConflictingDrgIds(
-      final DeploymentResource resource,
-      final ParsedDecisionRequirementsGraph parsedDrg,
-      final DeploymentRecord deploymentEvent) {
-
-    final var decisionRequirementsId = parsedDrg.getId();
-
-    return deploymentEvent.getDecisionRequirementsMetadata().stream()
-        .filter(drg -> drg.getDecisionRequirementsId().equals(decisionRequirementsId))
-        .findFirst()
-        .map(
-            duplicatedDrg -> {
-              final var failureMessage =
-                  String.format(
-                      "Expected the decision requirements ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      decisionRequirementsId,
-                      duplicatedDrg.getResourceName(),
-                      resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(NO_VALIDATION_ERROR);
-  }
-
-  private Either<Failure, ?> checkConflictingDecisionIds(
-      final DeploymentResource resource,
-      final ParsedDecisionRequirementsGraph parsedDrg,
-      final DeploymentRecord deploymentEvent) {
-
-    final var decisionIds =
-        parsedDrg.getDecisions().stream().map(ParsedDecision::getId).collect(Collectors.toList());
-
-    return deploymentEvent.getDecisionsMetadata().stream()
-        .filter(decision -> decisionIds.contains(decision.getDecisionId()))
-        .findFirst()
-        .map(
-            duplicatedDecision -> {
-              final var otherResourceName =
-                  getResourceNameForDecision(deploymentEvent, duplicatedDecision);
-
-              final var failureMessage =
-                  String.format(
-                      "Expected the decision ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      duplicatedDecision.getDecisionId(),
-                      otherResourceName,
-                      resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(NO_VALIDATION_ERROR);
-  }
-
-  /**
-   * Retrieves the resource name for a decision by looking up its parent DRG.
-   *
-   * <p>Resource names are stored at the DRG (Decision Requirements Graph) level, not at the
-   * individual decision level, since multiple decisions can come from the same DMN file. This
-   * method looks up the DRG metadata using the decision's decisionRequirementsKey to find the
-   * resource name.
-   *
-   * @param deploymentEvent the deployment record containing all DRG metadata
-   * @param decision the decision for which to find the resource name
-   * @return the resource name of the DMN file containing this decision, or "<?>" if not found
-   */
-  private String getResourceNameForDecision(
-      final DeploymentRecord deploymentEvent, final DecisionRecordValue decision) {
-    return deploymentEvent.getDecisionRequirementsMetadata().stream()
-        .filter(drg -> drg.getDecisionRequirementsKey() == decision.getDecisionRequirementsKey())
-        .map(DecisionRequirementsMetadataValue::getResourceName)
-        .findFirst()
-        .orElse("<?>");
   }
 
   private Either<Failure, ?> checkDrdIdNameLength(

@@ -104,9 +104,9 @@ public final class DeploymentTransformer {
     return checkHasResources(deploymentEvent)
         // Step 2: Iterate over all resources and build metadata
         .flatMap(ok -> buildMetadataForAllResources(deploymentEvent))
-        // Step 3: Check for conflicting resource IDs within the single deployment (already done in
-        // step 2)
-        // Step 4: Check if all deployment bindings are satisfied (already done in step 2)
+        // Step 3: Check for conflicting resource IDs within the single deployment
+        .flatMap(ok -> checkForDuplicateIds(deploymentEvent))
+        // Step 4: Check if all deployment bindings are satisfied
         // Step 5: Write the actual resources/deployment to state
         .map(
             ok -> {
@@ -171,6 +171,148 @@ public final class DeploymentTransformer {
 
     // Step 4: Validate deployment bindings for BPMN resources
     return validateDeploymentBindings(deploymentEvent, bpmnResources);
+  }
+
+  /**
+   * Step 3: Validates that there are no duplicate resource IDs within the deployment.
+   *
+   * <p>Checks all metadata collections for duplicate IDs:
+   *
+   * <ul>
+   *   <li>BPMN process IDs (bpmnProcessId)
+   *   <li>DMN decision requirements IDs (decisionRequirementsId)
+   *   <li>DMN decision IDs (decisionId)
+   *   <li>Form IDs (formId)
+   *   <li>Generic resource IDs (resourceId)
+   * </ul>
+   *
+   * @param deployment the deployment record containing all metadata
+   * @return Either.right(null) if no duplicates found, or Either.left with error details
+   */
+  private Either<Failure, Void> checkForDuplicateIds(final DeploymentRecord deployment) {
+    final StringBuilder errors = new StringBuilder();
+    boolean success = true;
+
+    // Check for duplicate BPMN process IDs
+    final var bpmnProcessIds = new java.util.HashSet<String>();
+    final var bpmnDuplicates = new java.util.HashMap<String, java.util.List<String>>();
+    for (final var processMetadata : deployment.getProcessesMetadata()) {
+      final var processId = processMetadata.getBpmnProcessId();
+      if (!bpmnProcessIds.add(processId)) {
+        bpmnDuplicates
+            .computeIfAbsent(processId, k -> new java.util.ArrayList<>())
+            .add(processMetadata.getResourceName());
+      }
+    }
+    for (final var entry : bpmnDuplicates.entrySet()) {
+      success = false;
+      errors
+          .append("\n- Duplicated process id '")
+          .append(entry.getKey())
+          .append("' in resources: ")
+          .append(String.join(", ", entry.getValue()));
+    }
+
+    // Check for duplicate DMN decision requirements IDs
+    final var drgIds = new java.util.HashSet<String>();
+    final var drgDuplicates = new java.util.HashMap<String, java.util.List<String>>();
+    for (final var drgMetadata : deployment.getDecisionRequirementsMetadata()) {
+      final var drgId = drgMetadata.getDecisionRequirementsId();
+      if (!drgIds.add(drgId)) {
+        drgDuplicates
+            .computeIfAbsent(drgId, k -> new java.util.ArrayList<>())
+            .add(drgMetadata.getResourceName());
+      }
+    }
+    for (final var entry : drgDuplicates.entrySet()) {
+      success = false;
+      errors
+          .append("\n- Duplicated decision requirements id '")
+          .append(entry.getKey())
+          .append("' in resources: ")
+          .append(String.join(", ", entry.getValue()));
+    }
+
+    // Check for duplicate DMN decision IDs
+    final var decisionIds = new java.util.HashSet<String>();
+    final var decisionDuplicates = new java.util.HashMap<String, java.util.List<String>>();
+    for (final var decisionMetadata : deployment.getDecisionsMetadata()) {
+      final var decisionId = decisionMetadata.getDecisionId();
+      if (!decisionIds.add(decisionId)) {
+        // Find the resource name by looking up the parent DRG
+        final var resourceName =
+            deployment.getDecisionRequirementsMetadata().stream()
+                .filter(
+                    drg ->
+                        drg.getDecisionRequirementsKey()
+                            == decisionMetadata.getDecisionRequirementsKey())
+                .map(drg -> drg.getResourceName())
+                .findFirst()
+                .orElse("<?>");
+        decisionDuplicates
+            .computeIfAbsent(decisionId, k -> new java.util.ArrayList<>())
+            .add(resourceName);
+      }
+    }
+    for (final var entry : decisionDuplicates.entrySet()) {
+      success = false;
+      errors
+          .append("\n- Duplicated decision id '")
+          .append(entry.getKey())
+          .append("' in resources: ")
+          .append(String.join(", ", entry.getValue()));
+    }
+
+    // Check for duplicate form IDs
+    final var formIds = new java.util.HashSet<String>();
+    final var formDuplicates = new java.util.HashMap<String, java.util.List<String>>();
+    for (final var formMetadata : deployment.getFormMetadata()) {
+      final var formId = formMetadata.getFormId();
+      if (!formIds.add(formId)) {
+        formDuplicates
+            .computeIfAbsent(formId, k -> new java.util.ArrayList<>())
+            .add(formMetadata.getResourceName());
+      }
+    }
+    for (final var entry : formDuplicates.entrySet()) {
+      success = false;
+      errors
+          .append("\n- Duplicated form id '")
+          .append(entry.getKey())
+          .append("' in resources: ")
+          .append(String.join(", ", entry.getValue()));
+    }
+
+    // Check for duplicate generic resource IDs
+    final var resourceIds = new java.util.HashSet<String>();
+    final var resourceDuplicates = new java.util.HashMap<String, java.util.List<String>>();
+    for (final var resourceMetadata : deployment.getResourceMetadata()) {
+      final var resourceId = resourceMetadata.getResourceId();
+      if (!resourceIds.add(resourceId)) {
+        resourceDuplicates
+            .computeIfAbsent(resourceId, k -> new java.util.ArrayList<>())
+            .add(resourceMetadata.getResourceName());
+      }
+    }
+    for (final var entry : resourceDuplicates.entrySet()) {
+      success = false;
+      errors
+          .append("\n- Duplicated resource id '")
+          .append(entry.getKey())
+          .append("' in resources: ")
+          .append(String.join(", ", entry.getValue()));
+    }
+
+    if (!success) {
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              "Expected resource IDs to be unique within a deployment, but encountered the following duplicates:%s",
+              errors);
+      return Either.left(new Failure(rejectionReason));
+    }
+
+    return Either.right(null);
   }
 
   /**

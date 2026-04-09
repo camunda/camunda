@@ -98,22 +98,19 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   }
 
   @Override
-  public final Either<Failure, Optional<ResourceInfo>> createMetadata(
+  public final Either<Failure, Void> createMetadata(
       final DeploymentResource deploymentResource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
     return parseResourceInfo(deploymentResource)
-        .flatMap(
-            resourceInfo ->
-                checkForConflictingResourceIds(resourceInfo, deploymentResource, deployment)
-                    .flatMap(
-                        ignored -> {
-                          final ResourceMetadataRecord resourceMetadataRecord =
-                              deployment.resourceMetadata().add();
-                          appendMetadataToResourceRecord(
-                              resourceMetadataRecord, resourceInfo, deploymentResource, deployment);
-                          return Either.right(Optional.of(resourceInfo));
-                        }));
+        .map(
+            resourceInfo -> {
+              final ResourceMetadataRecord resourceMetadataRecord =
+                  deployment.resourceMetadata().add();
+              appendMetadataToResourceRecord(
+                  resourceMetadataRecord, resourceInfo, deploymentResource, deployment);
+              return null;
+            });
   }
 
   @Override
@@ -146,27 +143,6 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         resourceMetadataRecord.getResourceKey(),
         ResourceIntent.CREATED,
         new ResourceRecord().wrap(resourceMetadataRecord, resource.getResource()));
-  }
-
-  private Either<Failure, Void> checkForConflictingResourceIds(
-      final ResourceInfo resourceInfo,
-      final DeploymentResource resource,
-      final DeploymentRecord deployment) {
-    return deployment.getResourceMetadata().stream()
-        .filter(metadata -> metadata.getResourceId().equals(resourceInfo.id()))
-        .findFirst()
-        .map(
-            dupeResource -> {
-              final var failureMessage =
-                  String.format(
-                      "Expected the resource ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      resourceInfo.id(),
-                      dupeResource.getResourceName(),
-                      resource.getResourceName());
-              return Either.<Failure, Void>left(new Failure(failureMessage));
-            })
-        .orElse(SUCCESS);
   }
 
   private void appendMetadataToResourceRecord(

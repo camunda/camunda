@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
-import io.camunda.zeebe.engine.processing.deployment.transform.DefaultResourceTransformer.ResourceInfo;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -91,7 +90,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Optional<ResourceInfo>> createMetadata(
+  public Either<Failure, Void> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
@@ -106,11 +105,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                 // validator
                 final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
 
-                return checkForConflictingBpmnIds(definition, resource, deployment)
-                    .flatMap(
-                        ok ->
-                            UnsupportedMultiTenantFeaturesValidator.validate(
-                                resource, executableProcesses, deployment.getTenantId()))
+                return UnsupportedMultiTenantFeaturesValidator.validate(
+                        resource, executableProcesses, deployment.getTenantId())
                     .flatMap(
                         ok -> {
                           if (enableStraightThroughProcessingLoopDetector) {
@@ -122,7 +118,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .map(
                         ok -> {
                           createProcessMetadata(deployment, resource, definition, context);
-                          return Optional.<ResourceInfo>empty();
+                          return null;
                         });
 
               } else {
