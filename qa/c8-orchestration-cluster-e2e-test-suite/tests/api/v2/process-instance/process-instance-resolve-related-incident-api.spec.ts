@@ -42,6 +42,12 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
   };
 
   test.beforeAll(async ({request}) => {
+    //**
+    // * Deplyed and instanciated process instance has two incidents related to it.
+    // * During test only one incident is fixed and actually resolved.
+    // * Use of the same process instance in unhappy paths tests does not cause any issue,
+    // * as process instance will always have at least one active incident.
+    // **
     await test.step('Setup - Deploy process and create instance to delete', async () => {
       await deploy(['./resources/MultipleErrorTypesProcess.bpmn']);
       const createdInstance = await createSingleInstance(
@@ -80,38 +86,36 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
     let batchOperationKey: string = '';
     let incidentKeys: string[] = [];
 
-    await test.step('Search for incidents and verify the number of incidents and its state', async () => {
-      await expect(async () => {
-        const searchRes = await request.post(buildUrl('/incidents/search'), {
+    await test.step('Search for incidents related to created process instance', async () => {
+      const incidents = await request.post(
+        buildUrl(
+          `/process-instances/${processInstanceKeyWithIncidentToResolve}/incidents/search`,
+        ),
+        {
           headers: jsonHeaders(),
-          data: {
-            filter: {
-              processInstanceKey: processInstanceKeyWithIncidentToResolve,
-            },
-          },
-        });
-
-        await assertStatusCode(searchRes, 200);
-        await validateResponse(
-          {
-            path: '/incidents/search',
-            method: 'POST',
-            status: '200',
-          },
-          searchRes,
-        );
-
-        const body = await searchRes.json();
-        expect(body.page.totalItems).toEqual(2);
-        expect(body.items.length).toBeGreaterThan(0);
-        for (const incident of body.items) {
-          incidentKeys.push(incident.incidentKey);
-          expect(incident.state).toBe('ACTIVE');
-          if (incident.errorType === 'EXTRACT_VALUE_ERROR') {
-            elementInstanceKey = incident.elementInstanceKey;
-          }
+        },
+      );
+      await assertStatusCode(incidents, 200);
+      await validateResponse(
+        {
+          path: '/process-instances/{processInstanceKey}/incidents/search',
+          method: 'POST',
+          status: '200',
+        },
+        incidents,
+      );
+      const body = await incidents.json();
+      expect(body.page.totalItems).toEqual(2);
+      expect(body.items.length).toEqual(2);
+      for (const incident of body.items) {
+        incidentKeys.push(incident.incidentKey);
+        expect(incident.state).toBe('ACTIVE');
+        if (incident.errorType === 'EXTRACT_VALUE_ERROR') {
+          elementInstanceKey = incident.elementInstanceKey;
         }
-      }).toPass(defaultAssertionOptions);
+      }
+      expect(elementInstanceKey).not.toEqual('');
+      expect(incidentKeys.length).toEqual(2);
     });
 
     await test.step('Update element instance variables', async () => {
