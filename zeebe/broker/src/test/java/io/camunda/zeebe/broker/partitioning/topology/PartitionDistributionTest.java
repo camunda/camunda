@@ -53,8 +53,8 @@ final class PartitionDistributionTest {
               .findFirst()
               .orElseThrow();
 
-      assertThat(renamedPartition.members()).containsExactlyInAnyOrderElementsOf(
-          originalPartition.members());
+      assertThat(renamedPartition.members())
+          .containsExactlyInAnyOrderElementsOf(originalPartition.members());
       assertThat(renamedPartition.getTargetPriority())
           .isEqualTo(originalPartition.getTargetPriority());
       assertThat(renamedPartition.getPrimary()).isEqualTo(originalPartition.getPrimary());
@@ -74,8 +74,8 @@ final class PartitionDistributionTest {
     original.withGroupName("engine-2");
 
     // then — original partition ids are untouched
-    assertThat(original.partitions()).allSatisfy(p ->
-        assertThat(p.id().group()).isEqualTo("default"));
+    assertThat(original.partitions())
+        .allSatisfy(p -> assertThat(p.id().group()).isEqualTo("default"));
   }
 
   private static PartitionDistribution distributionInGroup(final String group) {

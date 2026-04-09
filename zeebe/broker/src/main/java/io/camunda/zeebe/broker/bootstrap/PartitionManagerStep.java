@@ -100,8 +100,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerShutdownContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
-    final var partitionManager =
-        brokerShutdownContext.getPartitionManagers().get(physicalTenantId);
+    final var partitionManager = brokerShutdownContext.getPartitionManagers().get(physicalTenantId);
     if (partitionManager == null) {
       shutdownFuture.complete(brokerShutdownContext);
       return;

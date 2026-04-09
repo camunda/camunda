@@ -46,11 +46,11 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private String defaultEngineName = DEFAULT_ENGINE_NAME;
 
   /**
-   * Physical tenants to run on this broker. Each entry becomes its own Raft partition group with
-   * an independent set of partitions and on-disk data directory. The {@link
-   * #DEFAULT_PHYSICAL_TENANT_ID default} physical tenant is always present — it is implicitly
-   * added if missing from the configured list, so users can leave this empty for a single-tenant
-   * broker or list only the additional physical tenants.
+   * Physical tenants to run on this broker. Each entry becomes its own Raft partition group with an
+   * independent set of partitions and on-disk data directory. The {@link
+   * #DEFAULT_PHYSICAL_TENANT_ID default} physical tenant is always present — it is implicitly added
+   * if missing from the configured list, so users can leave this empty for a single-tenant broker
+   * or list only the additional physical tenants.
    *
    * <p>This is early-stage physical-tenants scaffolding (#50509). Most subsystems (admin service,
    * gateway routing, restore, exporters) target the default physical tenant only for now.
@@ -96,9 +96,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
       for (final String id : physicalTenantIds) {
         if (id == null || id.isBlank()) {
           throw new IllegalArgumentException(
-              "Physical tenant IDs must not be blank (configured list: "
-                  + physicalTenantIds
-                  + ")");
+              "Physical tenant IDs must not be blank (configured list: " + physicalTenantIds + ")");
         }
         final var trimmed = id.trim();
         if (trimmed.contains("/") || trimmed.contains("\\")) {
@@ -232,8 +230,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
 
   /**
    * Returns the list of physical tenant IDs this broker should run. The {@link
-   * #DEFAULT_PHYSICAL_TENANT_ID default} physical tenant is always present at the head of the
-   * list, regardless of whether the user configured it explicitly. The list is deduplicated.
+   * #DEFAULT_PHYSICAL_TENANT_ID default} physical tenant is always present at the head of the list,
+   * regardless of whether the user configured it explicitly. The list is deduplicated.
    */
   public List<String> getPhysicalTenantIds() {
     return physicalTenantIds;
