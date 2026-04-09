@@ -1142,6 +1142,50 @@ public final class OAuthCredentialsProviderTest {
     }
 
     @Test
+    void shouldHonorCustomRetryableStatusCodes() throws IOException {
+      // given — make 418 retryable, override the default set entirely
+      stubTokenStatus(418, com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED, "second");
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder()
+              .tokenFetchRetryableStatusCodes(new java.util.HashSet<>(java.util.Arrays.asList(418)))
+              .build();
+
+      // when
+      provider.applyCredentials(applier);
+
+      // then
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldLatchOnStatusCodeRemovedFromRetryableSet() {
+      // given — drop 429 from the default retryable set
+      stubAlwaysStatus(429);
+      final java.util.Set<Integer> withoutFourTwentyNine =
+          new java.util.HashSet<>(
+              io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder
+                  .DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES);
+      withoutFourTwentyNine.remove(429);
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder().tokenFetchRetryableStatusCodes(withoutFourTwentyNine).build();
+
+      // when — first call hits the endpoint and trips the latch
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 429");
+      assertThat(requestCount()).isEqualTo(1);
+
+      // then — second call must NOT hit the endpoint
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("permanently disabled");
+      assertThat(requestCount()).isEqualTo(1);
+    }
+
+    @Test
     void builderShouldRejectInvalidConfig() {
       assertThatThrownBy(() -> retryProviderBuilder().tokenFetchMaxRetries(0).build())
           .isInstanceOf(IllegalArgumentException.class)
@@ -1217,6 +1261,27 @@ public final class OAuthCredentialsProviderTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("tokenFetchInitialBackoff")
           .hasMessageContaining("at least 1 millisecond");
+    }
+
+    @Test
+    void shouldDefensivelyCopyRetryableStatusCodesOnBuild() throws IOException {
+      // given — build with a mutable set containing {404, 429, 500, 502, 503, 504}
+      final java.util.Set<Integer> mutableSet =
+          new java.util.HashSet<>(
+              io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder
+                  .DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES);
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder().tokenFetchRetryableStatusCodes(mutableSet).build();
+
+      // when — caller mutates the original set after building, adding 418
+      mutableSet.add(418);
+
+      // then — provider still treats 418 as non-retryable (latches immediately on it)
+      stubAlwaysStatus(418);
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("status code 418");
+      assertThat(requestCount()).isEqualTo(1);
     }
   }
 }

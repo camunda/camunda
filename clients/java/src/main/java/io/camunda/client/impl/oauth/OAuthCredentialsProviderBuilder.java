@@ -37,6 +37,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_MAX_RETRIES;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_WELL_KNOWN_CONFIGURATION_URL;
@@ -65,7 +66,12 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
 
 public final class OAuthCredentialsProviderBuilder {
@@ -81,6 +87,15 @@ public final class OAuthCredentialsProviderBuilder {
   public static final int DEFAULT_TOKEN_FETCH_MAX_RETRIES = 5;
   public static final Duration DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF = Duration.ofSeconds(1);
   public static final double DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER = 2.0;
+
+  /**
+   * HTTP status codes from the token endpoint that should trigger a retry with backoff. Any other
+   * non-200 status code is treated as a permanent failure and trips the latch. {@code IOException}
+   * (network/timeout) is always retried independently of this set.
+   */
+  public static final Set<Integer> DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(404, 429, 500, 502, 503, 504)));
+
   private String clientId;
   private String clientSecret;
   private String audience;
@@ -103,6 +118,7 @@ public final class OAuthCredentialsProviderBuilder {
   private Integer tokenFetchMaxRetries;
   private Duration tokenFetchInitialBackoff;
   private Double tokenFetchBackoffMultiplier;
+  private Set<Integer> tokenFetchRetryableStatusCodes;
   private boolean applyEnvironmentOverrides = true;
   private Path clientAssertionKeystorePath;
   private String clientAssertionKeystorePassword;
@@ -373,8 +389,9 @@ public final class OAuthCredentialsProviderBuilder {
 
   /**
    * The maximum number of attempts (including the initial one) when fetching a token from the OAuth
-   * authorization server. Retries are only attempted on transient failures (HTTP 404, 429, 5xx, or
-   * IOException). The default value is {@value #DEFAULT_TOKEN_FETCH_MAX_RETRIES}.
+   * authorization server. Retries are only attempted on {@link IOException} or HTTP status codes
+   * configured via {@link #tokenFetchRetryableStatusCodes(Set)}. The default value is {@value
+   * #DEFAULT_TOKEN_FETCH_MAX_RETRIES}.
    */
   public OAuthCredentialsProviderBuilder tokenFetchMaxRetries(final int tokenFetchMaxRetries) {
     this.tokenFetchMaxRetries = tokenFetchMaxRetries;
@@ -445,6 +462,46 @@ public final class OAuthCredentialsProviderBuilder {
    */
   public double getTokenFetchBackoffMultiplier() {
     return tokenFetchBackoffMultiplier;
+  }
+
+  /**
+   * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
+   * non-200 status code outside this set trips the permanent-failure latch and disables this
+   * provider until the client is recreated. The default is {@link
+   * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default; callers
+   * wanting to extend or shrink the default should derive from {@link
+   * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchRetryableStatusCodes(
+      final Set<Integer> tokenFetchRetryableStatusCodes) {
+    this.tokenFetchRetryableStatusCodes =
+        tokenFetchRetryableStatusCodes == null
+            ? null
+            : Collections.unmodifiableSet(new HashSet<>(tokenFetchRetryableStatusCodes));
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchRetryableStatusCodes(
+      final String csvStatusCodes) {
+    if (csvStatusCodes == null) {
+      return this;
+    }
+    if (csvStatusCodes.trim().isEmpty()) {
+      return tokenFetchRetryableStatusCodes(Collections.emptySet());
+    }
+    return tokenFetchRetryableStatusCodes(
+        Arrays.stream(csvStatusCodes.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Integer::parseInt)
+            .collect(Collectors.toSet()));
+  }
+
+  /**
+   * @see #tokenFetchRetryableStatusCodes(Set)
+   */
+  public Set<Integer> getTokenFetchRetryableStatusCodes() {
+    return tokenFetchRetryableStatusCodes;
   }
 
   public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
@@ -704,6 +761,8 @@ public final class OAuthCredentialsProviderBuilder {
         this::tokenFetchInitialBackoff, OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF);
     applyEnvironmentValueIfNotNull(
         this::tokenFetchBackoffMultiplier, OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchRetryableStatusCodes, OAUTH_ENV_TOKEN_FETCH_RETRYABLE_STATUS_CODES);
   }
 
   private void applyDefaults() {
@@ -729,6 +788,9 @@ public final class OAuthCredentialsProviderBuilder {
     }
     if (tokenFetchBackoffMultiplier == null) {
       tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+    }
+    if (tokenFetchRetryableStatusCodes == null) {
+      tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
     }
     if (clientAssertionKeystoreKeyPassword == null) {
       clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
@@ -818,6 +880,10 @@ public final class OAuthCredentialsProviderBuilder {
           String.format(
               "tokenFetchBackoffMultiplier is %s, expected a value greater than or equal to 1.0.",
               tokenFetchBackoffMultiplier));
+    }
+    if (tokenFetchRetryableStatusCodes == null) {
+      throw new IllegalArgumentException(
+          "tokenFetchRetryableStatusCodes must not be null (use an empty set to disable retries).");
     }
   }
 
