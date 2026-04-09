@@ -65,12 +65,13 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
               variant: 'edit-variable',
             });
 
+            const initialValue = variableEditor.getInitialValue(data);
             variableEditor.createModification({
               scopeId: variableEditor.variableScopeKey,
               name: variableName,
-              oldValue: variableEditor.getInitialValue(data),
+              oldValue: initialValue,
               newValue: value ?? '',
-              isDirty: variableEditor.getInitialValue(data) !== value,
+              isDirty: initialValue !== value,
               isValid: variableEditor.isValid ?? false,
               selectedElementName: variableEditor.selectedElementName,
             });
