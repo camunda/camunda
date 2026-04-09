@@ -67,7 +67,7 @@ public class JobCallbackCommandWrapper {
 
   private CompletableFuture<CommandOutcome> execute(final Runnable action) {
     if (!started.compareAndSet(false, true)) {
-      throw new IllegalStateException("CommandWrapper has already been executed");
+      throw new IllegalStateException("JobCallbackCommandWrapper has already been executed");
     }
 
     retryAction = action;
