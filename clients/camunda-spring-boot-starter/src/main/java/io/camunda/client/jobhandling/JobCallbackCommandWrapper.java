@@ -163,7 +163,7 @@ public class JobCallbackCommandWrapper {
   private void handleError(final Throwable throwable) {
     final CommandOutcome outcome = handleCommandError(throwable);
 
-    // a retried command has invoked scheduleExecutionUsing already, so we do not complete the
+    // a retried command has invoked scheduleExecution already, so we do not complete the
     // future here, it will be completed by the retry action
     if (outcome != null) {
       resultFuture.complete(outcome);
