@@ -132,6 +132,30 @@ def post_comment(owner: str, repo: str, pr_number: int, body: str, token: str) -
 
 
 # ---------------------------------------------------------------------------
+# Test comparison
+# ---------------------------------------------------------------------------
+
+def _is_same_test(known_key: str, pr_key: str) -> bool:
+    """Check if a BigQuery known key matches a normalized PR key.
+
+    BigQuery keys may have trailing params/suffixes that parse_test_name strips:
+      known: "pkg.Class.method(Param) variant"
+      pr:    "pkg.Class.method"
+
+    We accept a match if the known key equals the PR key, or starts with
+    the PR key followed by a non-alphanumeric char (to avoid "shouldFind"
+    matching "shouldFindAll").
+    """
+    if known_key == pr_key:
+        return True
+    if not known_key.startswith(pr_key):
+        return False
+    # The character right after the PR key must be a boundary (not part of a method name)
+    next_char = known_key[len(pr_key)]
+    return not next_char.isalnum() and next_char != "_"
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -216,9 +240,9 @@ def main() -> None:
     for test in processed_pr_tests:
         pr_key = get_test_key(test)
         # PR keys are normalized (no params), BigQuery keys may have params/suffixes.
-        # Match if the PR key equals the known key OR the known key starts with the PR key.
-        is_known = any(k == pr_key or k.startswith(pr_key) for k in known_keys)
-        matched = [k for k in known_keys if k == pr_key or k.startswith(pr_key)] if is_known else []
+        # Match if the known key is the same test method (exact or with param suffix).
+        is_known = any(_is_same_test(k, pr_key) for k in known_keys)
+        matched = [k for k in known_keys if _is_same_test(k, pr_key)] if is_known else []
         status = f"KNOWN (matched: {matched})" if is_known else "NEW (not seen on main/stable)"
         print(f"{PREFIX}   {pr_key} → {status}")
         if not is_known:
