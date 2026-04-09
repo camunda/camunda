@@ -33,6 +33,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var partitionManager =
         new PartitionManagerImpl(
+            PartitionManagerImpl.DEFAULT_GROUP_NAME,
             brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getActorSchedulingService(),
             brokerStartupContext.getBrokerConfiguration(),
@@ -50,6 +51,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getClusterConfigurationService(),
             brokerStartupContext.getMeterRegistry(),
             brokerStartupContext.getBrokerClient(),
+            brokerStartupContext.getRocksDbResources(),
             brokerStartupContext.getSecurityConfiguration(),
             brokerStartupContext.getSearchClientsProxy(),
             brokerStartupContext.getBrokerRequestAuthorizationConverter());

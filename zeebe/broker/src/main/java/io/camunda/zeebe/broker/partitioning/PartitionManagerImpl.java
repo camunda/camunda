@@ -67,6 +67,7 @@ public final class PartitionManagerImpl
   public static final String DEFAULT_GROUP_NAME = "default";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
+  private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
@@ -83,6 +84,7 @@ public final class PartitionManagerImpl
   private final PartitionScalingChangeExecutor scalingExecutor;
 
   public PartitionManagerImpl(
+      final String partitionGroup,
       final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -100,9 +102,11 @@ public final class PartitionManagerImpl
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
+      final RocksDbResources rocksDbResources,
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -143,7 +147,7 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(partitionGroup, brokerCfg);
     RocksDbSharedCacheMetrics.registerAllocationStrategy(
         brokerMeterRegistry,
         brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
@@ -152,9 +156,21 @@ public final class PartitionManagerImpl
   public void start() {
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
-    final var memberPartitions = clusterConfigurationService.getMemberPartitions(localMemberId);
+    // The default physical tenant's partition distribution is the only one stored in dynamic
+    // config; other physical tenants derive their distribution by rewriting the group on every
+    // PartitionId.
+    final var groupDistribution =
+        clusterConfigurationService.getPartitionDistribution().withGroupName(partitionGroup);
+    final var memberPartitions =
+        groupDistribution.partitions().stream()
+            .filter(p -> p.members().contains(localMemberId))
+            .toList();
 
-    healthCheckService.registerBootstrapPartitions(memberPartitions);
+    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
+    // physical tenant participates in the broker health check for now; other tenants are invisible.
+    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+      healthCheckService.registerBootstrapPartitions(memberPartitions);
+    }
     for (final var partitionMetadata : memberPartitions) {
       final var initialPartitionConfig =
           clusterConfigurationService
@@ -284,7 +300,6 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            zeebePartitionFactory.close();
             topologyManager.closeAsync().onComplete(result);
           }
         });
@@ -341,7 +356,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(DEFAULT_GROUP_NAME, partitionId),
+            PartitionId.from(partitionGroup, partitionId),
             members,
             membersWithPriority,
             targetPriority,
@@ -393,7 +408,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(DEFAULT_GROUP_NAME, partitionId),
+            PartitionId.from(partitionGroup, partitionId),
             members,
             Map.of(localMember, targetPriority),
             targetPriority,

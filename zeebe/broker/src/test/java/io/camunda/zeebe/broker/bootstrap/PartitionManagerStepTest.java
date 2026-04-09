@@ -105,7 +105,10 @@ class PartitionManagerStepTest {
 
     @AfterEach
     void tearDown() {
-      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      final var partitionManager =
+          testBrokerStartupContext
+              .getPartitionManagers()
+              .get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
       if (partitionManager != null) {
         partitionManager.stop().join();
       }
@@ -133,7 +136,10 @@ class PartitionManagerStepTest {
       await().until(startupFuture::isDone);
 
       // then
-      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      final var partitionManager =
+          testBrokerStartupContext
+              .getPartitionManagers()
+              .get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
       assertThat(partitionManager).isNotNull();
     }
 
@@ -186,7 +192,10 @@ class PartitionManagerStepTest {
 
       // then
       verify(mockPartitionManager).stop();
-      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      final var partitionManager =
+          testBrokerStartupContext
+              .getPartitionManagers()
+              .get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
       assertThat(partitionManager).isNull();
     }
 

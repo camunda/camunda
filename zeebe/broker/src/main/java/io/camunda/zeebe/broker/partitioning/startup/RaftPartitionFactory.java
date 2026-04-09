@@ -32,10 +32,16 @@ public final class RaftPartitionFactory {
   public static final String GROUP_NAME = "default";
   private static final String LEGACY_GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private final String partitionGroup;
   private final BrokerCfg brokerCfg;
 
-  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
+  public RaftPartitionFactory(final String partitionGroup, final BrokerCfg brokerCfg) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
+  }
+
+  public String partitionGroup() {
+    return partitionGroup;
   }
 
   public RaftPartition createRaftPartition(
