@@ -312,7 +312,9 @@ Ownership model:
 
 - [ ] Confirm official minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases) for definitions and timing.
 - [ ] Confirm the Monorepo Release Manager (MRM) is available for feature freeze week, code freeze / branch creation, and the final RC window.
-- [ ] Check for major holidays during RC and final release weeks, then adjust expectations with release stakeholders.
+- [ ] Check for major holidays during RC and final release weeks. If holidays are involved, do not just note it — explicitly align with release stakeholders on adjusted ETAs, coverage gaps, and any scope or timing changes, and document the agreed expectations.
+
+> **Tip:** When communicating release ETAs to stakeholders, default to **12:00 Central European time** as the reference time unless a different time has been explicitly agreed.
 
 #### 1. Around feature freeze / last alpha (branch strategy)
 
