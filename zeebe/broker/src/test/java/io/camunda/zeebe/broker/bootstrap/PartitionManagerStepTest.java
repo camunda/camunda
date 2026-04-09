@@ -50,7 +50,8 @@ class PartitionManagerStepTest {
   }
 
   private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
-  private final PartitionManagerStep sut = new PartitionManagerStep();
+  private final PartitionManagerStep sut =
+      new PartitionManagerStep(PartitionManagerImpl.DEFAULT_GROUP_NAME);
   private MockBrokerStartupContext testBrokerStartupContext;
 
   @Test
@@ -59,7 +60,7 @@ class PartitionManagerStepTest {
     final var actual = sut.getName();
 
     // then
-    assertThat(actual).isSameAs("Partition Manager");
+    assertThat(actual).isEqualTo("Partition Manager [default]");
   }
 
   @Nested

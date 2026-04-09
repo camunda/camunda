@@ -67,7 +67,9 @@ public final class BrokerStartupProcess {
     result.add(new SnapshotApiServiceStep());
     result.add(new PartitionGroupMigrationStep());
     result.add(new SharedRocksDbResourcesStep());
-    result.add(new PartitionManagerStep());
+    for (final String physicalTenantId : config.getExperimental().getPhysicalTenantIds()) {
+      result.add(new PartitionManagerStep(physicalTenantId));
+    }
     result.add(new BrokerAdminServiceStep());
     result.add(new CheckpointSchedulerServiceStep());
 
