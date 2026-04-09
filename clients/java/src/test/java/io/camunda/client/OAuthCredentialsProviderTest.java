@@ -1200,6 +1200,34 @@ public final class OAuthCredentialsProviderTest {
     }
 
     @Test
+    void shouldHonorRetryAfterHeaderOn429() throws IOException {
+      // given — first response is a 429 with Retry-After: 1 (1 second), second is success.
+      // Use a very small initial backoff so we can distinguish the Retry-After delay (~1000ms)
+      // from the computed backoff (~10ms).
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                  .willReturn(WireMock.aResponse().withStatus(429).withHeader("Retry-After", "1"))
+                  .willSetStateTo("second"));
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      final long started = System.nanoTime();
+      provider.applyCredentials(applier);
+      final long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+
+      // then — success, and we waited at least ~1s honoring the header
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+      assertThat(elapsedMs).isGreaterThanOrEqualTo(900L);
+    }
+
+    @Test
     void shouldRetryRequestShouldShortCircuitWhenLatchTripped() {
       // given — trip the latch via a 401
       stubAlwaysStatus(401);
@@ -1282,6 +1310,67 @@ public final class OAuthCredentialsProviderTest {
           .isInstanceOf(IOException.class)
           .hasMessageContaining("status code 418");
       assertThat(requestCount()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldHonorRetryAfterHeaderAsHttpDate() throws IOException {
+      // given — Retry-After header uses RFC 1123 HTTP-date format, ~2s in the future.
+      // HTTP-date has second-level resolution, so we need > 1s of cushion to reliably
+      // assert the delay was honored without sub-second rounding flakiness.
+      final String httpDate =
+          java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(
+              java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusSeconds(2));
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                  .willReturn(
+                      WireMock.aResponse().withStatus(503).withHeader("Retry-After", httpDate))
+                  .willSetStateTo("second"));
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      final long started = System.nanoTime();
+      provider.applyCredentials(applier);
+      final long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+
+      // then — honored the header, waited at least ~1s (well beyond the 10ms computed backoff)
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+      assertThat(elapsedMs).isGreaterThanOrEqualTo(1000L);
+    }
+
+    @Test
+    void shouldFallBackToComputedBackoffWhenRetryAfterUnparseable() throws IOException {
+      // given — unparseable Retry-After value should be ignored, falling back to the
+      // computed (jittered) backoff based on initial=10ms
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                  .willReturn(
+                      WireMock.aResponse().withStatus(429).withHeader("Retry-After", "garbage"))
+                  .willSetStateTo("second"));
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider = retryProviderBuilder().build();
+
+      // when
+      final long started = System.nanoTime();
+      provider.applyCredentials(applier);
+      final long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+
+      // then — succeeded, and elapsed time stayed near the computed backoff (well under 1s),
+      // proving the unparseable header did not cause us to wait the default Retry-After of 1s
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+      assertThat(elapsedMs).isLessThan(500L);
     }
   }
 }
