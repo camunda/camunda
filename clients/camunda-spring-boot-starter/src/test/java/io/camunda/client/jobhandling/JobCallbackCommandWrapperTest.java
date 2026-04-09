@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
@@ -39,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings("unchecked")
@@ -402,6 +405,139 @@ public class JobCallbackCommandWrapperTest {
     assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
     assertThat(((CommandOutcome.Completed) result.join()).response()).isSameAs(response);
     assertThat(((CommandOutcome.Completed) result.join()).attempts()).isEqualTo(3);
+  }
+
+  // ---- REST error path tests ----
+
+  @Test
+  void shouldCompleteWithIgnoredOnRestNotFound() {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(404, "Not Found");
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Ignored.class);
+    assertThat(((CommandOutcome.Ignored) outcome).cause()).isSameAs(error);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {429, 502, 503, 504})
+  void shouldRetryOnRestRetriableCode(final int statusCode) {
+    // given
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    final CompletableFuture<Object> secondSend = new CompletableFuture<>();
+    when(command.send())
+        .thenReturn(asCamundaFuture(firstSend))
+        .thenReturn(asCamundaFuture(secondSend));
+    final ClientHttpException error = new ClientHttpException(statusCode, "Retriable");
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    firstSend.completeExceptionally(error);
+
+    // then — retry must have been scheduled
+    assertThat(result).isNotDone();
+    final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(scheduledExecutorService)
+        .schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
+
+    // when — retry succeeds
+    runnableCaptor.getValue().run();
+    final Object response = new Object();
+    secondSend.complete(response);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Completed.class);
+    assertThat(((CommandOutcome.Completed) outcome).attempts()).isEqualTo(2);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {429, 502, 503, 504})
+  void shouldFailOnRestRetriableCodeWhenRetriesExhausted(final int statusCode) {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(statusCode, "Retriable");
+    // maxRetries=1 → only one attempt allowed
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 1);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
+    assertThat(((CommandOutcome.Failed) outcome).cause()).isSameAs(error);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {400, 401, 403, 409, 500})
+  void shouldFailImmediatelyOnRestNonRetriableCode(final int statusCode) {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(statusCode, "Non-retriable");
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
+    assertThat(((CommandOutcome.Failed) outcome).cause()).isSameAs(error);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  @Test
+  void shouldNotRetryRestRetriableCodeWhenJobDeadlineExceeded() {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(429, "Too Many Requests");
+    // deadline=0 means it is already exceeded
+    final JobCallbackCommandWrapper wrapper = buildWrapper(0L, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  // ---- helper ----
+
+  private JobCallbackCommandWrapper buildWrapper(final long deadline, final int maxRetries) {
+    return new JobCallbackCommandWrapper(
+        command,
+        deadline,
+        metricsRecorder,
+        metricsContext,
+        maxRetries,
+        backoffSupplier,
+        scheduledExecutorService);
   }
 
   private static <T> CamundaFuture<T> asCamundaFuture(final CompletableFuture<T> delegate) {
