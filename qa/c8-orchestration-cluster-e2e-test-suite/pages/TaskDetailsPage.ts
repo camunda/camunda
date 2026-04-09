@@ -406,9 +406,7 @@ class TaskDetailsPage {
     await this.clickUnassignButton();
 
     // Assign to the logged-in user and verify assignment
-    await expect(this.assignToMeButton).toBeVisible({timeout: 15000});
-    await this.assignToMeButton.click();
-    await expect(this.assignedToMeText).toBeVisible({timeout: 15000});
+    await this.clickAssignToMeButton();
 
     // Complete the task, wait for the banner to appear, then disappear
     await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
