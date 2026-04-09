@@ -69,7 +69,6 @@ const ReadOnlyEditorWrapper = styled.div<{
   cursor: pointer;
   padding-top: ${EDITOR_PADDING_TOP}px;
   padding-bottom: ${EDITOR_PADDING_BOTTOM}px;
-  background-color: var(--cds-field);
 
   ${({$scrollable, $height}) =>
     $scrollable
@@ -114,6 +113,7 @@ const ReadOnlyEditorWrapper = styled.div<{
   ${({$editMode}) =>
     $editMode &&
     css`
+      background-color: var(--cds-field);
       padding-left: ${EDITOR_DECORATION_WIDTH}px;
       border-block-end: 1px solid var(--cds-border-strong);
     `};
