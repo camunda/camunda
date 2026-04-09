@@ -447,7 +447,6 @@ public class TaskQueryDTO {
         .setSearchAfter(searchAfter)
         .setSearchAfterOrEqual(searchAfterOrEqual)
         .setSearchBefore(searchBefore)
-        .setSearchBefore(searchBefore)
         .setSearchBeforeOrEqual(searchBeforeOrEqual)
         .setFollowUpDate(followUpDate)
         .setDueDate(dueDate)
