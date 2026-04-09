@@ -50,6 +50,8 @@ public class Engine implements RecordProcessor {
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED =
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
+  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_BANNED =
+      "Expected to process record '%s' without errors, but the related process instance with key '%s' is banned.";
 
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
       EnumSet.range(ValueType.JOB, ValueType.SCALE);
@@ -178,6 +180,16 @@ public class Engine implements RecordProcessor {
         }
 
         currentProcessor.processRecord(record, processingResultBuilder);
+      } else {
+        // process instance is banned
+        writers
+            .rejection()
+            .appendRejection(
+                record,
+                RejectionType.INVALID_STATE,
+                ERROR_MESSAGE_PROCESS_INSTANCE_BANNED.formatted(
+                    record.getKey(),
+                    ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey()));
       }
     }
     return processingResultBuilder.build();
@@ -228,7 +240,6 @@ public class Engine implements RecordProcessor {
     }
 
     final boolean banned = isProcessInstanceBanned(typedCommand);
-
     if (!banned) {
       return true;
     }
