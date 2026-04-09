@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -56,9 +55,7 @@ import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
@@ -75,22 +72,18 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.LockUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
-import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ZeebePartitionFactory implements Closeable {
+public final class ZeebePartitionFactory {
 
   public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebePartitionFactory.class);
@@ -113,8 +106,7 @@ public final class ZeebePartitionFactory implements Closeable {
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
-  private final ReentrantLock rocksDbResourcesLock = new ReentrantLock();
-  private RocksDbResources rocksDbResources;
+  private final RocksDbResources rocksDbResources;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -134,7 +126,8 @@ public final class ZeebePartitionFactory implements Closeable {
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final ClusterConfigurationService clusterConfigurationService) {
+      final ClusterConfigurationService clusterConfigurationService,
+      final RocksDbResources rocksDbResources) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -153,6 +146,7 @@ public final class ZeebePartitionFactory implements Closeable {
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
+    this.rocksDbResources = rocksDbResources;
   }
 
   public ZeebePartition constructPartition(
@@ -170,8 +164,6 @@ public final class ZeebePartitionFactory implements Closeable {
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
     final var partitionId = raftPartition.id().id();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
-    final var rocksDbResources =
-        getOrInitRocksDbResources(rocksDbConfiguration, membershipService.getLocalMember().id());
 
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
@@ -217,68 +209,6 @@ public final class ZeebePartitionFactory implements Closeable {
         new PartitionTransitionImpl(generateTransitionSteps());
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
-  }
-
-  private RocksDbResources getOrInitRocksDbResources(
-      final RocksDbConfiguration rocksDbConfiguration, final MemberId localMemberId) {
-    if (rocksDbResources != null) {
-      return rocksDbResources;
-    }
-
-    final var runtimeInfo =
-        new RuntimeInfo(
-            getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg));
-    return LockUtil.withLock(
-        rocksDbResourcesLock,
-        () -> {
-          if (rocksDbResources == null) {
-            rocksDbResources = RocksDbResources.of(rocksDbConfiguration, runtimeInfo);
-          }
-          return rocksDbResources;
-        });
-  }
-
-  /**
-   * Determines the number of partitions this broker is responsible for. Attempts to get the actual
-   * partition count from the cluster topology, with a static-config estimate as last resort.
-   */
-  static int getPartitionsPerBroker(
-      final ClusterConfigurationService clusterConfigurationService,
-      final MemberId localMemberId,
-      final BrokerCfg brokerCfg) {
-    final long partitionCount =
-        clusterConfigurationService.getMemberPartitions(localMemberId).size();
-    if (partitionCount > 0) {
-      return (int) partitionCount;
-    }
-
-    // Fall back to counting JOINING partitions — this happens during scale-up when a broker is
-    // being asked to join a partition for the first time, and the partition distribution does not
-    // include the partitions that are in JOINING state yet.
-    final int joiningPartitionCount =
-        clusterConfigurationService.getJoiningMemberPartitionCount(localMemberId);
-    if (joiningPartitionCount > 0) {
-      return joiningPartitionCount;
-    }
-
-    // Last-resort fallback: the cluster configuration hasn't been updated yet (e.g. join called
-    // before the dynamic config reflects the JOINING state). Estimate the per-broker partition
-    // count
-    // from the static cluster config so the RocksDB cache is sized appropriately.
-    final var clusterCfg = brokerCfg.getCluster();
-    final int estimate =
-        (int)
-            Math.ceil(
-                (double) clusterCfg.getPartitionsCount()
-                    * clusterCfg.getReplicationFactor()
-                    / clusterCfg.getClusterSize());
-    LOGGER.warn(
-        "Could not determine partition count for broker {} from topology; "
-            + "falling back to static config estimate of {} partition(s) for RocksDB cache sizing. "
-            + "This is expected when joining a partition before the cluster configuration is updated.",
-        localMemberId,
-        estimate);
-    return estimate;
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
@@ -351,21 +281,5 @@ public final class ZeebePartitionFactory implements Closeable {
           searchClientsProxy,
           brokerRequestAuthorizationConverter);
     };
-  }
-
-  @Override
-  public void close() {
-    if (rocksDbResources instanceof final RocksDbResources.Shared sharedRocksDbMemory) {
-      LockUtil.withLock(
-          rocksDbResourcesLock,
-          () -> {
-            if (rocksDbResources != null) {
-              rocksDbResources = null;
-              CloseHelper.closeAll(
-                  sharedRocksDbMemory.getSharedWriteBufferManager(),
-                  sharedRocksDbMemory.getSharedCache());
-            }
-          });
-    }
   }
 }
