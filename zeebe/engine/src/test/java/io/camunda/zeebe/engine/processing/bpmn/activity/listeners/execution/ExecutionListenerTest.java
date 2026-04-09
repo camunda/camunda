@@ -615,6 +615,53 @@ public class ExecutionListenerTest {
                     .isEqualTo(Map.of("foo", "bar")));
   }
 
+  @Test
+  public void shouldCreateExecutionListenerJobWithMergedTaskHeaders() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/processes/process_with_listener_specific_task_headers.bpmn")
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process_with_listener_headers").create();
+    ENGINE.job().ofInstance(processInstanceKey).withType("startListener").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("endListener").complete();
+
+    // then
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .withType("startListener")
+                .getFirst())
+        .extracting(r -> r.getValue().getCustomHeaders())
+        .describedAs(
+            "Start listener should have base headers, listener-specific headers, and listener should override base for conflicting keys")
+        .isEqualTo(
+            Map.of(
+                "baseKey", "baseValue",
+                "listenerKey", "listenerValue",
+                "overrideKey", "listenerOverride"));
+
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .withType("endListener")
+                .getFirst())
+        .extracting(r -> r.getValue().getCustomHeaders())
+        .describedAs("End listener should have base headers and listener-specific headers")
+        .isEqualTo(
+            Map.of(
+                "baseKey", "baseValue",
+                "endListenerKey", "endListenerValue",
+                "overrideKey", "baseOverride"));
+  }
+
   // test util methods
   static long createProcessInstance(
       final EngineRule engineRule, final BpmnModelInstance modelInstance) {
