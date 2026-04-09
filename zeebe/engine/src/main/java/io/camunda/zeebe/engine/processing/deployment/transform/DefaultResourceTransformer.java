@@ -116,24 +116,24 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   @Override
   public final void writeRecords(
       final DeploymentResource resource, final DeploymentRecord deployment) {
-    parseResourceInfo(resource)
-        .map(resourceInfo -> deployment.findResourceMetadataByResourceId(resourceInfo.id()))
-        .ifRight(
+    final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
+    deployment.resourceMetadata().stream()
+        .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
+        .findFirst()
+        .ifPresent(
             metadata -> {
-              if (metadata != null) {
-                if (metadata.isDuplicate()) {
-                  // create new version as the deployment contains at least one other non-duplicate
-                  // resource and all resources in a deployment should be versioned together
-                  metadata
-                      .setResourceKey(keyGenerator.nextKey())
-                      .setVersion(
-                          resourceState.getNextResourceVersion(
-                              metadata.getResourceId(), metadata.getTenantId()))
-                      .setDuplicate(false)
-                      .setDeploymentKey(deployment.getDeploymentKey());
-                }
-                writeResourceRecord(metadata, resource);
+              if (metadata.isDuplicate()) {
+                // create new version as the deployment contains at least one other non-duplicate
+                // resource and all resources in a deployment should be versioned together
+                metadata
+                    .setResourceKey(keyGenerator.nextKey())
+                    .setVersion(
+                        resourceState.getNextResourceVersion(
+                            metadata.getResourceId(), metadata.getTenantId()))
+                    .setDuplicate(false)
+                    .setDeploymentKey(deployment.getDeploymentKey());
               }
+              writeResourceRecord(metadata, resource);
             });
   }
 
