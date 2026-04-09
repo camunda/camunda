@@ -17,8 +17,10 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
-public class ExecutionListenerBuilder {
+public class ExecutionListenerBuilder implements BuilderWithTaskHeaders<ExecutionListenerBuilder> {
   private final ZeebeExecutionListener element;
   private final AbstractBaseElementBuilder<?, ?> elementBuilder;
 
@@ -57,5 +59,20 @@ public class ExecutionListenerBuilder {
 
   public ExecutionListenerBuilder retriesExpression(final String retriesExpression) {
     return retries(elementBuilder.asZeebeExpression(retriesExpression));
+  }
+
+  @Override
+  public ExecutionListenerBuilder zeebeTaskHeader(final String key, final String value) {
+    ZeebeTaskHeaders taskHeaders = element.getTaskHeaders();
+    if (taskHeaders == null) {
+      taskHeaders = elementBuilder.createInstance(ZeebeTaskHeaders.class);
+      element.setTaskHeaders(taskHeaders);
+    }
+
+    final ZeebeHeader header = elementBuilder.createChild(taskHeaders, ZeebeHeader.class);
+    header.setKey(key);
+    header.setValue(value);
+
+    return this;
   }
 }

@@ -89,7 +89,6 @@ runs:
         driver-opts: network=host
         buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
         endpoint: zeebe-context
-        install: true
 
     - name: Set semantic version from Maven project
       id: get-version

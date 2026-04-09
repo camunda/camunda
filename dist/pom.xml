@@ -1083,7 +1083,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.18.0</version>
+        <version>7.21.0</version>
         <executions>
           <execution>
             <id>backups</id>
@@ -1093,6 +1093,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
               <modelPackage>io.camunda.management.backups</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
@@ -1103,6 +1107,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
@@ -1113,6 +1121,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
         </executions>

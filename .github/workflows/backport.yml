@@ -58,11 +58,19 @@ jobs:
           # Placeholders can be used to define variable values.
           # These are indicated by a dollar sign and curly braces (`${placeholder}`).
           # Please refer to this action's README for all available placeholders.
+          #
+          # WARNING: The stale backport tracker depends on two things:
+          #   1. PR author being "backport-action" or "monorepo-devops-automation[bot]"
+          #   2. Body containing "Backport of #NNNN" (parsed to link to parent PR)
+          # Changing either will break tracking.
+          # See: .ci/scripts/stale-backport-scripts/collect-stale-backports.sh
           pull_description: |-
-            # Description
-            Backport of #${pull_number} to `${target_branch}`.
+            ⤵️ Backport of #${pull_number} → `${target_branch}`
 
             relates to ${issue_refs}
+
+            ---
+            <sub><img src="https://avatars.githubusercontent.com/u/97796249?s=16" width="16" height="16" align="absmiddle"> Created by <a href="https://github.com/korthout/backport-action">backport-action</a></sub>
 
           add_author_as_assignee: true
           add_author_as_reviewer: true

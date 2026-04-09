@@ -20,10 +20,12 @@ import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
+import org.camunda.bpm.model.xml.type.child.ChildElement;
 
 public class ZeebeExecutionListenerImpl extends BpmnModelElementInstanceImpl
     implements ZeebeExecutionListener {
@@ -31,6 +33,7 @@ public class ZeebeExecutionListenerImpl extends BpmnModelElementInstanceImpl
   protected static Attribute<ZeebeExecutionListenerEventType> eventTypeAttribute;
   protected static Attribute<String> typeAttribute;
   protected static Attribute<String> retriesAttribute;
+  protected static ChildElement<ZeebeTaskHeaders> taskHeadersChild;
 
   public ZeebeExecutionListenerImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -66,6 +69,16 @@ public class ZeebeExecutionListenerImpl extends BpmnModelElementInstanceImpl
     retriesAttribute.setValue(this, retries);
   }
 
+  @Override
+  public ZeebeTaskHeaders getTaskHeaders() {
+    return taskHeadersChild.getChild(this);
+  }
+
+  @Override
+  public void setTaskHeaders(final ZeebeTaskHeaders taskHeaders) {
+    taskHeadersChild.setChild(this, taskHeaders);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -94,6 +107,8 @@ public class ZeebeExecutionListenerImpl extends BpmnModelElementInstanceImpl
             .defaultValue(ZeebeExecutionListener.DEFAULT_RETRIES)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
+
+    taskHeadersChild = typeBuilder.sequence().element(ZeebeTaskHeaders.class).build();
 
     typeBuilder.build();
   }
