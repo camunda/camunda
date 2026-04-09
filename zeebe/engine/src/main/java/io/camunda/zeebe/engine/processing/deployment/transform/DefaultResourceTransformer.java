@@ -91,10 +91,10 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
    * can override this method to parse a structured resource ID from the resource content.
    *
    * @param resource the raw deployment resource
-   * @return either the parsed {@link ResourceId}, or a {@link Failure} if the resource is invalid
+   * @return either the parsed {@link ResourceInfo}, or a {@link Failure} if the resource is invalid
    */
-  protected Either<Failure, ResourceId> parseResourceId(final DeploymentResource resource) {
-    return Either.right(ResourceId.of(resource.getResourceName()));
+  protected Either<Failure, ResourceInfo> parseResourceId(final DeploymentResource resource) {
+    return Either.right(ResourceInfo.of(resource.getResourceName()));
   }
 
   @Override
@@ -104,14 +104,14 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
       final DeploymentResourceContext context) {
     return parseResourceId(deploymentResource)
         .flatMap(
-            resourceId ->
-                checkForDuplicateResourceId(resourceId, deploymentResource, deployment)
+            resourceInfo ->
+                checkForConflictingResourceIds(resourceInfo, deploymentResource, deployment)
                     .flatMap(
                         ignored -> {
                           final ResourceMetadataRecord resourceMetadataRecord =
                               deployment.resourceMetadata().add();
                           appendMetadataToResourceRecord(
-                              resourceMetadataRecord, resourceId, deploymentResource, deployment);
+                              resourceMetadataRecord, resourceInfo, deploymentResource, deployment);
                           return SUCCESS;
                         }));
   }
@@ -123,8 +123,7 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
       return;
     }
     parseResourceId(resource)
-        .map(
-            resourceId -> deployment.findResourceMetadataByResourceId(resourceId.id()))
+        .map(resourceInfo -> deployment.findResourceMetadataByResourceId(resourceInfo.id()))
         .ifRight(
             metadata -> {
               if (metadata != null) {
@@ -152,12 +151,12 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         new ResourceRecord().wrap(resourceMetadataRecord, resource.getResource()));
   }
 
-  private Either<Failure, Void> checkForDuplicateResourceId(
-      final ResourceId resourceId,
+  private Either<Failure, Void> checkForConflictingResourceIds(
+      final ResourceInfo resourceInfo,
       final DeploymentResource resource,
       final DeploymentRecord deployment) {
     return deployment.getResourceMetadata().stream()
-        .filter(metadata -> metadata.getResourceId().equals(resourceId.id()))
+        .filter(metadata -> metadata.getResourceId().equals(resourceInfo.id()))
         .findFirst()
         .map(
             dupeResource -> {
@@ -165,7 +164,9 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
                   String.format(
                       "Expected the resource ids to be unique within a deployment"
                           + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      resourceId.id(), dupeResource.getResourceName(), resource.getResourceName());
+                      resourceInfo.id(),
+                      dupeResource.getResourceName(),
+                      resource.getResourceName());
               return Either.<Failure, Void>left(new Failure(failureMessage));
             })
         .orElse(SUCCESS);
@@ -173,20 +174,20 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
 
   private void appendMetadataToResourceRecord(
       final ResourceMetadataRecord resourceMetadataRecord,
-      final ResourceId resourceId,
+      final ResourceInfo resourceInfo,
       final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentRecord) {
     final LongSupplier newResourceKey = keyGenerator::nextKey;
     final DirectBuffer checksum =
         checksumGenerator.checksum(deploymentResource.getResourceBuffer());
-    final String id = resourceId.id();
+    final String id = resourceInfo.id();
     final String tenantId = deploymentRecord.getTenantId();
 
     resourceMetadataRecord.setResourceId(id);
     resourceMetadataRecord.setChecksum(checksum);
     resourceMetadataRecord.setResourceName(deploymentResource.getResourceName());
     resourceMetadataRecord.setTenantId(tenantId);
-    resourceId.versionTag().ifPresent(resourceMetadataRecord::setVersionTag);
+    resourceInfo.versionTag().ifPresent(resourceMetadataRecord::setVersionTag);
 
     resourceState
         .findLatestResourceById(id, tenantId)
@@ -220,14 +221,14 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
    * @param id the resource identifier (must not be null or blank)
    * @param versionTag an optional version tag
    */
-  record ResourceId(String id, Optional<String> versionTag) {
+  record ResourceInfo(String id, Optional<String> versionTag) {
 
-    static ResourceId of(final String id) {
-      return new ResourceId(id, Optional.empty());
+    static ResourceInfo of(final String id) {
+      return new ResourceInfo(id, Optional.empty());
     }
 
-    static ResourceId of(final String id, final String versionTag) {
-      return new ResourceId(id, Optional.ofNullable(versionTag));
+    static ResourceInfo of(final String id, final String versionTag) {
+      return new ResourceInfo(id, Optional.ofNullable(versionTag));
     }
   }
 }

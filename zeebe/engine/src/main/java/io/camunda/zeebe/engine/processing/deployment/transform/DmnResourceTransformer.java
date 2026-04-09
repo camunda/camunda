@@ -14,7 +14,6 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -56,19 +55,19 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final DecisionState decisionState;
-  private final EngineConfiguration engineConfiguration;
+  private final ValidationConfig validationConfig;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
       final DecisionState decisionState,
-      final ValidationConfig engineConfiguration) {
+      final ValidationConfig validationConfig) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.decisionState = decisionState;
-    this.engineConfiguration = engineConfiguration;
+    this.validationConfig = validationConfig;
   }
 
   @Override
@@ -86,7 +85,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      return checkForDuplicateIds(resource, parsedDrg, deployment)
+      return checkForConflictingIds(resource, parsedDrg, deployment)
           .flatMap(valid -> checkDrdIdNameLength(resource, parsedDrg))
           .flatMap(valid -> checkDecisionIdLength(resource, parsedDrg))
           .flatMap(valid -> checkDecisionNameLength(resource, parsedDrg))
@@ -173,16 +172,16 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             });
   }
 
-  private Either<Failure, ?> checkForDuplicateIds(
+  private Either<Failure, ?> checkForConflictingIds(
       final DeploymentResource resource,
       final ParsedDecisionRequirementsGraph parsedDrg,
       final DeploymentRecord deploymentEvent) {
 
-    return checkDuplicatedDrgIds(resource, parsedDrg, deploymentEvent)
-        .flatMap(noDuplicates -> checkDuplicatedDecisionIds(resource, parsedDrg, deploymentEvent));
+    return checkConflictingDrgIds(resource, parsedDrg, deploymentEvent)
+        .flatMap(noDuplicates -> checkConflictingDecisionIds(resource, parsedDrg, deploymentEvent));
   }
 
-  private Either<Failure, ?> checkDuplicatedDrgIds(
+  private Either<Failure, ?> checkConflictingDrgIds(
       final DeploymentResource resource,
       final ParsedDecisionRequirementsGraph parsedDrg,
       final DeploymentRecord deploymentEvent) {
@@ -206,7 +205,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .orElse(NO_VALIDATION_ERROR);
   }
 
-  private Either<Failure, ?> checkDuplicatedDecisionIds(
+  private Either<Failure, ?> checkConflictingDecisionIds(
       final DeploymentResource resource,
       final ParsedDecisionRequirementsGraph parsedDrg,
       final DeploymentRecord deploymentEvent) {
@@ -261,20 +260,20 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var decisionRequirementsName = parsedDrg.getName();
 
     if (decisionRequirementsId != null
-        && decisionRequirementsId.length() > engineConfiguration.getMaxIdFieldLength()) {
+        && decisionRequirementsId.length() > validationConfig.maxIdFieldLength()) {
       final var failureMessage =
           String.format(
               "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-              engineConfiguration.getMaxIdFieldLength(),
+              validationConfig.maxIdFieldLength(),
               decisionRequirementsId,
               resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     } else if (decisionRequirementsName != null
-        && decisionRequirementsName.length() > engineConfiguration.getMaxNameFieldLength()) {
+        && decisionRequirementsName.length() > validationConfig.maxNameFieldLength()) {
       final var failureMessage =
           String.format(
               "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was '%s' in DRG '%s'",
-              engineConfiguration.getMaxNameFieldLength(),
+              validationConfig.maxNameFieldLength(),
               decisionRequirementsName,
               resource.getResourceName());
       return Either.left(new Failure(failureMessage));
@@ -287,7 +286,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     return parsedDrg.getDecisions().stream()
         .map(ParsedDecision::getId)
-        .filter(id -> id != null && id.length() > engineConfiguration.getMaxIdFieldLength())
+        .filter(id -> id != null && id.length() > validationConfig.maxIdFieldLength())
         .findFirst()
         .map(
             id ->
@@ -295,9 +294,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                     new Failure(
                         String.format(
                             "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-                            engineConfiguration.getMaxIdFieldLength(),
-                            id,
-                            resource.getResourceName()))))
+                            validationConfig.maxIdFieldLength(), id, resource.getResourceName()))))
         .orElse(NO_VALIDATION_ERROR);
   }
 
@@ -305,7 +302,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     return parsedDrg.getDecisions().stream()
         .map(ParsedDecision::getName)
-        .filter(name -> name != null && name.length() > engineConfiguration.getMaxNameFieldLength())
+        .filter(name -> name != null && name.length() > validationConfig.maxNameFieldLength())
         .findFirst()
         .map(
             name ->
@@ -313,7 +310,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                     new Failure(
                         String.format(
                             "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
-                            engineConfiguration.getMaxNameFieldLength(),
+                            validationConfig.maxNameFieldLength(),
                             name,
                             resource.getResourceName()))))
         .orElse(NO_VALIDATION_ERROR);

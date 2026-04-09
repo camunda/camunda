@@ -39,6 +39,8 @@ public final class DeploymentTransformer {
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
+  // Track BPMN resources for deployment binding validation
+  private List<BpmnResource> bpmnResources;
 
   private final BpmnResourceTransformer bpmnResourceTransformer;
 
@@ -100,20 +102,55 @@ public final class DeploymentTransformer {
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
-    final StringBuilder errors = new StringBuilder();
-    boolean success = true;
+    // Step 1: Check if any resources, if not reject
+    return checkHasResources(deploymentEvent)
+        // Step 2: Iterate over all resources and build metadata
+        .flatMap(ok -> buildMetadataForAllResources(deploymentEvent))
+        // Step 3: Check for conflicting resource IDs within the single deployment (already done in
+        // step 2)
+        // Step 4: Check if all deployment bindings are satisfied
+        .flatMap(ok -> validateDeploymentBindings(deploymentEvent))
+        // Step 5: Write the actual resources/deployment to state
+        .map(
+            ok -> {
+              writeResourceRecords(deploymentEvent);
+              return null;
+            });
+  }
 
-    final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
+  /**
+   * Step 1: Checks that the deployment contains at least one resource.
+   *
+   * @param deployment the deployment to check
+   * @return Either.right(null) if resources exist, or Either.left with a rejection reason
+   */
+  private Either<Failure, Void> checkHasResources(final DeploymentRecord deployment) {
+    final Iterator<DeploymentResource> resourceIterator = deployment.resources().iterator();
     if (!resourceIterator.hasNext()) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = "Expected to deploy at least one resource, but none given";
-
       return Either.left(new Failure(rejectionReason));
     }
+    return Either.right(null);
+  }
 
-    // step 1: only validate the resources and add their metadata to the deployment record (no event
-    // records are being written yet)
-    final var bpmnResources = new ArrayList<BpmnResource>();
+  /**
+   * Step 2: Iterates over all resources and builds metadata for each. This step validates each
+   * resource and adds its metadata to the deployment record. It also checks for conflicting
+   * resource IDs within the deployment (Step 3 is done here implicitly).
+   *
+   * @param deploymentEvent the deployment record
+   * @return Either.right(null) if successful, or Either.left with error details
+   */
+  private Either<Failure, Void> buildMetadataForAllResources(
+      final DeploymentRecord deploymentEvent) {
+    final StringBuilder errors = new StringBuilder();
+    boolean success = true;
+
+    // Track BPMN resources separately for deployment binding validation (step 4)
+    bpmnResources = new ArrayList<>();
+
+    final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
     while (resourceIterator.hasNext()) {
       final DeploymentResource deploymentResource = resourceIterator.next();
       if (isBpmnResource(deploymentResource)) {
@@ -127,35 +164,43 @@ public final class DeploymentTransformer {
       }
     }
 
-    // intermediate step (for BPMN resources only): validate process elements that use deployment
-    // binding (all linked resources must be part of the current deployment)
-    if (success && !bpmnResources.isEmpty()) {
-      final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
-      for (final var bpmnResource : bpmnResources) {
-        final var validationError = validator.validate(bpmnResource.elements);
-        if (validationError != null) {
-          success = false;
-          errors
-              .append("\n'")
-              .append(bpmnResource.resource.getResourceName())
-              .append("':\n")
-              .append(validationError);
-        }
-      }
+    if (!success) {
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              "Expected to deploy new resources, but encountered the following errors:%s", errors);
+      return Either.left(new Failure(rejectionReason));
     }
 
-    // step 2: update metadata (optionally) and write actual event records.
-    // Note: if every resource in the deployment turned out to be a duplicate (hasDuplicatesOnly),
-    // no records are written. Otherwise, any resource that was individually marked as a duplicate
-    // must also be re-versioned so that all resources in the deployment share the same deployment
-    // key and version increment (versioning invariant).
-    // Note: the resource ID is used as join key here to find the matching metadata entry, since it
-    // is guaranteed to be unique within a deployment (enforced by checkForDuplicateResourceId).
-    // The distributed path in DeploymentCreateProcessor re-computes the checksum instead, since
-    // the resource ID is not available on DeploymentResource without parsing.
-    if (success) {
-      for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-        success &= writeRecords(deploymentResource, deploymentEvent, errors);
+    return Either.right(null);
+  }
+
+  /**
+   * Step 4: Validates deployment bindings for BPMN resources. Ensures that all referenced resources
+   * (via zeebe:calledElement, zeebe:calledDecision, zeebe:formDefinition, zeebe:linkedResource) are
+   * present in the deployment.
+   *
+   * @param deploymentEvent the deployment record
+   * @return Either.right(null) if validation succeeds, or Either.left with validation errors
+   */
+  private Either<Failure, Void> validateDeploymentBindings(final DeploymentRecord deploymentEvent) {
+    if (bpmnResources == null || bpmnResources.isEmpty()) {
+      return Either.right(null);
+    }
+
+    final StringBuilder errors = new StringBuilder();
+    boolean success = true;
+
+    final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
+    for (final var bpmnResource : bpmnResources) {
+      final var validationError = validator.validate(bpmnResource.elements);
+      if (validationError != null) {
+        success = false;
+        errors
+            .append("\n'")
+            .append(bpmnResource.resource.getResourceName())
+            .append("':\n")
+            .append(validationError);
       }
     }
 
@@ -164,11 +209,34 @@ public final class DeploymentTransformer {
       rejectionReason =
           String.format(
               "Expected to deploy new resources, but encountered the following errors:%s", errors);
-
       return Either.left(new Failure(rejectionReason));
     }
 
     return Either.right(null);
+  }
+
+  /**
+   * Step 5: Writes the actual resource records to state. This is called after all validation has
+   * passed.
+   *
+   * @param deploymentEvent the deployment record with metadata
+   */
+  private void writeResourceRecords(final DeploymentRecord deploymentEvent) {
+    final StringBuilder errors = new StringBuilder();
+    boolean success = true;
+
+    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
+      success &= writeRecords(deploymentResource, deploymentEvent, errors);
+    }
+
+    if (!success) {
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              "Expected to deploy new resources, but encountered the following errors:%s", errors);
+      // Note: In practice, this should never happen as validation already passed
+      throw new IllegalStateException(rejectionReason);
+    }
   }
 
   private boolean isBpmnResource(final DeploymentResource resource) {

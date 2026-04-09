@@ -65,7 +65,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     return parseForm(resource)
         .flatMap(
             form ->
-                checkForDuplicateFormId(form.id, resource, deployment)
+                checkForConflictingFormIds(form.id, resource, deployment)
                     .flatMap(valid -> checkForFormIdLength(form.id, resource))
                     .map(
                         valid -> {
@@ -108,16 +108,20 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
       final var failureMessage =
           String.format(
               "Failed to parse form JSON. '%s': %s",
-              resource.getResourceName(), e.getCause().getMessage());
+              resource.getResourceName(),
+              e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       return Either.left(new Failure(failureMessage));
     } catch (final IOException e) {
       final var failureMessage =
-          String.format("'%s': %s", resource.getResourceName(), e.getCause().getMessage());
+          String.format(
+              "'%s': %s",
+              resource.getResourceName(),
+              e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       return Either.left(new Failure(failureMessage));
     }
   }
 
-  private Either<Failure, ?> checkForDuplicateFormId(
+  private Either<Failure, ?> checkForConflictingFormIds(
       final String formId, final DeploymentResource resource, final DeploymentRecord record) {
     return record.getFormMetadata().stream()
         .filter(metadata -> metadata.getFormId().equals(formId))

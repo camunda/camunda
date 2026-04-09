@@ -105,7 +105,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                 // validator
                 final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
 
-                return checkForDuplicateBpmnId(definition, resource, deployment)
+                return checkForConflictingBpmnIds(definition, resource, deployment)
                     .flatMap(
                         ok ->
                             UnsupportedMultiTenantFeaturesValidator.validate(
@@ -176,7 +176,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     }
   }
 
-  private Either<Failure, ?> checkForDuplicateBpmnId(
+  private Either<Failure, ?> checkForConflictingBpmnIds(
       final BpmnModelInstance process,
       final DeploymentResource resource,
       final DeploymentRecord record) {

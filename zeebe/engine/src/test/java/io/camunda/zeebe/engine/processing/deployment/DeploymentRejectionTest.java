@@ -159,9 +159,7 @@ public class DeploymentRejectionTest {
         .first()
         .satisfies(
             metadata ->
-                Assertions.assertThat(metadata)
-                    .hasResourceName("process.xml")
-                    .hasVersion(1));
+                Assertions.assertThat(metadata).hasResourceName("process.xml").hasVersion(1));
   }
 
   @Test
