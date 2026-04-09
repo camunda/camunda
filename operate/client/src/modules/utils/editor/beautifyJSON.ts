@@ -20,9 +20,30 @@ function beautifyJSON(value: string) {
 
 function beautifyTruncatedJSON(value: string) {
   try {
-    const parsedValue = JSON.parse(untruncateJson(value));
+    const {completed, collectionDepth} = untruncateJson(value);
+    const parsedValue = JSON.parse(completed);
+    const pretty = JSON.stringify(parsedValue, null, '\t');
 
-    return JSON.stringify(parsedValue, null, '\t');
+    if (collectionDepth === 0) {
+      return pretty;
+    }
+
+    // Strip the synthesized closing tokens (} / ]) character-by-character from
+    // the end of the pretty-printed output, skipping over whitespace between
+    // them. This avoids the line-based approach dropping meaningful content
+    // when closing brackets appear inline (e.g. `"a": []`).
+    let pos = pretty.length;
+    for (let i = 0; i < collectionDepth; i++) {
+      while (pos > 0 && /\s/.test(pretty[pos - 1])) {
+        pos--;
+      }
+      if (pos > 0 && (pretty[pos - 1] === ']' || pretty[pos - 1] === '}')) {
+        pos--;
+      } else {
+        break;
+      }
+    }
+    return pretty.slice(0, pos);
   } catch {
     return value;
   }

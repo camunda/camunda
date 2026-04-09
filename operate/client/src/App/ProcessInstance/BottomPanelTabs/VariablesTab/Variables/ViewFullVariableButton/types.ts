@@ -30,6 +30,7 @@ export interface ViewFullVariableButtonShowProps extends ViewFullVariableBasePro
   mode: 'show';
   variableValue: string;
   variableKey: string;
+  buttonLabel?: string;
 }
 
 export type ViewFullVariableWrapperProps =

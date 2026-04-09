@@ -30,27 +30,7 @@ const ring = (color: string) => css`
 const EditorWrapper = styled.div<{
   $invalid?: boolean;
 }>`
-  height: 100%;
   position: relative;
-
-  .monaco-editor {
-    width: 100% !important;
-    --vscode-editor-background: var(--cds-field) !important;
-    --vscode-editorGutter-background: var(--cds-field) !important;
-    background-color: var(--cds-field) !important;
-
-    &:focus-within::after {
-      ${ring('var(--cds-focus, #0f62fe)')}
-    }
-
-    ${({$invalid}) =>
-      $invalid &&
-      css`
-        &:focus-within::after {
-          ${ring('var(--cds-support-error)')}
-        }
-      `}
-  }
 
   ${({$invalid}) =>
     $invalid &&
@@ -69,41 +49,46 @@ const EditorLoader = styled.div<{$height: number}>`
   height: ${({$height}) => $height}px;
 `;
 
-const EditorReadonly = styled.pre<{
+const ReadOnlyEditorWrapper = styled.div<{
   $height: number;
   $empty: boolean;
   $editMode: boolean;
   $scrollable: boolean;
   $invalid: boolean;
 }>`
-  display: block;
   position: relative;
-  text-wrap: wrap;
   width: 100%;
   min-height: ${EDITOR_MIN_HEIGHT}px;
-  font-size: ${EDITOR_FONT_SIZE}px;
-  line-height: ${EDITOR_LINE_HEIGHT}px;
-  font-family: ${EDITOR_FONT_FAMILY};
+  cursor: pointer;
   padding-top: ${EDITOR_PADDING_TOP}px;
   padding-bottom: ${EDITOR_PADDING_BOTTOM}px;
-  tab-size: 2;
-  background-color: var(--cds-field);
+  letter-spacing: 0;
 
   ${({$scrollable, $height}) =>
     $scrollable
       ? css`
           max-height: ${$height}px;
           overflow-y: auto;
+
+          &::-webkit-scrollbar {
+            width: 12px;
+          }
+          &::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 0;
+          }
+          &::-webkit-scrollbar-thumb {
+            background: var(--monaco-scrollbar-thumb);
+            border-radius: 0;
+          }
+          &::-webkit-scrollbar-thumb:hover {
+            background: var(--monaco-scrollbar-thumb-hover);
+          }
         `
       : css`
           height: auto;
           overflow: visible;
         `}
-
-  &:focus-visible {
-    outline: 2px solid var(--cds-focus);
-    outline-offset: -2px;
-  }
 
   ${({$invalid}) =>
     $invalid &&
@@ -122,9 +107,52 @@ const EditorReadonly = styled.pre<{
   ${({$editMode}) =>
     $editMode &&
     css`
+      background-color: var(--cds-field);
       padding-left: ${EDITOR_DECORATION_WIDTH}px;
       border-block-end: 1px solid var(--cds-border-strong);
     `};
 `;
 
-export {EditorWrapper, EditorLoader, EditorReadonly};
+const ReadOnlyEditorContent = styled.pre`
+  font-size: ${EDITOR_FONT_SIZE}px;
+  line-height: ${EDITOR_LINE_HEIGHT}px;
+  font-family: ${EDITOR_FONT_FAMILY};
+  tab-size: 2;
+  text-wrap: wrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-focus);
+    outline-offset: -2px;
+  }
+`;
+
+const WriteModeEditor = styled.div<{
+  $invalid?: boolean;
+}>`
+  .monaco-editor {
+    width: 100% !important;
+    --vscode-editor-background: var(--cds-field) !important;
+    --vscode-editorGutter-background: var(--cds-field) !important;
+    background-color: var(--cds-field) !important;
+
+    &:focus-within::after {
+      ${ring('var(--cds-focus)')}
+    }
+
+    ${({$invalid}) =>
+      $invalid &&
+      css`
+        &:focus-within::after {
+          ${ring('var(--cds-support-error)')}
+        }
+      `}
+  }
+`;
+
+export {
+  EditorWrapper,
+  EditorLoader,
+  ReadOnlyEditorWrapper,
+  ReadOnlyEditorContent,
+  WriteModeEditor,
+};

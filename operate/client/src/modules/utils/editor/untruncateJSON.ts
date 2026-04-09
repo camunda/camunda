@@ -30,7 +30,10 @@ function isWhitespace(char: string): boolean {
   return '\u0020\u000D\u000A\u0009'.indexOf(char) >= 0;
 }
 
-function untruncateJson(json: string): string {
+function untruncateJson(json: string): {
+  completed: string;
+  collectionDepth: number;
+} {
   const contextStack: ContextType[] = ['topLevel'];
   let position = 0;
   let respawnPosition: number | undefined;
@@ -203,6 +206,9 @@ function untruncateJson(json: string): string {
   ];
   const finishWord = (word: string) =>
     result.push(word.slice(json.length - json.lastIndexOf(word[0])));
+
+  let collectionDepth = 0;
+
   for (let i = contextStack.length - 1; i >= 0; i--) {
     switch (contextStack[i]) {
       case 'string':
@@ -224,16 +230,18 @@ function untruncateJson(json: string): string {
       case 'arrayNeedsValue':
       case 'arrayNeedsComma':
         result.push(']');
+        collectionDepth++;
         break;
       case 'objectNeedsKey':
       case 'objectNeedsColon':
       case 'objectNeedsValue':
       case 'objectNeedsComma':
         result.push('}');
+        collectionDepth++;
         break;
     }
   }
-  return result.join('');
+  return {completed: result.join(''), collectionDepth};
 }
 
 export {untruncateJson};
